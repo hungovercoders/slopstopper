@@ -59,11 +59,27 @@ jobs:
         run: |
           validate_url() {
             local url="$1"
-            if [[ ! "$url" =~ ^https?://[^[:space:][:cntrl:]]+$ ]]; then
+            python3 - "$url" <<'PY'
+          import re
+          import sys
+          from urllib.parse import urlparse
+
+          candidate = sys.argv[1]
+          if re.search(r'[\s\x00-\x1F\x7F]', candidate):
+            raise ValueError("contains whitespace or control characters")
+
+          parsed = urlparse(candidate)
+          if parsed.scheme not in ("http", "https"):
+            raise ValueError("must use http/https")
+          if not parsed.netloc:
+            raise ValueError("missing host")
+
+          print(candidate, end="")
+          PY
+            if [ $? -ne 0 ]; then
               echo "Error: Invalid URL format: $url" >&2
               exit 1
             fi
-            printf '%s' "$url"
           }
 
           if [ "$EVENT_NAME" == "workflow_dispatch" ] && [ -n "$INPUT_URL" ]; then

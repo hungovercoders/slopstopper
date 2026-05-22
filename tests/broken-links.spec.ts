@@ -24,15 +24,7 @@ test.describe('Broken Link Checks', () => {
       );
 
       for (const href of hrefs) {
-        const normalizedHref = href.toLowerCase();
-        if (
-          normalizedHref.startsWith('#') ||
-          normalizedHref.startsWith('mailto:') ||
-          normalizedHref.startsWith('tel:') ||
-          normalizedHref.startsWith('javascript:') ||
-          normalizedHref.startsWith('data:') ||
-          normalizedHref.startsWith('vbscript:')
-        ) {
+        if (/^(#|mailto:|tel:|javascript:|data:|vbscript:)/i.test(href)) {
           continue;
         }
 
@@ -41,6 +33,7 @@ test.describe('Broken Link Checks', () => {
           continue;
         }
 
+        // Fragments do not affect HTTP retrieval, so only pathname+query are checked.
         links.add(`${resolved.pathname}${resolved.search}`);
       }
     }
