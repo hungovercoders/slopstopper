@@ -24,11 +24,14 @@ test.describe('Broken Link Checks', () => {
       );
 
       for (const href of hrefs) {
+        const normalizedHref = href.toLowerCase();
         if (
-          href.startsWith('#') ||
-          href.startsWith('mailto:') ||
-          href.startsWith('tel:') ||
-          href.startsWith('javascript:')
+          normalizedHref.startsWith('#') ||
+          normalizedHref.startsWith('mailto:') ||
+          normalizedHref.startsWith('tel:') ||
+          normalizedHref.startsWith('javascript:') ||
+          normalizedHref.startsWith('data:') ||
+          normalizedHref.startsWith('vbscript:')
         ) {
           continue;
         }

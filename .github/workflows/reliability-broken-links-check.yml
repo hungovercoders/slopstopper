@@ -133,7 +133,7 @@ jobs:
               '### 🔍 How to Check Locally',
               '',
               '```bash',
-              'task reliability:links',
+              'BROKEN_LINKS_TEST_URL=https://your-site.netlify.app task reliability:links',
               '',
               'task reliability:links -- https://your-site.netlify.app',
               '```',
