@@ -6,6 +6,7 @@ on:
   push:
     branches: [main]
   deployment_status:
+  # Run daily at 08:00 UTC
   schedule:
     - cron: '0 8 * * *'
   workflow_dispatch:
@@ -101,7 +102,7 @@ jobs:
         run: task reliability:links:ci
 
       - name: Stop local server
-        if: steps.url.outputs.use_local == 'true' && always()
+        if: always() && steps.url.outputs.use_local == 'true'
         run: kill "$SERVER_PID" || true
 
       - name: Upload report

@@ -45,9 +45,14 @@ test.describe('Broken Link Checks', () => {
       }
     }
 
+    const brokenLinks: string[] = [];
     for (const linkPath of links) {
       const response = await request.get(linkPath);
-      expect(response.status(), `${linkPath} should not be broken`).toBeLessThan(400);
+      if (response.status() >= 400) {
+        brokenLinks.push(`${linkPath} returned ${response.status()}`);
+      }
     }
+
+    expect(brokenLinks, brokenLinks.join('\n')).toEqual([]);
   });
 });
