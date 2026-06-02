@@ -3,19 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SlopStopper — a reference template for adding deterministic, automated quality feedback (security, hygiene, reliability, accessibility, performance) to any repo.">
+    <meta name="theme-color" content="#16213e">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="SlopStopper">
+    <meta property="og:description" content="Deterministic feedback for AI-driven development — keep your repo healthy at high velocity.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="SlopStopper">
+    <meta name="twitter:description" content="Deterministic feedback for AI-driven development — keep your repo healthy at high velocity.">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>SlopStopper</title>
     <link rel="stylesheet" href="index.css">
 </head>
 <body>
+    <a href="#main" class="skip-link">Skip to main content</a>
     <header>
         <a href="index.html" class="site-title">SlopStopper</a>
-        <nav>
-            <a href="index.html" id="nav-home">Home</a>
+        <nav aria-label="Main">
+            <a href="index.html" id="nav-home" aria-current="page">Home</a>
             <a href="features.html" id="nav-features">Features</a>
             <a href="tools.html" id="nav-tools">Tools</a>
         </nav>
     </header>
-    <main>
+    <main id="main">
         <div class="hero">
             <h1>SlopStopper</h1>
             <p>Deterministic feedback for AI-driven development — keep your repo healthy at high velocity</p>
@@ -36,7 +47,12 @@
             </div>
             <div class="card">
                 <h2>✅ Reliability</h2>
-                <p>End-to-end and smoke tests verify every deploy works correctly in staging and production environments.</p>
+                <p>End-to-end, smoke, accessibility and Core Web Vitals checks verify every deploy works correctly for every user.</p>
+                <a href="features.html" class="card-link">View practices →</a>
+            </div>
+            <div class="card">
+                <h2>🤖 Operational</h2>
+                <p>Auto-labelled PRs, an agentic doc updater and automatic failure alerts keep day-to-day workflow on autopilot.</p>
                 <a href="features.html" class="card-link">View practices →</a>
             </div>
             <div class="card">
@@ -46,5 +62,8 @@
             </div>
         </div>
     </main>
+    <footer>
+        <p>SlopStopper is open source — <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">view the repository on GitHub</a>.</p>
+    </footer>
 </body>
 </html>
