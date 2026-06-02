@@ -1,4 +1,4 @@
-# template.netlify
+# Slopstopper
 
 SlopStopper — a static site promoting deterministic feedback for AI-driven development, with automated Netlify deployment and feature branch preview support.
 
