@@ -74,7 +74,7 @@ jobs:
             echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
           else
             # Scheduled run - use production URL
-            echo "url=https://magic8bi.com" >> "$GITHUB_OUTPUT"
+            echo "url=https://slopstopper.dev" >> "$GITHUB_OUTPUT"
           fi
         
       - name: Run smoke tests
