@@ -65,7 +65,7 @@ The default threshold (`serious`) means the workflow fails when any `critical` o
 | `pull_request` → `main` | Local build (`localhost:8080`) |
 | `push` → `main` | Local build (`localhost:8080`) |
 | `deployment_status` (success) | Deployment URL from Netlify |
-| `schedule` (daily 06:00 UTC) | Production URL (`https://magic8bi.com`) |
+| `schedule` (daily 06:00 UTC) | Production URL (`https://slopstopper.dev`) |
 | `workflow_dispatch` | Configurable via inputs |
 
 ### Manual Trigger
