@@ -8,7 +8,7 @@ consistent quality pipeline: security, hygiene, reliability, accessibility,
 performance, and operational automation — all running on every pull request
 and push to `main`.
 
-📍 **Live reference site:** see [the SlopStopper showcase](https://github.com/hungovercoders/slopstopper) — built with the same suite it advertises.
+📍 **Live reference site:** see [slopstopper.dev](https://slopstopper.dev/) — built with the same suite it advertises.
 
 ---
 
