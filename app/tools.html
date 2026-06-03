@@ -272,7 +272,7 @@ on:
 
             <div class="card">
                 <h2>⚡ Lighthouse CI</h2>
-                <p>Measures Core Web Vitals (LCP, INP, CLS) plus performance, accessibility and best-practice scores on every PR and nightly against production.</p>
+                <p>Measures Core Web Vitals (LCP, INP, CLS) plus performance, accessibility, best-practice and SEO category scores on every PR and nightly against production.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
                 <details class="details">
                     <summary>.ss/lighthouserc.json</summary>
@@ -282,13 +282,36 @@ on:
     "collect": { "url": ["http://localhost:8080/"] },
     "assert":  {
       "preset": "lighthouse:no-pwa",
-      "assertions": { "categories:performance": ["error", { "minScore": 0.95 }] }
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.7 }],
+        "categories:seo":         ["error", { "minScore": 0.9 }]
+      }
     }
   }
 }</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.ss/lighthouserc.json" rel="noopener noreferrer">View .ss/lighthouserc.json →</a>
                         <br>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-core-web-vitals.yml" rel="noopener noreferrer">View workflow →</a>
+                    </div>
+                </details>
+            </div>
+
+            <div class="card">
+                <h2>🔎 SEO Metatag Check</h2>
+                <p>Fetches each page and asserts the full set of social-share + indexer metadata: <code>&lt;title&gt;</code>, meta description, canonical, viewport, OpenGraph (og:title/description/type/url/image) and Twitter Card (twitter:card/title/description/image). HEAD-fetches <code>og:image</code> to confirm it is reachable. Stdlib Python — no new dependencies.</p>
+                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/SEO.md" rel="noopener noreferrer">Learn more about SEO check config →</a>
+                <details class="details">
+                    <summary>Taskfile excerpt</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>reliability:seo:
+  desc: Validate SEO + social-share metatags on a live URL
+  cmds:
+    - python3 .ss/scripts/check-seo-metatags.py
+  # Env: SEO_TEST_URL, SEO_PAGES (csv, default /),
+  #      SEO_REQUIRE_OG_IMAGE, SEO_VERIFY_OG_IMAGE</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.ss/scripts/check-seo-metatags.py" rel="noopener noreferrer">View check script →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-seo-check.yml" rel="noopener noreferrer">View workflow →</a>
                     </div>
                 </details>
             </div>

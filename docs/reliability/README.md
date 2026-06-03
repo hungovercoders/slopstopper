@@ -18,6 +18,10 @@ All reliability checks read their target URL and audit scope from environment va
 | `ACCESSIBILITY_IMPACT` | `serious` | accessibility — min `critical`/`serious`/`moderate`/`minor` |
 | `ACCESSIBILITY_THRESHOLD` | `0` | accessibility — max violations before failing |
 | `LIGHTHOUSE_URL` / `CWV_URL` | (none) | Lighthouse CI — URL to audit |
+| `SEO_TEST_URL` | (none) | SEO metatag check — base URL to audit |
+| `SEO_PAGES` | `/` | SEO metatag check — comma-separated paths, e.g. `/,/features.html` |
+| `SEO_REQUIRE_OG_IMAGE` | `1` | SEO metatag check — set `0` to skip og:image presence check |
+| `SEO_VERIFY_OG_IMAGE` | `1` | SEO metatag check — set `0` to skip HEAD-fetching og:image |
 
 ## Smoke Tests
 

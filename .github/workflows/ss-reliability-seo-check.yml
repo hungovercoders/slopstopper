@@ -1,0 +1,172 @@
+name: SlopStopper · SEO Metatag Check
+
+on:
+  pull_request:
+    branches: [main]
+
+  push:
+    branches: [main]
+
+  deployment_status:
+
+  schedule:
+    - cron: '0 7 * * *'
+
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL to audit (leave blank to audit local build)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  seo:
+    name: SEO Metatag Audit (OpenGraph + Twitter Card + canonical)
+    if: |
+      github.event_name != 'deployment_status' ||
+      github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Task
+        run: |
+          curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
+          task --version
+
+      - name: Determine audit URL
+        id: url
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_URL: ${{ github.event.inputs.url }}
+          DEPLOYMENT_URL: ${{ github.event.deployment_status.target_url }}
+        run: |
+          validate_url() {
+            local url="$1"
+            if [[ ! "$url" =~ ^https?://[^[:space:][:cntrl:]]+$ ]]; then
+              echo "Error: Invalid URL format: $url" >&2
+              exit 1
+            fi
+            printf '%s' "$url"
+          }
+
+          if [ "$EVENT_NAME" == "workflow_dispatch" ] && [ -n "$INPUT_URL" ]; then
+            SAFE_URL="$(validate_url "$INPUT_URL")"
+            echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
+            echo "use_local=false" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT_NAME" == "deployment_status" ]; then
+            SAFE_URL="$(validate_url "$DEPLOYMENT_URL")"
+            echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
+            echo "use_local=false" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT_NAME" == "schedule" ]; then
+            echo "url=https://slopstopper.dev" >> "$GITHUB_OUTPUT"
+            echo "use_local=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "url=http://localhost:8080" >> "$GITHUB_OUTPUT"
+            echo "use_local=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies (local build only)
+        if: steps.url.outputs.use_local == 'true'
+        run: npm ci
+
+      - name: Start local server (PR / push builds)
+        if: steps.url.outputs.use_local == 'true'
+        # CUSTOMISE FOR YOUR APP: this step is wired for this repo's static
+        # site (build + node server.js). Replace with whatever starts your
+        # app on port 8080 — or set use_local=false in the Determine audit
+        # URL step and point SEO_TEST_URL at a deployed environment.
+        run: |
+          if [ -f server.js ] && [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then
+            npm run build
+            node server.js &
+            echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+            for i in $(seq 1 10); do
+              if curl -s http://localhost:8080 > /dev/null; then
+                echo "✅ Server ready"
+                break
+              fi
+              sleep 1
+            done
+          else
+            echo "ℹ️  No server.js to start. Customise this step or set SEO_TEST_URL."
+            exit 1
+          fi
+
+      - name: Pages to audit (this repo)
+        if: steps.url.outputs.use_local == 'true'
+        # CUSTOMISE FOR YOUR APP: comma-separated paths to audit. Defaults
+        # to '/' if unset.
+        run: echo "SEO_PAGES=/,/features.html,/tools.html" >> "$GITHUB_ENV"
+
+      - name: Run SEO metatag audit
+        id: audit
+        env:
+          SEO_TEST_URL: ${{ steps.url.outputs.url }}
+        run: task ss:reliability:seo:ci
+
+      - name: Stop local server
+        if: steps.url.outputs.use_local == 'true' && always()
+        run: kill "$SERVER_PID" || true
+
+      - name: Upload SEO report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-metatags-report-${{ github.run_id }}
+          path: .ss/reports/seo/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Comment on PR with SEO results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        env:
+          JOB_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const status = process.env.JOB_STATUS === 'success' ? '✅ PASSED' : '❌ FAILED';
+            const runUrl = process.env.RUN_URL;
+
+            let body = `## 🔎 SEO Metatag Audit ${status}\n\n`;
+            body += 'Checks each page for `<title>`, meta description, canonical, viewport, the OpenGraph set (og:title/description/type/url/image) and the Twitter Card set (twitter:card/title/description/image). Also HEAD-fetches `og:image` to confirm reachability.\n\n';
+
+            if (process.env.JOB_STATUS !== 'success') {
+              body += '> ⚠️ Missing or unreachable tags. See workflow logs / artifact for details.\n\n';
+            }
+
+            body += '### 🔍 How to Check Locally\n\n';
+            body += '```bash\n';
+            body += '# Audit the local build\n';
+            body += 'task ss:reliability:seo -- http://localhost:8080\n\n';
+            body += '# Or audit a deployed URL\n';
+            body += 'task ss:reliability:seo -- https://your-site.netlify.app\n';
+            body += '```\n\n';
+            body += `[Full report in workflow artifacts](${runUrl})\n`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
