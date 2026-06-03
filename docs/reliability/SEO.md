@@ -56,7 +56,7 @@ SEO_VERIFY_OG_IMAGE=0 \
 task ss:reliability:seo
 ```
 
-Reports are written to:
+Generated reports are written to:
 
 - `.ss/reports/seo/seo-metatags-report.md` (human-readable)
 - `.ss/reports/seo/seo-metatags-report.json` (machine-readable)
