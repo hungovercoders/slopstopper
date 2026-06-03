@@ -43,7 +43,7 @@ Monitors overall documentation size and checks against configured thresholds:
 - **Individual file sizes:** max 20 KB
 - **Number of documentation files:** max 15
 
-This check is particularly important for AI-assisted development where documentation needs to fit within context windows efficiently. Running this check generates a detailed report in `.docs-reports/docs-size-report.md`.
+This check is particularly important for AI-assisted development where documentation needs to fit within context windows efficiently. Running this check generates a detailed report in `.ss/reports/docs/docs-size-report.md`.
 
 ```bash
 task ss:hygiene:docs-size
@@ -120,4 +120,4 @@ If thresholds are exceeded:
 - Move historical/completed content to an archive folder
 - Split large files into focused, topic-specific documents
 - Remove redundant or outdated information
-- Use the `.docs-reports/docs-size-report.md` report to identify which files need attention
+- Use the `.ss/reports/docs/docs-size-report.md` report to identify which files need attention

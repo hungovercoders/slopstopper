@@ -620,7 +620,7 @@ jobs:
                 <div class="bridge__header">
                     <span class="kicker">One source of truth</span>
                     <h3>Same commands. <span class="highlight">Both loops.</span></h3>
-                    <p class="bridge__lede">Every check is a <code>task</code> command — defined once in <a href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.yml" rel="noopener noreferrer">Taskfile.yml</a>. You type it locally for instant feedback. CI runs the exact same command. No drift between what you ran and what the pipeline runs — fast inner loop, consistent outer loop, identical behaviour.</p>
+                    <p class="bridge__lede">Every check is a <code>task ss:&lt;name&gt;</code> command — defined once in <a href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.ss.yml" rel="noopener noreferrer">Taskfile.ss.yml</a> under the <code>ss</code> namespace. You type it locally for instant feedback. CI runs the exact same command. No drift between what you ran and what the pipeline runs — fast inner loop, consistent outer loop, identical behaviour.</p>
                 </div>
                 <div class="bridge__grid">
                     <div class="bridge__col">
@@ -634,7 +634,7 @@ jobs:
                     </div>
                     <div class="bridge__center" aria-hidden="true">
                         <div class="bridge__sticker">
-                            <span class="bridge__taskfile">Taskfile.yml</span>
+                            <span class="bridge__taskfile">Taskfile.ss.yml</span>
                             <span class="bridge__sub">one definition</span>
                         </div>
                         <div class="bridge__arrows">
@@ -654,7 +654,9 @@ jobs:
                 <details class="details">
                     <summary>What a Taskfile entry looks like</summary>
                     <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>reliability:accessibility:
+                        <p>Definitions inside <code>Taskfile.ss.yml</code> use bare names. The root <code>Taskfile.yml</code> imports them under the <code>ss</code> namespace via <code>includes:</code>, so you invoke them with the prefix (<code>task ss:reliability:accessibility</code>):</p>
+                        <div class="codeblock codeblock--yaml"><pre><code># Taskfile.ss.yml — bare names, defined under the `ss` namespace
+reliability:accessibility:
   desc: Run axe-core accessibility audit against a URL
   cmds:
     - npx playwright test tests/accessibility.spec.ts
@@ -663,7 +665,15 @@ reliability:accessibility:ci:
   desc: Same audit, wired for CI artifacts
   cmds:
     - task: reliability:accessibility</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.yml" rel="noopener noreferrer">View Taskfile.yml on GitHub →</a>
+                        <p>And the wiring in the root <code>Taskfile.yml</code> is just:</p>
+                        <div class="codeblock codeblock--yaml"><pre><code># Taskfile.yml — thin integration layer
+version: '3'
+includes:
+  ss:
+    taskfile: ./Taskfile.ss.yml</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.ss.yml" rel="noopener noreferrer">View Taskfile.ss.yml on GitHub →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.yml" rel="noopener noreferrer">View root Taskfile.yml →</a>
                         <br>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-accessibility-check.yml" rel="noopener noreferrer">View workflow that calls it →</a>
                     </div>

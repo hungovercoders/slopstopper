@@ -12,8 +12,8 @@ import AxeBuilder from '@axe-core/playwright';
  *   ACCESSIBILITY_IMPACT    - Minimum impact level to flag: critical|serious|moderate|minor (default: serious)
  *
  * Run locally:
- *   task reliability:accessibility
- *   ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task reliability:accessibility
+ *   task ss:reliability:accessibility
+ *   ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task ss:reliability:accessibility
  */
 
 const targetUrl =

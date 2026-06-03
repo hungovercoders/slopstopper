@@ -23,13 +23,28 @@ from pathlib import Path
 # ── Helpers ──────────────────────────────────────────────────────────
 
 def get_taskfile_tasks():
-    """Extract declared task names from Taskfile.yml."""
-    taskfile = Path("Taskfile.yml")
-    if not taskfile.exists():
-        return set()
-    content = taskfile.read_text()
-    # Match top-level task keys (2-space indent, name ending with colon)
-    return {m.group(1) for m in re.finditer(r"^  ([a-z][a-z0-9:_-]+):", content, re.MULTILINE)}
+    """Extract declared task names from Taskfile.yml and Taskfile.ss.yml.
+
+    SlopStopper splits its Taskfile into a thin root (Taskfile.yml) that
+    declares `includes: { ss: ./Taskfile.ss.yml }`, and Taskfile.ss.yml
+    that carries the actual definitions under bare names (e.g.
+    `hygiene:complexity:`). Consumers invoke them as `task ss:hygiene:complexity`.
+    So tasks declared in Taskfile.ss.yml are surfaced here with the `ss:`
+    prefix to match the invocation form used in docs.
+    """
+    tasks = set()
+    # Root Taskfile.yml — any tasks declared here are directly invocable
+    # without a namespace prefix.
+    root = Path("Taskfile.yml")
+    if root.exists():
+        content = root.read_text()
+        tasks |= {m.group(1) for m in re.finditer(r"^  ([a-z][a-z0-9:_-]+):", content, re.MULTILINE)}
+    # Taskfile.ss.yml — tasks here live under the `ss` include namespace.
+    ss = Path("Taskfile.ss.yml")
+    if ss.exists():
+        content = ss.read_text()
+        tasks |= {"ss:" + m.group(1) for m in re.finditer(r"^  ([a-z][a-z0-9:_-]+):", content, re.MULTILINE)}
+    return tasks
 
 
 def get_workflow_files():
@@ -127,11 +142,12 @@ def check_task_references(md_path, valid_tasks):
 
 
 def check_workflow_references(md_path, valid_workflows):
-    """Find .yml workflow file references that don't exist."""
+    """Find workflow file references that don't exist."""
     issues = []
     content = md_path.read_text()
-    # Match .github/workflows/<name>.yml references
-    for m in re.finditer(r'\.github/workflows/([a-z0-9_-]+\.yml)', content):
+    # Match .github/workflows/<name>.(yml|md) references — gh-aw agentic
+    # workflows ship as .md alongside a .lock.yml companion.
+    for m in re.finditer(r'\.github/workflows/([a-z0-9_.-]+\.(?:yml|md))', content):
         wf_name = m.group(1)
         if wf_name not in valid_workflows:
             line_no = content[:m.start()].count("\n") + 1
@@ -149,23 +165,38 @@ _TRACKED_EXTENSIONS = frozenset(
 )
 
 
-def _should_skip_ref(ref, ext, base, content, m, suggestion_ctx):
-    """Return True if this file reference should be skipped."""
-    if ref.startswith(("http", "mailto")):
+# Refs that start with these prefixes aren't filesystem paths from the repo
+# root: http(s) and mailto are external links; a leading `/` denotes a URL
+# path on the deployed site (e.g. `/features.html`).
+_SKIP_REF_PREFIXES = ("http", "mailto", "/")
+# Substrings that indicate the ref is a placeholder / example, not a real path.
+_PLACEHOLDER_SUBS = ("example", "your-", "<", "YYYY")
+
+
+def _ref_is_placeholder_or_external(ref, ext):
+    """Cheap structural checks that don't depend on surrounding content."""
+    if ref.startswith(_SKIP_REF_PREFIXES):
         return True
     if ext not in _TRACKED_EXTENSIONS:
         return True
-    if Path(ref).exists() or (base / ref).exists():
+    if any(sub in ref for sub in _PLACEHOLDER_SUBS):
         return True
-    if any(sub in ref for sub in ("example", "your-", "<", "YYYY")):
-        return True
-    start = max(0, m.start() - 250)
-    end = min(len(content), m.end() + 250)
-    if suggestion_ctx.search(content[start:end]):
-        return True
+    # Bare yaml filenames (e.g. just `config.yml`) are usually examples, not
+    # references to a specific tracked file.
     if ext in (".yml", ".yaml") and "/" not in ref:
         return True
     return False
+
+
+def _should_skip_ref(ref, ext, base, content, m, suggestion_ctx):
+    """Return True if this file reference should be skipped."""
+    if _ref_is_placeholder_or_external(ref, ext):
+        return True
+    if Path(ref).exists() or (base / ref).exists():
+        return True
+    start = max(0, m.start() - 250)
+    end = min(len(content), m.end() + 250)
+    return bool(suggestion_ctx.search(content[start:end]))
 
 
 def check_source_file_references(md_path, project_files):

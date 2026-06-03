@@ -56,7 +56,7 @@ The default threshold (`serious`) means the workflow fails when any `critical` o
 
 ## GitHub Actions Workflow
 
-**File:** [`.github/workflows/reliability-accessibility-check.yml`](../../.github/workflows/reliability-accessibility-check.yml)
+**File:** [`.github/workflows/ss-reliability-accessibility-check.yml`](../../.github/workflows/ss-reliability-accessibility-check.yml)
 
 ### Triggers
 

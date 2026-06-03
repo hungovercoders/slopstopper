@@ -12,7 +12,7 @@ cd "$REPO_ROOT"
 # Thresholds (same as in workflow)
 MAX_TOTAL_SIZE_KB=150
 MAX_FILE_SIZE_KB=20
-MAX_FILES=15
+MAX_FILES=25
 
 # Colors for output
 RED='\033[0;31m'

@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
  * These tests verify critical functionality on live environments.
  * Run with: SMOKE_TEST_URL=https://your-site.netlify.app npm run test:smoke
  *
- * Or via task: task reliability:smoke -- https://your-site.netlify.app
+ * Or via task: task ss:reliability:smoke -- https://your-site.netlify.app
  */
 
 const targetUrl = process.env.SMOKE_TEST_URL || process.env.BASE_URL || 'http://localhost:8080';

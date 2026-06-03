@@ -7,8 +7,8 @@ tasks:
       Runs critical smoke tests against a deployed site to verify basic functionality.
       
       Usage:
-        task reliability:smoke -- https://your-site.netlify.app
-        SMOKE_TEST_URL=https://your-site.netlify.app task reliability:smoke
+        task ss:reliability:smoke -- https://your-site.netlify.app
+        SMOKE_TEST_URL=https://your-site.netlify.app task ss:reliability:smoke
         
       Used for:
         - Production health checks
@@ -24,8 +24,8 @@ tasks:
           echo "❌ Error: SMOKE_TEST_URL is required"
           echo ""
           echo "Usage:"
-          echo "  task reliability:smoke -- https://your-site.netlify.app"
-          echo "  SMOKE_TEST_URL=https://example.com task reliability:smoke"
+          echo "  task ss:reliability:smoke -- https://your-site.netlify.app"
+          echo "  SMOKE_TEST_URL=https://example.com task ss:reliability:smoke"
           exit 1
         fi
         
@@ -42,7 +42,7 @@ tasks:
       Intended for GitHub Actions and automated testing.
       
       Usage:
-        SMOKE_TEST_URL=https://your-site.netlify.app task reliability:smoke:ci
+        SMOKE_TEST_URL=https://your-site.netlify.app task ss:reliability:smoke:ci
     cmds:
       - |
         if [ -z "$SMOKE_TEST_URL" ]; then
@@ -63,8 +63,8 @@ tasks:
       Vitals against the thresholds defined in .lighthouserc.json.
       
       Usage:
-        task reliability:cwv -- https://your-site.netlify.app
-        CWV_URL=https://your-site.netlify.app task reliability:cwv
+        task ss:reliability:cwv -- https://your-site.netlify.app
+        CWV_URL=https://your-site.netlify.app task ss:reliability:cwv
         
       Thresholds (see .lighthouserc.json):
         - Performance score  ≥ 70
@@ -81,8 +81,8 @@ tasks:
           echo "❌ Error: CWV_URL is required"
           echo ""
           echo "Usage:"
-          echo "  task reliability:cwv -- https://your-site.netlify.app"
-          echo "  CWV_URL=https://example.com task reliability:cwv"
+          echo "  task ss:reliability:cwv -- https://your-site.netlify.app"
+          echo "  CWV_URL=https://example.com task ss:reliability:cwv"
           exit 1
         fi
         
@@ -101,7 +101,7 @@ tasks:
       Intended for GitHub Actions and automated testing.
       
       Usage:
-        CWV_URL=https://your-site.netlify.app task reliability:cwv:ci
+        CWV_URL=https://your-site.netlify.app task ss:reliability:cwv:ci
     cmds:
       - |
         if [ -z "$CWV_URL" ]; then
@@ -128,8 +128,8 @@ tasks:
         ACCESSIBILITY_THRESHOLD - Max allowed violations before failing (default: 0)
 
       Usage:
-        task reliability:accessibility -- https://your-site.netlify.app
-        ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task reliability:accessibility
+        task ss:reliability:accessibility -- https://your-site.netlify.app
+        ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task ss:reliability:accessibility
     cmds:
       - |
         {{if .CLI_ARGS}}
@@ -141,8 +141,8 @@ tasks:
           echo "❌ Error: ACCESSIBILITY_TEST_URL is required"
           echo ""
           echo "Usage:"
-          echo "  task reliability:accessibility -- https://your-site.netlify.app"
-          echo "  ACCESSIBILITY_TEST_URL=https://example.com task reliability:accessibility"
+          echo "  task ss:reliability:accessibility -- https://your-site.netlify.app"
+          echo "  ACCESSIBILITY_TEST_URL=https://example.com task ss:reliability:accessibility"
           exit 1
         fi
 
@@ -159,7 +159,7 @@ tasks:
       Intended for GitHub Actions and automated testing.
 
       Usage:
-        ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task reliability:accessibility:ci
+        ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task ss:reliability:accessibility:ci
     cmds:
       - |
         TARGET="${ACCESSIBILITY_TEST_URL:-${SMOKE_TEST_URL:-}}"
@@ -182,8 +182,8 @@ tasks:
       Generates both text and CSV reports with configurable thresholds.
       
       Usage:
-        task hygiene:complexity           # Run analysis
-        task hygiene:complexity -- -v     # Verbose output
+        task ss:hygiene:complexity           # Run analysis
+        task ss:hygiene:complexity -- -v     # Verbose output
     cmds:
       - task: hygiene:complexity:check-tool
       - task: hygiene:complexity:analyze
@@ -329,7 +329,7 @@ tasks:
       Usage:
         task security                           # Run all checks
         task sast                               # SAST only
-        task vulnerability:all                  # Vulnerability scan only
+        task ss:vulnerability:all                  # Vulnerability scan only
         task dast -- http://localhost:8080      # DAST only
         task secrets                            # Secrets detection only
     cmds:
@@ -472,7 +472,7 @@ tasks:
       Generates both JSON and Markdown reports.
 
       Usage:
-        task vulnerability:all           # Run scan
+        task ss:vulnerability:all           # Run scan
     cmds:
       - task: vulnerability:all:check-tool
       - task: vulnerability:all:analyze
@@ -1017,7 +1017,7 @@ tasks:
       Generates a detailed report in .ss/reports/docs/docs-size-report.md
       
       Usage:
-        task hygiene:docs-size    # Run size monitoring
+        task ss:hygiene:docs-size    # Run size monitoring
     cmds:
       - bash .ss/scripts/check-docs-size.sh
 
@@ -1033,7 +1033,7 @@ tasks:
       - Identifies deviations for discussion
       
       Usage:
-        task hygiene:docs-structure    # Validate structure
+        task ss:hygiene:docs-structure    # Validate structure
     cmds:
       - task: hygiene:docs-structure:check
       - task: hygiene:docs-structure:report
@@ -1084,7 +1084,7 @@ tasks:
       - Possible stale source-file references
 
       Usage:
-        task hygiene:docs-accuracy
+        task ss:hygiene:docs-accuracy
     cmds:
       - task: hygiene:docs-accuracy:check
       - task: hygiene:docs-accuracy:report
@@ -1189,7 +1189,7 @@ tasks:
     cmds:
       - |
         if [ -z "{{.SLUG}}" ]; then
-          echo "❌ Missing SLUG. Usage: task decisions:new SLUG=<decision-name>"
+          echo "❌ Missing SLUG. Usage: task ss:decisions:new SLUG=<decision-name>"
           exit 1
         fi
         target="docs/decisions/{{.DATE}}-{{.SLUG}}.md"

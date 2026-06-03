@@ -7,9 +7,11 @@ repo. Conformant with [agents.md](https://agents.md).
 > structured map of all project documentation.
 
 > 🏗️ **Naming convention:** the categories in
-> [`docs/index.md`](./docs/index.md) drive naming across the project — Task
-> targets use `category:action` (e.g. `hygiene:complexity`), GitHub Actions
-> use `category-action-check.yml` (e.g. `hygiene-complexity-check.yml`).
+> [`docs/index.md`](./docs/index.md) drive naming across the project. Task
+> targets are defined as `category:action` (e.g. `hygiene:complexity`) and
+> invoked under the `ss` namespace (`task ss:hygiene:complexity`). GitHub
+> Actions use `ss-category-action-check.yml` (e.g.
+> `ss-hygiene-complexity-check.yml`).
 
 ## What SlopStopper is
 
@@ -165,16 +167,16 @@ SVG; the favicon is `app/favicon.svg`.
 
 ## Deployment
 
-- **Production:** push to `main` → [`netlify-deploy.yml`](./.github/workflows/netlify-deploy.yml) → live site
+- **Production:** push to `main` → [`netlify-deploy.yml`](./.github/workflows/ss-netlify-deploy.yml) → live site
 - **Preview:** open PR → preview at `https://pr-{number}--{site-name}.netlify.app` → URL posted as PR comment
-- **Cleanup:** PR closed → [`netlify-cleanup-preview.yml`](./.github/workflows/netlify-cleanup-preview.yml) deletes the preview deploy
+- **Cleanup:** PR closed → [`netlify-cleanup-preview.yml`](./.github/workflows/ss-netlify-cleanup-preview.yml) deletes the preview deploy
 - **Secrets required:** `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`
 
 ## Operational automation
 
-- [`workflow-failure-issue.yml`](./.github/workflows/workflow-failure-issue.yml) — failed workflow runs on `main` raise (or update) a tracking issue labelled `workflow-failure`. Linked from the live site
-- [`hygiene-auto-label-pr.yml`](./.github/workflows/hygiene-auto-label-pr.yml) — labels PRs by changed paths via [`labeler.yml`](./.github/labeler.yml)
-- [`hygiene-doc-updater.md`](./.github/workflows/hygiene-doc-updater.md) — gh-aw agentic workflow; weekly scan of merged PRs + open `documentation` issues, opens sync PRs labelled `documentation, automation`. Requires `ANTHROPIC_API_KEY` secret
+- [`workflow-failure-issue.yml`](./.github/workflows/ss-workflow-failure-issue.yml) — failed workflow runs on `main` raise (or update) a tracking issue labelled `workflow-failure`. Linked from the live site
+- [`hygiene-auto-label-pr.yml`](./.github/workflows/ss-hygiene-auto-label-pr.yml) — labels PRs by changed paths via [`labeler.yml`](./.github/labeler.yml)
+- [`hygiene-doc-updater.md`](./.github/workflows/ss-hygiene-doc-updater.md) — gh-aw agentic workflow; weekly scan of merged PRs + open `documentation` issues, opens sync PRs labelled `documentation, automation`. Requires `ANTHROPIC_API_KEY` secret
 
 ## Commit conventions
 
