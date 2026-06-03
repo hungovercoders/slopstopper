@@ -111,6 +111,66 @@ def get_link(links: list[dict[str, str]], rel: str) -> Optional[str]:
     return None
 
 
+def value_or_empty(value: Optional[str]) -> str:
+    return value if value else ""
+
+
+def collect_tags(parser: HeadParser) -> dict[str, str]:
+    return {
+        "title": value_or_empty(parser.title),
+        "description": value_or_empty(get_meta(parser.metas, "name", "description")),
+        "canonical": value_or_empty(get_link(parser.links, "canonical")),
+        "viewport": value_or_empty(get_meta(parser.metas, "name", "viewport")),
+        "og:type": value_or_empty(get_meta(parser.metas, "property", "og:type")),
+        "og:title": value_or_empty(get_meta(parser.metas, "property", "og:title")),
+        "og:description": value_or_empty(get_meta(parser.metas, "property", "og:description")),
+        "og:url": value_or_empty(get_meta(parser.metas, "property", "og:url")),
+        "og:image": value_or_empty(get_meta(parser.metas, "property", "og:image")),
+        "twitter:card": value_or_empty(get_meta(parser.metas, "name", "twitter:card")),
+        "twitter:title": value_or_empty(get_meta(parser.metas, "name", "twitter:title")),
+        "twitter:description": value_or_empty(get_meta(parser.metas, "name", "twitter:description")),
+        "twitter:image": value_or_empty(get_meta(parser.metas, "name", "twitter:image")),
+    }
+
+
+def validate_core_tags(tags: dict[str, str], issues: list[str], notes: list[str]) -> None:
+    title = tags["title"]
+    description = tags["description"]
+    if not title:
+        issues.append("Missing <title>")
+    elif len(title) > 70:
+        notes.append(f"<title> is {len(title)} chars — consider ≤ 60")
+    if not description:
+        issues.append("Missing <meta name=\"description\">")
+    elif len(description) > 160:
+        notes.append(f"meta description is {len(description)} chars — consider ≤ 160")
+    if not tags["viewport"]:
+        issues.append("Missing <meta name=\"viewport\">")
+    if not tags["canonical"]:
+        issues.append("Missing <link rel=\"canonical\">")
+
+
+def validate_open_graph_tags(tags: dict[str, str], issues: list[str], require_og_image: bool) -> None:
+    for key in ("og:title", "og:description", "og:type", "og:url"):
+        if not tags[key]:
+            issues.append(f"Missing {key}")
+    if require_og_image and not tags["og:image"]:
+        issues.append("Missing og:image")
+
+
+def validate_twitter_tags(tags: dict[str, str], issues: list[str], notes: list[str], require_og_image: bool) -> None:
+    twitter_card = tags["twitter:card"]
+    if not twitter_card:
+        issues.append("Missing twitter:card")
+    elif twitter_card not in {"summary", "summary_large_image", "app", "player"}:
+        notes.append(f"twitter:card is {twitter_card!r}, expected one of summary|summary_large_image|app|player")
+    for key in ("twitter:title", "twitter:description"):
+        if not tags[key]:
+            issues.append(f"Missing {key}")
+    if require_og_image and not tags["twitter:image"]:
+        issues.append("Missing twitter:image")
+
+
 def check_page(base: str, path: str, require_og_image: bool, verify_og_image: bool) -> dict:
     page_url = urllib.parse.urljoin(base.rstrip("/") + "/", path.lstrip("/"))
     issues: list[str] = []
@@ -133,64 +193,16 @@ def check_page(base: str, path: str, require_og_image: bool, verify_og_image: bo
 
     parser = HeadParser()
     parser.feed(body)
-
-    title = parser.title or ""
-    description = get_meta(parser.metas, "name", "description") or ""
-    canonical = get_link(parser.links, "canonical") or ""
-    og_title = get_meta(parser.metas, "property", "og:title") or ""
-    og_description = get_meta(parser.metas, "property", "og:description") or ""
-    og_type = get_meta(parser.metas, "property", "og:type") or ""
-    og_url = get_meta(parser.metas, "property", "og:url") or ""
-    og_image = get_meta(parser.metas, "property", "og:image") or ""
-    twitter_card = get_meta(parser.metas, "name", "twitter:card") or ""
-    twitter_title = get_meta(parser.metas, "name", "twitter:title") or ""
-    twitter_description = get_meta(parser.metas, "name", "twitter:description") or ""
-    twitter_image = get_meta(parser.metas, "name", "twitter:image") or ""
-    viewport = get_meta(parser.metas, "name", "viewport") or ""
-
-    # Required: core SEO
-    if not title:
-        issues.append("Missing <title>")
-    elif len(title) > 70:
-        notes.append(f"<title> is {len(title)} chars — consider ≤ 60")
-    if not description:
-        issues.append("Missing <meta name=\"description\">")
-    elif len(description) > 160:
-        notes.append(f"meta description is {len(description)} chars — consider ≤ 160")
-    if not viewport:
-        issues.append("Missing <meta name=\"viewport\">")
-    if not canonical:
-        issues.append("Missing <link rel=\"canonical\">")
-
-    # Required: OpenGraph
-    if not og_title:
-        issues.append("Missing og:title")
-    if not og_description:
-        issues.append("Missing og:description")
-    if not og_type:
-        issues.append("Missing og:type")
-    if not og_url:
-        issues.append("Missing og:url")
-    if require_og_image and not og_image:
-        issues.append("Missing og:image")
-
-    # Required: Twitter card
-    if not twitter_card:
-        issues.append("Missing twitter:card")
-    elif twitter_card not in {"summary", "summary_large_image", "app", "player"}:
-        notes.append(f"twitter:card is {twitter_card!r}, expected one of summary|summary_large_image|app|player")
-    if not twitter_title:
-        issues.append("Missing twitter:title")
-    if not twitter_description:
-        issues.append("Missing twitter:description")
-    if require_og_image and not twitter_image:
-        issues.append("Missing twitter:image")
+    tags = collect_tags(parser)
+    validate_core_tags(tags, issues, notes)
+    validate_open_graph_tags(tags, issues, require_og_image)
+    validate_twitter_tags(tags, issues, notes, require_og_image)
 
     # Verify og:image is reachable
     image_check: Optional[dict] = None
-    if og_image and verify_og_image:
+    if tags["og:image"] and verify_og_image:
         # Normalise relative og:image against page URL
-        og_image_abs = urllib.parse.urljoin(page_url, og_image)
+        og_image_abs = urllib.parse.urljoin(page_url, tags["og:image"])
         ok, detail = head_ok(og_image_abs)
         image_check = {"url": og_image_abs, "ok": ok, "detail": detail}
         if not ok:
@@ -201,23 +213,77 @@ def check_page(base: str, path: str, require_og_image: bool, verify_og_image: bo
         "status": "fail" if issues else "pass",
         "issues": issues,
         "notes": notes,
-        "tags": {
-            "title": title,
-            "description": description,
-            "canonical": canonical,
-            "viewport": viewport,
-            "og:type": og_type,
-            "og:title": og_title,
-            "og:description": og_description,
-            "og:url": og_url,
-            "og:image": og_image,
-            "twitter:card": twitter_card,
-            "twitter:title": twitter_title,
-            "twitter:description": twitter_description,
-            "twitter:image": twitter_image,
-        },
+        "tags": tags,
         "image_check": image_check,
     }
+
+
+def append_issues(lines: list[str], issues: list[str]) -> None:
+    lines.append("**Issues:**")
+    for issue in issues:
+        lines.append(f"- ❌ {issue}")
+    lines.append("")
+
+
+def append_notes(lines: list[str], notes: list[str]) -> None:
+    lines.append("**Notes:**")
+    for note in notes:
+        lines.append(f"- ⚠️  {note}")
+    lines.append("")
+
+
+def append_tags(lines: list[str], tags: dict[str, str]) -> None:
+    lines.append("<details><summary>Tags detected</summary>")
+    lines.append("")
+    lines.append("| Tag | Value |")
+    lines.append("|---|---|")
+    for k, v in tags.items():
+        display = (v[:120] + "…") if v and len(v) > 120 else v
+        lines.append(f"| `{k}` | {display or '_(empty)_'} |")
+    lines.append("")
+    lines.append("</details>")
+    lines.append("")
+
+
+def append_image_check(lines: list[str], image_check: dict) -> None:
+    icon = "✅" if image_check["ok"] else "❌"
+    lines.append(f"**og:image fetch:** {icon} `{image_check['url']}` — {image_check['detail']}")
+    lines.append("")
+
+
+def append_page_markdown(lines: list[str], result: dict) -> None:
+    status_icon = {"pass": "✅", "fail": "❌", "error": "💥"}.get(result["status"], "•")
+    lines.append(f"## {status_icon} {result['url']}")
+    lines.append("")
+    if result["issues"]:
+        append_issues(lines, result["issues"])
+    if result.get("notes"):
+        append_notes(lines, result["notes"])
+    if result.get("tags"):
+        append_tags(lines, result["tags"])
+    if result.get("image_check"):
+        append_image_check(lines, result["image_check"])
+
+
+def build_markdown_report(results: list[dict], base: str, overall_pass: bool) -> str:
+    lines: list[str] = []
+    lines.append("# 🔎 SEO / Social-Share Metatag Report")
+    lines.append("")
+    lines.append(f"**Base URL:** {base}")
+    lines.append("")
+    lines.append(f"**Overall:** {'✅ PASS' if overall_pass else '❌ FAIL'}")
+    lines.append("")
+    for result in results:
+        append_page_markdown(lines, result)
+    lines.append("---")
+    lines.append("")
+    lines.append("## How to Fix")
+    lines.append("")
+    lines.append("- **Missing tag** → add it to the page's `<head>`. See [docs/reliability/SEO.md](../../../docs/reliability/SEO.md) for the full required set.")
+    lines.append("- **og:image not reachable** → confirm the URL is absolute, same-origin (or CORS-allowed for crawlers), and returns `image/*` content type.")
+    lines.append("- **Title / description too long** → trim to keep search-result snippets readable.")
+    lines.append("")
+    return "\n".join(lines) + "\n"
 
 
 def write_reports(results: list[dict], base: str) -> None:
@@ -234,67 +300,35 @@ def write_reports(results: list[dict], base: str) -> None:
 
     # Markdown
     md_path = REPORT_DIR / "seo-metatags-report.md"
-    lines: list[str] = []
-    lines.append("# 🔎 SEO / Social-Share Metatag Report")
-    lines.append("")
-    lines.append(f"**Base URL:** {base}")
-    lines.append("")
-    lines.append(f"**Overall:** {'✅ PASS' if overall_pass else '❌ FAIL'}")
-    lines.append("")
+    md_path.write_text(build_markdown_report(results, base, overall_pass))
+
+
+def read_config() -> tuple[str, list[str], bool, bool]:
+    base = os.environ.get("SEO_TEST_URL", "").strip()
+    pages_raw = os.environ.get("SEO_PAGES", "/")
+    pages = [p.strip() for p in pages_raw.split(",") if p.strip()] or ["/"]
+    require_og_image = os.environ.get("SEO_REQUIRE_OG_IMAGE", "1") != "0"
+    verify_og_image = os.environ.get("SEO_VERIFY_OG_IMAGE", "1") != "0"
+    return base, pages, require_og_image, verify_og_image
+
+
+def print_results(results: list[dict]) -> None:
     for r in results:
-        status_icon = {"pass": "✅", "fail": "❌", "error": "💥"}.get(r["status"], "•")
-        lines.append(f"## {status_icon} {r['url']}")
-        lines.append("")
-        if r["issues"]:
-            lines.append("**Issues:**")
-            for issue in r["issues"]:
-                lines.append(f"- ❌ {issue}")
-            lines.append("")
-        if r.get("notes"):
-            lines.append("**Notes:**")
-            for note in r["notes"]:
-                lines.append(f"- ⚠️  {note}")
-            lines.append("")
-        if r.get("tags"):
-            lines.append("<details><summary>Tags detected</summary>")
-            lines.append("")
-            lines.append("| Tag | Value |")
-            lines.append("|---|---|")
-            for k, v in r["tags"].items():
-                display = (v[:120] + "…") if v and len(v) > 120 else v
-                lines.append(f"| `{k}` | {display or '_(empty)_'} |")
-            lines.append("")
-            lines.append("</details>")
-            lines.append("")
-        if r.get("image_check"):
-            ic = r["image_check"]
-            icon = "✅" if ic["ok"] else "❌"
-            lines.append(f"**og:image fetch:** {icon} `{ic['url']}` — {ic['detail']}")
-            lines.append("")
-    lines.append("---")
-    lines.append("")
-    lines.append("## How to Fix")
-    lines.append("")
-    lines.append("- **Missing tag** → add it to the page's `<head>`. See [docs/reliability/SEO.md](../../../docs/reliability/SEO.md) for the full required set.")
-    lines.append("- **og:image not reachable** → confirm the URL is absolute, same-origin (or CORS-allowed for crawlers), and returns `image/*` content type.")
-    lines.append("- **Title / description too long** → trim to keep search-result snippets readable.")
-    lines.append("")
-    md_path.write_text("\n".join(lines) + "\n")
+        icon = {"pass": "✅", "fail": "❌", "error": "💥"}.get(r["status"], "•")
+        suffix = "" if r["status"] == "pass" else f" — {len(r['issues'])} issue(s)"
+        print(f"  {icon} {r['url']}{suffix}")
+        for issue in r["issues"]:
+            print(f"      - {issue}")
 
 
 def main() -> int:
-    base = os.environ.get("SEO_TEST_URL", "").strip()
+    base, pages, require_og_image, verify_og_image = read_config()
     if not base:
         print("❌ Error: SEO_TEST_URL is required", file=sys.stderr)
         print("", file=sys.stderr)
         print("Usage:", file=sys.stderr)
         print("  SEO_TEST_URL=https://your-site.com task ss:reliability:seo", file=sys.stderr)
         return 2
-
-    pages_raw = os.environ.get("SEO_PAGES", "/")
-    pages = [p.strip() for p in pages_raw.split(",") if p.strip()] or ["/"]
-    require_og_image = os.environ.get("SEO_REQUIRE_OG_IMAGE", "1") != "0"
-    verify_og_image = os.environ.get("SEO_VERIFY_OG_IMAGE", "1") != "0"
 
     print(f"🔎 SEO metatag audit against: {base}")
     print(f"   Pages: {', '.join(pages)}")
@@ -304,13 +338,7 @@ def main() -> int:
     write_reports(results, base)
 
     overall_pass = all(r["status"] == "pass" for r in results)
-    for r in results:
-        icon = {"pass": "✅", "fail": "❌", "error": "💥"}.get(r["status"], "•")
-        suffix = "" if r["status"] == "pass" else f" — {len(r['issues'])} issue(s)"
-        print(f"  {icon} {r['url']}{suffix}")
-        for issue in r["issues"]:
-            print(f"      - {issue}")
-
+    print_results(results)
     print("━" * 60)
     if overall_pass:
         print("✅ All pages pass.")
