@@ -37,6 +37,7 @@ Every check below runs on every PR and push to `main` here, and ships to consume
 [![Smoke Tests](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-smoke-tests.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-smoke-tests.yml)
 [![Accessibility](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-accessibility-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-accessibility-check.yml)
 [![Core Web Vitals](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-core-web-vitals.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-core-web-vitals.yml)
+[![SEO Metatags](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-seo-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-seo-check.yml)
 
 ### 🤖 Operational
 [![Doc Auto-Updater](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-doc-updater.lock.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-doc-updater.lock.yml)
@@ -115,18 +116,18 @@ Five loops of feedback, all running on every PR and push to `main`:
 | ---- | ------------ | ----- | ---- |
 | 🔒 **Security** | SAST, DAST, secrets detection, dependency CVE scanning | Semgrep, OWASP ZAP, Gitleaks, Trivy | [Security →](./docs/security/README.md) |
 | 🧹 **Hygiene** | Cyclomatic complexity caps, doc structure / accuracy / size checks, auto-labelled PRs | Lizard, Bandit, markdownlint | [Hygiene →](./docs/hygiene/README.md) |
-| ✅ **Reliability** | E2E + smoke tests, accessibility audits (WCAG 2.1 AA), Core Web Vitals | Playwright, axe-core, Lighthouse CI | [Reliability →](./docs/reliability/README.md) |
+| ✅ **Reliability** | E2E + smoke tests, accessibility audits (WCAG 2.1 AA), Core Web Vitals, SEO + OpenGraph metatag checks | Playwright, axe-core, Lighthouse CI, stdlib Python | [Reliability →](./docs/reliability/README.md) |
 | 🤖 **Operational** | Failed workflows auto-raise GitHub issues; an agentic doc updater opens weekly sync PRs | GitHub Actions, gh-aw | [Runbooks →](./docs/runbooks/README.md) |
 | 🚀 **Deployment** | Preview deploys per PR, automated production releases, preview cleanup | Netlify, GitHub Actions | [Deployment →](./docs/deployment/README.md) |
 
 ### What each check needs
 
-The 19 workflows split into four portability layers. Layer 1 runs the moment you install. Layers 2–3 need a small amount of configuration:
+The 20 workflows split into four portability layers. Layer 1 runs the moment you install. Layers 2–3 need a small amount of configuration:
 
 | Layer | Checks | What you provide |
 | ----- | ------ | ---------------- |
 | **1. Static analysis** (any code) | SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure / Accuracy / Size, Auto-label PRs, Workflow-failure tracker | Nothing — works out of the box |
-| **2. Web-app dynamic** (need a URL) | Smoke, Accessibility, Core Web Vitals, DAST, Playwright | `SMOKE_TEST_URL` · `ACCESSIBILITY_TEST_URL` · `LIGHTHOUSE_URL` · optionally `SMOKE_PAGES` / `ACCESSIBILITY_PAGES` |
+| **2. Web-app dynamic** (need a URL) | Smoke, Accessibility, Core Web Vitals, SEO Metatags, DAST, Playwright | `SMOKE_TEST_URL` · `ACCESSIBILITY_TEST_URL` · `LIGHTHOUSE_URL` · `SEO_TEST_URL` · optionally `SMOKE_PAGES` / `ACCESSIBILITY_PAGES` / `SEO_PAGES` |
 | **3. Netlify deploy** | Preview deploys, production releases, preview cleanup | `NETLIFY_AUTH_TOKEN` + `NETLIFY_SITE_ID` repo secrets |
 | **4. Agentic doc-updater** | Weekly doc-sync PRs | `ANTHROPIC_API_KEY` repo secret |
 

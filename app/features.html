@@ -194,12 +194,13 @@ jobs:
             <!-- ─── Reliability ─────────────────────────────────── -->
             <div class="card" id="reliability">
                 <h2>✅ Reliability</h2>
-                <p class="card-intro">Catch broken pages, slow loads and accessibility regressions before users do — E2E, smoke, axe-core WCAG 2.1 AA and Lighthouse CI on every change.</p>
+                <p class="card-intro">Catch broken pages, slow loads, accessibility regressions and broken social-share previews before users do — E2E, smoke, axe-core WCAG 2.1 AA, Lighthouse CI and SEO/OpenGraph checks on every change.</p>
                 <ul>
                     <li><strong>E2E Tests</strong> — Playwright covers navigation and critical user journeys</li>
                     <li><strong>Smoke Tests</strong> — Lightweight checks after every deploy</li>
                     <li><strong>Accessibility</strong> — axe-core audits every page against WCAG 2.1 AA</li>
                     <li><strong>Core Web Vitals</strong> — Lighthouse CI measures LCP, INP and CLS</li>
+                    <li><strong>SEO &amp; Social-Share</strong> — Lighthouse SEO budget + OpenGraph / Twitter Card / canonical presence check</li>
                 </ul>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
 
@@ -266,6 +267,25 @@ jobs:
   cwv:
     name: Core Web Vitals (Lighthouse CI)</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-core-web-vitals.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>SEO &amp; Social-Share (OpenGraph + Twitter Card)</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · SEO Metatag Check
+on:
+  pull_request: { branches: [main] }
+  push:         { branches: [main] }
+  deployment_status:
+  schedule: [ { cron: '0 7 * * *' } ]    # daily
+jobs:
+  seo:
+    name: SEO Metatag Audit (OpenGraph + Twitter Card + canonical)
+    steps:
+      - run: task ss:reliability:seo:ci   # title, description, canonical,
+                                           # og:*, twitter:*, og:image fetch</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-seo-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
                     </div>
                 </details>
             </div>

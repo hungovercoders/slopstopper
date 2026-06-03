@@ -117,6 +117,66 @@ tasks:
           --config=.ss/lighthouserc.json
     silent: false
 
+  reliability:seo:
+    desc: Validate SEO + social-share metatags on a live URL
+    summary: |
+      Fetches one or more pages and asserts the presence of the metadata
+      that social-share crawlers (Slack, Twitter/X, LinkedIn, Discord) and
+      SEO indexers rely on: title, meta description, canonical, viewport,
+      OpenGraph (og:title/description/type/url/image) and Twitter Card
+      (twitter:card/title/description/image). Also HEAD-checks og:image
+      to confirm it is reachable and returns image/* content.
+
+      Complements ss:reliability:cwv — Lighthouse's SEO category covers
+      core indexability but does not flag missing OG / Twitter tags.
+
+      Configuration (environment variables):
+        SEO_TEST_URL          - base URL to audit (required)
+        SEO_PAGES             - comma-separated paths (default: /)
+        SEO_REQUIRE_OG_IMAGE  - 0 to skip og:image presence check (default: 1)
+        SEO_VERIFY_OG_IMAGE   - 0 to skip HEAD-fetching og:image (default: 1)
+
+      Usage:
+        task ss:reliability:seo -- https://your-site.netlify.app
+        SEO_TEST_URL=https://your-site.netlify.app task ss:reliability:seo
+    cmds:
+      - |
+        {{if .CLI_ARGS}}
+          export SEO_TEST_URL="{{.CLI_ARGS}}"
+        {{end}}
+
+        if [ -z "$SEO_TEST_URL" ]; then
+          echo "❌ Error: SEO_TEST_URL is required"
+          echo ""
+          echo "Usage:"
+          echo "  task ss:reliability:seo -- https://your-site.netlify.app"
+          echo "  SEO_TEST_URL=https://example.com task ss:reliability:seo"
+          exit 1
+        fi
+
+        python3 .ss/scripts/check-seo-metatags.py
+    silent: false
+
+  reliability:seo:ci:
+    desc: Validate SEO + social-share metatags (CI mode)
+    summary: |
+      Same as ss:reliability:seo, intended for GitHub Actions.
+
+      Usage:
+        SEO_TEST_URL=https://your-site.netlify.app task ss:reliability:seo:ci
+    cmds:
+      - |
+        if [ -z "$SEO_TEST_URL" ]; then
+          echo "❌ Error: SEO_TEST_URL environment variable is required"
+          exit 1
+        fi
+
+        echo "🔎 Running SEO metatag audit (CI mode) against: $SEO_TEST_URL"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        python3 .ss/scripts/check-seo-metatags.py
+    silent: false
+
   reliability:accessibility:
     desc: Run accessibility audit against a live URL
     summary: |

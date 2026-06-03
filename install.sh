@@ -159,6 +159,7 @@ GENERIC_WORKFLOWS=(
   "ss-reliability-smoke-tests.yml"
   "ss-reliability-accessibility-check.yml"
   "ss-reliability-core-web-vitals.yml"
+  "ss-reliability-seo-check.yml"
   "ss-playwright-tests.yml"
   # Layer 3 — Netlify deploy (need NETLIFY_AUTH_TOKEN + NETLIFY_SITE_ID)
   "ss-netlify-deploy.yml"
