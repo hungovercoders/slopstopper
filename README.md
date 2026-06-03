@@ -12,6 +12,8 @@ and push to `main`.
 
 > 🪞 **Dogfooded here.** Every badge below is real. This repo runs the same suite it ships, on every PR and push to `main`.
 
+> 🗺️ **Documentation map:** [`docs/index.md`](./docs/index.md) is the single index of all project documentation. This README, [`AGENTS.md`](./AGENTS.md) and [`CLAUDE.md`](./CLAUDE.md) are deliberately thin entry points — all three defer to the map so each audience (humans, agents, AI assistants) has one short file to read and one shared place to find the truth. The [hygiene docs-structure check](./docs/hygiene/README.md) enforces that the map stays in sync with the directory tree.
+
 ## Pipeline status
 
 Every check below runs on every PR and push to `main` here, and ships to consumers via [`install.sh`](./install.sh). Netlify and Doc-Updater workflows are included by default but are inert until you add their secrets (see [Configure](#configure)).

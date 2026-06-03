@@ -1,8 +1,19 @@
 # Documentation Index
 
-This file defines documentation categories and governance.
+This file is **the map** — every other entry point in the repo defers to it.
 
 > 👋 **Saw a SlopStopper check fail in your PR?** Each category README below explains what the check does, how to read its output, and how to tune thresholds. Jump straight in: [Security](security/README.md) · [Hygiene](hygiene/README.md) · [Reliability](reliability/README.md) · [Runbooks](runbooks/README.md) · [Deployment](deployment/README.md). The full env-var contract for dynamic checks lives in [reliability/README.md](reliability/README.md).
+
+## The Map Pattern
+
+The repo has three small entry-point files — [`README.md`](../README.md) (humans), [`AGENTS.md`](../AGENTS.md) (automation tools, conformant with [agents.md](https://agents.md)) and [`CLAUDE.md`](../CLAUDE.md) (Claude Code) — and each one defers to this index instead of duplicating documentation inline.
+
+**Why this matters:**
+
+- **Agents stay focused.** Claude, Copilot or any agent loads only the thin entry file (typically <2K tokens) and navigates here when it needs detail. No bloated instruction files competing for context window.
+- **One source of truth.** The category READMEs are the canonical answer; entry files just point at them. Changes don't have to ripple through three places.
+- **Drift is caught by CI.** The [hygiene docs-structure check](hygiene/README.md) fails the build if the directory tree drifts from the map below, and the [docs-accuracy check](hygiene/README.md) catches broken cross-references in any doc.
+- **Reusable convention.** If you install SlopStopper into your own repo, dropping a `docs/index.md` and slimming `README.md` / `AGENTS.md` / `CLAUDE.md` to pointers gives you the same property for free.
 
 ## Governance Model
 
