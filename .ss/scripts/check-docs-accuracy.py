@@ -165,27 +165,38 @@ _TRACKED_EXTENSIONS = frozenset(
 )
 
 
-def _should_skip_ref(ref, ext, base, content, m, suggestion_ctx):
-    """Return True if this file reference should be skipped."""
-    if ref.startswith(("http", "mailto")):
-        return True
-    # Absolute-URL paths like `/features.html` are URL paths on the deployed
-    # site, not filesystem paths from the repo root. Skip them.
-    if ref.startswith("/"):
+# Refs that start with these prefixes aren't filesystem paths from the repo
+# root: http(s) and mailto are external links; a leading `/` denotes a URL
+# path on the deployed site (e.g. `/features.html`).
+_SKIP_REF_PREFIXES = ("http", "mailto", "/")
+# Substrings that indicate the ref is a placeholder / example, not a real path.
+_PLACEHOLDER_SUBS = ("example", "your-", "<", "YYYY")
+
+
+def _ref_is_placeholder_or_external(ref, ext):
+    """Cheap structural checks that don't depend on surrounding content."""
+    if ref.startswith(_SKIP_REF_PREFIXES):
         return True
     if ext not in _TRACKED_EXTENSIONS:
         return True
-    if Path(ref).exists() or (base / ref).exists():
+    if any(sub in ref for sub in _PLACEHOLDER_SUBS):
         return True
-    if any(sub in ref for sub in ("example", "your-", "<", "YYYY")):
-        return True
-    start = max(0, m.start() - 250)
-    end = min(len(content), m.end() + 250)
-    if suggestion_ctx.search(content[start:end]):
-        return True
+    # Bare yaml filenames (e.g. just `config.yml`) are usually examples, not
+    # references to a specific tracked file.
     if ext in (".yml", ".yaml") and "/" not in ref:
         return True
     return False
+
+
+def _should_skip_ref(ref, ext, base, content, m, suggestion_ctx):
+    """Return True if this file reference should be skipped."""
+    if _ref_is_placeholder_or_external(ref, ext):
+        return True
+    if Path(ref).exists() or (base / ref).exists():
+        return True
+    start = max(0, m.start() - 250)
+    end = min(len(content), m.end() + 250)
+    return bool(suggestion_ctx.search(content[start:end]))
 
 
 def check_source_file_references(md_path, project_files):
