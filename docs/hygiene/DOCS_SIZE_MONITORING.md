@@ -11,7 +11,7 @@ You now have a complete local documentation size monitoring system that replicat
 #### `.ss/scripts/check-docs-size.sh`
 - Main script that analyzes documentation size against thresholds
 - Counts markdown files and calculates total size, token estimates, and file sizes  
-- Checks against configured thresholds (150 KB total, 20 KB per file, 15 max files)
+- Checks against configured thresholds (150 KB total, 20 KB per file, 25 max files)
 - Generates a detailed markdown report to `.ss/reports/docs/docs-size-report.md`
 - Uses color-formatted output for easy readability
 - Executable script - runs with: `bash .ss/scripts/check-docs-size.sh`
@@ -57,7 +57,7 @@ Updated `.gitignore` to exclude:
 
 - **Total documentation size:** max 150 KB
 - **Individual file sizes:** max 20 KB  
-- **Number of documentation files:** max 15
+- **Number of documentation files:** max 25
 
 These thresholds are designed to:
 1. Keep documentation within AI context windows
