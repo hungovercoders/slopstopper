@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="SlopStopper — a reference template for adding deterministic, automated quality feedback (security, hygiene, reliability, accessibility, performance) to any repo.">
-    <meta name="theme-color" content="#16213e">
+    <meta name="description" content="SlopStopper — a template for deterministic, automated quality feedback (security, hygiene, reliability, accessibility, performance) on any repo. Drop it in with one command.">
+    <meta name="theme-color" content="#FBF5EC">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="SlopStopper">
-    <meta property="og:description" content="Deterministic feedback for AI-driven development — keep your repo healthy at high velocity.">
+    <meta property="og:title" content="SlopStopper — stop the slop">
+    <meta property="og:description" content="A template for deterministic, automated quality feedback on any repo. Catch slop before it ships.">
     <meta property="og:site_name" content="SlopStopper">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="SlopStopper">
-    <meta name="twitter:description" content="Deterministic feedback for AI-driven development — keep your repo healthy at high velocity.">
+    <meta name="twitter:title" content="SlopStopper — stop the slop">
+    <meta name="twitter:description" content="A template for deterministic, automated quality feedback on any repo. Catch slop before it ships.">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>SlopStopper</title>
+    <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="index.css">
 </head>
 <body>
@@ -24,43 +25,108 @@
             <a href="index.html" id="nav-home" aria-current="page">Home</a>
             <a href="features.html" id="nav-features">Features</a>
             <a href="tools.html" id="nav-tools">Tools</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                GitHub
+            </a>
         </nav>
     </header>
     <main id="main">
-        <div class="hero">
-            <h1>SlopStopper</h1>
-            <p>Deterministic feedback for AI-driven development — keep your repo healthy at high velocity</p>
-        </div>
-        <section class="about">
-            <p>SlopStopper is a template and reference site demonstrating how to add deterministic, automated quality feedback to any repo. As AI-assisted development increases the pace of change, consistent automated checks keep code quality high without slowing teams down.</p>
+        <section class="hero">
+            <div class="mascot mascot--hero" aria-hidden="true">
+                <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+                    <ellipse cx="120" cy="225" rx="70" ry="6" fill="rgba(42,33,24,0.12)"/>
+                    <path d="M40 130 C40 75, 80 50, 120 50 C160 50, 200 75, 200 130 C200 180, 165 210, 120 210 C75 210, 40 180, 40 130 Z" fill="#FBF5EC" stroke="#2A2118" stroke-width="6" stroke-linejoin="round"/>
+                    <rect x="92" y="58" width="22" height="8" rx="2" fill="#F5C24C" stroke="#2A2118" stroke-width="2.5"/>
+                    <line x1="98" y1="58" x2="98" y2="66" stroke="#2A2118" stroke-width="2"/>
+                    <line x1="108" y1="58" x2="108" y2="66" stroke="#2A2118" stroke-width="2"/>
+                    <circle cx="92" cy="130" r="13" fill="#2A2118"/>
+                    <circle cx="148" cy="130" r="13" fill="#2A2118"/>
+                    <circle cx="96" cy="125" r="4" fill="#FBF5EC"/>
+                    <circle cx="152" cy="125" r="4" fill="#FBF5EC"/>
+                    <path d="M100 165 Q120 182, 140 165" stroke="#2A2118" stroke-width="5" stroke-linecap="round" fill="none"/>
+                    <rect x="116" y="158" width="6" height="10" rx="1" fill="#FBF5EC" stroke="#2A2118" stroke-width="2"/>
+                    <circle cx="180" cy="155" r="8" fill="#FBF5EC" stroke="#2A2118" stroke-width="4"/>
+                    <circle cx="60" cy="155" r="8" fill="#FBF5EC" stroke="#2A2118" stroke-width="4"/>
+                    <polygon points="178,90 218,90 232,118 218,146 178,146 164,118" fill="#E8512B" stroke="#2A2118" stroke-width="5" stroke-linejoin="round"/>
+                    <text x="198" y="124" text-anchor="middle" font-family="ui-rounded, system-ui, sans-serif" font-weight="800" font-size="18" fill="#FBF5EC">SLOP</text>
+                </svg>
+            </div>
+            <div class="bubble">Catch slop before it ships.</div>
+            <h1>Stop the <span class="highlight">slop.</span></h1>
+            <p>Deterministic, automated feedback for AI-driven development — keep your repo healthy while you ship fast.</p>
+            <div class="cta-row">
+                <a href="#get-started" class="btn btn--primary">Get started →</a>
+                <a href="features.html" class="btn btn--ghost">See features</a>
+            </div>
         </section>
-        <div class="card-grid">
-            <div class="card">
-                <h2>🔒 Security</h2>
-                <p>Static analysis, dynamic scanning, secrets detection and dependency vulnerability checks run on every change.</p>
-                <a href="features.html" class="card-link">View practices →</a>
+
+        <section class="about">
+            <p>SlopStopper is a template and reference site demonstrating how to add deterministic, automated quality feedback to any repo. As AI-assisted development accelerates the pace of change, consistent automated checks keep code quality high without slowing teams down.</p>
+        </section>
+
+        <section class="section" id="get-started">
+            <span class="kicker">Get started</span>
+            <h2>One command. Whole pipeline.</h2>
+            <p class="lede">Drop SlopStopper into your repo and you get the full bundle: security, hygiene, reliability, accessibility, performance and deployment checks — all running on every PR.</p>
+            <div class="codeblock codeblock--sh" role="region" aria-label="Install command">
+                <pre><code>curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash</code></pre>
             </div>
-            <div class="card">
-                <h2>🧹 Hygiene</h2>
-                <p>Complexity limits, documentation structure and accuracy checks keep the codebase clean and well-documented.</p>
-                <a href="features.html" class="card-link">View practices →</a>
+            <details class="details">
+                <summary>What does this do?</summary>
+                <div class="details__body">
+                    <p>The installer clones the SlopStopper template into your current repo and copies in the GitHub Actions workflows, the <code>.scripts/</code> helpers, the <code>Taskfile.yml</code> and the documentation scaffold. It's idempotent — re-run any time to pull in new checks.</p>
+                    <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/install.sh" rel="noopener noreferrer">View install.sh on GitHub →</a>
+                </div>
+            </details>
+            <div class="steps">
+                <div class="step">
+                    <h3>Install</h3>
+                    <p>Run the one-liner from inside your repo. Workflows and scripts copy in.</p>
+                </div>
+                <div class="step">
+                    <h3>Customise</h3>
+                    <p>Tune complexity thresholds, accessibility impact level and Lighthouse budgets to suit.</p>
+                </div>
+                <div class="step">
+                    <h3>Open a PR</h3>
+                    <p>Push to a branch. Watch every check run automatically. Stop slop at the door.</p>
+                </div>
             </div>
-            <div class="card">
-                <h2>✅ Reliability</h2>
-                <p>End-to-end, smoke, accessibility and Core Web Vitals checks verify every deploy works correctly for every user.</p>
-                <a href="features.html" class="card-link">View practices →</a>
+        </section>
+
+        <section class="section">
+            <span class="kicker">What you get</span>
+            <h2>Five loops of feedback.</h2>
+            <p class="lede">Every category below maps to real GitHub Actions workflows. Click through to see exactly what runs.</p>
+            <div class="card-grid">
+                <div class="card">
+                    <h2>🔒 Security</h2>
+                    <p>Static analysis, dynamic scanning, secrets detection and dependency vulnerability checks run on every change.</p>
+                    <a href="features.html#security" class="card-link">View practices →</a>
+                </div>
+                <div class="card">
+                    <h2>🧹 Hygiene</h2>
+                    <p>Complexity limits, documentation structure and accuracy checks keep the codebase clean and well-documented.</p>
+                    <a href="features.html#hygiene" class="card-link">View practices →</a>
+                </div>
+                <div class="card">
+                    <h2>✅ Reliability</h2>
+                    <p>End-to-end, smoke, accessibility and Core Web Vitals checks verify every deploy works correctly for every user.</p>
+                    <a href="features.html#reliability" class="card-link">View practices →</a>
+                </div>
+                <div class="card">
+                    <h2>🤖 Operational</h2>
+                    <p>Auto-labelled PRs, an agentic doc updater and automatic failure alerts keep day-to-day workflow on autopilot.</p>
+                    <a href="features.html#operational" class="card-link">View practices →</a>
+                </div>
+                <div class="card">
+                    <h2>🚀 Deployment</h2>
+                    <p>Preview deployments on every pull request plus automated production releases ensure fast, safe shipping.</p>
+                    <a href="features.html#deployment" class="card-link">View practices →</a>
+                </div>
             </div>
-            <div class="card">
-                <h2>🤖 Operational</h2>
-                <p>Auto-labelled PRs, an agentic doc updater and automatic failure alerts keep day-to-day workflow on autopilot.</p>
-                <a href="features.html" class="card-link">View practices →</a>
-            </div>
-            <div class="card">
-                <h2>🚀 Deployment</h2>
-                <p>Preview deployments on every pull request plus automated production releases ensure fast, safe shipping.</p>
-                <a href="features.html" class="card-link">View practices →</a>
-            </div>
-        </div>
+        </section>
     </main>
     <footer>
         <p>SlopStopper is open source — <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">view the repository on GitHub</a>.</p>
