@@ -67,7 +67,7 @@ def main():
         "",
         "1. Review each issue above.",
         "2. Update the referenced docs to match the current project state.",
-        "3. Run `task hygiene:docs-accuracy` locally to verify fixes.",
+        "3. Run `task ss:hygiene:docs-accuracy` locally to verify fixes.",
         "",
     ]
 

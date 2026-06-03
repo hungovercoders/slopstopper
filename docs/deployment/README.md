@@ -12,8 +12,8 @@ publishes the `app/` directory.
 
 | Workflow | Trigger | Purpose |
 | -------- | ------- | ------- |
-| [netlify-deploy.yml](../../.github/workflows/netlify-deploy.yml) | Push to `main` / PR to `main` | Production deploy and PR preview deploy |
-| [netlify-cleanup-preview.yml](../../.github/workflows/netlify-cleanup-preview.yml) | PR closed | Delete preview deployments to free Netlify resources |
+| [ss-netlify-deploy.yml](../../.github/workflows/ss-netlify-deploy.yml) | Push to `main` / PR to `main` | Production deploy and PR preview deploy |
+| [ss-netlify-cleanup-preview.yml](../../.github/workflows/ss-netlify-cleanup-preview.yml) | PR closed | Delete preview deployments to free Netlify resources |
 
 ## Environments
 

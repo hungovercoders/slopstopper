@@ -54,7 +54,7 @@ This enables:
 
 ### GitHub Actions Example
 
-Create `.github/workflows/reliability-smoke-tests.yml`:
+Create `.github/workflows/ss-reliability-smoke-tests.yml`:
 
 ```yaml
 name: Smoke Tests

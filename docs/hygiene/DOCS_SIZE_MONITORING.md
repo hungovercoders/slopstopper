@@ -12,7 +12,7 @@ You now have a complete local documentation size monitoring system that replicat
 - Main script that analyzes documentation size against thresholds
 - Counts markdown files and calculates total size, token estimates, and file sizes  
 - Checks against configured thresholds (150 KB total, 20 KB per file, 15 max files)
-- Generates a detailed markdown report to `.docs-reports/docs-size-report.md`
+- Generates a detailed markdown report to `.ss/reports/docs/docs-size-report.md`
 - Uses color-formatted output for easy readability
 - Executable script - runs with: `bash .ss/scripts/check-docs-size.sh`
 
@@ -51,7 +51,7 @@ Created comprehensive documentation that includes:
 ### 4. **Configuration**
 
 Updated `.gitignore` to exclude:
-- `.docs-reports/` - Generated report directory
+- `.ss/reports/docs/` - Generated report directory
 
 ## Configured Thresholds
 
@@ -80,7 +80,7 @@ bash .ss/scripts/check-docs-size.sh
 ```
 
 ### View reports
-The generated report is saved to: `.docs-reports/docs-size-report.md`
+The generated report is saved to: `.ss/reports/docs/docs-size-report.md`
 
 It contains:
 - Documentation statistics (file count, total size, token estimates)
@@ -125,7 +125,7 @@ It contains:
 
 ## Integration with CI/CD
 
-This setup works alongside the existing GitHub Actions workflow (`.github/workflows/hygiene-docs-size-check.yml`). You can now:
+This setup works alongside the existing GitHub Actions workflow (`.github/workflows/ss-hygiene-docs-size-check.yml`). You can now:
 
 1. **Run locally** before committing: `task ss:hygiene:docs-size`
 2. **Get fast feedback** on documentation size changes
@@ -135,6 +135,6 @@ This setup works alongside the existing GitHub Actions workflow (`.github/workfl
 ## Next Steps
 
 - Run `task ss:hygiene:docs-size` regularly as part of your development workflow
-- Check the generated `.docs-reports/docs-size-report.md` for detailed analysis
+- Check the generated `.ss/reports/docs/docs-size-report.md` for detailed analysis
 - Consider running the full `task ss:hygiene:test` suite before commits
 - Monitor the report as documentation grows to stay within thresholds
