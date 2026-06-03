@@ -6,7 +6,7 @@ This template includes automated code complexity analysis using **Lizard** to he
 
 ### Check Complexity Locally
 ```bash
-task hygiene:complexity
+task ss:hygiene:complexity
 ```
 
 ### What You Get Automatically
@@ -140,7 +140,7 @@ Before pushing code, analyze complexity locally:
 curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
 
 # Run complexity analysis
-task hygiene:complexity
+task ss:hygiene:complexity
 ```
 
 This generates:
@@ -193,7 +193,7 @@ When complexity issues are detected on pushes to `main`:
 
 **To resolve:**
 1. Create a branch to address the complex functions
-2. Run `task hygiene:complexity` locally to verify improvements
+2. Run `task ss:hygiene:complexity` locally to verify improvements
 3. Open PR with refactored code
 4. CI will verify complexity is reduced
 5. After merge, close the GitHub issue
@@ -205,7 +205,7 @@ Since this is a **static HTML template**, code should remain minimal:
 - ✅ Keep helper scripts small and focused
 - ✅ Avoid complex conditional logic
 - ✅ Prefer simple, readable code over clever implementations
-- ✅ Test code locally before pushing: `task hygiene:complexity`
+- ✅ Test code locally before pushing: `task ss:hygiene:complexity`
 
 ## Troubleshooting
 

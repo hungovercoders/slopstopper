@@ -1,4 +1,4 @@
-name: Reliability Smoke Tests
+name: SlopStopper · Reliability Smoke Tests
 
 on:
   # Run after successful deployments
@@ -80,7 +80,7 @@ jobs:
       - name: Run smoke tests
         env:
           SMOKE_TEST_URL: ${{ steps.url.outputs.url }}
-        run: task reliability:smoke:ci
+        run: task ss:reliability:smoke:ci
         
       - name: Upload test results
         if: always()
@@ -126,7 +126,7 @@ jobs:
               `## How to Investigate`,
               ``,
               `\`\`\`bash`,
-              `SMOKE_TEST_URL="${url}" task reliability:smoke`,
+              `SMOKE_TEST_URL="${url}" task ss:reliability:smoke`,
               `\`\`\``,
               ``,
               `[View the failed workflow run](${runUrl})`,

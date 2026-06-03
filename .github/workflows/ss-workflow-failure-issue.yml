@@ -1,23 +1,25 @@
-name: Raise Issue on Workflow Failure
+name: SlopStopper · Raise Issue on Workflow Failure
 
 on:
   workflow_run:
     workflows:
-      - "Hygiene - Auto Label PRs"
-      - "Code Complexity Check"
-      - "Hygiene - Documentation Updater"
-      - "Hygiene - Documentation Accuracy Check"
-      - "Documentation Size Monitor"
-      - "Hygiene - Documentation Structure Check"
-      - "Cleanup Netlify Preview"
-      - "Deploy to Netlify"
-      - "Playwright Tests"
-      - "Reliability Smoke Tests"
-      - "DAST Analysis"
-      - "SAST Analysis"
-      - "Secrets Detection"
-      - "Dependency Vulnerability Scan"
-      - "Dependency review"
+      - "SlopStopper · Hygiene - Auto Label PRs"
+      - "SlopStopper · Code Complexity Check"
+      - "SlopStopper · Hygiene - Documentation Updater"
+      - "SlopStopper · Hygiene - Documentation Accuracy Check"
+      - "SlopStopper · Documentation Size Monitor"
+      - "SlopStopper · Hygiene - Documentation Structure Check"
+      - "SlopStopper · Cleanup Netlify Preview"
+      - "SlopStopper · Deploy to Netlify"
+      - "SlopStopper · Playwright Tests"
+      - "SlopStopper · Reliability Smoke Tests"
+      - "SlopStopper · DAST Analysis"
+      - "SlopStopper · SAST Analysis"
+      - "SlopStopper · Secrets Detection"
+      - "SlopStopper · Dependency Vulnerability Scan"
+      - "SlopStopper · Dependency review"
+      - "SlopStopper · Accessibility Check"
+      - "SlopStopper · Core Web Vitals"
     types:
       - completed
 

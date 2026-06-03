@@ -33,5 +33,5 @@ Documentation has its own Task targets — see
 [`Taskfile.yml`](../Taskfile.yml) and run `task --list` for the full set.
 Examples:
 
-- `task decisions:validate`
-- `task decisions:new SLUG=<name>`
+- `task ss:decisions:validate`
+- `task ss:decisions:new SLUG=<name>`

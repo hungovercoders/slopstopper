@@ -1,4 +1,4 @@
-name: Hygiene - Documentation Accuracy Check
+name: SlopStopper · Hygiene - Documentation Accuracy Check
 
 on:
   # ── Weekly schedule (every Monday at 07:00 UTC) ──
@@ -153,7 +153,7 @@ jobs:
 
             ## To Fix
             \`\`\`bash
-            task hygiene:docs-accuracy
+            task ss:hygiene:docs-accuracy
             \`\`\`
 
             Review each issue, update the docs to match the current project, then re-run the check.

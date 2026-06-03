@@ -1,4 +1,4 @@
-name: Core Web Vitals
+name: SlopStopper · Core Web Vitals
 
 on:
   # Run against the preview/production URL after a Netlify deployment
@@ -224,7 +224,7 @@ jobs:
             body += thresholds + '\n\n';
             if (reportUrl) body += `[📊 Full Lighthouse Report](${reportUrl})\n\n`;
             body += `### How to run locally\n\n`;
-            body += `\`\`\`bash\n# Install Task (one-time)\ncurl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin\n\n# Run against a live URL\ntask reliability:cwv -- https://your-site.netlify.app\n\`\`\`\n`;
+            body += `\`\`\`bash\n# Install Task (one-time)\ncurl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin\n\n# Run against a live URL\ntask ss:reliability:cwv -- https://your-site.netlify.app\n\`\`\`\n`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -284,7 +284,7 @@ jobs:
               `curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin`,
               ``,
               `# Run Core Web Vitals audit locally`,
-              `task reliability:cwv -- ${auditUrl}`,
+              `task ss:reliability:cwv -- ${auditUrl}`,
               `\`\`\``,
               ``,
               `[View the failed workflow run](${runUrl})`,

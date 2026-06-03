@@ -1,4 +1,4 @@
-name: Accessibility Check
+name: SlopStopper · Accessibility Check
 
 on:
   # Run on every pull request to main
@@ -123,7 +123,7 @@ jobs:
           ACCESSIBILITY_TEST_URL: ${{ steps.url.outputs.url }}
           ACCESSIBILITY_IMPACT: ${{ github.event.inputs.impact || 'serious' }}
           ACCESSIBILITY_THRESHOLD: ${{ github.event.inputs.threshold || '0' }}
-        run: task reliability:accessibility:ci
+        run: task ss:reliability:accessibility:ci
 
       - name: Stop local server
         if: steps.url.outputs.use_local == 'true' && always()
@@ -164,9 +164,9 @@ jobs:
             body += '### 🔍 How to Check Locally\n\n';
             body += '```bash\n';
             body += '# Audit the local build\n';
-            body += 'task reliability:accessibility\n\n';
+            body += 'task ss:reliability:accessibility\n\n';
             body += '# Or audit a deployed URL\n';
-            body += 'task reliability:accessibility -- https://your-site.netlify.app\n';
+            body += 'task ss:reliability:accessibility -- https://your-site.netlify.app\n';
             body += '```\n\n';
             body += `[Full report in workflow artifacts](${runUrl})\n`;
 
@@ -202,7 +202,7 @@ jobs:
               'npm run build && node server.js &',
               '',
               '# Run accessibility audit',
-              'task reliability:accessibility -- http://localhost:8080',
+              'task ss:reliability:accessibility -- http://localhost:8080',
               '```',
               ``,
               `[View the failed workflow run](${runUrl})`,

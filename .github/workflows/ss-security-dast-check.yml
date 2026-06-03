@@ -1,4 +1,4 @@
-name: DAST Analysis
+name: SlopStopper · DAST Analysis
 
 on:
   pull_request:
@@ -56,7 +56,7 @@ jobs:
       - name: Run DAST analysis
         id: dast
         run: |
-          task security:dast
+          task ss:security:dast
 
       - name: Stop local server
         if: always()

@@ -1,4 +1,4 @@
-name: SAST Analysis
+name: SlopStopper · SAST Analysis
 
 on:
   pull_request:
@@ -42,7 +42,7 @@ jobs:
       - name: Run SAST analysis
         id: sast
         run: |
-          task security:sast
+          task ss:security:sast
 
       - name: Check reports generated
         run: |
@@ -124,7 +124,7 @@ jobs:
 
             reportContent += '### 🔍 How to Check Locally\n\n';
             reportContent += '```bash\n';
-            reportContent += 'task security:sast\n';
+            reportContent += 'task ss:security:sast\n';
             reportContent += '```\n\n';
             reportContent += '[Full reports available in workflow artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) (`.sast-reports/` directory)\n';
 
@@ -159,7 +159,7 @@ jobs:
             body += '# Install Task (one-time)\n';
             body += 'curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin\n\n';
             body += '# Run SAST locally\n';
-            body += 'task security:sast\n';
+            body += 'task ss:security:sast\n';
             body += '```\n\n';
             body += '## Guidelines\n\n';
             body += '- **Error severity**: Must be reviewed and addressed\n';

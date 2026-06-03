@@ -27,16 +27,21 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
 bash install.sh [TARGET_DIR]
 ```
 
-The installer is idempotent — re-run any time to pull in new checks. Existing
-files are never overwritten; remove them first if you want to reinstall.
+The installer is idempotent — re-run any time to pull in new checks.
+Everything SlopStopper owns lives under the `ss` namespace so it can't
+clash with files you already have, and SlopStopper-owned files
+(`Taskfile.ss.yml`, `.ss/`, `.github/workflows/ss-*.yml`) are refreshed on
+re-run.
 
 ### What gets installed
 
 | Item | Description |
 | ---- | ----------- |
-| `Taskfile.yml` | All Task definitions (`task --list` to see them) |
-| `.scripts/` | Python/shell analysis scripts used by the tasks |
-| `.github/workflows/` | Security, hygiene, reliability, operational and deployment workflows |
+| `Taskfile.ss.yml` | All SlopStopper task definitions (always refreshed on re-run) |
+| `Taskfile.yml` | Thin root file with `includes: { ss: ./Taskfile.ss.yml }` — created if you don't have one; if you do, the installer prints the block to paste in |
+| `.ss/scripts/` | Python/shell analysis scripts (always refreshed) |
+| `.ss/reports/` | Generated scan output — `.gitignore`d |
+| `.github/workflows/ss-*.yml` | Security, hygiene, reliability and operational workflows — all `ss-` prefixed and named `SlopStopper · …` so they group together in your Actions UI |
 | `package.json` | Created (or `devDependencies` merged into an existing file) |
 
 ### After installing
@@ -70,15 +75,15 @@ Five loops of feedback, all running on every PR and push to `main`:
 
 ### Same commands, both loops
 
-Every check is just a `task` command, defined once in `Taskfile.yml`. You run
-it locally for instant feedback. CI runs the exact same command. No drift
-between what you ran and what the pipeline ran — fast inner loop, consistent
-outer loop, identical behaviour.
+Every check is just a `task ss:<name>` command, defined once in
+`Taskfile.ss.yml`. You run it locally for instant feedback. CI runs the
+exact same command. No drift between what you ran and what the pipeline
+ran — fast inner loop, consistent outer loop, identical behaviour.
 
 ```bash
-task hygiene:complexity            # locally
-task reliability:accessibility     # locally
-task security:sast                 # locally
+task ss:hygiene:complexity            # locally
+task ss:reliability:accessibility     # locally
+task ss:security:sast                 # locally
 ```
 
 The CI workflows call the same `task` targets (or a `:ci` variant that
@@ -98,7 +103,7 @@ You can tune thresholds without changing code:
 
 - `ACCESSIBILITY_IMPACT` — `critical` / `serious` / `moderate` / `minor` (default `serious`)
 - `ACCESSIBILITY_THRESHOLD` — max allowed violations before failing (default `0`)
-- Complexity caps — see [`.scripts/`](./.scripts/) and [`docs/hygiene/COMPLEXITY_CONFIG.md`](./docs/hygiene/COMPLEXITY_CONFIG.md)
+- Complexity caps — see [`.ss/scripts/`](./.ss/scripts/) and [`docs/hygiene/COMPLEXITY_CONFIG.md`](./docs/hygiene/COMPLEXITY_CONFIG.md)
 - Lighthouse budgets — `.lighthouserc.json` and `.lighthouserc.prod.json`
 
 ---

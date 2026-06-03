@@ -13,22 +13,22 @@ The audit uses [axe-core](https://github.com/dequelabs/axe-core) via [`@axe-core
 
 ```bash
 # Builds and starts the server automatically, then audits all pages
-task reliability:accessibility
+task ss:reliability:accessibility
 ```
 
 **Run against a deployed URL:**
 
 ```bash
-task reliability:accessibility -- https://your-site.netlify.app
+task ss:reliability:accessibility -- https://your-site.netlify.app
 
 # Or using an environment variable
-ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task reliability:accessibility
+ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task ss:reliability:accessibility
 ```
 
 **Run in CI mode (retries + HTML report):**
 
 ```bash
-ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task reliability:accessibility:ci
+ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task ss:reliability:accessibility:ci
 ```
 
 ## Configuration
@@ -79,7 +79,7 @@ Run the workflow manually from the **Actions** tab with optional inputs:
 ### What the Workflow Does
 
 1. Starts the local Node.js server (PR/push builds) or uses the deployment URL
-2. Runs `task reliability:accessibility:ci` which executes `tests/accessibility.spec.ts`
+2. Runs `task ss:reliability:accessibility:ci` which executes `tests/accessibility.spec.ts`
 3. Uploads the Playwright HTML report as a workflow artifact (30-day retention)
 4. Posts a PR comment with the audit result and a local reproduction command
 5. Creates (or updates) a GitHub issue when violations land on `main`
@@ -159,7 +159,7 @@ If the audit reveals many existing violations and you want to fix them increment
 
 ```bash
 # Allow up to 5 violations while you work through the backlog
-ACCESSIBILITY_THRESHOLD=5 task reliability:accessibility
+ACCESSIBILITY_THRESHOLD=5 task ss:reliability:accessibility
 ```
 
 Update `ACCESSIBILITY_THRESHOLD` in the workflow `workflow_dispatch` default and in the scheduled job once remediation progresses.

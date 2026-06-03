@@ -1,4 +1,4 @@
-name: Hygiene - Documentation Structure Check
+name: SlopStopper · Hygiene - Documentation Structure Check
 
 on:
   pull_request:
@@ -41,7 +41,7 @@ jobs:
       - name: Run documentation structure check
         id: structure
         run: |
-          task hygiene:docs-structure || true
+          task ss:hygiene:docs-structure || true
           
           # Parse violation count from JSON report
           if [ -f .docs-reports/docs-structure-report.json ]; then
@@ -132,7 +132,7 @@ jobs:
               '',
               '## To Fix',
               '```bash',
-              'task hygiene:docs-structure',
+              'task ss:hygiene:docs-structure',
               '```',
               '',
               '## Review',

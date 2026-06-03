@@ -25,7 +25,7 @@
 #
 # gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"eceacfc05ff46e5b4c6ef667478274fdeafc52dbc784333146d6d247461ef85a","compiler_version":"v0.50.7"}
 
-name: "Hygiene - Documentation Updater"
+name: "SlopStopper · Hygiene - Documentation Updater"
 "on":
   schedule:
   - cron: "36 22 * * 5"

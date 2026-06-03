@@ -1,4 +1,4 @@
-name: Cleanup Netlify Preview
+name: SlopStopper · Cleanup Netlify Preview
 
 on:
   pull_request:

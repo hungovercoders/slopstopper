@@ -27,9 +27,15 @@ reflected in the workflows AND the site copy (`app/features.html`,
 `app/tools.html`) AND `README.md`. The hygiene docs-accuracy workflow exists
 specifically to catch drift between these.
 
-## Canonical interface: Taskfile.yml
+## Canonical interface: Taskfile (the `ss` namespace)
 
-**Agents must use `task <name>` instead of raw commands** wherever possible.
+**Agents must use `task ss:<name>` instead of raw commands** wherever
+possible. SlopStopper's task definitions live in
+[`Taskfile.ss.yml`](./Taskfile.ss.yml); the root
+[`Taskfile.yml`](./Taskfile.yml) is a thin integration layer that imports
+them under the `ss` namespace via `includes:`. This keeps SlopStopper's
+tasks isolated from anything a consumer has in their own root Taskfile.
+
 The Taskfile is the single source of truth for build, test, lint and scan
 operations so developers, AI agents and CI all run the same thing — no
 drift, no version skew.
@@ -38,17 +44,17 @@ Examples (run `task --list` for the full set):
 
 | Task | What it does |
 | ---- | ------------ |
-| `task hygiene:complexity` | Cyclomatic complexity check (Lizard) |
-| `task security:sast` | Static security scan (Semgrep) |
-| `task security:dast` | Dynamic security scan (OWASP ZAP) |
-| `task security:secrets` | Secrets detection (Gitleaks) |
-| `task security:vulnerability:all` | Dependency CVE scan (Trivy) |
-| `task reliability:smoke` | Smoke tests against a URL |
-| `task reliability:accessibility` | axe-core WCAG 2.1 AA audit |
-| `task reliability:cwv` | Lighthouse CI / Core Web Vitals |
-| `task contributing:build` | TypeScript build (`tsc`) |
-| `task contributing:test` | Playwright suite |
-| `task contributing:run` | Local dev server on port 8080 |
+| `task ss:hygiene:complexity` | Cyclomatic complexity check (Lizard) |
+| `task ss:security:sast` | Static security scan (Semgrep) |
+| `task ss:security:dast` | Dynamic security scan (OWASP ZAP) |
+| `task ss:security:secrets` | Secrets detection (Gitleaks) |
+| `task ss:security:vulnerability:all` | Dependency CVE scan (Trivy) |
+| `task ss:reliability:smoke` | Smoke tests against a URL |
+| `task ss:reliability:accessibility` | axe-core WCAG 2.1 AA audit |
+| `task ss:reliability:cwv` | Lighthouse CI / Core Web Vitals |
+| `task ss:contributing:build` | TypeScript build (`tsc`) |
+| `task ss:contributing:test` | Playwright suite |
+| `task ss:contributing:run` | Local dev server on port 8080 |
 
 The `:ci` variants (e.g. `reliability:accessibility:ci`) just delegate to
 the base task with CI-friendly output paths — same logic.
@@ -57,8 +63,17 @@ the base task with CI-friendly output paths — same logic.
 
 ```
 slopstopper/
-├── .github/workflows/        # 19 GitHub Actions workflows (see docs/)
-├── .scripts/                 # Python/shell analysis scripts called by tasks
+├── .github/workflows/        # All SlopStopper workflows are `ss-*.yml`
+│                             #   (copilot-setup-steps.yml stays bare — platform-fixed)
+├── .ss/                      # Everything SlopStopper owns lives here
+│   ├── scripts/              # Python/shell analysis scripts called by tasks
+│   └── reports/              # Generated report output (.gitignored)
+│       ├── complexity/
+│       ├── sast/
+│       ├── dast/
+│       ├── secrets/
+│       ├── dependencies/
+│       └── docs/
 ├── app/                      # Static site — Netlify publish dir
 │   ├── index.html            # Hero + Get Started + capability grid
 │   ├── features.html         # 5 category cards with YAML excerpts + mock reports
@@ -74,7 +89,8 @@ slopstopper/
 ├── install.sh                # Adopter installer
 ├── netlify.toml              # Netlify config + strict CSP
 ├── server.js                 # Local dev server that parses netlify.toml headers
-├── Taskfile.yml              # Single source of truth for commands
+├── Taskfile.yml              # Thin root with `includes: { ss: ./Taskfile.ss.yml }`
+├── Taskfile.ss.yml           # SlopStopper task definitions
 ├── playwright.config.js
 ├── tsconfig.json
 ├── package.json
@@ -183,13 +199,13 @@ SVG; the favicon is `app/favicon.svg`.
 ## Verifying changes locally
 
 ```bash
-task contributing:build                  # TypeScript build
-task contributing:run                    # server on :8080
-task contributing:test                   # Playwright smoke + a11y
-task reliability:accessibility           # axe-core audit
-task reliability:cwv                     # Lighthouse CI
-task hygiene:complexity                  # Lizard cap
-task security:sast                       # Semgrep
+task ss:contributing:build                  # TypeScript build
+task ss:contributing:run                    # server on :8080
+task ss:contributing:test                   # Playwright smoke + a11y
+task ss:reliability:accessibility           # axe-core audit
+task ss:reliability:cwv                     # Lighthouse CI
+task ss:hygiene:complexity                  # Lizard cap
+task ss:security:sast                       # Semgrep
 ```
 
 Or run the underlying npm scripts if you don't have Task installed
@@ -217,3 +233,14 @@ behaviour matches CI exactly.
 - Tweaking `--accent` to use it as text colour → AA contrast fail (use
   `--accent-deep` for text)
 - Adding to one HTML page's header but not the other two → nav drifts
+- Invoking `task hygiene:complexity` (or any task) without the `ss:`
+  prefix → "task not found". All SlopStopper tasks live under the `ss`
+  namespace via the root `Taskfile.yml`'s `includes:` block. Use
+  `task ss:hygiene:complexity`
+- Creating a new workflow file without the `ss-` prefix → it won't get
+  grouped with the rest in the Actions UI, and consumers risk a clash
+  when they install. Always name new workflows `ss-<category>-<action>.yml`
+  (exception: `copilot-setup-steps.yml`, whose name is fixed by the
+  platform)
+- Putting analysis output anywhere other than under `.ss/reports/<category>/`
+  → it won't be `.gitignore`d and could pollute the consumer's repo

@@ -1,4 +1,4 @@
-name: Documentation Size Monitor
+name: SlopStopper · Documentation Size Monitor
 
 on:
   pull_request:
@@ -34,7 +34,7 @@ jobs:
         id: check
         run: |
           # Run the task and capture output
-          task hygiene:docs-size || true
+          task ss:hygiene:docs-size || true
           
           # Check if alerts were triggered (report contains "exceeds thresholds")
           if grep -q "❌" .docs-reports/docs-size-report.md; then

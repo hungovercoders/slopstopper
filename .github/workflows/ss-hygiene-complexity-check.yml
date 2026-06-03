@@ -1,4 +1,4 @@
-name: Code Complexity Check
+name: SlopStopper · Code Complexity Check
 
 on:
   pull_request:
@@ -42,7 +42,7 @@ jobs:
       - name: Run complexity analysis
         id: complexity
         run: |
-          task hygiene:complexity
+          task ss:hygiene:complexity
       
       - name: Check reports generated
         run: |
@@ -123,7 +123,7 @@ jobs:
             
             reportContent += '### 🔍 How to Check Locally\n\n';
             reportContent += '```bash\n';
-            reportContent += 'task hygiene:complexity\n';
+            reportContent += 'task ss:hygiene:complexity\n';
             reportContent += '```\n\n';
             reportContent += '[Full reports available in workflow artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) (`.complexity-reports/` directory)\n';
             
@@ -158,7 +158,7 @@ jobs:
             body += '# Install Task (one-time)\n';
             body += 'curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin\n\n';
             body += '# Run analysis locally\n';
-            body += 'task hygiene:complexity\n';
+            body += 'task ss:hygiene:complexity\n';
             body += '```\n\n';
             body += '## Guidelines\n\n';
             body += '- **Cyclomatic Complexity (CCN) > 10**: Indicates complex logic that should be refactored\n';

@@ -1,5 +1,5 @@
 ---
-name: Hygiene - Documentation Updater
+name: SlopStopper · Hygiene - Documentation Updater
 description: Weekly scan of merged PRs and code changes to keep project documentation in sync
 on:
   schedule:
