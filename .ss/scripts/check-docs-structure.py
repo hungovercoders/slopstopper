@@ -97,7 +97,7 @@ def main():
     violations = check_docs_structure()
     
     # Create report directory
-    Path(".ss/reports/docs").mkdir(exist_ok=True)
+    Path(".ss/reports/docs").mkdir(parents=True, exist_ok=True)
     
     # Write JSON report
     report = {

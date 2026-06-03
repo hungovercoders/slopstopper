@@ -224,7 +224,7 @@ def main():
         all_issues.extend(check_source_file_references(md_file, project_files))
 
     # Write JSON report
-    Path(".ss/reports/docs").mkdir(exist_ok=True)
+    Path(".ss/reports/docs").mkdir(parents=True, exist_ok=True)
     report = {
         "issues": all_issues,
         "issue_count": len(all_issues),

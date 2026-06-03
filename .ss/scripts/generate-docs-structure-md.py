@@ -133,7 +133,7 @@ def main():
         markdown_path = ".ss/reports/docs/docs-structure-report.md"
         
         # Ensure directory exists
-        Path(".ss/reports/docs").mkdir(exist_ok=True)
+        Path(".ss/reports/docs").mkdir(parents=True, exist_ok=True)
         
         # Read JSON report
         data = read_json_report(json_path)
