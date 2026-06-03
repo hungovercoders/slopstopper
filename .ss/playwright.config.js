@@ -1,47 +1,36 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// require('dotenv').config();
-
-/**
- * See https://playwright.dev/docs/test-configuration.
+ * SlopStopper portable Playwright config.
+ *
+ * testDir is `./tests` relative to this file, so specs under `.ss/tests/`
+ * are picked up regardless of what the consumer has under their own
+ * `tests/` directory.
+ *
+ * No webServer block — the consumer (or task) is responsible for ensuring
+ * the target URL is reachable before tests run. The base URL is taken from
+ * one of: ACCESSIBILITY_TEST_URL, SMOKE_TEST_URL, BASE_URL, or
+ * http://localhost:8080 as a final fallback.
  */
 export default defineConfig({
   testDir: './tests',
-  /* Run tests in files in parallel */
   fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env.ACCESSIBILITY_TEST_URL || process.env.SMOKE_TEST_URL || process.env.BASE_URL || 'http://localhost:8080',
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    baseURL:
+      process.env.ACCESSIBILITY_TEST_URL ||
+      process.env.SMOKE_TEST_URL ||
+      process.env.BASE_URL ||
+      'http://localhost:8080',
     trace: 'on-first-retry',
   },
-
-  /* Configure projects for major browsers */
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-
-  /* Run your local dev server before starting the tests */
-  /* Skip webServer when running smoke or accessibility tests against external URLs */
-  webServer: (process.env.ACCESSIBILITY_TEST_URL || process.env.SMOKE_TEST_URL) ? undefined : {
-    command: 'npm run build && node server.js',
-    url: 'http://localhost:8080',
-    reuseExistingServer: !process.env.CI,
-  },
 });

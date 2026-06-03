@@ -60,22 +60,35 @@ jobs:
         run: npm ci
 
       # ── Local server (PR / push to main) ────────────────────────────────────
+      # CUSTOMISE FOR YOUR APP: these two steps build and serve this repo's
+      # static site. Replace with your app's build/serve commands, or remove
+      # these steps and only audit deployed URLs.
       - name: Build site
         if: github.event_name == 'pull_request' || github.event_name == 'push'
-        run: npm run build
+        run: |
+          if [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then
+            npm run build
+          else
+            echo "ℹ️  No build script — skipping."
+          fi
 
       - name: Start local server
         if: github.event_name == 'pull_request' || github.event_name == 'push'
         run: |
-          node server.js &
-          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
-          for i in $(seq 1 15); do
-            if curl -s http://localhost:8080 > /dev/null; then
-              echo "✅ Server is ready"
-              break
-            fi
-            sleep 1
-          done
+          if [ -f server.js ]; then
+            node server.js &
+            echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+            for i in $(seq 1 15); do
+              if curl -s http://localhost:8080 > /dev/null; then
+                echo "✅ Server is ready"
+                break
+              fi
+              sleep 1
+            done
+          else
+            echo "ℹ️  No server.js — customise this step or only audit deployed URLs."
+            exit 1
+          fi
 
       # ── Determine audit URL and Lighthouse config ────────────────────────────
       - name: Determine audit URL
@@ -97,20 +110,20 @@ jobs:
           if [ "$EVENT_NAME" == "pull_request" ] || [ "$EVENT_NAME" == "push" ]; then
             # Local dev build — CWV-only thresholds, no preset
             echo "url=http://localhost:8080" >> "$GITHUB_OUTPUT"
-            echo "config=.lighthouserc.json" >> "$GITHUB_OUTPUT"
+            echo "config=.ss/lighthouserc.json" >> "$GITHUB_OUTPUT"
           elif [ "$EVENT_NAME" == "workflow_dispatch" ]; then
             SAFE_URL="$(validate_url "$INPUT_URL")"
             echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
-            echo "config=.lighthouserc.json" >> "$GITHUB_OUTPUT"
+            echo "config=.ss/lighthouserc.json" >> "$GITHUB_OUTPUT"
           elif [ "$EVENT_NAME" == "deployment_status" ]; then
             SAFE_URL="$(validate_url "$DEPLOYMENT_URL")"
             echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
             # Production deployment — use full preset including best-practices/SEO/accessibility
-            echo "config=.lighthouserc.prod.json" >> "$GITHUB_OUTPUT"
+            echo "config=.ss/lighthouserc.prod.json" >> "$GITHUB_OUTPUT"
           else
             # Scheduled run — use production URL with full preset
             echo "url=https://slopstopper.dev" >> "$GITHUB_OUTPUT"
-            echo "config=.lighthouserc.prod.json" >> "$GITHUB_OUTPUT"
+            echo "config=.ss/lighthouserc.prod.json" >> "$GITHUB_OUTPUT"
           fi
 
       # ── Run Lighthouse CI ────────────────────────────────────────────────────
@@ -245,7 +258,7 @@ jobs:
           echo "  TBT         : ${{ steps.results.outputs.tbt }} ms            (threshold: ≤ 600 ms)"
           echo "  CLS         : ${{ steps.results.outputs.cls }}               (threshold: ≤ 0.25)"
           echo ""
-          echo "Update .lighthouserc.json to adjust thresholds."
+          echo "Update .ss/lighthouserc.json to adjust thresholds."
           exit 1
 
       # ── Create/update issue on main-branch failures ───────────────────────────

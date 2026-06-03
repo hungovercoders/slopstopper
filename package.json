@@ -5,10 +5,10 @@
   "scripts": {
     "build": "tsc",
     "start": "node server.js",
-    "test": "playwright test",
-    "test:headed": "playwright test --headed",
-    "test:smoke": "playwright test tests/smoke.spec.ts",
-    "test:accessibility": "playwright test tests/accessibility.spec.ts"
+    "test": "playwright test --config=.ss/playwright.config.js",
+    "test:headed": "playwright test --config=.ss/playwright.config.js --headed",
+    "test:smoke": "playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts",
+    "test:accessibility": "playwright test --config=.ss/playwright.config.js .ss/tests/accessibility.spec.ts"
   },
   "keywords": [
     "netlify",

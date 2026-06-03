@@ -1,87 +1,63 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Smoke Tests for Production/Staging Reliability
+ * Portable smoke tests for any web app.
  *
- * These tests verify critical functionality on live environments.
- * Run with: SMOKE_TEST_URL=https://your-site.netlify.app npm run test:smoke
+ * Checks each page returns 200, loads without console errors, and responds
+ * within an acceptable time. No site-specific assertions (title, selectors)
+ * — accessibility audits cover content correctness; this just proves the
+ * pages are reachable and don't crash.
  *
- * Or via task: task ss:reliability:smoke -- https://your-site.netlify.app
+ * Configuration:
+ *   SMOKE_TEST_URL  — base URL to hit (required when running outside a repo
+ *                     with its own webServer config)
+ *   SMOKE_PAGES     — comma-separated list of paths to check, default '/'
+ *                     e.g. '/,/about,/pricing'
+ *   SMOKE_TIMEOUT   — per-request timeout in ms, default 5000
+ *
+ * Usage:
+ *   SMOKE_TEST_URL=https://your-site task ss:reliability:smoke
+ *   SMOKE_TEST_URL=https://your-site SMOKE_PAGES='/,/login' task ss:reliability:smoke
  */
 
 const targetUrl = process.env.SMOKE_TEST_URL || process.env.BASE_URL || 'http://localhost:8080';
 
+const pagesToCheck = (process.env.SMOKE_PAGES ?? '/')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const maxLoadMs = parseInt(process.env.SMOKE_TIMEOUT || '5000', 10);
+
 test.describe('Smoke Tests', () => {
   test.use({ baseURL: targetUrl });
 
-  test('homepage loads successfully', async ({ page }) => {
-    const response = await page.goto('/');
+  for (const path of pagesToCheck) {
+    test(`${path} returns 200 and loads cleanly`, async ({ page }) => {
+      const errors: Error[] = [];
+      page.on('pageerror', (e) => errors.push(e));
 
-    expect(response!.status()).toBe(200);
+      const startTime = Date.now();
+      const response = await page.goto(path);
+      const loadTime = Date.now() - startTime;
 
-    await expect(page).toHaveTitle('SlopStopper');
-  });
+      expect(response, `${path}: navigation returned no response`).not.toBeNull();
+      expect(response!.status(), `${path} should return 200`).toBe(200);
 
-  test('features page loads successfully', async ({ page }) => {
-    const response = await page.goto('/features.html');
+      await page.waitForLoadState('networkidle');
 
-    expect(response!.status()).toBe(200);
-    await expect(page).toHaveTitle('Features');
-  });
+      expect(errors, `${path}: page emitted JS errors: ${errors.map((e) => e.message).join('; ')}`)
+        .toHaveLength(0);
 
-  test('tools page loads successfully', async ({ page }) => {
-    const response = await page.goto('/tools.html');
+      expect(loadTime, `${path}: load took ${loadTime}ms (limit ${maxLoadMs}ms)`)
+        .toBeLessThan(maxLoadMs);
+    });
+  }
 
-    expect(response!.status()).toBe(200);
-    await expect(page).toHaveTitle('Tools');
-  });
-
-  test('basic navigation works', async ({ page }) => {
-    await page.goto('/');
-
-    const featuresLink = page.locator('#nav-features');
-    const toolsLink = page.locator('#nav-tools');
-
-    await expect(featuresLink).toBeVisible();
-    await expect(toolsLink).toBeVisible();
-
-    await featuresLink.click();
-    await expect(page).toHaveURL(/.*features(\.html)?/);
-    await expect(page).toHaveTitle('Features');
-  });
-
-  test('static assets load correctly', async ({ page }) => {
-    await page.goto('/');
-
+  test('homepage has at least one stylesheet linked', async ({ page }) => {
+    await page.goto(pagesToCheck[0]);
     const stylesheets = await page.locator('link[rel="stylesheet"]').count();
-    expect(stylesheets).toBeGreaterThan(0);
-
-    const errors: Error[] = [];
-    page.on('pageerror', error => errors.push(error));
-
-    await page.waitForLoadState('networkidle');
-    expect(errors.length).toBe(0);
-  });
-
-  test('site responds within acceptable time', async ({ page }) => {
-    const startTime = Date.now();
-    const response = await page.goto('/');
-    const loadTime = Date.now() - startTime;
-
-    expect(loadTime).toBeLessThan(5000);
-    expect(response!.status()).toBe(200);
-  });
-
-  test('all critical pages return 200 status', async ({ page }) => {
-    const criticalPages = [
-      '/',
-      '/features.html',
-      '/tools.html',
-    ];
-
-    for (const pagePath of criticalPages) {
-      const response = await page.goto(pagePath);
-      expect(response!.status(), `${pagePath} should return 200`).toBe(200);
-    }
+    expect(stylesheets, 'expected at least one <link rel="stylesheet"> on the homepage')
+      .toBeGreaterThan(0);
   });
 });
