@@ -16,16 +16,29 @@
 #
 # Layout installed (all SlopStopper-owned files are under the `ss` namespace):
 #
-#   Taskfile.yml             # thin root; created on fresh installs, left
-#                            #   alone if you already have one (instructions
-#                            #   printed in that case)
-#   Taskfile.ss.yml          # all SlopStopper task definitions; always
-#                            #   refreshed on re-run so updates flow through
-#   .ss/scripts/             # Python/shell analysis scripts; always refreshed
-#   .ss/reports/             # SlopStopper-owned scan/report output dirs
-#   .github/workflows/ss-*   # all SlopStopper workflows are ss- prefixed so
-#                            #   they group together in the Actions UI and
-#                            #   cannot clash with your existing workflows
+#   Taskfile.yml                # thin root; created on fresh installs, left
+#                               #   alone if you already have one (instructions
+#                               #   printed in that case)
+#   Taskfile.ss.yml             # all SlopStopper task definitions; always
+#                               #   refreshed on re-run so updates flow through
+#   .ss/scripts/                # Python/shell analysis scripts; always refreshed
+#   .ss/tests/                  # portable Playwright + report-generator specs
+#   .ss/playwright.config.js    # Playwright config scoped to .ss/tests/
+#   .ss/lighthouserc.json       # Lighthouse CI budgets (PR/dev)
+#   .ss/lighthouserc.prod.json  # Lighthouse CI budgets (production)
+#   .ss/reports/                # SlopStopper-owned scan/report output dirs
+#   .github/workflows/ss-*      # all SlopStopper workflows are ss- prefixed
+#                               #   so they group together in the Actions UI
+#                               #   and cannot clash with your existing workflows
+#
+# Workflow set ships in four conceptual layers:
+#   1. Static analysis  — work on any code (SAST, Secrets, Trivy, complexity, doc checks)
+#   2. Web-app dynamic  — need a URL (Smoke, Accessibility, CWV, Playwright)
+#   3. Netlify deploy   — need NETLIFY_AUTH_TOKEN + NETLIFY_SITE_ID secrets
+#   4. Agentic updater  — needs ANTHROPIC_API_KEY (gh-aw doc-updater)
+# Don't use one of the layers? Delete its workflows from .github/workflows/.
+# Re-running this installer will respect that deletion (it tracks what it
+# installed in .ss/.workflows-installed).
 
 set -euo pipefail
 
@@ -101,52 +114,100 @@ else
   success "Taskfile.yml installed"
 fi
 
-# 3. .ss/scripts/ — SlopStopper-owned; always refreshed.
+# 3. .ss/scripts/, .ss/tests/, playwright + lighthouse configs — all
+#    SlopStopper-owned and always refreshed on re-run.
 mkdir -p "$TARGET_DIR/.ss"
 rm -rf "$TARGET_DIR/.ss/scripts"
 cp -r "$SCRIPT_DIR/.ss/scripts" "$TARGET_DIR/.ss/scripts"
 success ".ss/scripts/ installed (refreshed)"
+
+rm -rf "$TARGET_DIR/.ss/tests"
+cp -r "$SCRIPT_DIR/.ss/tests" "$TARGET_DIR/.ss/tests"
+success ".ss/tests/ installed (refreshed)"
+
+cp "$SCRIPT_DIR/.ss/playwright.config.js" "$TARGET_DIR/.ss/playwright.config.js"
+cp "$SCRIPT_DIR/.ss/lighthouserc.json" "$TARGET_DIR/.ss/lighthouserc.json"
+cp "$SCRIPT_DIR/.ss/lighthouserc.prod.json" "$TARGET_DIR/.ss/lighthouserc.prod.json"
+success ".ss/ Playwright + Lighthouse configs installed (refreshed)"
 
 # 4. .github/workflows/ — install ss- prefixed generic workflows.
 WORKFLOWS_SRC="$SCRIPT_DIR/.github/workflows"
 WORKFLOWS_DST="$TARGET_DIR/.github/workflows"
 mkdir -p "$WORKFLOWS_DST"
 
-# Workflows that are generic and safe to install in any repo.
-# Netlify-specific and copilot-internal workflows are excluded by default.
+# Every workflow ships by default. The four layers are documented in
+# the post-install matrix; consumers can delete any they don't want and
+# re-running the installer will respect that deletion (tracked via
+# .ss/.workflows-installed).
+#
+# copilot-setup-steps.yml is platform-fixed and not included here — install
+# it manually if you use GitHub Copilot's setup-steps feature.
 GENERIC_WORKFLOWS=(
+  # Layer 1 — static analysis (works on any code)
   "ss-hygiene-complexity-check.yml"
   "ss-hygiene-docs-accuracy-check.yml"
   "ss-hygiene-docs-size-check.yml"
   "ss-hygiene-docs-structure-check.yml"
   "ss-hygiene-auto-label-pr.yml"
-  "ss-security-dast-check.yml"
   "ss-security-sast-check.yml"
   "ss-security-secrets-check.yml"
   "ss-security-vulnerability-all-check.yml"
   "ss-security-vulnerability-new-check.yml"
+  "ss-workflow-failure-issue.yml"
+  # Layer 2 — web-app dynamic (need a URL)
+  "ss-security-dast-check.yml"
   "ss-reliability-smoke-tests.yml"
   "ss-reliability-accessibility-check.yml"
   "ss-reliability-core-web-vitals.yml"
-  "ss-workflow-failure-issue.yml"
+  "ss-playwright-tests.yml"
+  # Layer 3 — Netlify deploy (need NETLIFY_AUTH_TOKEN + NETLIFY_SITE_ID)
+  "ss-netlify-deploy.yml"
+  "ss-netlify-cleanup-preview.yml"
+  # Layer 4 — agentic doc-updater (needs ANTHROPIC_API_KEY)
+  # NB: gh-aw workflows ship as a .md source + .lock.yml compiled artifact.
+  "ss-hygiene-doc-updater.md"
+  "ss-hygiene-doc-updater.lock.yml"
 )
 
+MARKER_FILE="$TARGET_DIR/.ss/.workflows-installed"
+
+# Load the set of workflows we installed last time (if any). If a workflow
+# is in this list AND missing from the consumer's repo now, they deleted it
+# and we won't re-add it. Compatible with bash 3.2 (no associative arrays).
+was_previously_installed() {
+  [ -f "$MARKER_FILE" ] && grep -Fxq "$1" "$MARKER_FILE"
+}
+
 INSTALLED_WORKFLOWS=0
-SKIPPED_WORKFLOWS=0
+REFRESHED_WORKFLOWS=0
+DELETED_RESPECTED=0
+NEW_MARKER_CONTENT=""
+
 for wf in "${GENERIC_WORKFLOWS[@]}"; do
   SRC="$WORKFLOWS_SRC/$wf"
   DST="$WORKFLOWS_DST/$wf"
   [ -f "$SRC" ] || continue
+
+  # Respect deletions: if we installed it before AND it's gone now, leave it gone.
+  if was_previously_installed "$wf" && [ ! -f "$DST" ]; then
+    (( DELETED_RESPECTED++ )) || true
+    continue
+  fi
+
   if [ -f "$DST" ]; then
-    # ss- prefix means we own it; refresh on update.
     cp "$SRC" "$DST"
-    (( SKIPPED_WORKFLOWS++ )) || true
+    (( REFRESHED_WORKFLOWS++ )) || true
   else
     cp "$SRC" "$DST"
     (( INSTALLED_WORKFLOWS++ )) || true
   fi
+  NEW_MARKER_CONTENT+="$wf"$'\n'
 done
-success "$INSTALLED_WORKFLOWS workflow(s) installed, $SKIPPED_WORKFLOWS refreshed"
+
+# Write the updated marker (atomic via tmp + mv).
+printf '%s' "$NEW_MARKER_CONTENT" > "$MARKER_FILE.tmp" && mv "$MARKER_FILE.tmp" "$MARKER_FILE"
+
+success "$INSTALLED_WORKFLOWS workflow(s) installed, $REFRESHED_WORKFLOWS refreshed, $DELETED_RESPECTED previously-deleted skipped"
 
 # 5. Merge devDependencies into package.json if one exists.
 PKG="$TARGET_DIR/package.json"
@@ -198,34 +259,38 @@ sep
 echo ""
 echo "  🎉 Installation complete!"
 echo ""
-echo "  Everything SlopStopper owns lives under the 'ss' namespace:"
-echo "    Taskfile.ss.yml       — task definitions"
-echo "    .ss/scripts/          — analysis scripts"
-echo "    .ss/reports/          — generated reports (git-ignored)"
-echo "    .github/workflows/ss-*— CI workflows"
+echo "  ── SlopStopper status for this repo ──────────────────────────────"
 echo ""
-echo "  Run any task with 'task ss:<name>', e.g.:"
-echo "    task ss:hygiene:complexity"
-echo "    task ss:security:sast"
-echo "    task ss:reliability:accessibility"
+echo "  ✅ Active now (no config needed — work on any code):"
+echo "       SAST · Secrets · Dependency CVEs · Dependency Review"
+echo "       Complexity · Doc Structure · Doc Accuracy · Doc Size"
+echo "       Auto-label PRs · Workflow-failure tracker"
 echo ""
-echo "  Re-run this installer any time to pull in updates — .ss/ and"
-echo "  Taskfile.ss.yml are refreshed; your Taskfile.yml is left alone."
+echo "  ⏳ Active once you point them at your app's URL (set env vars):"
+echo "       Smoke · Accessibility · Core Web Vitals · DAST · Playwright"
+echo ""
+echo "     export SMOKE_TEST_URL=https://staging.your-app.com"
+echo "     export ACCESSIBILITY_TEST_URL=\$SMOKE_TEST_URL"
+echo "     export ACCESSIBILITY_PAGES=/,/about,/pricing   # comma-separated"
+echo "     export LIGHTHOUSE_URL=\$SMOKE_TEST_URL"
+echo ""
+echo "  🔐 Inert until you add secrets in your repo settings:"
+echo "       Netlify Deploy + Preview Cleanup"
+echo "         → NETLIFY_AUTH_TOKEN, NETLIFY_SITE_ID"
+echo "       Doc Auto-Updater (gh-aw agentic workflow)"
+echo "         → ANTHROPIC_API_KEY"
+echo ""
+echo "  Don't use Netlify or the doc-updater? Just delete those workflows"
+echo "  from .github/workflows/ — re-running this installer won't bring"
+echo "  them back (tracked via .ss/.workflows-installed)."
+echo ""
+sep
 echo ""
 echo "  Next steps:"
-echo ""
-echo "  1. Install the Task runner (if not already installed):"
-echo "       curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin"
-echo ""
-echo "  2. Install npm dependencies:"
-echo "       npm install"
-echo ""
-echo "  3. View available tasks:"
-echo "       task --list"
-echo ""
-echo "  4. (Optional) For Netlify deployment workflows, also copy:"
-echo "       .github/workflows/ss-netlify-deploy.yml"
-echo "       .github/workflows/ss-netlify-cleanup-preview.yml"
-echo "     and add NETLIFY_AUTH_TOKEN + NETLIFY_SITE_ID to your repo secrets."
+echo "    1. Install the Task runner (if you don't have it):"
+echo "         curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin"
+echo "    2. npm install"
+echo "    3. task --list"
+echo "    4. Open a PR — every check runs automatically."
 echo ""
 sep
