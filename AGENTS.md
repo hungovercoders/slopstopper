@@ -3,8 +3,13 @@
 Open standard for agents, AI assistants and automation tools working in this
 repo. Conformant with [agents.md](https://agents.md).
 
-> 📚 **Documentation hub:** [`docs/index.md`](./docs/index.md) is the
-> structured map of all project documentation.
+> 🗺️ **Documentation map.** [`docs/index.md`](./docs/index.md) is the
+> single index of all project documentation. This file, [`CLAUDE.md`](./CLAUDE.md)
+> and [`README.md`](./README.md) are intentionally thin — they point at
+> the map rather than duplicating its content. When you need details on a
+> check, a runbook, or a decision, navigate the map. The
+> [hygiene docs-structure check](./docs/hygiene/README.md) keeps the map
+> honest against the directory tree.
 
 > 🏗️ **Naming convention:** the categories in
 > [`docs/index.md`](./docs/index.md) drive naming across the project. Task
