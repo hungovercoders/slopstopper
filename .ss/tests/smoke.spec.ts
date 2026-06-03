@@ -60,4 +60,11 @@ test.describe('Smoke Tests', () => {
     expect(stylesheets, 'expected at least one <link rel="stylesheet"> on the homepage')
       .toBeGreaterThan(0);
   });
+
+  test('og image is publicly shareable', async ({ request }) => {
+    const response = await request.get('/og-image.png');
+    expect(response.status(), 'expected /og-image.png to return 200').toBe(200);
+    expect(response.headers()['content-type']).toContain('image/png');
+    expect(response.headers()['cross-origin-resource-policy']).toBe('cross-origin');
+  });
 });
