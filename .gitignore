@@ -7,3 +7,5 @@ test-results/
 .netlify
 # TypeScript compiled output
 app/*.js
+# Local Claude Code state
+.claude/
