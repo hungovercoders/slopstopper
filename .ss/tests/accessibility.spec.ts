@@ -8,12 +8,15 @@ import AxeBuilder from '@axe-core/playwright';
  *
  * Configuration:
  *   ACCESSIBILITY_TEST_URL  - Base URL to audit (falls back to SMOKE_TEST_URL / BASE_URL / localhost)
+ *   ACCESSIBILITY_PAGES     - Comma-separated list of paths to audit (default: '/')
+ *                             e.g. '/,/features.html,/tools.html'
  *   ACCESSIBILITY_THRESHOLD - Maximum allowed violations before failing (default: 0)
  *   ACCESSIBILITY_IMPACT    - Minimum impact level to flag: critical|serious|moderate|minor (default: serious)
  *
  * Run locally:
  *   task ss:reliability:accessibility
- *   ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task ss:reliability:accessibility
+ *   ACCESSIBILITY_TEST_URL=https://your-site.netlify.app \
+ *     ACCESSIBILITY_PAGES='/,/about' task ss:reliability:accessibility
  */
 
 const targetUrl =
@@ -33,11 +36,11 @@ const impactThreshold = IMPACT_LEVELS.indexOf(minImpact);
 // Maximum number of violations allowed before the test fails
 const maxViolations = parseInt(process.env.ACCESSIBILITY_THRESHOLD || '0', 10);
 
-const pagesToAudit = [
-  { path: '/', label: 'Homepage' },
-  { path: '/features.html', label: 'Features page' },
-  { path: '/tools.html', label: 'Tools page' },
-];
+const pagesToAudit = (process.env.ACCESSIBILITY_PAGES ?? '/')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
+  .map((path) => ({ path, label: path === '/' ? 'homepage' : path }));
 
 test.describe('Accessibility Audit', () => {
   test.use({ baseURL: targetUrl });

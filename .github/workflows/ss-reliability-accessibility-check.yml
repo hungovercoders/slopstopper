@@ -105,17 +105,32 @@ jobs:
 
       - name: Start local server (PR / push builds)
         if: steps.url.outputs.use_local == 'true'
+        # CUSTOMISE FOR YOUR APP: this step is wired for this repo's static
+        # site (build + node server.js). Replace with whatever starts your
+        # app on port 8080 — or set use_local=false in the Determine audit
+        # URL step and point ACCESSIBILITY_TEST_URL at a deployed environment.
         run: |
-          npm run build
-          node server.js &
-          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
-          for i in $(seq 1 10); do
-            if curl -s http://localhost:8080 > /dev/null; then
-              echo "✅ Server ready"
-              break
-            fi
-            sleep 1
-          done
+          if [ -f server.js ] && [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then
+            npm run build
+            node server.js &
+            echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+            for i in $(seq 1 10); do
+              if curl -s http://localhost:8080 > /dev/null; then
+                echo "✅ Server ready"
+                break
+              fi
+              sleep 1
+            done
+          else
+            echo "ℹ️  No server.js to start. Customise this step or set ACCESSIBILITY_TEST_URL."
+            exit 1
+          fi
+
+      - name: Pages to audit (this repo)
+        if: steps.url.outputs.use_local == 'true'
+        # CUSTOMISE FOR YOUR APP: comma-separated paths to audit. Defaults
+        # to '/' if unset.
+        run: echo "ACCESSIBILITY_PAGES=/,/features.html,/tools.html" >> "$GITHUB_ENV"
 
       - name: Run accessibility audit
         id: audit
@@ -123,6 +138,8 @@ jobs:
           ACCESSIBILITY_TEST_URL: ${{ steps.url.outputs.url }}
           ACCESSIBILITY_IMPACT: ${{ github.event.inputs.impact || 'serious' }}
           ACCESSIBILITY_THRESHOLD: ${{ github.event.inputs.threshold || '0' }}
+          # ACCESSIBILITY_PAGES is set by the "Pages to audit" step above when
+          # auditing a local build. Defaults to '/' otherwise.
         run: task ss:reliability:accessibility:ci
 
       - name: Stop local server
@@ -134,8 +151,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: accessibility-report-${{ github.run_id }}
-          path: playwright-report/
+          path: |
+            playwright-report/
+            .ss/playwright-report/
           retention-days: 30
+          if-no-files-found: ignore
 
       - name: Comment on PR with accessibility results
         if: github.event_name == 'pull_request' && always()

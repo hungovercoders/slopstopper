@@ -38,6 +38,7 @@ All settings are controlled via environment variables. Defaults are deliberately
 | Variable | Default | Description |
 |---|---|---|
 | `ACCESSIBILITY_TEST_URL` | *(falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080`)* | Base URL to audit |
+| `ACCESSIBILITY_PAGES` | `/` | Comma-separated paths to audit, e.g. `/,/features.html,/tools.html` |
 | `ACCESSIBILITY_IMPACT` | `serious` | Minimum [axe impact level](https://github.com/dequelabs/axe-core/blob/develop/doc/API.md#axe-core-tags) to flag: `critical`, `serious`, `moderate`, `minor` |
 | `ACCESSIBILITY_THRESHOLD` | `0` | Maximum violations allowed before the check fails |
 
@@ -87,15 +88,21 @@ Run the workflow manually from the **Actions** tab with optional inputs:
 
 ## Pages Audited
 
-All pages are audited by default in [`tests/accessibility.spec.ts`](../../tests/accessibility.spec.ts):
+The portable spec at [`.ss/tests/accessibility.spec.ts`](../../.ss/tests/accessibility.spec.ts) reads the page list from the `ACCESSIBILITY_PAGES` env var (comma-separated; defaults to `/`). For this repo's CI, the accessibility workflow sets:
 
-| Page | URL Path | File |
-|---|---|---|
-| Homepage | `/` | `app/index.html` |
-| Features | `/features.html` | `app/features.html` |
-| Tools | `/tools.html` | `app/tools.html` |
+```yaml
+ACCESSIBILITY_PAGES: /,/features.html,/tools.html
+```
 
-To add more pages, update the `pagesToAudit` array in `tests/accessibility.spec.ts`.
+To add coverage for your own app:
+
+```bash
+ACCESSIBILITY_PAGES="/,/login,/dashboard" \
+  ACCESSIBILITY_TEST_URL=https://your-site.netlify.app \
+  task ss:reliability:accessibility
+```
+
+No code changes required.
 
 ## Understanding Results
 
@@ -177,7 +184,7 @@ Update `ACCESSIBILITY_THRESHOLD` in the workflow `workflow_dispatch` default and
 
 **Tests timeout:**
 - Check the target URL is reachable
-- Increase the Playwright timeout in `playwright.config.js`
+- Increase the Playwright timeout in `.ss/playwright.config.js`
 
 ## Related Documentation
 

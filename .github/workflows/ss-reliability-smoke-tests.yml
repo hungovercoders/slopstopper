@@ -80,15 +80,21 @@ jobs:
       - name: Run smoke tests
         env:
           SMOKE_TEST_URL: ${{ steps.url.outputs.url }}
+          # CUSTOMISE FOR YOUR APP: comma-separated paths to smoke-check.
+          # Defaults to '/' if unset.
+          SMOKE_PAGES: '/,/features.html,/tools.html'
         run: task ss:reliability:smoke:ci
-        
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: smoke-test-results-${{ github.run_id }}
-          path: playwright-report/
+          path: |
+            playwright-report/
+            .ss/playwright-report/
           retention-days: 30
+          if-no-files-found: ignore
           
       - name: Comment on deployment (if applicable)
         if: github.event_name == 'deployment_status' && always()

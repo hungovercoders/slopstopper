@@ -32,7 +32,7 @@ tasks:
         echo "🔍 Running smoke tests against: $SMOKE_TEST_URL"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         
-        npx playwright test tests/smoke.spec.ts --reporter=list
+        SMOKE_TEST_URL="$SMOKE_TEST_URL" npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts --reporter=list
     silent: false
 
   reliability:smoke:ci:
@@ -53,20 +53,20 @@ tasks:
         echo "🔍 Running smoke tests (CI mode) against: $SMOKE_TEST_URL"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         
-        CI=true npx playwright test tests/smoke.spec.ts --reporter=list,html
+        CI=true SMOKE_TEST_URL="$SMOKE_TEST_URL" npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts --reporter=list,html
     silent: false
 
   reliability:cwv:
     desc: Run a Core Web Vitals (Lighthouse CI) audit against a live URL
     summary: |
       Runs a Lighthouse CI audit against a deployed site and checks Core Web
-      Vitals against the thresholds defined in .lighthouserc.json.
-      
+      Vitals against the thresholds defined in .ss/lighthouserc.json.
+
       Usage:
         task ss:reliability:cwv -- https://your-site.netlify.app
         CWV_URL=https://your-site.netlify.app task ss:reliability:cwv
-        
-      Thresholds (see .lighthouserc.json):
+
+      Thresholds (see .ss/lighthouserc.json):
         - Performance score  ≥ 70
         - LCP                ≤ 4 s
         - TBT                ≤ 600 ms
@@ -91,7 +91,7 @@ tasks:
         
         npx lhci autorun \
           --collect.url="$CWV_URL" \
-          --config=.lighthouserc.json
+          --config=.ss/lighthouserc.json
     silent: false
 
   reliability:cwv:ci:
@@ -114,7 +114,7 @@ tasks:
         
         npx lhci autorun \
           --collect.url="$CWV_URL" \
-          --config=.lighthouserc.json
+          --config=.ss/lighthouserc.json
     silent: false
 
   reliability:accessibility:
@@ -149,7 +149,7 @@ tasks:
         echo "♿ Running accessibility audit against: $TARGET"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-        ACCESSIBILITY_TEST_URL="$TARGET" npx playwright test tests/accessibility.spec.ts --reporter=list
+        ACCESSIBILITY_TEST_URL="$TARGET" npx playwright test --config=.ss/playwright.config.js .ss/tests/accessibility.spec.ts --reporter=list
     silent: false
 
   reliability:accessibility:ci:
@@ -171,7 +171,7 @@ tasks:
         echo "♿ Running accessibility audit (CI mode) against: $TARGET"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-        ACCESSIBILITY_TEST_URL="$TARGET" CI=true npx playwright test tests/accessibility.spec.ts --reporter=list,html
+        ACCESSIBILITY_TEST_URL="$TARGET" CI=true npx playwright test --config=.ss/playwright.config.js .ss/tests/accessibility.spec.ts --reporter=list,html
     silent: false
 
 
@@ -259,6 +259,7 @@ tasks:
         # Run lizard and generate text report (intermediate)
         lizard . \
           -x "tests/*" \
+          -x ".ss/tests/*" \
           -x ".github/*" \
           -x "node_modules/*" \
           -x ".git/*" \
@@ -268,6 +269,7 @@ tasks:
         # Generate CSV report for structured data
         lizard . \
           -x "tests/*" \
+          -x ".ss/tests/*" \
           -x ".github/*" \
           -x "node_modules/*" \
           -x ".git/*" \
@@ -608,8 +610,9 @@ tasks:
       Generates both JSON and Markdown reports.
 
       Usage:
-        task start &                           # Start site first
-        task dast -- http://localhost:8080     # Then run DAST
+        # Start your app's server first, then:
+        task ss:security:dast -- http://localhost:8080
+        task ss:security:dast -- https://staging.example.com
     vars:
       TARGET: '{{default "http://localhost:8080" .CLI_ARGS}}'
     cmds:
@@ -651,29 +654,36 @@ tasks:
         mkdir -p .ss/reports/dast
         chmod 777 .ss/reports/dast
         
-        # Check if target is localhost and if server needs to be started  
+        # Check if target is localhost — if so, this repo's server.js may need to be started.
+        # For a consumer, start your own server before running DAST against localhost.
         TARGET="{{.TARGET}}"
         if [[ "$TARGET" == *"localhost"* ]] || [[ "$TARGET" == "http://127.0.0.1"* ]]; then
-          echo "🚀 Starting local development server..."
-          node server.js > /dev/null 2>&1 &
-          SERVER_PID=$!
-          
-          # Wait for server to be ready
-          echo "⏳ Waiting for server to be ready..."
-          for i in {1..30}; do
-            if curl -s http://localhost:8080 > /dev/null 2>&1; then
-              echo "✅ Server is ready"
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ Server failed to start within 30 seconds"
-              kill $SERVER_PID 2>/dev/null || true
-              exit 1
-            fi
-            sleep 1
-          done
-          
-          trap "kill $SERVER_PID 2>/dev/null || true" EXIT
+          if [ -f server.js ] && ! curl -sf http://localhost:8080 > /dev/null 2>&1; then
+            echo "🚀 Starting this repo's server.js..."
+            node server.js > /dev/null 2>&1 &
+            SERVER_PID=$!
+
+            echo "⏳ Waiting for server to be ready..."
+            for i in {1..30}; do
+              if curl -s http://localhost:8080 > /dev/null 2>&1; then
+                echo "✅ Server is ready"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "❌ Server failed to start within 30 seconds"
+                kill $SERVER_PID 2>/dev/null || true
+                exit 1
+              fi
+              sleep 1
+            done
+
+            trap "kill $SERVER_PID 2>/dev/null || true" EXIT
+          elif ! curl -sf http://localhost:8080 > /dev/null 2>&1; then
+            echo "❌ Nothing listening on $TARGET and no server.js to start."
+            echo "   Start your app's server first, then re-run this task."
+            exit 1
+          fi
+
           # Replace localhost with Docker gateway IP for access from container
           TARGET="http://172.17.0.1:8080"
           echo "📍 Using Docker-compatible target: $TARGET"
@@ -910,24 +920,45 @@ tasks:
         fi
 
   contributing:run:
-    desc: Run local development server
+    desc: Run local development server (this repo's server.js, if present)
     cmds:
-      - node server.js
+      - |
+        if [ -f server.js ]; then
+          node server.js
+        else
+          echo "ℹ️  No server.js found in this repo — SlopStopper does not ship a generic dev server."
+          echo "    Start your app's own server, then run SlopStopper tasks against its URL,"
+          echo "    e.g. SMOKE_TEST_URL=http://localhost:3000 task ss:reliability:smoke"
+        fi
 
   contributing:test:
-    desc: Run Playwright tests
+    desc: Run Playwright tests (root config if present, otherwise SlopStopper's portable suite)
     cmds:
-      - npx playwright test {{.CLI_ARGS}}
+      - |
+        if [ -f playwright.config.js ] || [ -f playwright.config.ts ]; then
+          npx playwright test {{.CLI_ARGS}}
+        elif [ -f .ss/playwright.config.js ]; then
+          npx playwright test --config=.ss/playwright.config.js {{.CLI_ARGS}}
+        else
+          echo "ℹ️  No playwright config found — nothing to run."
+        fi
 
   contributing:test:headed:
     desc: Run Playwright tests with headed browser
     cmds:
-      - npx playwright test --headed {{.CLI_ARGS}}
+      - |
+        if [ -f playwright.config.js ] || [ -f playwright.config.ts ]; then
+          npx playwright test --headed {{.CLI_ARGS}}
+        elif [ -f .ss/playwright.config.js ]; then
+          npx playwright test --config=.ss/playwright.config.js --headed {{.CLI_ARGS}}
+        else
+          echo "ℹ️  No playwright config found — nothing to run."
+        fi
 
   contributing:test:complexity:
     desc: Run complexity report generation tests
     cmds:
-      - python3 tests/generate_complexity_report.test.py
+      - python3 .ss/tests/generate_complexity_report.test.py
 
   contributing:test:security:
     desc: Run all security report generation tests
@@ -940,22 +971,22 @@ tasks:
   contributing:test:sast:
     desc: Run SAST report generation tests
     cmds:
-      - python3 tests/generate_sast_report.test.py
+      - python3 .ss/tests/generate_sast_report.test.py
 
   contributing:test:vulnerability:
     desc: Run vulnerability report generation tests
     cmds:
-      - python3 tests/generate_dependencies_report.test.py
+      - python3 .ss/tests/generate_dependencies_report.test.py
 
   contributing:test:dast:
     desc: Run DAST report generation tests
     cmds:
-      - python3 tests/generate_dast_report.test.py
+      - python3 .ss/tests/generate_dast_report.test.py
 
   contributing:test:secrets:
     desc: Run secrets detection report generation tests
     cmds:
-      - python3 tests/generate_secrets_report.test.py
+      - python3 .ss/tests/generate_secrets_report.test.py
 
   contributing:start:
     desc: Start local development server
