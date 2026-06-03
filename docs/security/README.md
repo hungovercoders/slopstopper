@@ -19,7 +19,7 @@ This template includes automated Static Application Security Testing (SAST) usin
 
 ### Run Analysis Locally
 ```bash
-task sast
+task ss:security:sast
 ```
 
 ### What You Get Automatically
@@ -94,7 +94,7 @@ rm .github/workflows/ss-security-sast-check.yml
 curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
 
 # Run SAST
-task sast
+task ss:security:sast
 ```
 
 Reports are saved to `.ss/reports/sast/`.
@@ -118,7 +118,7 @@ This template includes automated Dynamic Application Security Testing (DAST) usi
 # Start the site first
 task start &
 # Run DAST scan against it
-task dast -- http://localhost:8080
+task ss:security:dast -- http://localhost:8080
 ```
 
 ### What You Get Automatically
@@ -172,7 +172,7 @@ The DAST workflow:
 In `Taskfile.yml`, the `dast` task accepts the target URL as an argument:
 
 ```bash
-task dast -- http://your-site-url
+task ss:security:dast -- http://your-site-url
 ```
 
 In `ss-security-dast-check.yml`, the CI workflow starts a local server and passes `http://localhost:8080`. To scan a deployed preview instead, update that step with your preview URL.
@@ -207,7 +207,7 @@ curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
 task start &
 
 # Run DAST scan (requires Docker)
-task dast -- http://localhost:8080
+task ss:security:dast -- http://localhost:8080
 ```
 
 Reports are saved to `.ss/reports/dast/`.
@@ -228,7 +228,7 @@ This template includes automated dependency vulnerability scanning using **Trivy
 
 ### Run Analysis Locally
 ```bash
-task dependencies
+task ss:security:vulnerability:all
 ```
 
 ### What You Get Automatically
@@ -304,7 +304,7 @@ rm .github/workflows/ss-security-vulnerability-all-check.yml
 curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
 
 # Run dependency scan
-task dependencies
+task ss:security:vulnerability:all
 ```
 
 Reports are saved to `.ss/reports/dependencies/`.
@@ -324,7 +324,7 @@ This template includes automated secrets detection using **Gitleaks** to identif
 
 ### Run Analysis Locally
 ```bash
-task secrets
+task ss:security:secrets
 ```
 
 ### What You Get Automatically
@@ -417,7 +417,7 @@ rm .github/workflows/ss-security-secrets-check.yml
 curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
 
 # Run secrets detection
-task secrets
+task ss:security:secrets
 ```
 
 Reports are saved to `.ss/reports/secrets/`.

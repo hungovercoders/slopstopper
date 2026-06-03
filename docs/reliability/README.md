@@ -2,7 +2,22 @@
 
 ## Overview
 
-This directory contains documentation and tests for ensuring the reliability of deployed sites through automated smoke testing.
+This directory contains documentation for SlopStopper's reliability checks: portable smoke tests, accessibility audits (see [ACCESSIBILITY.md](ACCESSIBILITY.md)) and Core Web Vitals via Lighthouse CI. All three are wired via Playwright/Lighthouse against any reachable URL.
+
+## Configuration (env vars)
+
+All reliability checks read their target URL and audit scope from environment variables — no code changes needed.
+
+| Variable | Default | Used by |
+|---|---|---|
+| `SMOKE_TEST_URL` | (none) | smoke |
+| `SMOKE_PAGES` | `/` | smoke — comma-separated paths, e.g. `/,/login,/pricing` |
+| `SMOKE_TIMEOUT` | `5000` | smoke — per-request ms |
+| `ACCESSIBILITY_TEST_URL` | falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080` | accessibility |
+| `ACCESSIBILITY_PAGES` | `/` | accessibility — comma-separated paths |
+| `ACCESSIBILITY_IMPACT` | `serious` | accessibility — min `critical`/`serious`/`moderate`/`minor` |
+| `ACCESSIBILITY_THRESHOLD` | `0` | accessibility — max violations before failing |
+| `LIGHTHOUSE_URL` / `CWV_URL` | (none) | Lighthouse CI — URL to audit |
 
 ## Smoke Tests
 
@@ -35,7 +50,8 @@ SMOKE_TEST_URL=https://your-site.netlify.app npm run test:smoke
 **Using Playwright CLI:**
 
 ```bash
-SMOKE_TEST_URL=https://your-site.netlify.app npx playwright test tests/smoke.spec.js
+SMOKE_TEST_URL=https://your-site.netlify.app \
+  npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts
 ```
 
 ### Running in CI/CD
@@ -117,27 +133,19 @@ jobs:
 
 ### Test Configuration
 
-Tests are configured in [playwright.config.js](../../playwright.config.js):
-- Uses `SMOKE_TEST_URL` environment variable when set
-- Falls back to `BASE_URL` or localhost
-- Skips local dev server when testing external URLs
-- Includes retries in CI mode
+The portable spec is configured via [`.ss/playwright.config.js`](../../.ss/playwright.config.js) — `testDir: './tests'` resolves to `.ss/tests/` so SlopStopper's specs never collide with your own `tests/` directory.
 
-### Adding New Smoke Tests
+### Adding pages to the smoke check
 
-When adding critical functionality to your site, update [tests/smoke.spec.ts](../../tests/smoke.spec.ts):
+The portable smoke spec at [`.ss/tests/smoke.spec.ts`](../../.ss/tests/smoke.spec.ts) iterates over `SMOKE_PAGES`. To add coverage, set the env var — no code changes needed:
 
-```javascript
-test('new critical feature works', async ({ page }) => {
-  await page.goto('/new-feature');
-  
-  // Verify the feature loads
-  expect(response.status()).toBe(200);
-  
-  // Test critical functionality
-  await expect(page.locator('#critical-element')).toBeVisible();
-});
+```bash
+SMOKE_TEST_URL=https://your-site.netlify.app \
+  SMOKE_PAGES="/,/login,/pricing,/about" \
+  task ss:reliability:smoke
 ```
+
+For assertions beyond "page returns 200 and loads cleanly" (e.g. specific element visibility), add your own specs under your repo's own `tests/` directory — those are picked up by a `playwright.config.js` you write in your repo root, not by SlopStopper's `.ss/playwright.config.js`.
 
 ### Best Practices
 
