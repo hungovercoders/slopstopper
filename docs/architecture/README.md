@@ -15,7 +15,7 @@ Notation: C4 (Context + Container).
 ```mermaid
 flowchart LR
     U[User Browser]
-    A[template-netlify site]
+    A[SlopStopper site]
     N[Netlify Platform]
     G[GitHub Repository]
 
@@ -74,7 +74,7 @@ flowchart LR
     PR["📤 Push / Open PR"]
     SC["🔒 Security\nSAST · DAST · Secrets · CVEs"]
     HY["🧹 Hygiene\nComplexity · Docs"]
-    RE["✅ Reliability\nE2E · Smoke Tests"]
+    RE["✅ Reliability\nE2E · Smoke · A11y · CWV"]
     DP["🚀 Deploy\nPreview URL"]
     FB["💬 Feedback\nto Developer"]
 
