@@ -58,12 +58,15 @@ You are an AI documentation agent that updates the project documentation weekly 
 
 ## Project Context
 
-This is a **template-netlify** project — a minimal static site template deployed to Netlify with GitHub Actions CI/CD. The key characteristics are:
+This is the **SlopStopper** project — both a portable suite of CI quality
+workflows that consumers install into their own repos and a live
+reference site that markets the suite. Deployed to Netlify via GitHub
+Actions. The key characteristics are:
 
-- **Multi-page static site**: `index.html`, `page2.html`, `page3.html` with separate CSS/JS files
-- **No build step**: Static files deployed as-is via Netlify
+- **Multi-page static site**: `app/index.html`, `app/features.html`, `app/tools.html` with a shared `app/shared.css` plus per-page CSS files
+- **TypeScript build step**: `npm run build` runs `tsc`; Netlify publishes the `app/` directory
 - **Comprehensive docs**: All documentation lives in `docs/` following an index-driven governance model
-- **Taskfile automation**: Tasks follow `category:action` naming (e.g., `hygiene:complexity`)
+- **Taskfile automation**: Tasks follow `category:action` naming (e.g., `hygiene:complexity`); the Taskfile is the single source of truth for local + CI commands
 - **GitHub Actions CI/CD**: Workflows follow `category-action-check.yml` naming
 
 ## Documentation Structure

@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Categories of automated quality checks in SlopStopper: security, hygiene, reliability (E2E, smoke, accessibility, Core Web Vitals), operational and deployment.">
-    <meta name="theme-color" content="#16213e">
+    <meta name="description" content="Practices and automated feedback loops in SlopStopper: security, hygiene, reliability (E2E, smoke, accessibility, Core Web Vitals), operational and deployment. See the workflow behind each.">
+    <meta name="theme-color" content="#FBF5EC">
     <meta property="og:type" content="website">
     <meta property="og:title" content="SlopStopper — Features">
-    <meta property="og:description" content="Practices and automated feedback loops that keep a repo healthy at high velocity.">
+    <meta property="og:description" content="Every category of feedback, the workflow YAML behind it, and a peek at what the output looks like.">
     <meta property="og:site_name" content="SlopStopper">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="SlopStopper — Features">
-    <meta name="twitter:description" content="Practices and automated feedback loops that keep a repo healthy at high velocity.">
+    <meta name="twitter:description" content="Every category of feedback, the workflow YAML behind it, and a peek at what the output looks like.">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>Features</title>
+    <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="features.css">
 </head>
 <body>
@@ -24,92 +25,649 @@
             <a href="index.html" id="nav-home">Home</a>
             <a href="features.html" id="nav-features" aria-current="page">Features</a>
             <a href="tools.html" id="nav-tools">Tools</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                GitHub
+            </a>
         </nav>
     </header>
     <main id="main">
-        <div class="hero">
-            <h1>Practices &amp; Feedback</h1>
-            <p>The categories of automated checks that keep your repo healthy</p>
-        </div>
+        <section class="hero">
+            <span class="kicker">Practices &amp; feedback</span>
+            <h1>Five loops, <span class="highlight">no slop.</span></h1>
+            <p>Every check below is a real GitHub Actions workflow in the repo. Click any sub-feature to peek at the YAML behind it.</p>
+        </section>
+
         <div class="card-grid">
-            <div class="card">
+            <!-- ─── Security ─────────────────────────────────────── -->
+            <div class="card" id="security">
                 <h2>🔒 Security</h2>
+                <p class="card-intro">Static analysis, dynamic scanning, secrets detection and dependency CVE checks run on every change.</p>
                 <ul>
-                    <li><strong>SAST</strong> — Static application security testing flags vulnerabilities in source code before merge</li>
-                    <li><strong>DAST</strong> — Dynamic scanning probes a running site for common web vulnerabilities</li>
-                    <li><strong>Secrets Detection</strong> — Scans every commit for accidentally committed credentials or tokens</li>
-                    <li><strong>Dependency Scanning</strong> — Checks all dependencies for known CVEs on every pull request</li>
+                    <li><strong>SAST</strong> — Semgrep flags vulnerabilities in source code before merge</li>
+                    <li><strong>DAST</strong> — OWASP ZAP probes a running site for common web vulnerabilities</li>
+                    <li><strong>Secrets</strong> — Gitleaks scans every commit for accidentally committed credentials</li>
+                    <li><strong>Dependencies</strong> — Trivy checks all dependencies for known CVEs</li>
                 </ul>
+
+                <details class="details">
+                    <summary>SAST (Semgrep)</summary>
+                    <div class="details__body">
+                        <!-- sync this excerpt if the workflow's first job step changes -->
+                        <div class="codeblock codeblock--yaml" role="region" aria-label="SAST workflow excerpt"><pre><code>name: SAST Analysis
+on:
+  pull_request: { branches: [ main ] }
+  push:         { branches: [ main ] }
+jobs:
+  sast:
+    name: Static Application Security Testing with Semgrep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install semgrep && semgrep ci</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/security-sast-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>DAST (OWASP ZAP)</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: DAST Analysis
+on:
+  pull_request: { branches: [ main ] }
+  push:         { branches: [ main ] }
+jobs:
+  dast:
+    name: Dynamic Application Security Testing with OWASP ZAP
+    steps:
+      - uses: actions/checkout@v4
+      - run: task start &amp;&amp; npx @zaproxy/action-baseline</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/security-dast-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>Secrets (Gitleaks)</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: Secrets Detection
+on:
+  pull_request: { branches: [ main ] }
+  push:         { branches: [ main ] }
+jobs:
+  secrets:
+    name: Detect Secrets with Gitleaks
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/security-secrets-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>Dependencies (Trivy + Dependency Review)</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: Dependency Vulnerability Scan
+on:
+  pull_request: { branches: [ main ] }
+  push:         { branches: [ main ] }
+jobs:
+  dependencies:
+    name: Scan Dependencies with Trivy
+    steps:
+      - uses: actions/checkout@v4
+      - run: trivy fs --severity HIGH,CRITICAL .</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/security-vulnerability-all-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/security-vulnerability-new-check.yml" rel="noopener noreferrer">View dependency-review workflow →</a>
+                    </div>
+                </details>
             </div>
-            <div class="card">
+
+            <!-- ─── Hygiene ──────────────────────────────────────── -->
+            <div class="card" id="hygiene">
                 <h2>🧹 Hygiene</h2>
+                <p class="card-intro">Complexity limits and documentation checks keep the codebase auditable and the docs honest.</p>
                 <ul>
-                    <li><strong>Complexity Checks</strong> — Enforces complexity thresholds to keep functions readable and maintainable</li>
-                    <li><strong>Doc Structure</strong> — Validates that required documentation sections are present</li>
-                    <li><strong>Doc Accuracy</strong> — Ensures documentation reflects the actual state of the codebase</li>
-                    <li><strong>Doc Size</strong> — Prevents documentation from growing unwieldy or stale</li>
+                    <li><strong>Complexity</strong> — Lizard + Bandit cap cyclomatic complexity and Python security smells</li>
+                    <li><strong>Doc Structure</strong> — Required docs sections present and linted</li>
+                    <li><strong>Doc Accuracy</strong> — Documentation reflects the actual code</li>
+                    <li><strong>Doc Size</strong> — Prevents documentation from going stale or unwieldy</li>
+                    <li><strong>Auto-label PRs</strong> — PRs labelled from the paths changed</li>
                 </ul>
+
+                <details class="details">
+                    <summary>Complexity (Lizard)</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: Code Complexity Check
+on:
+  pull_request: { branches: [ main ] }
+  push:         { branches: [ main ] }
+jobs:
+  complexity-check:
+    name: Check Code Complexity with Lizard
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install lizard &amp;&amp; lizard -C 10 -L 60 .</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/hygiene-complexity-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>Doc Structure &amp; Accuracy</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: Hygiene - Documentation Accuracy Check
+on:
+  schedule: [ { cron: '0 7 * * 1' } ]   # weekly
+  pull_request:
+    paths: [ 'docs/**', '*.html', '*.js', '*.css' ]
+  push:
+    branches: [ main ]</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/hygiene-docs-accuracy-check.yml" rel="noopener noreferrer">View accuracy workflow →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/hygiene-docs-structure-check.yml" rel="noopener noreferrer">View structure workflow →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/hygiene-docs-size-check.yml" rel="noopener noreferrer">View size-monitor workflow →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>Auto-label PRs</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: Hygiene - Auto Label PRs
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  label:
+    steps:
+      - uses: actions/labeler@v5
+        with: { sync-labels: true }</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/hygiene-auto-label-pr.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
             </div>
-            <div class="card">
+
+            <!-- ─── Reliability ─────────────────────────────────── -->
+            <div class="card" id="reliability">
                 <h2>✅ Reliability</h2>
+                <p class="card-intro">End-to-end, smoke, accessibility and Core Web Vitals checks verify every deploy works for every user.</p>
                 <ul>
-                    <li><strong>E2E Tests</strong> — Playwright tests verify all pages and user flows work on every pull request</li>
-                    <li><strong>Smoke Tests</strong> — Lightweight smoke tests run against staging and production after every deploy</li>
-                    <li><strong>Accessibility</strong> — axe-core audits every page against WCAG 2.1 AA on PRs, after deploys, and on a daily schedule</li>
-                    <li><strong>Core Web Vitals</strong> — Lighthouse CI measures LCP, INP and CLS on every PR and nightly against production</li>
+                    <li><strong>E2E Tests</strong> — Playwright covers navigation and critical user journeys</li>
+                    <li><strong>Smoke Tests</strong> — Lightweight checks after every deploy</li>
+                    <li><strong>Accessibility</strong> — axe-core audits every page against WCAG 2.1 AA</li>
+                    <li><strong>Core Web Vitals</strong> — Lighthouse CI measures LCP, INP and CLS</li>
                 </ul>
+
+                <details class="details">
+                    <summary>E2E Tests (Playwright)</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: Playwright Tests
+on:
+  pull_request: { branches: [ main ] }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci &amp;&amp; npx playwright install chromium
+      - run: npx playwright test</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/playwright-tests.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>Smoke Tests</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: Reliability Smoke Tests
+on:
+  deployment_status:           # after every deploy
+  schedule: [ { cron: '0 * * * *' } ]   # hourly
+  workflow_dispatch:
+jobs:
+  smoke-test:
+    if: github.event.deployment_status.state == 'success' || ...</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/reliability-smoke-tests.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>Accessibility (axe-core)</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: Accessibility Check
+on:
+  pull_request:      { branches: [main] }
+  push:              { branches: [main] }
+  deployment_status:
+  schedule: [ { cron: '0 6 * * *' } ]    # daily
+jobs:
+  a11y:
+    name: Accessibility Audit (axe-core / WCAG 2.1 AA)</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/reliability-accessibility-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>Core Web Vitals (Lighthouse CI)</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: Core Web Vitals
+on:
+  deployment_status:
+  schedule: [ { cron: '0 0 * * *' } ]   # nightly prod
+  pull_request: { branches: [ main ] }
+  push:         { branches: [ main ] }
+jobs:
+  cwv:
+    name: Core Web Vitals (Lighthouse CI)</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/reliability-core-web-vitals.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
             </div>
-            <div class="card">
+
+            <!-- ─── Operational ─────────────────────────────────── -->
+            <div class="card" id="operational">
                 <h2>🤖 Operational</h2>
+                <p class="card-intro">Day-to-day workflow on autopilot: labels, doc updates and incident creation handled for you.</p>
                 <ul>
-                    <li><strong>Auto PR Labelling</strong> — Pull requests are labelled automatically from the paths changed</li>
-                    <li><strong>Doc Auto-Updater</strong> — A weekly agentic workflow opens PRs to keep documentation in sync with the code</li>
                     <li><strong>Failure Alerts</strong> — Failed workflow runs on main raise (or update) a tracking issue automatically</li>
+                    <li><strong>Doc Auto-Updater</strong> — A weekly agentic workflow opens PRs to keep docs in sync</li>
                 </ul>
+
+                <details class="details">
+                    <summary>Failure Alerts</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: Raise Issue on Workflow Failure
+on:
+  workflow_run:
+    workflows: ["SAST Analysis", "DAST Analysis", ...]
+    types: [completed]
+jobs:
+  raise-issue:
+    if: github.event.workflow_run.conclusion == 'failure'
+        &amp;&amp; github.event.workflow_run.head_branch == 'main'</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/workflow-failure-issue.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        <div class="live-links">
+                            <span class="live-links__label">See it in action:</span>
+                            <a href="https://github.com/hungovercoders/slopstopper/issues?q=is%3Aissue+is%3Aopen+label%3Aworkflow-failure" rel="noopener noreferrer">🔴 Open issues</a>
+                            <a href="https://github.com/hungovercoders/slopstopper/issues?q=is%3Aissue+is%3Aclosed+label%3Aworkflow-failure" rel="noopener noreferrer">✅ Closed issues</a>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>Doc Auto-Updater (agentic)</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: Hygiene - Documentation Updater
+on:
+  schedule: [ { cron: 'weekly' } ]
+  workflow_dispatch:
+safe-outputs:
+  create-pull-request:
+    title-prefix: "[docs] "
+    labels: [documentation, automation]</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/hygiene-doc-updater.md" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        <div class="live-links">
+                            <span class="live-links__label">See it in action:</span>
+                            <a href="https://github.com/hungovercoders/slopstopper/pulls?q=is%3Apr+is%3Aopen+label%3Aautomation+label%3Adocumentation" rel="noopener noreferrer">🔴 Open PRs</a>
+                            <a href="https://github.com/hungovercoders/slopstopper/pulls?q=is%3Apr+is%3Aclosed+label%3Aautomation+label%3Adocumentation" rel="noopener noreferrer">✅ Closed PRs</a>
+                        </div>
+                    </div>
+                </details>
             </div>
-            <div class="card">
+
+            <!-- ─── Deployment ──────────────────────────────────── -->
+            <div class="card" id="deployment">
                 <h2>🚀 Deployment</h2>
+                <p class="card-intro">Preview deploys on every PR, automated production releases on merge, stale previews cleaned up.</p>
                 <ul>
-                    <li><strong>Preview Deploys</strong> — Every pull request gets a unique preview URL on Netlify for review</li>
-                    <li><strong>Production Deploy</strong> — Merges to main trigger an automatic production release</li>
-                    <li><strong>Preview Cleanup</strong> — Stale preview environments are automatically removed after PRs close</li>
+                    <li><strong>Preview Deploys</strong> — Every PR gets a unique preview URL on Netlify</li>
+                    <li><strong>Production Deploy</strong> — Merges to main trigger an automatic release</li>
+                    <li><strong>Preview Cleanup</strong> — Stale previews are removed after PRs close</li>
                 </ul>
+
+                <details class="details">
+                    <summary>Deploy &amp; Preview</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: Deploy to Netlify
+on:
+  push:         { branches: [ main ] }
+  pull_request: { branches: [ main ] }
+jobs:
+  deploy:
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci &amp;&amp; npm run build
+      - uses: nwtgck/actions-netlify@v2.1
+        with: { publish-dir: './app', production-deploy: true }</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/netlify-deploy.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>Preview Cleanup</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: Cleanup Netlify Preview
+on:
+  pull_request:
+    types: [closed]
+    branches: [ main ]
+jobs:
+  cleanup:
+    steps:
+      - run: |
+          DEPLOY_ID=$(curl ... /api/v1/sites/$SITE_ID/deploys ...)
+          curl -X DELETE ... /api/v1/sites/$SITE_ID/deploys/$DEPLOY_ID</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/netlify-cleanup-preview.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
             </div>
         </div>
-        <section class="loops">
-            <h2>Development Loops</h2>
-            <p class="loops-intro">SlopStopper organises quality feedback into two loops that keep velocity high and quality consistent.</p>
+
+        <!-- ─── What feedback looks like ────────────────────────── -->
+        <section class="section reports-section">
+            <div class="mascot mascot--peek" aria-hidden="true">
+                <svg viewBox="0 0 240 160" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M40 130 C40 75, 80 50, 120 50 C160 50, 200 75, 200 130 Z" fill="#FBF5EC" stroke="#2A2118" stroke-width="6" stroke-linejoin="round"/>
+                    <circle cx="92" cy="100" r="11" fill="#2A2118"/>
+                    <circle cx="148" cy="100" r="11" fill="#2A2118"/>
+                    <circle cx="95" cy="96" r="3.5" fill="#FBF5EC"/>
+                    <circle cx="151" cy="96" r="3.5" fill="#FBF5EC"/>
+                    <path d="M105 122 Q120 132, 135 122" stroke="#2A2118" stroke-width="4" stroke-linecap="round" fill="none"/>
+                </svg>
+            </div>
+            <span class="kicker">What feedback looks like</span>
+            <h2>Reports, not lectures.</h2>
+            <p class="lede">A mock-up of the kind of output you'll see on a PR. Concrete signal, not vibes.</p>
+
+            <div class="reports-grid">
+                <!-- axe-core mock report -->
+                <div class="report report--axe">
+                    <svg viewBox="0 0 480 320" role="img" aria-labelledby="axeTitle" xmlns="http://www.w3.org/2000/svg">
+                        <title id="axeTitle">axe-core accessibility report mockup</title>
+                        <rect width="480" height="320" fill="#FFFFFF"/>
+                        <rect x="0" y="0" width="480" height="36" fill="#2A2118"/>
+                        <circle cx="16" cy="18" r="5" fill="#E8512B"/>
+                        <circle cx="32" cy="18" r="5" fill="#F5C24C"/>
+                        <circle cx="48" cy="18" r="5" fill="#2E8B6F"/>
+                        <text x="70" y="23" font-family="ui-monospace, monospace" font-size="12" fill="#FBF5EC">axe-core / WCAG 2.1 AA</text>
+                        <text x="20" y="72" font-family="ui-rounded, system-ui, sans-serif" font-weight="800" font-size="20" fill="#2A2118">Accessibility report</text>
+                        <text x="20" y="92" font-family="ui-rounded, system-ui, sans-serif" font-size="13" fill="#6B5B47">3 issues found on this page</text>
+                        <rect x="350" y="56" width="110" height="24" rx="12" fill="#FFD9B8" stroke="#2A2118" stroke-width="1.5"/>
+                        <text x="405" y="73" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="11" fill="#2A2118">WCAG 2.1 AA</text>
+                        <rect x="20" y="110" width="440" height="14" rx="7" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
+                        <rect x="22" y="112" width="330" height="10" rx="5" fill="#2E8B6F"/>
+                        <rect x="352" y="112" width="60" height="10" fill="#F5C24C"/>
+                        <rect x="412" y="112" width="46" height="10" rx="5" fill="#E8512B"/>
+                        <text x="20" y="148" font-family="ui-rounded, sans-serif" font-weight="700" font-size="13" fill="#2A2118">Violations</text>
+                        <rect x="20" y="160" width="78" height="22" rx="11" fill="#E8512B"/>
+                        <text x="59" y="176" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="11" fill="#FBF5EC">CRITICAL</text>
+                        <text x="108" y="176" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">color-contrast</text>
+                        <text x="240" y="176" font-family="ui-rounded, sans-serif" font-size="12" fill="#6B5B47">— foreground/background ratio &lt; 4.5</text>
+                        <rect x="20" y="194" width="78" height="22" rx="11" fill="#F5C24C"/>
+                        <text x="59" y="210" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="11" fill="#2A2118">SERIOUS</text>
+                        <text x="108" y="210" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">image-alt</text>
+                        <text x="200" y="210" font-family="ui-rounded, sans-serif" font-size="12" fill="#6B5B47">— image missing alternative text</text>
+                        <rect x="20" y="228" width="78" height="22" rx="11" fill="#6B5B47"/>
+                        <text x="59" y="244" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="11" fill="#FBF5EC">MODERATE</text>
+                        <text x="108" y="244" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">aria-required-attr</text>
+                        <text x="260" y="244" font-family="ui-rounded, sans-serif" font-size="12" fill="#6B5B47">— required ARIA attribute</text>
+                        <text x="20" y="284" font-family="ui-rounded, sans-serif" font-size="11" fill="#6B5B47">12 passes · 2 incomplete · 3 violations</text>
+                    </svg>
+                </div>
+
+                <!-- Lighthouse mock report -->
+                <div class="report report--lh">
+                    <svg viewBox="0 0 480 320" role="img" aria-labelledby="lhTitle" xmlns="http://www.w3.org/2000/svg">
+                        <title id="lhTitle">Lighthouse Core Web Vitals report mockup</title>
+                        <rect width="480" height="320" fill="#FFFFFF"/>
+                        <rect x="0" y="0" width="480" height="36" fill="#2A2118"/>
+                        <circle cx="16" cy="18" r="5" fill="#E8512B"/>
+                        <circle cx="32" cy="18" r="5" fill="#F5C24C"/>
+                        <circle cx="48" cy="18" r="5" fill="#2E8B6F"/>
+                        <text x="70" y="23" font-family="ui-monospace, monospace" font-size="12" fill="#FBF5EC">Lighthouse CI</text>
+                        <text x="20" y="72" font-family="ui-rounded, sans-serif" font-weight="800" font-size="20" fill="#2A2118">Core Web Vitals</text>
+                        <g transform="translate(40,100)">
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="#FBF5EC" stroke-width="6"/>
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="#2E8B6F" stroke-width="6" stroke-dasharray="221.7" stroke-dashoffset="4.5" transform="rotate(-90 40 40)"/>
+                            <text x="40" y="46" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="800" font-size="20" fill="#2A2118">98</text>
+                            <text x="40" y="100" text-anchor="middle" font-family="ui-rounded, sans-serif" font-size="11" fill="#6B5B47">Performance</text>
+                        </g>
+                        <g transform="translate(140,100)">
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="#FBF5EC" stroke-width="6"/>
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="#2E8B6F" stroke-width="6" stroke-dasharray="226.2" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
+                            <text x="40" y="46" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="800" font-size="20" fill="#2A2118">100</text>
+                            <text x="40" y="100" text-anchor="middle" font-family="ui-rounded, sans-serif" font-size="11" fill="#6B5B47">Accessibility</text>
+                        </g>
+                        <g transform="translate(240,100)">
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="#FBF5EC" stroke-width="6"/>
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="#2E8B6F" stroke-width="6" stroke-dasharray="226.2" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
+                            <text x="40" y="46" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="800" font-size="20" fill="#2A2118">100</text>
+                            <text x="40" y="100" text-anchor="middle" font-family="ui-rounded, sans-serif" font-size="11" fill="#6B5B47">Best Pract.</text>
+                        </g>
+                        <g transform="translate(340,100)">
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="#FBF5EC" stroke-width="6"/>
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="#2E8B6F" stroke-width="6" stroke-dasharray="226.2" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
+                            <text x="40" y="46" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="800" font-size="20" fill="#2A2118">100</text>
+                            <text x="40" y="100" text-anchor="middle" font-family="ui-rounded, sans-serif" font-size="11" fill="#6B5B47">SEO</text>
+                        </g>
+                        <g transform="translate(20,232)">
+                            <rect width="140" height="60" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
+                            <circle cx="14" cy="14" r="5" fill="#2E8B6F"/>
+                            <text x="26" y="18" font-family="ui-monospace, monospace" font-size="11" fill="#6B5B47">LCP</text>
+                            <text x="14" y="44" font-family="ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#2A2118">1.2 s</text>
+                        </g>
+                        <g transform="translate(170,232)">
+                            <rect width="140" height="60" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
+                            <circle cx="14" cy="14" r="5" fill="#2E8B6F"/>
+                            <text x="26" y="18" font-family="ui-monospace, monospace" font-size="11" fill="#6B5B47">INP</text>
+                            <text x="14" y="44" font-family="ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#2A2118">80 ms</text>
+                        </g>
+                        <g transform="translate(320,232)">
+                            <rect width="140" height="60" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
+                            <circle cx="14" cy="14" r="5" fill="#2E8B6F"/>
+                            <text x="26" y="18" font-family="ui-monospace, monospace" font-size="11" fill="#6B5B47">CLS</text>
+                            <text x="14" y="44" font-family="ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#2A2118">0.01</text>
+                        </g>
+                    </svg>
+                </div>
+
+                <!-- Trivy mock report -->
+                <div class="report report--trivy">
+                    <svg viewBox="0 0 480 320" role="img" aria-labelledby="trivyTitle" xmlns="http://www.w3.org/2000/svg">
+                        <title id="trivyTitle">Trivy vulnerability scan report mockup</title>
+                        <rect width="480" height="320" fill="#FFFFFF"/>
+                        <rect x="0" y="0" width="480" height="36" fill="#2A2118"/>
+                        <circle cx="16" cy="18" r="5" fill="#E8512B"/>
+                        <circle cx="32" cy="18" r="5" fill="#F5C24C"/>
+                        <circle cx="48" cy="18" r="5" fill="#2E8B6F"/>
+                        <text x="70" y="23" font-family="ui-monospace, monospace" font-size="12" fill="#FBF5EC">trivy fs .</text>
+                        <text x="20" y="72" font-family="ui-rounded, sans-serif" font-weight="800" font-size="20" fill="#2A2118">Vulnerability scan</text>
+                        <text x="20" y="92" font-family="ui-rounded, sans-serif" font-size="13" fill="#6B5B47">19 known issues across direct &amp; transitive deps</text>
+                        <g transform="translate(20,110)">
+                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">CRITICAL</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#2E8B6F">0</text>
+                        </g>
+                        <g transform="translate(130,110)">
+                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">HIGH</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#E8512B">2</text>
+                        </g>
+                        <g transform="translate(240,110)">
+                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">MEDIUM</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#F5C24C">5</text>
+                        </g>
+                        <g transform="translate(350,110)">
+                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">LOW</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#6B5B47">12</text>
+                        </g>
+                        <line x1="20" y1="180" x2="460" y2="180" stroke="#2A2118" stroke-width="1"/>
+                        <text x="20" y="200" font-family="ui-monospace, monospace" font-size="11" fill="#6B5B47">package</text>
+                        <text x="170" y="200" font-family="ui-monospace, monospace" font-size="11" fill="#6B5B47">version</text>
+                        <text x="260" y="200" font-family="ui-monospace, monospace" font-size="11" fill="#6B5B47">CVE</text>
+                        <text x="400" y="200" font-family="ui-monospace, monospace" font-size="11" fill="#6B5B47">sev</text>
+                        <text x="20" y="222" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">esbuild</text>
+                        <text x="170" y="222" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">0.21.5</text>
+                        <text x="260" y="222" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">CVE-2024-12345</text>
+                        <rect x="396" y="208" width="48" height="18" rx="9" fill="#E8512B"/>
+                        <text x="420" y="221" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#FBF5EC">HIGH</text>
+                        <text x="20" y="246" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">tar</text>
+                        <text x="170" y="246" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">6.2.0</text>
+                        <text x="260" y="246" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">CVE-2024-23456</text>
+                        <rect x="396" y="232" width="48" height="18" rx="9" fill="#F5C24C"/>
+                        <text x="420" y="245" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#2A2118">MED</text>
+                        <text x="20" y="270" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">semver</text>
+                        <text x="170" y="270" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">7.5.4</text>
+                        <text x="260" y="270" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">CVE-2024-34567</text>
+                        <rect x="396" y="256" width="48" height="18" rx="9" fill="#6B5B47"/>
+                        <text x="420" y="269" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#FBF5EC">LOW</text>
+                    </svg>
+                </div>
+
+                <!-- ZAP mock report -->
+                <div class="report report--zap">
+                    <svg viewBox="0 0 480 320" role="img" aria-labelledby="zapTitle" xmlns="http://www.w3.org/2000/svg">
+                        <title id="zapTitle">OWASP ZAP DAST summary report mockup</title>
+                        <rect width="480" height="320" fill="#FFFFFF"/>
+                        <rect x="0" y="0" width="480" height="36" fill="#2A2118"/>
+                        <circle cx="16" cy="18" r="5" fill="#E8512B"/>
+                        <circle cx="32" cy="18" r="5" fill="#F5C24C"/>
+                        <circle cx="48" cy="18" r="5" fill="#2E8B6F"/>
+                        <text x="70" y="23" font-family="ui-monospace, monospace" font-size="12" fill="#FBF5EC">OWASP ZAP — baseline</text>
+                        <text x="20" y="72" font-family="ui-rounded, sans-serif" font-weight="800" font-size="20" fill="#2A2118">DAST summary</text>
+                        <text x="20" y="92" font-family="ui-rounded, sans-serif" font-size="13" fill="#6B5B47">11 findings on https://preview.netlify.app</text>
+                        <g transform="translate(20,110)">
+                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">HIGH</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#2E8B6F">0</text>
+                        </g>
+                        <g transform="translate(130,110)">
+                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">MEDIUM</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#F5C24C">1</text>
+                        </g>
+                        <g transform="translate(240,110)">
+                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">LOW</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#6B5B47">3</text>
+                        </g>
+                        <g transform="translate(350,110)">
+                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">INFO</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#2A2118">7</text>
+                        </g>
+                        <line x1="20" y1="180" x2="460" y2="180" stroke="#2A2118" stroke-width="1"/>
+                        <text x="20" y="200" font-family="ui-rounded, sans-serif" font-weight="700" font-size="13" fill="#2A2118">Findings</text>
+                        <rect x="20" y="212" width="48" height="22" rx="11" fill="#F5C24C"/>
+                        <text x="44" y="228" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="11" fill="#2A2118">MED</text>
+                        <text x="78" y="228" font-family="ui-monospace, monospace" font-size="11" fill="#2A2118">GET / — CSP not enforced</text>
+                        <rect x="20" y="244" width="48" height="22" rx="11" fill="#6B5B47"/>
+                        <text x="44" y="260" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="11" fill="#FBF5EC">LOW</text>
+                        <text x="78" y="260" font-family="ui-monospace, monospace" font-size="11" fill="#2A2118">GET / — Cache-Control missing</text>
+                        <rect x="20" y="276" width="48" height="22" rx="11" fill="#2A2118"/>
+                        <text x="44" y="292" text-anchor="middle" font-family="ui-rounded, sans-serif" font-weight="700" font-size="11" fill="#FBF5EC">INFO</text>
+                        <text x="78" y="292" font-family="ui-monospace, monospace" font-size="11" fill="#2A2118">GET /robots.txt — not found</text>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Development Loops ──────────────────────────────── -->
+        <section class="section loops">
+            <span class="kicker">Development loops</span>
+            <h2>Inner loop. Outer loop. <span class="highlight">Both fast.</span></h2>
+            <p class="lede">SlopStopper organises quality feedback into two loops that keep velocity high and quality consistent.</p>
+
             <div class="loop-diagram">
                 <h3>Inner Loop — Local</h3>
                 <p class="loop-desc">The fast, local cycle a developer (or AI agent) runs before pushing. Completes in seconds to minutes.</p>
                 <div class="loop-flow">
                     <div class="loop-step">✏️ Write Code<span class="step-sub">with AI</span></div>
-                    <div class="loop-arrow">→</div>
+                    <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
                     <div class="loop-step">🔨 Build &amp; Lint<span class="step-sub">locally</span></div>
-                    <div class="loop-arrow">→</div>
+                    <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
                     <div class="loop-step">🧪 Run Tests<span class="step-sub">locally</span></div>
-                    <div class="loop-arrow">→</div>
+                    <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
                     <div class="loop-step">📤 Commit &amp; Push<span class="step-sub">open PR</span></div>
                 </div>
                 <div class="loop-back">↩ iterate on feedback</div>
             </div>
+
             <div class="loop-diagram">
                 <h3>Outer Loop — CI/CD</h3>
                 <p class="loop-desc">Automated checks triggered on every push or PR. Deterministic feedback before code reaches production.</p>
                 <div class="loop-flow">
                     <div class="loop-step loop-step--trigger">📤 Push / PR</div>
-                    <div class="loop-arrow">→</div>
+                    <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
                     <div class="loop-step">🔒 Security<span class="step-sub">SAST · DAST · Secrets · CVEs</span></div>
-                    <div class="loop-arrow">→</div>
+                    <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
                     <div class="loop-step">🧹 Hygiene<span class="step-sub">Complexity · Docs</span></div>
-                    <div class="loop-arrow">→</div>
+                    <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
                     <div class="loop-step">✅ Reliability<span class="step-sub">E2E · Smoke · A11y · CWV</span></div>
-                    <div class="loop-arrow">→</div>
+                    <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
                     <div class="loop-step">🚀 Deploy<span class="step-sub">Preview URL</span></div>
-                    <div class="loop-arrow">→</div>
+                    <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
                     <div class="loop-step loop-step--feedback">💬 Feedback<span class="step-sub">to developer</span></div>
                 </div>
                 <div class="loop-back">↩ fix &amp; iterate</div>
+            </div>
+
+            <div class="bridge">
+                <div class="bridge__header">
+                    <span class="kicker">One source of truth</span>
+                    <h3>Same commands. <span class="highlight">Both loops.</span></h3>
+                    <p class="bridge__lede">Every check is a <code>task</code> command — defined once in <a href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.yml" rel="noopener noreferrer">Taskfile.yml</a>. You type it locally for instant feedback. CI runs the exact same command. No drift between what you ran and what the pipeline runs — fast inner loop, consistent outer loop, identical behaviour.</p>
+                </div>
+                <div class="bridge__grid">
+                    <div class="bridge__col">
+                        <div class="bridge__label">🧑‍💻 Inner loop — local</div>
+                        <ul class="bridge__list">
+                            <li><code>task hygiene:complexity</code></li>
+                            <li><code>task security:sast</code></li>
+                            <li><code>task reliability:accessibility</code></li>
+                            <li><code>task reliability:smoke</code></li>
+                        </ul>
+                    </div>
+                    <div class="bridge__center" aria-hidden="true">
+                        <div class="bridge__sticker">
+                            <span class="bridge__taskfile">Taskfile.yml</span>
+                            <span class="bridge__sub">one definition</span>
+                        </div>
+                        <div class="bridge__arrows">
+                            <svg viewBox="0 0 120 40" aria-hidden="true"><path d="M60 6 Q30 12, 8 22 L14 18 M8 22 L14 26" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M60 6 Q90 12, 112 22 L106 18 M112 22 L106 26" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                    </div>
+                    <div class="bridge__col">
+                        <div class="bridge__label">🤖 Outer loop — CI</div>
+                        <ul class="bridge__list">
+                            <li><code>task hygiene:complexity</code></li>
+                            <li><code>task security:sast</code></li>
+                            <li><code>task reliability:accessibility:ci</code></li>
+                            <li><code>task reliability:smoke:ci</code></li>
+                        </ul>
+                    </div>
+                </div>
+                <details class="details">
+                    <summary>What a Taskfile entry looks like</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>reliability:accessibility:
+  desc: Run axe-core accessibility audit against a URL
+  cmds:
+    - npx playwright test tests/accessibility.spec.ts
+
+reliability:accessibility:ci:
+  desc: Same audit, wired for CI artifacts
+  cmds:
+    - task: reliability:accessibility</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.yml" rel="noopener noreferrer">View Taskfile.yml on GitHub →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/reliability-accessibility-check.yml" rel="noopener noreferrer">View workflow that calls it →</a>
+                    </div>
+                </details>
             </div>
         </section>
     </main>
