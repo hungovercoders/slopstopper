@@ -10,9 +10,11 @@ and push to `main`.
 
 📍 **Live reference site:** see [slopstopper.dev](https://slopstopper.dev/) — built with the same suite it advertises.
 
+> 🪞 **Dogfooded here.** Every badge below is real. This repo runs the same suite it ships, on every PR and push to `main`.
+
 ## Pipeline status
 
-Every check below runs on every PR and push to `main` against SlopStopper itself — what consumers get when they install SlopStopper is exactly what gates this repo.
+Every check below runs on every PR and push to `main` here, and ships to consumers via [`install.sh`](./install.sh). Netlify and Doc-Updater workflows are included by default but are inert until you add their secrets (see [Configure](#configure)).
 
 ### 🔒 Security
 [![SAST](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-security-sast-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-security-sast-check.yml)
@@ -43,6 +45,14 @@ Every check below runs on every PR and push to `main` against SlopStopper itself
 [![Preview Cleanup](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-netlify-cleanup-preview.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-netlify-cleanup-preview.yml)
 
 ---
+
+## Prerequisites
+
+- **Bash + Git** — installer + workflow runners
+- **Node 20+** — Playwright, Lighthouse CI, markdownlint, TypeScript build
+- **Python 3.10+** — all analysis scripts (`.ss/scripts/`) are Python
+- **Task v3.x** — canonical interface for every check; `curl -sL https://taskfile.dev/install.sh | sh`
+- **Docker** — only needed for DAST (OWASP ZAP runs in a container)
 
 ## Install
 
@@ -91,19 +101,34 @@ task --list
 # 4. Open a pull request — every check runs automatically
 ```
 
+**First-run note:** the first time you run any check (e.g. `task ss:hygiene:complexity`), SlopStopper auto-installs the underlying tool (Lizard, Semgrep, Trivy, Gitleaks…) via pip or curl. Expect a one-time delay — subsequent runs are fast.
+
 ---
 
 ## What you get
 
 Five loops of feedback, all running on every PR and push to `main`:
 
-| Loop | What it does | Tools |
-| ---- | ------------ | ----- |
-| 🔒 **Security** | SAST, DAST, secrets detection, dependency CVE scanning | Semgrep, OWASP ZAP, Gitleaks, Trivy |
-| 🧹 **Hygiene** | Cyclomatic complexity caps, doc structure / accuracy / size checks, auto-labelled PRs | Lizard, Bandit, markdownlint |
-| ✅ **Reliability** | E2E + smoke tests, accessibility audits (WCAG 2.1 AA), Core Web Vitals | Playwright, axe-core, Lighthouse CI |
-| 🤖 **Operational** | Failed workflows auto-raise GitHub issues; an agentic doc updater opens weekly sync PRs | GitHub Actions, gh-aw |
-| 🚀 **Deployment** | Preview deploys per PR, automated production releases, preview cleanup | Netlify, GitHub Actions |
+| Loop | What it does | Tools | Docs |
+| ---- | ------------ | ----- | ---- |
+| 🔒 **Security** | SAST, DAST, secrets detection, dependency CVE scanning | Semgrep, OWASP ZAP, Gitleaks, Trivy | [Security →](./docs/security/README.md) |
+| 🧹 **Hygiene** | Cyclomatic complexity caps, doc structure / accuracy / size checks, auto-labelled PRs | Lizard, Bandit, markdownlint | [Hygiene →](./docs/hygiene/README.md) |
+| ✅ **Reliability** | E2E + smoke tests, accessibility audits (WCAG 2.1 AA), Core Web Vitals | Playwright, axe-core, Lighthouse CI | [Reliability →](./docs/reliability/README.md) |
+| 🤖 **Operational** | Failed workflows auto-raise GitHub issues; an agentic doc updater opens weekly sync PRs | GitHub Actions, gh-aw | [Runbooks →](./docs/runbooks/README.md) |
+| 🚀 **Deployment** | Preview deploys per PR, automated production releases, preview cleanup | Netlify, GitHub Actions | [Deployment →](./docs/deployment/README.md) |
+
+### What each check needs
+
+The 19 workflows split into four portability layers. Layer 1 runs the moment you install. Layers 2–3 need a small amount of configuration:
+
+| Layer | Checks | What you provide |
+| ----- | ------ | ---------------- |
+| **1. Static analysis** (any code) | SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure / Accuracy / Size, Auto-label PRs, Workflow-failure tracker | Nothing — works out of the box |
+| **2. Web-app dynamic** (need a URL) | Smoke, Accessibility, Core Web Vitals, DAST, Playwright | `SMOKE_TEST_URL` · `ACCESSIBILITY_TEST_URL` · `LIGHTHOUSE_URL` · optionally `SMOKE_PAGES` / `ACCESSIBILITY_PAGES` |
+| **3. Netlify deploy** | Preview deploys, production releases, preview cleanup | `NETLIFY_AUTH_TOKEN` + `NETLIFY_SITE_ID` repo secrets |
+| **4. Agentic doc-updater** | Weekly doc-sync PRs | `ANTHROPIC_API_KEY` repo secret |
+
+Don't use Netlify or the doc-updater? Delete those workflows from `.github/workflows/` — re-running the installer respects deletions (tracked in `.ss/.workflows-installed`).
 
 ### Same commands, both loops
 
@@ -125,18 +150,25 @@ delegates to the same definition). One source of truth.
 
 ## Configure
 
-Most checks work out of the box. The deployment workflows need two GitHub
-secrets if you want Netlify previews:
+Most checks work out of the box. Things to wire up if you want the full suite:
 
-- `NETLIFY_AUTH_TOKEN` — Netlify User settings → Applications → Personal access tokens
-- `NETLIFY_SITE_ID` — Netlify Site settings → General → Site details
+**Repo secrets** (under your repo's Settings → Secrets and variables → Actions):
 
-You can tune thresholds without changing code:
+- `NETLIFY_AUTH_TOKEN` + `NETLIFY_SITE_ID` — for the Netlify deploy + preview cleanup workflows
+- `ANTHROPIC_API_KEY` — for the agentic doc-updater (`ss-hygiene-doc-updater`)
 
-- `ACCESSIBILITY_IMPACT` — `critical` / `serious` / `moderate` / `minor` (default `serious`)
-- `ACCESSIBILITY_THRESHOLD` — max allowed violations before failing (default `0`)
-- Complexity caps — see [`.ss/scripts/`](./.ss/scripts/) and [`docs/hygiene/COMPLEXITY_CONFIG.md`](./docs/hygiene/COMPLEXITY_CONFIG.md)
-- Lighthouse budgets — `.lighthouserc.json` and `.lighthouserc.prod.json`
+**Tunable env vars** (set in workflows or locally):
+
+- `ACCESSIBILITY_TEST_URL` / `SMOKE_TEST_URL` / `LIGHTHOUSE_URL` — point the dynamic checks at your app
+- `ACCESSIBILITY_PAGES` / `SMOKE_PAGES` — comma-separated paths to audit (default `/`)
+- `ACCESSIBILITY_IMPACT` — `critical` / `serious` / `moderate` / `minor` (default `serious`) — see [`docs/reliability/ACCESSIBILITY.md`](./docs/reliability/ACCESSIBILITY.md)
+- `ACCESSIBILITY_THRESHOLD` — max violations before failing (default `0`)
+
+**Files you can edit** for permanent tuning:
+
+- Complexity caps — see [`docs/hygiene/COMPLEXITY_CONFIG.md`](./docs/hygiene/COMPLEXITY_CONFIG.md)
+- Lighthouse budgets — `.ss/lighthouserc.json` (PR/dev) and `.ss/lighthouserc.prod.json` (production)
+- Doc size thresholds — see [`docs/hygiene/DOCS_SIZE_MONITORING.md`](./docs/hygiene/DOCS_SIZE_MONITORING.md)
 
 ---
 
