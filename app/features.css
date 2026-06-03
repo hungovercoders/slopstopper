@@ -87,3 +87,130 @@
         width: 72px;
     }
 }
+
+/* ─── Bridge: same commands, both loops ─────────────────── */
+.bridge {
+    margin-top: 2rem;
+    background: var(--paper);
+    border: var(--border);
+    border-radius: var(--r-md);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sticker);
+}
+.bridge__header h3 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin: 0.3rem 0 0.5rem 0;
+    color: var(--ink);
+}
+.bridge__lede {
+    color: var(--ink-soft);
+    max-width: 680px;
+    margin-bottom: 1.5rem;
+}
+.bridge__lede code {
+    background: var(--peach-soft);
+    padding: 0.05rem 0.35rem;
+    border-radius: var(--r-sm);
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    color: var(--ink);
+}
+.bridge__grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 1.5rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.bridge__col {
+    background: var(--cream);
+    border: var(--border-thin);
+    border-radius: var(--r-md);
+    padding: 1rem 1.1rem;
+}
+.bridge__label {
+    font-weight: 800;
+    font-size: 0.95rem;
+    margin-bottom: 0.6rem;
+    color: var(--ink);
+}
+.bridge__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.bridge__list li code {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.86rem;
+    background: var(--paper);
+    border: 1px dashed rgba(42, 33, 24, 0.25);
+    border-radius: var(--r-sm);
+    padding: 0.35rem 0.55rem;
+    color: var(--ink);
+}
+.bridge__center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--accent-deep);
+}
+.bridge__sticker {
+    background: var(--sun);
+    border: var(--border);
+    border-radius: var(--r-md);
+    padding: 0.7rem 1rem;
+    text-align: center;
+    box-shadow: var(--shadow-sticker-sm);
+    transform: rotate(-3deg);
+    margin-bottom: 0.6rem;
+}
+.bridge__taskfile {
+    display: block;
+    font-family: var(--font-mono);
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: var(--ink);
+}
+.bridge__sub {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--ink);
+    opacity: 0.7;
+    margin-top: 0.15rem;
+}
+.bridge__arrows {
+    width: 120px;
+    color: var(--accent-deep);
+}
+.bridge__arrows svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+@media (max-width: 720px) {
+    .bridge__grid {
+        grid-template-columns: 1fr;
+    }
+    .bridge__center {
+        order: -1;
+        margin-bottom: 0.5rem;
+    }
+    .bridge__arrows {
+        display: none;
+    }
+    .bridge__sticker {
+        transform: rotate(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bridge__sticker {
+        transform: none;
+    }
+}

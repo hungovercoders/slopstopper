@@ -288,6 +288,11 @@ jobs:
     if: github.event.workflow_run.conclusion == 'failure'
         &amp;&amp; github.event.workflow_run.head_branch == 'main'</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/workflow-failure-issue.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        <div class="live-links">
+                            <span class="live-links__label">See it in action:</span>
+                            <a href="https://github.com/hungovercoders/slopstopper/issues?q=is%3Aissue+is%3Aopen+label%3Aworkflow-failure" rel="noopener noreferrer">🔴 Open issues</a>
+                            <a href="https://github.com/hungovercoders/slopstopper/issues?q=is%3Aissue+is%3Aclosed+label%3Aworkflow-failure" rel="noopener noreferrer">✅ Closed issues</a>
+                        </div>
                     </div>
                 </details>
 
@@ -303,6 +308,11 @@ safe-outputs:
     title-prefix: "[docs] "
     labels: [documentation, automation]</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/hygiene-doc-updater.md" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        <div class="live-links">
+                            <span class="live-links__label">See it in action:</span>
+                            <a href="https://github.com/hungovercoders/slopstopper/pulls?q=is%3Apr+is%3Aopen+label%3Aautomation+label%3Adocumentation" rel="noopener noreferrer">🔴 Open PRs</a>
+                            <a href="https://github.com/hungovercoders/slopstopper/pulls?q=is%3Apr+is%3Aclosed+label%3Aautomation+label%3Adocumentation" rel="noopener noreferrer">✅ Closed PRs</a>
+                        </div>
                     </div>
                 </details>
             </div>
@@ -604,6 +614,60 @@ jobs:
                     <div class="loop-step loop-step--feedback">💬 Feedback<span class="step-sub">to developer</span></div>
                 </div>
                 <div class="loop-back">↩ fix &amp; iterate</div>
+            </div>
+
+            <div class="bridge">
+                <div class="bridge__header">
+                    <span class="kicker">One source of truth</span>
+                    <h3>Same commands. <span class="highlight">Both loops.</span></h3>
+                    <p class="bridge__lede">Every check is a <code>task</code> command — defined once in <a href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.yml" rel="noopener noreferrer">Taskfile.yml</a>. You type it locally for instant feedback. CI runs the exact same command. No drift between what you ran and what the pipeline runs — fast inner loop, consistent outer loop, identical behaviour.</p>
+                </div>
+                <div class="bridge__grid">
+                    <div class="bridge__col">
+                        <div class="bridge__label">🧑‍💻 Inner loop — local</div>
+                        <ul class="bridge__list">
+                            <li><code>task hygiene:complexity</code></li>
+                            <li><code>task security:sast</code></li>
+                            <li><code>task reliability:accessibility</code></li>
+                            <li><code>task reliability:smoke</code></li>
+                        </ul>
+                    </div>
+                    <div class="bridge__center" aria-hidden="true">
+                        <div class="bridge__sticker">
+                            <span class="bridge__taskfile">Taskfile.yml</span>
+                            <span class="bridge__sub">one definition</span>
+                        </div>
+                        <div class="bridge__arrows">
+                            <svg viewBox="0 0 120 40" aria-hidden="true"><path d="M60 6 Q30 12, 8 22 L14 18 M8 22 L14 26" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M60 6 Q90 12, 112 22 L106 18 M112 22 L106 26" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                    </div>
+                    <div class="bridge__col">
+                        <div class="bridge__label">🤖 Outer loop — CI</div>
+                        <ul class="bridge__list">
+                            <li><code>task hygiene:complexity</code></li>
+                            <li><code>task security:sast</code></li>
+                            <li><code>task reliability:accessibility:ci</code></li>
+                            <li><code>task reliability:smoke:ci</code></li>
+                        </ul>
+                    </div>
+                </div>
+                <details class="details">
+                    <summary>What a Taskfile entry looks like</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>reliability:accessibility:
+  desc: Run axe-core accessibility audit against a URL
+  cmds:
+    - npx playwright test tests/accessibility.spec.ts
+
+reliability:accessibility:ci:
+  desc: Same audit, wired for CI artifacts
+  cmds:
+    - task: reliability:accessibility</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.yml" rel="noopener noreferrer">View Taskfile.yml on GitHub →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/reliability-accessibility-check.yml" rel="noopener noreferrer">View workflow that calls it →</a>
+                    </div>
+                </details>
             </div>
         </section>
     </main>

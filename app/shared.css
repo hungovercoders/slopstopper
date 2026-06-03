@@ -383,6 +383,37 @@ main {
     font-size: 0.88rem;
     font-weight: 700;
 }
+.live-links {
+    margin-top: 0.8rem;
+    padding-top: 0.7rem;
+    border-top: 1px dashed rgba(42, 33, 24, 0.2);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+.live-links__label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+}
+.live-links a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--paper);
+    border: var(--border-thin);
+    border-radius: var(--r-pill);
+    padding: 0.25rem 0.7rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--ink);
+}
+.live-links a:hover {
+    background: var(--peach-soft);
+    color: var(--ink);
+}
 
 /* ─── Mascot ─────────────────────────────────────────────── */
 .mascot {
