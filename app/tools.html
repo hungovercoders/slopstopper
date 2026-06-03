@@ -85,7 +85,7 @@ tasks:
 });</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/playwright.config.js" rel="noopener noreferrer">View playwright.config.js →</a>
                         <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/playwright-tests.yml" rel="noopener noreferrer">View workflow →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-playwright-tests.yml" rel="noopener noreferrer">View workflow →</a>
                     </div>
                 </details>
             </div>
@@ -136,7 +136,7 @@ tasks:
     Content-Security-Policy = "default-src 'self'; ..."</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/netlify.toml" rel="noopener noreferrer">View netlify.toml →</a>
                         <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/netlify-deploy.yml" rel="noopener noreferrer">View deploy workflow →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-netlify-deploy.yml" rel="noopener noreferrer">View deploy workflow →</a>
                     </div>
                 </details>
             </div>
@@ -153,7 +153,7 @@ tasks:
     steps:
       - uses: actions/checkout@v4
       - run: pip install semgrep &amp;&amp; semgrep ci</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/security-sast-check.yml" rel="noopener noreferrer">View source →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-sast-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
                 </details>
             </div>
@@ -170,7 +170,7 @@ tasks:
     steps:
       - run: task start &amp;
       - uses: zaproxy/action-baseline@v0.10.0</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/security-dast-check.yml" rel="noopener noreferrer">View source →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-dast-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
                 </details>
             </div>
@@ -187,7 +187,7 @@ tasks:
     steps:
       - uses: actions/checkout@v4
       - run: trivy fs --severity HIGH,CRITICAL .</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/security-vulnerability-all-check.yml" rel="noopener noreferrer">View source →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-vulnerability-all-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
                 </details>
             </div>
@@ -205,7 +205,7 @@ tasks:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
       - uses: gitleaks/gitleaks-action@v2</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/security-secrets-check.yml" rel="noopener noreferrer">View source →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-secrets-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
                 </details>
             </div>
@@ -223,7 +223,7 @@ tasks:
       - run: pip install lizard bandit
       - run: lizard -C 10 -L 60 .
       - run: bandit -r .scripts/</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/hygiene-complexity-check.yml" rel="noopener noreferrer">View source →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-complexity-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
                 </details>
             </div>
@@ -234,13 +234,13 @@ tasks:
                 <details class="details">
                     <summary>Workflow excerpt</summary>
                     <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: Accessibility Check
+                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Accessibility Check
 on:
   pull_request:      { branches: [main] }
   push:              { branches: [main] }
   deployment_status:
   schedule: [ { cron: '0 6 * * *' } ]    # daily</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/reliability-accessibility-check.yml" rel="noopener noreferrer">View source →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-accessibility-check.yml" rel="noopener noreferrer">View source →</a>
                         <br>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/tests/accessibility.spec.ts" rel="noopener noreferrer">View accessibility spec →</a>
                     </div>
@@ -264,7 +264,7 @@ on:
 }</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.lighthouserc.json" rel="noopener noreferrer">View .lighthouserc.json →</a>
                         <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/reliability-core-web-vitals.yml" rel="noopener noreferrer">View workflow →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-core-web-vitals.yml" rel="noopener noreferrer">View workflow →</a>
                     </div>
                 </details>
             </div>
@@ -280,7 +280,7 @@ on:
     steps:
       - uses: actions/checkout@v4
       - run: npx markdownlint-cli 'docs/**/*.md'</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/hygiene-docs-structure-check.yml" rel="noopener noreferrer">View source →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-structure-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
                 </details>
             </div>

@@ -1,0 +1,144 @@
+name: SlopStopper · Documentation Size Monitor
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  check-docs-size:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Install Task
+        run: |
+          sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
+      
+      - name: Run documentation size check
+        id: check
+        run: |
+          # Run the task and capture output
+          task ss:hygiene:docs-size || true
+          
+          # Check if alerts were triggered (report contains "exceeds thresholds")
+          if grep -q "❌" .ss/reports/docs/docs-size-report.md; then
+            echo "has_alerts=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_alerts=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Copy report for workflow
+        run: cp .ss/reports/docs/docs-size-report.md docs-report.md
+      
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('docs-report.md', 'utf8');
+            
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('📚 Documentation Size Report')
+            );
+            
+            const commentBody = report;
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+      
+      - name: Create or update issue on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check.outputs.has_alerts == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('docs-report.md', 'utf8');
+            
+            // Check for existing open issue
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'documentation-size'
+            });
+            
+            const title = '📚 Documentation Size Exceeds Thresholds';
+            const body = `${report}\n\n---\n*This issue was automatically created by the Documentation Size Monitor workflow.*\n*Commit: ${context.sha}*`;
+            
+            if (issues.length > 0) {
+              // Update existing issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues[0].number,
+                body: body
+              });
+              
+              // Add comment about new violation
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues[0].number,
+                body: `🔔 Documentation size thresholds exceeded again in commit ${context.sha}`
+              });
+            } else {
+              // Create new issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['documentation-size', 'maintenance']
+              });
+            }
+      
+      - name: Warn if thresholds exceeded on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check.outputs.has_alerts == 'true'
+        run: |
+          echo "::warning::Documentation size thresholds exceeded! An issue has been created."
+          # Don't fail the workflow, just warn
+          exit 0
+      
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-size-report
+          path: docs-report.md
+          retention-days: 30

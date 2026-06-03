@@ -12,7 +12,7 @@ def setup_test_env():
     """Create a temporary directory for test files."""
     tmpdir = tempfile.mkdtemp()
     os.chdir(tmpdir)
-    os.makedirs(".dependencies-reports", exist_ok=True)
+    os.makedirs(".ss/reports/dependencies", exist_ok=True)
     return tmpdir
 
 
@@ -41,7 +41,7 @@ def run_script(cwd):
 
 def write_json(tmpdir, data):
     with open(
-        os.path.join(tmpdir, ".dependencies-reports", "dependencies-report.json"), "w"
+        os.path.join(tmpdir, ".ss/reports/dependencies", "dependencies-report.json"), "w"
     ) as f:
         json.dump(data, f)
 
@@ -55,7 +55,7 @@ def test_missing_json_fails():
         assert result.returncode != 0, "Script should fail when JSON is missing"
         assert "not found" in result.stderr, "Should report missing JSON"
         assert not os.path.exists(
-            os.path.join(tmpdir, ".dependencies-reports", "dependencies-report.md")
+            os.path.join(tmpdir, ".ss/reports/dependencies", "dependencies-report.md")
         ), "Should not generate report on error"
 
         print("✅ test_missing_json_fails passed")
@@ -73,7 +73,7 @@ def test_generates_report_with_no_vulnerabilities():
 
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
         report_path = os.path.join(
-            tmpdir, ".dependencies-reports", "dependencies-report.md"
+            tmpdir, ".ss/reports/dependencies", "dependencies-report.md"
         )
         assert os.path.exists(report_path), "Should generate markdown report"
 
@@ -132,7 +132,7 @@ def test_identifies_critical_and_high_vulns():
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
 
         with open(
-            os.path.join(tmpdir, ".dependencies-reports", "dependencies-report.md")
+            os.path.join(tmpdir, ".ss/reports/dependencies", "dependencies-report.md")
         ) as f:
             content = f.read()
 
@@ -158,7 +158,7 @@ def test_report_includes_guidelines():
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
 
         with open(
-            os.path.join(tmpdir, ".dependencies-reports", "dependencies-report.md")
+            os.path.join(tmpdir, ".ss/reports/dependencies", "dependencies-report.md")
         ) as f:
             content = f.read()
 
@@ -207,7 +207,7 @@ def test_severity_counts_in_summary():
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
 
         with open(
-            os.path.join(tmpdir, ".dependencies-reports", "dependencies-report.md")
+            os.path.join(tmpdir, ".ss/reports/dependencies", "dependencies-report.md")
         ) as f:
             content = f.read()
 

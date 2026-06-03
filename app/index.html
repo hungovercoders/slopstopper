@@ -75,7 +75,7 @@
             <details class="details">
                 <summary>What does this do?</summary>
                 <div class="details__body">
-                    <p>The installer clones the SlopStopper template into your current repo and copies in the GitHub Actions workflows, the <code>.scripts/</code> helpers, the <code>Taskfile.yml</code> and the documentation scaffold. It's idempotent — re-run any time to pull in new checks.</p>
+                    <p>The installer clones the SlopStopper template into your current repo and drops everything under the <code>ss</code> namespace: <code>.ss/scripts/</code> for the helpers, <code>Taskfile.ss.yml</code> for the task definitions, and <code>.github/workflows/ss-*.yml</code> for the CI checks. A thin root <code>Taskfile.yml</code> wires it all together via <code>includes:</code>. It's idempotent — re-run any time to pull in new checks.</p>
                     <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/install.sh" rel="noopener noreferrer">View install.sh on GitHub →</a>
                 </div>
             </details>

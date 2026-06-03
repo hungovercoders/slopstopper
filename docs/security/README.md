@@ -62,7 +62,7 @@ The SAST workflow:
 |------|---------|
 | `.github/workflows/security-sast-check.yml` | GitHub Actions workflow |
 | `Taskfile.yml` (`sast*` tasks) | Local task runner config |
-| `.scripts/generate-sast-md.py` | Report generator |
+| `.ss/scripts/generate-sast-md.py` | Report generator |
 | `.gitignore` | Excludes `.sast-reports/` |
 
 ## Key Configuration Points
@@ -162,7 +162,7 @@ The DAST workflow:
 |------|---------|
 | `.github/workflows/security-dast-check.yml` | GitHub Actions workflow |
 | `Taskfile.yml` (`dast*` tasks) | Local task runner config |
-| `.scripts/generate-dast-md.py` | Report generator |
+| `.ss/scripts/generate-dast-md.py` | Report generator |
 | `.gitignore` | Excludes `.dast-reports/` |
 
 ## Key Configuration Points
@@ -272,7 +272,7 @@ The dependency scanning workflow:
 |------|---------|
 | `.github/workflows/security-vulnerability-all-check.yml` | GitHub Actions workflow |
 | `Taskfile.yml` (`dependencies*` tasks) | Local task runner config |
-| `.scripts/generate-dependencies-md.py` | Report generator |
+| `.ss/scripts/generate-dependencies-md.py` | Report generator |
 | `.gitignore` | Excludes `.dependencies-reports/` |
 
 ## Key Configuration Points
@@ -359,7 +359,7 @@ The secrets workflow:
 |------|---------|
 | `.github/workflows/security-secrets-check.yml` | GitHub Actions workflow |
 | `Taskfile.yml` (`secrets*` tasks) | Local task runner config |
-| `.scripts/generate-secrets-md.py` | Report generator |
+| `.ss/scripts/generate-secrets-md.py` | Report generator |
 | `.gitignore` | Excludes `.secrets-reports/` |
 
 ## Suppressing False Positives

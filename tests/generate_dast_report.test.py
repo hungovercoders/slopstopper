@@ -12,7 +12,7 @@ def setup_test_env():
     """Create a temporary directory for test files."""
     tmpdir = tempfile.mkdtemp()
     os.chdir(tmpdir)
-    os.makedirs(".dast-reports", exist_ok=True)
+    os.makedirs(".ss/reports/dast", exist_ok=True)
     return tmpdir
 
 
@@ -40,7 +40,7 @@ def run_script(cwd):
 
 
 def write_json(tmpdir, data):
-    with open(os.path.join(tmpdir, ".dast-reports", "dast-report.json"), "w") as f:
+    with open(os.path.join(tmpdir, ".ss/reports/dast", "dast-report.json"), "w") as f:
         json.dump(data, f)
 
 
@@ -53,7 +53,7 @@ def test_missing_json_fails():
         assert result.returncode != 0, "Script should fail when JSON is missing"
         assert "not found" in result.stderr, "Should report missing JSON"
         assert not os.path.exists(
-            os.path.join(tmpdir, ".dast-reports", "dast-report.md")
+            os.path.join(tmpdir, ".ss/reports/dast", "dast-report.md")
         ), "Should not generate report on error"
 
         print("✅ test_missing_json_fails passed")
@@ -70,7 +70,7 @@ def test_generates_report_with_no_alerts():
         result = run_script(tmpdir)
 
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
-        report_path = os.path.join(tmpdir, ".dast-reports", "dast-report.md")
+        report_path = os.path.join(tmpdir, ".ss/reports/dast", "dast-report.md")
         assert os.path.exists(report_path), "Should generate markdown report"
 
         with open(report_path) as f:
@@ -122,7 +122,7 @@ def test_identifies_high_and_medium_alerts():
 
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
 
-        with open(os.path.join(tmpdir, ".dast-reports", "dast-report.md")) as f:
+        with open(os.path.join(tmpdir, ".ss/reports/dast", "dast-report.md")) as f:
             content = f.read()
 
         assert "Medium Risk Alerts" in content, "Should have medium alerts section"
@@ -145,7 +145,7 @@ def test_report_includes_guidelines():
 
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
 
-        with open(os.path.join(tmpdir, ".dast-reports", "dast-report.md")) as f:
+        with open(os.path.join(tmpdir, ".ss/reports/dast", "dast-report.md")) as f:
             content = f.read()
 
         assert "Guidelines" in content, "Should include guidelines"
@@ -193,7 +193,7 @@ def test_risk_summary_counts():
 
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
 
-        with open(os.path.join(tmpdir, ".dast-reports", "dast-report.md")) as f:
+        with open(os.path.join(tmpdir, ".ss/reports/dast", "dast-report.md")) as f:
             content = f.read()
 
         assert "High Risk Alerts" in content, "Should have high risk section"

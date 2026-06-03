@@ -20,10 +20,10 @@ Smoke tests are lightweight, critical-path tests that verify a deployed site is 
 
 ```bash
 # Pass URL as argument
-task reliability:smoke -- https://your-site.netlify.app
+task ss:reliability:smoke -- https://your-site.netlify.app
 
 # Or set environment variable
-SMOKE_TEST_URL=https://your-site.netlify.app task reliability:smoke
+SMOKE_TEST_URL=https://your-site.netlify.app task ss:reliability:smoke
 ```
 
 **Using npm directly:**
@@ -43,7 +43,7 @@ SMOKE_TEST_URL=https://your-site.netlify.app npx playwright test tests/smoke.spe
 For GitHub Actions or other CI environments, use the CI-specific task:
 
 ```bash
-SMOKE_TEST_URL=https://your-site.netlify.app task reliability:smoke:ci
+SMOKE_TEST_URL=https://your-site.netlify.app task ss:reliability:smoke:ci
 ```
 
 This enables:
@@ -95,7 +95,7 @@ jobs:
       - name: Run smoke tests
         env:
           SMOKE_TEST_URL: ${{ github.event.inputs.url || 'https://your-site.netlify.app' }}
-        run: task reliability:smoke:ci
+        run: task ss:reliability:smoke:ci
         
       - name: Upload test results
         if: always()

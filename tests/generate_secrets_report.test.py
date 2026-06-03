@@ -12,7 +12,7 @@ def setup_test_env():
     """Create a temporary directory for test files."""
     tmpdir = tempfile.mkdtemp()
     os.chdir(tmpdir)
-    os.makedirs(".secrets-reports", exist_ok=True)
+    os.makedirs(".ss/reports/secrets", exist_ok=True)
     return tmpdir
 
 
@@ -40,7 +40,7 @@ def run_script(cwd):
 
 
 def write_json(tmpdir, data):
-    path = os.path.join(tmpdir, ".secrets-reports", "secrets-report.json")
+    path = os.path.join(tmpdir, ".ss/reports/secrets", "secrets-report.json")
     with open(path, "w") as f:
         if data is None:
             f.write("null")
@@ -57,7 +57,7 @@ def test_missing_json_fails():
         assert result.returncode != 0, "Script should fail when JSON is missing"
         assert "not found" in result.stderr, "Should report missing JSON"
         assert not os.path.exists(
-            os.path.join(tmpdir, ".secrets-reports", "secrets-report.md")
+            os.path.join(tmpdir, ".ss/reports/secrets", "secrets-report.md")
         ), "Should not generate report on error"
 
         print("✅ test_missing_json_fails passed")
@@ -74,7 +74,7 @@ def test_generates_report_with_null_output():
         result = run_script(tmpdir)
 
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
-        report_path = os.path.join(tmpdir, ".secrets-reports", "secrets-report.md")
+        report_path = os.path.join(tmpdir, ".ss/reports/secrets", "secrets-report.md")
         assert os.path.exists(report_path), "Should generate markdown report"
 
         with open(report_path) as f:
@@ -98,7 +98,7 @@ def test_generates_report_with_empty_list():
 
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
 
-        with open(os.path.join(tmpdir, ".secrets-reports", "secrets-report.md")) as f:
+        with open(os.path.join(tmpdir, ".ss/reports/secrets", "secrets-report.md")) as f:
             content = f.read()
 
         assert "No secrets detected" in content, "Should indicate clean status"
@@ -135,7 +135,7 @@ def test_identifies_secrets():
 
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
 
-        with open(os.path.join(tmpdir, ".secrets-reports", "secrets-report.md")) as f:
+        with open(os.path.join(tmpdir, ".ss/reports/secrets", "secrets-report.md")) as f:
             content = f.read()
 
         assert "aws-access-token" in content, "Should list AWS token rule"
@@ -158,7 +158,7 @@ def test_report_includes_guidelines():
 
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
 
-        with open(os.path.join(tmpdir, ".secrets-reports", "secrets-report.md")) as f:
+        with open(os.path.join(tmpdir, ".ss/reports/secrets", "secrets-report.md")) as f:
             content = f.read()
 
         assert "Guidelines" in content, "Should include guidelines"

@@ -6,17 +6,17 @@ You now have a complete local documentation size monitoring system that replicat
 
 ## What Was Created
 
-### 1. **Scripts** (Located in `.scripts/`)
+### 1. **Scripts** (Located in `.ss/scripts/`)
 
-#### `.scripts/check-docs-size.sh`
+#### `.ss/scripts/check-docs-size.sh`
 - Main script that analyzes documentation size against thresholds
 - Counts markdown files and calculates total size, token estimates, and file sizes  
 - Checks against configured thresholds (150 KB total, 20 KB per file, 15 max files)
 - Generates a detailed markdown report to `.docs-reports/docs-size-report.md`
 - Uses color-formatted output for easy readability
-- Executable script - runs with: `bash .scripts/check-docs-size.sh`
+- Executable script - runs with: `bash .ss/scripts/check-docs-size.sh`
 
-#### `.scripts/generate-docs-size-report.py`
+#### `.ss/scripts/generate-docs-size-report.py`
 - Python script that generates formatted markdown reports
 - Creates a rich report with statistics, largest files, thresholds, and recommendations
 - Includes timestamp of when the report was generated
@@ -26,9 +26,9 @@ You now have a complete local documentation size monitoring system that replicat
 
 Added two new tasks in `Taskfile.yml`:
 
-#### `task hygiene:docs-size`
+#### `task ss:hygiene:docs-size`
 ```bash
-task hygiene:docs-size
+task ss:hygiene:docs-size
 ```
 - Monitor documentation size and check against all thresholds
 - Generates a detailed report
@@ -70,13 +70,13 @@ These thresholds are designed to:
 ### Run locally
 ```bash
 # Run just the docs size check
-task hygiene:docs-size
+task ss:hygiene:docs-size
 
 # Run all hygiene checks
-task hygiene:test
+task ss:hygiene:test
 
 # Run the shell script directly
-bash .scripts/check-docs-size.sh
+bash .ss/scripts/check-docs-size.sh
 ```
 
 ### View reports
@@ -127,14 +127,14 @@ It contains:
 
 This setup works alongside the existing GitHub Actions workflow (`.github/workflows/hygiene-docs-size-check.yml`). You can now:
 
-1. **Run locally** before committing: `task hygiene:docs-size`
+1. **Run locally** before committing: `task ss:hygiene:docs-size`
 2. **Get fast feedback** on documentation size changes
 3. **Identify issues early** before pushing to the repository
 4. **Review detailed reports** to find optimization opportunities
 
 ## Next Steps
 
-- Run `task hygiene:docs-size` regularly as part of your development workflow
+- Run `task ss:hygiene:docs-size` regularly as part of your development workflow
 - Check the generated `.docs-reports/docs-size-report.md` for detailed analysis
-- Consider running the full `task hygiene:test` suite before commits
+- Consider running the full `task ss:hygiene:test` suite before commits
 - Monitor the report as documentation grows to stay within thresholds

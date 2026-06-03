@@ -13,6 +13,19 @@
 #
 # When piped from curl the script clones a temporary copy of the repo and
 # installs from there, so no local checkout is required.
+#
+# Layout installed (all SlopStopper-owned files are under the `ss` namespace):
+#
+#   Taskfile.yml             # thin root; created on fresh installs, left
+#                            #   alone if you already have one (instructions
+#                            #   printed in that case)
+#   Taskfile.ss.yml          # all SlopStopper task definitions; always
+#                            #   refreshed on re-run so updates flow through
+#   .ss/scripts/             # Python/shell analysis scripts; always refreshed
+#   .ss/reports/             # SlopStopper-owned scan/report output dirs
+#   .github/workflows/ss-*   # all SlopStopper workflows are ss- prefixed so
+#                            #   they group together in the Actions UI and
+#                            #   cannot clash with your existing workflows
 
 set -euo pipefail
 
@@ -34,7 +47,8 @@ sep() { echo "──────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)" || true
 
 # When piped through curl, BASH_SOURCE is not set and we need to clone.
-if [ -z "$SCRIPT_DIR" ] || [ ! -f "$SCRIPT_DIR/Taskfile.yml" ]; then
+# Taskfile.ss.yml is the marker file that proves we're in the SlopStopper repo.
+if [ -z "$SCRIPT_DIR" ] || [ ! -f "$SCRIPT_DIR/Taskfile.ss.yml" ]; then
   if ! command -v git &>/dev/null; then
     error "git is required when running via curl. Please install git and try again."
   fi
@@ -61,23 +75,39 @@ sep
 
 # ── install files ─────────────────────────────────────────────────────────────
 
-# 1. Taskfile.yml
+# 1. Taskfile.ss.yml — always refreshed (SlopStopper-owned, safe to overwrite).
+cp "$SCRIPT_DIR/Taskfile.ss.yml" "$TARGET_DIR/Taskfile.ss.yml"
+success "Taskfile.ss.yml installed (refreshed)"
+
+# 2. Root Taskfile.yml — only create if missing.
+# If the consumer already has one, print clear instructions instead of editing it.
 if [ -f "$TARGET_DIR/Taskfile.yml" ]; then
-  warn "Taskfile.yml already exists — skipping (back up and remove it to reinstall)"
+  if grep -qE "^[[:space:]]+ss:[[:space:]]*$" "$TARGET_DIR/Taskfile.yml" 2>/dev/null \
+     || grep -q "Taskfile.ss.yml" "$TARGET_DIR/Taskfile.yml" 2>/dev/null; then
+    info "Taskfile.yml already references Taskfile.ss.yml — no changes needed"
+  else
+    warn "Taskfile.yml already exists — leaving it alone."
+    echo ""
+    echo "  Add the following block to your existing Taskfile.yml so the"
+    echo "  SlopStopper tasks become available as 'task ss:<name>':"
+    echo ""
+    echo "    includes:"
+    echo "      ss:"
+    echo "        taskfile: ./Taskfile.ss.yml"
+    echo ""
+  fi
 else
   cp "$SCRIPT_DIR/Taskfile.yml" "$TARGET_DIR/Taskfile.yml"
   success "Taskfile.yml installed"
 fi
 
-# 2. .scripts/
-if [ -d "$TARGET_DIR/.scripts" ]; then
-  warn ".scripts/ already exists — skipping (remove it to reinstall)"
-else
-  cp -r "$SCRIPT_DIR/.scripts" "$TARGET_DIR/.scripts"
-  success ".scripts/ installed"
-fi
+# 3. .ss/scripts/ — SlopStopper-owned; always refreshed.
+mkdir -p "$TARGET_DIR/.ss"
+rm -rf "$TARGET_DIR/.ss/scripts"
+cp -r "$SCRIPT_DIR/.ss/scripts" "$TARGET_DIR/.ss/scripts"
+success ".ss/scripts/ installed (refreshed)"
 
-# 3. .github/workflows/
+# 4. .github/workflows/ — install ss- prefixed generic workflows.
 WORKFLOWS_SRC="$SCRIPT_DIR/.github/workflows"
 WORKFLOWS_DST="$TARGET_DIR/.github/workflows"
 mkdir -p "$WORKFLOWS_DST"
@@ -85,18 +115,20 @@ mkdir -p "$WORKFLOWS_DST"
 # Workflows that are generic and safe to install in any repo.
 # Netlify-specific and copilot-internal workflows are excluded by default.
 GENERIC_WORKFLOWS=(
-  "hygiene-complexity-check.yml"
-  "hygiene-docs-accuracy-check.yml"
-  "hygiene-docs-size-check.yml"
-  "hygiene-docs-structure-check.yml"
-  "hygiene-auto-label-pr.yml"
-  "security-dast-check.yml"
-  "security-sast-check.yml"
-  "security-secrets-check.yml"
-  "security-vulnerability-all-check.yml"
-  "security-vulnerability-new-check.yml"
-  "reliability-smoke-tests.yml"
-  "workflow-failure-issue.yml"
+  "ss-hygiene-complexity-check.yml"
+  "ss-hygiene-docs-accuracy-check.yml"
+  "ss-hygiene-docs-size-check.yml"
+  "ss-hygiene-docs-structure-check.yml"
+  "ss-hygiene-auto-label-pr.yml"
+  "ss-security-dast-check.yml"
+  "ss-security-sast-check.yml"
+  "ss-security-secrets-check.yml"
+  "ss-security-vulnerability-all-check.yml"
+  "ss-security-vulnerability-new-check.yml"
+  "ss-reliability-smoke-tests.yml"
+  "ss-reliability-accessibility-check.yml"
+  "ss-reliability-core-web-vitals.yml"
+  "ss-workflow-failure-issue.yml"
 )
 
 INSTALLED_WORKFLOWS=0
@@ -106,16 +138,17 @@ for wf in "${GENERIC_WORKFLOWS[@]}"; do
   DST="$WORKFLOWS_DST/$wf"
   [ -f "$SRC" ] || continue
   if [ -f "$DST" ]; then
-    warn "Workflow $wf already exists — skipping"
+    # ss- prefix means we own it; refresh on update.
+    cp "$SRC" "$DST"
     (( SKIPPED_WORKFLOWS++ )) || true
   else
     cp "$SRC" "$DST"
     (( INSTALLED_WORKFLOWS++ )) || true
   fi
 done
-success "$INSTALLED_WORKFLOWS workflow(s) installed, $SKIPPED_WORKFLOWS skipped"
+success "$INSTALLED_WORKFLOWS workflow(s) installed, $SKIPPED_WORKFLOWS refreshed"
 
-# 4. Merge devDependencies into package.json if one exists.
+# 5. Merge devDependencies into package.json if one exists.
 PKG="$TARGET_DIR/package.json"
 SRC_PKG="$SCRIPT_DIR/package.json"
 if [ -f "$PKG" ] && command -v node &>/dev/null; then
@@ -165,6 +198,20 @@ sep
 echo ""
 echo "  🎉 Installation complete!"
 echo ""
+echo "  Everything SlopStopper owns lives under the 'ss' namespace:"
+echo "    Taskfile.ss.yml       — task definitions"
+echo "    .ss/scripts/          — analysis scripts"
+echo "    .ss/reports/          — generated reports (git-ignored)"
+echo "    .github/workflows/ss-*— CI workflows"
+echo ""
+echo "  Run any task with 'task ss:<name>', e.g.:"
+echo "    task ss:hygiene:complexity"
+echo "    task ss:security:sast"
+echo "    task ss:reliability:accessibility"
+echo ""
+echo "  Re-run this installer any time to pull in updates — .ss/ and"
+echo "  Taskfile.ss.yml are refreshed; your Taskfile.yml is left alone."
+echo ""
 echo "  Next steps:"
 echo ""
 echo "  1. Install the Task runner (if not already installed):"
@@ -177,8 +224,8 @@ echo "  3. View available tasks:"
 echo "       task --list"
 echo ""
 echo "  4. (Optional) For Netlify deployment workflows, also copy:"
-echo "       .github/workflows/netlify-deploy.yml"
-echo "       .github/workflows/netlify-cleanup-preview.yml"
+echo "       .github/workflows/ss-netlify-deploy.yml"
+echo "       .github/workflows/ss-netlify-cleanup-preview.yml"
 echo "     and add NETLIFY_AUTH_TOKEN + NETLIFY_SITE_ID to your repo secrets."
 echo ""
 sep

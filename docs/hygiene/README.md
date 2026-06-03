@@ -12,28 +12,28 @@ Hygiene checks ensure that the project's code and documentation are well-maintai
 Analyzes code complexity using Lizard to identify overly complex functions and modules. Helps identify refactoring opportunities and maintain code health.
 
 ```bash
-task hygiene:complexity
+task ss:hygiene:complexity
 ```
 
 ### Documentation Linting
 Validates markdown syntax and formatting using markdownlint. Ensures consistent style across all documentation files.
 
 ```bash
-task hygiene:lint
+task ss:hygiene:lint
 ```
 
 ### Documentation Structure
 Verifies that the documentation index file exists at `docs/index.md`. This ensures proper documentation organization.
 
 ```bash
-task hygiene:structure
+task ss:hygiene:structure
 ```
 
 ### File Size Checks
 Checks individual markdown files to ensure they don't exceed the 2,500 word limit. This keeps documents focused and manageable.
 
 ```bash
-task hygiene:size
+task ss:hygiene:size
 ```
 
 ### Documentation Size Monitoring
@@ -46,7 +46,7 @@ Monitors overall documentation size and checks against configured thresholds:
 This check is particularly important for AI-assisted development where documentation needs to fit within context windows efficiently. Running this check generates a detailed report in `.docs-reports/docs-size-report.md`.
 
 ```bash
-task hygiene:docs-size
+task ss:hygiene:docs-size
 ```
 
 ### Documentation Structure Validation
@@ -61,7 +61,7 @@ The documentation index is the **sole source of truth for documentation structur
 - Violations are raised as blocking issues for discussion
 
 ```bash
-task hygiene:docs-structure
+task ss:hygiene:docs-structure
 ```
 
 ### Documentation Accuracy
@@ -70,25 +70,25 @@ Scans all documentation for stale or broken references: internal markdown links 
 Runs **weekly on a schedule** (Monday 07:00 UTC), on PRs/pushes that change docs or project structure, and can be triggered manually. When issues are found, a GitHub issue is automatically created or updated.
 
 ```bash
-task hygiene:docs-accuracy
+task ss:hygiene:docs-accuracy
 ```
 
 ## Quick Reference
 
 Run all hygiene checks:
 ```bash
-task hygiene:test
+task ss:hygiene:test
 ```
 
 Run individual checks:
 ```bash
-task hygiene:complexity        # Analyze code complexity
-task hygiene:lint              # Check markdown formatting
-task hygiene:structure         # Verify documentation index exists
-task hygiene:size              # Check individual file sizes
-task hygiene:docs-size         # Monitor overall documentation size
-task hygiene:docs-structure    # Validate structure matches governance
-task hygiene:docs-accuracy     # Check for broken links and stale refs
+task ss:hygiene:complexity        # Analyze code complexity
+task ss:hygiene:lint              # Check markdown formatting
+task ss:hygiene:structure         # Verify documentation index exists
+task ss:hygiene:size              # Check individual file sizes
+task ss:hygiene:docs-size         # Monitor overall documentation size
+task ss:hygiene:docs-structure    # Validate structure matches governance
+task ss:hygiene:docs-accuracy     # Check for broken links and stale refs
 ```
 
 ## Contents
@@ -98,7 +98,7 @@ task hygiene:docs-accuracy     # Check for broken links and stale refs
 
 ## When to Run
 
-- **Before commits:** Run `task hygiene:test` to catch code and documentation issues early
+- **Before commits:** Run `task ss:hygiene:test` to catch code and documentation issues early
 - **During code review:** Complexity analysis helps identify refactoring opportunities
 - **During PR reviews:** Size monitoring helps track documentation growth
 - **In CI/CD:** These checks run automatically in GitHub Actions workflows

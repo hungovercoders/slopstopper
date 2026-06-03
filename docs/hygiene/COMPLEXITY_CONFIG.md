@@ -6,7 +6,7 @@ This template includes automated code complexity analysis using **Lizard** to he
 
 ### Check Complexity Locally
 ```bash
-task hygiene:complexity
+task ss:hygiene:complexity
 ```
 
 ### What You Get Automatically
@@ -19,7 +19,7 @@ task hygiene:complexity
 | Problem | Solution |
 |---------|----------|
 | Workflow not triggering? | Check workflow is at `.github/workflows/hygiene-complexity-check.yml` (not `.github/`) |
-| Need different threshold? | Update CCN > 10 threshold in `Taskfile.yml`, `.github/workflows/hygiene-complexity-check.yml`, and `.scripts/generate-complexity-md.py` |
+| Need different threshold? | Update CCN > 10 threshold in `Taskfile.yml`, `.github/workflows/hygiene-complexity-check.yml`, and `.ss/scripts/generate-complexity-md.py` |
 | Don't want complexity checks? | Delete `.github/workflows/hygiene-complexity-check.yml` |
 
 ### Threshold Reference
@@ -47,7 +47,7 @@ The complexity workflow:
 |------|---------|---------------|
 | [`.github/workflows/hygiene-complexity-check.yml`](../../.github/workflows/hygiene-complexity-check.yml) | GitHub Actions workflow | Triggers, failure behavior, reporting |
 | [`Taskfile.yml`](../../Taskfile.yml) | Local task runner config | Complexity thresholds, exclusions |
-| [`.scripts/generate-complexity-md.py`](../../.scripts/generate-complexity-md.py) | Report generator | Markdown formatting, metrics |
+| [`.ss/scripts/generate-complexity-md.py`](../../.ss/scripts/generate-complexity-md.py) | Report generator | Markdown formatting, metrics |
 | [`.gitignore`](../../.gitignore) | Git ignore rules | Excludes `.complexity-reports/` from version control |
 
 ## Key Configuration Points
@@ -140,7 +140,7 @@ Before pushing code, analyze complexity locally:
 curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
 
 # Run complexity analysis
-task hygiene:complexity
+task ss:hygiene:complexity
 ```
 
 This generates:
@@ -193,7 +193,7 @@ When complexity issues are detected on pushes to `main`:
 
 **To resolve:**
 1. Create a branch to address the complex functions
-2. Run `task hygiene:complexity` locally to verify improvements
+2. Run `task ss:hygiene:complexity` locally to verify improvements
 3. Open PR with refactored code
 4. CI will verify complexity is reduced
 5. After merge, close the GitHub issue
@@ -205,7 +205,7 @@ Since this is a **static HTML template**, code should remain minimal:
 - ✅ Keep helper scripts small and focused
 - ✅ Avoid complex conditional logic
 - ✅ Prefer simple, readable code over clever implementations
-- ✅ Test code locally before pushing: `task hygiene:complexity`
+- ✅ Test code locally before pushing: `task ss:hygiene:complexity`
 
 ## Troubleshooting
 
