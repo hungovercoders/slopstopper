@@ -14,7 +14,7 @@ on:
       url:
         description: 'URL to test'
         required: true
-        default: 'https://magic8bi.com/'
+        default: 'https://slopstopper.dev/'
         type: string
 
 jobs:
