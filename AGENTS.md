@@ -89,7 +89,14 @@ slopstopper/
 │   ├── index.css             # Page-specific layout
 │   ├── features.css          # Page-specific layout (loops, bridge, reports)
 │   ├── tools.css             # Page-specific layout
-│   └── favicon.svg           # Inline SVG favicon (CSP-safe)
+│   ├── favicon.svg           # Inline SVG favicon (CSP-safe)
+│   ├── apple-touch-icon.svg  # Source for the 180×180 iOS home-screen icon
+│   ├── apple-touch-icon.png  # Rendered via task ss:contributing:assets
+│   ├── og-image.svg          # Source for the 1200×630 OpenGraph card
+│   ├── og-image.png          # Rendered via task ss:contributing:assets
+│   ├── manifest.webmanifest  # PWA manifest (name, icons, theme colour)
+│   ├── robots.txt            # Allows all, points at the sitemap
+│   └── sitemap.xml           # Lists the three indexable pages
 ├── docs/                     # Documentation hub — see docs/index.md
 ├── src/                      # TypeScript stubs (build target; no runtime JS)
 ├── tests/                    # Playwright smoke + accessibility specs
