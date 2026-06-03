@@ -5,18 +5,18 @@
 #   ./install.sh [TARGET_DIR]
 #
 # Usage (recommended two-step from GitHub):
-#   curl -fsSL https://raw.githubusercontent.com/happydevs-studio/template-netlify/main/install.sh -o install.sh
+#   curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh -o install.sh
 #   bash install.sh [TARGET_DIR]
 #
 # Usage (one-liner from GitHub, review the script first):
-#   curl -fsSL https://raw.githubusercontent.com/happydevs-studio/template-netlify/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 #
 # When piped from curl the script clones a temporary copy of the repo and
 # installs from there, so no local checkout is required.
 
 set -euo pipefail
 
-REPO_URL="https://github.com/happydevs-studio/template-netlify.git"
+REPO_URL="https://github.com/hungovercoders/slopstopper.git"
 TARGET_DIR="${1:-$(pwd)}"
 
 # ── helpers ──────────────────────────────────────────────────────────────────
