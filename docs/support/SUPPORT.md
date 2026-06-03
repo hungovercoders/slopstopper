@@ -38,7 +38,7 @@ Use GitHub Copilot or another AI assistant to ask questions about the codebase b
 
 If AI cannot resolve your question and the problem is **specific to this repository**, open a support issue using the template provided:
 
-👉 [Open a Support Issue](../../issues/new?template=support-request.yml)
+👉 [Open a Support Issue](https://github.com/hungovercoders/slopstopper/issues/new?template=support-request.yml)
 
 Use this for:
 
@@ -50,7 +50,7 @@ Use this for:
 
 If the problem spans multiple repositories, teams, or is architectural in nature, start a **GitHub Discussion** rather than an issue:
 
-👉 [Start a Discussion](../../discussions/new)
+👉 [Start a Discussion](https://github.com/hungovercoders/slopstopper/discussions/new)
 
 Use this for:
 
@@ -63,6 +63,6 @@ Use this for:
 | Situation | Channel |
 |-----------|---------|
 | Quick question about the codebase | Ask AI / Copilot |
-| Bug or gap scoped to this repo | [Support Issue](../../issues/new?template=support-request.yml) |
-| Cross-repo or cross-team concern | [Discussion](../../discussions/new) |
+| Bug or gap scoped to this repo | [Support Issue](https://github.com/hungovercoders/slopstopper/issues/new?template=support-request.yml) |
+| Cross-repo or cross-team concern | [Discussion](https://github.com/hungovercoders/slopstopper/discussions/new) |
 | Security vulnerability | See [Security docs](../security/README.md) |
