@@ -35,6 +35,38 @@ nav a {
 nav a:hover {
     background: rgba(0, 212, 170, 0.2);
 }
+nav a[aria-current="page"] {
+    background: rgba(0, 212, 170, 0.15);
+    color: #00d4aa;
+}
+.skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    background: #00d4aa;
+    color: #16213e;
+    padding: 0.6rem 1rem;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: 0 0 4px 0;
+    z-index: 100;
+}
+.skip-link:focus {
+    left: 0;
+    outline: 2px solid #16213e;
+    outline-offset: 2px;
+}
+footer {
+    margin-top: 4rem;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid rgba(0, 212, 170, 0.25);
+    text-align: center;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+footer a {
+    color: #00d4aa;
+}
 main {
     max-width: 960px;
     margin: 0 auto;

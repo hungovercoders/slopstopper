@@ -3,19 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Categories of automated quality checks in SlopStopper: security, hygiene, reliability (E2E, smoke, accessibility, Core Web Vitals), operational and deployment.">
+    <meta name="theme-color" content="#16213e">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="SlopStopper — Features">
+    <meta property="og:description" content="Practices and automated feedback loops that keep a repo healthy at high velocity.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="SlopStopper — Features">
+    <meta name="twitter:description" content="Practices and automated feedback loops that keep a repo healthy at high velocity.">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>Features</title>
     <link rel="stylesheet" href="features.css">
 </head>
 <body>
+    <a href="#main" class="skip-link">Skip to main content</a>
     <header>
         <a href="index.html" class="site-title">SlopStopper</a>
-        <nav>
+        <nav aria-label="Main">
             <a href="index.html" id="nav-home">Home</a>
-            <a href="features.html" id="nav-features">Features</a>
+            <a href="features.html" id="nav-features" aria-current="page">Features</a>
             <a href="tools.html" id="nav-tools">Tools</a>
         </nav>
     </header>
-    <main>
+    <main id="main">
         <div class="hero">
             <h1>Practices &amp; Feedback</h1>
             <p>The categories of automated checks that keep your repo healthy</p>
@@ -44,6 +55,16 @@
                 <ul>
                     <li><strong>E2E Tests</strong> — Playwright tests verify all pages and user flows work on every pull request</li>
                     <li><strong>Smoke Tests</strong> — Lightweight smoke tests run against staging and production after every deploy</li>
+                    <li><strong>Accessibility</strong> — axe-core audits every page against WCAG 2.1 AA on PRs, after deploys, and on a daily schedule</li>
+                    <li><strong>Core Web Vitals</strong> — Lighthouse CI measures LCP, INP and CLS on every PR and nightly against production</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h2>🤖 Operational</h2>
+                <ul>
+                    <li><strong>Auto PR Labelling</strong> — Pull requests are labelled automatically from the paths changed</li>
+                    <li><strong>Doc Auto-Updater</strong> — A weekly agentic workflow opens PRs to keep documentation in sync with the code</li>
+                    <li><strong>Failure Alerts</strong> — Failed workflow runs on main raise (or update) a tracking issue automatically</li>
                 </ul>
             </div>
             <div class="card">
@@ -82,7 +103,7 @@
                     <div class="loop-arrow">→</div>
                     <div class="loop-step">🧹 Hygiene<span class="step-sub">Complexity · Docs</span></div>
                     <div class="loop-arrow">→</div>
-                    <div class="loop-step">✅ Reliability<span class="step-sub">E2E · Smoke Tests</span></div>
+                    <div class="loop-step">✅ Reliability<span class="step-sub">E2E · Smoke · A11y · CWV</span></div>
                     <div class="loop-arrow">→</div>
                     <div class="loop-step">🚀 Deploy<span class="step-sub">Preview URL</span></div>
                     <div class="loop-arrow">→</div>
@@ -92,5 +113,8 @@
             </div>
         </section>
     </main>
+    <footer>
+        <p>SlopStopper is open source — <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">view the repository on GitHub</a>.</p>
+    </footer>
 </body>
 </html>

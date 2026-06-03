@@ -3,19 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="The technology stack powering SlopStopper: GitHub Actions, Task, Playwright, TypeScript, Semgrep, ZAP, Trivy, Gitleaks, axe-core, Lighthouse CI and more.">
+    <meta name="theme-color" content="#16213e">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="SlopStopper — Tools">
+    <meta property="og:description" content="The technology stack powering SlopStopper's automated feedback.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="SlopStopper — Tools">
+    <meta name="twitter:description" content="The technology stack powering SlopStopper's automated feedback.">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>Tools</title>
     <link rel="stylesheet" href="tools.css">
 </head>
 <body>
+    <a href="#main" class="skip-link">Skip to main content</a>
     <header>
         <a href="index.html" class="site-title">SlopStopper</a>
-        <nav>
+        <nav aria-label="Main">
             <a href="index.html" id="nav-home">Home</a>
             <a href="features.html" id="nav-features">Features</a>
-            <a href="tools.html" id="nav-tools">Tools</a>
+            <a href="tools.html" id="nav-tools" aria-current="page">Tools</a>
         </nav>
     </header>
-    <main>
+    <main id="main">
         <div class="hero">
             <h1>Tools</h1>
             <p>The technology stack powering SlopStopper's automated feedback</p>
@@ -23,7 +34,11 @@
         <div class="card-grid">
             <div class="card">
                 <h2>⚙️ GitHub Actions</h2>
-                <p>All checks run as GitHub Actions workflows triggered on every pull request and push to main — security, hygiene, reliability and deployment in one pipeline.</p>
+                <p>All checks run as GitHub Actions workflows triggered on every pull request and push to main — security, hygiene, reliability, accessibility, performance and deployment in one pipeline.</p>
+            </div>
+            <div class="card">
+                <h2>📋 Task</h2>
+                <p>A Taskfile.yml defines the single source of truth for build, test, lint and scan commands so developers, AI agents and CI all run the same thing.</p>
             </div>
             <div class="card">
                 <h2>🎭 Playwright</h2>
@@ -34,18 +49,49 @@
                 <p>All application and test code is written in TypeScript for static type safety, reducing a whole class of bugs before code is even run.</p>
             </div>
             <div class="card">
-                <h2>🟢 Netlify</h2>
-                <p>Continuous deployment to Netlify with preview URLs on every PR and automated production releases on merge to main.</p>
-            </div>
-            <div class="card">
                 <h2>🐍 Python</h2>
                 <p>Reporting scripts that generate structured JSON reports for security, complexity, documentation and dependency checks used across CI workflows.</p>
             </div>
             <div class="card">
-                <h2>🔍 Semgrep &amp; ZAP</h2>
-                <p>Semgrep provides fast SAST scanning and OWASP ZAP provides DAST scanning against running deployments, together covering static and dynamic security concerns.</p>
+                <h2>🟢 Netlify</h2>
+                <p>Continuous deployment to Netlify with preview URLs on every PR and automated production releases on merge to main.</p>
+            </div>
+            <div class="card">
+                <h2>🔍 Semgrep</h2>
+                <p>Fast static application security testing (SAST). Scans source code for vulnerability patterns and OWASP-style issues before code is merged.</p>
+            </div>
+            <div class="card">
+                <h2>🕷️ OWASP ZAP</h2>
+                <p>Dynamic application security testing (DAST). Probes a running deployment for common web vulnerabilities such as XSS, injection and insecure headers.</p>
+            </div>
+            <div class="card">
+                <h2>🛡️ Trivy</h2>
+                <p>Scans project dependencies for known CVEs on every pull request and push, with severity-based gating to prevent vulnerable packages from reaching production.</p>
+            </div>
+            <div class="card">
+                <h2>🔑 Gitleaks</h2>
+                <p>Inspects every commit for accidentally committed credentials, tokens and other secrets, blocking pull requests when high-confidence matches are found.</p>
+            </div>
+            <div class="card">
+                <h2>🐛 Bandit &amp; Lizard</h2>
+                <p>Bandit performs Python-focused security analysis and Lizard enforces cyclomatic complexity limits so code stays auditable and maintainable.</p>
+            </div>
+            <div class="card">
+                <h2>♿ axe-core</h2>
+                <p>Industry-standard accessibility engine, run via Playwright on every page to flag WCAG 2.1 AA violations on PRs, after deploys and on a daily schedule.</p>
+            </div>
+            <div class="card">
+                <h2>⚡ Lighthouse CI</h2>
+                <p>Measures Core Web Vitals (LCP, INP, CLS) plus performance, accessibility and best-practice scores on every PR and nightly against production.</p>
+            </div>
+            <div class="card">
+                <h2>📝 markdownlint</h2>
+                <p>Lints all documentation as part of the hygiene checks, keeping markdown style, headings and link structure consistent across the repo.</p>
             </div>
         </div>
     </main>
+    <footer>
+        <p>SlopStopper is open source — <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">view the repository on GitHub</a>.</p>
+    </footer>
 </body>
 </html>
