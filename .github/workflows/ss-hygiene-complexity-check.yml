@@ -46,7 +46,7 @@ jobs:
       
       - name: Check reports generated
         run: |
-          if [ ! -f .complexity-reports/complexity-report.md ]; then
+          if [ ! -f .ss/reports/complexity/complexity-report.md ]; then
             echo "❌ Failed to generate complexity report"
             exit 1
           fi
@@ -59,9 +59,9 @@ jobs:
           set +e
           HIGH_COMPLEXITY_FOUND=0
           
-          if [ -f .complexity-reports/complexity-report.csv ]; then
+          if [ -f .ss/reports/complexity/complexity-report.csv ]; then
             # Count items with CCN (column 2) > 10
-            HIGH_COUNT=$(awk -F',' '$2 > 10' .complexity-reports/complexity-report.csv | wc -l)
+            HIGH_COUNT=$(awk -F',' '$2 > 10' .ss/reports/complexity/complexity-report.csv | wc -l)
             if [ "$HIGH_COUNT" -gt 0 ]; then
               HIGH_COMPLEXITY_FOUND=1
               echo "⚠️  Found $HIGH_COUNT item(s) with complexity > 10"
@@ -82,15 +82,15 @@ jobs:
           echo "📂 Contents of current directory:"
           ls -la | head -20
           echo ""
-          echo "📂 Checking .complexity-reports/:"
-          if [ -d .complexity-reports ]; then
+          echo "📂 Checking .ss/reports/complexity/:"
+          if [ -d .ss/reports/complexity ]; then
             echo "✅ Directory exists"
-            ls -la .complexity-reports/
+            ls -la .ss/reports/complexity/
             echo ""
             echo "Content of complexity-report.md:"
-            cat .complexity-reports/complexity-report.md | head -10 || echo "File not readable"
+            cat .ss/reports/complexity/complexity-report.md | head -10 || echo "File not readable"
           else
-            echo "❌ Directory .complexity-reports does not exist"
+            echo "❌ Directory .ss/reports/complexity does not exist"
           fi
       
       - name: Upload complexity reports
@@ -99,9 +99,9 @@ jobs:
         with:
           name: complexity-reports
           path: |
-            .complexity-reports/complexity-report.md
-            .complexity-reports/complexity-report.csv
-            .complexity-reports/complexity-report-raw.txt
+            .ss/reports/complexity/complexity-report.md
+            .ss/reports/complexity/complexity-report.csv
+            .ss/reports/complexity/complexity-report-raw.txt
           retention-days: 30
           if-no-files-found: warn
       
@@ -115,7 +115,7 @@ jobs:
             let reportContent = '## 📊 Code Complexity Analysis\n\n';
             
             try {
-              const markdownReport = fs.readFileSync('.complexity-reports/complexity-report.md', 'utf8');
+              const markdownReport = fs.readFileSync('.ss/reports/complexity/complexity-report.md', 'utf8');
               reportContent += markdownReport + '\n\n';
             } catch (e) {
               reportContent += '**Could not read complexity report.** See workflow artifacts for details.\n\n';
@@ -125,7 +125,7 @@ jobs:
             reportContent += '```bash\n';
             reportContent += 'task ss:hygiene:complexity\n';
             reportContent += '```\n\n';
-            reportContent += '[Full reports available in workflow artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) (`.complexity-reports/` directory)\n';
+            reportContent += '[Full reports available in workflow artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) (`.ss/reports/complexity/` directory)\n';
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -147,7 +147,7 @@ jobs:
             body += `**Run:** [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n`;
             
             try {
-              const markdownReport = fs.readFileSync('.complexity-reports/complexity-report.md', 'utf8');
+              const markdownReport = fs.readFileSync('.ss/reports/complexity/complexity-report.md', 'utf8');
               body += '## Report\n\n' + markdownReport + '\n\n';
             } catch (e) {
               body += 'See workflow artifacts for detailed reports.\n\n';

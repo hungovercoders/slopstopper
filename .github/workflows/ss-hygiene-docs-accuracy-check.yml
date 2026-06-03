@@ -60,13 +60,13 @@ jobs:
       - name: Run documentation accuracy check
         id: accuracy
         run: |
-          python3 .scripts/check-docs-accuracy.py || true
-          python3 .scripts/generate-docs-accuracy-md.py || true
+          python3 .ss/scripts/check-docs-accuracy.py || true
+          python3 .ss/scripts/generate-docs-accuracy-md.py || true
 
-          if [ -f .docs-reports/docs-accuracy-report.json ]; then
+          if [ -f .ss/reports/docs/docs-accuracy-report.json ]; then
             ISSUE_COUNT=$(python3 -c "
           import json
-          with open('.docs-reports/docs-accuracy-report.json') as f:
+          with open('.ss/reports/docs/docs-accuracy-report.json') as f:
             data = json.load(f)
           print(data.get('issue_count', 0))
           " 2>/dev/null || echo "0")
@@ -83,7 +83,7 @@ jobs:
           fi
 
       - name: Copy report for workflow
-        run: cp .docs-reports/docs-accuracy-report.md docs-accuracy-report.md || true
+        run: cp .ss/reports/docs/docs-accuracy-report.md docs-accuracy-report.md || true
 
       # ── PR comment ──
       - name: Comment on PR with accuracy report
@@ -229,5 +229,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: docs-accuracy-report
-          path: .docs-reports/docs-accuracy-report.md
+          path: .ss/reports/docs/docs-accuracy-report.md
           retention-days: 30

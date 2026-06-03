@@ -37,14 +37,14 @@ jobs:
           task ss:hygiene:docs-size || true
           
           # Check if alerts were triggered (report contains "exceeds thresholds")
-          if grep -q "❌" .docs-reports/docs-size-report.md; then
+          if grep -q "❌" .ss/reports/docs/docs-size-report.md; then
             echo "has_alerts=true" >> $GITHUB_OUTPUT
           else
             echo "has_alerts=false" >> $GITHUB_OUTPUT
           fi
       
       - name: Copy report for workflow
-        run: cp .docs-reports/docs-size-report.md docs-report.md
+        run: cp .ss/reports/docs/docs-size-report.md docs-report.md
       
       - name: Comment on PR
         if: github.event_name == 'pull_request'

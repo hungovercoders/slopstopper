@@ -81,7 +81,7 @@ If thresholds are exceeded:
 """
 
     # Write report
-    report_dir = Path(".docs-reports")
+    report_dir = Path(".ss/reports/docs")
     report_dir.mkdir(exist_ok=True)
 
     report_file = report_dir / "docs-size-report.md"

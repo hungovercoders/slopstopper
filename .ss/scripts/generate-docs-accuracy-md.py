@@ -2,8 +2,8 @@
 
 """Generate a Markdown documentation accuracy report from JSON output.
 
-Reads .docs-reports/docs-accuracy-report.json (produced by check-docs-accuracy.py)
-and writes .docs-reports/docs-accuracy-report.md — a human-readable summary.
+Reads .ss/reports/docs/docs-accuracy-report.json (produced by check-docs-accuracy.py)
+and writes .ss/reports/docs/docs-accuracy-report.md — a human-readable summary.
 """
 
 import json
@@ -13,7 +13,7 @@ from pathlib import Path
 
 
 def main():
-    json_path = Path(".docs-reports/docs-accuracy-report.json")
+    json_path = Path(".ss/reports/docs/docs-accuracy-report.json")
     if not json_path.exists():
         print("❌ docs-accuracy-report.json not found — run check-docs-accuracy.py first")
         sys.exit(1)
@@ -72,7 +72,7 @@ def main():
     ]
 
     report_text = "\n".join(lines) + "\n"
-    out = Path(".docs-reports/docs-accuracy-report.md")
+    out = Path(".ss/reports/docs/docs-accuracy-report.md")
     out.write_text(report_text)
     print(f"📄 Report written to {out}")
 

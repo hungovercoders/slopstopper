@@ -254,7 +254,7 @@ tasks:
         echo ""
         
         # Create reports directory
-        mkdir -p .complexity-reports
+        mkdir -p .ss/reports/complexity
         
         # Run lizard and generate text report (intermediate)
         lizard . \
@@ -405,7 +405,7 @@ tasks:
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
         
-        mkdir -p .sast-reports
+        mkdir -p .ss/reports/sast
         
         semgrep \
           --config=auto \
@@ -538,7 +538,7 @@ tasks:
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
         
-        mkdir -p .dependencies-reports
+        mkdir -p .ss/reports/dependencies
         
         trivy fs \
           --format json \
@@ -648,8 +648,8 @@ tasks:
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
         
-        mkdir -p .dast-reports
-        chmod 777 .dast-reports
+        mkdir -p .ss/reports/dast
+        chmod 777 .ss/reports/dast
         
         # Check if target is localhost and if server needs to be started  
         TARGET="{{.TARGET}}"
@@ -680,7 +680,7 @@ tasks:
         fi
         
         docker run --rm \
-          -v "$(pwd)/.dast-reports:/zap/wrk/:rw" \
+          -v "$(pwd)/.ss/reports/dast:/zap/wrk/:rw" \
           ghcr.io/zaproxy/zaproxy:stable \
           zap-baseline.py \
           -t "$TARGET" \
@@ -820,7 +820,7 @@ tasks:
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
         
-        mkdir -p .secrets-reports
+        mkdir -p .ss/reports/secrets
         
         # Run gitleaks against full git history; exit code 1 means secrets found, which is expected
         gitleaks detect \

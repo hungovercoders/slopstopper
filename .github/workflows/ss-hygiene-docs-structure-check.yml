@@ -44,8 +44,8 @@ jobs:
           task ss:hygiene:docs-structure || true
           
           # Parse violation count from JSON report
-          if [ -f .docs-reports/docs-structure-report.json ]; then
-            VIOLATION_COUNT=$(python3 -c "import json; data=json.load(open('.docs-reports/docs-structure-report.json')); print(data.get('violation_count', 0))" 2>/dev/null || echo "0")
+          if [ -f .ss/reports/docs/docs-structure-report.json ]; then
+            VIOLATION_COUNT=$(python3 -c "import json; data=json.load(open('.ss/reports/docs/docs-structure-report.json')); print(data.get('violation_count', 0))" 2>/dev/null || echo "0")
             echo "violation_count=$VIOLATION_COUNT" >> $GITHUB_OUTPUT
             
             if [ "$VIOLATION_COUNT" -gt 0 ]; then
@@ -56,7 +56,7 @@ jobs:
           fi
       
       - name: Copy report for workflow
-        run: cp .docs-reports/docs-structure-report.md docs-structure-report.md || true
+        run: cp .ss/reports/docs/docs-structure-report.md docs-structure-report.md || true
       
       - name: Comment on PR with structure report
         if: github.event_name == 'pull_request' && steps.structure.outputs.has_violations == 'true'
@@ -174,5 +174,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: docs-structure-report
-          path: .docs-reports/docs-structure-report.md
+          path: .ss/reports/docs/docs-structure-report.md
           retention-days: 30

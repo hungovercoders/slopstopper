@@ -97,7 +97,7 @@ def main():
     violations = check_docs_structure()
     
     # Create report directory
-    Path(".docs-reports").mkdir(exist_ok=True)
+    Path(".ss/reports/docs").mkdir(exist_ok=True)
     
     # Write JSON report
     report = {
@@ -106,7 +106,7 @@ def main():
         "violation_count": len(violations)
     }
     
-    with open(".docs-reports/docs-structure-report.json", "w") as f:
+    with open(".ss/reports/docs/docs-structure-report.json", "w") as f:
         json.dump(report, f, indent=2)
     
     if violations:

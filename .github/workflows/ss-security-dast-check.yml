@@ -64,7 +64,7 @@ jobs:
 
       - name: Check reports generated
         run: |
-          if [ ! -f .dast-reports/dast-report.md ]; then
+          if [ ! -f .ss/reports/dast/dast-report.md ]; then
             echo "❌ Failed to generate DAST report"
             exit 1
           fi
@@ -77,10 +77,10 @@ jobs:
           set +e
           ALERTS_FOUND=0
 
-          if [ -f .dast-reports/dast-report.json ]; then
+          if [ -f .ss/reports/dast/dast-report.json ]; then
             ALERT_COUNT=$(python3 -c "
           import json, sys
-          with open('.dast-reports/dast-report.json') as f:
+          with open('.ss/reports/dast/dast-report.json') as f:
             data = json.load(f)
           count = 0
           for site in data.get('site', []):
@@ -106,15 +106,15 @@ jobs:
           echo "📍 Current working directory:"
           pwd
           echo ""
-          echo "📂 Checking .dast-reports/:"
-          if [ -d .dast-reports ]; then
+          echo "📂 Checking .ss/reports/dast/:"
+          if [ -d .ss/reports/dast ]; then
             echo "✅ Directory exists"
-            ls -la .dast-reports/
+            ls -la .ss/reports/dast/
             echo ""
             echo "Content of dast-report.md (first 10 lines):"
-            cat .dast-reports/dast-report.md | head -10 || echo "File not readable"
+            cat .ss/reports/dast/dast-report.md | head -10 || echo "File not readable"
           else
-            echo "❌ Directory .dast-reports does not exist"
+            echo "❌ Directory .ss/reports/dast does not exist"
           fi
 
       - name: Upload DAST reports
@@ -123,8 +123,8 @@ jobs:
         with:
           name: dast-reports
           path: |
-            .dast-reports/dast-report.md
-            .dast-reports/dast-report.json
+            .ss/reports/dast/dast-report.md
+            .ss/reports/dast/dast-report.json
           retention-days: 30
           if-no-files-found: warn
 
@@ -138,7 +138,7 @@ jobs:
             let reportContent = '## 🌐 DAST Analysis\n\n';
 
             try {
-              const markdownReport = fs.readFileSync('.dast-reports/dast-report.md', 'utf8');
+              const markdownReport = fs.readFileSync('.ss/reports/dast/dast-report.md', 'utf8');
               reportContent += markdownReport + '\n\n';
             } catch (e) {
               reportContent += '**Could not read DAST report.** See workflow artifacts for details.\n\n';
@@ -151,7 +151,7 @@ jobs:
             reportContent += '# Run DAST scan\n';
             reportContent += 'task dast -- http://localhost:8080\n';
             reportContent += '```\n\n';
-            reportContent += '[Full reports available in workflow artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) (`.dast-reports/` directory)\n';
+            reportContent += '[Full reports available in workflow artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) (`.ss/reports/dast/` directory)\n';
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -173,7 +173,7 @@ jobs:
             body += `**Run:** [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n`;
 
             try {
-              const markdownReport = fs.readFileSync('.dast-reports/dast-report.md', 'utf8');
+              const markdownReport = fs.readFileSync('.ss/reports/dast/dast-report.md', 'utf8');
               body += '## Report\n\n' + markdownReport + '\n\n';
             } catch (e) {
               body += 'See workflow artifacts for detailed reports.\n\n';

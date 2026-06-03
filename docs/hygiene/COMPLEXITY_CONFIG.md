@@ -19,7 +19,7 @@ task ss:hygiene:complexity
 | Problem | Solution |
 |---------|----------|
 | Workflow not triggering? | Check workflow is at `.github/workflows/hygiene-complexity-check.yml` (not `.github/`) |
-| Need different threshold? | Update CCN > 10 threshold in `Taskfile.yml`, `.github/workflows/hygiene-complexity-check.yml`, and `.scripts/generate-complexity-md.py` |
+| Need different threshold? | Update CCN > 10 threshold in `Taskfile.yml`, `.github/workflows/hygiene-complexity-check.yml`, and `.ss/scripts/generate-complexity-md.py` |
 | Don't want complexity checks? | Delete `.github/workflows/hygiene-complexity-check.yml` |
 
 ### Threshold Reference
@@ -47,7 +47,7 @@ The complexity workflow:
 |------|---------|---------------|
 | [`.github/workflows/hygiene-complexity-check.yml`](../../.github/workflows/hygiene-complexity-check.yml) | GitHub Actions workflow | Triggers, failure behavior, reporting |
 | [`Taskfile.yml`](../../Taskfile.yml) | Local task runner config | Complexity thresholds, exclusions |
-| [`.scripts/generate-complexity-md.py`](../../.scripts/generate-complexity-md.py) | Report generator | Markdown formatting, metrics |
+| [`.ss/scripts/generate-complexity-md.py`](../../.ss/scripts/generate-complexity-md.py) | Report generator | Markdown formatting, metrics |
 | [`.gitignore`](../../.gitignore) | Git ignore rules | Excludes `.complexity-reports/` from version control |
 
 ## Key Configuration Points

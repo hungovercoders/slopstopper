@@ -9,7 +9,7 @@ Checks documentation files for common accuracy issues:
 - References to non-existent workflow files
 - Stale project descriptions (single-file vs multi-file, wrong tool names)
 
-Generates a JSON report at .docs-reports/docs-accuracy-report.json.
+Generates a JSON report at .ss/reports/docs/docs-accuracy-report.json.
 """
 
 import json
@@ -224,13 +224,13 @@ def main():
         all_issues.extend(check_source_file_references(md_file, project_files))
 
     # Write JSON report
-    Path(".docs-reports").mkdir(exist_ok=True)
+    Path(".ss/reports/docs").mkdir(exist_ok=True)
     report = {
         "issues": all_issues,
         "issue_count": len(all_issues),
         "clean": len(all_issues) == 0,
     }
-    with open(".docs-reports/docs-accuracy-report.json", "w") as f:
+    with open(".ss/reports/docs/docs-accuracy-report.json", "w") as f:
         json.dump(report, f, indent=2)
 
     if all_issues:

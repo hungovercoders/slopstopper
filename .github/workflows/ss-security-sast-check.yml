@@ -46,7 +46,7 @@ jobs:
 
       - name: Check reports generated
         run: |
-          if [ ! -f .sast-reports/sast-report.md ]; then
+          if [ ! -f .ss/reports/sast/sast-report.md ]; then
             echo "❌ Failed to generate SAST report"
             exit 1
           fi
@@ -59,10 +59,10 @@ jobs:
           set +e
           ERRORS_FOUND=0
 
-          if [ -f .sast-reports/sast-report.json ]; then
+          if [ -f .ss/reports/sast/sast-report.json ]; then
             ERROR_COUNT=$(python3 -c "
           import json, sys
-          with open('.sast-reports/sast-report.json') as f:
+          with open('.ss/reports/sast/sast-report.json') as f:
             data = json.load(f)
           errors = [r for r in data.get('results', []) if r.get('extra', {}).get('severity', '').upper() == 'ERROR']
           print(len(errors))
@@ -84,15 +84,15 @@ jobs:
           echo "📍 Current working directory:"
           pwd
           echo ""
-          echo "📂 Checking .sast-reports/:"
-          if [ -d .sast-reports ]; then
+          echo "📂 Checking .ss/reports/sast/:"
+          if [ -d .ss/reports/sast ]; then
             echo "✅ Directory exists"
-            ls -la .sast-reports/
+            ls -la .ss/reports/sast/
             echo ""
             echo "Content of sast-report.md (first 10 lines):"
-            cat .sast-reports/sast-report.md | head -10 || echo "File not readable"
+            cat .ss/reports/sast/sast-report.md | head -10 || echo "File not readable"
           else
-            echo "❌ Directory .sast-reports does not exist"
+            echo "❌ Directory .ss/reports/sast does not exist"
           fi
 
       - name: Upload SAST reports
@@ -101,8 +101,8 @@ jobs:
         with:
           name: sast-reports
           path: |
-            .sast-reports/sast-report.md
-            .sast-reports/sast-report.json
+            .ss/reports/sast/sast-report.md
+            .ss/reports/sast/sast-report.json
           retention-days: 30
           if-no-files-found: warn
 
@@ -116,7 +116,7 @@ jobs:
             let reportContent = '## 🔍 SAST Analysis\n\n';
 
             try {
-              const markdownReport = fs.readFileSync('.sast-reports/sast-report.md', 'utf8');
+              const markdownReport = fs.readFileSync('.ss/reports/sast/sast-report.md', 'utf8');
               reportContent += markdownReport + '\n\n';
             } catch (e) {
               reportContent += '**Could not read SAST report.** See workflow artifacts for details.\n\n';
@@ -126,7 +126,7 @@ jobs:
             reportContent += '```bash\n';
             reportContent += 'task ss:security:sast\n';
             reportContent += '```\n\n';
-            reportContent += '[Full reports available in workflow artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) (`.sast-reports/` directory)\n';
+            reportContent += '[Full reports available in workflow artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) (`.ss/reports/sast/` directory)\n';
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -148,7 +148,7 @@ jobs:
             body += `**Run:** [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n`;
 
             try {
-              const markdownReport = fs.readFileSync('.sast-reports/sast-report.md', 'utf8');
+              const markdownReport = fs.readFileSync('.ss/reports/sast/sast-report.md', 'utf8');
               body += '## Report\n\n' + markdownReport + '\n\n';
             } catch (e) {
               body += 'See workflow artifacts for detailed reports.\n\n';

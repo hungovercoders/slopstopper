@@ -13,7 +13,7 @@ def setup_test_env():
     # Create temp dir
     tmpdir = tempfile.mkdtemp()
     os.chdir(tmpdir)
-    os.makedirs(".complexity-reports", exist_ok=True)
+    os.makedirs(".ss/reports/complexity", exist_ok=True)
     return tmpdir
 
 
@@ -28,11 +28,11 @@ def test_missing_csv_fails():
     tmpdir = setup_test_env()
     try:
         # Create raw report but no CSV
-        with open(".complexity-reports/complexity-report-raw.txt", "w") as f:
+        with open(".ss/reports/complexity/complexity-report-raw.txt", "w") as f:
             f.write("Total nloc  = 100\n")
         
         result = subprocess.run(
-            ["python3", "/workspaces/template-netlify/.scripts/generate-complexity-md.py"],
+            ["python3", "/workspaces/slopstopper/.ss/scripts/generate-complexity-md.py"],
             capture_output=True,
             text=True,
             cwd=tmpdir
@@ -40,7 +40,7 @@ def test_missing_csv_fails():
         
         assert result.returncode != 0, "Script should fail when CSV is missing"
         assert "CSV report not found" in result.stderr, "Should report missing CSV"
-        assert not os.path.exists(".complexity-reports/complexity-report.md"), \
+        assert not os.path.exists(".ss/reports/complexity/complexity-report.md"), \
             "Should not generate report on error"
         
         print("✅ test_missing_csv_fails passed")
@@ -53,12 +53,12 @@ def test_missing_raw_report_fails():
     tmpdir = setup_test_env()
     try:
         # Create CSV but no raw report
-        with open(".complexity-reports/complexity-report.csv", "w") as f:
+        with open(".ss/reports/complexity/complexity-report.csv", "w") as f:
             f.write("NLOC,CCN,Tokens,Params,Length,Location\n")
             f.write("10,5,50,2,10,test.py:function_a\n")
         
         result = subprocess.run(
-            ["python3", "/workspaces/template-netlify/.scripts/generate-complexity-md.py"],
+            ["python3", "/workspaces/slopstopper/.ss/scripts/generate-complexity-md.py"],
             capture_output=True,
             text=True,
             cwd=tmpdir
@@ -77,28 +77,28 @@ def test_generates_report_with_valid_input():
     tmpdir = setup_test_env()
     try:
         # Create valid input files
-        with open(".complexity-reports/complexity-report.csv", "w") as f:
+        with open(".ss/reports/complexity/complexity-report.csv", "w") as f:
             f.write("NLOC,CCN,Tokens,Params,Length,Location\n")
             f.write("10,5,50,2,10,test.py:function_a\n")
             f.write("15,8,75,3,15,test.py:function_b\n")
         
-        with open(".complexity-reports/complexity-report-raw.txt", "w") as f:
+        with open(".ss/reports/complexity/complexity-report-raw.txt", "w") as f:
             f.write("Total nloc  = 100\n")
             f.write("Altogether 2 files are analyzed.\n")
             f.write("TOTAL     2 (avg: 1) \t2 (avg: 1) \tNo thresholds exceeded.\n")
         
         result = subprocess.run(
-            ["python3", "/workspaces/template-netlify/.scripts/generate-complexity-md.py"],
+            ["python3", "/workspaces/slopstopper/.ss/scripts/generate-complexity-md.py"],
             capture_output=True,
             text=True,
             cwd=tmpdir
         )
         
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
-        assert os.path.exists(".complexity-reports/complexity-report.md"), \
+        assert os.path.exists(".ss/reports/complexity/complexity-report.md"), \
             "Should generate markdown report"
         
-        with open(".complexity-reports/complexity-report.md", "r") as f:
+        with open(".ss/reports/complexity/complexity-report.md", "r") as f:
             content = f.read()
         
         assert "Code Complexity Analysis Report" in content, "Should have title"
@@ -115,19 +115,19 @@ def test_identifies_high_complexity_items():
     tmpdir = setup_test_env()
     try:
         # Create input with high complexity item
-        with open(".complexity-reports/complexity-report.csv", "w") as f:
+        with open(".ss/reports/complexity/complexity-report.csv", "w") as f:
             f.write("NLOC,CCN,Tokens,Params,Length,Location\n")
             f.write("10,5,50,2,10,code.py:simple_func\n")
             f.write("50,15,200,5,50,code.py:complex_func\n")
             f.write("20,8,100,3,20,code.py:medium_func\n")
         
-        with open(".complexity-reports/complexity-report-raw.txt", "w") as f:
+        with open(".ss/reports/complexity/complexity-report-raw.txt", "w") as f:
             f.write("Total nloc  = 100\n")
             f.write("Altogether 3 files are analyzed.\n")
             f.write("TOTAL     3 (avg: 1) \t3 (avg: 1) \tNo thresholds exceeded.\n")
         
         result = subprocess.run(
-            ["python3", "/workspaces/template-netlify/.scripts/generate-complexity-md.py"],
+            ["python3", "/workspaces/slopstopper/.ss/scripts/generate-complexity-md.py"],
             capture_output=True,
             text=True,
             cwd=tmpdir
@@ -135,7 +135,7 @@ def test_identifies_high_complexity_items():
         
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
         
-        with open(".complexity-reports/complexity-report.md", "r") as f:
+        with open(".ss/reports/complexity/complexity-report.md", "r") as f:
             content = f.read()
         
         assert "High Complexity Items (CCN > 10)" in content, \
@@ -154,15 +154,15 @@ def test_report_includes_guidelines():
     tmpdir = setup_test_env()
     try:
         # Create valid minimal input
-        with open(".complexity-reports/complexity-report.csv", "w") as f:
+        with open(".ss/reports/complexity/complexity-report.csv", "w") as f:
             f.write("NLOC,CCN,Tokens,Params,Length,Location\n")
         
-        with open(".complexity-reports/complexity-report-raw.txt", "w") as f:
+        with open(".ss/reports/complexity/complexity-report-raw.txt", "w") as f:
             f.write("Total nloc  = 0\n")
             f.write("Altogether 0 files are analyzed.\n")
         
         result = subprocess.run(
-            ["python3", "/workspaces/template-netlify/.scripts/generate-complexity-md.py"],
+            ["python3", "/workspaces/slopstopper/.ss/scripts/generate-complexity-md.py"],
             capture_output=True,
             text=True,
             cwd=tmpdir
@@ -170,7 +170,7 @@ def test_report_includes_guidelines():
         
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
         
-        with open(".complexity-reports/complexity-report.md", "r") as f:
+        with open(".ss/reports/complexity/complexity-report.md", "r") as f:
             content = f.read()
         
         assert "Guidelines" in content, "Should include guidelines"

@@ -129,11 +129,11 @@ The following categories are defined in `docs/index.md`:
 
 def main():
     try:
-        json_path = ".docs-reports/docs-structure-report.json"
-        markdown_path = ".docs-reports/docs-structure-report.md"
+        json_path = ".ss/reports/docs/docs-structure-report.json"
+        markdown_path = ".ss/reports/docs/docs-structure-report.md"
         
         # Ensure directory exists
-        Path(".docs-reports").mkdir(exist_ok=True)
+        Path(".ss/reports/docs").mkdir(exist_ok=True)
         
         # Read JSON report
         data = read_json_report(json_path)

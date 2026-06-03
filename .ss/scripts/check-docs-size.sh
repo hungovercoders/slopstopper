@@ -27,7 +27,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Create reports directory
-mkdir -p .docs-reports
+mkdir -p .ss/reports/docs
 
 # Count markdown files (excluding archive)
 FILE_COUNT=$(find docs -name "*.md" -not -path "docs/archive/*" 2>/dev/null | wc -l)
@@ -106,7 +106,7 @@ else
 fi
 
 # Generate report
-python3 ".scripts/generate-docs-size-report.py" \
+python3 ".ss/scripts/generate-docs-size-report.py" \
   --file-count "$FILE_COUNT" \
   --total-size-kb "$TOTAL_SIZE_KB" \
   --estimated-tokens "$ESTIMATED_TOKENS" \
@@ -115,7 +115,7 @@ python3 ".scripts/generate-docs-size-report.py" \
   --has-alerts "$HAS_ALERTS" \
   --alerts "$ALERTS"
 
-echo "📁 Reports saved to: .docs-reports/"
+echo "📁 Reports saved to: .ss/reports/docs/"
 echo "   • docs-size-report.md (human-readable)"
 echo ""
 
