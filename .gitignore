@@ -7,7 +7,8 @@ test-results/
 .ss/reports/
 # Local Netlify folder
 .netlify
-# TypeScript compiled output
+# TypeScript compiled output (copy.js is hand-written runtime JS, not a tsc artefact)
 app/*.js
+!app/copy.js
 # Local Claude Code state
 .claude/
