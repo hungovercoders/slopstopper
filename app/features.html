@@ -210,10 +210,11 @@ jobs:
             <!-- ─── Reliability ─────────────────────────────────── -->
             <div class="card" id="reliability">
                 <h2>✅ Reliability</h2>
-                <p class="card-intro">Catch broken pages, slow loads, accessibility regressions and broken social-share previews before users do — E2E, smoke, axe-core WCAG 2.1 AA, Lighthouse CI and SEO/OpenGraph checks on every change.</p>
+                <p class="card-intro">Catch broken pages, dead internal links, slow loads, accessibility regressions and broken social-share previews before users do — E2E, smoke, broken-link, axe-core WCAG 2.1 AA, Lighthouse CI and SEO/OpenGraph checks on every change.</p>
                 <ul>
                     <li><strong>E2E Tests</strong> — Playwright covers navigation and critical user journeys</li>
                     <li><strong>Smoke Tests</strong> — Lightweight checks after every deploy</li>
+                    <li><strong>Broken-Link Checks</strong> — Crawls internal anchors from key pages and fails on 4xx/5xx destinations</li>
                     <li><strong>Accessibility</strong> — axe-core audits every page against WCAG 2.1 AA</li>
                     <li><strong>Core Web Vitals</strong> — Lighthouse CI measures LCP, INP and CLS</li>
                     <li><strong>SEO &amp; Social-Share</strong> — Lighthouse SEO budget + OpenGraph / Twitter Card / canonical presence check</li>
@@ -251,6 +252,26 @@ jobs:
   smoke-test:
     if: github.event.deployment_status.state == 'success' || ...</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-smoke-tests.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>Broken-Link Checks</summary>
+                    <div class="details__body">
+                        <!-- sync this excerpt if the workflow's first job step changes -->
+                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Reliability Broken Links
+on:
+  pull_request: { branches: [main] }
+  push:         { branches: [main] }
+  deployment_status:
+  schedule: [ { cron: '0 8 * * *' } ]
+jobs:
+  broken-links:
+    runs-on: ubuntu-latest
+    steps:
+      # excerpt — setup/install steps omitted for brevity
+      - run: task ss:reliability:links:ci</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-broken-links-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
                     </div>
                 </details>
 

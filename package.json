@@ -8,7 +8,8 @@
     "test": "playwright test --config=.ss/playwright.config.js",
     "test:headed": "playwright test --config=.ss/playwright.config.js --headed",
     "test:smoke": "playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts",
-    "test:accessibility": "playwright test --config=.ss/playwright.config.js .ss/tests/accessibility.spec.ts"
+    "test:accessibility": "playwright test --config=.ss/playwright.config.js .ss/tests/accessibility.spec.ts",
+    "test:links": "playwright test --config=.ss/playwright.config.js .ss/tests/broken-links.spec.ts"
   },
   "keywords": [
     "netlify",

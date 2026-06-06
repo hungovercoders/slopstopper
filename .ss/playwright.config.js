@@ -21,6 +21,7 @@ export default defineConfig({
   reporter: 'html',
   use: {
     baseURL:
+      process.env.BROKEN_LINKS_TEST_URL ||
       process.env.ACCESSIBILITY_TEST_URL ||
       process.env.SMOKE_TEST_URL ||
       process.env.BASE_URL ||
