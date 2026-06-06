@@ -1,171 +1,26 @@
+# Root Taskfile — thin integration layer.
+#
+# SlopStopper's tasks are defined in Taskfile.ss.yml under the `ss` namespace.
+# Run any of them with the prefix:
+#
+#   task ss:hygiene:complexity
+#   task ss:security:sast
+#   task ss:reliability:accessibility
+#   task --list                       # see everything
+#
+# This file is the consumer-facing integration point. If you adopt
+# SlopStopper into a repo that already has a Taskfile.yml, add the
+# `includes` block below to your existing file instead of overwriting it.
+
 version: '3'
 
+includes:
+  ss:
+    taskfile: ./Taskfile.ss.yml
+
 tasks:
-  complexity:
-    desc: Analyze code complexity using Lizard
-    summary: |
-      Performs code complexity analysis on the codebase using Lizard.
-      Generates both text and CSV reports with configurable thresholds.
-      
-      Usage:
-        task complexity           # Run analysis
-        task complexity -- -v     # Verbose output
-    cmds:
-      - task: complexity:check-tool
-      - task: complexity:analyze
-      - task: complexity:report
-    silent: false
-
-  complexity:check-tool:
-    desc: Check if Lizard is installed, install if necessary
-    internal: true
-    cmds:
-      - |
-        if ! command -v lizard &> /dev/null; then
-          echo "📦 Installing Lizard..."
-          
-          INSTALL_SUCCESS=0
-          
-          if command -v pip3 &> /dev/null; then
-            echo "Trying pip3..."
-            if pip3 install --user lizard; then
-              INSTALL_SUCCESS=1
-            fi
-          elif command -v pip &> /dev/null; then
-            echo "Trying pip..."
-            if pip install --user lizard; then
-              INSTALL_SUCCESS=1
-            fi
-          elif command -v sudo &> /dev/null && command -v apt-get &> /dev/null; then
-            echo "Trying apt-get..."
-            if sudo apt-get update && sudo apt-get install -y python3-pip && pip3 install --user lizard; then
-              INSTALL_SUCCESS=1
-            fi
-          elif command -v brew &> /dev/null; then
-            echo "Trying brew..."
-            if brew install lizard; then
-              INSTALL_SUCCESS=1
-            fi
-          fi
-          
-          if [ $INSTALL_SUCCESS -eq 0 ]; then
-            echo "❌ Failed to install Lizard with any available package manager"
-            echo "Please install Lizard manually:"
-            echo "  - pip install lizard"
-            echo "  - brew install lizard"
-            echo "  - https://github.com/terryyin/lizard"
-            exit 1
-          fi
-        fi
-        
-        # Verify installation succeeded
-        if ! command -v lizard &> /dev/null; then
-          echo "❌ Lizard installed but not found in PATH"
-          exit 1
-        fi
-        
-        LIZARD_VERSION=$(lizard --version 2>&1)
-        echo "✅ Lizard $LIZARD_VERSION"
-    silent: false
-
-  complexity:analyze:
-    desc: Run Lizard analysis and generate reports
-    internal: true
-    dir: .
-    cmds:
-      - |
-        echo ""
-        echo "🔍 Analyzing code complexity..."
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        
-        # Create reports directory
-        mkdir -p .complexity-reports
-        
-        # Run lizard and generate text report (intermediate)
-        lizard . \
-          -x "tests/*" \
-          -x ".github/*" \
-          -x "node_modules/*" \
-          -x ".git/*" \
-          -o ".complexity-reports/complexity-report-raw.txt" \
-          || true
-        
-        # Generate CSV report for structured data
-        lizard . \
-          -x "tests/*" \
-          -x ".github/*" \
-          -x "node_modules/*" \
-          -x ".git/*" \
-          --csv > ".complexity-reports/complexity-report.csv" \
-          || true
-        
-        # Convert to markdown using Python
-        python3 .scripts/generate-complexity-md.py
-        
-        echo "✅ Analysis complete"
-    silent: false
-
-  complexity:report:
-    desc: Display formatted complexity report
-    internal: true
-    cmds:
-      - |
-        echo ""
-        echo "📊 COMPLEXITY REPORT"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        
-        if [ ! -f .complexity-reports/complexity-report.md ]; then
-          echo "❌ Complexity report not generated!"
-          echo "This indicates an error in the analysis step. Check the logs above."
-          exit 1
-        fi
-        
-        cat .complexity-reports/complexity-report.md
-        
-        echo ""
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        echo "📁 Reports saved to: .complexity-reports/"
-        echo "   • complexity-report.md (human-readable)"
-        echo "   • complexity-report.csv (machine-readable)"
-        echo ""
-        
-        # Check for high complexity issues (CCN in column 2, indexed as $2)
-        if [ -f .complexity-reports/complexity-report.csv ]; then
-          HIGH_COMPLEXITY=$(awk -F',' '$2 > 10' .complexity-reports/complexity-report.csv | wc -l)
-          if [ "$HIGH_COMPLEXITY" -gt 0 ]; then
-            echo "⚠️  Found $HIGH_COMPLEXITY item(s) with cyclomatic complexity > 10"
-            echo ""
-          else
-            echo "✅ No high-complexity items found (all CCN ≤ 10)"
-            echo ""
-          fi
-        fi
-    silent: false
-
   drift-detect:
     desc: Run git commit drift detection tests
     cmds:
-      - npx playwright test tests/drift-detection.spec.js {{.CLI_ARGS}}
+      - npx playwright test --config=.ss/playwright.config.js .ss/tests/drift-detection.spec.js {{.CLI_ARGS}}
 
-  test:
-    desc: Run Playwright tests
-    cmds:
-      - npx playwright test {{.CLI_ARGS}}
-
-  test:headed:
-    desc: Run Playwright tests with headed browser
-    cmds:
-      - npx playwright test --headed {{.CLI_ARGS}}
-
-  test:complexity:
-    desc: Run complexity report generation tests
-    cmds:
-      - python3 tests/generate_complexity_report.test.py
-
-  start:
-    desc: Start local development server
-    cmds:
-      - npx http-server . -p 8080 -o

@@ -18,9 +18,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Inject git commit SHA
-        run: sed -i 's/__GIT_COMMIT__/${{ github.sha }}/g' index.html
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -29,18 +26,45 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build
+        run: npm run build
+
+      - name: Inject git commit SHA
+        run: sed -i 's/__GIT_COMMIT__/${{ github.sha }}/g' app/index.html
+
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
+      - name: Start local server
+        run: |
+          node server.js &
+          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 10); do
+            if curl -s http://localhost:8080 > /dev/null; then
+              echo "✅ Server ready"
+              break
+            fi
+            sleep 1
+          done
+
       - name: Run drift detection tests
-        run: npx playwright test tests/drift-detection.spec.js
+        run: npx playwright test --config=.ss/playwright.config.js .ss/tests/drift-detection.spec.js
         env:
           GITHUB_SHA: ${{ github.sha }}
+          BASE_URL: http://localhost:8080
+
+      - name: Stop local server
+        if: always()
+        run: kill "$SERVER_PID" || true
 
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: drift-detection-report
-          path: playwright-report/
+          path: |
+            playwright-report/
+            .ss/playwright-report/
           retention-days: 7
+          if-no-files-found: ignore
+
