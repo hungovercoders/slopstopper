@@ -84,7 +84,7 @@ slopstopper/
 ├── app/                      # Static site — Netlify publish dir
 │   ├── index.html            # Hero + Get Started + capability grid
 │   ├── features.html         # 5 category cards with YAML excerpts + mock reports
-│   ├── tools.html            # 14 tool cards with YAML/config excerpts
+│   ├── tools.html            # 15 tool cards with YAML/config excerpts
 │   ├── shared.css            # Brand system, components, layout primitives
 │   ├── index.css             # Page-specific layout
 │   ├── features.css          # Page-specific layout (loops, bridge, reports)

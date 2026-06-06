@@ -76,27 +76,12 @@
             <p class="lede">Sign in with GitHub. Your comment goes straight to <a href="https://github.com/hungovercoders/slopstopper/discussions/categories/feedback" rel="noopener noreferrer">our Discussions tab</a>.</p>
 
             <!--
-                Giscus embed.
-
-                This page (and ONLY this page) has a relaxed CSP — see
-                netlify.toml's [[headers]] block for /feedback.html and the
-                full rationale in docs/security/CSP_EXCEPTIONS.md. The
-                ss:hygiene:csp-exceptions check enforces that the two stay
-                in sync.
-
-                Three placeholders below need filling once Discussions is
-                enabled on the repo and the Giscus app is installed
-                (https://github.com/apps/giscus):
-                  - data-repo-id
-                  - data-category
-                  - data-category-id
-                The giscus.app config wizard generates them. Until then the
-                widget will fail to render and the fallback link below stays
-                useful.
-
+                Giscus embed. This page (and ONLY this page) has a relaxed
+                CSP — see netlify.toml's [[headers]] block for /feedback.html
+                and the full rationale in docs/security/CSP_EXCEPTIONS.md.
+                The ss:hygiene:csp-exceptions check keeps the two in sync.
                 The integrity= attribute pins the exact bundle hash served
-                by giscus.app. Refresh procedure documented in
-                docs/security/CSP_EXCEPTIONS.md.
+                by giscus.app — refresh procedure in CSP_EXCEPTIONS.md.
             -->
             <div class="giscus"></div>
             <script src="https://giscus.app/client.js"
