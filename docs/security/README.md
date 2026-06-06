@@ -26,7 +26,7 @@ This template includes automated Static Application Security Testing (SAST) usin
 
 ### Run Analysis Locally
 ```bash
-task sast
+task ss:security:sast
 ```
 
 ### What You Get Automatically
@@ -38,9 +38,9 @@ task sast
 
 | Problem | Solution |
 |---------|----------|
-| Workflow not triggering? | Check workflow is at `.github/workflows/security-sast-check.yml` |
+| Workflow not triggering? | Check workflow is at `.github/workflows/ss-security-sast-check.yml` |
 | Want stricter/looser rules? | Use a custom Semgrep config file (see below) |
-| Don't want SAST checks? | Delete `.github/workflows/security-sast-check.yml` |
+| Don't want SAST checks? | Delete `.github/workflows/ss-security-sast-check.yml` |
 
 ### Severity Reference
 
@@ -67,10 +67,10 @@ The SAST workflow:
 
 | File | Purpose |
 |------|---------|
-| `.github/workflows/security-sast-check.yml` | GitHub Actions workflow |
+| `.github/workflows/ss-security-sast-check.yml` | GitHub Actions workflow |
 | `Taskfile.yml` (`sast*` tasks) | Local task runner config |
-| `.scripts/generate-sast-md.py` | Report generator |
-| `.gitignore` | Excludes `.sast-reports/` |
+| `.ss/scripts/generate-sast-md.py` | Report generator |
+| `.gitignore` | Excludes `.ss/reports/sast/` |
 
 ## Key Configuration Points
 
@@ -89,7 +89,7 @@ semgrep \
 
 ```bash
 # Option A: delete the workflow
-rm .github/workflows/security-sast-check.yml
+rm .github/workflows/ss-security-sast-check.yml
 
 # Option B: disable in GitHub UI → Actions → SAST Analysis → Disable workflow
 ```
@@ -101,10 +101,10 @@ rm .github/workflows/security-sast-check.yml
 curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
 
 # Run SAST
-task sast
+task ss:security:sast
 ```
 
-Reports are saved to `.sast-reports/`.
+Reports are saved to `.ss/reports/sast/`.
 
 ## For More Information
 
@@ -125,7 +125,7 @@ This template includes automated Dynamic Application Security Testing (DAST) usi
 # Start the site first
 task start &
 # Run DAST scan against it
-task dast -- http://localhost:8080
+task ss:security:dast -- http://localhost:8080
 ```
 
 ### What You Get Automatically
@@ -137,9 +137,9 @@ task dast -- http://localhost:8080
 
 | Problem | Solution |
 |---------|----------|
-| Workflow not triggering? | Check workflow is at `.github/workflows/security-dast-check.yml` |
+| Workflow not triggering? | Check workflow is at `.github/workflows/ss-security-dast-check.yml` |
 | ZAP not available? | The workflow uses Docker to run ZAP — no installation needed in CI |
-| Don't want DAST checks? | Delete `.github/workflows/security-dast-check.yml` |
+| Don't want DAST checks? | Delete `.github/workflows/ss-security-dast-check.yml` |
 
 ### Risk Level Reference
 
@@ -167,10 +167,10 @@ The DAST workflow:
 
 | File | Purpose |
 |------|---------|
-| `.github/workflows/security-dast-check.yml` | GitHub Actions workflow |
+| `.github/workflows/ss-security-dast-check.yml` | GitHub Actions workflow |
 | `Taskfile.yml` (`dast*` tasks) | Local task runner config |
-| `.scripts/generate-dast-md.py` | Report generator |
-| `.gitignore` | Excludes `.dast-reports/` |
+| `.ss/scripts/generate-dast-md.py` | Report generator |
+| `.gitignore` | Excludes `.ss/reports/dast/` |
 
 ## Key Configuration Points
 
@@ -179,14 +179,14 @@ The DAST workflow:
 In `Taskfile.yml`, the `dast` task accepts the target URL as an argument:
 
 ```bash
-task dast -- http://your-site-url
+task ss:security:dast -- http://your-site-url
 ```
 
-In `security-dast-check.yml`, the CI workflow starts a local server and passes `http://localhost:8080`. To scan a deployed preview instead, update that step with your preview URL.
+In `ss-security-dast-check.yml`, the CI workflow starts a local server and passes `http://localhost:8080`. To scan a deployed preview instead, update that step with your preview URL.
 
 ### Change the Blocking Threshold
 
-To block only on High (not Medium), edit `security-dast-check.yml`:
+To block only on High (not Medium), edit `ss-security-dast-check.yml`:
 
 ```python
 # Change this line:
@@ -199,7 +199,7 @@ if int(alert.get('riskcode', 0)) >= 3:
 
 ```bash
 # Option A: delete the workflow
-rm .github/workflows/security-dast-check.yml
+rm .github/workflows/ss-security-dast-check.yml
 
 # Option B: disable in GitHub UI → Actions → DAST Analysis → Disable workflow
 ```
@@ -214,10 +214,10 @@ curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
 task start &
 
 # Run DAST scan (requires Docker)
-task dast -- http://localhost:8080
+task ss:security:dast -- http://localhost:8080
 ```
 
-Reports are saved to `.dast-reports/`.
+Reports are saved to `.ss/reports/dast/`.
 
 ## For More Information
 
@@ -235,7 +235,7 @@ This template includes automated dependency vulnerability scanning using **Trivy
 
 ### Run Analysis Locally
 ```bash
-task dependencies
+task ss:security:vulnerability:all
 ```
 
 ### What You Get Automatically
@@ -247,9 +247,9 @@ task dependencies
 
 | Problem | Solution |
 |---------|----------|
-| Workflow not triggering? | Check workflow is at `.github/workflows/security-vulnerability-all-check.yml` |
-| Want to change blocking threshold? | Edit severity check in `security-vulnerability-all-check.yml` |
-| Don't want vulnerability scans? | Delete `.github/workflows/security-vulnerability-all-check.yml` |
+| Workflow not triggering? | Check workflow is at `.github/workflows/ss-security-vulnerability-all-check.yml` |
+| Want to change blocking threshold? | Edit severity check in `ss-security-vulnerability-all-check.yml` |
+| Don't want vulnerability scans? | Delete `.github/workflows/ss-security-vulnerability-all-check.yml` |
 
 ### Severity Reference
 
@@ -277,16 +277,16 @@ The dependency scanning workflow:
 
 | File | Purpose |
 |------|---------|
-| `.github/workflows/security-vulnerability-all-check.yml` | GitHub Actions workflow |
+| `.github/workflows/ss-security-vulnerability-all-check.yml` | GitHub Actions workflow |
 | `Taskfile.yml` (`dependencies*` tasks) | Local task runner config |
-| `.scripts/generate-dependencies-md.py` | Report generator |
-| `.gitignore` | Excludes `.dependencies-reports/` |
+| `.ss/scripts/generate-dependencies-md.py` | Report generator |
+| `.gitignore` | Excludes `.ss/reports/dependencies/` |
 
 ## Key Configuration Points
 
 ### Change the Blocking Threshold
 
-To block only on CRITICAL (not HIGH), edit the `check-dependencies` step in `security-vulnerability-all-check.yml`:
+To block only on CRITICAL (not HIGH), edit the `check-dependencies` step in `ss-security-vulnerability-all-check.yml`:
 
 ```bash
 # Change this line:
@@ -299,7 +299,7 @@ if v.get('Severity', '').upper() == 'CRITICAL':
 
 ```bash
 # Option A: delete the workflow
-rm .github/workflows/security-vulnerability-all-check.yml
+rm .github/workflows/ss-security-vulnerability-all-check.yml
 
 # Option B: disable in GitHub UI → Actions → Dependency Vulnerability Scan → Disable workflow
 ```
@@ -311,10 +311,10 @@ rm .github/workflows/security-vulnerability-all-check.yml
 curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
 
 # Run dependency scan
-task dependencies
+task ss:security:vulnerability:all
 ```
 
-Reports are saved to `.dependencies-reports/`.
+Reports are saved to `.ss/reports/dependencies/`.
 
 ## For More Information
 
@@ -331,7 +331,7 @@ This template includes automated secrets detection using **Gitleaks** to identif
 
 ### Run Analysis Locally
 ```bash
-task secrets
+task ss:security:secrets
 ```
 
 ### What You Get Automatically
@@ -343,9 +343,9 @@ task secrets
 
 | Problem | Solution |
 |---------|----------|
-| Workflow not triggering? | Check workflow is at `.github/workflows/security-secrets-check.yml` |
+| Workflow not triggering? | Check workflow is at `.github/workflows/ss-security-secrets-check.yml` |
 | False positives? | Add a `.gitleaks.toml` allowlist (see below) |
-| Don't want secrets checks? | Delete `.github/workflows/security-secrets-check.yml` |
+| Don't want secrets checks? | Delete `.github/workflows/ss-security-secrets-check.yml` |
 
 ---
 
@@ -364,10 +364,10 @@ The secrets workflow:
 
 | File | Purpose |
 |------|---------|
-| `.github/workflows/security-secrets-check.yml` | GitHub Actions workflow |
+| `.github/workflows/ss-security-secrets-check.yml` | GitHub Actions workflow |
 | `Taskfile.yml` (`secrets*` tasks) | Local task runner config |
-| `.scripts/generate-secrets-md.py` | Report generator |
-| `.gitignore` | Excludes `.secrets-reports/` |
+| `.ss/scripts/generate-secrets-md.py` | Report generator |
+| `.gitignore` | Excludes `.ss/reports/secrets/` |
 
 ## Suppressing False Positives
 
@@ -412,7 +412,7 @@ Act immediately:
 
 ```bash
 # Option A: delete the workflow
-rm .github/workflows/security-secrets-check.yml
+rm .github/workflows/ss-security-secrets-check.yml
 
 # Option B: disable in GitHub UI → Actions → Secrets Detection → Disable workflow
 ```
@@ -424,7 +424,7 @@ rm .github/workflows/security-secrets-check.yml
 curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
 
 # Run secrets detection
-task secrets
+task ss:security:secrets
 ```
 
-Reports are saved to `.secrets-reports/`.
+Reports are saved to `.ss/reports/secrets/`.

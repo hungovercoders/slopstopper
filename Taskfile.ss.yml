@@ -1,0 +1,1422 @@
+version: '3'
+
+tasks:
+  reliability:smoke:
+    desc: Run smoke tests against a live URL
+    summary: |
+      Runs critical smoke tests against a deployed site to verify basic functionality.
+      
+      Usage:
+        task ss:reliability:smoke -- https://your-site.netlify.app
+        SMOKE_TEST_URL=https://your-site.netlify.app task ss:reliability:smoke
+        
+      Used for:
+        - Production health checks
+        - Post-deployment verification
+        - Scheduled reliability monitoring
+    cmds:
+      - |
+        {{if .CLI_ARGS}}
+          export SMOKE_TEST_URL="{{.CLI_ARGS}}"
+        {{end}}
+        
+        if [ -z "$SMOKE_TEST_URL" ]; then
+          echo "❌ Error: SMOKE_TEST_URL is required"
+          echo ""
+          echo "Usage:"
+          echo "  task ss:reliability:smoke -- https://your-site.netlify.app"
+          echo "  SMOKE_TEST_URL=https://example.com task ss:reliability:smoke"
+          exit 1
+        fi
+        
+        echo "🔍 Running smoke tests against: $SMOKE_TEST_URL"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        
+        SMOKE_TEST_URL="$SMOKE_TEST_URL" npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts --reporter=list
+    silent: false
+
+  reliability:smoke:ci:
+    desc: Run smoke tests in CI mode with retries
+    summary: |
+      Runs smoke tests with CI-specific configuration (retries, single worker).
+      Intended for GitHub Actions and automated testing.
+      
+      Usage:
+        SMOKE_TEST_URL=https://your-site.netlify.app task ss:reliability:smoke:ci
+    cmds:
+      - |
+        if [ -z "$SMOKE_TEST_URL" ]; then
+          echo "❌ Error: SMOKE_TEST_URL environment variable is required"
+          exit 1
+        fi
+        
+        echo "🔍 Running smoke tests (CI mode) against: $SMOKE_TEST_URL"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        
+        CI=true SMOKE_TEST_URL="$SMOKE_TEST_URL" npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts --reporter=list,html
+    silent: false
+
+  reliability:cwv:
+    desc: Run a Core Web Vitals (Lighthouse CI) audit against a live URL
+    summary: |
+      Runs a Lighthouse CI audit against a deployed site and checks Core Web
+      Vitals against the thresholds defined in .ss/lighthouserc.json.
+
+      Usage:
+        task ss:reliability:cwv -- https://your-site.netlify.app
+        CWV_URL=https://your-site.netlify.app task ss:reliability:cwv
+
+      Thresholds (see .ss/lighthouserc.json):
+        - Performance score  ≥ 70
+        - LCP                ≤ 4 s
+        - TBT                ≤ 600 ms
+        - CLS                ≤ 0.25
+    cmds:
+      - |
+        {{if .CLI_ARGS}}
+          export CWV_URL="{{.CLI_ARGS}}"
+        {{end}}
+        
+        if [ -z "$CWV_URL" ]; then
+          echo "❌ Error: CWV_URL is required"
+          echo ""
+          echo "Usage:"
+          echo "  task ss:reliability:cwv -- https://your-site.netlify.app"
+          echo "  CWV_URL=https://example.com task ss:reliability:cwv"
+          exit 1
+        fi
+        
+        echo "🚦 Running Core Web Vitals audit against: $CWV_URL"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        
+        npx lhci autorun \
+          --collect.url="$CWV_URL" \
+          --config=.ss/lighthouserc.json
+    silent: false
+
+  reliability:cwv:ci:
+    desc: Run Core Web Vitals audit in CI mode
+    summary: |
+      Runs a Lighthouse CI audit with CI-specific settings.
+      Intended for GitHub Actions and automated testing.
+      
+      Usage:
+        CWV_URL=https://your-site.netlify.app task ss:reliability:cwv:ci
+    cmds:
+      - |
+        if [ -z "$CWV_URL" ]; then
+          echo "❌ Error: CWV_URL environment variable is required"
+          exit 1
+        fi
+        
+        echo "🚦 Running Core Web Vitals audit (CI mode) against: $CWV_URL"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        
+        npx lhci autorun \
+          --collect.url="$CWV_URL" \
+          --config=.ss/lighthouserc.json
+    silent: false
+
+  reliability:seo:
+    desc: Validate SEO + social-share metatags on a live URL
+    summary: |
+      Fetches one or more pages and asserts the presence of the metadata
+      that social-share crawlers (Slack, Twitter/X, LinkedIn, Discord) and
+      SEO indexers rely on: title, meta description, canonical, viewport,
+      OpenGraph (og:title/description/type/url/image) and Twitter Card
+      (twitter:card/title/description/image). Also HEAD-checks og:image
+      to confirm it is reachable and returns image/* content.
+
+      Complements ss:reliability:cwv — Lighthouse's SEO category covers
+      core indexability but does not flag missing OG / Twitter tags.
+
+      Configuration (environment variables):
+        SEO_TEST_URL          - base URL to audit (required)
+        SEO_PAGES             - comma-separated paths (default: /)
+        SEO_REQUIRE_OG_IMAGE  - 0 to skip og:image presence check (default: 1)
+        SEO_VERIFY_OG_IMAGE   - 0 to skip HEAD-fetching og:image (default: 1)
+
+      Usage:
+        task ss:reliability:seo -- https://your-site.netlify.app
+        SEO_TEST_URL=https://your-site.netlify.app task ss:reliability:seo
+    cmds:
+      - |
+        {{if .CLI_ARGS}}
+          export SEO_TEST_URL="{{.CLI_ARGS}}"
+        {{end}}
+
+        if [ -z "$SEO_TEST_URL" ]; then
+          echo "❌ Error: SEO_TEST_URL is required"
+          echo ""
+          echo "Usage:"
+          echo "  task ss:reliability:seo -- https://your-site.netlify.app"
+          echo "  SEO_TEST_URL=https://example.com task ss:reliability:seo"
+          exit 1
+        fi
+
+        python3 .ss/scripts/check-seo-metatags.py
+    silent: false
+
+  reliability:seo:ci:
+    desc: Validate SEO + social-share metatags (CI mode)
+    summary: |
+      Same as ss:reliability:seo, intended for GitHub Actions.
+
+      Usage:
+        SEO_TEST_URL=https://your-site.netlify.app task ss:reliability:seo:ci
+    cmds:
+      - |
+        if [ -z "$SEO_TEST_URL" ]; then
+          echo "❌ Error: SEO_TEST_URL environment variable is required"
+          exit 1
+        fi
+
+        echo "🔎 Running SEO metatag audit (CI mode) against: $SEO_TEST_URL"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        python3 .ss/scripts/check-seo-metatags.py
+    silent: false
+
+  reliability:accessibility:
+    desc: Run accessibility audit against a live URL
+    summary: |
+      Audits all pages for WCAG 2.1 AA violations using axe-core + Playwright.
+
+      Configuration (environment variables):
+        ACCESSIBILITY_TEST_URL  - URL to audit (required; also accepts SMOKE_TEST_URL / BASE_URL)
+        ACCESSIBILITY_IMPACT    - Minimum impact to flag: critical|serious|moderate|minor (default: serious)
+        ACCESSIBILITY_THRESHOLD - Max allowed violations before failing (default: 0)
+
+      Usage:
+        task ss:reliability:accessibility -- https://your-site.netlify.app
+        ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task ss:reliability:accessibility
+    cmds:
+      - |
+        {{if .CLI_ARGS}}
+          export ACCESSIBILITY_TEST_URL="{{.CLI_ARGS}}"
+        {{end}}
+
+        TARGET="${ACCESSIBILITY_TEST_URL:-${SMOKE_TEST_URL:-}}"
+        if [ -z "$TARGET" ]; then
+          echo "❌ Error: ACCESSIBILITY_TEST_URL is required"
+          echo ""
+          echo "Usage:"
+          echo "  task ss:reliability:accessibility -- https://your-site.netlify.app"
+          echo "  ACCESSIBILITY_TEST_URL=https://example.com task ss:reliability:accessibility"
+          exit 1
+        fi
+
+        echo "♿ Running accessibility audit against: $TARGET"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        ACCESSIBILITY_TEST_URL="$TARGET" npx playwright test --config=.ss/playwright.config.js .ss/tests/accessibility.spec.ts --reporter=list
+    silent: false
+
+  reliability:accessibility:ci:
+    desc: Run accessibility audit in CI mode with retries
+    summary: |
+      Runs accessibility audit with CI-specific configuration (retries, single worker, HTML report).
+      Intended for GitHub Actions and automated testing.
+
+      Usage:
+        ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task ss:reliability:accessibility:ci
+    cmds:
+      - |
+        TARGET="${ACCESSIBILITY_TEST_URL:-${SMOKE_TEST_URL:-}}"
+        if [ -z "$TARGET" ]; then
+          echo "❌ Error: ACCESSIBILITY_TEST_URL environment variable is required"
+          exit 1
+        fi
+
+        echo "♿ Running accessibility audit (CI mode) against: $TARGET"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        ACCESSIBILITY_TEST_URL="$TARGET" CI=true npx playwright test --config=.ss/playwright.config.js .ss/tests/accessibility.spec.ts --reporter=list,html
+    silent: false
+
+  reliability:links:
+    desc: Run broken-link checks against a live URL
+    summary: |
+      Checks internal navigation links for broken destinations.
+
+      Configuration (environment variables):
+        BROKEN_LINKS_TEST_URL - URL to audit (required; also accepts SMOKE_TEST_URL / BASE_URL)
+        BROKEN_LINKS_PAGES    - Comma-separated paths to scan for links (default: /)
+
+      Usage:
+        task ss:reliability:links -- https://your-site.netlify.app
+        BROKEN_LINKS_TEST_URL=https://your-site.netlify.app task ss:reliability:links
+    cmds:
+      - |
+        {{if .CLI_ARGS}}
+          export BROKEN_LINKS_TEST_URL="{{.CLI_ARGS}}"
+        {{end}}
+
+        TARGET="${BROKEN_LINKS_TEST_URL:-${SMOKE_TEST_URL:-}}"
+        if [ -z "$TARGET" ]; then
+          echo "❌ Error: BROKEN_LINKS_TEST_URL is required"
+          echo ""
+          echo "Usage:"
+          echo "  task ss:reliability:links -- https://your-site.netlify.app"
+          echo "  BROKEN_LINKS_TEST_URL=https://example.com task ss:reliability:links"
+          exit 1
+        fi
+
+        echo "🔗 Running broken-link checks against: $TARGET"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        BROKEN_LINKS_TEST_URL="$TARGET" npx playwright test --config=.ss/playwright.config.js .ss/tests/broken-links.spec.ts --reporter=list
+    silent: false
+
+  reliability:links:ci:
+    desc: Run broken-link checks in CI mode with retries
+    summary: |
+      Runs broken-link checks with CI-specific configuration (retries, single worker, HTML report).
+      Intended for GitHub Actions and automated testing.
+
+      Usage:
+        BROKEN_LINKS_TEST_URL=https://your-site.netlify.app task ss:reliability:links:ci
+    cmds:
+      - |
+        TARGET="${BROKEN_LINKS_TEST_URL:-${SMOKE_TEST_URL:-}}"
+        if [ -z "$TARGET" ]; then
+          echo "❌ Error: BROKEN_LINKS_TEST_URL environment variable is required"
+          exit 1
+        fi
+
+        echo "🔗 Running broken-link checks (CI mode) against: $TARGET"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        BROKEN_LINKS_TEST_URL="$TARGET" CI=true npx playwright test --config=.ss/playwright.config.js .ss/tests/broken-links.spec.ts --reporter=list,html
+    silent: false
+
+
+  hygiene:complexity:
+    desc: Analyze code complexity using Lizard
+    summary: |
+      Performs code complexity analysis on the codebase using Lizard.
+      Generates both text and CSV reports with configurable thresholds.
+      
+      Usage:
+        task ss:hygiene:complexity           # Run analysis
+        task ss:hygiene:complexity -- -v     # Verbose output
+    cmds:
+      - task: hygiene:complexity:check-tool
+      - task: hygiene:complexity:analyze
+      - task: hygiene:complexity:report
+    silent: false
+
+  hygiene:complexity:check-tool:
+    desc: Check if Lizard is installed, install if necessary
+    internal: true
+    cmds:
+      - |
+        if ! command -v lizard &> /dev/null; then
+          echo "📦 Installing Lizard..."
+          
+          INSTALL_SUCCESS=0
+          
+          if command -v pip3 &> /dev/null; then
+            echo "Trying pip3..."
+            if pip3 install --user lizard; then
+              INSTALL_SUCCESS=1
+            fi
+          elif command -v pip &> /dev/null; then
+            echo "Trying pip..."
+            if pip install --user lizard; then
+              INSTALL_SUCCESS=1
+            fi
+          elif command -v sudo &> /dev/null && command -v apt-get &> /dev/null; then
+            echo "Trying apt-get..."
+            if sudo apt-get update && sudo apt-get install -y python3-pip && pip3 install --user lizard; then
+              INSTALL_SUCCESS=1
+            fi
+          elif command -v brew &> /dev/null; then
+            echo "Trying brew..."
+            if brew install lizard; then
+              INSTALL_SUCCESS=1
+            fi
+          fi
+          
+          if [ $INSTALL_SUCCESS -eq 0 ]; then
+            echo "❌ Failed to install Lizard with any available package manager"
+            echo "Please install Lizard manually:"
+            echo "  - pip install lizard"
+            echo "  - brew install lizard"
+            echo "  - https://github.com/terryyin/lizard"
+            exit 1
+          fi
+        fi
+        
+        # Verify installation succeeded
+        if ! command -v lizard &> /dev/null; then
+          echo "❌ Lizard installed but not found in PATH"
+          exit 1
+        fi
+        
+        LIZARD_VERSION=$(lizard --version 2>&1)
+        echo "✅ Lizard $LIZARD_VERSION"
+    silent: false
+
+  hygiene:complexity:analyze:
+    desc: Run Lizard analysis and generate reports
+    internal: true
+    dir: .
+    cmds:
+      - |
+        echo ""
+        echo "🔍 Analyzing code complexity..."
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        
+        # Create reports directory
+        mkdir -p .ss/reports/complexity
+        
+        # Run lizard and generate text report (intermediate)
+        lizard . \
+          -x "tests/*" \
+          -x ".ss/tests/*" \
+          -x ".github/*" \
+          -x "node_modules/*" \
+          -x ".git/*" \
+          -o ".ss/reports/complexity/complexity-report-raw.txt" \
+          || true
+        
+        # Generate CSV report for structured data
+        lizard . \
+          -x "tests/*" \
+          -x ".ss/tests/*" \
+          -x ".github/*" \
+          -x "node_modules/*" \
+          -x ".git/*" \
+          --csv > ".ss/reports/complexity/complexity-report.csv" \
+          || true
+        
+        # Convert to markdown using Python
+        python3 .ss/scripts/generate-complexity-md.py
+        
+        echo "✅ Analysis complete"
+    silent: false
+
+  hygiene:complexity:report:
+    desc: Display formatted complexity report
+    internal: true
+    cmds:
+      - |
+        echo ""
+        echo "📊 COMPLEXITY REPORT"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        
+        if [ ! -f .ss/reports/complexity/complexity-report.md ]; then
+          echo "❌ Complexity report not generated!"
+          echo "This indicates an error in the analysis step. Check the logs above."
+          exit 1
+        fi
+        
+        cat .ss/reports/complexity/complexity-report.md
+        
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "📁 Reports saved to: .ss/reports/complexity/"
+        echo "   • complexity-report.md (human-readable)"
+        echo "   • complexity-report.csv (machine-readable)"
+        echo ""
+        
+        # Check for high complexity issues (CCN in column 2, indexed as $2)
+        if [ -f .ss/reports/complexity/complexity-report.csv ]; then
+          HIGH_COMPLEXITY=$(awk -F',' '$2 > 10' .ss/reports/complexity/complexity-report.csv | wc -l)
+          if [ "$HIGH_COMPLEXITY" -gt 0 ]; then
+            echo "⚠️  Found $HIGH_COMPLEXITY item(s) with cyclomatic complexity > 10"
+            echo ""
+          else
+            echo "✅ No high-complexity items found (all CCN ≤ 10)"
+            echo ""
+          fi
+        fi
+    silent: false
+
+  security:
+    internal: true
+    desc: Run all security checks (SAST, vulnerabilities, DAST, secrets)
+    summary: |
+      Runs the full security suite: SAST (Semgrep), vulnerability scanning (Trivy),
+      DAST (OWASP ZAP), and secrets detection (Gitleaks).
+
+      Usage:
+        task security                           # Run all checks
+        task sast                               # SAST only
+        task ss:vulnerability:all                  # Vulnerability scan only
+        task dast -- http://localhost:8080      # DAST only
+        task secrets                            # Secrets detection only
+    cmds:
+      - task: sast
+      - task: vulnerability:all
+      - task: dast
+      - task: secrets
+    silent: false
+
+  sast:
+    internal: true
+    desc: Run static application security testing using Semgrep
+    summary: |
+      Performs SAST on the codebase using Semgrep.
+      Generates both JSON and Markdown reports.
+
+      Usage:
+        task sast           # Run analysis
+    cmds:
+      - task: sast:check-tool
+      - task: sast:analyze
+      - task: sast:report
+    silent: false
+
+  sast:check-tool:
+    desc: Check if Semgrep is installed, install if necessary
+    internal: true
+    cmds:
+      - |
+        if ! command -v semgrep &> /dev/null; then
+          echo "📦 Installing Semgrep..."
+          
+          INSTALL_SUCCESS=0
+          
+          if command -v pip3 &> /dev/null; then
+            echo "Trying pip3..."
+            if pip3 install --user semgrep; then
+              INSTALL_SUCCESS=1
+            fi
+          elif command -v pip &> /dev/null; then
+            echo "Trying pip..."
+            if pip install --user semgrep; then
+              INSTALL_SUCCESS=1
+            fi
+          fi
+          
+          if [ $INSTALL_SUCCESS -eq 0 ]; then
+            echo "❌ Failed to install Semgrep"
+            echo "Please install Semgrep manually:"
+            echo "  - pip install semgrep"
+            echo "  - https://semgrep.dev/docs/getting-started/"
+            exit 1
+          fi
+        fi
+        
+        if ! command -v semgrep &> /dev/null; then
+          echo "❌ Semgrep installed but not found in PATH"
+          exit 1
+        fi
+        
+        SEMGREP_VERSION=$(semgrep --version 2>&1)
+        echo "✅ Semgrep $SEMGREP_VERSION"
+    silent: false
+
+  sast:analyze:
+    desc: Run Semgrep SAST analysis and generate reports
+    internal: true
+    dir: .
+    cmds:
+      - |
+        echo ""
+        echo "🔍 Running SAST analysis..."
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        
+        mkdir -p .ss/reports/sast
+        
+        semgrep \
+          --config=auto \
+          --json \
+          --output=".ss/reports/sast/sast-report.json" \
+          --exclude="node_modules" \
+          --exclude=".git" \
+          . \
+          || true
+        
+        python3 .ss/scripts/generate-sast-md.py
+        
+        echo "✅ Analysis complete"
+    silent: false
+
+  sast:report:
+    desc: Display formatted SAST report
+    internal: true
+    cmds:
+      - |
+        echo ""
+        echo "🔍 SAST REPORT"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        
+        if [ ! -f .ss/reports/sast/sast-report.md ]; then
+          echo "❌ SAST report not generated!"
+          exit 1
+        fi
+        
+        cat .ss/reports/sast/sast-report.md
+        
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "📁 Reports saved to: .ss/reports/sast/"
+        echo "   • sast-report.md (human-readable)"
+        echo "   • sast-report.json (machine-readable)"
+        echo ""
+        
+        if [ -f .ss/reports/sast/sast-report.json ]; then
+          ERROR_COUNT=$(python3 -c "
+        import json, sys
+        with open('.ss/reports/sast/sast-report.json') as f:
+          data = json.load(f)
+        errors = [r for r in data.get('results', []) if r.get('extra', {}).get('severity', '').upper() == 'ERROR']
+        print(len(errors))
+        " 2>/dev/null || echo "0")
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "⚠️  Found $ERROR_COUNT error-severity finding(s)"
+            echo ""
+          else
+            echo "✅ No error-severity findings detected"
+            echo ""
+          fi
+        fi
+    silent: false
+
+  vulnerability:all:
+    internal: true
+    desc: Run vulnerability scanning using Trivy
+    summary: |
+      Scans project dependencies for known CVEs using Trivy.
+      Generates both JSON and Markdown reports.
+
+      Usage:
+        task ss:vulnerability:all           # Run scan
+    cmds:
+      - task: vulnerability:all:check-tool
+      - task: vulnerability:all:analyze
+      - task: vulnerability:all:report
+    silent: false
+
+  vulnerability:all:check-tool:
+    desc: Check if Trivy is installed, install if necessary
+    internal: true
+    cmds:
+      - |
+        if ! command -v trivy &> /dev/null; then
+          echo "📦 Installing Trivy..."
+          
+          INSTALL_SUCCESS=0
+          
+          if command -v apt-get &> /dev/null && command -v wget &> /dev/null; then
+            echo "Trying apt-get install..."
+            wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+            echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee /etc/apt/sources.list.d/trivy.list
+            if sudo apt-get update -qq && sudo apt-get install -y trivy; then
+              INSTALL_SUCCESS=1
+            fi
+          fi
+          
+          if [ $INSTALL_SUCCESS -eq 0 ] && command -v curl &> /dev/null; then
+            echo "Trying GitHub releases install..."
+            TRIVY_VERSION=$(curl -s https://api.github.com/repos/aquasecurity/trivy/releases/latest | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
+            if [ -n "$TRIVY_VERSION" ]; then
+              mkdir -p "$HOME/.local/bin"
+              if curl -sfL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" | tar -xz -C "$HOME/.local/bin" trivy; then
+                export PATH="$PATH:$HOME/.local/bin"
+                INSTALL_SUCCESS=1
+              fi
+            fi
+          fi
+          
+          if [ $INSTALL_SUCCESS -eq 0 ]; then
+            echo "❌ Failed to install Trivy"
+            echo "Please install Trivy manually:"
+            echo "  - https://trivy.dev/latest/getting-started/installation/"
+            exit 1
+          fi
+        fi
+        
+        if ! command -v trivy &> /dev/null; then
+          echo "❌ Trivy installed but not found in PATH"
+          exit 1
+        fi
+        
+        TRIVY_VERSION=$(trivy --version 2>&1 | head -1)
+        echo "✅ $TRIVY_VERSION"
+    silent: false
+
+  vulnerability:all:analyze:
+    desc: Run Trivy dependency scan and generate reports
+    internal: true
+    dir: .
+    cmds:
+      - |
+        echo ""
+        echo "🔍 Scanning dependencies for vulnerabilities..."
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        
+        mkdir -p .ss/reports/dependencies
+        
+        trivy fs \
+          --format json \
+          --output ".ss/reports/dependencies/dependencies-report.json" \
+          --skip-dirs node_modules \
+          --skip-dirs .git \
+          . \
+          || true
+        
+        python3 .ss/scripts/generate-dependencies-md.py
+        
+        echo "✅ Scan complete"
+    silent: false
+
+  vulnerability:all:report:
+    desc: Display formatted dependency vulnerability report
+    internal: true
+    cmds:
+      - |
+        echo ""
+        echo "📦 DEPENDENCY VULNERABILITY REPORT"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        
+        if [ ! -f .ss/reports/dependencies/dependencies-report.md ]; then
+          echo "❌ Dependency report not generated!"
+          exit 1
+        fi
+        
+        cat .ss/reports/dependencies/dependencies-report.md
+        
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "📁 Reports saved to: .ss/reports/dependencies/"
+        echo "   • dependencies-report.md (human-readable)"
+        echo "   • dependencies-report.json (machine-readable)"
+        echo ""
+        
+        if [ -f .ss/reports/dependencies/dependencies-report.json ]; then
+          VULN_COUNT=$(python3 -c "
+        import json, sys
+        with open('.ss/reports/dependencies/dependencies-report.json') as f:
+          data = json.load(f)
+        count = 0
+        for r in data.get('Results', []):
+          for v in r.get('Vulnerabilities', []):
+            if v.get('Severity', '').upper() in ('CRITICAL', 'HIGH'):
+              count += 1
+        print(count)
+        " 2>/dev/null || echo "0")
+          if [ "$VULN_COUNT" -gt 0 ]; then
+            echo "⚠️  Found $VULN_COUNT CRITICAL/HIGH vulnerability(ies)"
+            echo ""
+          else
+            echo "✅ No CRITICAL/HIGH vulnerabilities detected"
+            echo ""
+          fi
+        fi
+    silent: false
+
+  dast:
+    internal: true
+    desc: Run dynamic application security testing using OWASP ZAP
+    summary: |
+      Performs DAST against a running site using OWASP ZAP (requires Docker).
+      Generates both JSON and Markdown reports.
+
+      Usage:
+        # Start your app's server first, then:
+        task ss:security:dast -- http://localhost:8080
+        task ss:security:dast -- https://staging.example.com
+    vars:
+      TARGET: '{{default "http://localhost:8080" .CLI_ARGS}}'
+    cmds:
+      - task: dast:check-tool
+      - task: dast:analyze
+        vars:
+          TARGET: '{{.TARGET}}'
+      - task: dast:report
+    silent: false
+
+  dast:check-tool:
+    desc: Check if Docker (for ZAP) is available
+    internal: true
+    cmds:
+      - |
+        if ! command -v docker &> /dev/null; then
+          echo "❌ Docker is required to run OWASP ZAP"
+          echo "Please install Docker: https://docs.docker.com/get-docker/"
+          exit 1
+        fi
+        
+        DOCKER_VERSION=$(docker --version 2>&1)
+        echo "✅ $DOCKER_VERSION"
+    silent: false
+
+  dast:analyze:
+    desc: Run OWASP ZAP baseline scan and generate reports
+    internal: true
+    dir: .
+    vars:
+      TARGET: '{{default "http://localhost:8080" .TARGET}}'
+    cmds:
+      - |
+        echo ""
+        echo "🌐 Running DAST analysis against {{.TARGET}}..."
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        
+        mkdir -p .ss/reports/dast
+        chmod 777 .ss/reports/dast
+        
+        # Check if target is localhost — if so, this repo's server.js may need to be started.
+        # For a consumer, start your own server before running DAST against localhost.
+        TARGET="{{.TARGET}}"
+        if [[ "$TARGET" == *"localhost"* ]] || [[ "$TARGET" == "http://127.0.0.1"* ]]; then
+          if [ -f server.js ] && ! curl -sf http://localhost:8080 > /dev/null 2>&1; then
+            echo "🚀 Starting this repo's server.js..."
+            node server.js > /dev/null 2>&1 &
+            SERVER_PID=$!
+
+            echo "⏳ Waiting for server to be ready..."
+            for i in {1..30}; do
+              if curl -s http://localhost:8080 > /dev/null 2>&1; then
+                echo "✅ Server is ready"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "❌ Server failed to start within 30 seconds"
+                kill $SERVER_PID 2>/dev/null || true
+                exit 1
+              fi
+              sleep 1
+            done
+
+            trap "kill $SERVER_PID 2>/dev/null || true" EXIT
+          elif ! curl -sf http://localhost:8080 > /dev/null 2>&1; then
+            echo "❌ Nothing listening on $TARGET and no server.js to start."
+            echo "   Start your app's server first, then re-run this task."
+            exit 1
+          fi
+
+          # Replace localhost with Docker gateway IP for access from container
+          TARGET="http://172.17.0.1:8080"
+          echo "📍 Using Docker-compatible target: $TARGET"
+        fi
+        
+        docker run --rm \
+          -v "$(pwd)/.ss/reports/dast:/zap/wrk/:rw" \
+          ghcr.io/zaproxy/zaproxy:stable \
+          zap-baseline.py \
+          -t "$TARGET" \
+          -J "dast-report.json" \
+          -I \
+          || true
+        
+        python3 .ss/scripts/generate-dast-md.py
+        
+        echo "✅ Analysis complete"
+    silent: false
+
+  dast:report:
+    desc: Display formatted DAST report
+    internal: true
+    cmds:
+      - |
+        echo ""
+        echo "🌐 DAST REPORT"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        
+        if [ ! -f .ss/reports/dast/dast-report.md ]; then
+          echo "❌ DAST report not generated!"
+          exit 1
+        fi
+        
+        cat .ss/reports/dast/dast-report.md
+        
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "📁 Reports saved to: .ss/reports/dast/"
+        echo "   • dast-report.md (human-readable)"
+        echo "   • dast-report.json (machine-readable)"
+        echo ""
+        
+        if [ -f .ss/reports/dast/dast-report.json ]; then
+          ALERT_COUNT=$(python3 -c "
+        import json, sys
+        with open('.ss/reports/dast/dast-report.json') as f:
+          data = json.load(f)
+        count = 0
+        for site in data.get('site', []):
+          for alert in site.get('alerts', []):
+            if int(alert.get('riskcode', 0)) >= 2:
+              count += 1
+        print(count)
+        " 2>/dev/null || echo "0")
+          if [ "$ALERT_COUNT" -gt 0 ]; then
+            echo "⚠️  Found $ALERT_COUNT medium/high alert(s)"
+            echo ""
+          else
+            echo "✅ No medium/high alerts detected"
+            echo ""
+          fi
+        fi
+    silent: false
+
+  secrets:
+    internal: true
+    desc: Run secrets detection using Gitleaks
+    summary: |
+      Scans the codebase and git history for hardcoded credentials using Gitleaks.
+      Generates both JSON and Markdown reports.
+
+      Usage:
+        task secrets           # Run detection
+    cmds:
+      - task: secrets:check-tool
+      - task: secrets:analyze
+      - task: secrets:report
+    silent: false
+
+  secrets:check-tool:
+    desc: Check if Gitleaks is installed, install if necessary
+    internal: true
+    cmds:
+      - |
+        if ! command -v gitleaks &> /dev/null; then
+          echo "📦 Installing Gitleaks..."
+          
+          INSTALL_SUCCESS=0
+          
+          if command -v curl &> /dev/null; then
+            echo "Trying GitHub releases..."
+            
+            # Detect OS and architecture
+            OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+            ARCH=$(uname -m)
+            case "$ARCH" in
+              x86_64) ARCH="x64" ;;
+              aarch64|arm64) ARCH="arm64" ;;
+              *) ARCH="x64" ;;
+            esac
+            case "$OS" in
+              darwin) OS="darwin" ;;
+              linux)  OS="linux" ;;
+              *)      OS="linux" ;;
+            esac
+            
+            LATEST=$(curl -s https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
+            DOWNLOAD_URL="https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_${LATEST}_${OS}_${ARCH}.tar.gz"
+            
+            mkdir -p ~/.local/bin
+            if curl -sSfL "$DOWNLOAD_URL" | tar -xz -C ~/.local/bin gitleaks 2>/dev/null; then
+              export PATH="$PATH:$HOME/.local/bin"
+              INSTALL_SUCCESS=1
+            fi
+          fi
+          
+          if [ $INSTALL_SUCCESS -eq 0 ]; then
+            echo "❌ Failed to install Gitleaks"
+            echo "Please install Gitleaks manually:"
+            echo "  - https://gitleaks.io/"
+            exit 1
+          fi
+        fi
+        
+        if ! command -v gitleaks &> /dev/null; then
+          echo "❌ Gitleaks installed but not found in PATH"
+          exit 1
+        fi
+        
+        GITLEAKS_VERSION=$(gitleaks version 2>&1)
+        echo "✅ Gitleaks $GITLEAKS_VERSION"
+    silent: false
+
+  secrets:analyze:
+    desc: Run Gitleaks secrets detection and generate reports
+    internal: true
+    dir: .
+    cmds:
+      - |
+        echo ""
+        echo "🔑 Running secrets detection..."
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        
+        mkdir -p .ss/reports/secrets
+        
+        # Run gitleaks against full git history; exit code 1 means secrets found, which is expected
+        gitleaks detect \
+          --source=. \
+          --report-format=json \
+          --report-path=".ss/reports/secrets/secrets-report.json" \
+          || true
+        
+        python3 .ss/scripts/generate-secrets-md.py
+        
+        echo "✅ Detection complete"
+    silent: false
+
+  secrets:report:
+    desc: Display formatted secrets detection report
+    internal: true
+    cmds:
+      - |
+        echo ""
+        echo "🔑 SECRETS DETECTION REPORT"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        
+        if [ ! -f .ss/reports/secrets/secrets-report.md ]; then
+          echo "❌ Secrets report not generated!"
+          exit 1
+        fi
+        
+        cat .ss/reports/secrets/secrets-report.md
+        
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "📁 Reports saved to: .ss/reports/secrets/"
+        echo "   • secrets-report.md (human-readable)"
+        echo "   • secrets-report.json (machine-readable)"
+        echo ""
+        
+        if [ -f .ss/reports/secrets/secrets-report.json ]; then
+          SECRET_COUNT=$(python3 -c "
+        import json, sys
+        with open('.ss/reports/secrets/secrets-report.json') as f:
+          content = f.read().strip()
+        if not content or content == 'null':
+          print(0)
+        else:
+          data = json.loads(content)
+          print(len(data) if isinstance(data, list) else 0)
+        " 2>/dev/null || echo "0")
+          if [ "$SECRET_COUNT" -gt 0 ]; then
+            echo "⚠️  Found $SECRET_COUNT secret(s) — revoke and remove immediately"
+            echo ""
+          else
+            echo "✅ No secrets detected"
+            echo ""
+          fi
+        fi
+    silent: false
+
+  contributing:setup:
+    desc: Install project dependencies
+    cmds:
+      - npm install
+
+  contributing:assets:
+    desc: Re-render SVG source assets (og-image, apple-touch-icon) to PNG via Playwright
+    cmds:
+      - node .ss/scripts/render-static-assets.js
+
+  contributing:build:
+    desc: Build the project (if a build script is defined)
+    cmds:
+      - |
+        if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.build ? 0 : 1)"; then
+          npm run build {{.CLI_ARGS}}
+        else
+          echo "ℹ️  No build script defined in package.json; nothing to build for this static project."
+        fi
+
+  contributing:lint:
+    desc: Run lint checks
+    cmds:
+      - |
+        if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.lint ? 0 : 1)"; then
+          npm run lint {{.CLI_ARGS}}
+        else
+          files="docs/**/*.md"
+          if [ -f CONTRIBUTING.md ]; then
+            files="$files CONTRIBUTING.md"
+          fi
+          npx markdownlint $files
+        fi
+
+  contributing:run:
+    desc: Run local development server (this repo's server.js, if present)
+    cmds:
+      - |
+        if [ -f server.js ]; then
+          node server.js
+        else
+          echo "ℹ️  No server.js found in this repo — SlopStopper does not ship a generic dev server."
+          echo "    Start your app's own server, then run SlopStopper tasks against its URL,"
+          echo "    e.g. SMOKE_TEST_URL=http://localhost:3000 task ss:reliability:smoke"
+        fi
+
+  contributing:test:
+    desc: Run Playwright tests (root config if present, otherwise SlopStopper's portable suite)
+    cmds:
+      - |
+        if [ -f playwright.config.js ] || [ -f playwright.config.ts ]; then
+          npx playwright test {{.CLI_ARGS}}
+        elif [ -f .ss/playwright.config.js ]; then
+          npx playwright test --config=.ss/playwright.config.js {{.CLI_ARGS}}
+        else
+          echo "ℹ️  No playwright config found — nothing to run."
+        fi
+
+  contributing:test:headed:
+    desc: Run Playwright tests with headed browser
+    cmds:
+      - |
+        if [ -f playwright.config.js ] || [ -f playwright.config.ts ]; then
+          npx playwright test --headed {{.CLI_ARGS}}
+        elif [ -f .ss/playwright.config.js ]; then
+          npx playwright test --config=.ss/playwright.config.js --headed {{.CLI_ARGS}}
+        else
+          echo "ℹ️  No playwright config found — nothing to run."
+        fi
+
+  contributing:test:complexity:
+    desc: Run complexity report generation tests
+    cmds:
+      - python3 .ss/tests/generate_complexity_report.test.py
+
+  contributing:test:security:
+    desc: Run all security report generation tests
+    cmds:
+      - task: contributing:test:sast
+      - task: contributing:test:dependencies
+      - task: contributing:test:dast
+      - task: contributing:test:secrets
+
+  contributing:test:sast:
+    desc: Run SAST report generation tests
+    cmds:
+      - python3 .ss/tests/generate_sast_report.test.py
+
+  contributing:test:vulnerability:
+    desc: Run vulnerability report generation tests
+    cmds:
+      - python3 .ss/tests/generate_dependencies_report.test.py
+
+  contributing:test:dast:
+    desc: Run DAST report generation tests
+    cmds:
+      - python3 .ss/tests/generate_dast_report.test.py
+
+  contributing:test:secrets:
+    desc: Run secrets detection report generation tests
+    cmds:
+      - python3 .ss/tests/generate_secrets_report.test.py
+
+  contributing:start:
+    desc: Start local development server
+    cmds:
+      - task: contributing:run
+
+  # Hygiene tasks
+  hygiene:lint:
+    desc: Lint documentation markdown files
+    cmds:
+      - npx markdownlint "docs/**/*.md"
+
+  hygiene:structure:
+    desc: Verify documentation index exists
+    cmds:
+      - |
+        if [ ! -f docs/index.md ]; then
+          echo "❌ docs/index.md not found"
+          exit 1
+        fi
+        echo "✅ docs/index.md found"
+
+  hygiene:size:
+    desc: Check for oversized markdown files in docs
+    cmds:
+      - |
+        python3 - <<'PY'
+        import glob
+        import pathlib
+        import re
+        import sys
+
+        max_words = 2500
+        violations = []
+
+        for path in glob.glob('docs/**/*.md', recursive=True):
+          text = pathlib.Path(path).read_text(encoding='utf-8')
+          words = len(re.findall(r"\\b\\w+\\b", text))
+          if words > max_words:
+            violations.append((path, words))
+
+        if violations:
+          print(f"❌ Found {len(violations)} oversized doc file(s) (>{max_words} words):")
+          for path, words in violations:
+            print(f"  - {path}: {words} words")
+          sys.exit(1)
+
+        print("✅ No oversized markdown files found in docs")
+        PY
+
+  hygiene:docs-size:
+    desc: Monitor documentation size and check against thresholds
+    summary: |
+      Analyzes documentation size against configured thresholds:
+      - Total documentation size (max 150 KB)
+      - Individual file sizes (max 20 KB)
+      - Number of documentation files (max 15)
+      
+      Generates a detailed report in .ss/reports/docs/docs-size-report.md
+      
+      Usage:
+        task ss:hygiene:docs-size    # Run size monitoring
+    cmds:
+      - bash .ss/scripts/check-docs-size.sh
+
+  hygiene:docs-structure:
+    desc: Validate documentation structure matches governance model
+    summary: |
+      Validates that the documentation directory structure matches
+      the governance model defined in docs/index.md.
+      
+      Checks:
+      - All expected categories exist with README.md files
+      - No unexpected files or directories outside the index
+      - Identifies deviations for discussion
+      
+      Usage:
+        task ss:hygiene:docs-structure    # Validate structure
+    cmds:
+      - task: hygiene:docs-structure:check
+      - task: hygiene:docs-structure:report
+    silent: false
+
+  hygiene:docs-structure:check:
+    desc: Check documentation structure and generate report
+    internal: true
+    cmds:
+      - python3 .ss/scripts/check-docs-structure.py || true
+    silent: false
+
+  hygiene:docs-structure:report:
+    desc: Generate markdown documentation structure report
+    internal: true
+    cmds:
+      - |
+        python3 .ss/scripts/generate-docs-structure-md.py
+        
+        echo ""
+        echo "📋 DOCUMENTATION STRUCTURE REPORT"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        
+        if [ ! -f .ss/reports/docs/docs-structure-report.md ]; then
+          echo "❌ Documentation structure report not generated!"
+          exit 1
+        fi
+        
+        cat .ss/reports/docs/docs-structure-report.md
+        
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "📁 Reports saved to: .ss/reports/docs/"
+        echo "   • docs-structure-report.md (human-readable)"
+        echo "   • docs-structure-report.json (machine-readable)"
+        echo ""
+    silent: false
+
+  hygiene:docs-accuracy:
+    desc: Check documentation for broken links, stale task/workflow refs
+    summary: |
+      Scans all markdown files under docs/ for accuracy issues:
+      - Broken internal markdown links
+      - References to non-existent Taskfile tasks
+      - References to non-existent GitHub Actions workflows
+      - Possible stale source-file references
+
+      Usage:
+        task ss:hygiene:docs-accuracy
+    cmds:
+      - task: hygiene:docs-accuracy:check
+      - task: hygiene:docs-accuracy:report
+    silent: false
+
+  hygiene:docs-accuracy:check:
+    desc: Run accuracy checks and produce JSON report
+    internal: true
+    cmds:
+      - python3 .ss/scripts/check-docs-accuracy.py || true
+    silent: false
+
+  hygiene:docs-accuracy:report:
+    desc: Generate markdown accuracy report
+    internal: true
+    cmds:
+      - |
+        python3 .ss/scripts/generate-docs-accuracy-md.py
+
+        echo ""
+        echo "🔎 DOCUMENTATION ACCURACY REPORT"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+
+        if [ ! -f .ss/reports/docs/docs-accuracy-report.md ]; then
+          echo "❌ Accuracy report not generated!"
+          exit 1
+        fi
+
+        cat .ss/reports/docs/docs-accuracy-report.md
+
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "📁 Reports saved to: .ss/reports/docs/"
+        echo "   • docs-accuracy-report.md (human-readable)"
+        echo "   • docs-accuracy-report.json (machine-readable)"
+        echo ""
+    silent: false
+
+  hygiene:docs-front-matter:
+    desc: Check all docs markdown files contain valid YAML front matter
+    summary: |
+      Validates that every markdown file under docs/ contains YAML front matter
+      with the required fields: title, description, status, and date.
+
+      Usage:
+        task ss:hygiene:docs-front-matter
+    cmds:
+      - task: hygiene:docs-front-matter:check
+      - task: hygiene:docs-front-matter:report
+    silent: false
+
+  hygiene:docs-front-matter:check:
+    desc: Run front matter checks and produce JSON report
+    internal: true
+    cmds:
+      - python3 .ss/scripts/check-docs-front-matter.py || true
+    silent: false
+
+  hygiene:docs-front-matter:report:
+    desc: Generate markdown front matter report
+    internal: true
+    cmds:
+      - |
+        python3 .ss/scripts/generate-docs-front-matter-md.py
+
+        echo ""
+        echo "📄 DOCUMENTATION FRONT MATTER REPORT"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+
+        if [ ! -f .ss/reports/docs/docs-front-matter-report.md ]; then
+          echo "❌ Front matter report not generated!"
+          exit 1
+        fi
+
+        cat .ss/reports/docs/docs-front-matter-report.md
+
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "📁 Reports saved to: .ss/reports/docs/"
+        echo "   • docs-front-matter-report.md (human-readable)"
+        echo "   • docs-front-matter-report.json (machine-readable)"
+        echo ""
+    silent: false
+
+  hygiene:test:
+    desc: Run all hygiene checks for code and documentation
+    cmds:
+      - task: hygiene:lint
+      - task: hygiene:structure
+      - task: hygiene:size
+      - task: hygiene:docs-size
+      - task: hygiene:docs-structure
+      - task: hygiene:docs-accuracy
+      - task: hygiene:docs-front-matter
+      - task: hygiene:complexity
+
+  # Security tasks
+  security:scan:
+    desc: Run full security scan suite
+    cmds:
+      - task: security
+
+  security:sast:
+    desc: Run static application security testing
+    cmds:
+      - task: sast
+
+  security:vulnerability:all:
+    desc: Run vulnerability scanning
+    cmds:
+      - task: vulnerability:all
+
+  security:dast:
+    desc: Run dynamic application security testing
+    cmds:
+      - task: dast
+
+  security:secrets:
+    desc: Run secrets detection
+    cmds:
+      - task: secrets
+
+  # Decisions tasks
+  decisions:validate:
+    desc: Validate decisions documentation baseline
+    cmds:
+      - |
+        if [ ! -f docs/decisions/DECISIONS.md ]; then
+          echo "❌ docs/decisions/DECISIONS.md not found"
+          exit 1
+        fi
+        if [ ! -f docs/decisions/DECISION_TEMPLATE.md ]; then
+          echo "❌ docs/decisions/DECISION_TEMPLATE.md not found"
+          exit 1
+        fi
+        if ! grep -q "| Date | Decision | Status | Rationale | Notes |" docs/decisions/DECISIONS.md; then
+          echo "❌ docs/decisions/DECISIONS.md is missing the decisions table header"
+          exit 1
+        fi
+        echo "✅ Decisions documentation baseline is valid"
+
+  decisions:new:
+    desc: Create a new decision note from template (use SLUG=<name>)
+    vars:
+      DATE:
+        sh: date +%F
+    cmds:
+      - |
+        if [ -z "{{.SLUG}}" ]; then
+          echo "❌ Missing SLUG. Usage: task ss:decisions:new SLUG=<decision-name>"
+          exit 1
+        fi
+        target="docs/decisions/{{.DATE}}-{{.SLUG}}.md"
+        if [ -f "$target" ]; then
+          echo "❌ $target already exists"
+          exit 1
+        fi
+        cp docs/decisions/DECISION_TEMPLATE.md "$target"
+        echo "✅ Created $target"
+
+  install:
+    desc: Install SlopStopper tooling into another repository (use TARGET=<path>)
+    summary: |
+      Installs the SlopStopper tooling (Taskfile, scripts, and GitHub workflows)
+      into a target repository directory.
+
+      Usage:
+        task install TARGET=/path/to/other-repo
+        task install                              # installs into current directory
+
+      What gets installed:
+        - Taskfile.yml          (skipped if already present)
+        - .ss/scripts/             (skipped if already present)
+        - .github/workflows/    (generic hygiene, security, and reliability workflows)
+        - package.json          (created or devDependencies merged)
+    vars:
+      TARGET: '{{.TARGET | default "."}}'
+    cmds:
+      - bash "{{.TASKFILE_DIR}}/install.sh" "{{.TARGET}}"

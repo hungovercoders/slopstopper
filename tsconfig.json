@@ -4,6 +4,7 @@
     "module": "none",
     "lib": ["ES6", "DOM"],
     "strict": true,
+    "skipLibCheck": true,
     "outDir": "app",
     "rootDir": "src"
   },

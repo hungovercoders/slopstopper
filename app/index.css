@@ -1,96 +1,17 @@
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-body {
-    min-height: 100vh;
-    font-family: Arial, sans-serif;
-    background: #1a1a2e;
-    color: #e0e0e0;
-}
-header {
-    background: #16213e;
-    padding: 1.2rem 2rem;
-    border-bottom: 2px solid #00d4aa;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-.site-title {
-    font-size: 1.4rem;
-    color: #00d4aa;
-    font-weight: bold;
-    text-decoration: none;
-}
-nav a {
-    color: #e0e0e0;
-    text-decoration: none;
-    margin-left: 1.2rem;
-    padding: 0.4rem 1rem;
-    border-radius: 4px;
-    transition: background 0.2s;
-    display: inline-block;
-}
-nav a:hover {
-    background: rgba(0, 212, 170, 0.2);
-}
-main {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 3rem 2rem;
-}
+/* index.html — page-specific styles */
+
 .hero {
-    text-align: center;
-    margin-bottom: 2.5rem;
+    padding-top: 1rem;
 }
-.hero h1 {
-    font-size: 3rem;
-    color: #00d4aa;
-    margin-bottom: 0.8rem;
+.hero .bubble {
+    margin-bottom: 1.5rem;
 }
-.hero p {
-    font-size: 1.2rem;
-    opacity: 0.8;
-}
-.about {
-    font-size: 1.05rem;
-    line-height: 1.7;
-    opacity: 0.85;
-    margin-bottom: 2rem;
-    text-align: center;
-    max-width: 720px;
-    margin-left: auto;
-    margin-right: auto;
-}
-.card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.5rem;
-}
-.card {
-    background: #16213e;
-    border: 1px solid rgba(0, 212, 170, 0.25);
-    border-radius: 8px;
-    padding: 1.5rem;
-}
-.card h2 {
-    color: #00d4aa;
-    font-size: 1.15rem;
-    margin-bottom: 0.8rem;
-}
-.card p {
-    font-size: 0.95rem;
-    line-height: 1.6;
-    opacity: 0.8;
-}
-.card-link {
-    display: inline-block;
-    margin-top: 1rem;
-    color: #00d4aa;
-    text-decoration: none;
-    font-size: 0.9rem;
-}
-.card-link:hover {
-    text-decoration: underline;
+
+@media (max-width: 600px) {
+    .mascot--hero {
+        width: 140px;
+    }
+    .cta-row .btn {
+        width: 100%;
+    }
 }

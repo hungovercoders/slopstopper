@@ -7,7 +7,7 @@ date: 2026-03-02
 
 # Runbooks
 
-Operational procedures for the template-netlify project.
+Operational procedures for the SlopStopper project.
 
 ## Overview
 

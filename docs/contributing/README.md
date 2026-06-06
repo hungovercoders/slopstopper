@@ -18,27 +18,27 @@ This document defines the default way to contribute to this project.
 
 Use `Taskfile.yml` as the default interface for contributor workflows:
 
-- `task contributing:setup` — Install dependencies
-- `task contributing:build` — Build the project
-- `task contributing:lint` — Run lint checks
-- `task contributing:run` — Run local development server
-- `task contributing:test` — Run Playwright tests
-- `task contributing:test:complexity` — Run code complexity checks
-- `task contributing:test:security` — Run all security test suites
-- `task contributing:test:sast` — Run SAST tests
-- `task contributing:test:vulnerability` — Run vulnerability scanning tests
-- `task contributing:test:dast` — Run DAST tests
-- `task contributing:test:secrets` — Run secrets detection tests
+- `task ss:contributing:setup` — Install dependencies
+- `task ss:contributing:build` — Build the project
+- `task ss:contributing:lint` — Run lint checks
+- `task ss:contributing:run` — Run local development server
+- `task ss:contributing:test` — Run Playwright tests
+- `task ss:contributing:test:complexity` — Run code complexity checks
+- `task ss:contributing:test:security` — Run all security test suites
+- `task ss:contributing:test:sast` — Run SAST tests
+- `task ss:contributing:test:vulnerability` — Run vulnerability scanning tests
+- `task ss:contributing:test:dast` — Run DAST tests
+- `task ss:contributing:test:secrets` — Run secrets detection tests
 
 Use namespaced documentation tasks via root Taskfile. Check available tasks with `task --list`:
 
-- `task hygiene:test`
-- `task hygiene:lint`
-- `task security:scan`
-- `task security:sast`
-- `task security:vulnerability:all`
-- `task decisions:validate`
-- `task decisions:new SLUG=<name>`
+- `task ss:hygiene:test`
+- `task ss:hygiene:lint`
+- `task ss:security:scan`
+- `task ss:security:sast`
+- `task ss:security:vulnerability:all`
+- `task ss:decisions:validate`
+- `task ss:decisions:new SLUG=<name>`
 
 ## Workflow
 

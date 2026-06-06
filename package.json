@@ -5,9 +5,11 @@
   "scripts": {
     "build": "tsc",
     "start": "node server.js",
-    "test": "playwright test",
-    "test:headed": "playwright test --headed",
-    "test:smoke": "playwright test tests/smoke.spec.ts"
+    "test": "playwright test --config=.ss/playwright.config.js",
+    "test:headed": "playwright test --config=.ss/playwright.config.js --headed",
+    "test:smoke": "playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts",
+    "test:accessibility": "playwright test --config=.ss/playwright.config.js .ss/tests/accessibility.spec.ts",
+    "test:links": "playwright test --config=.ss/playwright.config.js .ss/tests/broken-links.spec.ts"
   },
   "keywords": [
     "netlify",
@@ -17,6 +19,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
+    "@lhci/cli": "^0.14.0",
     "@playwright/test": "^1.40.0",
     "markdownlint-cli": "^0.47.0",
     "typescript": "^5.9.3"
