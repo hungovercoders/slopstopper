@@ -145,6 +145,7 @@ task ss:security:dast -- http://localhost:8080
 - ✅ PR comments with DAST findings report
 - ✅ Merge blocking if any High or Medium alerts exist
 - ✅ GitHub issues on main branch for blocking alerts
+- ✅ Documented CSP exceptions surfaced separately and **not** blocking (see below)
 
 ### Common Issues
 
@@ -153,15 +154,26 @@ task ss:security:dast -- http://localhost:8080
 | Workflow not triggering? | Check workflow is at `.github/workflows/ss-security-dast-check.yml` |
 | ZAP not available? | The workflow uses Docker to run ZAP — no installation needed in CI |
 | Don't want DAST checks? | Delete `.github/workflows/ss-security-dast-check.yml` |
+| All my PRs fail DAST because I had to embed GTM / Intercom / etc.? | Document the CSP relaxation in [`CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md). The gate will swallow CSP-class findings on documented paths. See "DAST + CSP exceptions" below. |
 
 ### Risk Level Reference
 
 | Risk Level | riskcode | Status | Action |
 |------------|----------|--------|--------|
-| High | 3 | 🔴 Blocking | Must be fixed before merge |
-| Medium | 2 | 🟡 Blocking | Must be fixed before merge |
+| High | 3 | 🔴 Blocking | Must be fixed before merge — blocks even on documented exception paths |
+| Medium | 2 | 🟡 Blocking by default | Blocks unless the finding is a CSP issue on a path documented in `CSP_EXCEPTIONS.md` |
 | Low | 1 | 🔵 Non-blocking | Review when time allows |
 | Informational | 0 | ℹ️ Non-blocking | Awareness only |
+
+### DAST + CSP exceptions
+
+The DAST gate in this template (driven by [`.ss/scripts/check-dast-alerts.py`](../../.ss/scripts/check-dast-alerts.py)) consults [`docs/security/CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md) on every run:
+
+- **No `CSP_EXCEPTIONS.md` file?** Gate behaves exactly like a vanilla riskcode ≥ 2 cutoff — nothing changes for you. Adopters with no third-party scripts can ignore this section entirely.
+- **You added a third-party widget (GTM, Sentry, Intercom, Giscus…)?** Add a per-path `[[headers]]` block to `netlify.toml` for the affected path, *and* document it under `## Exceptions` in `CSP_EXCEPTIONS.md` using the schema in that file. Once it's documented, ZAP's CSP findings on that exact path stop blocking the build. They still appear in the PR comment under a separate "🛡 Documented CSP exceptions" section so they stay visible in review.
+- **What still blocks even with an exception?** Any non-CSP finding (XSS, missing other headers, CSRF, etc.) on the same path; any finding at all on a non-documented path; any High-severity (riskcode 3) finding anywhere — including CSP High on a documented path. The exception only relaxes the *Medium-CSP-on-this-path* case; the rest of DAST coverage is unchanged.
+
+The companion check `ss:hygiene:csp-exceptions` (workflow `ss-hygiene-csp-exceptions-check.yml`) keeps `netlify.toml` and `CSP_EXCEPTIONS.md` in sync — if either side drifts, the build fails before DAST even runs.
 
 ---
 
@@ -183,6 +195,8 @@ The DAST workflow:
 | `.github/workflows/ss-security-dast-check.yml` | GitHub Actions workflow |
 | `Taskfile.yml` (`dast*` tasks) | Local task runner config |
 | `.ss/scripts/generate-dast-md.py` | Report generator |
+| `.ss/scripts/check-dast-alerts.py` | Pass/fail gate — filters documented CSP exceptions from the blocker count |
+| `docs/security/CSP_EXCEPTIONS.md` | Single source of truth for per-path CSP relaxations (optional — gate handles absence) |
 | `.gitignore` | Excludes `.ss/reports/dast/` |
 
 ## Key Configuration Points

@@ -36,7 +36,7 @@ unhelpful. The honest answer is a pattern:
 5. **Let DAST keep flagging the relaxed pages.** A scanner flagging a
    documented exception is correct behaviour — that's how you find
    *un*documented relaxations later. The DAST workflow on this repo
-   consults this file via [`check-dast-alerts.py`](../../.ss/scripts/check-dast-alerts.py):
+   consults this file via [the DAST gate script](../../.ss/scripts/check-dast-alerts.py):
    ZAP CSP findings whose URL path is listed under `## Exceptions`
    below are reported separately and do **not** fail the build, while
    any non-CSP finding or any High-severity (riskcode 3) CSP finding
@@ -107,5 +107,12 @@ Re-run when the widget breaks after a third-party release.
 4. Install `ss-hygiene-csp-exceptions-check.yml` via the SlopStopper
    installer — the check enforces drift between `netlify.toml` and this
    file
-5. Keep DAST in your pipeline. A scanner finding on a documented exception
-   page is expected; an undocumented one is a real bug
+5. Keep DAST in your pipeline. The SlopStopper DAST gate
+   (`.ss/scripts/check-dast-alerts.py`) already consults this file:
+   Medium-severity CSP findings on documented paths are surfaced in the
+   PR comment but do **not** block the build. Undocumented relaxations
+   still fail DAST, as does any non-CSP finding or any High-severity
+   finding (even CSP, even on a documented path)
+6. If your repo has no third-party widgets, you can ignore this file
+   entirely — the DAST gate handles its absence as "no exceptions" and
+   blocks all riskcode ≥ 2 findings normally
