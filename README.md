@@ -38,6 +38,7 @@ Every check below runs on every PR and push to `main` here, and ships to consume
 [![Accessibility](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-accessibility-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-accessibility-check.yml)
 [![Core Web Vitals](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-core-web-vitals.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-core-web-vitals.yml)
 [![SEO Metatags](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-seo-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-seo-check.yml)
+[![Broken Links](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-broken-links-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-broken-links-check.yml)
 
 ### 🤖 Operational
 [![Doc Auto-Updater](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-doc-updater.lock.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-doc-updater.lock.yml)
@@ -116,7 +117,7 @@ Five loops of feedback, all running on every PR and push to `main`:
 | ---- | ------------ | ----- | ---- |
 | 🔒 **Security** | SAST, DAST, secrets detection, dependency CVE scanning | Semgrep, OWASP ZAP, Gitleaks, Trivy | [Security →](./docs/security/README.md) |
 | 🧹 **Hygiene** | Cyclomatic complexity caps, doc structure / accuracy / size checks, auto-labelled PRs | Lizard, Bandit, markdownlint | [Hygiene →](./docs/hygiene/README.md) |
-| ✅ **Reliability** | E2E + smoke tests, accessibility audits (WCAG 2.1 AA), Core Web Vitals, SEO + OpenGraph metatag checks | Playwright, axe-core, Lighthouse CI, stdlib Python | [Reliability →](./docs/reliability/README.md) |
+| ✅ **Reliability** | E2E + smoke tests, internal broken-link audits, accessibility audits (WCAG 2.1 AA), Core Web Vitals, SEO + OpenGraph metatag checks | Playwright, axe-core, Lighthouse CI, stdlib Python | [Reliability →](./docs/reliability/README.md) |
 | 🤖 **Operational** | Failed workflows auto-raise GitHub issues; an agentic doc updater opens weekly sync PRs | GitHub Actions, gh-aw | [Runbooks →](./docs/runbooks/README.md) |
 | 🚀 **Deployment** | Preview deploys per PR, automated production releases, preview cleanup | Netlify, GitHub Actions | [Deployment →](./docs/deployment/README.md) |
 
@@ -127,7 +128,7 @@ The 20 workflows split into four portability layers. Layer 1 runs the moment you
 | Layer | Checks | What you provide |
 | ----- | ------ | ---------------- |
 | **1. Static analysis** (any code) | SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure / Accuracy / Size, Auto-label PRs, Workflow-failure tracker | Nothing — works out of the box |
-| **2. Web-app dynamic** (need a URL) | Smoke, Accessibility, Core Web Vitals, SEO Metatags, DAST, Playwright | `SMOKE_TEST_URL` · `ACCESSIBILITY_TEST_URL` · `LIGHTHOUSE_URL` · `SEO_TEST_URL` · optionally `SMOKE_PAGES` / `ACCESSIBILITY_PAGES` / `SEO_PAGES` |
+| **2. Web-app dynamic** (need a URL) | Smoke, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, DAST, Playwright | `SMOKE_TEST_URL` · `BROKEN_LINKS_TEST_URL` · `ACCESSIBILITY_TEST_URL` · `LIGHTHOUSE_URL` · `SEO_TEST_URL` · optionally `SMOKE_PAGES` / `BROKEN_LINKS_PAGES` / `ACCESSIBILITY_PAGES` / `SEO_PAGES` |
 | **3. Netlify deploy** | Preview deploys, production releases, preview cleanup | `NETLIFY_AUTH_TOKEN` + `NETLIFY_SITE_ID` repo secrets |
 | **4. Agentic doc-updater** | Weekly doc-sync PRs | `ANTHROPIC_API_KEY` repo secret |
 
@@ -162,8 +163,8 @@ Most checks work out of the box. Things to wire up if you want the full suite:
 
 **Tunable env vars** (set in workflows or locally):
 
-- `ACCESSIBILITY_TEST_URL` / `SMOKE_TEST_URL` / `LIGHTHOUSE_URL` — point the dynamic checks at your app
-- `ACCESSIBILITY_PAGES` / `SMOKE_PAGES` — comma-separated paths to audit (default `/`)
+- `ACCESSIBILITY_TEST_URL` / `SMOKE_TEST_URL` / `BROKEN_LINKS_TEST_URL` / `LIGHTHOUSE_URL` — point the dynamic checks at your app
+- `ACCESSIBILITY_PAGES` / `SMOKE_PAGES` / `BROKEN_LINKS_PAGES` — comma-separated paths to audit (default `/`)
 - `ACCESSIBILITY_IMPACT` — `critical` / `serious` / `moderate` / `minor` (default `serious`) — see [`docs/reliability/ACCESSIBILITY.md`](./docs/reliability/ACCESSIBILITY.md)
 - `ACCESSIBILITY_THRESHOLD` — max violations before failing (default `0`)
 

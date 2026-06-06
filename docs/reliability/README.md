@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains documentation for SlopStopper's reliability checks: portable smoke tests, accessibility audits (see [ACCESSIBILITY.md](ACCESSIBILITY.md)) and Core Web Vitals via Lighthouse CI. All three are wired via Playwright/Lighthouse against any reachable URL.
+This directory contains documentation for SlopStopper's reliability checks: portable smoke tests, broken-link audits, accessibility audits (see [ACCESSIBILITY.md](ACCESSIBILITY.md)) and Core Web Vitals via Lighthouse CI. These checks are wired against any reachable URL.
 
 ## Configuration (env vars)
 
@@ -13,6 +13,8 @@ All reliability checks read their target URL and audit scope from environment va
 | `SMOKE_TEST_URL` | (none) | smoke |
 | `SMOKE_PAGES` | `/` | smoke — comma-separated paths, e.g. `/,/login,/pricing` |
 | `SMOKE_TIMEOUT` | `5000` | smoke — per-request ms |
+| `BROKEN_LINKS_TEST_URL` | falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080` | broken links |
+| `BROKEN_LINKS_PAGES` | `/` | broken links — comma-separated crawl seed paths, e.g. `/,/features.html,/tools.html` |
 | `ACCESSIBILITY_TEST_URL` | falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080` | accessibility |
 | `ACCESSIBILITY_PAGES` | `/` | accessibility — comma-separated paths |
 | `ACCESSIBILITY_IMPACT` | `serious` | accessibility — min `critical`/`serious`/`moderate`/`minor` |
@@ -22,6 +24,35 @@ All reliability checks read their target URL and audit scope from environment va
 | `SEO_PAGES` | `/` | SEO metatag check — comma-separated paths, e.g. `/,/features.html` |
 | `SEO_REQUIRE_OG_IMAGE` | `1` | SEO metatag check — set `0` to skip og:image presence check |
 | `SEO_VERIFY_OG_IMAGE` | `1` | SEO metatag check — set `0` to skip HEAD-fetching og:image |
+
+## Broken Link Checks
+
+The broken-link check can run against any site you provide via `BROKEN_LINKS_TEST_URL`.
+It visits each path in `BROKEN_LINKS_PAGES`, collects all anchor links, keeps only same-origin HTTP(S) links, then asserts each destination returns a non-4xx/5xx status.
+External links are intentionally skipped to reduce noise from third-party outages,
+rate limits, or bot protections outside your control.
+
+### Running broken-link checks locally
+
+```bash
+# Pass URL directly
+task ss:reliability:links -- https://your-site.netlify.app
+
+# Or set environment variables
+BROKEN_LINKS_TEST_URL=https://your-site.netlify.app \
+BROKEN_LINKS_PAGES="/,/features.html,/tools.html" \
+task ss:reliability:links
+```
+
+### Running broken-link checks in CI/CD
+
+```bash
+BROKEN_LINKS_TEST_URL=https://your-site.netlify.app \
+BROKEN_LINKS_PAGES="/,/features.html,/tools.html" \
+task ss:reliability:links:ci
+```
+
+For live `slopstopper.dev`, the workflow seeds `/,/features.html,/tools.html` so links from the three main pages are validated on every scheduled/deploy/PR run.
 
 ## Smoke Tests
 
