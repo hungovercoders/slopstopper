@@ -1226,6 +1226,25 @@ tasks:
         echo ""
     silent: false
 
+  hygiene:csp-exceptions:
+    desc: Validate per-page CSP relaxations in netlify.toml match docs/security/CSP_EXCEPTIONS.md
+    summary: |
+      Parses netlify.toml and docs/security/CSP_EXCEPTIONS.md and fails if
+      either side has a per-path CSP exception the other doesn't document.
+
+      Default site CSP is strict (`default-src 'self'; script-src 'self'`).
+      Per-page exceptions are allowed for vetted third-party widgets
+      (Giscus, GTM, Sentry, etc.) but MUST be documented and SRI-pinned.
+
+      See docs/security/CSP_EXCEPTIONS.md for the pattern adopters can
+      reuse in their own repos.
+
+      Usage:
+        task ss:hygiene:csp-exceptions
+    cmds:
+      - python3 .ss/scripts/check-csp-exceptions.py
+    silent: false
+
   hygiene:docs-accuracy:
     desc: Check documentation for broken links, stale task/workflow refs
     summary: |

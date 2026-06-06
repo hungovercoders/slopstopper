@@ -8,6 +8,26 @@ Overview of security scanning and controls for this project.
 - [DAST — Dynamic Application Security Testing](#dast--dynamic-application-security-testing)
 - [Dependency Vulnerability Scanning](#dependency-vulnerability-scanning)
 - [Secrets Detection](#secrets-detection)
+- [CSP Exceptions](#csp-exceptions) — strict-default + per-path exceptions pattern
+
+---
+
+# CSP Exceptions
+
+The site ships a strict `default-src 'self'; script-src 'self'` Content
+Security Policy on every path. When a third-party widget is genuinely
+required on a single page (e.g. Giscus on `/feedback.html`), we admit it
+via a **scoped, documented, SRI-pinned per-path exception** rather than
+weakening the site-wide CSP.
+
+The full pattern — and the live list of exceptions — is in
+[`CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md). The
+[`ss:hygiene:csp-exceptions`](../../Taskfile.ss.yml) check enforces drift
+between `netlify.toml` and that document.
+
+**For adopters:** this is the pattern to reuse the moment your site needs
+GTM, Sentry, Intercom or any analytics tag. Copy the schema, drop the
+hygiene check via the installer, and your auditors will thank you.
 
 ---
 

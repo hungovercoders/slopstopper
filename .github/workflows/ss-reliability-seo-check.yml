@@ -116,7 +116,7 @@ jobs:
         if: steps.url.outputs.use_local == 'true'
         # CUSTOMISE FOR YOUR APP: comma-separated paths to audit. Defaults
         # to '/' if unset.
-        run: echo "SEO_PAGES=/,/features.html,/tools.html" >> "$GITHUB_ENV"
+        run: echo "SEO_PAGES=/,/features.html,/tools.html,/feedback.html" >> "$GITHUB_ENV"
 
       - name: Run SEO metatag audit
         id: audit

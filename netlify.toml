@@ -17,3 +17,22 @@
   for = "/og-image.png"
   [headers.values]
     Cross-Origin-Resource-Policy = "cross-origin"
+
+# ─────────────────────────────────────────────────────────────
+# CSP EXCEPTION — /feedback.html embeds Giscus (GitHub Discussions).
+#
+# Documented in docs/security/CSP_EXCEPTIONS.md.
+# Validated in CI by ss:hygiene:csp-exceptions.
+#
+# This block REPLACES the /* CSP for /feedback.html only. All other
+# paths keep the strict default-src 'self' policy.
+#
+# Also relaxes COEP / COOP so the Giscus iframe loads and the GitHub
+# OAuth popup can communicate back.
+# ─────────────────────────────────────────────────────────────
+[[headers]]
+  for = "/feedback.html"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://giscus.app; style-src 'self' 'unsafe-inline'; frame-src https://giscus.app; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
+    Cross-Origin-Embedder-Policy = "unsafe-none"

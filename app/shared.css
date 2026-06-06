@@ -494,6 +494,59 @@ main {
     z-index: 1;
 }
 
+/* ─── Testimonial sticker card ──────────────────────────── */
+.testimonial {
+    position: relative;
+    background: var(--peach-soft);
+    border: var(--border);
+    border-radius: var(--r-lg);
+    padding: 2rem 2rem 1.5rem;
+    margin: 2rem 0;
+    box-shadow: var(--shadow-sticker);
+    transform: rotate(-1.2deg);
+}
+.testimonial::before {
+    content: "\201C";
+    position: absolute;
+    top: -0.6rem;
+    left: 1.2rem;
+    font-size: 5rem;
+    line-height: 1;
+    color: var(--accent-deep);
+    font-family: Georgia, "Times New Roman", serif;
+}
+.testimonial__quote {
+    font-style: italic;
+    font-size: 1.25rem;
+    line-height: 1.5;
+    color: var(--ink);
+    margin: 0 0 1rem;
+    padding-top: 1.5rem;
+}
+.testimonial__quote a {
+    color: var(--accent-deep);
+    font-weight: 700;
+}
+.testimonial__attrib {
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    margin: 0 0 1.5rem;
+}
+.testimonial__attrib strong {
+    color: var(--ink);
+}
+.testimonial__interrupt {
+    transform: rotate(-2deg);
+    margin-top: 0.5rem;
+}
+.testimonial__pause {
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0;
+}
+
 /* ─── Footer ─────────────────────────────────────────────── */
 footer {
     margin-top: 5rem;

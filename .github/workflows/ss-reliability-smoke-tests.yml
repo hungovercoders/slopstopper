@@ -82,7 +82,7 @@ jobs:
           SMOKE_TEST_URL: ${{ steps.url.outputs.url }}
           # CUSTOMISE FOR YOUR APP: comma-separated paths to smoke-check.
           # Defaults to '/' if unset.
-          SMOKE_PAGES: '/,/features.html,/tools.html'
+          SMOKE_PAGES: '/,/features.html,/tools.html,/feedback.html'
         run: task ss:reliability:smoke:ci
 
       - name: Upload test results
