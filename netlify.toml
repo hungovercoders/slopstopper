@@ -24,14 +24,27 @@
 # Documented in docs/security/CSP_EXCEPTIONS.md.
 # Validated in CI by ss:hygiene:csp-exceptions.
 #
-# This block REPLACES the /* CSP for /feedback.html only. All other
+# These blocks REPLACE the /* CSP for the feedback page only. All other
 # paths keep the strict default-src 'self' policy.
+#
+# Two paths are scoped:
+#   - /feedback.html  (canonical)
+#   - /feedback       (Netlify's "pretty URL" served from the same file)
+# Without the second block, navigating to /feedback gets the strict
+# CSP and Giscus is silently blocked.
 #
 # Also relaxes COEP / COOP so the Giscus iframe loads and the GitHub
 # OAuth popup can communicate back.
 # ─────────────────────────────────────────────────────────────
 [[headers]]
   for = "/feedback.html"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://giscus.app; style-src 'self' 'unsafe-inline' https://giscus.app; frame-src https://giscus.app; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
+    Cross-Origin-Embedder-Policy = "unsafe-none"
+
+[[headers]]
+  for = "/feedback"
   [headers.values]
     Content-Security-Policy = "default-src 'self'; script-src 'self' https://giscus.app; style-src 'self' 'unsafe-inline' https://giscus.app; frame-src https://giscus.app; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
     Cross-Origin-Opener-Policy = "same-origin-allow-popups"

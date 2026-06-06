@@ -96,6 +96,18 @@ Re-run when the widget breaks after a third-party release.
   - The COOP/COEP overrides on this path (`same-origin-allow-popups` / `unsafe-none`) are also part of this exception, so the GitHub OAuth popup can communicate back during sign-in
 - **Fallback if Giscus is unavailable or SRI mismatch:** The page renders a static link to the Feedback discussion category (`https://github.com/hungovercoders/slopstopper/discussions/categories/feedback`) so visitors can still reach the same destination
 
+### `/feedback`
+
+Netlify's "pretty URL" feature also serves `/feedback.html` at `/feedback` (no extension). Per-path `[[headers]]` rules match on exact path, so this URL needs its own block with the same relaxation as `/feedback.html` above. All fields below are intentionally identical to the entry above; they document the same Giscus exception applied to the alias URL.
+
+- **Origin allowed:** `https://giscus.app`
+- **Directives added:** `script-src https://giscus.app`, `frame-src https://giscus.app`, `style-src 'unsafe-inline' https://giscus.app`
+- **Loader SRI:** `sha384-UwLZGbJGvkTzz0719+xEzUm/idqwzs0yZN8aB9Se5vUXHbyRyDWw9yqZTIsOsJ7x` (refresh together with the `/feedback.html` entry)
+- **Why:** Same as `/feedback.html` — covers Netlify's pretty-URL alias so visitors typing `/feedback` get the same relaxed CSP
+- **Approved by:** PR introducing the feedback page (see `git log app/feedback.html`)
+- **Data leaving site:** Same as `/feedback.html`
+- **Refresh policy:** When refreshing the SRI on `/feedback.html` above, refresh this entry too — they must stay identical
+
 ---
 
 ## Adopters: how to use this in your own repo
