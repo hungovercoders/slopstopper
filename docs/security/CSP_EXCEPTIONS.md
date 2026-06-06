@@ -94,7 +94,7 @@ Re-run when the widget breaks after a third-party release.
     3. Update the `**Loader SRI:**` line above to match
     4. Open a PR — the `ss:hygiene:csp-exceptions` check will green-light when both sides match
   - The COOP/COEP overrides on this path (`same-origin-allow-popups` / `unsafe-none`) are also part of this exception, so the GitHub OAuth popup can communicate back during sign-in
-- **Fallback if Giscus is unavailable or SRI mismatch:** The page renders a static link to `https://github.com/hungovercoders/slopstopper/discussions` so visitors can still reach the same destination
+- **Fallback if Giscus is unavailable or SRI mismatch:** The page renders a static link to the Feedback discussion category (`https://github.com/hungovercoders/slopstopper/discussions/categories/feedback`) so visitors can still reach the same destination
 
 ---
 

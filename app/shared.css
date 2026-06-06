@@ -537,14 +537,17 @@ main {
     color: var(--ink);
 }
 .testimonial__interrupt {
-    transform: rotate(-2deg);
-    margin-top: 0.5rem;
-}
-.testimonial__pause {
-    color: var(--ink-soft);
-    font-size: 0.95rem;
-    margin-top: 1.5rem;
-    margin-bottom: 0;
+    display: inline-block;
+    margin-top: 0.75rem;
+    padding: 0.6rem 1rem;
+    background: var(--sun);
+    border: var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sticker-sm);
+    transform: rotate(-3deg);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--ink);
 }
 
 /* ─── Footer ─────────────────────────────────────────────── */
