@@ -1,17 +1,19 @@
 # Deployment
 
-Release and environment workflows for the template-netlify project.
+Release and environment workflows for the SlopStopper project.
 
 ## Overview
 
-This project deploys a static site to Netlify using GitHub Actions. There is no build step — static files are published as-is.
+This project deploys a static site to Netlify using GitHub Actions. The
+build step compiles TypeScript via `npm run build` (`tsc`) before Netlify
+publishes the `app/` directory.
 
 ## Workflows
 
 | Workflow | Trigger | Purpose |
 | -------- | ------- | ------- |
-| [netlify-deploy.yml](../../.github/workflows/netlify-deploy.yml) | Push to `main` / PR to `main` | Production deploy and PR preview deploy |
-| [netlify-cleanup-preview.yml](../../.github/workflows/netlify-cleanup-preview.yml) | PR closed | Delete preview deployments to free Netlify resources |
+| [ss-netlify-deploy.yml](../../.github/workflows/ss-netlify-deploy.yml) | Push to `main` / PR to `main` | Production deploy and PR preview deploy |
+| [ss-netlify-cleanup-preview.yml](../../.github/workflows/ss-netlify-cleanup-preview.yml) | PR closed | Delete preview deployments to free Netlify resources |
 
 ## Environments
 
@@ -28,5 +30,6 @@ This project deploys a static site to Netlify using GitHub Actions. There is no 
 ## Configuration
 
 Deployment is configured via [netlify.toml](../../netlify.toml):
-- Publish directory: `.` (root)
-- Build command: `echo 'No build step required for static site'`
+- Publish directory: `app`
+- Build command: `npm run build` (runs `tsc`)
+- Security headers (CSP, frame-ancestors, etc.) are defined in `netlify.toml` and applied by Netlify in production and by `server.js` locally for parity.

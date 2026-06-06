@@ -1,0 +1,204 @@
+name: SlopStopper · Reliability Smoke Tests
+
+on:
+  # Run after successful deployments
+  deployment_status:
+  
+  # Run on schedule (every hour)
+  schedule:
+    - cron: '0 * * * *'
+  
+  # Allow manual trigger with custom URL
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL to test'
+        required: true
+        default: 'https://slopstopper.dev/'
+        type: string
+
+jobs:
+  smoke-test:
+    # Only run on successful deployments or manual/scheduled runs
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      github.event_name == 'schedule' || 
+      (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success')
+    
+    runs-on: ubuntu-latest
+
+    permissions:
+      issues: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Task
+        run: |
+          curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
+          task --version
+        
+      - name: Determine test URL
+        id: url
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_URL: ${{ github.event.inputs.url }}
+          DEPLOYMENT_URL: ${{ github.event.deployment_status.target_url }}
+        run: |
+          validate_url() {
+            local url="$1"
+            if [[ ! "$url" =~ ^https?://[^[:space:][:cntrl:]]+$ ]]; then
+              echo "Error: Invalid URL format: $url" >&2
+              exit 1
+            fi
+            printf '%s' "$url"
+          }
+          if [ "$EVENT_NAME" == "workflow_dispatch" ]; then
+            SAFE_URL="$(validate_url "$INPUT_URL")"
+            echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT_NAME" == "deployment_status" ]; then
+            SAFE_URL="$(validate_url "$DEPLOYMENT_URL")"
+            echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
+          else
+            # Scheduled run - use production URL
+            echo "url=https://slopstopper.dev" >> "$GITHUB_OUTPUT"
+          fi
+        
+      - name: Run smoke tests
+        env:
+          SMOKE_TEST_URL: ${{ steps.url.outputs.url }}
+          # CUSTOMISE FOR YOUR APP: comma-separated paths to smoke-check.
+          # Defaults to '/' if unset.
+          SMOKE_PAGES: '/,/features.html,/tools.html'
+        run: task ss:reliability:smoke:ci
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-results-${{ github.run_id }}
+          path: |
+            playwright-report/
+            .ss/playwright-report/
+          retention-days: 30
+          if-no-files-found: ignore
+          
+      - name: Comment on deployment (if applicable)
+        if: github.event_name == 'deployment_status' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const testStatus = '${{ job.status }}' === 'success' ? '✅ PASSED' : '❌ FAILED';
+            const url = '${{ steps.url.outputs.url }}';
+            
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `## Smoke Test Results ${testStatus}\n\nTested URL: ${url}\n\n[View detailed results](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`
+            });
+
+      - name: Create/Update issue on smoke test failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '❌ Smoke Tests Failing';
+            const label = 'smoke-test-failure';
+            const url = '${{ steps.url.outputs.url }}';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const body = [
+              `## Smoke Test Failure Detected`,
+              ``,
+              `**URL Tested:** ${url}`,
+              `**Run:** [#${context.runId}](${runUrl})`,
+              ``,
+              `The smoke tests are failing on the deployed site.`,
+              ``,
+              `## How to Investigate`,
+              ``,
+              `\`\`\`bash`,
+              `SMOKE_TEST_URL="${url}" task ss:reliability:smoke`,
+              `\`\`\``,
+              ``,
+              `[View the failed workflow run](${runUrl})`,
+              ``,
+              `---`,
+              `*This issue was automatically created by the Reliability Smoke Tests workflow.*`
+            ].join('\n');
+
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: [label]
+            });
+
+            const existingIssue = openIssues.find(issue => issue.title === title);
+
+            if (existingIssue) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: [
+                  `## New Failure`,
+                  ``,
+                  `**Time:** ${new Date().toISOString()}`,
+                  `**URL Tested:** ${url}`,
+                  `**Run:** [#${context.runId}](${runUrl})`
+                ].join('\n')
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: [label, 'reliability']
+              });
+            }
+
+      - name: Close smoke test failure issue on success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const label = 'smoke-test-failure';
+            const title = '❌ Smoke Tests Failing';
+
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: [label]
+            });
+
+            for (const issue of openIssues.filter(i => i.title === title)) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `✅ Smoke tests are now passing. Closing this issue automatically.`
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed'
+              });
+            }

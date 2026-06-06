@@ -1,0 +1,198 @@
+name: SlopStopper · SAST Analysis
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  sast:
+    name: Static Application Security Testing with Semgrep
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Semgrep
+        run: |
+          set -e
+          pip install --upgrade pip
+          pip install semgrep
+          semgrep --version
+        shell: bash
+
+      - name: Install Task
+        run: |
+          curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
+          task --version
+
+      - name: Run SAST analysis
+        id: sast
+        run: |
+          task ss:security:sast
+
+      - name: Check reports generated
+        run: |
+          if [ ! -f .ss/reports/sast/sast-report.md ]; then
+            echo "❌ Failed to generate SAST report"
+            exit 1
+          fi
+
+          echo "✅ SAST reports generated successfully"
+
+      - name: Check for error-severity findings
+        id: check-sast
+        run: |
+          set +e
+          ERRORS_FOUND=0
+
+          if [ -f .ss/reports/sast/sast-report.json ]; then
+            ERROR_COUNT=$(python3 -c "
+          import json, sys
+          with open('.ss/reports/sast/sast-report.json') as f:
+            data = json.load(f)
+          errors = [r for r in data.get('results', []) if r.get('extra', {}).get('severity', '').upper() == 'ERROR']
+          print(len(errors))
+          " 2>/dev/null || echo "0")
+            if [ "$ERROR_COUNT" -gt 0 ]; then
+              ERRORS_FOUND=1
+              echo "⚠️  Found $ERROR_COUNT error-severity finding(s)"
+            fi
+          fi
+
+          set -e
+          echo "errors_found=$ERRORS_FOUND" >> $GITHUB_OUTPUT
+
+      - name: Debug - Check directory contents before upload
+        if: always()
+        run: |
+          echo "🔍 Debugging directory structure and paths"
+          echo ""
+          echo "📍 Current working directory:"
+          pwd
+          echo ""
+          echo "📂 Checking .ss/reports/sast/:"
+          if [ -d .ss/reports/sast ]; then
+            echo "✅ Directory exists"
+            ls -la .ss/reports/sast/
+            echo ""
+            echo "Content of sast-report.md (first 10 lines):"
+            cat .ss/reports/sast/sast-report.md | head -10 || echo "File not readable"
+          else
+            echo "❌ Directory .ss/reports/sast does not exist"
+          fi
+
+      - name: Upload SAST reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sast-reports
+          path: |
+            .ss/reports/sast/sast-report.md
+            .ss/reports/sast/sast-report.json
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Comment on PR with SAST report
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let reportContent = '## 🔍 SAST Analysis\n\n';
+
+            try {
+              const markdownReport = fs.readFileSync('.ss/reports/sast/sast-report.md', 'utf8');
+              reportContent += markdownReport + '\n\n';
+            } catch (e) {
+              reportContent += '**Could not read SAST report.** See workflow artifacts for details.\n\n';
+            }
+
+            reportContent += '### 🔍 How to Check Locally\n\n';
+            reportContent += '```bash\n';
+            reportContent += 'task ss:security:sast\n';
+            reportContent += '```\n\n';
+            reportContent += '[Full reports available in workflow artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) (`.ss/reports/sast/` directory)\n';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: reportContent
+            });
+
+      - name: Create/Update issue on main branch with error findings
+        if: steps.check-sast.outputs.errors_found == '1' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            const title = '⚠️ SAST Issues in Main Branch';
+            let body = '## SAST Analysis Found Issues\n\n';
+            body += `**Commit:** [\`${{ github.sha }}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})\n`;
+            body += `**Run:** [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n`;
+
+            try {
+              const markdownReport = fs.readFileSync('.ss/reports/sast/sast-report.md', 'utf8');
+              body += '## Report\n\n' + markdownReport + '\n\n';
+            } catch (e) {
+              body += 'See workflow artifacts for detailed reports.\n\n';
+            }
+
+            body += '## Reproduction Steps\n\n';
+            body += '```bash\n';
+            body += '# Install Task (one-time)\n';
+            body += 'curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin\n\n';
+            body += '# Run SAST locally\n';
+            body += 'task ss:security:sast\n';
+            body += '```\n\n';
+            body += '## Guidelines\n\n';
+            body += '- **Error severity**: Must be reviewed and addressed\n';
+            body += '- **Warning severity**: Should be reviewed; may indicate potential issues\n';
+
+            // Check for existing open issue
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['sast']
+            });
+
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['sast', 'security']
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body: `## New Report\n\n${new Date().toISOString()}\n\n${body}`
+              });
+            }
+
+      - name: Fail job if error-severity findings found
+        if: steps.check-sast.outputs.errors_found == '1'
+        run: |
+          echo "❌ SAST error-severity findings detected"
+          echo "Please review the SAST report above and address error-severity findings"
+          exit 1

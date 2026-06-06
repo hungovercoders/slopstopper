@@ -6,7 +6,7 @@ This template includes automated code complexity analysis using **Lizard** to he
 
 ### Check Complexity Locally
 ```bash
-task hygiene:complexity
+task ss:hygiene:complexity
 ```
 
 ### What You Get Automatically
@@ -18,9 +18,9 @@ task hygiene:complexity
 
 | Problem | Solution |
 |---------|----------|
-| Workflow not triggering? | Check workflow is at `.github/workflows/hygiene-complexity-check.yml` (not `.github/`) |
-| Need different threshold? | Update CCN > 10 threshold in `Taskfile.yml`, `.github/workflows/hygiene-complexity-check.yml`, and `.scripts/generate-complexity-md.py` |
-| Don't want complexity checks? | Delete `.github/workflows/hygiene-complexity-check.yml` |
+| Workflow not triggering? | Check workflow is at `.github/workflows/ss-hygiene-complexity-check.yml` (not `.github/`) |
+| Need different threshold? | Update CCN > 10 threshold in `Taskfile.yml`, `.github/workflows/ss-hygiene-complexity-check.yml`, and `.ss/scripts/generate-complexity-md.py` |
+| Don't want complexity checks? | Delete `.github/workflows/ss-hygiene-complexity-check.yml` |
 
 ### Threshold Reference
 
@@ -45,10 +45,10 @@ The complexity workflow:
 
 | File | Purpose | Customization |
 |------|---------|---------------|
-| [`.github/workflows/hygiene-complexity-check.yml`](../../.github/workflows/hygiene-complexity-check.yml) | GitHub Actions workflow | Triggers, failure behavior, reporting |
+| [`.github/workflows/ss-hygiene-complexity-check.yml`](../../.github/workflows/ss-hygiene-complexity-check.yml) | GitHub Actions workflow | Triggers, failure behavior, reporting |
 | [`Taskfile.yml`](../../Taskfile.yml) | Local task runner config | Complexity thresholds, exclusions |
-| [`.scripts/generate-complexity-md.py`](../../.scripts/generate-complexity-md.py) | Report generator | Markdown formatting, metrics |
-| [`.gitignore`](../../.gitignore) | Git ignore rules | Excludes `.complexity-reports/` from version control |
+| [`.ss/scripts/generate-complexity-md.py`](../../.ss/scripts/generate-complexity-md.py) | Report generator | Markdown formatting, metrics |
+| [`.gitignore`](../../.gitignore) | Git ignore rules | Excludes `.ss/reports/complexity/` from version control |
 
 ## Key Configuration Points
 
@@ -56,7 +56,7 @@ The complexity workflow:
 
 **Where it's defined:**
 - `Taskfile.yml` - Python script checks `if ccn > 10` (line ~20)
-- `.github/workflows/hygiene-complexity-check.yml` - AWK filter `'$2 > 10'` (multiple places)
+- `.github/workflows/ss-hygiene-complexity-check.yml` - AWK filter `'$2 > 10'` (multiple places)
 
 **To change CCN threshold:**
 
@@ -70,7 +70,7 @@ if ccn > 10:  # ← Change this number (e.g., 15 for higher tolerance, 8 for str
 
 Also update the workflow file:
 ```yaml
-# .github/workflows/hygiene-complexity-check.yml, line ~51
+# .github/workflows/ss-hygiene-complexity-check.yml, line ~51
 HIGH_COUNT=$(awk -F',' '$2 > 10' ...)  # ← Change 10 to your threshold
 ```
 
@@ -98,7 +98,7 @@ The workflow has different behavior based on the trigger:
 | **Push to main** | Posts complexity report, creates GitHub issue if complexities found |
 | **Workflow Dispatch** | Manual run for verification |
 
-To disable PR failures (warnings only), edit `.github/workflows/hygiene-complexity-check.yml`:
+To disable PR failures (warnings only), edit `.github/workflows/ss-hygiene-complexity-check.yml`:
 
 ```yaml
 # Remove or comment out the "Fail job" step at the end:
@@ -118,12 +118,12 @@ To temporarily disable this workflow:
 **Option B:** Delete/rename the workflow file
 ```bash
 # This will prevent the workflow from running
-rm .github/workflows/hygiene-complexity-check.yml
+rm .github/workflows/ss-hygiene-complexity-check.yml
 ```
 
 **Option C:** Comment out the trigger
 ```yaml
-# .github/workflows/hygiene-complexity-check.yml
+# .github/workflows/ss-hygiene-complexity-check.yml
 # on:
 #   pull_request:
 #     branches: [ main ]
@@ -140,12 +140,12 @@ Before pushing code, analyze complexity locally:
 curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
 
 # Run complexity analysis
-task hygiene:complexity
+task ss:hygiene:complexity
 ```
 
 This generates:
-- `.complexity-reports/complexity-report.md` - Human-readable report
-- `.complexity-reports/complexity-report.csv` - Machine-readable metrics
+- `.ss/reports/complexity/complexity-report.md` - Human-readable report
+- `.ss/reports/complexity/complexity-report.csv` - Machine-readable metrics
 
 ## Understanding Complexity Metrics
 
@@ -193,7 +193,7 @@ When complexity issues are detected on pushes to `main`:
 
 **To resolve:**
 1. Create a branch to address the complex functions
-2. Run `task hygiene:complexity` locally to verify improvements
+2. Run `task ss:hygiene:complexity` locally to verify improvements
 3. Open PR with refactored code
 4. CI will verify complexity is reduced
 5. After merge, close the GitHub issue
@@ -205,7 +205,7 @@ Since this is a **static HTML template**, code should remain minimal:
 - ✅ Keep helper scripts small and focused
 - ✅ Avoid complex conditional logic
 - ✅ Prefer simple, readable code over clever implementations
-- ✅ Test code locally before pushing: `task hygiene:complexity`
+- ✅ Test code locally before pushing: `task ss:hygiene:complexity`
 
 ## Troubleshooting
 
@@ -217,15 +217,15 @@ If the workflow fails with "lizard: command not found":
 
 ### Reports Not Generated
 
-If `.complexity-reports/` directory is empty:
+If `.ss/reports/complexity/` directory is empty:
 1. Check workflow logs for errors
 2. Verify Python script is executable: `chmod +x .github/scripts/generate-complexity-md.py`
-3. Check that `.complexity-reports/` is not excluded by your `.gitignore` (it shouldn't be)
+3. Check that `.ss/reports/complexity/` is not excluded by your `.gitignore` (it shouldn't be)
 
 ### Custom Threshold Not Working
 
 If your threshold changes aren't taking effect:
-1. Both `Taskfile.yml` AND `.github/workflows/hygiene-complexity-check.yml` must be updated
+1. Both `Taskfile.yml` AND `.github/workflows/ss-hygiene-complexity-check.yml` must be updated
 2. The Python script also has threshold checks
 3. Rebuild Docker image or clear cache if using containers
 

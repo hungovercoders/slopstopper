@@ -13,22 +13,22 @@ The audit uses [axe-core](https://github.com/dequelabs/axe-core) via [`@axe-core
 
 ```bash
 # Builds and starts the server automatically, then audits all pages
-task reliability:accessibility
+task ss:reliability:accessibility
 ```
 
 **Run against a deployed URL:**
 
 ```bash
-task reliability:accessibility -- https://your-site.netlify.app
+task ss:reliability:accessibility -- https://your-site.netlify.app
 
 # Or using an environment variable
-ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task reliability:accessibility
+ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task ss:reliability:accessibility
 ```
 
 **Run in CI mode (retries + HTML report):**
 
 ```bash
-ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task reliability:accessibility:ci
+ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task ss:reliability:accessibility:ci
 ```
 
 ## Configuration
@@ -38,6 +38,7 @@ All settings are controlled via environment variables. Defaults are deliberately
 | Variable | Default | Description |
 |---|---|---|
 | `ACCESSIBILITY_TEST_URL` | *(falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080`)* | Base URL to audit |
+| `ACCESSIBILITY_PAGES` | `/` | Comma-separated paths to audit, e.g. `/,/features.html,/tools.html` |
 | `ACCESSIBILITY_IMPACT` | `serious` | Minimum [axe impact level](https://github.com/dequelabs/axe-core/blob/develop/doc/API.md#axe-core-tags) to flag: `critical`, `serious`, `moderate`, `minor` |
 | `ACCESSIBILITY_THRESHOLD` | `0` | Maximum violations allowed before the check fails |
 
@@ -56,7 +57,7 @@ The default threshold (`serious`) means the workflow fails when any `critical` o
 
 ## GitHub Actions Workflow
 
-**File:** [`.github/workflows/reliability-accessibility-check.yml`](../../.github/workflows/reliability-accessibility-check.yml)
+**File:** [`.github/workflows/ss-reliability-accessibility-check.yml`](../../.github/workflows/ss-reliability-accessibility-check.yml)
 
 ### Triggers
 
@@ -65,7 +66,7 @@ The default threshold (`serious`) means the workflow fails when any `critical` o
 | `pull_request` → `main` | Local build (`localhost:8080`) |
 | `push` → `main` | Local build (`localhost:8080`) |
 | `deployment_status` (success) | Deployment URL from Netlify |
-| `schedule` (daily 06:00 UTC) | Production URL (`https://magic8bi.com`) |
+| `schedule` (daily 06:00 UTC) | Production URL (`https://slopstopper.dev`) |
 | `workflow_dispatch` | Configurable via inputs |
 
 ### Manual Trigger
@@ -79,7 +80,7 @@ Run the workflow manually from the **Actions** tab with optional inputs:
 ### What the Workflow Does
 
 1. Starts the local Node.js server (PR/push builds) or uses the deployment URL
-2. Runs `task reliability:accessibility:ci` which executes `tests/accessibility.spec.ts`
+2. Runs `task ss:reliability:accessibility:ci` which executes `tests/accessibility.spec.ts`
 3. Uploads the Playwright HTML report as a workflow artifact (30-day retention)
 4. Posts a PR comment with the audit result and a local reproduction command
 5. Creates (or updates) a GitHub issue when violations land on `main`
@@ -87,15 +88,21 @@ Run the workflow manually from the **Actions** tab with optional inputs:
 
 ## Pages Audited
 
-All pages are audited by default in [`tests/accessibility.spec.ts`](../../tests/accessibility.spec.ts):
+The portable spec at [`.ss/tests/accessibility.spec.ts`](../../.ss/tests/accessibility.spec.ts) reads the page list from the `ACCESSIBILITY_PAGES` env var (comma-separated; defaults to `/`). For this repo's CI, the accessibility workflow sets:
 
-| Page | URL Path | File |
-|---|---|---|
-| Homepage | `/` | `app/index.html` |
-| Features | `/features.html` | `app/features.html` |
-| Tools | `/tools.html` | `app/tools.html` |
+```yaml
+ACCESSIBILITY_PAGES: /,/features.html,/tools.html
+```
 
-To add more pages, update the `pagesToAudit` array in `tests/accessibility.spec.ts`.
+To add coverage for your own app:
+
+```bash
+ACCESSIBILITY_PAGES="/,/login,/dashboard" \
+  ACCESSIBILITY_TEST_URL=https://your-site.netlify.app \
+  task ss:reliability:accessibility
+```
+
+No code changes required.
 
 ## Understanding Results
 
@@ -159,7 +166,7 @@ If the audit reveals many existing violations and you want to fix them increment
 
 ```bash
 # Allow up to 5 violations while you work through the backlog
-ACCESSIBILITY_THRESHOLD=5 task reliability:accessibility
+ACCESSIBILITY_THRESHOLD=5 task ss:reliability:accessibility
 ```
 
 Update `ACCESSIBILITY_THRESHOLD` in the workflow `workflow_dispatch` default and in the scheduled job once remediation progresses.
@@ -177,7 +184,7 @@ Update `ACCESSIBILITY_THRESHOLD` in the workflow `workflow_dispatch` default and
 
 **Tests timeout:**
 - Check the target URL is reachable
-- Increase the Playwright timeout in `playwright.config.js`
+- Increase the Playwright timeout in `.ss/playwright.config.js`
 
 ## Related Documentation
 

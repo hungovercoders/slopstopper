@@ -1,0 +1,178 @@
+name: SlopStopper · Hygiene - Documentation Structure Check
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'docs/index.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'docs/index.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-docs-structure:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install Task
+        run: |
+          curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
+          task --version
+      
+      - name: Run documentation structure check
+        id: structure
+        run: |
+          task ss:hygiene:docs-structure || true
+          
+          # Parse violation count from JSON report
+          if [ -f .ss/reports/docs/docs-structure-report.json ]; then
+            VIOLATION_COUNT=$(python3 -c "import json; data=json.load(open('.ss/reports/docs/docs-structure-report.json')); print(data.get('violation_count', 0))" 2>/dev/null || echo "0")
+            echo "violation_count=$VIOLATION_COUNT" >> $GITHUB_OUTPUT
+            
+            if [ "$VIOLATION_COUNT" -gt 0 ]; then
+              echo "has_violations=true" >> $GITHUB_OUTPUT
+            else
+              echo "has_violations=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+      
+      - name: Copy report for workflow
+        run: cp .ss/reports/docs/docs-structure-report.md docs-structure-report.md || true
+      
+      - name: Comment on PR with structure report
+        if: github.event_name == 'pull_request' && steps.structure.outputs.has_violations == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let reportContent = '';
+            try {
+              reportContent = fs.readFileSync('docs-structure-report.md', 'utf8');
+            } catch (e) {
+              reportContent = '❌ Failed to read structure report';
+            }
+            
+            const commentBody = reportContent;
+            
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('📋 Documentation Structure')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+      
+      - name: Create or update issue on main when structure fails
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.structure.outputs.has_violations == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let reportContent = 'Unable to read structure report';
+            try {
+              reportContent = fs.readFileSync('docs-structure-report.md', 'utf8');
+            } catch (e) {
+              console.log('Report not found:', e.message);
+            }
+            
+            // Check for existing open issue
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'documentation-structure'
+            });
+            
+            const title = '📋 Documentation Structure Issues';
+            const body = [
+              'The documentation structure no longer matches the governance model defined in docs/index.md.',
+              '',
+              '## Report',
+              reportContent,
+              '',
+              '## To Fix',
+              '```bash',
+              'task ss:hygiene:docs-structure',
+              '```',
+              '',
+              '## Review',
+              'See [docs/index.md](../blob/main/docs/index.md) for the current governance model.',
+              '',
+              'This issue was automatically created by the Documentation Structure Check workflow.',
+              `Commit: ${context.sha}`
+            ].join('\n');
+            
+            if (issues.length > 0) {
+              // Update existing issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues[0].number,
+                body: body
+              });
+              
+              // Add comment about new violation
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues[0].number,
+                body: `🔔 Documentation structure issues detected again in commit ${context.sha}`
+              });
+            } else {
+              // Create new issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['documentation-structure', 'documentation']
+              });
+            }
+      
+      - name: Upload structure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-structure-report
+          path: .ss/reports/docs/docs-structure-report.md
+          retention-days: 30

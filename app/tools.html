@@ -3,49 +3,353 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tools</title>
+    <title>Tools — SlopStopper</title>
+    <meta name="description" content="The technology stack powering SlopStopper: GitHub Actions, Task, Playwright, TypeScript, Semgrep, ZAP, Trivy, Gitleaks, axe-core, Lighthouse CI and more. Each card links back to its source.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <link rel="canonical" href="https://slopstopper.dev/tools.html">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://slopstopper.dev/tools.html">
+    <meta property="og:title" content="Tools — SlopStopper">
+    <meta property="og:description" content="The technology stack powering SlopStopper's automated feedback.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper — stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Tools — SlopStopper">
+    <meta name="twitter:description" content="The technology stack powering SlopStopper's automated feedback.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper — stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="manifest.webmanifest">
+
+    <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="tools.css">
 </head>
 <body>
+    <a href="#main" class="skip-link">Skip to main content</a>
     <header>
         <a href="index.html" class="site-title">SlopStopper</a>
-        <nav>
+        <nav aria-label="Main">
             <a href="index.html" id="nav-home">Home</a>
             <a href="features.html" id="nav-features">Features</a>
-            <a href="tools.html" id="nav-tools">Tools</a>
+            <a href="tools.html" id="nav-tools" aria-current="page">Tools</a>
+            <a href="index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
         </nav>
     </header>
-    <main>
-        <div class="hero">
-            <h1>Tools</h1>
-            <p>The technology stack powering SlopStopper's automated feedback</p>
-        </div>
+    <main id="main">
+        <section class="hero">
+            <span class="kicker">Tools</span>
+            <h1>The kit behind <span class="highlight">the loops.</span></h1>
+            <p>Every tool here drives one of the checks on the Features page. Open any card to see how it's wired in.</p>
+        </section>
+
         <div class="card-grid">
             <div class="card">
                 <h2>⚙️ GitHub Actions</h2>
-                <p>All checks run as GitHub Actions workflows triggered on every pull request and push to main — security, hygiene, reliability and deployment in one pipeline.</p>
+                <p>All checks run as GitHub Actions workflows triggered on every pull request and push to main — security, hygiene, reliability, accessibility, performance and deployment in one pipeline.</p>
+                <details class="details">
+                    <summary>See it in action</summary>
+                    <div class="details__body">
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/tree/main/.github/workflows" rel="noopener noreferrer">View all workflows on GitHub →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/actions" rel="noopener noreferrer">View live runs →</a>
+                    </div>
+                </details>
             </div>
+
+            <div class="card">
+                <h2>📋 Task</h2>
+                <p>A Taskfile.yml defines the single source of truth for build, test, lint and scan commands so developers, AI agents and CI all run the same thing.</p>
+                <details class="details">
+                    <summary>Taskfile excerpt</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>version: '3'
+tasks:
+  contributing:build:    { cmds: ['npm run build'] }
+  contributing:run:      { cmds: ['node server.js'] }
+  contributing:test:     { cmds: ['npx playwright test --config=.ss/playwright.config.js'] }
+  reliability:accessibility:
+    cmds: ['npx playwright test --config=.ss/playwright.config.js .ss/tests/accessibility.spec.ts']</code></pre></div>
+                        <p class="details__hint">Run from your repo with <code>task ss:contributing:build</code>, <code>task ss:reliability:accessibility</code>, etc.</p>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.ss.yml" rel="noopener noreferrer">View Taskfile.ss.yml →</a>
+                    </div>
+                </details>
+            </div>
+
             <div class="card">
                 <h2>🎭 Playwright</h2>
-                <p>End-to-end and smoke tests written in TypeScript using Playwright, covering navigation, page load reliability, and critical user journeys.</p>
+                <p>Portable smoke and accessibility specs live under <code>.ss/tests/</code> with their own <code>.ss/playwright.config.js</code>, so they never collide with your repo's own <code>tests/</code> directory.</p>
+                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
+                <details class="details">
+                    <summary>.ss/playwright.config.js</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>export default defineConfig({
+  testDir: './tests',                 // resolves to .ss/tests
+  use: {
+    baseURL: process.env.SMOKE_TEST_URL || 'http://localhost:8080',
+  },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+});</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.ss/playwright.config.js" rel="noopener noreferrer">View .ss/playwright.config.js →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-playwright-tests.yml" rel="noopener noreferrer">View workflow →</a>
+                    </div>
+                </details>
             </div>
+
             <div class="card">
                 <h2>🔷 TypeScript</h2>
                 <p>All application and test code is written in TypeScript for static type safety, reducing a whole class of bugs before code is even run.</p>
+                <details class="details">
+                    <summary>tsconfig.json</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "strict": true,
+    "outDir": "./dist"
+  }
+}</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/tsconfig.json" rel="noopener noreferrer">View tsconfig.json →</a>
+                    </div>
+                </details>
             </div>
-            <div class="card">
-                <h2>🟢 Netlify</h2>
-                <p>Continuous deployment to Netlify with preview URLs on every PR and automated production releases on merge to main.</p>
-            </div>
+
             <div class="card">
                 <h2>🐍 Python</h2>
                 <p>Reporting scripts that generate structured JSON reports for security, complexity, documentation and dependency checks used across CI workflows.</p>
+                <details class="details">
+                    <summary>See the scripts</summary>
+                    <div class="details__body">
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/tree/main/.ss/scripts" rel="noopener noreferrer">View .ss/scripts/ on GitHub →</a>
+                    </div>
+                </details>
             </div>
+
             <div class="card">
-                <h2>🔍 Semgrep &amp; ZAP</h2>
-                <p>Semgrep provides fast SAST scanning and OWASP ZAP provides DAST scanning against running deployments, together covering static and dynamic security concerns.</p>
+                <h2>🟢 Netlify</h2>
+                <p>Continuous deployment to Netlify with preview URLs on every PR and automated production releases on merge to main.</p>
+                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/deployment/README.md" rel="noopener noreferrer">Learn more about Deployment →</a>
+                <details class="details">
+                    <summary>netlify.toml</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>[build]
+  publish = "app"
+  command = "npm run build"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; ..."</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/netlify.toml" rel="noopener noreferrer">View netlify.toml →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-netlify-deploy.yml" rel="noopener noreferrer">View deploy workflow →</a>
+                    </div>
+                </details>
+            </div>
+
+            <div class="card">
+                <h2>🔍 Semgrep</h2>
+                <p>Fast static application security testing (SAST). Scans source code for vulnerability patterns and OWASP-style issues before code is merged.</p>
+                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/README.md" rel="noopener noreferrer">Learn more about Security →</a>
+                <details class="details">
+                    <summary>Workflow excerpt</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>jobs:
+  sast:
+    name: Static Application Security Testing with Semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install semgrep &amp;&amp; semgrep ci</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-sast-check.yml" rel="noopener noreferrer">View source →</a>
+                    </div>
+                </details>
+            </div>
+
+            <div class="card">
+                <h2>🕷️ OWASP ZAP</h2>
+                <p>Dynamic application security testing (DAST). Probes a running deployment for common web vulnerabilities such as XSS, injection and insecure headers.</p>
+                <details class="details">
+                    <summary>Workflow excerpt</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>jobs:
+  dast:
+    name: Dynamic Application Security Testing with OWASP ZAP
+    steps:
+      - run: task start &amp;
+      - uses: zaproxy/action-baseline@v0.10.0</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-dast-check.yml" rel="noopener noreferrer">View source →</a>
+                    </div>
+                </details>
+            </div>
+
+            <div class="card">
+                <h2>🛡️ Trivy</h2>
+                <p>Scans project dependencies for known CVEs on every pull request and push, with severity-based gating to prevent vulnerable packages from reaching production.</p>
+                <details class="details">
+                    <summary>Workflow excerpt</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>jobs:
+  dependencies:
+    name: Scan Dependencies with Trivy
+    steps:
+      - uses: actions/checkout@v4
+      - run: trivy fs --severity HIGH,CRITICAL .</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-vulnerability-all-check.yml" rel="noopener noreferrer">View source →</a>
+                    </div>
+                </details>
+            </div>
+
+            <div class="card">
+                <h2>🔑 Gitleaks</h2>
+                <p>Inspects every commit for accidentally committed credentials, tokens and other secrets, blocking pull requests when high-confidence matches are found.</p>
+                <details class="details">
+                    <summary>Workflow excerpt</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>jobs:
+  secrets:
+    name: Detect Secrets with Gitleaks
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-secrets-check.yml" rel="noopener noreferrer">View source →</a>
+                    </div>
+                </details>
+            </div>
+
+            <div class="card">
+                <h2>🐛 Bandit &amp; Lizard</h2>
+                <p>Bandit performs Python-focused security analysis and Lizard enforces cyclomatic complexity limits so code stays auditable and maintainable.</p>
+                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/COMPLEXITY_CONFIG.md" rel="noopener noreferrer">Learn more about Complexity config →</a>
+                <details class="details">
+                    <summary>Workflow excerpt</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>jobs:
+  complexity-check:
+    name: Check Code Complexity with Lizard
+    steps:
+      - run: pip install lizard bandit
+      - run: lizard -C 10 -L 60 .
+      - run: bandit -r .ss/scripts/</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-complexity-check.yml" rel="noopener noreferrer">View source →</a>
+                    </div>
+                </details>
+            </div>
+
+            <div class="card">
+                <h2>♿ axe-core</h2>
+                <p>Industry-standard accessibility engine, run via Playwright on every page to flag WCAG 2.1 AA violations on PRs, after deploys and on a daily schedule.</p>
+                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/ACCESSIBILITY.md" rel="noopener noreferrer">Learn more about Accessibility →</a>
+                <details class="details">
+                    <summary>Workflow excerpt</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Accessibility Check
+on:
+  pull_request:      { branches: [main] }
+  push:              { branches: [main] }
+  deployment_status:
+  schedule: [ { cron: '0 6 * * *' } ]    # daily</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-accessibility-check.yml" rel="noopener noreferrer">View source →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.ss/tests/accessibility.spec.ts" rel="noopener noreferrer">View accessibility spec →</a>
+                    </div>
+                </details>
+            </div>
+
+            <div class="card">
+                <h2>⚡ Lighthouse CI</h2>
+                <p>Measures Core Web Vitals (LCP, INP, CLS) plus performance, accessibility, best-practice and SEO category scores on every PR and nightly against production.</p>
+                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
+                <details class="details">
+                    <summary>.ss/lighthouserc.json</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>{
+  "ci": {
+    "collect": { "url": ["http://localhost:8080/"] },
+    "assert":  {
+      "preset": "lighthouse:no-pwa",
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.7 }],
+        "categories:seo":         ["error", { "minScore": 0.9 }]
+      }
+    }
+  }
+}</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.ss/lighthouserc.json" rel="noopener noreferrer">View .ss/lighthouserc.json →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-core-web-vitals.yml" rel="noopener noreferrer">View workflow →</a>
+                    </div>
+                </details>
+            </div>
+
+            <div class="card">
+                <h2>🔎 SEO Metatag Check</h2>
+                <p>Fetches each page and asserts the full set of social-share + indexer metadata: <code>&lt;title&gt;</code>, meta description, canonical, viewport, OpenGraph (og:title/description/type/url/image) and Twitter Card (twitter:card/title/description/image). HEAD-fetches <code>og:image</code> to confirm it is reachable. Stdlib Python — no new dependencies.</p>
+                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/SEO.md" rel="noopener noreferrer">Learn more about SEO check config →</a>
+                <details class="details">
+                    <summary>Taskfile excerpt</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>reliability:seo:
+  desc: Validate SEO + social-share metatags on a live URL
+  cmds:
+    - python3 .ss/scripts/check-seo-metatags.py
+  # Env: SEO_TEST_URL, SEO_PAGES (csv, default /),
+  #      SEO_REQUIRE_OG_IMAGE, SEO_VERIFY_OG_IMAGE</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.ss/scripts/check-seo-metatags.py" rel="noopener noreferrer">View check script →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-seo-check.yml" rel="noopener noreferrer">View workflow →</a>
+                    </div>
+                </details>
+            </div>
+
+            <div class="card">
+                <h2>📝 markdownlint</h2>
+                <p>Lints all documentation as part of the hygiene checks, keeping markdown style, headings and link structure consistent across the repo.</p>
+                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/DOCS_SIZE_MONITORING.md" rel="noopener noreferrer">Learn more about Doc monitoring →</a>
+                <details class="details">
+                    <summary>Workflow excerpt</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>jobs:
+  check-docs-structure:
+    steps:
+      - uses: actions/checkout@v4
+      - run: npx markdownlint-cli 'docs/**/*.md'</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-structure-check.yml" rel="noopener noreferrer">View source →</a>
+                    </div>
+                </details>
             </div>
         </div>
     </main>
+    <footer>
+        <p>
+            <span class="mascot mascot--wave" aria-hidden="true">
+                <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M40 130 C40 75, 80 50, 120 50 C160 50, 200 75, 200 130 C200 180, 165 210, 120 210 C75 210, 40 180, 40 130 Z" fill="#FBF5EC" stroke="#2A2118" stroke-width="6" stroke-linejoin="round"/>
+                    <circle cx="92" cy="130" r="13" fill="#2A2118"/>
+                    <circle cx="148" cy="130" r="13" fill="#2A2118"/>
+                    <circle cx="96" cy="125" r="4" fill="#FBF5EC"/>
+                    <circle cx="152" cy="125" r="4" fill="#FBF5EC"/>
+                    <path d="M100 165 Q120 182, 140 165" stroke="#2A2118" stroke-width="5" stroke-linecap="round" fill="none"/>
+                    <path d="M198 105 Q230 90, 222 56" stroke="#2A2118" stroke-width="9" stroke-linecap="round" fill="none"/>
+                    <circle cx="222" cy="50" r="9" fill="#FBF5EC" stroke="#2A2118" stroke-width="5"/>
+                </svg>
+            </span>
+            SlopStopper is open source — <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">view the repository on GitHub</a>.
+        </p>
+    </footer>
 </body>
 </html>
