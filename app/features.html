@@ -153,6 +153,7 @@ jobs:
                     <li><strong>Doc Structure</strong> — Enforces <code>docs/index.md</code> as the documentation map; README / AGENTS.md / CLAUDE.md stay thin pointers</li>
                     <li><strong>Doc Accuracy</strong> — Documentation reflects the actual code</li>
                     <li><strong>Doc Size</strong> — Prevents documentation from going stale or unwieldy</li>
+                    <li><strong>CSP Exceptions Drift</strong> — Keeps <code>netlify.toml</code> and <code>CSP_EXCEPTIONS.md</code> in sync so per-page CSP relaxations stay documented</li>
                     <li><strong>Auto-label PRs</strong> — PRs labelled from the paths changed</li>
                 </ul>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about Hygiene →</a>
@@ -189,6 +190,28 @@ on:
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-structure-check.yml" rel="noopener noreferrer">View structure workflow →</a>
                         <br>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-size-check.yml" rel="noopener noreferrer">View size-monitor workflow →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>CSP Exceptions Drift</summary>
+                    <div class="details__body">
+                        <!-- sync this excerpt if the workflow's first job step changes -->
+                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - CSP Exceptions Drift Check
+on:
+  pull_request:
+    paths:
+      - 'netlify.toml'
+      - 'docs/security/CSP_EXCEPTIONS.md'
+jobs:
+  check-csp-exceptions:
+    steps:
+      - uses: actions/checkout@v4
+      - run: task ss:hygiene:csp-exceptions</code></pre></div>
+                        <p class="details__hint">Strict <code>default-src 'self'</code> CSP is the default. Per-path exceptions (e.g. Giscus on <code>/feedback.html</code>) must be documented in <code>CSP_EXCEPTIONS.md</code> with SRI hashes and a fallback. This check fails the build if <code>netlify.toml</code> and <code>CSP_EXCEPTIONS.md</code> disagree.</p>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-csp-exceptions-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">View the exceptions doc →</a>
                     </div>
                 </details>
 
