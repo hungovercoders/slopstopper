@@ -130,7 +130,7 @@ The 20 workflows split into four portability layers. Layer 1 runs the moment you
 | **1. Static analysis** (any code) | SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure / Accuracy / Size, Auto-label PRs, Workflow-failure tracker | Nothing — works out of the box |
 | **2. Web-app dynamic** (need a URL) | Smoke, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, DAST, Playwright | `SMOKE_TEST_URL` · `BROKEN_LINKS_TEST_URL` · `ACCESSIBILITY_TEST_URL` · `LIGHTHOUSE_URL` · `SEO_TEST_URL` · optionally `SMOKE_PAGES` / `BROKEN_LINKS_PAGES` / `ACCESSIBILITY_PAGES` / `SEO_PAGES` |
 | **3. Netlify deploy** | Preview deploys, production releases, preview cleanup | `NETLIFY_AUTH_TOKEN` + `NETLIFY_SITE_ID` repo secrets |
-| **4. Agentic doc-updater** | Weekly doc-sync PRs | `ANTHROPIC_API_KEY` repo secret |
+| **4. Agentic doc-updater** | Weekly doc-sync PRs | `COPILOT_GITHUB_TOKEN` repo secret |
 
 Don't use Netlify or the doc-updater? Delete those workflows from `.github/workflows/` — re-running the installer respects deletions (tracked in `.ss/.workflows-installed`).
 
@@ -159,7 +159,7 @@ Most checks work out of the box. Things to wire up if you want the full suite:
 **Repo secrets** (under your repo's Settings → Secrets and variables → Actions):
 
 - `NETLIFY_AUTH_TOKEN` + `NETLIFY_SITE_ID` — for the Netlify deploy + preview cleanup workflows
-- `ANTHROPIC_API_KEY` — for the agentic doc-updater (`ss-hygiene-doc-updater`)
+- `COPILOT_GITHUB_TOKEN` — for the agentic doc-updater (`ss-hygiene-doc-updater`), a [gh-aw](https://github.github.com/gh-aw/) workflow that runs via the GitHub Copilot CLI engine. See the [gh-aw Copilot setup guide](https://github.github.com/gh-aw/reference/engines/#github-copilot-default) for how to generate the token
 
 **Tunable env vars** (set in workflows or locally):
 
@@ -227,4 +227,4 @@ same instructions automatically.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE) if present, or the package metadata.
+MIT — see [LICENSE](./LICENSE).

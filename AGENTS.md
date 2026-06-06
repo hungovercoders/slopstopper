@@ -210,7 +210,7 @@ exists for adopters as much as for this repo.
 
 - [`workflow-failure-issue.yml`](./.github/workflows/ss-workflow-failure-issue.yml) — failed workflow runs on `main` raise (or update) a tracking issue labelled `workflow-failure`. Linked from the live site
 - [`hygiene-auto-label-pr.yml`](./.github/workflows/ss-hygiene-auto-label-pr.yml) — labels PRs by changed paths via [`labeler.yml`](./.github/labeler.yml)
-- [`hygiene-doc-updater.md`](./.github/workflows/ss-hygiene-doc-updater.md) — gh-aw agentic workflow; weekly scan of merged PRs + open `documentation` issues, opens sync PRs labelled `documentation, automation`. Requires `ANTHROPIC_API_KEY` secret
+- [`hygiene-doc-updater.md`](./.github/workflows/ss-hygiene-doc-updater.md) — gh-aw agentic workflow; weekly scan of merged PRs + open `documentation` issues, opens sync PRs labelled `documentation, automation`. Requires `COPILOT_GITHUB_TOKEN` secret (gh-aw runs the GitHub Copilot CLI engine)
 
 ## Commit conventions
 
@@ -253,7 +253,7 @@ behaviour matches CI exactly.
 - **Netlify:** deployment is driven by GitHub Actions (not Netlify's git
   integration). DNS is managed externally.
 - **GitHub Actions:** workflows require `NETLIFY_AUTH_TOKEN`,
-  `NETLIFY_SITE_ID`, and (for the agentic doc updater) `ANTHROPIC_API_KEY`.
+  `NETLIFY_SITE_ID`, and (for the agentic doc updater) `COPILOT_GITHUB_TOKEN`.
 - **Netlify API:** the cleanup workflow uses
   `https://api.netlify.com/api/v1/sites/{site_id}/deploys` to delete
   preview deployments.
