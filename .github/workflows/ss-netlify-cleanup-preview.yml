@@ -16,6 +16,11 @@ jobs:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
           PR_NUMBER: ${{ github.event.number }}
         run: |
+          if [ -z "${NETLIFY_AUTH_TOKEN:-}" ] || [ -z "${NETLIFY_SITE_ID:-}" ]; then
+            echo "::warning::Netlify secrets not set — skipping cleanup. If you don't use Netlify, delete this workflow (see README §Configure)."
+            exit 0
+          fi
+
           echo "Cleaning up preview deployment for PR #${PR_NUMBER}"
           
           # Get the deploy ID for this PR's preview alias

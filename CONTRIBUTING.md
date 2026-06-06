@@ -1,5 +1,11 @@
 # Contributing to SlopStopper
 
+> 📌 **This guide is for contributors to the SlopStopper project itself.**
+> If you've installed SlopStopper into your own repo and want to customise
+> or extend it there, the main [`README.md`](./README.md) and
+> [`docs/`](./docs/) cover that. Read on if you want to push a change up to
+> this repository.
+
 Thanks for considering a contribution. The full contributor guide lives at:
 
 → [`docs/contributing/README.md`](./docs/contributing/README.md)

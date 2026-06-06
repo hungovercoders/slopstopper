@@ -118,7 +118,7 @@ Five loops of feedback, all running on every PR and push to `main`:
 | 🔒 **Security** | SAST, DAST, secrets detection, dependency CVE scanning | Semgrep, OWASP ZAP, Gitleaks, Trivy | [Security →](./docs/security/README.md) |
 | 🧹 **Hygiene** | Cyclomatic complexity caps, doc structure / accuracy / size checks, auto-labelled PRs | Lizard, Bandit, markdownlint | [Hygiene →](./docs/hygiene/README.md) |
 | ✅ **Reliability** | E2E + smoke tests, internal broken-link audits, accessibility audits (WCAG 2.1 AA), Core Web Vitals, SEO + OpenGraph metatag checks | Playwright, axe-core, Lighthouse CI, stdlib Python | [Reliability →](./docs/reliability/README.md) |
-| 🤖 **Operational** | Failed workflows auto-raise GitHub issues; an agentic doc updater opens weekly sync PRs | GitHub Actions, gh-aw | [Runbooks →](./docs/runbooks/README.md) |
+| 🤖 **Runbooks** | Failed workflows auto-raise GitHub issues; an agentic doc updater opens weekly sync PRs | GitHub Actions, gh-aw | [Runbooks →](./docs/runbooks/README.md) |
 | 🚀 **Deployment** | Preview deploys per PR, automated production releases, preview cleanup | Netlify, GitHub Actions | [Deployment →](./docs/deployment/README.md) |
 
 ### What each check needs
@@ -185,21 +185,6 @@ afterwards.
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 ```
-
----
-
-## Run the demo site locally
-
-This repo also hosts the SlopStopper marketing site (the same set of HTML
-pages you'd see at the live URL). To run it yourself:
-
-```bash
-npm install
-npm run build      # compiles TypeScript
-npm start          # serves app/ on http://localhost:8080
-```
-
-`server.js` parses `netlify.toml` so local headers match production.
 
 ---
 

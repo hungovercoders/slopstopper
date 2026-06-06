@@ -35,7 +35,7 @@
 #   1. Static analysis  — work on any code (SAST, Secrets, Trivy, complexity, doc checks)
 #   2. Web-app dynamic  — need a URL (Smoke, Accessibility, CWV, Playwright)
 #   3. Netlify deploy   — need NETLIFY_AUTH_TOKEN + NETLIFY_SITE_ID secrets
-#   4. Agentic updater  — needs ANTHROPIC_API_KEY (gh-aw doc-updater)
+#   4. Agentic updater  — needs COPILOT_GITHUB_TOKEN (gh-aw doc-updater)
 # Don't use one of the layers? Delete its workflows from .github/workflows/.
 # Re-running this installer will respect that deletion (it tracks what it
 # installed in .ss/.workflows-installed).
@@ -53,6 +53,41 @@ warn()    { echo "  ⚠️  $*"; }
 error()   { echo "  ❌ $*" >&2; exit 1; }
 
 sep() { echo "────────────────────────────────────────────────────────────"; }
+
+# ── prerequisite check ────────────────────────────────────────────────────────
+#
+# Surface missing tools up front rather than letting the install fail mid-flight
+# with a cryptic "command not found". `git` is hard-required (the installer
+# clones this repo); the rest are soft-required (you'll need them to actually
+# run any check, but the install itself will succeed without them).
+
+preflight() {
+  local missing_hard=()
+  local missing_soft=()
+
+  command -v git     >/dev/null 2>&1 || missing_hard+=("git")
+  command -v node    >/dev/null 2>&1 || missing_soft+=("node (Playwright, Lighthouse CI, markdownlint, TypeScript): https://nodejs.org/")
+  command -v python3 >/dev/null 2>&1 || missing_soft+=("python3 (analysis scripts under .ss/scripts): https://www.python.org/downloads/")
+  command -v task    >/dev/null 2>&1 || missing_soft+=("task (canonical interface — every check is 'task ss:...'): https://taskfile.dev/installation/")
+  command -v docker  >/dev/null 2>&1 || info "Docker not found — only needed for DAST (task ss:security:dast). Skipping check."
+
+  if [ "${#missing_hard[@]}" -gt 0 ]; then
+    for tool in "${missing_hard[@]}"; do
+      echo "  ❌ Required tool missing: $tool" >&2
+    done
+    error "Install the tools above and re-run."
+  fi
+
+  if [ "${#missing_soft[@]}" -gt 0 ]; then
+    warn "The following tools aren't installed — you'll need them to run the checks SlopStopper installs:"
+    for tool in "${missing_soft[@]}"; do
+      echo "      • $tool"
+    done
+    info "Continuing with install; install the tools above before running any task."
+  fi
+}
+
+preflight
 
 # ── locate source directory ───────────────────────────────────────────────────
 
