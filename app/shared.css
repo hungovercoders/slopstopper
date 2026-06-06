@@ -503,7 +503,6 @@ main {
     padding: 2rem 2rem 1.5rem;
     margin: 2rem 0;
     box-shadow: var(--shadow-sticker);
-    transform: rotate(-1.2deg);
 }
 .testimonial::before {
     content: "\201C";

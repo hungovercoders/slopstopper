@@ -33,6 +33,6 @@
 [[headers]]
   for = "/feedback.html"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self' https://giscus.app; style-src 'self' 'unsafe-inline'; frame-src https://giscus.app; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://giscus.app; style-src 'self' 'unsafe-inline' https://giscus.app; frame-src https://giscus.app; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
     Cross-Origin-Opener-Policy = "same-origin-allow-popups"
     Cross-Origin-Embedder-Policy = "unsafe-none"
