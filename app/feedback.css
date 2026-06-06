@@ -13,10 +13,21 @@
     margin: 0 auto;
 }
 
-.comments-section .giscus,
-.comments-section .giscus-frame {
+.comments-section .giscus {
     width: 100%;
     margin-top: 1.5rem;
+    background: var(--cream);
+    border: var(--border);
+    border-radius: var(--r-lg);
+    padding: 1.25rem 1.25rem 1.5rem;
+    box-shadow: var(--shadow-sticker);
+    min-height: 14rem; /* reserve space while iframe loads */
+}
+
+.comments-section .giscus-frame {
+    width: 100%;
+    border: none;
+    color-scheme: light; /* opt the iframe out of OS dark-mode for form controls */
 }
 
 .card-grid--two {
