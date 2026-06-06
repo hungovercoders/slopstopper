@@ -35,8 +35,13 @@ unhelpful. The honest answer is a pattern:
    matches what's documented here.
 5. **Let DAST keep flagging the relaxed pages.** A scanner flagging a
    documented exception is correct behaviour — that's how you find
-   *un*documented relaxations later. Treat known-accepted findings
-   separately in your triage.
+   *un*documented relaxations later. The DAST workflow on this repo
+   consults this file via [`check-dast-alerts.py`](../../.ss/scripts/check-dast-alerts.py):
+   ZAP CSP findings whose URL path is listed under `## Exceptions`
+   below are reported separately and do **not** fail the build, while
+   any non-CSP finding or any High-severity (riskcode 3) CSP finding
+   still blocks. PR comments call out the swallowed findings so they
+   stay visible in review.
 
 This pattern is what this site does for Giscus. If you're adopting
 SlopStopper and need to admit GTM or any other third-party, copy the
