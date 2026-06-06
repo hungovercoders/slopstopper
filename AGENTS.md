@@ -89,6 +89,7 @@ slopstopper/
 │   ├── index.css             # Page-specific layout
 │   ├── features.css          # Page-specific layout (loops, bridge, reports)
 │   ├── tools.css             # Page-specific layout
+│   ├── copy.js               # Progressive-enhancement copy button for [data-copyable] codeblocks; only runtime JS
 │   ├── favicon.svg           # Inline SVG favicon (CSP-safe)
 │   ├── apple-touch-icon.svg  # Source for the 180×180 iOS home-screen icon
 │   ├── apple-touch-icon.png  # Rendered via task ss:contributing:assets
@@ -98,7 +99,7 @@ slopstopper/
 │   ├── robots.txt            # Allows all, points at the sitemap
 │   └── sitemap.xml           # Lists the three indexable pages
 ├── docs/                     # Documentation hub — see docs/index.md
-├── src/                      # TypeScript stubs (build target; no runtime JS)
+├── src/                      # TypeScript stubs (build target; runtime JS is limited to app/copy.js)
 ├── tests/                    # Playwright smoke + accessibility specs
 ├── install.sh                # Adopter installer
 ├── netlify.toml              # Netlify config + strict CSP
