@@ -10,7 +10,21 @@
 .other-routes-section,
 .csp-pattern-section {
     max-width: 760px;
-    margin: 0 auto;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Consistent vertical rhythm between feedback-page sections so card
+   shadows never bleed into the section below. */
+.testimonials-section,
+.comments-section,
+.other-routes-section {
+    margin-bottom: 3.5rem;
+}
+
+.csp-pattern-section {
+    margin-top: 1rem;
+    margin-bottom: 3rem;
 }
 
 .comments-section .giscus {
@@ -37,10 +51,10 @@
 
 .csp-pattern-section {
     background: var(--peach-soft);
-    border: 3px solid var(--ink);
-    border-radius: 18px;
+    border: var(--border);
+    border-radius: var(--r-lg);
     padding: 2rem;
-    box-shadow: 4px 4px 0 var(--ink);
+    box-shadow: var(--shadow-sticker);
 }
 
 .csp-pattern-section h2 {
