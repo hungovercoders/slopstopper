@@ -1,5 +1,13 @@
 node_modules/
 playwright-report/
 test-results/
-.complexity-reports/
-.security-reports/
+.ss/playwright-report/
+.ss/test-results/
+# SlopStopper-generated reports (all under .ss/reports/<category>/)
+.ss/reports/
+# Local Netlify folder
+.netlify
+# TypeScript compiled output
+app/*.js
+# Local Claude Code state
+.claude/

@@ -1,109 +1,260 @@
-# Agents Instructions for template.netlify
+# Agent instructions — SlopStopper
 
-This is an open standard for agents, AI assistants, and automation tools to understand project conventions and best practices.
+Open standard for agents, AI assistants and automation tools working in this
+repo. Conformant with [agents.md](https://agents.md).
 
-## Project Overview
+> 🗺️ **Documentation map.** [`docs/index.md`](./docs/index.md) is the
+> single index of all project documentation. This file, [`CLAUDE.md`](./CLAUDE.md)
+> and [`README.md`](./README.md) are intentionally thin — they point at
+> the map rather than duplicating its content. When you need details on a
+> check, a runbook, or a decision, navigate the map. The
+> [hygiene docs-structure check](./docs/hygiene/README.md) keeps the map
+> honest against the directory tree.
 
-This is a minimal static site template demonstrating Netlify deployment with GitHub Actions CI/CD. The entire application is a single [index.html](index.html) file with embedded CSS—no build process, no bundlers, no frameworks.
+> 🏗️ **Naming convention:** the categories in
+> [`docs/index.md`](./docs/index.md) drive naming across the project. Task
+> targets are defined as `category:action` (e.g. `hygiene:complexity`) and
+> invoked under the `ss` namespace (`task ss:hygiene:complexity`). GitHub
+> Actions use `ss-category-action-check.yml` (e.g.
+> `ss-hygiene-complexity-check.yml`).
 
-## Architecture
+## What SlopStopper is
 
-**Static Single-File Site**: All HTML, CSS, and content lives in [index.html](index.html). There's no separate CSS/JS files, no templating, no build step.
+Two things at once:
 
-**Deployment Pipeline**: 
-- Production: Pushes to `main` trigger production deployment via [.github/workflows/netlify-deploy.yml](.github/workflows/netlify-deploy.yml)
-- Preview: PRs to `main` create preview deployments at `https://pr-{number}--{site-name}.netlify.app`
-- Cleanup: PRs closed/merged trigger automatic preview deletion via [.github/workflows/netlify-cleanup.yml](.github/workflows/netlify-cleanup.yml)
+1. **A portable suite** of GitHub Actions workflows, Task targets and
+   analysis scripts that consumers install into their own repos via
+   [`install.sh`](./install.sh).
+2. **A live reference site** under [`app/`](./app/) that markets the suite
+   and proves it works — built and deployed with the same suite it
+   advertises.
 
-**Configuration**: [netlify.toml](netlify.toml) publishes the root directory `.` as-is with no build command.
+Changes that affect both layers (e.g. adding a new quality check) must be
+reflected in the workflows AND the site copy (`app/features.html`,
+`app/tools.html`) AND `README.md`. The hygiene docs-accuracy workflow exists
+specifically to catch drift between these.
 
-## Critical Workflows
+## Canonical interface: Taskfile (the `ss` namespace)
 
-### Local Development
-```bash
-npm start  # Uses npx http-server on port 8080
+**Agents must use `task ss:<name>` instead of raw commands** wherever
+possible. SlopStopper's task definitions live in
+[`Taskfile.ss.yml`](./Taskfile.ss.yml); the root
+[`Taskfile.yml`](./Taskfile.yml) is a thin integration layer that imports
+them under the `ss` namespace via `includes:`. This keeps SlopStopper's
+tasks isolated from anything a consumer has in their own root Taskfile.
+
+The Taskfile is the single source of truth for build, test, lint and scan
+operations so developers, AI agents and CI all run the same thing — no
+drift, no version skew.
+
+Examples (run `task --list` for the full set):
+
+| Task | What it does |
+| ---- | ------------ |
+| `task ss:hygiene:complexity` | Cyclomatic complexity check (Lizard) |
+| `task ss:security:sast` | Static security scan (Semgrep) |
+| `task ss:security:dast` | Dynamic security scan (OWASP ZAP) |
+| `task ss:security:secrets` | Secrets detection (Gitleaks) |
+| `task ss:security:vulnerability:all` | Dependency CVE scan (Trivy) |
+| `task ss:reliability:smoke` | Smoke tests against a URL |
+| `task ss:reliability:accessibility` | axe-core WCAG 2.1 AA audit |
+| `task ss:reliability:cwv` | Lighthouse CI / Core Web Vitals |
+| `task ss:contributing:build` | TypeScript build (`tsc`) |
+| `task ss:contributing:test` | Playwright suite |
+| `task ss:contributing:run` | Local dev server on port 8080 |
+
+The `:ci` variants (e.g. `reliability:accessibility:ci`) just delegate to
+the base task with CI-friendly output paths — same logic.
+
+## Repo structure (current state)
+
 ```
-Alternative: Open [index.html](index.html) directly in browser or use `python -m http.server 8080`.
+slopstopper/
+├── .github/workflows/        # All SlopStopper workflows are `ss-*.yml`
+│                             #   (copilot-setup-steps.yml stays bare — platform-fixed)
+├── .ss/                      # Everything SlopStopper owns lives here
+│   ├── scripts/              # Python/shell analysis scripts called by tasks
+│   └── reports/              # Generated report output (.gitignored)
+│       ├── complexity/
+│       ├── sast/
+│       ├── dast/
+│       ├── secrets/
+│       ├── dependencies/
+│       └── docs/
+├── app/                      # Static site — Netlify publish dir
+│   ├── index.html            # Hero + Get Started + capability grid
+│   ├── features.html         # 5 category cards with YAML excerpts + mock reports
+│   ├── tools.html            # 14 tool cards with YAML/config excerpts
+│   ├── shared.css            # Brand system, components, layout primitives
+│   ├── index.css             # Page-specific layout
+│   ├── features.css          # Page-specific layout (loops, bridge, reports)
+│   ├── tools.css             # Page-specific layout
+│   ├── favicon.svg           # Inline SVG favicon (CSP-safe)
+│   ├── apple-touch-icon.svg  # Source for the 180×180 iOS home-screen icon
+│   ├── apple-touch-icon.png  # Rendered via task ss:contributing:assets
+│   ├── og-image.svg          # Source for the 1200×630 OpenGraph card
+│   ├── og-image.png          # Rendered via task ss:contributing:assets
+│   ├── manifest.webmanifest  # PWA manifest (name, icons, theme colour)
+│   ├── robots.txt            # Allows all, points at the sitemap
+│   └── sitemap.xml           # Lists the three indexable pages
+├── docs/                     # Documentation hub — see docs/index.md
+├── src/                      # TypeScript stubs (build target; no runtime JS)
+├── tests/                    # Playwright smoke + accessibility specs
+├── install.sh                # Adopter installer
+├── netlify.toml              # Netlify config + strict CSP
+├── server.js                 # Local dev server that parses netlify.toml headers
+├── Taskfile.yml              # Thin root with `includes: { ss: ./Taskfile.ss.yml }`
+├── Taskfile.ss.yml           # SlopStopper task definitions
+├── playwright.config.js
+├── tsconfig.json
+├── package.json
+├── README.md                 # Consumer-focused
+└── CONTRIBUTING.md → docs/contributing/README.md
+```
 
-### Deployment
-- **Production**: Push/merge to `main` → Auto-deploys → Commit comment with URL
-- **Preview**: Open PR → Auto-deploys preview → PR comment with preview URL
-- **Cleanup**: Close/merge PR → Auto-deletes preview deployment (frees Netlify resources)
-- **Secrets Required**: `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` in GitHub repo secrets
+## Visual / brand conventions (rebranded — keep in sync if you change them)
 
-### GitHub Actions Workflows
-**Deploy** ([.github/workflows/netlify-deploy.yml](.github/workflows/netlify-deploy.yml)):
-- Uses `nwtgck/actions-netlify@v2.1` action
-- Runs on `ubuntu-latest` with `pull-requests: write` permission
-- Has separate steps for production (main branch) and preview (PRs) with different comment settings
-- Times out after 5 minutes
+The site is **indie-playful**: cream / peach background, tomato accent,
+"Stoppy" mascot, sticker cards with offset shadows and tiny rotations,
+sun-highlighter underlines, hand-drawn SVG arrows.
 
-**Cleanup** ([.github/workflows/netlify-cleanup.yml](.github/workflows/netlify-cleanup.yml)):
-- Triggers on `pull_request: [closed]` events
-- Queries Netlify API for deployment matching `pr-{number}` alias
-- Deletes the preview deployment via Netlify API
-- Handles gracefully if no deployment exists
+Brand tokens live in [`app/shared.css`](./app/shared.css) on `:root`:
 
-## Project Conventions
+```css
+--cream: #FBF5EC;        /* page background */
+--peach: #FFD9B8;        /* secondary surface */
+--peach-soft: #FFE9D4;
+--ink: #2A2118;          /* primary text */
+--ink-soft: #6B5B47;     /* secondary text */
+--accent: #E8512B;       /* tomato — for decorative shapes only */
+--accent-deep: #B33A1A;  /* tomato for text-on-light or text-on-accent */
+--mint: #2E8B6F;         /* "pass" indicator */
+--sun: #F5C24C;          /* "warning" + highlighter underline */
+```
 
-**Zero Dependencies**: No npm packages installed. [package.json](package.json) only defines the `start` script using `npx http-server`.
+**Contrast rule:** `--accent` (`#E8512B`) is below 4.5:1 against white. For
+any text on a light background, or white text on coloured backgrounds, use
+`--accent-deep`. axe-core will catch violations at the strictest `minor`
+threshold — keep that gate green.
 
-**Inline Everything**: All styling is embedded in `<style>` tags in [index.html](index.html). Uses a gradient background (`linear-gradient(135deg, #ff8c00 0%, #ff6347 100%)`) and flexbox centering.
+Typography is system-only (no web fonts): `ui-rounded` cascading to
+`system-ui` for sans, `ui-monospace` for mono. Do not add `@font-face` or
+external font links.
 
-**No Build Step**: [netlify.toml](netlify.toml) explicitly uses `echo 'No build step required for static site'` as the build command. The publish directory is `.` (root).
+## CSP — what you can and cannot load
 
-**Conventional Commits**: All commits follow the [Conventional Commits](https://www.conventionalcommits.org/) standard for clear, predictable commit history. Format: `<type>(<scope>): <description>` where type is one of:
-- `feat:` - New feature or content
-- `fix:` - Bug fix or issue correction
-- `docs:` - Documentation updates
-- `style:` - Styling or visual changes
-- `test:` - Test additions or updates
-- `chore:` - Build, dependencies, or maintenance
-- `refactor:` - Code restructuring without feature changes
+[`netlify.toml`](./netlify.toml) ships a strict CSP:
 
-Examples: `feat(hero): add gradient animation`, `fix(nav): correct mobile menu alignment`, `docs(complexity): update threshold guidance`
+```
+default-src 'self'; script-src 'self'; style-src 'self';
+base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+```
 
-## Customization Guide
+This is non-negotiable — the security headers are tested in DAST. Therefore:
 
-This is a **template** repository—here's how to customize it:
+- ✅ Local CSS, local JS, local images, local fonts (none currently)
+- ❌ No CDN fonts, no Google Fonts
+- ❌ No external images, no `shields.io` badges
+- ❌ No third-party scripts, no analytics, no embeds (no GitHub iframe, no Lighthouse iframe)
+- ❌ No `data:` URLs for images (blocked by `default-src 'self'` in most browsers)
 
-**Visual Changes** (all in [index.html](index.html) `<style>` block):
-- Background gradient: Modify `linear-gradient(135deg, #ff8c00 0%, #ff6347 100%)` with new color stops
-- Font sizes: `h1 { font-size: 4rem }` and `p { font-size: 1.5rem }`
-- Layout: Change flexbox properties in `body` or `.container`
+Use inline SVG for any imagery. Mascots and mock report cards are inline
+SVG; the favicon is `app/favicon.svg`.
 
-**Content Changes** (in [index.html](index.html) `<body>`):
-- Heading: Edit `<h1>Hello World</h1>` 
-- Subtext: Edit `<p>Welcome to your Netlify static site!</p>`
-- Page title: Edit `<title>Hello World</title>` in `<head>`
+## Pages — content authoring rules
 
-**Site Configuration**:
-- Set `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` as GitHub repo secrets (see [README.md](README.md) Netlify Setup)
-- Netlify site name determines preview URLs: `pr-{number}--{site-name}.netlify.app`
+- Each HTML page links `shared.css` first, then its page-specific CSS
+- Header / nav / footer markup is duplicated across pages — there is no
+  build step or SSI. Accept the duplication; if you change one, change all
+  three
+- Every external link uses `rel="noopener noreferrer"`. Avoid
+  `target="_blank"` for predictable screen-reader behaviour
+- `aria-current="page"` marks the active nav link
+- Skip-to-content link is the first `<body>` child
+- The `<details>` collapsibles use a custom `+` / `−` marker; do not add JS
+- Workflow YAML excerpts inside `<details>` are **hand-curated illustrative
+  excerpts**, not verbatim. Each block has an HTML comment
+  `<!-- sync this excerpt if the workflow's first job step changes -->`.
+  The visible "View source" link is the canonical reference
 
-**Adding Pages**: Create additional HTML files in root (e.g., `about.html`). They'll deploy automatically. Link from [index.html](index.html) with `<a href="about.html">`.
+## Deployment
 
-## Integration Points
+- **Production:** push to `main` → [`netlify-deploy.yml`](./.github/workflows/ss-netlify-deploy.yml) → live site
+- **Preview:** open PR → preview at `https://pr-{number}--{site-name}.netlify.app` → URL posted as PR comment
+- **Cleanup:** PR closed → [`netlify-cleanup-preview.yml`](./.github/workflows/ss-netlify-cleanup-preview.yml) deletes the preview deploy
+- **Secrets required:** `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`
 
-**Netlify**: Direct deployment via GitHub Actions (not Netlify's automatic git integration).
+## Operational automation
 
-**GitHub Actions**: Workflows require repo secrets (`NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`) and use `secrets.GITHUB_TOKEN` for PR commenting.
+- [`workflow-failure-issue.yml`](./.github/workflows/ss-workflow-failure-issue.yml) — failed workflow runs on `main` raise (or update) a tracking issue labelled `workflow-failure`. Linked from the live site
+- [`hygiene-auto-label-pr.yml`](./.github/workflows/ss-hygiene-auto-label-pr.yml) — labels PRs by changed paths via [`labeler.yml`](./.github/labeler.yml)
+- [`hygiene-doc-updater.md`](./.github/workflows/ss-hygiene-doc-updater.md) — gh-aw agentic workflow; weekly scan of merged PRs + open `documentation` issues, opens sync PRs labelled `documentation, automation`. Requires `ANTHROPIC_API_KEY` secret
 
-**Netlify API**: Cleanup workflow uses `https://api.netlify.com/api/v1/sites/{site_id}/deploys` endpoint to query and delete preview deployments.
+## Commit conventions
 
-## When Making Changes
+[Conventional Commits](https://www.conventionalcommits.org/):
+`<type>(<scope>): <description>` where type is one of `feat`, `fix`,
+`docs`, `style`, `test`, `chore`, `refactor`. Examples:
 
-- Content/style edits: Modify [index.html](index.html) directly
-- Deployment behavior: Edit [.github/workflows/netlify-deploy.yml](.github/workflows/netlify-deploy.yml)
-- Cleanup behavior: Edit [.github/workflows/netlify-cleanup.yml](.github/workflows/netlify-cleanup.yml)
-- Netlify settings: Update [netlify.toml](netlify.toml) (though current config is minimal)
-- No need to run builds or install dependencies—changes are deployed as-is
+- `feat(site): add Taskfile bridge + live issue/PR links`
+- `fix(install): correct REPO_URL after rename`
+- `docs(agents): refresh visual conventions`
 
-## Common Patterns
+## When making changes
 
-This project demonstrates:
-- GitHub Actions workflows with conditional steps (`if: github.event_name == 'push'`)
-- PR preview deployments using dynamic aliases (`alias: pr-${{ github.event.number }}`)
-- Automatic resource cleanup on PR close using Netlify API
-- Zero-build static site deployment pattern
-- Single-file web applications with embedded styles
+| Change | Affects |
+| ------ | ------- |
+| Visual / brand | `app/shared.css` (tokens), then individual pages if they use new components |
+| New quality check | Add workflow under `.github/workflows/`, add Task target, surface on `app/features.html` and `app/tools.html`, mention in `README.md` |
+| New page | Add HTML + page-specific CSS in `app/`; link `shared.css` first; copy header/nav/footer; add to nav on the other two pages; add to `tests/smoke.spec.ts` and `tests/accessibility.spec.ts` |
+| Netlify behaviour | `netlify.toml` (CSP changes are blast-radius — touch DAST tests too) |
+| Installer behaviour | `install.sh` (the REPO_URL must always match this repo's actual location) |
+
+## Verifying changes locally
+
+```bash
+task ss:contributing:build                  # TypeScript build
+task ss:contributing:run                    # server on :8080
+task ss:contributing:test                   # Playwright smoke + a11y
+task ss:reliability:accessibility           # axe-core audit
+task ss:reliability:cwv                     # Lighthouse CI
+task ss:hygiene:complexity                  # Lizard cap
+task ss:security:sast                       # Semgrep
+```
+
+Or run the underlying npm scripts if you don't have Task installed
+(`npm start`, `npm run build`, `npm test`) — but **prefer `task`** so your
+behaviour matches CI exactly.
+
+## Integration points
+
+- **Netlify:** deployment is driven by GitHub Actions (not Netlify's git
+  integration). DNS is managed externally.
+- **GitHub Actions:** workflows require `NETLIFY_AUTH_TOKEN`,
+  `NETLIFY_SITE_ID`, and (for the agentic doc updater) `ANTHROPIC_API_KEY`.
+- **Netlify API:** the cleanup workflow uses
+  `https://api.netlify.com/api/v1/sites/{site_id}/deploys` to delete
+  preview deployments.
+
+## Common pitfalls
+
+- Adding a quality check workflow but forgetting to add a matching Task
+  target → CI and local diverge
+- Editing `app/index.html` but forgetting `aria-current="page"` on the
+  active nav link → a11y regression
+- Adding any external resource → CSP blocks it silently in production; test
+  in DevTools first
+- Tweaking `--accent` to use it as text colour → AA contrast fail (use
+  `--accent-deep` for text)
+- Adding to one HTML page's header but not the other two → nav drifts
+- Invoking `task hygiene:complexity` (or any task) without the `ss:`
+  prefix → "task not found". All SlopStopper tasks live under the `ss`
+  namespace via the root `Taskfile.yml`'s `includes:` block. Use
+  `task ss:hygiene:complexity`
+- Creating a new workflow file without the `ss-` prefix → it won't get
+  grouped with the rest in the Actions UI, and consumers risk a clash
+  when they install. Always name new workflows `ss-<category>-<action>.yml`
+  (exception: `copilot-setup-steps.yml`, whose name is fixed by the
+  platform)
+- Putting analysis output anywhere other than under `.ss/reports/<category>/`
+  → it won't be `.gitignore`d and could pollute the consumer's repo

@@ -1,0 +1,40 @@
+name: SlopStopper · Cleanup Netlify Preview
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Netlify Preview Deployment
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          echo "Cleaning up preview deployment for PR #${PR_NUMBER}"
+          
+          # Get the deploy ID for this PR's preview alias
+          DEPLOY_ID=$(curl -s \
+            -H "Authorization: Bearer ${NETLIFY_AUTH_TOKEN}" \
+            "https://api.netlify.com/api/v1/sites/${NETLIFY_SITE_ID}/deploys?deploy_type=branch" \
+            | jq -r ".[] | select(.name == \"pr-${PR_NUMBER}\") | .id" \
+            | head -n 1)
+          
+          if [ -z "$DEPLOY_ID" ] || [ "$DEPLOY_ID" == "null" ]; then
+            echo "No preview deployment found for PR #${PR_NUMBER}"
+            exit 0
+          fi
+          
+          echo "Found deploy ID: ${DEPLOY_ID}"
+          
+          # Delete the deployment
+          curl -X DELETE \
+            -H "Authorization: Bearer ${NETLIFY_AUTH_TOKEN}" \
+            "https://api.netlify.com/api/v1/sites/${NETLIFY_SITE_ID}/deploys/${DEPLOY_ID}"
+          
+          echo "Successfully deleted preview deployment for PR #${PR_NUMBER}"
