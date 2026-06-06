@@ -35,3 +35,4 @@ Examples:
 
 - `task ss:decisions:validate`
 - `task ss:decisions:new SLUG=<name>`
+

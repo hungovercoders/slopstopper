@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains documentation for SlopStopper's reliability checks: portable smoke tests, broken-link audits, accessibility audits (see [ACCESSIBILITY.md](ACCESSIBILITY.md)) and Core Web Vitals via Lighthouse CI. These checks are wired against any reachable URL.
+This directory contains documentation for SlopStopper's reliability checks: portable smoke tests, broken-link audits, accessibility audits (see [ACCESSIBILITY.md](ACCESSIBILITY.md)), Core Web Vitals via Lighthouse CI, and git commit drift detection (see [DRIFT_DETECTION.md](DRIFT_DETECTION.md)). These checks are wired against any reachable URL.
 
 ## Configuration (env vars)
 
@@ -219,3 +219,4 @@ For assertions beyond "page returns 200 and loads cleanly" (e.g. specific elemen
 - [Playwright Testing Guide](https://playwright.dev/docs/intro)
 - [GitHub Actions Documentation](https://docs.github.com/actions)
 - [Contributing Guidelines](../contributing/README.md)
+- [Git Commit Drift Detection](DRIFT_DETECTION.md)

@@ -17,3 +17,10 @@ version: '3'
 includes:
   ss:
     taskfile: ./Taskfile.ss.yml
+
+tasks:
+  drift-detect:
+    desc: Run git commit drift detection tests
+    cmds:
+      - npx playwright test --config=.ss/playwright.config.js .ss/tests/drift-detection.spec.js {{.CLI_ARGS}}
+
