@@ -75,7 +75,7 @@ Re-run when the widget breaks after a third-party release.
 
 - **Origin allowed:** `https://giscus.app`
 - **Directives added:** `script-src https://giscus.app`, `frame-src https://giscus.app`, `style-src 'unsafe-inline'`
-- **Loader SRI:** `sha384-TODO_REFRESH_AFTER_DISCUSSIONS_ENABLED` (refresh when Discussions is enabled and the placeholder in `app/feedback.html` is replaced)
+- **Loader SRI:** `sha384-UwLZGbJGvkTzz0719+xEzUm/idqwzs0yZN8aB9Se5vUXHbyRyDWw9yqZTIsOsJ7x` (last refreshed when this exception was added; see refresh policy below)
 - **Why:** Embedded GitHub Discussions comments via [Giscus](https://giscus.app) so visitors can leave feedback directly on the page without leaving the site
 - **Approved by:** PR introducing the feedback page (see `git log app/feedback.html`)
 - **Data leaving site:**
