@@ -1,0 +1,200 @@
+name: SlopStopper · Code Complexity Check
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  complexity-check:
+    name: Check Code Complexity with Lizard
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install Lizard
+        run: |
+          set -e
+          pip install --upgrade pip
+          pip install lizard
+          lizard --version
+        shell: bash
+      
+      - name: Install Task
+        run: |
+          curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
+          task --version
+      
+      - name: Run complexity analysis
+        id: complexity
+        run: |
+          task ss:hygiene:complexity
+      
+      - name: Check reports generated
+        run: |
+          if [ ! -f .ss/reports/complexity/complexity-report.md ]; then
+            echo "❌ Failed to generate complexity report"
+            exit 1
+          fi
+          
+          echo "✅ Complexity reports generated successfully"
+      
+      - name: Check for high complexity
+        id: check-complexity
+        run: |
+          set +e
+          HIGH_COMPLEXITY_FOUND=0
+          
+          if [ -f .ss/reports/complexity/complexity-report.csv ]; then
+            # Count items with CCN (column 2) > 10
+            HIGH_COUNT=$(awk -F',' '$2 > 10' .ss/reports/complexity/complexity-report.csv | wc -l)
+            if [ "$HIGH_COUNT" -gt 0 ]; then
+              HIGH_COMPLEXITY_FOUND=1
+              echo "⚠️  Found $HIGH_COUNT item(s) with complexity > 10"
+            fi
+          fi
+          
+          set -e
+          echo "high_complexity_found=$HIGH_COMPLEXITY_FOUND" >> $GITHUB_OUTPUT
+      
+      - name: Debug - Check directory contents before upload
+        if: always()
+        run: |
+          echo "🔍 Debugging directory structure and paths"
+          echo ""
+          echo "📍 Current working directory:"
+          pwd
+          echo ""
+          echo "📂 Contents of current directory:"
+          ls -la | head -20
+          echo ""
+          echo "📂 Checking .ss/reports/complexity/:"
+          if [ -d .ss/reports/complexity ]; then
+            echo "✅ Directory exists"
+            ls -la .ss/reports/complexity/
+            echo ""
+            echo "Content of complexity-report.md:"
+            cat .ss/reports/complexity/complexity-report.md | head -10 || echo "File not readable"
+          else
+            echo "❌ Directory .ss/reports/complexity does not exist"
+          fi
+      
+      - name: Upload complexity reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: complexity-reports
+          path: |
+            .ss/reports/complexity/complexity-report.md
+            .ss/reports/complexity/complexity-report.csv
+            .ss/reports/complexity/complexity-report-raw.txt
+          retention-days: 30
+          if-no-files-found: warn
+      
+      - name: Comment on PR with complexity report
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let reportContent = '## 📊 Code Complexity Analysis\n\n';
+            
+            try {
+              const markdownReport = fs.readFileSync('.ss/reports/complexity/complexity-report.md', 'utf8');
+              reportContent += markdownReport + '\n\n';
+            } catch (e) {
+              reportContent += '**Could not read complexity report.** See workflow artifacts for details.\n\n';
+            }
+            
+            reportContent += '### 🔍 How to Check Locally\n\n';
+            reportContent += '```bash\n';
+            reportContent += 'task ss:hygiene:complexity\n';
+            reportContent += '```\n\n';
+            reportContent += '[Full reports available in workflow artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) (`.ss/reports/complexity/` directory)\n';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: reportContent
+            });
+      
+      - name: Create/Update issue on main branch with high complexity
+        if: steps.check-complexity.outputs.high_complexity_found == '1' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            const title = '⚠️ Code Complexity Issues in Main Branch';
+            let body = '## Code Complexity Analysis Failed\n\n';
+            body += `**Commit:** [\`${{ github.sha }}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})\n`;
+            body += `**Run:** [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n`;
+            
+            try {
+              const markdownReport = fs.readFileSync('.ss/reports/complexity/complexity-report.md', 'utf8');
+              body += '## Report\n\n' + markdownReport + '\n\n';
+            } catch (e) {
+              body += 'See workflow artifacts for detailed reports.\n\n';
+            }
+            
+            body += '## Reproduction Steps\n\n';
+            body += '```bash\n';
+            body += '# Install Task (one-time)\n';
+            body += 'curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin\n\n';
+            body += '# Run analysis locally\n';
+            body += 'task ss:hygiene:complexity\n';
+            body += '```\n\n';
+            body += '## Guidelines\n\n';
+            body += '- **Cyclomatic Complexity (CCN) > 10**: Indicates complex logic that should be refactored\n';
+            body += '- **Function length > 50 lines**: Consider breaking into smaller functions\n';
+            body += '- **For this template**: Code should remain minimal since it\'s a static site\n';
+            
+            // Check for existing open issue
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['code-complexity']
+            });
+            
+            if (issues.data.length === 0) {
+              // Create new issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['code-complexity', 'technical-debt']
+              });
+            } else {
+              // Update existing issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body: `## New Report\n\n${new Date().toISOString()}\n\n${body}`
+              });
+            }
+      
+      - name: Fail job if high complexity found
+        if: steps.check-complexity.outputs.high_complexity_found == '1'
+        run: |
+          echo "❌ Code complexity issues detected in pull request"
+          echo "Please review the complexity report above and refactor high-complexity functions"
+          exit 1

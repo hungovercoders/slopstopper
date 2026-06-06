@@ -1,0 +1,71 @@
+# Auto-labeling rules for PRs based on changed files
+# Used by: .github/workflows/hygiene-auto-label-pr.yml
+# Docs: https://github.com/actions/labeler
+
+# ── Documentation ──
+docs:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'docs/**'
+      - '*.md'
+
+# ── Security ──
+security:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/security-*'
+      - 'docs/security/**'
+      - 'tests/generate_sast_report*'
+      - 'tests/generate_dast_report*'
+      - 'tests/generate_secrets_report*'
+      - 'tests/generate_dependencies_report*'
+
+# ── Reliability ──
+reliability:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/reliability-*'
+      - 'tests/smoke.spec.js'
+      - 'tests/navigation.spec.js'
+      - 'docs/reliability/**'
+
+# ── Hygiene ──
+hygiene:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/hygiene-*'
+      - 'docs/hygiene/**'
+      - 'tests/generate_complexity_report*'
+
+# ── Deployment / Infrastructure ──
+deployment:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/netlify-*'
+      - 'netlify.toml'
+      - 'docs/deployment/**'
+
+# ── Tests ──
+tests:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'tests/**'
+      - 'playwright.config.js'
+      - '.github/workflows/playwright-tests.yml'
+
+# ── CI/CD ──
+ci:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**'
+
+# ── Frontend / Content ──
+content:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '*.html'
+      - '*.css'
+      - '*.js'
+      - '!server.js'
+      - '!playwright.config.js'
+      - '!validation.js'

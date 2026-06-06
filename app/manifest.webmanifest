@@ -1,0 +1,24 @@
+{
+  "name": "SlopStopper",
+  "short_name": "SlopStopper",
+  "description": "Deterministic, automated feedback for AI-driven development. Catch slop before it ships.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "browser",
+  "background_color": "#FBF5EC",
+  "theme_color": "#FBF5EC",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180",
+      "purpose": "any"
+    }
+  ]
+}

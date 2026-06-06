@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://slopstopper.dev/sitemap.xml

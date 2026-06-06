@@ -1,0 +1,17 @@
+/* index.html — page-specific styles */
+
+.hero {
+    padding-top: 1rem;
+}
+.hero .bubble {
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 600px) {
+    .mascot--hero {
+        width: 140px;
+    }
+    .cta-row .btn {
+        width: 100%;
+    }
+}

@@ -1,4 +1,4 @@
-name: Deploy to Netlify
+name: SlopStopper · Deploy to Netlify
 
 on:
   push:
@@ -18,11 +18,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
       - name: Deploy to Netlify (Production)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: nwtgck/actions-netlify@v2.1
         with:
-          publish-dir: '.'
+          publish-dir: './app'
           production-deploy: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           deploy-message: "Deploy from GitHub Actions - ${{ github.event.head_commit.message }}"
@@ -35,26 +46,22 @@ jobs:
         timeout-minutes: 5
 
       # PR Preview Deployment with Before/After Screenshots
-      - name: Setup Node.js for screenshots
-        if: github.event_name == 'pull_request'
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Install Playwright
         if: github.event_name == 'pull_request'
         run: |
-          npm install -g http-server playwright-chromium
           npx playwright install chromium
 
       - name: Start local server for "Before" screenshot
         if: github.event_name == 'pull_request'
         run: |
-          # Checkout main branch to a separate directory
+          # Checkout main branch to a separate directory and build it
           git fetch origin main
-          git clone --single-branch --branch main . ../main-branch
+          rm -rf ../main-branch
+          git clone --single-branch --branch main $GITHUB_WORKSPACE ../main-branch
           cd ../main-branch
-          npx http-server . -p 8080 &
+          npm ci
+          npm run build
+          PORT=8080 node server.js &
           echo $! > /tmp/server_before.pid
           sleep 5
           # Wait for server to be ready
@@ -86,7 +93,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           cd $GITHUB_WORKSPACE
-          npx http-server . -p 8081 &
+          PORT=8081 node server.js &
           echo $! > /tmp/server_after.pid
           sleep 5
           # Wait for server to be ready
@@ -127,7 +134,7 @@ jobs:
         id: netlify-preview
         uses: nwtgck/actions-netlify@v2.1
         with:
-          publish-dir: '.'
+          publish-dir: './app'
           production-deploy: false
           github-token: ${{ secrets.GITHUB_TOKEN }}
           deploy-message: "Deploy preview from PR #${{ github.event.number }}"

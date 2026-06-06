@@ -1,0 +1,19 @@
+# Root Taskfile — thin integration layer.
+#
+# SlopStopper's tasks are defined in Taskfile.ss.yml under the `ss` namespace.
+# Run any of them with the prefix:
+#
+#   task ss:hygiene:complexity
+#   task ss:security:sast
+#   task ss:reliability:accessibility
+#   task --list                       # see everything
+#
+# This file is the consumer-facing integration point. If you adopt
+# SlopStopper into a repo that already has a Taskfile.yml, add the
+# `includes` block below to your existing file instead of overwriting it.
+
+version: '3'
+
+includes:
+  ss:
+    taskfile: ./Taskfile.ss.yml
