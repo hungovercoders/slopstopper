@@ -63,6 +63,22 @@ task ss:security:sast
 | WARNING | ⚠️ Non-blocking | Review recommended |
 | INFO | ℹ️ Informational | Awareness only |
 
+### Documented suppressions
+
+Some Semgrep rules are too broad for known-safe patterns. Rather than disable rules globally (which would hurt adopters whose code legitimately needs them), we use narrow inline annotations with a rationale at the call site:
+
+- `# nosemgrep: <full-rule-id>` for Python — placed on the affected statement, with a brief comment explaining why the pattern is safe here
+- `<!-- nosemgrep: <full-rule-id> --><rationale>` for HTML — placed on the line directly above the affected element
+
+Both are visible in code review and act as documentation; nothing is silently disabled. Current suppressions in this repo:
+
+| Rule | Where | Why it's safe here |
+| ---- | ----- | ------------------ |
+| `python.lang.security.audit.dynamic-urllib-use-detected` | `.ss/scripts/check-seo-metatags.py` (`fetch` + `head_ok`) | URL originates from `SEO_TEST_URL` env var (operator-supplied) and `_require_safe_url()` is called before every `urlopen()` to reject any scheme other than `http`/`https`. So `file://`/`ftp://` reads are impossible by construction. |
+| `html.security.audit.missing-integrity` | `<link rel="canonical">` in `app/index.html`, `app/features.html`, `app/tools.html`, `app/feedback.html` | Canonical links declare URL identity for search engines. They load no subresource, so Subresource Integrity is structurally inapplicable. The rule fires on any `<link>` without `integrity=` regardless of whether the tag loads anything. |
+
+**For adopters:** when SlopStopper flags noise in your code, prefer this narrow-suppression-with-rationale pattern over disabling a rule globally — it keeps the rule active for real findings while you accept the false positive at the exact site that needs it.
+
 ---
 
 ## Overview

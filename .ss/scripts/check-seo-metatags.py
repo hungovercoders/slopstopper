@@ -38,6 +38,24 @@ from typing import Optional
 REPORT_DIR = Path(".ss/reports/seo")
 USER_AGENT = "SlopStopper-SEO-Check/1.0"
 TIMEOUT_SECONDS = 15
+ALLOWED_SCHEMES = ("http", "https")
+
+
+def _require_safe_url(url: str) -> None:
+    """Reject any URL whose scheme isn't http/https.
+
+    urllib.request.urlopen happily handles file:// and ftp:// too, which
+    could let a hostile SEO_TEST_URL value (e.g. file:///etc/passwd) be
+    read by this checker. Validating the scheme up-front makes the
+    urlopen calls safe by construction even though they take a variable
+    URL — Semgrep's dynamic-urllib-use-detected rule cannot see that
+    safety, hence the # nosemgrep annotations downstream.
+    """
+    scheme = urllib.parse.urlparse(url).scheme.lower()
+    if scheme not in ALLOWED_SCHEMES:
+        raise ValueError(
+            f"SEO check refuses scheme {scheme!r} (only http/https allowed). url={url!r}"
+        )
 
 
 # ── HTML parser: only walks the <head>, captures meta/title/link ─────
@@ -77,15 +95,28 @@ class HeadParser(HTMLParser):
 
 
 def fetch(url: str) -> tuple[int, str, str]:
+    # Scheme validated by _require_safe_url; URL originates from the
+    # SEO_TEST_URL env var (operator-supplied), not end-user input. The
+    # # nosemgrep on the urlopen line below references that guarantee;
+    # # nosec B310 is the same suppression in Bandit's syntax.
+    _require_safe_url(url)
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:  # nosec B310 — URL comes from env, not user input
+    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+    with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:  # nosec B310
         return resp.status, resp.headers.get("Content-Type", ""), resp.read().decode("utf-8", errors="replace")
 
 
 def head_ok(url: str) -> tuple[bool, str]:
     """Return (ok, detail). Validates og:image is reachable and is an image."""
+    # Scheme validated by _require_safe_url; URL is derived from a
+    # page-resolved og:image, which itself came from operator-supplied
+    # SEO_TEST_URL. The # nosemgrep on the urlopen line below references
+    # that guarantee; # nosec B310 is the same suppression in Bandit's
+    # syntax.
     try:
+        _require_safe_url(url)
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT}, method="HEAD")
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:  # nosec B310
             ct = resp.headers.get("Content-Type", "")
             if resp.status != 200:
