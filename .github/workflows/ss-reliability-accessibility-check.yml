@@ -130,7 +130,7 @@ jobs:
         if: steps.url.outputs.use_local == 'true'
         # CUSTOMISE FOR YOUR APP: comma-separated paths to audit. Defaults
         # to '/' if unset.
-        run: echo "ACCESSIBILITY_PAGES=/,/features.html,/tools.html" >> "$GITHUB_ENV"
+        run: echo "ACCESSIBILITY_PAGES=/,/features.html,/tools.html,/feedback.html" >> "$GITHUB_ENV"
 
       - name: Run accessibility audit
         id: audit

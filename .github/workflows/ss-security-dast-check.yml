@@ -71,32 +71,33 @@ jobs:
 
           echo "✅ DAST reports generated successfully"
 
-      - name: Check for high/medium alerts
+      - name: Check for blocking alerts (CSP exceptions filtered)
         id: check-dast
+        # Counts riskcode >= 2 alerts AFTER filtering out CSP findings
+        # whose URL path is in docs/security/CSP_EXCEPTIONS.md. High-risk
+        # alerts (riskcode 3) and non-CSP alerts still block everywhere.
+        # See .ss/scripts/check-dast-alerts.py for the full filter logic.
         run: |
           set +e
-          ALERTS_FOUND=0
+          python3 .ss/scripts/check-dast-alerts.py
+          GATE_EXIT=$?
+          set -e
 
-          if [ -f .ss/reports/dast/dast-report.json ]; then
-            ALERT_COUNT=$(python3 -c "
-          import json, sys
-          with open('.ss/reports/dast/dast-report.json') as f:
-            data = json.load(f)
-          count = 0
-          for site in data.get('site', []):
-            for alert in site.get('alerts', []):
-              if int(alert.get('riskcode', 0)) >= 2:
-                count += 1
-          print(count)
-          " 2>/dev/null || echo "0")
-            if [ "$ALERT_COUNT" -gt 0 ]; then
-              ALERTS_FOUND=1
-              echo "⚠️  Found $ALERT_COUNT medium/high alert(s)"
-            fi
+          if [ -f .ss/reports/dast/dast-gate.json ]; then
+            BLOCKING=$(python3 -c "import json; print(json.load(open('.ss/reports/dast/dast-gate.json'))['blocking'])")
+            SWALLOWED=$(python3 -c "import json; print(len(json.load(open('.ss/reports/dast/dast-gate.json'))['swallowed']))")
+            echo "blocking=$BLOCKING" >> $GITHUB_OUTPUT
+            echo "swallowed=$SWALLOWED" >> $GITHUB_OUTPUT
+          else
+            echo "blocking=0" >> $GITHUB_OUTPUT
+            echo "swallowed=0" >> $GITHUB_OUTPUT
           fi
 
-          set -e
-          echo "alerts_found=$ALERTS_FOUND" >> $GITHUB_OUTPUT
+          if [ "$GATE_EXIT" -ne 0 ]; then
+            echo "alerts_found=1" >> $GITHUB_OUTPUT
+          else
+            echo "alerts_found=0" >> $GITHUB_OUTPUT
+          fi
 
       - name: Debug - Check directory contents before upload
         if: always()
@@ -136,6 +137,20 @@ jobs:
             const fs = require('fs');
 
             let reportContent = '## 🌐 DAST Analysis\n\n';
+
+            try {
+              const gate = JSON.parse(fs.readFileSync('.ss/reports/dast/dast-gate.json', 'utf8'));
+              if (gate.swallowed && gate.swallowed.length > 0) {
+                reportContent += '### 🛡 Documented CSP exceptions (swallowed by gate)\n\n';
+                reportContent += `${gate.swallowed.length} CSP finding(s) on documented exception paths in [\`docs/security/CSP_EXCEPTIONS.md\`](https://github.com/${{ github.repository }}/blob/main/docs/security/CSP_EXCEPTIONS.md) were filtered out:\n\n`;
+                for (const s of gate.swallowed) {
+                  reportContent += `- **${s.path}** — pluginid \`${s.pluginid}\`, riskcode ${s.riskcode}, _${s.alert}_\n`;
+                }
+                reportContent += '\nThese do not block the build. They will block again if the path is removed from the exceptions doc or if a higher-risk variant appears.\n\n';
+              }
+            } catch (e) {
+              // Gate report absent — skip the swallowed section.
+            }
 
             try {
               const markdownReport = fs.readFileSync('.ss/reports/dast/dast-report.md', 'utf8');

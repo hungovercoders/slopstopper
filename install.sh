@@ -145,6 +145,7 @@ mkdir -p "$WORKFLOWS_DST"
 GENERIC_WORKFLOWS=(
   # Layer 1 — static analysis (works on any code)
   "ss-hygiene-complexity-check.yml"
+  "ss-hygiene-csp-exceptions-check.yml"
   "ss-hygiene-docs-accuracy-check.yml"
   "ss-hygiene-docs-size-check.yml"
   "ss-hygiene-docs-structure-check.yml"

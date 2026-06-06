@@ -141,25 +141,47 @@ Typography is system-only (no web fonts): `ui-rounded` cascading to
 `system-ui` for sans, `ui-monospace` for mono. Do not add `@font-face` or
 external font links.
 
-## CSP — what you can and cannot load
+## CSP — strict by default, documented per-page exceptions
 
-[`netlify.toml`](./netlify.toml) ships a strict CSP:
+[`netlify.toml`](./netlify.toml) ships a strict default CSP applied to
+every path via `for = "/*"`:
 
 ```
 default-src 'self'; script-src 'self'; style-src 'self';
 base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 ```
 
-This is non-negotiable — the security headers are tested in DAST. Therefore:
+Defaults are tested in DAST. **Do not weaken the default `/*` block.**
+
+For pages that genuinely need a vetted third-party widget (e.g.
+`/feedback.html` embeds Giscus for GitHub Discussions comments) we
+allow per-path CSP exceptions via additional `[[headers]]` blocks
+scoped to a single path. Every exception MUST:
+
+1. **Be scoped to a single path** in `netlify.toml` — never widen `/*`
+2. **Be documented** in [`docs/security/CSP_EXCEPTIONS.md`](./docs/security/CSP_EXCEPTIONS.md)
+   with origin, directives, SRI hash, why, data leaving, refresh policy
+3. **SRI-pin external scripts** wherever the host supports it
+4. **Provide a fallback** so the page is still useful if the third-party
+   is down or the SRI hash goes stale
+
+The [`ss:hygiene:csp-exceptions`](./Taskfile.ss.yml) check fails the
+build if `netlify.toml` and `CSP_EXCEPTIONS.md` disagree.
+
+Default rules for any new resource (use these unless you're explicitly
+opening a documented exception):
 
 - ✅ Local CSS, local JS, local images, local fonts (none currently)
+- ✅ Inline SVG for imagery — mascots, mock report cards, favicon
 - ❌ No CDN fonts, no Google Fonts
 - ❌ No external images, no `shields.io` badges
-- ❌ No third-party scripts, no analytics, no embeds (no GitHub iframe, no Lighthouse iframe)
-- ❌ No `data:` URLs for images (blocked by `default-src 'self'` in most browsers)
+- ❌ No third-party scripts on `/*` — open a per-path exception instead
+- ❌ No `data:` URLs for images (blocked by `default-src 'self'` in most
+  browsers)
 
-Use inline SVG for any imagery. Mascots and mock report cards are inline
-SVG; the favicon is `app/favicon.svg`.
+If you're adopting SlopStopper and your site needs GTM, Sentry,
+Intercom, etc., copy the pattern from `CSP_EXCEPTIONS.md`. That doc
+exists for adopters as much as for this repo.
 
 ## Pages — content authoring rules
 
