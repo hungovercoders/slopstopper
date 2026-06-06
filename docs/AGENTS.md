@@ -1,3 +1,10 @@
+---
+title: Agent Instructions Pointer
+description: Pointer to canonical agent instructions at the repo root for AI assistants and automation tools.
+status: maintained
+date: 2026-03-02
+---
+
 # Agent instructions — pointer
 
 The canonical agent instructions for this repo now live at the repo root:

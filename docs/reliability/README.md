@@ -1,3 +1,10 @@
+---
+title: Reliability Testing
+description: Documentation and tests for ensuring reliability of deployed sites through automated smoke testing.
+status: maintained
+date: 2026-03-02
+---
+
 # Reliability Testing
 
 ## Overview

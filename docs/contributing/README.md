@@ -1,3 +1,10 @@
+---
+title: Contributing
+description: Contributor workflow and expectations for the template-netlify project.
+status: maintained
+date: 2026-03-02
+---
+
 # Contributing
 
 This document defines the default way to contribute to this project.

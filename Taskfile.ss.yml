@@ -1277,6 +1277,54 @@ tasks:
         echo ""
     silent: false
 
+  hygiene:docs-front-matter:
+    desc: Check all docs markdown files contain valid YAML front matter
+    summary: |
+      Validates that every markdown file under docs/ contains YAML front matter
+      with the required fields: title, description, status, and date.
+
+      Usage:
+        task ss:hygiene:docs-front-matter
+    cmds:
+      - task: hygiene:docs-front-matter:check
+      - task: hygiene:docs-front-matter:report
+    silent: false
+
+  hygiene:docs-front-matter:check:
+    desc: Run front matter checks and produce JSON report
+    internal: true
+    cmds:
+      - python3 .ss/scripts/check-docs-front-matter.py || true
+    silent: false
+
+  hygiene:docs-front-matter:report:
+    desc: Generate markdown front matter report
+    internal: true
+    cmds:
+      - |
+        python3 .ss/scripts/generate-docs-front-matter-md.py
+
+        echo ""
+        echo "📄 DOCUMENTATION FRONT MATTER REPORT"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+
+        if [ ! -f .ss/reports/docs/docs-front-matter-report.md ]; then
+          echo "❌ Front matter report not generated!"
+          exit 1
+        fi
+
+        cat .ss/reports/docs/docs-front-matter-report.md
+
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "📁 Reports saved to: .ss/reports/docs/"
+        echo "   • docs-front-matter-report.md (human-readable)"
+        echo "   • docs-front-matter-report.json (machine-readable)"
+        echo ""
+    silent: false
+
   hygiene:test:
     desc: Run all hygiene checks for code and documentation
     cmds:
@@ -1286,6 +1334,7 @@ tasks:
       - task: hygiene:docs-size
       - task: hygiene:docs-structure
       - task: hygiene:docs-accuracy
+      - task: hygiene:docs-front-matter
       - task: hygiene:complexity
 
   # Security tasks

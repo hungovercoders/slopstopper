@@ -1,3 +1,10 @@
+---
+title: Accessibility Monitoring
+description: Automated WCAG 2.1 AA accessibility monitoring via axe-core and Playwright for the SlopStopper site.
+status: maintained
+date: 2026-03-02
+---
+
 # Accessibility Monitoring
 
 ## Overview

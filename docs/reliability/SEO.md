@@ -1,3 +1,10 @@
+---
+title: SEO & Social-Share Metatag Check
+description: Overview of SEO and social-share metatag checks provided by SlopStopper via Lighthouse and axe-core.
+status: maintained
+date: 2026-03-02
+---
+
 # SEO & Social-Share Metatag Check
 
 SlopStopper ships two complementary SEO-flavoured checks:

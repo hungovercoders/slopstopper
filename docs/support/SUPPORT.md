@@ -1,6 +1,11 @@
-# Support
+---
+title: Support
+description: How to get help with the template-netlify project, including support flow, escalation steps, and channel guide.
+status: maintained
+date: 2026-03-02
+---
 
-This document describes how to get help with this project.
+# Support
 
 ## Support Flow
 

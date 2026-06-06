@@ -1,3 +1,10 @@
+---
+title: App
+description: What the site does and how its pages are organised.
+status: maintained
+date: 2026-03-02
+---
+
 # App
 
 What the site does and how its pages are organised.

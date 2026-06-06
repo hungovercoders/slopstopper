@@ -1,3 +1,10 @@
+---
+title: SlopStopper Documentation
+description: Documentation hub for the SlopStopper project — structure, categories, and navigation.
+status: maintained
+date: 2026-03-02
+---
+
 # SlopStopper documentation
 
 This directory holds the structured project documentation.
