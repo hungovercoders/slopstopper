@@ -31,11 +31,13 @@
 #                               #   so they group together in the Actions UI
 #                               #   and cannot clash with your existing workflows
 #
-# Workflow set ships in four conceptual layers:
+# Workflow set ships in three conceptual layers:
 #   1. Static analysis  — work on any code (SAST, Secrets, Trivy, complexity, doc checks)
 #   2. Web-app dynamic  — need a URL (Smoke, Accessibility, CWV, Playwright)
-#   3. Netlify deploy   — need NETLIFY_AUTH_TOKEN + NETLIFY_SITE_ID secrets
-#   4. Agentic updater  — needs COPILOT_GITHUB_TOKEN (gh-aw doc-updater)
+#   3. Agentic updater  — needs COPILOT_GITHUB_TOKEN (gh-aw doc-updater)
+# Deploy is intentionally not a layer: connect your repo in the Cloudflare
+# dash (Workers & Pages → Create → Connect to Git) and you get production
+# deploys, PR previews and preview cleanup for free — no workflow needed.
 # Don't use one of the layers? Delete its workflows from .github/workflows/.
 # Re-running this installer will respect that deletion (it tracks what it
 # installed in .ss/.workflows-installed).
@@ -197,10 +199,7 @@ GENERIC_WORKFLOWS=(
   "ss-reliability-core-web-vitals.yml"
   "ss-reliability-seo-check.yml"
   "ss-playwright-tests.yml"
-  # Layer 3 — Netlify deploy (need NETLIFY_AUTH_TOKEN + NETLIFY_SITE_ID)
-  "ss-netlify-deploy.yml"
-  "ss-netlify-cleanup-preview.yml"
-  # Layer 4 — agentic doc-updater (needs ANTHROPIC_API_KEY)
+  # Layer 3 — agentic doc-updater (needs ANTHROPIC_API_KEY)
   # NB: gh-aw workflows ship as a .md source + .lock.yml compiled artifact.
   "ss-hygiene-doc-updater.md"
   "ss-hygiene-doc-updater.lock.yml"
@@ -312,14 +311,18 @@ echo "     export ACCESSIBILITY_PAGES=/,/about,/pricing   # comma-separated"
 echo "     export LIGHTHOUSE_URL=\$SMOKE_TEST_URL"
 echo ""
 echo "  🔐 Inert until you add secrets in your repo settings:"
-echo "       Netlify Deploy + Preview Cleanup"
-echo "         → NETLIFY_AUTH_TOKEN, NETLIFY_SITE_ID"
 echo "       Doc Auto-Updater (gh-aw agentic workflow)"
 echo "         → ANTHROPIC_API_KEY"
 echo ""
-echo "  Don't use Netlify or the doc-updater? Just delete those workflows"
-echo "  from .github/workflows/ — re-running this installer won't bring"
-echo "  them back (tracked via .ss/.workflows-installed)."
+echo "  🚀 Deploy is handled by Cloudflare, not by a workflow in this suite:"
+echo "       Cloudflare dash → Workers & Pages → Create → Connect to Git"
+echo "       Pushes deploy to prod, PRs get preview URLs, closing a PR"
+echo "       cleans up the preview. No GitHub secrets required."
+echo "       See docs/deployment/README.md for the full cutover steps."
+echo ""
+echo "  Don't use the doc-updater? Just delete its workflows from"
+echo "  .github/workflows/ — re-running this installer won't bring them"
+echo "  back (tracked via .ss/.workflows-installed)."
 echo ""
 sep
 echo ""

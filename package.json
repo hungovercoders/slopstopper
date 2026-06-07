@@ -12,7 +12,7 @@
     "test:links": "playwright test --config=.ss/playwright.config.js .ss/tests/broken-links.spec.ts"
   },
   "keywords": [
-    "netlify",
+    "cloudflare",
     "slopstopper",
     "code-quality"
   ],

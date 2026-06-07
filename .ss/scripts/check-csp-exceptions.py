@@ -4,24 +4,24 @@
 CSP-Exceptions Drift Detector
 
 The SlopStopper site ships a strict Content-Security-Policy on every
-path (`for = "/*"` in `netlify.toml`). Per-page CSP relaxations are
-permitted but must be documented in `docs/security/CSP_EXCEPTIONS.md`.
+path (the `/*` rule in `worker/headers.json`). Per-page CSP relaxations
+are permitted but must be documented in `docs/security/CSP_EXCEPTIONS.md`.
 
 This script enforces the contract:
 
-- Every non-`/*` `[[headers]]` block in netlify.toml that adds external
-  origins to its CSP must have a matching `## /<path>` heading in
+- Every non-`/*` entry in `worker/headers.json` whose `Content-Security-Policy`
+  adds external origins must have a matching `## /<path>` heading in
   CSP_EXCEPTIONS.md
-- Every origin allowed by the CSP block must be listed under
+- Every origin allowed by the CSP entry must be listed under
   `**Origin allowed:**` for that heading
 - Every CSP_EXCEPTIONS.md heading must correspond to a real
-  netlify.toml block (catches stale documentation)
+  `worker/headers.json` entry (catches stale documentation)
 
 Generates a report at .ss/reports/csp/csp-exceptions-report.{md,json}
 mirroring the docs-accuracy check.
 
 Exit codes:
-  0 — netlify.toml and CSP_EXCEPTIONS.md agree
+  0 — worker/headers.json and CSP_EXCEPTIONS.md agree
   1 — drift detected (details in report)
   2 — required input files missing
 """
@@ -33,7 +33,7 @@ import re
 import sys
 from pathlib import Path
 
-NETLIFY_TOML = Path("netlify.toml")
+HEADERS_JSON = Path("worker/headers.json")
 EXCEPTIONS_DOC = Path("docs/security/CSP_EXCEPTIONS.md")
 REPORT_DIR = Path(".ss/reports/csp")
 
@@ -47,58 +47,31 @@ REQUIRED_FIELDS = {
     "Refresh policy",
 }
 
-KV_RE = re.compile(r'^([^=]+?)\s*=\s*"((?:[^"\\]|\\.)*)"$')
 ORIGIN_RE = re.compile(r"https?://[^\s`'\"\)\],]+")
 HEADING_RE = re.compile(r"^###\s+`?(/[^\s`]+)`?\s*$")
 FIELD_RE = re.compile(r"^-\s*\*\*([^:*]+):\*\*\s*(.*)$")
 
 
-# ── netlify.toml parser (minimal — matches what server.js parses) ──
+# ── worker/headers.json reader ─────────────────────────────────────
 
-def _commit_current(state: dict) -> None:
-    if state["current"] is not None:
-        state["rules"].append(state["current"])
-        state["current"] = None
-
-
-def _apply_toml_kv(state: dict, key: str, value: str) -> None:
-    if state["current"] is None:
-        return
-    if state["in_values"] and key == "Content-Security-Policy":
-        state["current"]["csp"] = value
-    elif not state["in_values"] and key == "for":
-        state["current"]["for"] = value
-
-
-def _handle_toml_line(state: dict, line: str) -> None:
-    """Mutate state with the effects of one stripped TOML line."""
-    if line == "[[headers]]":
-        _commit_current(state)
-        state["current"] = {"for": None, "csp": None}
-        state["in_values"] = False
-        return
-    if line == "[headers.values]":
-        state["in_values"] = True
-        return
-    if line.startswith("["):
-        _commit_current(state)
-        state["in_values"] = False
-        return
-    m = KV_RE.match(line)
-    if m:
-        _apply_toml_kv(state, m.group(1).strip(), m.group(2))
-
-
-def parse_netlify_headers(toml_path: Path) -> list[dict]:
-    """Return list of {for: str, csp: str|None} for each [[headers]] block."""
-    if not toml_path.exists():
+def load_headers_json(headers_path: Path) -> list[dict]:
+    """Return list of {for: str, csp: str|None} for each entry in worker/headers.json."""
+    if not headers_path.exists():
         return []
-    state: dict = {"rules": [], "current": None, "in_values": False}
-    for raw_line in toml_path.read_text().splitlines():
-        _handle_toml_line(state, raw_line.strip())
-    if state["current"] is not None:
-        state["rules"].append(state["current"])
-    return [r for r in state["rules"] if r["for"] is not None]
+    raw = json.loads(headers_path.read_text())
+    if not isinstance(raw, list):
+        return []
+    rules: list[dict] = []
+    for entry in raw:
+        if not isinstance(entry, dict):
+            continue
+        path = entry.get("for")
+        values = entry.get("values") or {}
+        if not isinstance(path, str) or not isinstance(values, dict):
+            continue
+        csp = values.get("Content-Security-Policy")
+        rules.append({"for": path, "csp": csp if isinstance(csp, str) else None})
+    return rules
 
 
 def extract_csp_origins(csp: str) -> set[str]:
@@ -168,8 +141,8 @@ def parse_exceptions_doc(doc_path: Path) -> dict[str, dict]:
 
 # ── Comparison ──────────────────────────────────────────────────────
 
-def _toml_exception_map(rules: list[dict]) -> dict[str, set[str]]:
-    """Return {path: external_origins} for non-/* CSP blocks that admit external origins."""
+def _headers_exception_map(rules: list[dict]) -> dict[str, set[str]]:
+    """Return {path: external_origins} for non-/* CSP entries that admit external origins."""
     out: dict[str, set[str]] = {}
     for rule in rules:
         path = rule["for"]
@@ -182,14 +155,14 @@ def _toml_exception_map(rules: list[dict]) -> dict[str, set[str]]:
 
 
 def _issues_for_documented_path(path: str, required: set[str], entry: dict) -> list[dict]:
-    """All issues for a path that exists in both netlify.toml and the doc."""
+    """All issues for a path that exists in both worker/headers.json and the doc."""
     issues: list[dict] = []
     missing_origins = required - entry["origins"]
     if missing_origins:
         issues.append({
             "severity": "error",
             "path": path,
-            "message": f"`{path}` allows {', '.join(sorted(missing_origins))} in netlify.toml but those origins are not listed in CSP_EXCEPTIONS.md",
+            "message": f"`{path}` allows {', '.join(sorted(missing_origins))} in worker/headers.json but those origins are not listed in CSP_EXCEPTIONS.md",
         })
     missing_fields = REQUIRED_FIELDS - entry["fields_seen"]
     if missing_fields:
@@ -222,27 +195,27 @@ def _sri_issues(path: str, sri: str) -> list[dict]:
 def compare(rules: list[dict], doc_entries: dict[str, dict]) -> list[dict]:
     """Return a list of issues (each {severity, path, message})."""
     issues: list[dict] = []
-    toml_map = _toml_exception_map(rules)
+    headers_map = _headers_exception_map(rules)
 
-    # 1) Every toml exception must have a matching doc heading covering its origins
-    for path, required in toml_map.items():
+    # 1) Every headers.json exception must have a matching doc heading covering its origins
+    for path, required in headers_map.items():
         entry = doc_entries.get(path)
         if entry is None:
             issues.append({
                 "severity": "error",
                 "path": path,
-                "message": f"`{path}` in netlify.toml allows external origins ({', '.join(sorted(required))}) but has no entry in CSP_EXCEPTIONS.md",
+                "message": f"`{path}` in worker/headers.json allows external origins ({', '.join(sorted(required))}) but has no entry in CSP_EXCEPTIONS.md",
             })
             continue
         issues.extend(_issues_for_documented_path(path, required, entry))
 
-    # 2) Every doc heading must correspond to a real netlify.toml block (catch stale docs)
+    # 2) Every doc heading must correspond to a real worker/headers.json entry (catch stale docs)
     for path in doc_entries:
-        if path not in toml_map:
+        if path not in headers_map:
             issues.append({
                 "severity": "error",
                 "path": path,
-                "message": f"`{path}` is documented in CSP_EXCEPTIONS.md but no matching CSP exception exists in netlify.toml",
+                "message": f"`{path}` is documented in CSP_EXCEPTIONS.md but no matching CSP exception exists in worker/headers.json",
             })
 
     return issues
@@ -279,8 +252,8 @@ def _md_fix_section() -> list[str]:
         "## How to Fix",
         "",
         "- **Missing doc entry** → add a `### \\`/path\\`` heading under `## Exceptions` in `docs/security/CSP_EXCEPTIONS.md` with all required fields.",
-        "- **Mismatched origins** → make `Origin allowed` / `Directives added` in the doc list every external origin in the corresponding `netlify.toml` CSP.",
-        "- **Stale doc entry** → remove the heading, or restore the matching `[[headers]]` block in `netlify.toml`.",
+        "- **Mismatched origins** → make `Origin allowed` / `Directives added` in the doc list every external origin in the corresponding `worker/headers.json` entry.",
+        "- **Stale doc entry** → remove the heading, or restore the matching entry in `worker/headers.json`.",
         "- **Placeholder SRI** → recompute with the procedure documented in `CSP_EXCEPTIONS.md` and update both the doc and `app/feedback.html`.",
         "",
     ]
@@ -293,11 +266,11 @@ def _write_markdown_report(issues: list[dict], summary: dict) -> None:
         f"**Status:** {_overall_status(issues)}",
         "",
         f"- Documented exceptions in `docs/security/CSP_EXCEPTIONS.md`: {summary['doc_entries']}",
-        f"- CSP exceptions in `netlify.toml` (non-`/*`): {summary['toml_exceptions']}",
+        f"- CSP exceptions in `worker/headers.json` (non-`/*`): {summary['headers_exceptions']}",
         "",
     ]
     if not issues:
-        lines.extend(["No drift detected. `netlify.toml` and `CSP_EXCEPTIONS.md` agree.", ""])
+        lines.extend(["No drift detected. `worker/headers.json` and `CSP_EXCEPTIONS.md` agree.", ""])
     else:
         lines.extend(_md_issue_section("## ❌ Errors", "error", issues))
         lines.extend(_md_issue_section("## ⚠️ Warnings", "warn", issues))
@@ -313,9 +286,9 @@ def write_reports(issues: list[dict], summary: dict) -> None:
 
 # ── Main ───────────────────────────────────────────────────────────
 
-def _print_results(toml_count: int, doc_count: int, issues: list[dict]) -> None:
+def _print_results(headers_count: int, doc_count: int, issues: list[dict]) -> None:
     print("🔐 CSP exceptions check")
-    print(f"   netlify.toml CSP exceptions: {toml_count}")
+    print(f"   worker/headers.json CSP exceptions: {headers_count}")
     print(f"   documented in CSP_EXCEPTIONS.md: {doc_count}")
     print("━" * 60)
     if not issues:
@@ -328,20 +301,20 @@ def _print_results(toml_count: int, doc_count: int, issues: list[dict]) -> None:
 
 
 def main() -> int:
-    if not NETLIFY_TOML.exists():
-        print("❌ netlify.toml not found", file=sys.stderr)
+    if not HEADERS_JSON.exists():
+        print("❌ worker/headers.json not found", file=sys.stderr)
         return 2
     if not EXCEPTIONS_DOC.exists():
         print("❌ docs/security/CSP_EXCEPTIONS.md not found", file=sys.stderr)
         return 2
 
-    rules = parse_netlify_headers(NETLIFY_TOML)
+    rules = load_headers_json(HEADERS_JSON)
     doc_entries = parse_exceptions_doc(EXCEPTIONS_DOC)
-    toml_count = len(_toml_exception_map(rules))
+    headers_count = len(_headers_exception_map(rules))
     issues = compare(rules, doc_entries)
 
-    write_reports(issues, {"doc_entries": len(doc_entries), "toml_exceptions": toml_count})
-    _print_results(toml_count, len(doc_entries), issues)
+    write_reports(issues, {"doc_entries": len(doc_entries), "headers_exceptions": headers_count})
+    _print_results(headers_count, len(doc_entries), issues)
 
     if any(i["severity"] == "error" for i in issues):
         print("❌ Drift detected. See .ss/reports/csp/csp-exceptions-report.md for full details.")

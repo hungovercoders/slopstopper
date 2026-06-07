@@ -36,10 +36,10 @@ rate limits, or bot protections outside your control.
 
 ```bash
 # Pass URL directly
-task ss:reliability:links -- https://your-site.netlify.app
+task ss:reliability:links -- https://your-site.example.com
 
 # Or set environment variables
-BROKEN_LINKS_TEST_URL=https://your-site.netlify.app \
+BROKEN_LINKS_TEST_URL=https://your-site.example.com \
 BROKEN_LINKS_PAGES="/,/features.html,/tools.html" \
 task ss:reliability:links
 ```
@@ -47,7 +47,7 @@ task ss:reliability:links
 ### Running broken-link checks in CI/CD
 
 ```bash
-BROKEN_LINKS_TEST_URL=https://your-site.netlify.app \
+BROKEN_LINKS_TEST_URL=https://your-site.example.com \
 BROKEN_LINKS_PAGES="/,/features.html,/tools.html" \
 task ss:reliability:links:ci
 ```
@@ -70,22 +70,22 @@ Smoke tests are lightweight, critical-path tests that verify a deployed site is 
 
 ```bash
 # Pass URL as argument
-task ss:reliability:smoke -- https://your-site.netlify.app
+task ss:reliability:smoke -- https://your-site.example.com
 
 # Or set environment variable
-SMOKE_TEST_URL=https://your-site.netlify.app task ss:reliability:smoke
+SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke
 ```
 
 **Using npm directly:**
 
 ```bash
-SMOKE_TEST_URL=https://your-site.netlify.app npm run test:smoke
+SMOKE_TEST_URL=https://your-site.example.com npm run test:smoke
 ```
 
 **Using Playwright CLI:**
 
 ```bash
-SMOKE_TEST_URL=https://your-site.netlify.app \
+SMOKE_TEST_URL=https://your-site.example.com \
   npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts
 ```
 
@@ -94,7 +94,7 @@ SMOKE_TEST_URL=https://your-site.netlify.app \
 For GitHub Actions or other CI environments, use the CI-specific task:
 
 ```bash
-SMOKE_TEST_URL=https://your-site.netlify.app task ss:reliability:smoke:ci
+SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke:ci
 ```
 
 This enables:
@@ -124,7 +124,7 @@ on:
       url:
         description: 'URL to test'
         required: true
-        default: 'https://your-site.netlify.app'
+        default: 'https://your-site.example.com'
 
 jobs:
   smoke-test:
@@ -145,7 +145,7 @@ jobs:
         
       - name: Run smoke tests
         env:
-          SMOKE_TEST_URL: ${{ github.event.inputs.url || 'https://your-site.netlify.app' }}
+          SMOKE_TEST_URL: ${{ github.event.inputs.url || 'https://your-site.example.com' }}
         run: task ss:reliability:smoke:ci
         
       - name: Upload test results
@@ -175,7 +175,7 @@ The portable spec is configured via [`.ss/playwright.config.js`](../../.ss/playw
 The portable smoke spec at [`.ss/tests/smoke.spec.ts`](../../.ss/tests/smoke.spec.ts) iterates over `SMOKE_PAGES`. To add coverage, set the env var — no code changes needed:
 
 ```bash
-SMOKE_TEST_URL=https://your-site.netlify.app \
+SMOKE_TEST_URL=https://your-site.example.com \
   SMOKE_PAGES="/,/login,/pricing,/about" \
   task ss:reliability:smoke
 ```

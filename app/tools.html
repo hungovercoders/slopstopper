@@ -142,23 +142,25 @@ tasks:
             </div>
 
             <div class="card">
-                <h2>🟢 Netlify</h2>
-                <p>Continuous deployment to Netlify with preview URLs on every PR and automated production releases on merge to main.</p>
+                <h2>🟧 Cloudflare</h2>
+                <p>Static site served by Cloudflare Workers with the <code>[assets]</code> binding. Workers Builds watches the repo: pushes deploy to prod, PRs get preview URLs, closing a PR cleans up — no GitHub Actions needed.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/deployment/README.md" rel="noopener noreferrer">Learn more about Deployment →</a>
                 <details class="details">
-                    <summary>netlify.toml</summary>
+                    <summary>wrangler.jsonc</summary>
                     <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>[build]
-  publish = "app"
-  command = "npm run build"
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Content-Security-Policy = "default-src 'self'; ..."</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/netlify.toml" rel="noopener noreferrer">View netlify.toml →</a>
+                        <div class="codeblock codeblock--yaml"><pre><code>{
+  "name": "slopstopper",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-06-01",
+  "assets": {
+    "directory": "./app",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  }
+}</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/wrangler.jsonc" rel="noopener noreferrer">View wrangler.jsonc →</a>
                         <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-netlify-deploy.yml" rel="noopener noreferrer">View deploy workflow →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/worker/index.ts" rel="noopener noreferrer">View Worker →</a>
                     </div>
                 </details>
             </div>

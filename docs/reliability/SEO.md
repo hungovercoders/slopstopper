@@ -43,7 +43,7 @@ For each page in `SEO_PAGES`, the script asserts the following are present and n
 
 ```bash
 # Audit a deployed site
-task ss:reliability:seo -- https://your-site.netlify.app
+task ss:reliability:seo -- https://your-site.example.com
 
 # Audit the local build with specific paths
 SEO_TEST_URL=http://localhost:8080 \

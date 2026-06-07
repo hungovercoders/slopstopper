@@ -77,7 +77,7 @@
 
             <!--
                 Giscus embed. This page (and ONLY this page) has a relaxed
-                CSP — see netlify.toml's [[headers]] block for /feedback.html
+                CSP — see worker/headers.json's entry for /feedback.html
                 and the full rationale in docs/security/CSP_EXCEPTIONS.md.
                 The ss:hygiene:csp-exceptions check keeps the two in sync.
                 The integrity= attribute pins the exact bundle hash served
@@ -126,7 +126,7 @@
         <section class="section csp-pattern-section">
             <span class="kicker">🔐 About the comments embed</span>
             <h2>Strict CSP &mdash; with one documented exception.</h2>
-            <p>This site ships a strict <code>default-src 'self'</code> Content Security Policy on every path. This page is the only exception: <code>/feedback.html</code> allows <code>https://giscus.app</code> via per-path <code>[[headers]]</code> in <code>netlify.toml</code>, with the loader script SRI-pinned. The exception is documented in <code>docs/security/CSP_EXCEPTIONS.md</code>, and a hygiene check (<code>task ss:hygiene:csp-exceptions</code>) fails the build if either side drifts.</p>
+            <p>This site ships a strict <code>default-src 'self'</code> Content Security Policy on every path. This page is the only exception: <code>/feedback.html</code> allows <code>https://giscus.app</code> via a per-path entry in <code>worker/headers.json</code> (the Cloudflare Worker reads it and applies the headers), with the loader script SRI-pinned. The exception is documented in <code>docs/security/CSP_EXCEPTIONS.md</code>, and a hygiene check (<code>task ss:hygiene:csp-exceptions</code>) fails the build if either side drifts.</p>
             <p>If you're adopting SlopStopper and need to embed a third-party widget (GTM, Sentry, Intercom, an analytics tag) — this is the pattern. <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">Read the full guide →</a></p>
         </section>
     </main>

@@ -9,8 +9,6 @@ on:
       - "SlopStopper · Hygiene - Documentation Accuracy Check"
       - "SlopStopper · Documentation Size Monitor"
       - "SlopStopper · Hygiene - Documentation Structure Check"
-      - "SlopStopper · Cleanup Netlify Preview"
-      - "SlopStopper · Deploy to Netlify"
       - "SlopStopper · Playwright Tests"
       - "SlopStopper · Reliability Smoke Tests"
       - "SlopStopper · DAST Analysis"

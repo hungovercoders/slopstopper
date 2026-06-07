@@ -16,7 +16,7 @@ and push to `main`.
 
 ## Pipeline status
 
-Every check below runs on every PR and push to `main` here, and ships to consumers via [`install.sh`](./install.sh). Netlify and Doc-Updater workflows are included by default but are inert until you add their secrets (see [Configure](#configure)).
+Every check below runs on every PR and push to `main` here, and ships to consumers via [`install.sh`](./install.sh). The Doc-Updater workflow is included by default but is inert until you add its secret (see [Configure](#configure)). Deploy is handled by Cloudflare directly — connect your repo in the Cloudflare dash, no GitHub Action involved.
 
 ### 🔒 Security
 [![SAST](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-security-sast-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-security-sast-check.yml)
@@ -45,8 +45,9 @@ Every check below runs on every PR and push to `main` here, and ships to consume
 [![Failure Alerts](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-workflow-failure-issue.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-workflow-failure-issue.yml)
 
 ### 🚀 Deployment
-[![Netlify Deploy](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-netlify-deploy.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-netlify-deploy.yml)
-[![Preview Cleanup](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-netlify-cleanup-preview.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-netlify-cleanup-preview.yml)
+[![Production Deploy](https://img.shields.io/github/deployments/hungovercoders/slopstopper/Production?label=deploy&logo=cloudflare)](https://github.com/hungovercoders/slopstopper/deployments)
+
+Per-deploy status from the GitHub Deployments API (Cloudflare's GitHub App writes a deployment event for every push). Live post-deploy health is the [Smoke Tests](#-reliability) badge above — it runs hourly *and* on every `deployment_status` event.
 
 ---
 
@@ -119,20 +120,21 @@ Five loops of feedback, all running on every PR and push to `main`:
 | 🧹 **Hygiene** | Cyclomatic complexity caps, doc structure / accuracy / size checks, auto-labelled PRs | Lizard, Bandit, markdownlint | [Hygiene →](./docs/hygiene/README.md) |
 | ✅ **Reliability** | E2E + smoke tests, internal broken-link audits, accessibility audits (WCAG 2.1 AA), Core Web Vitals, SEO + OpenGraph metatag checks | Playwright, axe-core, Lighthouse CI, stdlib Python | [Reliability →](./docs/reliability/README.md) |
 | 🤖 **Runbooks** | Failed workflows auto-raise GitHub issues; an agentic doc updater opens weekly sync PRs | GitHub Actions, gh-aw | [Runbooks →](./docs/runbooks/README.md) |
-| 🚀 **Deployment** | Preview deploys per PR, automated production releases, preview cleanup | Netlify, GitHub Actions | [Deployment →](./docs/deployment/README.md) |
+| 🚀 **Deployment** | Preview deploys per PR, automated production releases, automatic preview cleanup | Cloudflare Workers Builds (Git integration) | [Deployment →](./docs/deployment/README.md) |
 
 ### What each check needs
 
-The 20 workflows split into four portability layers. Layer 1 runs the moment you install. Layers 2–3 need a small amount of configuration:
+The workflows split into three portability layers. Layer 1 runs the moment you install. Layers 2–3 need a small amount of configuration:
 
 | Layer | Checks | What you provide |
 | ----- | ------ | ---------------- |
 | **1. Static analysis** (any code) | SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure / Accuracy / Size, Auto-label PRs, Workflow-failure tracker | Nothing — works out of the box |
 | **2. Web-app dynamic** (need a URL) | Smoke, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, DAST, Playwright | `SMOKE_TEST_URL` · `BROKEN_LINKS_TEST_URL` · `ACCESSIBILITY_TEST_URL` · `LIGHTHOUSE_URL` · `SEO_TEST_URL` · optionally `SMOKE_PAGES` / `BROKEN_LINKS_PAGES` / `ACCESSIBILITY_PAGES` / `SEO_PAGES` |
-| **3. Netlify deploy** | Preview deploys, production releases, preview cleanup | `NETLIFY_AUTH_TOKEN` + `NETLIFY_SITE_ID` repo secrets |
-| **4. Agentic doc-updater** | Weekly doc-sync PRs | `COPILOT_GITHUB_TOKEN` repo secret |
+| **3. Agentic doc-updater** | Weekly doc-sync PRs | `COPILOT_GITHUB_TOKEN` repo secret |
 
-Don't use Netlify or the doc-updater? Delete those workflows from `.github/workflows/` — re-running the installer respects deletions (tracked in `.ss/.workflows-installed`).
+Don't use the doc-updater? Delete its workflows from `.github/workflows/` — re-running the installer respects deletions (tracked in `.ss/.workflows-installed`).
+
+Deploy is intentionally not a layer: connect your repo in the Cloudflare dash (Workers & Pages → Create → Connect to Git) and you get production deploys, PR previews and preview cleanup for free. See [Deployment](./docs/deployment/README.md) for the cutover steps.
 
 ### Same commands, both loops
 
@@ -158,8 +160,9 @@ Most checks work out of the box. Things to wire up if you want the full suite:
 
 **Repo secrets** (under your repo's Settings → Secrets and variables → Actions):
 
-- `NETLIFY_AUTH_TOKEN` + `NETLIFY_SITE_ID` — for the Netlify deploy + preview cleanup workflows
 - `COPILOT_GITHUB_TOKEN` — for the agentic doc-updater (`ss-hygiene-doc-updater`), a [gh-aw](https://github.github.com/gh-aw/) workflow that runs via the GitHub Copilot CLI engine. See the [gh-aw Copilot setup guide](https://github.github.com/gh-aw/reference/engines/#github-copilot-default) for how to generate the token
+
+No secrets are needed for deploy — Cloudflare Workers Builds is connected via the Cloudflare GitHub App and reads `wrangler.jsonc` directly from the repo.
 
 **Tunable env vars** (set in workflows or locally):
 

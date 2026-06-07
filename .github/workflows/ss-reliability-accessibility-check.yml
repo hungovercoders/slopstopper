@@ -186,7 +186,7 @@ jobs:
             body += '# Audit the local build\n';
             body += 'task ss:reliability:accessibility\n\n';
             body += '# Or audit a deployed URL\n';
-            body += 'task ss:reliability:accessibility -- https://your-site.netlify.app\n';
+            body += 'task ss:reliability:accessibility -- https://your-site.example.com\n';
             body += '```\n\n';
             body += `[Full report in workflow artifacts](${runUrl})\n`;
 

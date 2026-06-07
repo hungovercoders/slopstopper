@@ -37,8 +37,10 @@ app/tools.html      ← Tools page
 app/tools.css       ← Tools styles
 app/tools.js        ← Compiled from src/tools.ts (gitignored, built by tsc)
 
-server.js           ← Local dev server (reads headers from netlify.toml, serves app/)
-netlify.toml        ← Netlify config: headers, routing, build settings (publish = "app")
+server.js           ← Local dev server (reads worker/headers.json, serves app/)
+wrangler.jsonc      ← Cloudflare Worker config: [assets] binding, compatibility date
+worker/index.ts     ← Worker entrypoint: fetches assets, applies headers
+worker/headers.json ← Canonical header map (CSP + COOP/COEP + …)
 tsconfig.json       ← TypeScript config: src/ → app/
 ```
 
@@ -50,7 +52,8 @@ TypeScript source in `src/` is compiled to JavaScript in `app/` using:
 npm run build
 ```
 
-Netlify runs `npm run build` automatically before deployment.
+Cloudflare Workers Builds runs `npm run build` automatically before
+deploying the Worker.
 
 ## Interaction Details
 

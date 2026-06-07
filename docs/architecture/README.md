@@ -1,14 +1,17 @@
 # Architecture
 
-Architecture structure and boundaries overview for this static Netlify app.
+Architecture structure and boundaries overview for this static site
+hosted on a Cloudflare Worker.
 
 Notation: C4 (Context + Container).
 
 ## Scope
 
-- Static HTML/CSS/JS pages served in production by Netlify.
+- Static HTML/CSS/JS pages served in production by a Cloudflare
+  Worker with the `[assets]` binding.
 - Local development and DAST use `server.js`.
-- Security headers are defined in `netlify.toml` and applied both in Netlify and local server behavior.
+- Security headers live in `worker/headers.json`. The Worker, the
+  local server and the CSP-drift gate all read the same file.
 
 ## C4 – Level 1 (System Context)
 
@@ -16,12 +19,12 @@ Notation: C4 (Context + Container).
 flowchart LR
     U[User Browser]
     A[SlopStopper site]
-    N[Netlify Platform]
+    CF[Cloudflare Workers + Custom Domain]
     G[GitHub Repository]
 
     U -->|HTTPS| A
-    A -->|Hosted on| N
-    G -->|Deploy pipeline updates site| N
+    A -->|Served by| CF
+    G -->|Workers Builds Git integration| CF
 ```
 
 ## C4 – Level 2 (Container)
@@ -29,25 +32,29 @@ flowchart LR
 ```mermaid
 flowchart LR
     B[Browser]
-    CDN[Netlify CDN + Static Hosting]
-    APP[Static Assets\napp/index.html, app/features.html, app/tools.html, CSS, compiled JS]
-    TOML[netlify.toml\nheaders + routing config]
+    WORKER[Cloudflare Worker\nworker/index.ts]
+    ASSETS[Static Assets\napp/index.html, app/features.html, app/tools.html, CSS, compiled JS]
+    HJSON[worker/headers.json\ncanonical header map]
     DEV[Local Node Server\nserver.js]
 
-    B -->|Prod HTTPS requests| CDN
-    CDN --> APP
-    TOML -->|configures| CDN
+    B -->|Prod HTTPS requests| WORKER
+    WORKER -->|env.ASSETS.fetch| ASSETS
+    HJSON -->|imported by| WORKER
 
     B -->|Local HTTP requests| DEV
-    DEV --> APP
-    TOML -->|header rules parsed by| DEV
+    DEV --> ASSETS
+    HJSON -->|loaded by| DEV
 ```
 
 ## Request Flow (Minimal)
 
 1. Browser requests a page.
-2. In production, Netlify serves static files and applies configured headers.
-3. In local/dev scanning, `server.js` serves static files and applies header rules parsed from `netlify.toml`.
+2. In production, the Cloudflare Worker fetches the asset via the
+   `[assets]` binding, then applies the per-path headers from
+   `worker/headers.json` before returning the response.
+3. In local/dev scanning, `server.js` serves the same `app/` directory
+   and loads the same `worker/headers.json` so prod and local stay
+   identical.
 
 ## Development Loops
 
