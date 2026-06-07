@@ -8,15 +8,16 @@ SlopStopper is a static site promoting deterministic feedback for AI-driven deve
 
 ## Pages
 
-The site is a three-page static app with shared navigation. Each page has its own HTML and CSS file, with TypeScript source compiled to JavaScript.
+The site is a four-page static app with shared navigation. Each page has its own HTML and CSS file.
 
 | Page | File | Title | Interactive Element |
 | ---- | ---- | ----- | ------------------- |
-| Home | `app/index.html` | SlopStopper | **Run Health Check** button — displays "✅ Repo is healthy!" |
+| Home | `app/index.html` | SlopStopper | **Run Health Check** button; **Copy** button on the install curl block |
 | Features | `app/features.html` | Features | **Text input + Check** — confirms a feature is enabled |
 | Tools | `app/tools.html` | Tools | **Counter** — increment, decrement, and reset buttons |
+| Feedback | `app/feedback.html` | Feedback | GitHub Discussions comments via Giscus embed |
 
-Every page includes a `<nav>` bar linking to all three pages.
+Every page includes a `<nav>` bar linking to all four pages.
 
 ## File Map
 
@@ -36,6 +37,12 @@ app/features.js     ← Compiled from src/features.ts (gitignored, built by tsc)
 app/tools.html      ← Tools page
 app/tools.css       ← Tools styles
 app/tools.js        ← Compiled from src/tools.ts (gitignored, built by tsc)
+
+app/feedback.html   ← Feedback page (Giscus comments embed)
+app/feedback.css    ← Feedback styles
+
+app/copy.js         ← Runtime copy-button script (hand-authored, NOT compiled
+                       from src/; opt-in via data-copyable on codeblocks)
 
 server.js           ← Local dev server (reads worker/headers.json, serves app/)
 wrangler.jsonc      ← Cloudflare Worker config: [assets] binding, compatibility date
@@ -61,6 +68,11 @@ deploying the Worker.
 
 Clicking the button sets the `#message` element's text to "✅ Repo is healthy!".
 
+The install `curl` block also has a **Copy** button (powered by `app/copy.js`).
+Clicking it writes the exact one-liner to the clipboard; the label restores
+after 1.5 s. Only codeblocks marked with `data-copyable` get a button — the
+illustrative YAML snippets on other pages are intentionally excluded.
+
 ### Features — Feature Check
 
 1. User types a feature name into the text input.
@@ -74,3 +86,10 @@ Clicking the button sets the `#message` element's text to "✅ Repo is healthy!"
 - **Reset** sets the counter back to 0.
 
 The counter value is held in a TypeScript variable and rendered into the `#counter` element.
+
+### Feedback — GitHub Discussions
+
+The page embeds [Giscus](https://giscus.app/) to surface GitHub Discussions
+comments directly on the page. The embed requires a per-path CSP relaxation
+(see [`docs/security/CSP_EXCEPTIONS.md`](../security/CSP_EXCEPTIONS.md)) and
+serves as the reference example of the documented CSP exceptions pattern.

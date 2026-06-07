@@ -73,6 +73,26 @@ Runs **weekly on a schedule** (Monday 07:00 UTC), on PRs/pushes that change docs
 task ss:hygiene:docs-accuracy
 ```
 
+### CSP Exceptions Drift Check
+
+Validates that every per-path CSP relaxation in
+[`worker/headers.json`](../../worker/headers.json) has a matching documented
+entry in [`docs/security/CSP_EXCEPTIONS.md`](../security/CSP_EXCEPTIONS.md),
+and vice versa. Fails the build if either side has an entry the other lacks.
+
+The site ships a strict `default-src 'self'` CSP by default. When a page
+genuinely needs a vetted third-party widget (e.g. Giscus on
+`/feedback.html`), the exception must be declared in both files and
+SRI-pinned. This check keeps the two sources of truth in sync so CSP
+relaxations are never silent or undocumented.
+
+```bash
+task ss:hygiene:csp-exceptions
+```
+
+Workflow: `ss-hygiene-csp-exceptions-check.yml` — runs on PRs/pushes touching
+`worker/headers.json` or `docs/security/CSP_EXCEPTIONS.md`.
+
 ## Quick Reference
 
 Run all hygiene checks:
@@ -89,6 +109,7 @@ task ss:hygiene:size              # Check individual file sizes
 task ss:hygiene:docs-size         # Monitor overall documentation size
 task ss:hygiene:docs-structure    # Validate structure matches governance
 task ss:hygiene:docs-accuracy     # Check for broken links and stale refs
+task ss:hygiene:csp-exceptions    # Validate CSP exceptions are fully documented
 ```
 
 ## Contents
