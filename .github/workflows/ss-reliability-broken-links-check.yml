@@ -1,4 +1,4 @@
-name: SlopStopper · Broken Link Checker
+name: SlopStopper · Broken Links Check
 
 on:
   pull_request:
@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   broken-links:
-    name: Reliability Broken Link Check
+    name: Broken Links Check
     if: |
       github.event_name != 'deployment_status' ||
       github.event.deployment_status.state == 'success'
@@ -59,27 +59,11 @@ jobs:
         run: |
           validate_url() {
             local url="$1"
-            python3 - "$url" <<'PY'
-import re
-import sys
-from urllib.parse import urlparse
-
-candidate = sys.argv[1]
-if re.search(r'[\s\x00-\x1F\x7F]', candidate):
-  raise ValueError("contains whitespace or control characters")
-
-parsed = urlparse(candidate)
-if parsed.scheme not in ("http", "https"):
-  raise ValueError("must use http/https")
-if not parsed.netloc:
-  raise ValueError("missing host")
-
-print(candidate, end="")
-PY
-            if [ $? -ne 0 ]; then
+            if [[ ! "$url" =~ ^https?://[^[:space:][:cntrl:]]+$ ]]; then
               echo "Error: Invalid URL format: $url" >&2
               exit 1
             fi
+            printf '%s' "$url"
           }
 
           if [ "$EVENT_NAME" == "workflow_dispatch" ] && [ -n "$INPUT_URL" ]; then
@@ -151,7 +135,7 @@ PY
             const checkUrl = process.env.CHECK_URL;
 
             const body = [
-              `## 🔗 Broken Link Checker ${status}`,
+              `## 🔗 Broken Links Check ${status}`,
               '',
               `**Checked URL:** ${checkUrl}`,
               '',
