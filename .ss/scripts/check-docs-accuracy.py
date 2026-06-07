@@ -7,7 +7,10 @@ Checks documentation files for common accuracy issues:
 - Broken internal markdown links (file references that don't resolve)
 - References to non-existent Taskfile tasks
 - References to non-existent workflow files
-- Stale project descriptions (single-file vs multi-file, wrong tool names)
+- Stale source-file references in backticks
+
+Scans all of docs/ plus the repo-root entry files (README.md, AGENTS.md,
+CLAUDE.md, CONTRIBUTING.md) so drift in the most-loaded files is caught.
 
 Generates a JSON report at .ss/reports/docs/docs-accuracy-report.json.
 """
@@ -174,15 +177,18 @@ _PLACEHOLDER_SUBS = ("example", "your-", "<", "YYYY")
 
 
 def _ref_is_placeholder_or_external(ref, ext):
-    """Cheap structural checks that don't depend on surrounding content."""
+    """Cheap structural checks that don't depend on surrounding content.
+
+    Bare yaml filenames are skipped because tutorial prose names them
+    constantly as examples. .py and .sh references in this repo are almost
+    always real cross-references, so they don't get the same soft-filter.
+    """
     if ref.startswith(_SKIP_REF_PREFIXES):
         return True
     if ext not in _TRACKED_EXTENSIONS:
         return True
     if any(sub in ref for sub in _PLACEHOLDER_SUBS):
         return True
-    # Bare yaml filenames (e.g. just `config.yml`) are usually examples, not
-    # references to a specific tracked file.
     if ext in (".yml", ".yaml") and "/" not in ref:
         return True
     return False
@@ -246,9 +252,18 @@ def main():
         print("❌ docs/ directory not found")
         sys.exit(1)
 
+    # Scan all of docs/ plus the repo-root entry files. These four files load
+    # into every agent conversation; drift in them is the most-loaded drift in
+    # the repo and used to be invisible to CI.
+    targets = sorted(docs_path.rglob("*.md"))
+    for entry in ("README.md", "AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md"):
+        entry_path = Path(entry)
+        if entry_path.exists():
+            targets.append(entry_path)
+
     all_issues = []
 
-    for md_file in sorted(docs_path.rglob("*.md")):
+    for md_file in targets:
         all_issues.extend(check_broken_links(md_file, project_files))
         all_issues.extend(check_task_references(md_file, valid_tasks))
         all_issues.extend(check_workflow_references(md_file, valid_workflows))

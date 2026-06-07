@@ -1226,6 +1226,24 @@ tasks:
         echo ""
     silent: false
 
+  hygiene:entry-files:
+    desc: Enforce <2k token budget on agent entry files (README.md, AGENTS.md, CLAUDE.md)
+    summary: |
+      The agent entry files are loaded into every conversation. docs/index.md
+      declares they should stay under ~2k tokens each so they don't crowd
+      the context window. This check enforces that with a 1,500-word cap
+      (≈ 2k tokens for English prose) and exits non-zero if any file is
+      over budget — moving the over-budget file's bulk into the category
+      README that owns the topic is the fix.
+
+      Generates a report at .ss/reports/entry-files/entry-file-size-report.md.
+
+      Usage:
+        task ss:hygiene:entry-files
+    cmds:
+      - python3 .ss/scripts/check-entry-file-size.py
+    silent: false
+
   hygiene:csp-exceptions:
     desc: Validate per-page CSP relaxations in worker/headers.json match docs/security/CSP_EXCEPTIONS.md
     summary: |
@@ -1305,6 +1323,7 @@ tasks:
       - task: hygiene:docs-size
       - task: hygiene:docs-structure
       - task: hygiene:docs-accuracy
+      - task: hygiene:entry-files
       - task: hygiene:complexity
 
   # Security tasks

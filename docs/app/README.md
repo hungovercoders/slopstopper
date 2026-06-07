@@ -6,6 +6,53 @@ What the site does and how its pages are organised.
 
 SlopStopper is a static site promoting deterministic feedback for AI-driven development. It showcases the quality gates and tools available in this repo to keep a codebase healthy through high volumes of AI-assisted changes.
 
+## Brand & Design System
+
+The site is **indie-playful**: cream / peach background, tomato accent,
+"Stoppy" mascot, sticker cards with offset shadows and tiny rotations,
+sun-highlighter underlines, hand-drawn SVG arrows.
+
+Brand tokens live in [`app/shared.css`](../../app/shared.css) on `:root`:
+
+```css
+--cream: #FBF5EC;        /* page background */
+--peach: #FFD9B8;        /* secondary surface */
+--peach-soft: #FFE9D4;
+--ink: #2A2118;          /* primary text */
+--ink-soft: #6B5B47;     /* secondary text */
+--accent: #E8512B;       /* tomato — for decorative shapes only */
+--accent-deep: #B33A1A;  /* tomato for text-on-light or text-on-accent */
+--mint: #2E8B6F;         /* "pass" indicator */
+--sun: #F5C24C;          /* "warning" + highlighter underline */
+```
+
+**Contrast rule:** `--accent` (`#E8512B`) is below 4.5:1 against white.
+For any text on a light background, or white text on coloured
+backgrounds, use `--accent-deep`. axe-core catches violations at the
+strictest `minor` threshold — keep that gate green.
+
+Typography is system-only (no web fonts): `ui-rounded` cascading to
+`system-ui` for sans, `ui-monospace` for mono. Do not add `@font-face`
+or external font links.
+
+## Content authoring rules
+
+- Each HTML page links `app/shared.css` first, then its page-specific CSS.
+- Header / nav / footer markup is duplicated across pages — there is
+  no build step or SSI. Accept the duplication; if you change one,
+  change all four.
+- Every external link uses `rel="noopener noreferrer"`. Avoid
+  `target="_blank"` for predictable screen-reader behaviour.
+- `aria-current="page"` marks the active nav link.
+- Skip-to-content link is the first `<body>` child.
+- The `<details>` collapsibles use a custom `+` / `−` marker; do not
+  add JS.
+- Workflow YAML excerpts inside `<details>` are **hand-curated
+  illustrative excerpts**, not verbatim. Each block has an HTML
+  comment `<!-- sync this excerpt if the workflow's first job step
+  changes -->`. The visible "View source" link is the canonical
+  reference.
+
 ## Pages
 
 The site is a four-page static app with shared navigation. Each page has its own HTML and CSS file.
