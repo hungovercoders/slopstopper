@@ -122,6 +122,13 @@ jobs:
         id: audit
         env:
           SEO_TEST_URL: ${{ steps.url.outputs.url }}
+          # og:image is an absolute URL pointing at the production domain
+          # (required by social-share crawlers). The reachability HEAD check
+          # can't succeed when auditing localhost, so skip it for local
+          # builds. Keep the presence assertion on. Schedule and
+          # deployment_status runs still verify reachability against the
+          # real deployed URL.
+          SEO_VERIFY_OG_IMAGE: ${{ steps.url.outputs.use_local == 'true' && '0' || '1' }}
         run: task ss:reliability:seo:ci
 
       - name: Stop local server
