@@ -6,11 +6,14 @@ repo. Conformant with [agents.md](https://agents.md).
 > 🗺️ **Documentation map.** [`docs/index.md`](./docs/index.md) is the
 > single index of all project documentation. This file, [`CLAUDE.md`](./CLAUDE.md)
 > and [`README.md`](./README.md) are intentionally thin — they point at
-> the map rather than duplicating its content. The
+> the map rather than duplicating its content. When you need detail on
+> any topic — a check, a runbook, a workflow, a CSP exception — start
+> at [`docs/index.md`](./docs/index.md) and follow its links to the
+> category README that owns it. The
 > [`ss:hygiene:entry-files`](./docs/hygiene/README.md) check enforces a
-> <2k token cap on each of them; the
-> [`ss:hygiene:docs-structure`](./docs/hygiene/README.md) check keeps the
-> map honest against the directory tree.
+> <2k token cap on each entry file; the
+> [`ss:hygiene:docs-structure`](./docs/hygiene/README.md) check keeps
+> the map honest against the directory tree.
 
 > 🏗️ **Naming convention.** The categories in
 > [`docs/index.md`](./docs/index.md) drive naming across the project. Task
@@ -36,18 +39,6 @@ reflected in the workflows AND the site copy (`app/features.html`,
 [`ss:hygiene:docs-accuracy`](./docs/hygiene/README.md) check catches drift
 between these.
 
-## Where to find detail
-
-| What you need | Where to look |
-| ------------- | ------------- |
-| Task namespace, command reference, verification checklist, commit conventions | [`docs/contributing/README.md`](./docs/contributing/README.md) |
-| Repo layout, C4 diagrams, request flow, inner/outer dev loops | [`docs/architecture/README.md`](./docs/architecture/README.md) |
-| Brand tokens, contrast rule, page-authoring rules | [`docs/app/README.md`](./docs/app/README.md) |
-| CSP defaults, per-page exceptions process | [`docs/security/CSP_EXCEPTIONS.md`](./docs/security/CSP_EXCEPTIONS.md) |
-| Deployment lifecycle, Cloudflare integration, custom-domain config | [`docs/deployment/README.md`](./docs/deployment/README.md) |
-| Hygiene checks (complexity, docs-accuracy, entry-files, csp-exceptions, doc-updater) | [`docs/hygiene/README.md`](./docs/hygiene/README.md) |
-| Common pitfalls when extending the suite | [`docs/contributing/PITFALLS.md`](./docs/contributing/PITFALLS.md) |
-
 ## When making changes
 
 | Change | Affects |
@@ -58,6 +49,3 @@ between these.
 | Headers / CSP | `worker/headers.json` (single source of truth — CSP changes are blast-radius, touch DAST tests too) |
 | Worker behaviour | `worker/index.ts` (path matching, redirects); `wrangler.jsonc` (assets binding, compatibility date) |
 | Installer behaviour | `install.sh` (the REPO_URL must always match this repo's actual location) |
-
-For the gotchas that have bitten people before, see
-[`docs/contributing/PITFALLS.md`](./docs/contributing/PITFALLS.md).
