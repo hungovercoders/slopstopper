@@ -20,11 +20,9 @@
   "license": "MIT",
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
-    "@cloudflare/workers-types": "^4.20250601.0",
     "@lhci/cli": "^0.14.0",
     "@playwright/test": "^1.40.0",
     "markdownlint-cli": "^0.47.0",
-    "typescript": "^5.9.3",
-    "wrangler": "^4.0.0"
+    "typescript": "^5.9.3"
   }
 }
