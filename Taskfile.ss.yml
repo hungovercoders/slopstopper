@@ -1371,6 +1371,54 @@ tasks:
         cp docs/decisions/DECISION_TEMPLATE.md "$target"
         echo "✅ Created $target"
 
+  meta:adoption:
+    desc: Print public adoption signals (stars, forks, clones, views, public adopters)
+    summary: |
+      Public-signals-only adoption snapshot. Prints a small Markdown block
+      to stdout — copy/paste into a status update, release notes or a
+      tracking issue. No persistence, no phone-home.
+
+      Signals reported:
+        ⭐ Stars + forks
+        📥 14-day clones (total + unique cloners)
+        👀 14-day views (total + unique visitors)
+        📦 Public adopters with Taskfile.ss.yml on the default branch
+
+      Authentication: needs `gh` authenticated with `repo` scope (the
+      Traffic endpoints require it). `gh auth login` if you see 403s.
+
+      See docs/runbooks/adoption-metrics.md for what each number means
+      and what it doesn't.
+    cmds:
+      - |
+        if ! command -v gh >/dev/null 2>&1; then
+          echo "❌ gh CLI not installed — https://cli.github.com/"
+          exit 1
+        fi
+        if ! gh auth status >/dev/null 2>&1; then
+          echo "❌ gh not authenticated — run: gh auth login"
+          exit 1
+        fi
+        REPO="hungovercoders/slopstopper"
+        stars=$(gh api "repos/$REPO" --jq '.stargazers_count')
+        forks=$(gh api "repos/$REPO" --jq '.forks_count')
+        clones_total=$(gh api "repos/$REPO/traffic/clones" --jq '.count')
+        clones_unique=$(gh api "repos/$REPO/traffic/clones" --jq '.uniques')
+        views_total=$(gh api "repos/$REPO/traffic/views" --jq '.count')
+        views_unique=$(gh api "repos/$REPO/traffic/views" --jq '.uniques')
+        adopters=$(gh api -X GET "search/code" -f q="filename:Taskfile.ss.yml" --jq '.total_count' 2>/dev/null || echo "?")
+        cat <<EOF
+        ## SlopStopper adoption — $(date -u +%Y-%m-%d)
+
+        - ⭐ Stars: $stars
+        - 🍴 Forks: $forks
+        - 📥 Clones (14-day): $clones_total total / $clones_unique unique
+        - 👀 Views (14-day): $views_total total / $views_unique unique
+        - 📦 Public adopters (Taskfile.ss.yml on default branch): $adopters
+
+        See docs/runbooks/adoption-metrics.md for caveats.
+        EOF
+
   install:
     desc: Install SlopStopper tooling into another repository (use TARGET=<path>)
     summary: |
