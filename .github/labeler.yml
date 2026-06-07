@@ -41,8 +41,8 @@ hygiene:
 deployment:
   - changed-files:
     - any-glob-to-any-file:
-      - '.github/workflows/netlify-*'
-      - 'netlify.toml'
+      - 'wrangler.jsonc'
+      - 'worker/**'
       - 'docs/deployment/**'
 
 # ── Tests ──

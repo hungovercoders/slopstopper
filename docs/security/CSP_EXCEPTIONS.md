@@ -2,8 +2,8 @@
 
 This file is the **single source of truth** for every per-path
 Content-Security-Policy relaxation on the SlopStopper site. The
-`ss:hygiene:csp-exceptions` check fails the build if `netlify.toml` and
-this file disagree.
+`ss:hygiene:csp-exceptions` check fails the build if `worker/headers.json`
+and this file disagree.
 
 ## Why this exists
 
@@ -17,11 +17,12 @@ embedded video, a comments widget. Telling adopters "just don't" is
 unhelpful. The honest answer is a pattern:
 
 1. **Default to the strictest CSP you can.** Set it once for the whole
-   site (`for = "/*"`).
+   site (the `/*` entry in `worker/headers.json`).
 2. **Relax per page, not site-wide.** When you need a third-party on one
-   page, add a new `[[headers]]` block in `netlify.toml` scoped to that
-   exact path. The rest of the site stays strict, so XSS or supply-chain
-   issues stay contained.
+   page, add a new entry to `worker/headers.json` scoped to that exact
+   path. The Cloudflare Worker (`worker/index.ts`) imports the JSON and
+   applies the matching headers on every response. The rest of the site
+   stays strict, so XSS or supply-chain issues stay contained.
 3. **Pin external scripts with SRI** wherever the host supports it. SRI
    locks the relaxation to one exact bundle hash — a compromise of the
    third-party CDN can't ship new JavaScript to your visitors. The
@@ -31,7 +32,7 @@ unhelpful. The honest answer is a pattern:
    useful in that window.
 4. **Document every exception here.** What origin you let in, on which
    page, what data leaves, who approved it, and how to refresh the SRI
-   hash. The hygiene check verifies that what's in `netlify.toml`
+   hash. The hygiene check verifies that what's in `worker/headers.json`
    matches what's documented here.
 5. **Let DAST keep flagging the relaxed pages.** A scanner flagging a
    documented exception is correct behaviour — that's how you find
@@ -49,7 +50,8 @@ shape below.
 
 ## Schema
 
-Each exception is a `## /path` heading followed by these fields:
+Each exception is a `### /path` heading under `## Exceptions` followed
+by these fields:
 
 | Field | Purpose |
 | --- | --- |
@@ -96,29 +98,24 @@ Re-run when the widget breaks after a third-party release.
   - The COOP/COEP overrides on this path (`same-origin-allow-popups` / `unsafe-none`) are also part of this exception, so the GitHub OAuth popup can communicate back during sign-in
 - **Fallback if Giscus is unavailable or SRI mismatch:** The page renders a static link to the Feedback discussion category (`https://github.com/hungovercoders/slopstopper/discussions/categories/feedback`) so visitors can still reach the same destination
 
-### `/feedback`
-
-Netlify's "pretty URL" feature also serves `/feedback.html` at `/feedback` (no extension). Per-path `[[headers]]` rules match on exact path, so this URL needs its own block with the same relaxation as `/feedback.html` above. All fields below are intentionally identical to the entry above; they document the same Giscus exception applied to the alias URL.
-
-- **Origin allowed:** `https://giscus.app`
-- **Directives added:** `script-src https://giscus.app`, `frame-src https://giscus.app`, `style-src 'unsafe-inline' https://giscus.app`
-- **Loader SRI:** `sha384-UwLZGbJGvkTzz0719+xEzUm/idqwzs0yZN8aB9Se5vUXHbyRyDWw9yqZTIsOsJ7x` (refresh together with the `/feedback.html` entry)
-- **Why:** Same as `/feedback.html` — covers Netlify's pretty-URL alias so visitors typing `/feedback` get the same relaxed CSP
-- **Approved by:** PR introducing the feedback page (see `git log app/feedback.html`)
-- **Data leaving site:** Same as `/feedback.html`
-- **Refresh policy:** When refreshing the SRI on `/feedback.html` above, refresh this entry too — they must stay identical
+> **Note on the `/feedback` pretty URL.** Netlify used to serve `/feedback`
+> implicitly from `/feedback.html`, which required a duplicate exception
+> entry. On Cloudflare, `worker/index.ts` redirects `/feedback` → `/feedback.html`
+> with a 301, so a single entry for the canonical `.html` path covers
+> both visit shapes.
 
 ---
 
 ## Adopters: how to use this in your own repo
 
-1. Keep your own `[[headers]] for = "/*"` strict by default
-2. Drop a new `[[headers]]` block per page that needs a relaxation; **list
-   the full replacement directives**, not just additions
+1. Keep your default `/*` entry in `worker/headers.json` (or your host's
+   equivalent) strict by default
+2. Add a new entry per page that needs a relaxation; **list the full
+   replacement directives**, not just additions
 3. Add an entry to this file mirroring the schema above
 4. Install `ss-hygiene-csp-exceptions-check.yml` via the SlopStopper
-   installer — the check enforces drift between `netlify.toml` and this
-   file
+   installer — the check enforces drift between `worker/headers.json`
+   and this file
 5. Keep DAST in your pipeline. The SlopStopper DAST gate
    (`.ss/scripts/check-dast-alerts.py`) already consults this file:
    Medium-severity CSP findings on documented paths are surfaced in the

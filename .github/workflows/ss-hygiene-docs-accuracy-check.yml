@@ -13,7 +13,8 @@ on:
       - '*.js'
       - '*.css'
       - 'Taskfile.yml'
-      - 'netlify.toml'
+      - 'wrangler.jsonc'
+      - 'worker/**'
       - 'server.js'
       - '.github/workflows/**'
   push:
@@ -25,7 +26,8 @@ on:
       - '*.js'
       - '*.css'
       - 'Taskfile.yml'
-      - 'netlify.toml'
+      - 'wrangler.jsonc'
+      - 'worker/**'
       - 'server.js'
       - '.github/workflows/**'
 

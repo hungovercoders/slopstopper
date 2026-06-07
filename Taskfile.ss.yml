@@ -7,8 +7,8 @@ tasks:
       Runs critical smoke tests against a deployed site to verify basic functionality.
       
       Usage:
-        task ss:reliability:smoke -- https://your-site.netlify.app
-        SMOKE_TEST_URL=https://your-site.netlify.app task ss:reliability:smoke
+        task ss:reliability:smoke -- https://your-site.example.com
+        SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke
         
       Used for:
         - Production health checks
@@ -24,7 +24,7 @@ tasks:
           echo "❌ Error: SMOKE_TEST_URL is required"
           echo ""
           echo "Usage:"
-          echo "  task ss:reliability:smoke -- https://your-site.netlify.app"
+          echo "  task ss:reliability:smoke -- https://your-site.example.com"
           echo "  SMOKE_TEST_URL=https://example.com task ss:reliability:smoke"
           exit 1
         fi
@@ -42,7 +42,7 @@ tasks:
       Intended for GitHub Actions and automated testing.
       
       Usage:
-        SMOKE_TEST_URL=https://your-site.netlify.app task ss:reliability:smoke:ci
+        SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke:ci
     cmds:
       - |
         if [ -z "$SMOKE_TEST_URL" ]; then
@@ -63,8 +63,8 @@ tasks:
       Vitals against the thresholds defined in .ss/lighthouserc.json.
 
       Usage:
-        task ss:reliability:cwv -- https://your-site.netlify.app
-        CWV_URL=https://your-site.netlify.app task ss:reliability:cwv
+        task ss:reliability:cwv -- https://your-site.example.com
+        CWV_URL=https://your-site.example.com task ss:reliability:cwv
 
       Thresholds (see .ss/lighthouserc.json):
         - Performance score  ≥ 70
@@ -81,7 +81,7 @@ tasks:
           echo "❌ Error: CWV_URL is required"
           echo ""
           echo "Usage:"
-          echo "  task ss:reliability:cwv -- https://your-site.netlify.app"
+          echo "  task ss:reliability:cwv -- https://your-site.example.com"
           echo "  CWV_URL=https://example.com task ss:reliability:cwv"
           exit 1
         fi
@@ -101,7 +101,7 @@ tasks:
       Intended for GitHub Actions and automated testing.
       
       Usage:
-        CWV_URL=https://your-site.netlify.app task ss:reliability:cwv:ci
+        CWV_URL=https://your-site.example.com task ss:reliability:cwv:ci
     cmds:
       - |
         if [ -z "$CWV_URL" ]; then
@@ -137,8 +137,8 @@ tasks:
         SEO_VERIFY_OG_IMAGE   - 0 to skip HEAD-fetching og:image (default: 1)
 
       Usage:
-        task ss:reliability:seo -- https://your-site.netlify.app
-        SEO_TEST_URL=https://your-site.netlify.app task ss:reliability:seo
+        task ss:reliability:seo -- https://your-site.example.com
+        SEO_TEST_URL=https://your-site.example.com task ss:reliability:seo
     cmds:
       - |
         {{if .CLI_ARGS}}
@@ -149,7 +149,7 @@ tasks:
           echo "❌ Error: SEO_TEST_URL is required"
           echo ""
           echo "Usage:"
-          echo "  task ss:reliability:seo -- https://your-site.netlify.app"
+          echo "  task ss:reliability:seo -- https://your-site.example.com"
           echo "  SEO_TEST_URL=https://example.com task ss:reliability:seo"
           exit 1
         fi
@@ -163,7 +163,7 @@ tasks:
       Same as ss:reliability:seo, intended for GitHub Actions.
 
       Usage:
-        SEO_TEST_URL=https://your-site.netlify.app task ss:reliability:seo:ci
+        SEO_TEST_URL=https://your-site.example.com task ss:reliability:seo:ci
     cmds:
       - |
         if [ -z "$SEO_TEST_URL" ]; then
@@ -188,8 +188,8 @@ tasks:
         ACCESSIBILITY_THRESHOLD - Max allowed violations before failing (default: 0)
 
       Usage:
-        task ss:reliability:accessibility -- https://your-site.netlify.app
-        ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task ss:reliability:accessibility
+        task ss:reliability:accessibility -- https://your-site.example.com
+        ACCESSIBILITY_TEST_URL=https://your-site.example.com task ss:reliability:accessibility
     cmds:
       - |
         {{if .CLI_ARGS}}
@@ -201,7 +201,7 @@ tasks:
           echo "❌ Error: ACCESSIBILITY_TEST_URL is required"
           echo ""
           echo "Usage:"
-          echo "  task ss:reliability:accessibility -- https://your-site.netlify.app"
+          echo "  task ss:reliability:accessibility -- https://your-site.example.com"
           echo "  ACCESSIBILITY_TEST_URL=https://example.com task ss:reliability:accessibility"
           exit 1
         fi
@@ -219,7 +219,7 @@ tasks:
       Intended for GitHub Actions and automated testing.
 
       Usage:
-        ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task ss:reliability:accessibility:ci
+        ACCESSIBILITY_TEST_URL=https://your-site.example.com task ss:reliability:accessibility:ci
     cmds:
       - |
         TARGET="${ACCESSIBILITY_TEST_URL:-${SMOKE_TEST_URL:-}}"
@@ -244,8 +244,8 @@ tasks:
         BROKEN_LINKS_PAGES    - Comma-separated paths to scan for links (default: /)
 
       Usage:
-        task ss:reliability:links -- https://your-site.netlify.app
-        BROKEN_LINKS_TEST_URL=https://your-site.netlify.app task ss:reliability:links
+        task ss:reliability:links -- https://your-site.example.com
+        BROKEN_LINKS_TEST_URL=https://your-site.example.com task ss:reliability:links
     cmds:
       - |
         {{if .CLI_ARGS}}
@@ -257,7 +257,7 @@ tasks:
           echo "❌ Error: BROKEN_LINKS_TEST_URL is required"
           echo ""
           echo "Usage:"
-          echo "  task ss:reliability:links -- https://your-site.netlify.app"
+          echo "  task ss:reliability:links -- https://your-site.example.com"
           echo "  BROKEN_LINKS_TEST_URL=https://example.com task ss:reliability:links"
           exit 1
         fi
@@ -275,7 +275,7 @@ tasks:
       Intended for GitHub Actions and automated testing.
 
       Usage:
-        BROKEN_LINKS_TEST_URL=https://your-site.netlify.app task ss:reliability:links:ci
+        BROKEN_LINKS_TEST_URL=https://your-site.example.com task ss:reliability:links:ci
     cmds:
       - |
         TARGET="${BROKEN_LINKS_TEST_URL:-${SMOKE_TEST_URL:-}}"
@@ -1227,9 +1227,9 @@ tasks:
     silent: false
 
   hygiene:csp-exceptions:
-    desc: Validate per-page CSP relaxations in netlify.toml match docs/security/CSP_EXCEPTIONS.md
+    desc: Validate per-page CSP relaxations in worker/headers.json match docs/security/CSP_EXCEPTIONS.md
     summary: |
-      Parses netlify.toml and docs/security/CSP_EXCEPTIONS.md and fails if
+      Parses worker/headers.json and docs/security/CSP_EXCEPTIONS.md and fails if
       either side has a per-path CSP exception the other doesn't document.
 
       Default site CSP is strict (`default-src 'self'; script-src 'self'`).

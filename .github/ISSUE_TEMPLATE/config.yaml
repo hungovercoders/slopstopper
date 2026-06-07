@@ -7,9 +7,9 @@ contact_links:
     about: Most questions can be answered immediately by asking GitHub Copilot or another AI assistant about the codebase. Try this before opening an issue.
 
   - name: 🗂️ Support Guide
-    url: https://github.com/happydevs-studio/template-netlify/blob/main/docs/support/SUPPORT.md
+    url: https://github.com/hungovercoders/slopstopper/blob/main/docs/support/SUPPORT.md
     about: Read the support guide to understand the full support flow and choose the right channel.
 
   - name: 💡 Start a Discussion (cross-repo or cross-team)
-    url: https://github.com/happydevs-studio/template-netlify/discussions/new
+    url: https://github.com/hungovercoders/slopstopper/discussions/new
     about: Use a Discussion for questions that span multiple repositories, teams, or are architectural in nature.

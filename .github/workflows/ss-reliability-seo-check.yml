@@ -160,7 +160,7 @@ jobs:
             body += '# Audit the local build\n';
             body += 'task ss:reliability:seo -- http://localhost:8080\n\n';
             body += '# Or audit a deployed URL\n';
-            body += 'task ss:reliability:seo -- https://your-site.netlify.app\n';
+            body += 'task ss:reliability:seo -- https://your-site.example.com\n';
             body += '```\n\n';
             body += `[Full report in workflow artifacts](${runUrl})\n`;
 

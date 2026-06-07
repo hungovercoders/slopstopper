@@ -81,7 +81,7 @@ slopstopper/
 │       ├── secrets/
 │       ├── dependencies/
 │       └── docs/
-├── app/                      # Static site — Netlify publish dir
+├── app/                      # Static site — bound as the [assets] dir on the Worker
 │   ├── index.html            # Hero + Get Started + capability grid
 │   ├── features.html         # 5 category cards with YAML excerpts + mock reports
 │   ├── tools.html            # 15 tool cards with YAML/config excerpts
@@ -102,8 +102,11 @@ slopstopper/
 ├── src/                      # TypeScript stubs (build target; runtime JS is limited to app/copy.js)
 ├── tests/                    # Playwright smoke + accessibility specs
 ├── install.sh                # Adopter installer
-├── netlify.toml              # Netlify config + strict CSP
-├── server.js                 # Local dev server that parses netlify.toml headers
+├── wrangler.jsonc            # Cloudflare Worker + [assets] binding (Workers Builds reads this)
+├── worker/                   # Cloudflare Worker — applies headers to every response
+│   ├── index.ts              # fetch handler: env.ASSETS.fetch + per-path headers
+│   └── headers.json          # canonical header map (CSP, COOP/COEP, X-Frame-Options …)
+├── server.js                 # Local dev server — reads worker/headers.json for parity
 ├── Taskfile.yml              # Thin root with `includes: { ss: ./Taskfile.ss.yml }`
 ├── Taskfile.ss.yml           # SlopStopper task definitions
 ├── playwright.config.js
@@ -144,22 +147,26 @@ external font links.
 
 ## CSP — strict by default, documented per-page exceptions
 
-[`netlify.toml`](./netlify.toml) ships a strict default CSP applied to
-every path via `for = "/*"`:
+[`worker/headers.json`](./worker/headers.json) is the single source of
+truth for response headers. The `/*` entry ships a strict default CSP
+applied to every path:
 
 ```
 default-src 'self'; script-src 'self'; style-src 'self';
 base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 ```
 
-Defaults are tested in DAST. **Do not weaken the default `/*` block.**
+The Cloudflare Worker (`worker/index.ts`) imports this JSON and
+applies the matching headers to every response. `server.js` (local
+dev / DAST) reads the same file so prod and local stay identical.
+Defaults are tested in DAST. **Do not weaken the default `/*` entry.**
 
 For pages that genuinely need a vetted third-party widget (e.g.
 `/feedback.html` embeds Giscus for GitHub Discussions comments) we
-allow per-path CSP exceptions via additional `[[headers]]` blocks
-scoped to a single path. Every exception MUST:
+allow per-path CSP exceptions via additional entries scoped to a
+single path. Every exception MUST:
 
-1. **Be scoped to a single path** in `netlify.toml` — never widen `/*`
+1. **Be scoped to a single path** in `worker/headers.json` — never widen `/*`
 2. **Be documented** in [`docs/security/CSP_EXCEPTIONS.md`](./docs/security/CSP_EXCEPTIONS.md)
    with origin, directives, SRI hash, why, data leaving, refresh policy
 3. **SRI-pin external scripts** wherever the host supports it
@@ -167,7 +174,7 @@ scoped to a single path. Every exception MUST:
    is down or the SRI hash goes stale
 
 The [`ss:hygiene:csp-exceptions`](./Taskfile.ss.yml) check fails the
-build if `netlify.toml` and `CSP_EXCEPTIONS.md` disagree.
+build if `worker/headers.json` and `CSP_EXCEPTIONS.md` disagree.
 
 Default rules for any new resource (use these unless you're explicitly
 opening a documented exception):
@@ -202,10 +209,15 @@ exists for adopters as much as for this repo.
 
 ## Deployment
 
-- **Production:** push to `main` → [`netlify-deploy.yml`](./.github/workflows/ss-netlify-deploy.yml) → live site
-- **Preview:** open PR → preview at `https://pr-{number}--{site-name}.netlify.app` → URL posted as PR comment
-- **Cleanup:** PR closed → [`netlify-cleanup-preview.yml`](./.github/workflows/ss-netlify-cleanup-preview.yml) deletes the preview deploy
-- **Secrets required:** `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID`
+Cloudflare Workers Builds is connected to the repo via the Cloudflare
+GitHub App and handles the whole lifecycle. **No GitHub Action
+workflow ships deploys; do not add one.**
+
+- **Production:** push to `main` → Workers Builds runs `npm run build` → `wrangler deploy` → live site at the custom domain
+- **Preview:** open PR → Workers Builds creates a version with a `<hash>-slopstopper.workers.dev` URL → posted as a commit check on the PR
+- **Cleanup:** PR closed → Cloudflare retires the preview version automatically
+- **Visibility:** `README.md` shows a shields.io GitHub-Deployments badge for per-deploy status; `ss-reliability-smoke-tests.yml` runs hourly *and* on every `deployment_status` event for ongoing health
+- **GitHub secrets required:** none. (Locally, `wrangler dev` needs a `CLOUDFLARE_API_TOKEN` in your `.zshrc.local` to authenticate.)
 
 ## Operational automation
 
@@ -230,7 +242,8 @@ exists for adopters as much as for this repo.
 | Visual / brand | `app/shared.css` (tokens), then individual pages if they use new components |
 | New quality check | Add workflow under `.github/workflows/`, add Task target, surface on `app/features.html` and `app/tools.html`, mention in `README.md` |
 | New page | Add HTML + page-specific CSS in `app/`; link `shared.css` first; copy header/nav/footer; add to nav on the other two pages; add to `tests/smoke.spec.ts` and `tests/accessibility.spec.ts` |
-| Netlify behaviour | `netlify.toml` (CSP changes are blast-radius — touch DAST tests too) |
+| Headers / CSP | `worker/headers.json` (single source of truth — CSP changes are blast-radius, touch DAST tests too) |
+| Worker behaviour | `worker/index.ts` (path matching, redirects); `wrangler.jsonc` (assets binding, compatibility date) |
 | Installer behaviour | `install.sh` (the REPO_URL must always match this repo's actual location) |
 
 ## Verifying changes locally
@@ -251,13 +264,14 @@ behaviour matches CI exactly.
 
 ## Integration points
 
-- **Netlify:** deployment is driven by GitHub Actions (not Netlify's git
-  integration). DNS is managed externally.
-- **GitHub Actions:** workflows require `NETLIFY_AUTH_TOKEN`,
-  `NETLIFY_SITE_ID`, and (for the agentic doc updater) `COPILOT_GITHUB_TOKEN`.
-- **Netlify API:** the cleanup workflow uses
-  `https://api.netlify.com/api/v1/sites/{site_id}/deploys` to delete
-  preview deployments.
+- **Cloudflare:** deployment is driven by Workers Builds (Cloudflare's
+  Git integration via the Cloudflare GitHub App). DNS is managed
+  through Cloudflare's dashboard; the custom domain is attached to
+  the Worker directly. No GitHub secret involved.
+- **GitHub Actions:** workflows require `COPILOT_GITHUB_TOKEN` (for the
+  agentic doc updater). No deploy secrets.
+- **Local dev:** `wrangler dev` needs `CLOUDFLARE_API_TOKEN` set as
+  an env var (e.g. in `.zshrc.local`). `server.js` does not need it.
 
 ## Common pitfalls
 

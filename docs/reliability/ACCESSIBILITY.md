@@ -19,16 +19,16 @@ task ss:reliability:accessibility
 **Run against a deployed URL:**
 
 ```bash
-task ss:reliability:accessibility -- https://your-site.netlify.app
+task ss:reliability:accessibility -- https://your-site.example.com
 
 # Or using an environment variable
-ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task ss:reliability:accessibility
+ACCESSIBILITY_TEST_URL=https://your-site.example.com task ss:reliability:accessibility
 ```
 
 **Run in CI mode (retries + HTML report):**
 
 ```bash
-ACCESSIBILITY_TEST_URL=https://your-site.netlify.app task ss:reliability:accessibility:ci
+ACCESSIBILITY_TEST_URL=https://your-site.example.com task ss:reliability:accessibility:ci
 ```
 
 ## Configuration
@@ -65,7 +65,7 @@ The default threshold (`serious`) means the workflow fails when any `critical` o
 |---|---|
 | `pull_request` → `main` | Local build (`localhost:8080`) |
 | `push` → `main` | Local build (`localhost:8080`) |
-| `deployment_status` (success) | Deployment URL from Netlify |
+| `deployment_status` (success) | Deployment URL from Cloudflare Workers Builds |
 | `schedule` (daily 06:00 UTC) | Production URL (`https://slopstopper.dev`) |
 | `workflow_dispatch` | Configurable via inputs |
 
@@ -98,7 +98,7 @@ To add coverage for your own app:
 
 ```bash
 ACCESSIBILITY_PAGES="/,/login,/dashboard" \
-  ACCESSIBILITY_TEST_URL=https://your-site.netlify.app \
+  ACCESSIBILITY_TEST_URL=https://your-site.example.com \
   task ss:reliability:accessibility
 ```
 

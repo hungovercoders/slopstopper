@@ -15,7 +15,7 @@ import AxeBuilder from '@axe-core/playwright';
  *
  * Run locally:
  *   task ss:reliability:accessibility
- *   ACCESSIBILITY_TEST_URL=https://your-site.netlify.app \
+ *   ACCESSIBILITY_TEST_URL=https://your-site.example.com \
  *     ACCESSIBILITY_PAGES='/,/about' task ss:reliability:accessibility
  */
 

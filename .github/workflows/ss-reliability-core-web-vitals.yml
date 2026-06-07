@@ -1,7 +1,7 @@
 name: SlopStopper · Core Web Vitals
 
 on:
-  # Run against the preview/production URL after a Netlify deployment
+  # Run against the preview/production URL after a successful deployment
   deployment_status:
 
   # Run on schedule against production (daily at midnight UTC)
@@ -237,7 +237,7 @@ jobs:
             body += thresholds + '\n\n';
             if (reportUrl) body += `[📊 Full Lighthouse Report](${reportUrl})\n\n`;
             body += `### How to run locally\n\n`;
-            body += `\`\`\`bash\n# Install Task (one-time)\ncurl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin\n\n# Run against a live URL\ntask ss:reliability:cwv -- https://your-site.netlify.app\n\`\`\`\n`;
+            body += `\`\`\`bash\n# Install Task (one-time)\ncurl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin\n\n# Run against a live URL\ntask ss:reliability:cwv -- https://your-site.example.com\n\`\`\`\n`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,

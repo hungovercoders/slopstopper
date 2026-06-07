@@ -42,7 +42,8 @@ tools:
     - "cat *.html"
     - "cat *.js"
     - "cat *.css"
-    - "cat netlify.toml"
+    - "cat wrangler.jsonc"
+    - "cat worker/headers.json"
     - "cat Taskfile.yml"
     - "cat package.json"
     - "cat .github/workflows/*.yml"
@@ -60,11 +61,12 @@ You are an AI documentation agent that updates the project documentation weekly 
 
 This is the **SlopStopper** project — both a portable suite of CI quality
 workflows that consumers install into their own repos and a live
-reference site that markets the suite. Deployed to Netlify via GitHub
-Actions. The key characteristics are:
+reference site that markets the suite. Deployed to Cloudflare Workers
+(Workers Builds Git integration — no GitHub Action ships deploys).
+The key characteristics are:
 
 - **Multi-page static site**: `app/index.html`, `app/features.html`, `app/tools.html` with a shared `app/shared.css` plus per-page CSS files
-- **TypeScript build step**: `npm run build` runs `tsc`; Netlify publishes the `app/` directory
+- **TypeScript build step**: `npm run build` runs `tsc`; Cloudflare Workers Builds runs the build and serves `app/` via the Worker's `[assets]` binding
 - **Comprehensive docs**: All documentation lives in `docs/` following an index-driven governance model
 - **Taskfile automation**: Tasks follow `category:action` naming (e.g., `hygiene:complexity`); the Taskfile is the single source of truth for local + CI commands
 - **GitHub Actions CI/CD**: Workflows follow `category-action-check.yml` naming

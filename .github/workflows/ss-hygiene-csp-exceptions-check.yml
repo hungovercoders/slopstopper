@@ -3,14 +3,14 @@ name: SlopStopper · Hygiene - CSP Exceptions Drift Check
 on:
   pull_request:
     paths:
-      - 'netlify.toml'
+      - 'worker/headers.json'
       - 'docs/security/CSP_EXCEPTIONS.md'
       - '.ss/scripts/check-csp-exceptions.py'
       - '.github/workflows/ss-hygiene-csp-exceptions-check.yml'
   push:
     branches: [main]
     paths:
-      - 'netlify.toml'
+      - 'worker/headers.json'
       - 'docs/security/CSP_EXCEPTIONS.md'
       - '.ss/scripts/check-csp-exceptions.py'
       - '.github/workflows/ss-hygiene-csp-exceptions-check.yml'
@@ -65,7 +65,7 @@ jobs:
             const runUrl = process.env.RUN_URL;
 
             let body = `## 🔐 CSP Exceptions Check ${status}\n\n`;
-            body += 'This check enforces that every per-path CSP relaxation in `netlify.toml` is documented in `docs/security/CSP_EXCEPTIONS.md` — and vice versa.\n\n';
+            body += 'This check enforces that every per-path CSP relaxation in `worker/headers.json` is documented in `docs/security/CSP_EXCEPTIONS.md` — and vice versa.\n\n';
 
             try {
               const report = fs.readFileSync('.ss/reports/csp/csp-exceptions-report.md', 'utf8');
