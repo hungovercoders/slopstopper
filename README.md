@@ -160,7 +160,7 @@ Most checks work out of the box. Things to wire up if you want the full suite:
 
 **Repo secrets** (under your repo's Settings → Secrets and variables → Actions):
 
-- `COPILOT_GITHUB_TOKEN` — for the agentic doc-updater (`ss-hygiene-doc-updater`), a [gh-aw](https://github.github.com/gh-aw/) workflow that runs via the GitHub Copilot CLI engine. See the [gh-aw Copilot setup guide](https://github.github.com/gh-aw/reference/engines/#github-copilot-default) for how to generate the token
+- `COPILOT_GITHUB_TOKEN` — for the agentic doc-updater (`ss-hygiene-doc-updater`), a [gh-aw](https://github.github.com/gh-aw/) workflow that runs via the GitHub Copilot CLI engine. See the [gh-aw Copilot setup guide](https://github.github.com/gh-aw/reference/engines/#github-copilot-default) for how to generate the token. Also enable **Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests"** so the workflow can open its PRs directly instead of falling back to a tracking issue. Full setup + recompile runbook: [`docs/hygiene/DOC_UPDATER.md`](./docs/hygiene/DOC_UPDATER.md)
 
 No secrets are needed for deploy — Cloudflare Workers Builds is connected via the Cloudflare GitHub App and reads `wrangler.jsonc` directly from the repo.
 
