@@ -10,7 +10,7 @@ The repo has three small entry-point files — [`README.md`](../README.md) (huma
 
 **Why this matters:**
 
-- **Agents stay focused.** Claude, Copilot or any agent loads only the thin entry file (typically <2K tokens) and navigates here when it needs detail. No bloated instruction files competing for context window.
+- **Agents stay focused.** Claude, Copilot or any agent loads only the thin entry file (capped at <2K tokens, enforced by [`task ss:hygiene:entry-files`](hygiene/README.md)) and navigates here when it needs detail. No bloated instruction files competing for context window.
 - **One source of truth.** The category READMEs are the canonical answer; entry files just point at them. Changes don't have to ripple through three places.
 - **Drift is caught by CI.** The [hygiene docs-structure check](hygiene/README.md) fails the build if the directory tree drifts from the map below, and the [docs-accuracy check](hygiene/README.md) catches broken cross-references in any doc.
 - **Reusable convention.** If you install SlopStopper into your own repo, dropping a `docs/index.md` and slimming `README.md` / `AGENTS.md` / `CLAUDE.md` to pointers gives you the same property for free.

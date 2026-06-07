@@ -13,6 +13,41 @@ Notation: C4 (Context + Container).
 - Security headers live in `worker/headers.json`. The Worker, the
   local server and the CSP-drift gate all read the same file.
 
+## Project Layout
+
+```
+slopstopper/
+├── .github/workflows/        # All SlopStopper workflows are `ss-*.yml`
+│                             #   (copilot-setup-steps.yml stays bare — platform-fixed)
+├── .ss/                      # Everything SlopStopper owns lives here
+│   ├── scripts/              # Python/shell analysis scripts called by tasks
+│   └── reports/              # Generated report output (.gitignored)
+├── app/                      # Static site — bound as the [assets] dir on the Worker
+│   ├── index.html            # Hero + Get Started + capability grid
+│   ├── features.html         # 5 category cards with YAML excerpts + mock reports
+│   ├── tools.html            # 15 tool cards with YAML/config excerpts
+│   ├── feedback.html         # Giscus comments embed (per-path CSP exception)
+│   ├── shared.css            # Brand system, components, layout primitives
+│   ├── copy.js               # Progressive-enhancement copy button; only runtime JS
+│   ├── manifest.webmanifest  # PWA manifest
+│   ├── robots.txt            # Allows all, points at the sitemap
+│   └── sitemap.xml           # Lists indexable pages
+├── docs/                     # Documentation hub — see docs/index.md
+├── src/                      # TypeScript stubs (build target; runtime JS is limited to app/copy.js)
+├── tests/                    # Playwright smoke + accessibility specs
+├── install.sh                # Adopter installer
+├── wrangler.jsonc            # Cloudflare Worker + [assets] binding
+├── worker/                   # Cloudflare Worker — applies headers to every response
+│   ├── index.ts              # fetch handler: env.ASSETS.fetch + per-path headers
+│   └── headers.json          # Canonical header map (CSP, COOP/COEP, X-Frame-Options …)
+├── server.js                 # Local dev server — reads worker/headers.json for parity
+├── Taskfile.yml              # Thin root with `includes: { ss: ./Taskfile.ss.yml }`
+├── Taskfile.ss.yml           # SlopStopper task definitions
+├── README.md                 # Consumer-facing entry point
+├── AGENTS.md                 # Thin agent pointer (see docs/index.md map pattern)
+└── CONTRIBUTING.md → docs/contributing/README.md
+```
+
 ## C4 – Level 1 (System Context)
 
 ```mermaid

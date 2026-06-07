@@ -65,13 +65,28 @@ task ss:hygiene:docs-structure
 ```
 
 ### Documentation Accuracy
-Scans all documentation for stale or broken references: internal markdown links that don't resolve, `task <name>` references to non-existent Taskfile tasks, workflow filename references that don't match `.github/workflows/`, and possible stale source-file references.
+Scans markdown for stale or broken references: internal markdown links that don't resolve, `task <name>` references to non-existent Taskfile tasks, workflow filename references that don't match `.github/workflows/`, and stale source-file references. Scans all of `docs/` plus the repo-root entry files (`README.md`, `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`) so drift in the most-loaded files is caught too.
 
 Runs **weekly on a schedule** (Monday 07:00 UTC), on PRs/pushes that change docs or project structure, and can be triggered manually. When issues are found, a GitHub issue is automatically created or updated.
 
 ```bash
 task ss:hygiene:docs-accuracy
 ```
+
+### Entry-File Budget
+Enforces the "thin pointer" principle declared in [`docs/index.md`](../index.md#the-map-pattern):
+agent entry files (`README.md`, `AGENTS.md`, `CLAUDE.md`) must stay under
+~2k tokens each so they don't crowd the context window of every agent
+conversation. Threshold is 1,500 words per file (≈ 2k tokens for English
+prose). Fails the build on violation — the fix is to move the over-budget
+file's bulk into the category README that owns the topic, leaving a
+one-line pointer.
+
+```bash
+task ss:hygiene:entry-files
+```
+
+Workflow: `ss-hygiene-entry-files-check.yml` — runs on PRs/pushes touching `README.md`, `AGENTS.md`, or `CLAUDE.md`.
 
 ### CSP Exceptions Drift Check
 
@@ -107,6 +122,7 @@ task ss:hygiene:lint              # Check markdown formatting
 task ss:hygiene:structure         # Verify documentation index exists
 task ss:hygiene:size              # Check individual file sizes
 task ss:hygiene:docs-size         # Monitor overall documentation size
+task ss:hygiene:entry-files       # Enforce <2k token budget on entry files
 task ss:hygiene:docs-structure    # Validate structure matches governance
 task ss:hygiene:docs-accuracy     # Check for broken links and stale refs
 task ss:hygiene:csp-exceptions    # Validate CSP exceptions are fully documented
