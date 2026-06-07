@@ -1400,23 +1400,33 @@ tasks:
           exit 1
         fi
         REPO="hungovercoders/slopstopper"
+        CUTOFF=$(date -u -v-14d +%Y-%m-%d 2>/dev/null || date -u -d '14 days ago' +%Y-%m-%d)
         stars=$(gh api "repos/$REPO" --jq '.stargazers_count')
         forks=$(gh api "repos/$REPO" --jq '.forks_count')
         clones_total=$(gh api "repos/$REPO/traffic/clones" --jq '.count')
         clones_unique=$(gh api "repos/$REPO/traffic/clones" --jq '.uniques')
         views_total=$(gh api "repos/$REPO/traffic/views" --jq '.count')
         views_unique=$(gh api "repos/$REPO/traffic/views" --jq '.uniques')
+        ci_runs=$(gh api -X GET "repos/$REPO/actions/runs" -f "created=>$CUTOFF" --jq '.total_count')
+        installs_est=$(( clones_total - ci_runs ))
+        if [ "$installs_est" -lt 0 ]; then installs_est=0; fi
         adopters=$(gh api -X GET "search/code" -f q="filename:Taskfile.ss.yml" --jq '.total_count' 2>/dev/null || echo "?")
         cat <<EOF
         ## SlopStopper adoption — $(date -u +%Y-%m-%d)
 
+        **Real-adopter signals (uncontaminated by this repo's CI):**
+        - 📦 Public adopters (Taskfile.ss.yml on default branch): $adopters
         - ⭐ Stars: $stars
         - 🍴 Forks: $forks
-        - 📥 Clones (14-day): $clones_total total / $clones_unique unique
         - 👀 Views (14-day): $views_total total / $views_unique unique
-        - 📦 Public adopters (Taskfile.ss.yml on default branch): $adopters
 
-        See docs/runbooks/adoption-metrics.md for caveats.
+        **Clone signal (heavily polluted by this repo's CI):**
+        - 📥 Clones (14-day): $clones_total total / $clones_unique unique
+        - 🤖 Workflow runs (14-day, ≈ CI checkouts): $ci_runs
+        - 🧮 Install estimate (clones − CI runs, floored at 0): $installs_est
+
+        See docs/runbooks/adoption-metrics.md for what each number means
+        and why the clone signal is unreliable on this repo.
         EOF
 
   install:
