@@ -116,6 +116,7 @@ task ss:hygiene:csp-exceptions    # Validate CSP exceptions are fully documented
 
 - [COMPLEXITY_CONFIG.md](COMPLEXITY_CONFIG.md)
 - [DOCS_SIZE_MONITORING.md](DOCS_SIZE_MONITORING.md) - Setup and usage of local documentation size monitoring
+- [DOC_UPDATER.md](DOC_UPDATER.md) - Weekly agentic doc-updater (gh-aw): required setup, what it produces, and how to recompile after edits
 
 ## When to Run
 

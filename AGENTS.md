@@ -223,7 +223,7 @@ workflow ships deploys; do not add one.**
 
 - [`workflow-failure-issue.yml`](./.github/workflows/ss-workflow-failure-issue.yml) — failed workflow runs on `main` raise (or update) a tracking issue labelled `workflow-failure`. Linked from the live site
 - [`hygiene-auto-label-pr.yml`](./.github/workflows/ss-hygiene-auto-label-pr.yml) — labels PRs by changed paths via [`labeler.yml`](./.github/labeler.yml)
-- [`hygiene-doc-updater.md`](./.github/workflows/ss-hygiene-doc-updater.md) — gh-aw agentic workflow; weekly scan of merged PRs + open `documentation` issues, opens sync PRs labelled `documentation, automation`. Requires `COPILOT_GITHUB_TOKEN` secret (gh-aw runs the GitHub Copilot CLI engine)
+- [`hygiene-doc-updater.md`](./.github/workflows/ss-hygiene-doc-updater.md) — gh-aw agentic workflow; weekly scan of merged PRs + open `documentation` issues, opens sync PRs labelled `documentation, automation`. Requires `COPILOT_GITHUB_TOKEN` secret AND the "Allow GitHub Actions to create and approve pull requests" repo setting. After editing the `.md`, recompile with `gh aw compile ss-hygiene-doc-updater`. Full runbook: [`docs/hygiene/DOC_UPDATER.md`](./docs/hygiene/DOC_UPDATER.md)
 
 ## Commit conventions
 
