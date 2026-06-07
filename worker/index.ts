@@ -41,7 +41,15 @@ export default {
       return Response.redirect(`${url.origin}/feedback.html`, 301);
     }
 
-    const response = await env.ASSETS.fetch(request);
+    // html_handling: "none" disables the auto root → index.html lookup, so
+    // rewrite explicitly. Path matching for headers still uses the original
+    // pathname ("/"), so the /* rule applies as expected.
+    const assetRequest =
+      url.pathname === "/"
+        ? new Request(new URL("/index.html", url.origin).toString(), request)
+        : request;
+
+    const response = await env.ASSETS.fetch(assetRequest);
     const next = new Response(response.body, response);
     for (const [name, value] of Object.entries(headersForPath(url.pathname))) {
       next.headers.set(name, value);
