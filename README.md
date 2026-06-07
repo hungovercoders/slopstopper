@@ -45,8 +45,9 @@ Every check below runs on every PR and push to `main` here, and ships to consume
 [![Failure Alerts](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-workflow-failure-issue.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-workflow-failure-issue.yml)
 
 ### 🚀 Deployment
+[![Site](https://img.shields.io/website?url=https%3A%2F%2Fslopstopper.dev&label=slopstopper.dev&up_message=up&down_message=down)](https://slopstopper.dev/)
 
-Deployed via [Cloudflare Workers Builds](https://developers.cloudflare.com/workers/ci-cd/) — every push to `main` deploys, every PR gets a preview URL as a commit check, closing a PR retires the preview. Live deploy status is in the [Cloudflare dashboard](https://dash.cloudflare.com/) → Workers → `slopstopper` → Deployments. Live post-deploy health is the [Smoke Tests](#-reliability) badge above — it runs hourly *and* against the production URL on every successful build.
+Deployed via [Cloudflare Workers Builds](https://developers.cloudflare.com/workers/ci-cd/) — every push to `main` deploys, every PR gets a preview URL as a commit check, closing a PR retires the preview. Live deploy status is in the [Cloudflare dashboard](https://dash.cloudflare.com/) → Workers → `slopstopper` → Deployments. The badge above pings the production URL via shields.io; live post-deploy *behaviour* is the [Smoke Tests](#-reliability) badge — it runs hourly *and* against the production URL on every successful build.
 
 ---
 
