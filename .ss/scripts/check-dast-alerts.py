@@ -31,6 +31,7 @@ Outputs:
 
 from __future__ import annotations
 
+import fnmatch
 import json
 import re
 import sys
@@ -39,6 +40,7 @@ from urllib.parse import urlparse
 
 ZAP_REPORT = Path(".ss/reports/dast/dast-report.json")
 EXCEPTIONS_DOC = Path("docs/security/CSP_EXCEPTIONS.md")
+ZAP_RULES_FILE = Path(".zap/rules.tsv")
 GATE_REPORT = Path(".ss/reports/dast/dast-gate.json")
 
 # ZAP plugin IDs that report on Content Security Policy issues.
@@ -69,6 +71,28 @@ def documented_exception_paths(doc: Path) -> set[str]:
     return paths
 
 
+def ignored_plugin_ids(rules_file: Path) -> set[str]:
+    """Return the set of ZAP plugin IDs the consumer has marked IGNORE in .zap/rules.tsv.
+
+    ZAP's `-c` flag stops these rules from FAILing the scan but still
+    leaves the findings in the JSON report with their original riskcode.
+    The gate honours the same allowlist so a `90003 IGNORE` (e.g. SRI
+    on a rotating cross-domain script) doesn't keep blocking the build
+    just because ZAP recorded the alert anyway.
+    """
+    if not rules_file.exists():
+        return set()
+    ignored: set[str] = set()
+    for raw in rules_file.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split("\t")
+        if len(parts) >= 2 and parts[1].strip().upper() == "IGNORE":
+            ignored.add(parts[0].strip())
+    return ignored
+
+
 # ── Alert classification ────────────────────────────────────────────
 
 def is_csp_alert(alert: dict) -> bool:
@@ -92,6 +116,21 @@ def riskcode(alert: dict) -> int:
 
 # ── Gate ────────────────────────────────────────────────────────────
 
+def _match_exception_path(path: str, exception_paths: set[str]) -> str | None:
+    """Return the matching exception-path pattern for `path`, or None.
+
+    Documented paths support shell-style globs so site-wide relaxations
+    (`/*`) and section-wide relaxations (`/blog/*`) can be expressed
+    without listing every actual URL. Literal paths still match exactly.
+    Returns the pattern that matched so the swallow record carries
+    provenance back to the doc, not the resolved URL path.
+    """
+    for pattern in exception_paths:
+        if path == pattern or fnmatch.fnmatch(path, pattern):
+            return pattern
+    return None
+
+
 def _classify_instance(alert: dict, uri: str, exception_paths: set[str]) -> dict | None:
     """Return a swallow-record if this instance is a documented CSP exception, else None."""
     if riskcode(alert) >= 3:
@@ -99,10 +138,11 @@ def _classify_instance(alert: dict, uri: str, exception_paths: set[str]) -> dict
     if not is_csp_alert(alert):
         return None
     path = instance_path(uri)
-    if path not in exception_paths:
+    matched = _match_exception_path(path, exception_paths)
+    if matched is None:
         return None
     return {
-        "path": path,
+        "path": matched,
         "uri": uri,
         "pluginid": str(alert.get("pluginid", "")),
         "alert": alert.get("alert") or alert.get("name", ""),
@@ -110,7 +150,11 @@ def _classify_instance(alert: dict, uri: str, exception_paths: set[str]) -> dict
     }
 
 
-def classify_alerts(zap_data: dict, exception_paths: set[str]) -> tuple[int, list[dict]]:
+def classify_alerts(
+    zap_data: dict,
+    exception_paths: set[str],
+    ignored_pluginids: set[str],
+) -> tuple[int, list[dict]]:
     """Return (blocking_count, swallowed_records) across all sites/alerts/instances."""
     blocking = 0
     swallowed: list[dict] = []
@@ -118,10 +162,25 @@ def classify_alerts(zap_data: dict, exception_paths: set[str]) -> tuple[int, lis
         for alert in site.get("alerts", []):
             if riskcode(alert) < 2:
                 continue
+            pid = str(alert.get("pluginid", ""))
             instances = alert.get("instances") or [{"uri": alert.get("url", "")}]
             for inst in instances:
+                # Rule-level IGNORE in .zap/rules.tsv: swallow regardless of path
+                # or alert class, since the consumer has explicitly accepted
+                # this finding type for the whole site.
+                if pid in ignored_pluginids:
+                    swallowed.append({
+                        "path": instance_path(inst.get("uri", "")),
+                        "uri": inst.get("uri", ""),
+                        "pluginid": pid,
+                        "alert": alert.get("alert") or alert.get("name", ""),
+                        "riskcode": riskcode(alert),
+                        "source": ".zap/rules.tsv",
+                    })
+                    continue
                 record = _classify_instance(alert, inst.get("uri", ""), exception_paths)
                 if record is not None:
+                    record["source"] = "docs/security/CSP_EXCEPTIONS.md"
                     swallowed.append(record)
                 else:
                     blocking += 1
@@ -166,7 +225,8 @@ def main() -> int:
         return 2
 
     exception_paths = documented_exception_paths(EXCEPTIONS_DOC)
-    blocking, swallowed = classify_alerts(zap_data, exception_paths)
+    ignored_pluginids = ignored_plugin_ids(ZAP_RULES_FILE)
+    blocking, swallowed = classify_alerts(zap_data, exception_paths, ignored_pluginids)
     _write_gate_report(blocking, swallowed)
     _print_summary(blocking, swallowed)
     return 0 if blocking == 0 else 1
