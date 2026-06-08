@@ -261,7 +261,7 @@ Symptom: workflow exits with "No server.js — customise this step or set X_TEST
 
 Tune `script-src` / `connect-src` to the actual third parties the site loads. `'unsafe-inline'` for `script-src` is the pragmatic call when the build tool injects inline scripts (Astro `define:vars`, GTM bootstrap) and you can't easily add nonces; tighten to nonces or hashes if the framework supports them.
 
-**Per-path relaxations:** if a specific page genuinely needs a relaxed CSP (e.g. Giscus comments needing `https://giscus.app` in `frame-src`), add a per-path override and document the relaxation in `docs/security/CSP_EXCEPTIONS.md` with this shape:
+**Per-path CSP relaxations:** if a specific page genuinely needs a relaxed CSP (e.g. Giscus comments needing `https://giscus.app` in `frame-src`, or a site-wide `'unsafe-inline'` because the build tool injects inline scripts/styles), add a per-path override and document the relaxation in `docs/security/CSP_EXCEPTIONS.md` with this shape:
 
 ```
 ## Exceptions
@@ -270,7 +270,21 @@ Tune `script-src` / `connect-src` to the actual third parties the site loads. `'
 Relaxed `frame-src`/`connect-src` to admit `https://giscus.app` because the comments widget renders in an iframe.
 ```
 
-The DAST gate (`check-dast-alerts.py`) reads that file and swallows CSP findings on documented paths only — other classes of finding still block, and CSP findings on undocumented paths still block.
+The DAST gate (`.ss/scripts/check-dast-alerts.py`) reads that file and swallows CSP findings on documented paths only — other classes of finding still block, and CSP findings on undocumented paths still block.
+
+**ZAP rule false positives:** some ZAP rules are structurally wrong for content-heavy sites and can't be fixed at source — most commonly:
+
+- **Sub Resource Integrity Attribute Missing (rule 90003)** on cross-domain scripts whose hash rotates (Google Tag Manager, video embeds that auto-update). SRI can't pin something that changes per release.
+- **Source Code Disclosure - SQL (rule 10099)** on blog posts containing SQL code blocks. ZAP's heuristic matches SQL syntax in `<pre><code>` and assumes the app is leaking source — false positive on tutorial content.
+
+For these, ship a consumer-side `.zap/rules.tsv` and slopstopper's `dast:analyze` task will pass it to ZAP via `-c`. Tab-separated, one rule per line, each with a `# why` comment:
+
+```
+90003	IGNORE	# SRI: GTM script rotates, no stable hash viable
+10099	IGNORE	# SQL disclosure: false positive on blog tutorials
+```
+
+Keep the list short and justified. Every line is a documented gate exception, not a way to quiet findings that should be fixed. Reference the file from `docs/security/README.md` so the why-rationale is discoverable in the docs map, not buried in the TSV.
 
 ### Smoke test fails on `/og-image.png` (404 or missing CORP header)
 **Symptom:** `.ss/tests/smoke.spec.ts` fails with `expected /og-image.png to return 200 — Expected: 200 Received: 404`, or with `Expected: "cross-origin"` on the `cross-origin-resource-policy` header. **Cause:** the slopstopper smoke test hardcodes a check for a site-wide `/og-image.png` with `Cross-Origin-Resource-Policy: cross-origin` (so social platforms can embed it). Targets that use per-post share images instead of a single site-wide image won't have the file; targets without prod-equivalent header config locally won't have the CORP header on `localhost:8080`. **Fix:**
