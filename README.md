@@ -108,6 +108,8 @@ task --list
 
 **First-run note:** the first time you run any check (e.g. `task ss:hygiene:complexity`), SlopStopper auto-installs the underlying tool (Lizard, Semgrep, Trivy, Gitleaks…) via pip or curl. Expect a one-time delay — subsequent runs are fast.
 
+**Using Claude Code?** The shipped [`install-slopstopper`](./.claude/skills/install-slopstopper/SKILL.md) skill walks an agent through pre-flight, the install command, URL config, verification, and first-PR triage.
+
 ---
 
 ## What you get

@@ -10,5 +10,6 @@ test-results/
 # TypeScript compiled output (copy.js is hand-written runtime JS, not a tsc artefact)
 app/*.js
 !app/copy.js
-# Local Claude Code state
-.claude/
+# Local Claude Code state — but ship shared skills with the repo
+.claude/*
+!.claude/skills/

@@ -49,3 +49,9 @@ between these.
 | Headers / CSP | `worker/headers.json` (single source of truth — CSP changes are blast-radius, touch DAST tests too) |
 | Worker behaviour | `worker/index.ts` (path matching, redirects); `wrangler.jsonc` (assets binding, compatibility date) |
 | Installer behaviour | `install.sh` (the REPO_URL must always match this repo's actual location) |
+
+## Skills for agents
+
+Skills under [`.claude/skills/`](./.claude/skills/) are committed and shipped with the repo (the `.gitignore` carves them out from local Claude Code state). They're the long-form playbooks an agent should follow when doing one of these jobs:
+
+- [`install-slopstopper`](./.claude/skills/install-slopstopper/SKILL.md) — installing SlopStopper into an existing repo. Covers pre-flight, the install command, post-install URL config, verification, and first-PR triage grounded in real installs into non-trivial repos.
