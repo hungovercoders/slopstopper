@@ -23,15 +23,23 @@ Before running anything, learn enough about the target to predict where it'll bi
 
 2. **Does the target already have GitHub Actions workflows?** Slopstopper adds 19 new `ss-*.yml` workflows. They're all `ss-`-prefixed so they group in the Actions UI, but the user should know they're getting that many checks running on every PR.
 
-3. **What's the deploy model?** Some reliability workflows assume a `server.js`-served static site on `localhost:8080` for their PR/push local-build path. If the target is anything else (Astro, Next, SvelteKit, a backend app), those workflows will fail at "Start local server" with `exit 1` until someone customises the step. This is the #1 first-PR failure on non-trivial sites.
+3. **What `engines.node` does the target need?** Slopstopper workflows pin `node-version: '20'` in their `actions/setup-node` step. If the target needs Node 22+ (Astro 6, recent Next, SvelteKit kit), `npm run build` will fail across every reliability/Playwright workflow with `Node.js vXX is not supported`. This is the **#1 cause of red checks on the first PR** — predict it from the target's `package.json` `engines.node` and plan to bump the workflows.
 
-4. **Existing `package.json` devDeps that might collide?** Slopstopper merges in `@axe-core/playwright`, `@lhci/cli`, `@playwright/test`, `markdownlint-cli`, `typescript`. Spot collisions ahead of time.
+4. **What's the deploy model and serve story?** Some reliability/DAST workflows assume a `server.js`-served static site on `localhost:8080` for their PR/push local-build path. If the target is anything else (Astro, Next, SvelteKit, a backend app), those workflows fail at "Start local server" with `exit 1` until someone provides a `server.js` shim or rewrites the step. Pair this question with the deploy model — Cloudflare Workers / Vercel / Netlify / GH Pages each call for a different answer.
 
-5. **Does the target have its own README/AGENTS/CLAUDE entry files?** The `ss:hygiene:entry-files` check enforces a 1500-word budget on each. Most repos pass, but check if any are bloated.
+5. **How does the target manage security headers?** The CSP-exceptions drift check (`ss-hygiene-csp-exceptions-check.yml`) reads from `worker/headers.json` — slopstopper.dev's pattern. Sites that use an adapter, framework middleware, or platform config to set headers won't have that file and the check will fail with `worker/headers.json not found`. If the target doesn't use the worker/headers.json pattern, the check has nothing to guard — flag for deletion.
 
-6. **Is the target a private repo?** Some workflows post issues, comments, and PR labels. They need `issues: write`, `pull-requests: write` permissions — usually fine, but flag for the user if their org restricts this.
+6. **Existing `package.json` devDeps that might collide?** Slopstopper merges in `@axe-core/playwright`, `@lhci/cli`, `@playwright/test`, `markdownlint-cli`, `typescript`. Spot collisions ahead of time.
 
-Report what you found to the user before running the installer, especially the deploy-model finding — that's the one that drives whether the dynamic checks need rework.
+7. **Does the target have its own README/AGENTS/CLAUDE entry files?** The `ss:hygiene:entry-files` check enforces a 1500-word budget on each. Most repos pass, but check if any are bloated.
+
+8. **Is GitHub Advanced Security (or public-repo Dependency Graph) enabled?** The `ss-security-vulnerability-new-check.yml` workflow uses `actions/dependency-review-action` which requires either GHAS on a private repo or the Dependency Graph setting enabled on a public repo. If neither is on, the check fails with `Dependency review is not supported on this repository`. Repo-admin setting, not a code change — flag to the user before install.
+
+9. **Does the target already have a `.github/labeler.yml`?** Slopstopper ships the auto-label workflow (`ss-hygiene-auto-label-pr.yml`) but not the config — labels are by definition repo-specific. If there's no existing `.github/labeler.yml`, the check fails immediately with `The config file was not found`. Plan to ship one mapping the target repo's directory structure to labels.
+
+10. **Is the target a private repo?** Some workflows post issues, comments, and PR labels. They need `issues: write`, `pull-requests: write` permissions — usually fine, but flag for the user if their org restricts this.
+
+Report what you found to the user before running the installer. The Node-version question and the deploy-model question together cause most first-PR red checks — call them out specifically.
 
 ## Step 2 — Run the installer
 
@@ -113,7 +121,10 @@ Capture each finding — pass, fail, and why — for the user. Don't fix anythin
 
 ## Step 6 — First-PR triage (from real installs)
 
-Things that have actually broken on first install — check whether they apply here:
+Things that have actually broken on first install — check whether they apply here. Pre-flight from Step 1 should have predicted most of these; this section is the recovery playbook when they hit.
+
+### Build fails everywhere with "Node.js vXX is not supported"
+**Symptom:** `Core Web Vitals`, `Accessibility`, `SEO`, `Playwright`, and `DAST` workflows all fail at `npm run build` with `Node.js v20.X.X is not supported by Astro!` (or the framework equivalent). **Cause:** the workflows pin `node-version: '20'` in their `actions/setup-node` step. Targets on Astro 6+, recent Next, etc. need Node 22+. **Fix:** bulk-edit the affected workflows to `node-version: '22'` (or whatever matches the target's `engines.node`). One root cause, four-to-five red checks resolved at once. Hardcoded — will be wiped on next `install.sh` re-run.
 
 ### Gitleaks flags a "secret" in old blog/doc content
 Tutorial repos and blogs frequently embed example connection strings, sample API keys, or emulator config that gitleaks matches as Generic API Keys. **Triage:**
@@ -128,6 +139,15 @@ Symptom: workflow exits with "No server.js — customise this step or set X_TEST
 - (a) Add a tiny `server.js` shim that serves the built output on port 8080 (best for static sites).
 - (b) Rewrite the "Start local server" step to use the target's actual dev/serve command (`npm run dev`, etc.).
 - (c) Point the workflow at a deployed environment via the `*_TEST_URL` env vars and remove the local-build branch entirely.
+
+### Auto-label workflow fails with "config file was not found"
+**Symptom:** `ss-hygiene-auto-label-pr.yml` fails immediately with `HttpError: Not Found` and `The config file was not found at .github/labeler.yml`. **Cause:** slopstopper ships the workflow but not the config — labels are repo-specific. **Fix:** add a `.github/labeler.yml` mapping the target's directory globs to labels. Standard `actions/labeler@v5` format: `{label-name}: [{ changed-files: [{ any-glob-to-any-file: [...] }] }]`. Use the target repo's natural taxonomy (e.g. `blog`, `docs`, `ci`, `deps`).
+
+### Dependency Review fails with "not supported on this repository"
+**Symptom:** `ss-security-vulnerability-new-check.yml` errors with `Dependency review is not supported on this repository. Please ensure that Dependency graph is enabled along with GitHub Advanced Security`. **Cause:** the `actions/dependency-review-action` requires GHAS for private repos, or the Dependency Graph setting enabled for public repos. **Fix:** either toggle the setting in repo Settings → Code security and analysis → Dependency graph (admin action, not a code change), or delete the workflow until GHAS is on. There's no in-code workaround.
+
+### CSP-exceptions check fails with "worker/headers.json not found"
+**Symptom:** `ss-hygiene-csp-exceptions-check.yml` errors with `❌ worker/headers.json not found`. **Cause:** the check is slopstopper.dev-specific — it guards a single-source-of-truth `worker/headers.json` file used by slopstopper.dev's Cloudflare Worker. Sites that manage headers via an adapter, framework middleware, or platform config don't have this file. **Fix:** delete the workflow. There's no header file to guard, the check has nothing to do. The `.ss/.workflows-installed` tracker will remember the deletion so a re-install doesn't bring it back.
 
 ### Doc-structure check fails on day one
 If the target has its own `docs/` directory not laid out like slopstopper's governance map, `ss:hygiene:docs-structure` will fail. **Fix:** either adopt the map pattern (write a `docs/index.md` that lists categories matching the directory) or disable that workflow if it's not the right fit for the target.
