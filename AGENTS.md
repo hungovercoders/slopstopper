@@ -47,6 +47,8 @@ between these.
 | New quality check | Add workflow under `.github/workflows/ss-*.yml`, add `task ss:<category>:<action>` target, add to `install.sh`'s `GENERIC_WORKFLOWS`, surface on `app/features.html` and `app/tools.html`, mention in `README.md`, **add to the install-slopstopper skill** (workflow inventory + Pass A/B example in [`.claude/skills/install-slopstopper/SKILL.md`](./.claude/skills/install-slopstopper/SKILL.md)) |
 | Renaming a `task ss:*` target or env var | `Taskfile.ss.yml`, `docs/<category>/README.md`, **the install-slopstopper skill** (local-task commands + env-var list) |
 | Editing `install.sh` (esp. `GENERIC_WORKFLOWS` or post-install stdout) | `install.sh` (the `REPO_URL` must always match this repo's actual location), **the install-slopstopper skill** (Step 3 "what just landed" inventory) |
+| Editing the install-slopstopper skill ([`.claude/skills/install-slopstopper/SKILL.md`](./.claude/skills/install-slopstopper/SKILL.md)) | [`install-skill.sh`](./install-skill.sh) (validates the fetched file looks like a skill — frontmatter contract), [`docs/runbooks/INSTALL_SKILL.md`](./docs/runbooks/INSTALL_SKILL.md) (adopter runbook), `README.md` "Using Claude Code?" section, `app/index.html` "Claude Code users" section |
+| Editing `install-skill.sh` | [`docs/runbooks/INSTALL_SKILL.md`](./docs/runbooks/INSTALL_SKILL.md) (keep the user-facing description aligned), `README.md` + `app/index.html` if the install command line changes |
 | New page | Add HTML + page-specific CSS in `app/`; link `app/shared.css` first; copy header/nav/footer; add to nav on the other pages; add to `tests/smoke.spec.ts` and `tests/accessibility.spec.ts` |
 | Headers / CSP | `worker/headers.json` (single source of truth — CSP changes are blast-radius, touch DAST tests too) |
 | Worker behaviour | `worker/index.ts` (path matching, redirects); `wrangler.jsonc` (assets binding, compatibility date) |
@@ -57,4 +59,4 @@ The right-hand column flags the [install-slopstopper skill](./.claude/skills/ins
 
 Skills under [`.claude/skills/`](./.claude/skills/) are committed and shipped with the repo (the `.gitignore` carves them out from local Claude Code state). They're the long-form playbooks an agent should follow when doing one of these jobs:
 
-- [`install-slopstopper`](./.claude/skills/install-slopstopper/SKILL.md) — installing SlopStopper into an existing repo. Covers pre-flight, the install command, post-install URL config, verification, and first-PR triage grounded in real installs into non-trivial repos.
+- [`install-slopstopper`](./.claude/skills/install-slopstopper/SKILL.md) — installing SlopStopper into an existing repo. Covers pre-flight, the install command, post-install URL config, a local-first verification loop, and a forward-looking gotcha table. Distributed to adopter machines via [`install-skill.sh`](./install-skill.sh) — see [`docs/runbooks/INSTALL_SKILL.md`](./docs/runbooks/INSTALL_SKILL.md).
