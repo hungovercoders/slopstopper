@@ -29,7 +29,7 @@ Before running anything, learn enough about the target to predict where it'll bi
 
 5. **How does the target manage security headers?** The CSP-exceptions drift check (`ss-hygiene-csp-exceptions-check.yml`) reads from `worker/headers.json` — slopstopper.dev's pattern. Sites that use an adapter, framework middleware, or platform config to set headers won't have that file and the check will fail with `worker/headers.json not found`. If the target doesn't use the worker/headers.json pattern, the check has nothing to guard — flag for deletion.
 
-6. **Does the target follow the Map Pattern for docs?** Three workflows — `ss-hygiene-docs-accuracy-check.yml`, `ss-hygiene-docs-structure-check.yml`, `ss-hygiene-docs-size-check.yml` — assume a `docs/` directory laid out per slopstopper's governance map (with a `docs/index.md` listing categories). Without it, the underlying scripts bail with `❌ docs/ directory not found`. Until [hungovercoders/slopstopper#172](https://github.com/hungovercoders/slopstopper/pull/172) merges, these workflows **silently pass** when the script fails (the `|| true` swallow + falsy `has_issues` default — see triage section). Even after the fix, the right call for non-Map-Pattern repos is to delete these three workflows — they have nothing to guard.
+6. **Does the target follow the Map Pattern for docs?** Three workflows — `ss-hygiene-docs-accuracy-check.yml`, `ss-hygiene-docs-structure-check.yml`, `ss-hygiene-docs-size-check.yml` — require a `docs/` directory with an `index.md` listing categories (each as a subdirectory with its own `README.md`). Without it the checks fail with `❌ docs/ directory not found`. Two valid choices: set up the Map Pattern (see Step 5) or delete these three workflows. Don't leave a half-built `docs/` directory in place — the checks will keep failing until the structure matches the index.
 
 7. **Existing `package.json` devDeps that might collide?** Slopstopper merges in `@axe-core/playwright`, `@lhci/cli`, `@playwright/test`, `markdownlint-cli`, `typescript`. Spot collisions ahead of time.
 
@@ -106,7 +106,46 @@ If the user picks hardcode, edit each workflow in three places:
 2. The `elif [ "$EVENT_NAME" == "schedule" ]` branch's `echo "url=…"`
 3. The page list env var (`SMOKE_PAGES` / `ACCESSIBILITY_PAGES` / `SEO_PAGES`) — replace the default slopstopper.dev paths (`'/,/features.html,/tools.html,/feedback.html'`) with the target site's actual paths.
 
-## Step 5 — Surface what's installed via README badges
+## Step 5 — Set up the Map Pattern (if keeping the docs-* checks)
+
+The three docs-* workflows (`docs-accuracy`, `docs-structure`, `docs-size`) validate a `docs/` directory laid out per slopstopper's governance pattern. If you're keeping them, the target needs a `docs/` directory shaped like this:
+
+```
+docs/
+  index.md                    The map — table of categories, each linked
+  <category-a>/README.md      One README per category named in the index
+  <category-b>/README.md
+  …
+```
+
+The structure check parses the table in `docs/index.md` (pattern: `| [category/](category/) | … |`) and fails the build if any listed category lacks a directory or `README.md`, or if there's an undocumented directory inside `docs/`. The directory tree must conform to the index — not the reverse.
+
+**Minimum `docs/index.md`:**
+
+```markdown
+# Documentation Index
+
+This file is **the map** — every other entry point in the repo defers to it.
+
+| Category | Purpose | README |
+| -------- | ------- | ------ |
+| [architecture/](architecture/) | System structure and boundaries | [README](architecture/README.md) |
+| [content/](content/) | What this repo produces, and how | [README](content/README.md) |
+| [deployment/](deployment/) | How it ships | [README](deployment/README.md) |
+| [operations/](operations/) | Runbooks and on-call notes | [README](operations/README.md) |
+```
+
+Pick categories that fit the target. Four is usually enough; slopstopper itself uses ten because it ships a tool with many surfaces. A blog/site does fine with three or four.
+
+**Each category README** needs at minimum a heading and a sentence describing the category's scope. Better: short, practical, actually-useful content. The `docs-size` check caps total docs/ size and per-file size — keep each README concise.
+
+**Trim the entry files too.** Once the map exists, slim `README.md` / `AGENTS.md` / `CLAUDE.md` to ~1 page each, deferring detail to the map. The `ss:hygiene:entry-files` check enforces a 1500-word budget on each.
+
+**Cross-references in docs:** the `docs-accuracy` check scans for `` `backtick-quoted` `` filenames and broken markdown links. Use full repo-relative paths (`scripts/foo.sh`, not bare `foo.sh`) so the checker can resolve them.
+
+If none of this fits the target — short-lived prototype, single-file tool, generated docs only — delete the three workflows instead. `.ss/.workflows-installed` will remember the deletion so re-installs don't bring them back.
+
+## Step 6 — Surface what's installed via README badges
 
 After the workflows are live, surface them in the target's README. One GitHub Actions badge per `ss-*.yml` workflow plus a "powered by slopstopper" advert badge — gives anyone landing on the repo an instant sense of what's being checked and that the gates are real.
 
@@ -141,7 +180,7 @@ Generate the block by listing `ls .github/workflows/ss-*.yml` and grouping by lo
 
 The "powered by slopstopper" badge uses a static shields.io URL (`https://img.shields.io/badge/quality-slopstopper-2c7be5`). No live status, just an advert — keeps it portable and avoids relying on infra slopstopper doesn't own.
 
-## Step 6 — Verify
+## Step 7 — Verify
 
 Run, in order, from the target repo:
 
@@ -156,9 +195,9 @@ task ss:hygiene:complexity      # Lizard cyclomatic complexity
 
 Capture each finding — pass, fail, and why — for the user. Don't fix anything yet; surface the list so the user decides what's a real issue vs. a tuning task.
 
-## Step 7 — First-PR triage (from real installs)
+## Step 8 — First-PR triage
 
-Things that have actually broken on first install — check whether they apply here. Pre-flight from Step 1 should have predicted most of these; this section is the recovery playbook when they hit.
+Common first-PR failures and how to handle each. Pre-flight from Step 1 should predict most of these; this section is the recovery playbook when they hit.
 
 ### Build fails everywhere with "Node.js vXX is not supported"
 **Symptom:** `Core Web Vitals`, `Accessibility`, `SEO`, `Playwright`, and `DAST` workflows all fail at `npm run build` with `Node.js v20.X.X is not supported by Astro!` (or the framework equivalent). **Cause:** the workflows pin `node-version: '20'` in their `actions/setup-node` step. Targets on Astro 6+, recent Next, etc. need Node 22+. **Fix:** bulk-edit the affected workflows to `node-version: '22'` (or whatever matches the target's `engines.node`). One root cause, four-to-five red checks resolved at once. Hardcoded — will be wiped on next `install.sh` re-run.
@@ -186,8 +225,8 @@ Symptom: workflow exits with "No server.js — customise this step or set X_TEST
 ### CSP-exceptions check fails with "worker/headers.json not found"
 **Symptom:** `ss-hygiene-csp-exceptions-check.yml` errors with `❌ worker/headers.json not found`. **Cause:** the check is slopstopper.dev-specific — it guards a single-source-of-truth `worker/headers.json` file used by slopstopper.dev's Cloudflare Worker. Sites that manage headers via an adapter, framework middleware, or platform config don't have this file. **Fix:** delete the workflow. There's no header file to guard, the check has nothing to do. The `.ss/.workflows-installed` tracker will remember the deletion so a re-install doesn't bring it back.
 
-### docs-* workflows silently pass on repos without a docs/ Map Pattern
-**Symptom:** `ss-hygiene-docs-accuracy-check.yml`, `ss-hygiene-docs-structure-check.yml`, and `ss-hygiene-docs-size-check.yml` all show green even though the underlying scripts can't run. **Cause:** each workflow wraps its analysis call in `|| true`, swallowing the script's non-zero exit. When the script fails (e.g. "❌ docs/ directory not found" on a non-Map-Pattern repo), no JSON report gets written, the workflow falls into a falsy `has_issues=false` default, and reports green. The audit hasn't run — the workflow has lied about it. **Fix:** delete the three workflows on any repo that doesn't follow slopstopper's `docs/` Map Pattern (the underlying check has nothing to guard there). Upstream fix in [hungovercoders/slopstopper#172](https://github.com/hungovercoders/slopstopper/pull/172) drops the `|| true` so future installs see honest red checks instead of dishonest green ones — but on a non-Map-Pattern repo the right end-state is still deletion. **Detection tip:** after install, sanity-check that any "green" check actually ran by inspecting the workflow logs once — a check that passes in zero seconds is suspicious.
+### docs-* checks fail with "docs/ directory not found"
+**Symptom:** `ss-hygiene-docs-accuracy-check.yml`, `ss-hygiene-docs-structure-check.yml`, and `ss-hygiene-docs-size-check.yml` all fail with `❌ docs/ directory not found`. **Cause:** these three checks validate slopstopper's Map Pattern, which assumes the target has a `docs/` directory with an `index.md` listing categories. The target has no such directory. **Fix:** either set up the Map Pattern (see Step 5 — `docs/index.md` plus one category README per row in the index table) or delete the three workflows because the target doesn't need them. Don't half-build the structure; the structure check parses every category named in the index and fails on any missing directory or README.
 
 ### Doc-structure check fails on day one
 If the target has its own `docs/` directory not laid out like slopstopper's governance map, `ss:hygiene:docs-structure` will fail. **Fix:** either adopt the map pattern (write a `docs/index.md` that lists categories matching the directory) or disable that workflow if it's not the right fit for the target.
@@ -195,7 +234,7 @@ If the target has its own `docs/` directory not laid out like slopstopper's gove
 ### `ss:hygiene:docs-accuracy` flags broken cross-references
 Common in old repos where docs reference renamed/moved files. **Triage:** real findings — fix the links.
 
-## Step 8 — When NOT to install slopstopper
+## Step 9 — When NOT to install slopstopper
 
 Don't push the user to install if:
 - The target already has a competing quality suite they're happy with (don't double up).
