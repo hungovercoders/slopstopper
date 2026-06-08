@@ -34,7 +34,7 @@ jobs:
         id: check
         run: |
           # Run the task and capture output
-          task ss:hygiene:docs-size || true
+          task ss:hygiene:docs-size
           
           # Check if alerts were triggered (report contains "exceeds thresholds")
           if grep -q "❌" .ss/reports/docs/docs-size-report.md; then
