@@ -41,7 +41,7 @@ jobs:
       - name: Run documentation structure check
         id: structure
         run: |
-          task ss:hygiene:docs-structure || true
+          task ss:hygiene:docs-structure
           
           # Parse violation count from JSON report
           if [ -f .ss/reports/docs/docs-structure-report.json ]; then

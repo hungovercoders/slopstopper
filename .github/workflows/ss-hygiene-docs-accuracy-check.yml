@@ -72,8 +72,8 @@ jobs:
       - name: Run documentation accuracy check
         id: accuracy
         run: |
-          python3 .ss/scripts/check-docs-accuracy.py || true
-          python3 .ss/scripts/generate-docs-accuracy-md.py || true
+          python3 .ss/scripts/check-docs-accuracy.py
+          python3 .ss/scripts/generate-docs-accuracy-md.py
 
           if [ -f .ss/reports/docs/docs-accuracy-report.json ]; then
             ISSUE_COUNT=$(python3 -c "
