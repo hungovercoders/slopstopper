@@ -71,8 +71,19 @@ Sanity-check the install dropped what you expect:
 - `.ss/tests/` — Playwright specs (smoke, accessibility, broken-links)
 - `.ss/playwright.config.js`, `.ss/lighthouserc.json`, `.ss/lighthouserc.prod.json`
 - `.ss/.workflows-installed` — manifest of installed workflows (tracks deletions on reinstall; commit this)
-- `.github/workflows/ss-*.yml` — 19 workflows
+- `.github/workflows/ss-*.yml` — the curated installer set
 - `package.json` — devDeps merged
+
+**Diff what landed vs what slopstopper ships.** `install.sh` uses a hardcoded `GENERIC_WORKFLOWS` array, not a wildcard over slopstopper's `.github/workflows/ss-*.yml`. The two can drift — slopstopper may ship a workflow that the installer hasn't been updated to include. To catch this, run:
+
+```bash
+# inside the target repo, after install
+comm -23 \
+  <(curl -s https://api.github.com/repos/hungovercoders/slopstopper/contents/.github/workflows | jq -r '.[].name' | grep '^ss-' | sort) \
+  <(ls .github/workflows/ | grep '^ss-' | sort)
+```
+
+Any line in the output is a workflow that exists upstream but didn't land. If any look relevant, copy them from slopstopper's repo into `.github/workflows/` directly (and customize like the rest — Node version, URLs, page paths). Also worth flagging the gap upstream as an install.sh fix.
 
 The installer's stdout summarises what's active vs what needs config — read it and relay to the user.
 
