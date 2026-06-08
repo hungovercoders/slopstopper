@@ -2,9 +2,9 @@
 
 Operational procedures for the SlopStopper project.
 
-## Overview
+## Available runbooks
 
-This directory holds step-by-step runbooks for common operational tasks. As the project is a minimal static site template, operational procedures are currently minimal.
+- [adoption-metrics.md](adoption-metrics.md) — How to measure who is using SlopStopper using only public GitHub signals. Backs `task ss:meta:adoption`.
 
 ## Adding Runbooks
 
