@@ -259,6 +259,13 @@ If the target has its own `docs/` directory not laid out like slopstopper's gove
 ### `ss:hygiene:docs-accuracy` flags broken cross-references
 Common in old repos where docs reference renamed/moved files. **Triage:** real findings — fix the links.
 
+### Accessibility audit fails on DOM injected by third-party widgets
+**Symptom:** `ss-reliability-accessibility-check.yml` (or the local `task ss:reliability:accessibility`) reports `color-contrast`, `link-in-text-block`, or `label-title-only` violations and the failing HTML belongs to a cookie banner, chat widget, search UI, embedded video player, or other third-party JS-injected content. **Cause:** widgets like klaro (cookie consent), giscus, intercom, pagefind, etc. inject their own stylesheet at runtime *after* your site's CSS has been parsed, so they win on load order. axe-core scans the rendered DOM and flags their violations as the page's. The page owns them — even if the markup isn't yours, the visitor's accessibility is. **Fix:**
+- Scope CSS overrides to the widget's root class (e.g. `.klaro *`, `.giscus *`).
+- Use `!important` — runtime-injected styles can't be beaten on specificity alone if they were loaded last.
+- For `link-in-text-block` failures, add `text-decoration: underline` so the link is distinguishable from surrounding text by more than colour.
+- For inputs missing labels (common with JS-generated search UIs), add an `aria-label` via a small post-init script.
+
 ## Step 9 — When NOT to install slopstopper
 
 Don't push the user to install if:
