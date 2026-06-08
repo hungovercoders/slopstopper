@@ -104,7 +104,42 @@ If the user picks hardcode, edit each workflow in three places:
 2. The `elif [ "$EVENT_NAME" == "schedule" ]` branch's `echo "url=…"`
 3. The page list env var (`SMOKE_PAGES` / `ACCESSIBILITY_PAGES` / `SEO_PAGES`) — replace the default slopstopper.dev paths (`'/,/features.html,/tools.html,/feedback.html'`) with the target site's actual paths.
 
-## Step 5 — Verify
+## Step 5 — Surface what's installed via README badges
+
+After the workflows are live, surface them in the target's README. One GitHub Actions badge per `ss-*.yml` workflow plus a "powered by slopstopper" advert badge — gives anyone landing on the repo an instant sense of what's being checked and that the gates are real.
+
+Generate the block by listing `ls .github/workflows/ss-*.yml` and grouping by loop prefix (`ss-security-*`, `ss-hygiene-*`, `ss-reliability-*`, operational = `ss-workflow-failure-issue.yml` + `ss-hygiene-doc-updater*`). Use this template — substitute `<OWNER>/<REPO>` with the values from `gh repo view --json nameWithOwner -q .nameWithOwner`:
+
+```markdown
+## Pipeline status
+
+[![slopstopper](https://img.shields.io/badge/quality-slopstopper-2c7be5?style=flat-square)](https://slopstopper.dev/)
+
+### 🔒 Security
+[![SAST](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-security-sast-check.yml/badge.svg?branch=main)](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-security-sast-check.yml)
+[![Secrets](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-security-secrets-check.yml/badge.svg?branch=main)](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-security-secrets-check.yml)
+[![Dependency CVEs](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-security-vulnerability-all-check.yml/badge.svg?branch=main)](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-security-vulnerability-all-check.yml)
+
+### 🧹 Hygiene
+[![Complexity](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-hygiene-complexity-check.yml/badge.svg?branch=main)](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-hygiene-complexity-check.yml)
+... (one badge per installed ss-hygiene-* workflow)
+
+### ✅ Reliability
+... (one badge per installed ss-reliability-* and ss-playwright-tests.yml)
+
+### 🤖 Operational
+... (one badge per installed operational workflow)
+```
+
+**Three things to get right:**
+
+1. **Only badge what's actually installed.** Don't paste badges for workflows the user has deleted (the `.ss/.workflows-installed` tracker is the source of truth — but `ls .github/workflows/ss-*.yml` is the simpler check).
+2. **Insert position matters.** Most READMEs have a "what this is" intro at the top; the Pipeline status block reads best immediately after that, before the install/usage section — so visitors see what's guarded before they read what it is.
+3. **The `?branch=main` parameter is important.** Without it, the badge shows the most recent run on any branch — which during PR work makes the badge flicker red even when `main` is fine.
+
+The "powered by slopstopper" badge uses a static shields.io URL (`https://img.shields.io/badge/quality-slopstopper-2c7be5`). No live status, just an advert — keeps it portable and avoids relying on infra slopstopper doesn't own.
+
+## Step 6 — Verify
 
 Run, in order, from the target repo:
 
@@ -119,7 +154,7 @@ task ss:hygiene:complexity      # Lizard cyclomatic complexity
 
 Capture each finding — pass, fail, and why — for the user. Don't fix anything yet; surface the list so the user decides what's a real issue vs. a tuning task.
 
-## Step 6 — First-PR triage (from real installs)
+## Step 7 — First-PR triage (from real installs)
 
 Things that have actually broken on first install — check whether they apply here. Pre-flight from Step 1 should have predicted most of these; this section is the recovery playbook when they hit.
 
@@ -155,7 +190,7 @@ If the target has its own `docs/` directory not laid out like slopstopper's gove
 ### `ss:hygiene:docs-accuracy` flags broken cross-references
 Common in old repos where docs reference renamed/moved files. **Triage:** real findings — fix the links.
 
-## Step 7 — When NOT to install slopstopper
+## Step 8 — When NOT to install slopstopper
 
 Don't push the user to install if:
 - The target already has a competing quality suite they're happy with (don't double up).
