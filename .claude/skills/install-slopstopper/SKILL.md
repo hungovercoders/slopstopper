@@ -152,7 +152,23 @@ Pick categories that fit the target. Four is usually enough; slopstopper itself 
 
 **Each category README** needs at minimum a heading and a sentence describing the category's scope. Better: short, practical, actually-useful content. The `docs-size` check caps total docs/ size and per-file size — keep each README concise.
 
-**Trim the entry files too.** Once the map exists, slim `README.md` / `AGENTS.md` / `CLAUDE.md` to ~1 page each, deferring detail to the map. The `ss:hygiene:entry-files` check enforces a 1500-word budget on each.
+**Wire the three entry files to defer to the map.** The Map Pattern is only useful if the entry files actually point at it. Once `docs/index.md` exists, restructure `README.md`, `AGENTS.md` and `CLAUDE.md` as a chain — each thin, each deferring upstream — so a human, an automation tool, or Claude Code all converge on the same canonical map:
+
+- **`README.md`** (humans) — short project intro, install/run commands, pipeline-status badges, then a pointer like `See [docs/index.md](./docs/index.md) for the full documentation map.`
+- **`AGENTS.md`** (any automation, [agents.md](https://agents.md) standard) — opens with a Map Pattern callout linking `docs/index.md`. Keeps only what an agent needs up-front: coding conventions (indentation, language, naming patterns), a "where to look for what" table mapping change types to category READMEs, and any non-obvious project-wide rules. Everything else lives in `docs/<category>/README.md`.
+- **`CLAUDE.md`** (Claude Code) — a 3-5 line file that names the canonical chain (CLAUDE.md → AGENTS.md → docs/index.md) and uses the `@AGENTS.md` directive to import the agent conventions. Don't duplicate content here; Claude Code resolves the directive automatically.
+
+Example minimal `CLAUDE.md`:
+
+```markdown
+# Claude Code — project instructions
+
+The canonical agent conventions for this repo live in [`AGENTS.md`](./AGENTS.md), which in turn defers to the documentation map at [`docs/index.md`](./docs/index.md). Claude Code imports `AGENTS.md` via the directive below — keep this file thin.
+
+@AGENTS.md
+```
+
+The `ss:hygiene:entry-files` check enforces a 1500-word budget on each of the three entry files. Aim well under it — the budget is the ceiling, not the target.
 
 **Cross-references in docs:** the `docs-accuracy` check scans for `` `backtick-quoted` `` filenames and broken markdown links. Use full repo-relative paths (`scripts/foo.sh`, not bare `foo.sh`) so the checker can resolve them.
 
