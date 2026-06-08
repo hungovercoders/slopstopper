@@ -245,6 +245,33 @@ Symptom: workflow exits with "No server.js — customise this step or set X_TEST
 - (b) Rewrite the "Start local server" step to use the target's actual dev/serve command (`npm run dev`, etc.).
 - (c) Point the workflow at a deployed environment via the `*_TEST_URL` env vars and remove the local-build branch entirely.
 
+### DAST gate fails with missing-security-header alerts
+**Symptom:** `ss-security-dast-check.yml` runs, OWASP ZAP completes, and the gate fails with `Found N medium/high alert(s)` — the report lists `Content Security Policy (CSP) Header Not Set`, `Missing Anti-clickjacking Header`, `X-Content-Type-Options Header Missing`, `Cross-Origin-*-Policy Header Missing or Invalid`. **Cause:** the site has no security headers configured. Nearly every fresh adopter hits this — the install ships the gate but not the headers. **Fix:** add the headers via whatever mechanism the platform supports (Cloudflare adapter: `public/_headers`; Vercel: `vercel.json`; Netlify: `_headers` or `netlify.toml`). A pragmatic baseline for a static site that uses GTM:
+
+```
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.google-analytics.com https://*.googletagmanager.com; font-src 'self' data:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+```
+
+Tune `script-src` / `connect-src` to the actual third parties the site loads. `'unsafe-inline'` for `script-src` is the pragmatic call when the build tool injects inline scripts (Astro `define:vars`, GTM bootstrap) and you can't easily add nonces; tighten to nonces or hashes if the framework supports them.
+
+**Per-path relaxations:** if a specific page genuinely needs a relaxed CSP (e.g. Giscus comments needing `https://giscus.app` in `frame-src`), add a per-path override and document the relaxation in `docs/security/CSP_EXCEPTIONS.md` with this shape:
+
+```
+## Exceptions
+
+### `/feedback.html`
+Relaxed `frame-src`/`connect-src` to admit `https://giscus.app` because the comments widget renders in an iframe.
+```
+
+The DAST gate (`check-dast-alerts.py`) reads that file and swallows CSP findings on documented paths only — other classes of finding still block, and CSP findings on undocumented paths still block.
+
 ### Smoke test fails on `/og-image.png` (404 or missing CORP header)
 **Symptom:** `.ss/tests/smoke.spec.ts` fails with `expected /og-image.png to return 200 — Expected: 200 Received: 404`, or with `Expected: "cross-origin"` on the `cross-origin-resource-policy` header. **Cause:** the slopstopper smoke test hardcodes a check for a site-wide `/og-image.png` with `Cross-Origin-Resource-Policy: cross-origin` (so social platforms can embed it). Targets that use per-post share images instead of a single site-wide image won't have the file; targets without prod-equivalent header config locally won't have the CORP header on `localhost:8080`. **Fix:**
 - Add a 1200×630 `og-image.png` at the site root (e.g. `public/og-image.png` for Astro).
