@@ -805,13 +805,28 @@ tasks:
           echo "📍 Using Docker-compatible target: $TARGET"
         fi
         
+        # Honour consumer-side ZAP rule overrides at .zap/rules.tsv if present.
+        # Format (tab-separated): <plugin-id>\tIGNORE\t# why this is accepted.
+        # Lets adopters silence false-positive rules (e.g. SRI on a GTM-served
+        # script with rotating content, SQL Source Code Disclosure firing on
+        # blog posts containing SQL code blocks) without modifying slopstopper.
+        # Keep the list short and document each entry — every line is a
+        # justified gate exception, not a way to quiet findings you should fix.
+        ZAP_RULES_VOL=""
+        ZAP_RULES_FLAG=""
+        if [ -f .zap/rules.tsv ]; then
+          ZAP_RULES_VOL="-v $(pwd)/.zap:/zap/wrk/.zap:ro"
+          ZAP_RULES_FLAG="-c .zap/rules.tsv"
+        fi
         docker run --rm \
           -v "$(pwd)/.ss/reports/dast:/zap/wrk/:rw" \
+          $ZAP_RULES_VOL \
           ghcr.io/zaproxy/zaproxy:stable \
           zap-baseline.py \
           -t "$TARGET" \
           -J "dast-report.json" \
           -I \
+          $ZAP_RULES_FLAG \
           || true
         
         python3 .ss/scripts/generate-dast-md.py
