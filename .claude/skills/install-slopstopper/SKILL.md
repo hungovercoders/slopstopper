@@ -31,15 +31,17 @@ Before running anything, learn enough about the target to predict where it'll bi
 
 6. **Does the target follow the Map Pattern for docs?** Three workflows — `ss-hygiene-docs-accuracy-check.yml`, `ss-hygiene-docs-structure-check.yml`, `ss-hygiene-docs-size-check.yml` — require a `docs/` directory with an `index.md` listing categories (each as a subdirectory with its own `README.md`). Without it the checks fail with `❌ docs/ directory not found`. Two valid choices: set up the Map Pattern (see Step 5) or delete these three workflows. Don't leave a half-built `docs/` directory in place — the checks will keep failing until the structure matches the index.
 
-7. **Existing `package.json` devDeps that might collide?** Slopstopper merges in `@axe-core/playwright`, `@lhci/cli`, `@playwright/test`, `markdownlint-cli`, `typescript`. Spot collisions ahead of time.
+7. **Does the target serve a site-wide `/og-image.png` with `Cross-Origin-Resource-Policy: cross-origin`?** The slopstopper Playwright smoke test (`.ss/tests/smoke.spec.ts`) asserts that `/og-image.png` returns 200, has `Content-Type: image/png`, and the CORP header set to `cross-origin` (so social platforms can embed it). Targets that use per-post share images (e.g. `/assets/<slug>/link.png`) instead of a single site-wide image will fail this test. Plan to either: (a) add a 1200×630 `og-image.png` at the site root and configure CORP for that path (Astro/Cloudflare adapter respects `public/_headers`), or (b) skip the smoke spec via Playwright config if the target genuinely doesn't have a site-wide og-image concept.
 
-8. **Does the target have its own README/AGENTS/CLAUDE entry files?** The `ss:hygiene:entry-files` check enforces a 1500-word budget on each. Most repos pass, but check if any are bloated.
+8. **Existing `package.json` devDeps that might collide?** Slopstopper merges in `@axe-core/playwright`, `@lhci/cli`, `@playwright/test`, `markdownlint-cli`, `typescript`. Spot collisions ahead of time.
 
-9. **Is GitHub Advanced Security (or public-repo Dependency Graph) enabled?** The `ss-security-vulnerability-new-check.yml` workflow uses `actions/dependency-review-action` which requires either GHAS on a private repo or the Dependency Graph setting enabled on a public repo. If neither is on, the check fails with `Dependency review is not supported on this repository`. Repo-admin setting, not a code change — flag to the user before install.
+9. **Does the target have its own README/AGENTS/CLAUDE entry files?** The `ss:hygiene:entry-files` check enforces a 1500-word budget on each. Most repos pass, but check if any are bloated.
 
-10. **Does the target already have a `.github/labeler.yml`?** Slopstopper ships the auto-label workflow (`ss-hygiene-auto-label-pr.yml`) but not the config — labels are by definition repo-specific. If there's no existing `.github/labeler.yml`, the check fails immediately with `The config file was not found`. Plan to ship one mapping the target repo's directory structure to labels.
+10. **Is GitHub Advanced Security (or public-repo Dependency Graph) enabled?** The `ss-security-vulnerability-new-check.yml` workflow uses `actions/dependency-review-action` which requires either GHAS on a private repo or the Dependency Graph setting enabled on a public repo. If neither is on, the check fails with `Dependency review is not supported on this repository`. Repo-admin setting, not a code change — flag to the user before install.
 
-11. **Is the target a private repo?** Some workflows post issues, comments, and PR labels. They need `issues: write`, `pull-requests: write` permissions — usually fine, but flag for the user if their org restricts this.
+11. **Does the target already have a `.github/labeler.yml`?** Slopstopper ships the auto-label workflow (`ss-hygiene-auto-label-pr.yml`) but not the config — labels are by definition repo-specific. If there's no existing `.github/labeler.yml`, the check fails immediately with `The config file was not found`. Plan to ship one mapping the target repo's directory structure to labels.
+
+12. **Is the target a private repo?** Some workflows post issues, comments, and PR labels. They need `issues: write`, `pull-requests: write` permissions — usually fine, but flag for the user if their org restricts this.
 
 Report what you found to the user before running the installer. The Node-version question and the deploy-model question together cause most first-PR red checks — call them out specifically.
 
@@ -212,9 +214,21 @@ Symptom: `lizard` runs and errors out with compression-tool usage text. **Cause:
 
 ### Reliability workflows fail at "Start local server" on PR/push
 Symptom: workflow exits with "No server.js — customise this step or set X_TEST_URL." **Cause:** the local-build path of the reliability workflows expects a `server.js` at the repo root serving the built site on port 8080. This works on the slopstopper.dev repo (static site + bundled `server.js`); it does not work on Astro/Next/SvelteKit/backend repos out of the box. **Fix options:**
-- (a) Add a tiny `server.js` shim that serves the built output on port 8080 (best for static sites).
+- (a) Add a tiny `server.js` shim that serves the built output on port 8080 (best for static sites). The shim must mirror the deployed Worker's header behavior — for Cloudflare-deployed Astro sites that means parsing `public/_headers` (Cloudflare's per-path header format) and applying matching headers per request, otherwise tests asserting CORP/CSP headers will pass on schedule (against deployed URL) but fail on every PR (against the bare shim).
 - (b) Rewrite the "Start local server" step to use the target's actual dev/serve command (`npm run dev`, etc.).
 - (c) Point the workflow at a deployed environment via the `*_TEST_URL` env vars and remove the local-build branch entirely.
+
+### Smoke test fails on `/og-image.png` (404 or missing CORP header)
+**Symptom:** `.ss/tests/smoke.spec.ts` fails with `expected /og-image.png to return 200 — Expected: 200 Received: 404`, or with `Expected: "cross-origin"` on the `cross-origin-resource-policy` header. **Cause:** the slopstopper smoke test hardcodes a check for a site-wide `/og-image.png` with `Cross-Origin-Resource-Policy: cross-origin` (so social platforms can embed it). Targets that use per-post share images instead of a single site-wide image won't have the file; targets without prod-equivalent header config locally won't have the CORP header on `localhost:8080`. **Fix:**
+- Add a 1200×630 `og-image.png` at the site root (e.g. `public/og-image.png` for Astro).
+- Configure the CORP header for that path. On Astro/Cloudflare, add to `public/_headers`:
+  ```
+  /og-image.png
+    Cross-Origin-Resource-Policy: cross-origin
+  ```
+- Ensure your local `server.js` shim applies those headers — see the previous entry.
+
+If the target genuinely has no site-wide og-image concept (per-post images only), the alternative is to grep the spec from the Playwright run via a root-level `playwright.config.js` that extends `.ss/playwright.config.js` with a `grepInvert` pattern. But adding the file is almost always simpler.
 
 ### Auto-label workflow fails with "config file was not found"
 **Symptom:** `ss-hygiene-auto-label-pr.yml` fails immediately with `HttpError: Not Found` and `The config file was not found at .github/labeler.yml`. **Cause:** slopstopper ships the workflow but not the config — labels are repo-specific. **Fix:** add a `.github/labeler.yml` mapping the target's directory globs to labels. Standard `actions/labeler@v5` format: `{label-name}: [{ changed-files: [{ any-glob-to-any-file: [...] }] }]`. Use the target repo's natural taxonomy (e.g. `blog`, `docs`, `ci`, `deps`).
