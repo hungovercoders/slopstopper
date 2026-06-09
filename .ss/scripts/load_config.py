@@ -36,26 +36,85 @@ _LIST_ITEM_RE = re.compile(r"^-\s+(.*)$")
 _INLINE_LIST_RE = re.compile(r"^\[(.*)\]$")
 
 
+_KEYWORDS = {"": None, "null": None, "~": None, "true": True, "false": False}
+
+
+def _parse_inline_list(s: str) -> list:
+    """Parse an inline-list `[a, b, c]` form (caller has already matched _INLINE_LIST_RE)."""
+    inner = _INLINE_LIST_RE.match(s).group(1).strip()
+    if not inner:
+        return []
+    return [_parse_scalar(part) for part in inner.split(",")]
+
+
+def _strip_quotes(s: str) -> str | None:
+    """Return the inside of a matched-quote string, or None if not quoted."""
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in ("'", '"'):
+        return s[1:-1]
+    return None
+
+
 def _parse_scalar(raw: str) -> object:
     """Convert a raw YAML scalar string to a Python value."""
     s = raw.strip()
-    if s == "" or s.lower() in ("null", "~"):
-        return None
-    if s.lower() == "true":
-        return True
-    if s.lower() == "false":
-        return False
-    # Strip matching surrounding quotes (single or double).
-    if len(s) >= 2 and s[0] == s[-1] and s[0] in ("'", '"'):
-        return s[1:-1]
-    # Inline list: [a, b, c]
-    inline = _INLINE_LIST_RE.match(s)
-    if inline:
-        inner = inline.group(1).strip()
-        if not inner:
-            return []
-        return [_parse_scalar(part) for part in inner.split(",")]
+    keyword_value = _KEYWORDS.get(s.lower()) if s.lower() in _KEYWORDS else "MISS"
+    if keyword_value != "MISS":
+        return keyword_value
+    unquoted = _strip_quotes(s)
+    if unquoted is not None:
+        return unquoted
+    if _INLINE_LIST_RE.match(s):
+        return _parse_inline_list(s)
     return s
+
+
+def _strip_comment(line: str) -> str:
+    """Quote-aware strip of '#'-prefixed comments from a single line."""
+    if "#" not in line:
+        return line
+    in_squote = False
+    in_dquote = False
+    for i, ch in enumerate(line):
+        if ch == "'" and not in_dquote:
+            in_squote = not in_squote
+        elif ch == '"' and not in_squote:
+            in_dquote = not in_dquote
+        elif ch == "#" and not in_squote and not in_dquote:
+            return line[:i].rstrip()
+    return line
+
+
+def _pop_to_parent(stack: list, indent: int) -> object | None:
+    """Pop the stack until the head is the parent for `indent`. Return parent or None if malformed."""
+    while stack and stack[-1][0] >= indent:
+        stack.pop()
+    if not stack:
+        return None
+    return stack[-1][1]
+
+
+def _handle_list_item(parent: object, body: str) -> None:
+    """Append a parsed list item to parent if parent is a list; otherwise no-op."""
+    match = _LIST_ITEM_RE.match(body)
+    if not match or not isinstance(parent, list):
+        return
+    parent.append(_parse_scalar(match.group(1)))
+
+
+def _handle_key_value(parent: object, indent: int, body: str, stack: list) -> None:
+    """Apply a 'key: value' line under a dict parent. Empty value opens a child container."""
+    if not isinstance(parent, dict):
+        return
+    kv = _KV_RE.match(body)
+    if not kv:
+        return
+    key, value_str = kv.group(1), kv.group(2)
+    if value_str == "":
+        new_container: dict = {}
+        parent[key] = new_container
+        stack.append((indent, new_container))
+    else:
+        parent[key] = _parse_scalar(value_str)
 
 
 def _load_yaml_subset(path: Path) -> dict:
@@ -74,87 +133,24 @@ def _load_yaml_subset(path: Path) -> dict:
         return {}
 
     root: dict = {}
-    # stack entries: (indent_cols, container) — container is dict or list
     stack: list[tuple[int, object]] = [(-1, root)]
 
     for raw_line in raw.splitlines():
-        # Strip comments (but not '#' inside a quoted string — best-effort)
-        line = raw_line
-        if "#" in line:
-            # naive split on first '#' that isn't inside quotes
-            in_squote = False
-            in_dquote = False
-            for i, ch in enumerate(line):
-                if ch == "'" and not in_dquote:
-                    in_squote = not in_squote
-                elif ch == '"' and not in_squote:
-                    in_dquote = not in_dquote
-                elif ch == "#" and not in_squote and not in_dquote:
-                    line = line[:i].rstrip()
-                    break
+        line = _strip_comment(raw_line)
         if not line.strip():
             continue
-
-        m = _INDENT_RE.match(line)
-        if not m:
+        match = _INDENT_RE.match(line)
+        if not match:
             continue
-        indent = len(m.group(1))
-        body = m.group(2)
-
-        # Pop the stack to the parent of this indent.
-        while stack and stack[-1][0] >= indent:
-            stack.pop()
-        if not stack:
-            # malformed — bail
-            return root
-        parent = stack[-1][1]
-
-        # List item under a parent (must be a list)
-        list_item = _LIST_ITEM_RE.match(body)
-        if list_item:
-            value = _parse_scalar(list_item.group(1))
-            if isinstance(parent, list):
-                parent.append(value)
-            elif isinstance(parent, dict):
-                # parent expected to be a dict; previous key opened a list-value
-                # which we'd have stacked as a list. If we got here, the YAML
-                # is malformed for our subset.
-                continue
-            continue
-
-        # Key-value line
-        kv = _KV_RE.match(body)
-        if not kv:
-            continue
-        key = kv.group(1)
-        value_str = kv.group(2)
-
-        if not isinstance(parent, dict):
-            continue
-
-        if value_str == "":
-            # Could open either a nested dict OR a list — we don't know until
-            # we see the next line. Default to dict; promote to list if a '-'
-            # appears at deeper indent.
-            new_container: object = {}
-            parent[key] = new_container
-            stack.append((indent, new_container))
+        indent, body = len(match.group(1)), match.group(2)
+        parent = _pop_to_parent(stack, indent)
+        if parent is None:
+            return root  # malformed
+        if _LIST_ITEM_RE.match(body):
+            _handle_list_item(parent, body)
         else:
-            # Inline scalar (or inline list, handled by _parse_scalar)
-            parent[key] = _parse_scalar(value_str)
+            _handle_key_value(parent, indent, body, stack)
 
-    # Pass 2 — for keys that ended up with empty dicts but should be lists
-    # (because the immediately-following lines were '-' items), this parser
-    # already populated them as lists via the list_item branch above when
-    # the stack head was the empty dict and we appended to it. Wait — that
-    # branch checks isinstance(parent, list). So if parent is the empty
-    # dict, the append is skipped. We need a fix: when we see a list_item
-    # under a dict-parent that was just opened as empty, convert it to list.
-    # Handled by a second pass: detect dicts that hold no keys but had list
-    # items intended. The simplest fix is to track this differently in
-    # pass 1 — but since the test cases for .slopstopper.yml use either
-    # inline lists `[]` or explicit list items under a dedicated list key,
-    # let's handle the dict-was-meant-to-be-list case lazily:
     return _convert_empty_dicts_to_lists_if_needed(root, raw)
 
 
