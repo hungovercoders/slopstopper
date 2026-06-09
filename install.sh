@@ -200,7 +200,6 @@ GENERIC_WORKFLOWS=(
   "ss-reliability-broken-links-check.yml"
   "ss-reliability-core-web-vitals.yml"
   "ss-reliability-seo-check.yml"
-  "ss-playwright-tests.yml"
   # Layer 3 — agentic doc-updater (needs ANTHROPIC_API_KEY)
   # NB: gh-aw workflows ship as a .md source + .lock.yml compiled artifact.
   "ss-hygiene-doc-updater.md"

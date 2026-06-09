@@ -208,7 +208,7 @@ Generate the block by listing `ls .github/workflows/ss-*.yml` and grouping by lo
 ... (one badge per installed ss-hygiene-* workflow)
 
 ### ✅ Reliability
-... (one badge per installed ss-reliability-* and ss-playwright-tests.yml)
+... (one badge per installed ss-reliability-* workflow)
 
 ### 🤖 Operational
 ... (one badge per installed operational workflow)

@@ -56,10 +56,13 @@ urls:
   preview:
 
 # Pages to exercise on each dynamic check (comma-separated paths).
+# Workflows read these via .ss/scripts/load_config.py and fall back to '/'
+# if unset. Override per check, e.g. `accessibility: /,/blog,/about`.
 pages:
   smoke:         /
   accessibility: /
   seo:           /
+  broken_links:  /
 
 # ── Smoke test customizations ────────────────────────────────────────
 smoke:

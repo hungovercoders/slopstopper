@@ -44,6 +44,7 @@ pages:
   smoke:         /
   accessibility: /
   seo:           /
+  broken_links:  /
 
 # ── Smoke test customizations ────────────────────────────────────────
 smoke:

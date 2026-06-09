@@ -1,29 +1,36 @@
 name: SlopStopper · Reliability Smoke Tests
 
 on:
+  # Run on every pull request to main (against local build)
+  pull_request:
+    branches: [main]
+
+  # Run on push to main (against local build)
+  push:
+    branches: [main]
+
   # Run after successful deployments
   deployment_status:
-  
+
   # Run on schedule (every hour)
   schedule:
     - cron: '0 * * * *'
-  
-  # Allow manual trigger with custom URL
+
+  # Allow manual trigger with custom URL (blank = local build)
   workflow_dispatch:
     inputs:
       url:
-        description: 'URL to test'
-        required: true
-        default: 'https://slopstopper.dev/'
+        description: 'URL to test (leave blank to test local build)'
+        required: false
+        default: ''
         type: string
 
 jobs:
   smoke-test:
-    # Only run on successful deployments or manual/scheduled runs
+    # For deployment events, only run when the deployment succeeded
     if: |
-      github.event_name == 'workflow_dispatch' || 
-      github.event_name == 'schedule' || 
-      (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success')
+      github.event_name != 'deployment_status' ||
+      github.event.deployment_status.state == 'success'
     
     runs-on: ubuntu-latest
 
@@ -66,24 +73,65 @@ jobs:
             fi
             printf '%s' "$url"
           }
-          if [ "$EVENT_NAME" == "workflow_dispatch" ]; then
+
+          if [ "$EVENT_NAME" == "workflow_dispatch" ] && [ -n "$INPUT_URL" ]; then
             SAFE_URL="$(validate_url "$INPUT_URL")"
             echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
+            echo "use_local=false" >> "$GITHUB_OUTPUT"
           elif [ "$EVENT_NAME" == "deployment_status" ]; then
             SAFE_URL="$(validate_url "$DEPLOYMENT_URL")"
             echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
-          else
-            # Scheduled run - use production URL
+            echo "use_local=false" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT_NAME" == "schedule" ]; then
             echo "url=https://slopstopper.dev" >> "$GITHUB_OUTPUT"
+            echo "use_local=false" >> "$GITHUB_OUTPUT"
+          else
+            # PR / push / manual without URL → smoke local build
+            echo "url=http://localhost:8080" >> "$GITHUB_OUTPUT"
+            echo "use_local=true" >> "$GITHUB_OUTPUT"
           fi
-        
+
+      - name: Start local server (PR / push builds)
+        if: steps.url.outputs.use_local == 'true'
+        # CUSTOMISE FOR YOUR APP: this step is wired for a static site
+        # (build + node server.js). Replace with whatever starts your
+        # app on port 8080 — or set use_local=false in the Determine
+        # test URL step and point SMOKE_TEST_URL at a deployed environment.
+        run: |
+          if [ -f server.js ] && [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then
+            npm run build
+            node server.js &
+            echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+            for i in $(seq 1 10); do
+              if curl -s http://localhost:8080 > /dev/null; then
+                echo "✅ Server ready"
+                break
+              fi
+              sleep 1
+            done
+          else
+            echo "ℹ️  No server.js to start. Customise this step or set SMOKE_TEST_URL."
+            exit 1
+          fi
+
+      - name: Pages to smoke-check
+        # Reads pages.smoke from .slopstopper.yml. Falls back to '/' if not
+        # configured. Override per-repo in .slopstopper.yml:
+        #   pages:
+        #     smoke: /,/blog,/about
+        run: |
+          PAGES=$(python3 .ss/scripts/load_config.py pages.smoke /)
+          echo "SMOKE_PAGES=$PAGES" >> "$GITHUB_ENV"
+
       - name: Run smoke tests
         env:
           SMOKE_TEST_URL: ${{ steps.url.outputs.url }}
-          # CUSTOMISE FOR YOUR APP: comma-separated paths to smoke-check.
-          # Defaults to '/' if unset.
-          SMOKE_PAGES: '/,/features.html,/tools.html,/feedback.html'
+          SMOKE_PAGES: ${{ env.SMOKE_PAGES }}
         run: task ss:reliability:smoke:ci
+
+      - name: Stop local server
+        if: steps.url.outputs.use_local == 'true' && always()
+        run: kill "$SERVER_PID" || true
 
       - name: Upload test results
         if: always()

@@ -47,7 +47,6 @@ Every slopstopper workflow has a local `task ss:*` equivalent. Run that, not the
 | `ss-reliability-core-web-vitals.yml` | `task ss:reliability:cwv -- <URL>` | ✓ | ✓ | – |
 | `ss-reliability-seo-check.yml` | `task ss:reliability:seo -- <URL>` | ✓ | ✓ | – |
 | `ss-reliability-broken-links-check.yml` | `task ss:reliability:links -- <URL>` | ✓ | ✓ | – |
-| `ss-playwright-tests.yml` | `npx playwright test --config=.ss/playwright.config.js` | ✓ | ✓ | – |
 | `ss-workflow-failure-issue.yml` | (CI-only — operational, runs on workflow_run) | – | – | – |
 
 For dynamic checks (`URL ✓`): pass the URL via the `--` arg, or set the matching env var (`SMOKE_TEST_URL`, `DAST_TEST_URL`, etc.). Pointing at `http://localhost:8080` with a `server.js` shim serving the built site is the fastest local loop.

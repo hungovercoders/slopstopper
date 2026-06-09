@@ -39,7 +39,7 @@ tasks:
         echo "🔍 Running smoke tests against: $SMOKE_TEST_URL"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-        SMOKE_TEST_URL="$SMOKE_TEST_URL" SMOKE_OG_IMAGE_PATH="${SMOKE_OG_IMAGE_PATH:-/og-image.png}" npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts --reporter=list
+        SMOKE_TEST_URL="$SMOKE_TEST_URL" SMOKE_OG_IMAGE_PATH="${SMOKE_OG_IMAGE_PATH-/og-image.png}" npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts --reporter=list
     silent: false
 
   reliability:smoke:ci:
@@ -64,7 +64,7 @@ tasks:
         echo "🔍 Running smoke tests (CI mode) against: $SMOKE_TEST_URL"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-        CI=true SMOKE_TEST_URL="$SMOKE_TEST_URL" SMOKE_OG_IMAGE_PATH="${SMOKE_OG_IMAGE_PATH:-/og-image.png}" npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts --reporter=list,html
+        CI=true SMOKE_TEST_URL="$SMOKE_TEST_URL" SMOKE_OG_IMAGE_PATH="${SMOKE_OG_IMAGE_PATH-/og-image.png}" npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts --reporter=list,html
     silent: false
 
   reliability:cwv:
