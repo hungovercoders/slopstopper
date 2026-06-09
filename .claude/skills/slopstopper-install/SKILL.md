@@ -1,6 +1,6 @@
 ---
-name: install-slopstopper
-description: Install slopstopper into an existing repo. Use when a user asks to add slopstopper, the slopstopper quality suite, or any of its five loops (security, hygiene, reliability, runbooks, deployment) to a project. Walks pre-flight, install, post-install config, a local-first verification loop that closes every check before pushing, and a short maintenance note for when slopstopper itself changes.
+name: slopstopper-install
+description: Install slopstopper into a repo for the first time. Use when a user asks to add slopstopper, the slopstopper quality suite, or any of its five loops (security, hygiene, reliability, runbooks, deployment) to a project that doesn't have it yet. Walks pre-flight, install, post-install URL config, Map Pattern setup, README badges, and a local-first verification loop that closes every check before pushing. For per-check failure diagnosis use the slopstopper-triage skill; for keeping an existing install fresh use slopstopper-update.
 ---
 
 # Install slopstopper
@@ -256,48 +256,19 @@ Iterate the same way as Pass A: fix root cause locally, re-run the single task, 
 
 **Only when both passes are clean do you push.** At that point CI is confirming what you already know.
 
-### Anticipated issues during the local loop
+### When a check fails during the local loop
 
-These come up reliably on first installs. Handling them locally during Step 7 is what makes the first CI pass green.
+A few classes of failure come up reliably on first installs (Node version pin, missing security headers, missing `.github/labeler.yml`, third-party-widget a11y violations, ZAP false positives, etc.). The **`slopstopper-triage`** skill has the per-check playbook — symptom → diagnostic step → fix location → cross-link to the relevant category README. Let it handle each failure as you iterate.
 
-| Symptom (where you'll see it locally) | Root cause | Local fix |
-|---|---|---|
-| `Node.js vXX is not supported by Astro!` (or framework equivalent) on `npm run build` and across every reliability/Playwright workflow | Workflows pin `node-version: '20'`; target needs Node 22+ | Bulk-edit affected workflows to the version matching the target's `engines.node` |
-| `task ss:hygiene:complexity` errors with compression-tool usage text instead of cyclomatic output | PATH collision: the `lz4-lizard` compression utility (often Homebrew) shadows the Python `lizard` | `pip install --upgrade lizard`; reorder PATH so Python's wins, or invoke `python3 -m lizard` |
-| `task ss:security:secrets` flags an example connection string, sample API key, or emulator config | gitleaks regex matches sample/tutorial content as a generic API key | Real leak → revoke + scrub history. Sample → add a path-scoped allowlist in `.gitleaks.toml`; don't disable globally |
-| `task ss:hygiene:docs-accuracy` flags backtick-quoted filenames that don't resolve | Old docs reference renamed/moved files, or use bare filenames the resolver can't find | Fix the link; use full repo-relative paths (`scripts/foo.sh`, not bare `foo.sh`) |
-| `task ss:hygiene:docs-structure` fails with `❌ docs/ directory not found` (or category mismatch) | Target doesn't follow the Map Pattern, or has an undocumented dir under `docs/` | Set up the Map Pattern (Step 5) or delete the three docs-* workflows. Don't half-build it |
-| `task ss:hygiene:csp-exceptions` fails with `worker/headers.json not found` | Target manages headers via adapter/middleware/platform config, not slopstopper.dev's pattern | Delete `ss-hygiene-csp-exceptions-check.yml`; the check has nothing to guard. `.ss/.workflows-installed` remembers the deletion across re-installs |
-| `task ss:reliability:smoke` fails: `expected /og-image.png to return 200` or wrong CORP header | Site has no site-wide og-image, or local server isn't applying prod headers | Add a 1200×630 `public/og-image.png`; add `Cross-Origin-Resource-Policy: cross-origin` for that path; make sure the `server.js` shim parses the platform's headers file (e.g. `public/_headers` on Cloudflare) |
-| Reliability or DAST tasks fail at "Start local server" / connection refused | No `server.js` at repo root serving the build on port 8080 | (a) add a `server.js` shim that serves the built output and applies the platform's header file per request, OR (b) point each workflow at a deployed URL via the `*_TEST_URL` env vars |
-| `task ss:security:dast` reports `Content Security Policy (CSP) Header Not Set`, `X-Frame-Options` missing, etc. | Site has no security headers configured | Add headers via the platform (Cloudflare: `public/_headers`; Vercel: `vercel.json`; Netlify: `_headers` or `netlify.toml`). Baseline for a static site using GTM is in the appendix below |
-| `task ss:security:dast` reports a CSP finding on a page that genuinely needs the relaxation (Giscus, GTM, etc.) | Per-path CSP relaxation is real and needs documenting | Document the relaxation in `docs/security/CSP_EXCEPTIONS.md` under `## Exceptions` with a `### /path` heading (glob patterns supported: `/*`, `/blog/*`). The DAST gate swallows CSP findings only on documented paths |
-| `task ss:security:dast` reports a ZAP rule that's structurally wrong for the target (SRI on rotating GTM script; SQL Disclosure on blog posts with code blocks) | ZAP heuristic doesn't fit content-heavy sites | Add a `.zap/rules.tsv` with the plugin ID marked `IGNORE` and a `# why` comment. The `dast:analyze` task passes it to ZAP and the gate honours the same allowlist |
-| `task ss:reliability:accessibility` reports `color-contrast`, `link-in-text-block`, or `label-title-only` on DOM that belongs to a cookie banner, chat widget, search UI, embedded video | Third-party widget injects its stylesheet at runtime after your CSS — wins on load order. The page owns the violations regardless of authorship | Scope CSS overrides to the widget's root class; use `!important` (runtime-injected styles can't be beaten on specificity alone if loaded last); add `text-decoration: underline` for `link-in-text-block`; add `aria-label` via small post-init script for inputs missing labels |
-
-**Baseline security headers for a static site using GTM** (used in the DAST row above):
-
-```
-/*
-  X-Content-Type-Options: nosniff
-  X-Frame-Options: DENY
-  Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: geolocation=(), camera=(), microphone=(), interest-cohort=()
-  Cross-Origin-Opener-Policy: same-origin
-  Cross-Origin-Resource-Policy: same-origin
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.google-analytics.com https://*.googletagmanager.com; font-src 'self' data:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
-```
-
-Tune `script-src` / `connect-src` to the third parties the site actually loads. `'unsafe-inline'` for `script-src` is the pragmatic call when the build tool injects inline scripts (Astro `define:vars`, GTM bootstrap) and you can't easily add nonces; tighten to nonces or hashes if the framework supports them. Document any `'unsafe-inline'` retention in `docs/security/CSP_EXCEPTIONS.md` under `### /*` so the DAST gate swallows the inevitable site-wide CSP finding.
+Don't try to fix everything yourself inside this skill. Hand off, fix the one check, come back to Pass A / Pass B and re-run.
 
 ## Step 8 — Push and watch the confirmation pass
 
-After Step 7's local loop is fully green, push to a PR branch. CI should mirror what you saw locally. A few checks are CI-only by design — handle these now rather than locally:
+After Step 7's local loop is fully green, push to a PR branch. CI should mirror what you saw locally.
 
-- **`ss-security-vulnerability-new-check.yml` (Dependency Review)** — only runs on `pull_request` and requires either GHAS on a private repo or Dependency Graph enabled on a public repo. If it fails with `Dependency review is not supported on this repository`, toggle the setting in repo Settings → Code security and analysis (admin action), or delete the workflow.
-- **`ss-hygiene-auto-label-pr.yml`** — needs a `.github/labeler.yml` in the target. If missing, ship one mapping the target's directory globs to labels using the `actions/labeler@v5` config format. Use the target repo's natural taxonomy (e.g. `blog`, `docs`, `ci`, `deps`).
+A few checks are CI-only by design (Dependency Review needs GHAS or Dependency Graph; auto-label-pr needs `.github/labeler.yml`). If they fail on the first CI run, hand them to the **`slopstopper-triage`** skill — its check-by-check table covers them alongside the local checks.
 
-If anything else is red on CI but was green locally: that's signal there's an environmental delta between local and CI (Node version pin, missing env var, file-permissions, OS-specific tool). Diagnose, fix, and add the difference to the local pre-flight for next time.
+If anything was green locally but red on CI: that's signal there's an environmental delta (Node version pin, missing env var, file-permissions, OS-specific tool). Diagnose, fix, and add the difference to the local pre-flight for next time.
 
 ## Step 9 — When NOT to install slopstopper
 
@@ -309,21 +280,30 @@ Don't push the user to install if:
 
 In any of those cases: recommend a partial adoption (cherry-pick specific workflows) rather than the full install.
 
-## Step 10 — Maintaining this skill when slopstopper changes
+## Step 10 — When to hand off + maintaining this skill
+
+This skill is one of three in the slopstopper trio:
+
+- **`slopstopper-install`** (this one) — first-time install into a new repo.
+- **`slopstopper-update`** — keep an existing install fresh: re-run installer, pull in new workflows, re-apply customizations that get wiped on reinstall, bump Node version pins.
+- **`slopstopper-triage`** — diagnose a failing slopstopper check, end-to-end: workflow → local task → report → finding category → fix location.
+
+Hand off to `slopstopper-triage` mid-install whenever a check fails during Step 7's local loop. Hand off to `slopstopper-update` once the user wants to refresh an install that's already in place.
+
+### Maintaining this skill when slopstopper changes
 
 This skill names specific files, env vars, workflow IDs, the `GENERIC_WORKFLOWS` list in `install.sh`, and the local `task ss:*` commands that mirror each workflow. **Any change to slopstopper that touches one of those needs a corresponding update here**, or the skill silently drifts away from reality.
 
 Triggers that require revisiting this skill:
 
-- A workflow is added, removed, or renamed under `slopstopper/.github/workflows/ss-*.yml` → update the workflow count in the intro, Step 1.2, and Step 3; add/remove the matching local-task row in Step 7's table; add/remove the badge example in Step 6.
+- A workflow is added, removed, or renamed under `slopstopper/.github/workflows/ss-*.yml` → update the workflow count in the intro, Step 1.2, and Step 3; add/remove the matching local-task row in Step 7's Pass A or Pass B; add/remove the badge example in Step 6. (The per-check failure entry lives in `slopstopper-triage` — update there too.)
 - The `GENERIC_WORKFLOWS` array in `slopstopper/install.sh` changes → confirm the "What just landed" inventory in Step 3 still matches.
-- A `task ss:*` target is renamed in `slopstopper/Taskfile.ss.yml` → update the matching command in Step 7's Pass A or Pass B.
-- A new env var is introduced for a dynamic check → add to the URL-defaults list in Step 4 and to the Pass B example in Step 7.
-- A new persistent class of finding emerges on a fresh install that can't be resolved by existing guidance → add a row to Step 7's anticipated-issues table (forward-looking phrasing — what the symptom looks like, what the cause is, what the fix is — without citing the install that surfaced it).
+- A `task ss:*` target is renamed in `slopstopper/Taskfile.ss.yml` → update the matching command in Step 7's Pass A or Pass B (and the equivalent in `slopstopper-update` Step 7 + `slopstopper-triage`'s reproduce table).
+- A new env var is introduced for a dynamic check → add to the URL-defaults list in Step 4 and to the Pass B example in Step 7 (and the equivalents in `slopstopper-update`).
 
 The companion to this is `AGENTS.md` in the slopstopper repo: its "When making changes" table flags the skill as a follow-on target whenever a change of the above kind ships. If you're updating slopstopper itself and that table isn't pointing readers back here, fix that first.
 
-This skill is distributed to adopter machines via `install-skill.sh` in the slopstopper repo (which writes a single `~/.claude/skills/install-slopstopper/SKILL.md` file and validates the download starts with frontmatter). If you rename the skill, move its file, change the frontmatter contract, or otherwise change the shape of what gets fetched, update `install-skill.sh` and `docs/runbooks/INSTALL_SKILL.md` in the same change — otherwise the install-skill one-liner silently drifts away from what this skill expects to land at.
+The trio is distributed to adopter machines via `install-skill.sh` in the slopstopper repo (which iterates a `SKILLS=( slopstopper-install slopstopper-update slopstopper-triage )` array, atomically writes each `~/.claude/skills/<skill>/SKILL.md`, and validates each download starts with frontmatter). If you rename a skill, add a fourth, change the frontmatter contract, or otherwise change the shape of what gets fetched, update `install-skill.sh`'s `SKILLS` array AND `docs/runbooks/INSTALL_SKILLS.md` in the same change — otherwise the install-skill one-liner silently drifts away from what the trio expects to land at.
 
 ## Notes for the agent
 

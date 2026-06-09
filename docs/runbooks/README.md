@@ -10,7 +10,7 @@ This directory holds step-by-step runbooks for common operational tasks. As the 
 
 | Runbook | What it covers |
 | ------- | -------------- |
-| [INSTALL_SKILL.md](./INSTALL_SKILL.md) | Install the [`install-slopstopper`](../../.claude/skills/install-slopstopper/SKILL.md) Claude Code skill into your user profile so any project on this machine can ask Claude Code to add SlopStopper |
+| [INSTALL_SKILLS.md](./INSTALL_SKILLS.md) | Install the SlopStopper Claude Code skill trio (`slopstopper-install`, `slopstopper-update`, `slopstopper-triage`) into your user profile so any project on this machine can ask Claude Code to add, refresh, or triage SlopStopper |
 
 ## Adding Runbooks
 
