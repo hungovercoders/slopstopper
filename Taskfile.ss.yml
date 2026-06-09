@@ -19,7 +19,7 @@ tasks:
         {{if .CLI_ARGS}}
           export SMOKE_TEST_URL="{{.CLI_ARGS}}"
         {{end}}
-        
+
         if [ -z "$SMOKE_TEST_URL" ]; then
           echo "❌ Error: SMOKE_TEST_URL is required"
           echo ""
@@ -28,11 +28,18 @@ tasks:
           echo "  SMOKE_TEST_URL=https://example.com task ss:reliability:smoke"
           exit 1
         fi
-        
+
+        # Pull og-image path from .slopstopper.yml smoke.og_image_path if not
+        # already set in the environment. Default '/og-image.png' preserves
+        # backward compat; adopters with no site-wide og-image set it to ''.
+        if [ -z "${SMOKE_OG_IMAGE_PATH+x}" ] && [ -f .slopstopper.yml ]; then
+          export SMOKE_OG_IMAGE_PATH="$(python3 .ss/scripts/load_config.py smoke.og_image_path /og-image.png)"
+        fi
+
         echo "🔍 Running smoke tests against: $SMOKE_TEST_URL"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        
-        SMOKE_TEST_URL="$SMOKE_TEST_URL" npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts --reporter=list
+
+        SMOKE_TEST_URL="$SMOKE_TEST_URL" SMOKE_OG_IMAGE_PATH="${SMOKE_OG_IMAGE_PATH:-/og-image.png}" npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts --reporter=list
     silent: false
 
   reliability:smoke:ci:
@@ -40,7 +47,7 @@ tasks:
     summary: |
       Runs smoke tests with CI-specific configuration (retries, single worker).
       Intended for GitHub Actions and automated testing.
-      
+
       Usage:
         SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke:ci
     cmds:
@@ -49,11 +56,15 @@ tasks:
           echo "❌ Error: SMOKE_TEST_URL environment variable is required"
           exit 1
         fi
-        
+
+        if [ -z "${SMOKE_OG_IMAGE_PATH+x}" ] && [ -f .slopstopper.yml ]; then
+          export SMOKE_OG_IMAGE_PATH="$(python3 .ss/scripts/load_config.py smoke.og_image_path /og-image.png)"
+        fi
+
         echo "🔍 Running smoke tests (CI mode) against: $SMOKE_TEST_URL"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        
-        CI=true SMOKE_TEST_URL="$SMOKE_TEST_URL" npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts --reporter=list,html
+
+        CI=true SMOKE_TEST_URL="$SMOKE_TEST_URL" SMOKE_OG_IMAGE_PATH="${SMOKE_OG_IMAGE_PATH:-/og-image.png}" npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts --reporter=list,html
     silent: false
 
   reliability:cwv:

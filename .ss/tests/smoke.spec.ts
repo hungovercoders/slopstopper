@@ -61,10 +61,17 @@ test.describe('Smoke Tests', () => {
       .toBeGreaterThan(0);
   });
 
-  test('og image is publicly shareable', async ({ request }) => {
-    const response = await request.get('/og-image.png');
-    expect(response.status(), 'expected /og-image.png to return 200').toBe(200);
-    expect(response.headers()['content-type']).toContain('image/png');
-    expect(response.headers()['cross-origin-resource-policy']).toBe('cross-origin');
-  });
+  // Opt-in via SMOKE_OG_IMAGE_PATH (default: /og-image.png for backward compat).
+  // Set to empty string in your .slopstopper.yml under smoke.og_image_path to
+  // disable — use this if you ship per-post share images instead of one
+  // site-wide image.
+  const ogImagePath = process.env.SMOKE_OG_IMAGE_PATH ?? '/og-image.png';
+  if (ogImagePath) {
+    test(`og image (${ogImagePath}) is publicly shareable`, async ({ request }) => {
+      const response = await request.get(ogImagePath);
+      expect(response.status(), `expected ${ogImagePath} to return 200`).toBe(200);
+      expect(response.headers()['content-type']).toContain('image/png');
+      expect(response.headers()['cross-origin-resource-policy']).toBe('cross-origin');
+    });
+  }
 });

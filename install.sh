@@ -291,6 +291,96 @@ elif [ ! -f "$PKG" ]; then
   success "package.json installed"
 fi
 
+# 6. Seed adopter-default templates. seed_template() copies <src> to <dst>
+# only if <dst> does not exist; never overwrites. The whole point is to
+# remove the cliff between "install lands" and "first PR is green" — these
+# defaults handle the common cases (no config file, no auto-label config,
+# no headers, no .zap suppressions, no gitignore entries) so an adopter's
+# first CI run isn't a discovery pass.
+
+seed_template() {
+  local label="$1"
+  local src="$2"
+  local dst="$3"
+  if [ ! -f "$src" ]; then
+    return 0  # template missing from source (e.g. running an old install.sh against a new repo) — skip silently
+  fi
+  if [ -f "$dst" ]; then
+    info "$label: $dst already exists — leaving it alone"
+    return 0
+  fi
+  mkdir -p "$(dirname "$dst")"
+  cp "$src" "$dst"
+  success "$label: seeded $dst"
+}
+
+# .slopstopper.yml — config carrier
+seed_template ".slopstopper.yml" \
+  "$SCRIPT_DIR/templates/slopstopper.yml.example" \
+  "$TARGET_DIR/.slopstopper.yml"
+
+# .github/labeler.yml — config for ss-hygiene-auto-label-pr.yml
+seed_template ".github/labeler.yml" \
+  "$SCRIPT_DIR/templates/labeler.yml.example" \
+  "$TARGET_DIR/.github/labeler.yml"
+
+# public/_headers — Cloudflare/Netlify static-asset header baseline (commented out)
+if [ -d "$TARGET_DIR/public" ]; then
+  seed_template "public/_headers" \
+    "$SCRIPT_DIR/templates/_headers.example" \
+    "$TARGET_DIR/public/_headers"
+else
+  info "public/_headers: no public/ directory in target — skipping (add one and re-run if you want the baseline)"
+fi
+
+# .zap/rules.tsv — ZAP rule overrides (entries commented; uncomment what applies)
+seed_template ".zap/rules.tsv" \
+  "$SCRIPT_DIR/templates/zap-rules.tsv.example" \
+  "$TARGET_DIR/.zap/rules.tsv"
+
+# .gitignore — append the slopstopper block if not already present.
+# Idempotent re-append: the block is bracketed with markers so re-runs
+# detect the existing block and skip rather than duplicate.
+GI="$TARGET_DIR/.gitignore"
+GI_BLOCK_SRC="$SCRIPT_DIR/templates/gitignore.block"
+if [ -f "$GI_BLOCK_SRC" ]; then
+  if [ -f "$GI" ] && grep -Fq "# slopstopper begin" "$GI" 2>/dev/null; then
+    info ".gitignore: slopstopper block already present — leaving it alone"
+  else
+    [ -f "$GI" ] && [ -s "$GI" ] && printf '\n' >> "$GI"
+    cat "$GI_BLOCK_SRC" >> "$GI"
+    success ".gitignore: appended slopstopper block"
+  fi
+fi
+
+# 7. Apply .slopstopper.yml workflows.disabled — remove any matching
+# workflows the adopter has opted out of, and remember the deletion via
+# .ss/.workflows-installed so a re-run won't re-add them. This lets the
+# config file drive deletions instead of "delete file and trust the
+# marker" — both work, but config-driven is easier to audit and survive
+# clone-and-rebuild.
+if [ -f "$TARGET_DIR/.slopstopper.yml" ] && command -v python3 &>/dev/null; then
+  DISABLED="$(cd "$TARGET_DIR" && python3 "$SCRIPT_DIR/.ss/scripts/load_config.py" workflows.disabled 2>/dev/null || true)"
+  if [ -n "$DISABLED" ]; then
+    DISABLED_COUNT=0
+    IFS=',' read -ra DISABLED_LIST <<< "$DISABLED"
+    for wf_name in "${DISABLED_LIST[@]}"; do
+      wf_name="$(echo "$wf_name" | tr -d ' ')"
+      [ -z "$wf_name" ] && continue
+      # Tolerate both with-extension and without-extension forms
+      [[ "$wf_name" != *.yml ]] && wf_name="${wf_name}.yml"
+      wf_path="$TARGET_DIR/.github/workflows/$wf_name"
+      if [ -f "$wf_path" ]; then
+        rm -f "$wf_path"
+        (( DISABLED_COUNT++ )) || true
+      fi
+    done
+    if [ "$DISABLED_COUNT" -gt 0 ]; then
+      info "Removed $DISABLED_COUNT workflow(s) listed in .slopstopper.yml workflows.disabled"
+    fi
+  fi
+fi
+
 # ── post-install guidance ─────────────────────────────────────────────────────
 
 sep
@@ -304,13 +394,17 @@ echo "       SAST · Secrets · Dependency CVEs · Dependency Review"
 echo "       Complexity · Doc Structure · Doc Accuracy · Doc Size"
 echo "       Auto-label PRs · Workflow-failure tracker"
 echo ""
-echo "  ⏳ Active once you point them at your app's URL (set env vars):"
+echo "  ⏳ Active once you point them at your app (edit .slopstopper.yml):"
 echo "       Smoke · Accessibility · Core Web Vitals · DAST · Playwright"
 echo ""
-echo "     export SMOKE_TEST_URL=https://staging.your-app.com"
-echo "     export ACCESSIBILITY_TEST_URL=\$SMOKE_TEST_URL"
-echo "     export ACCESSIBILITY_PAGES=/,/about,/pricing   # comma-separated"
-echo "     export LIGHTHOUSE_URL=\$SMOKE_TEST_URL"
+echo "     # in .slopstopper.yml:"
+echo "     urls:"
+echo "       production: https://your-site.example.com"
+echo "       preview:    https://staging.your-site.example.com"
+echo ""
+echo "     # if you need Node 22+ for your build:"
+echo "     node_version: '22'"
+echo "     gh variable set SLOPSTOPPER_NODE_VERSION --body 22"
 echo ""
 echo "  🔐 Inert until you add secrets in your repo settings:"
 echo "       Doc Auto-Updater (gh-aw agentic workflow)"

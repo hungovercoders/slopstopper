@@ -1,0 +1,30 @@
+# .slopstopper.yml — slopstopper.dev's own config.
+#
+# See .slopstopper.yml.example for the fully-annotated schema reference,
+# and docs/architecture/README.md for how the headers source feeds into
+# the CSP-drift check and the local server.
+
+node_version: '20'
+
+# slopstopper.dev manages headers via a Cloudflare Worker that imports
+# worker/headers.json (see worker/index.ts). The CSP-drift check reads
+# the same file via the JSON adapter.
+headers:
+  source: worker/headers.json
+  format: json
+
+# slopstopper.dev URLs — used by scheduled smoke + DAST + CWV.
+urls:
+  production: https://slopstopper.dev
+  preview:
+
+pages:
+  smoke:         /,/features.html,/tools.html,/feedback.html
+  accessibility: /,/features.html,/tools.html,/feedback.html
+  seo:           /,/features.html,/tools.html,/feedback.html
+
+smoke:
+  og_image_path: /og-image.png
+
+workflows:
+  disabled: []

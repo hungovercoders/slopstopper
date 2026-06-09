@@ -1,0 +1,8 @@
+# slopstopper begin
+# Generated outputs from slopstopper checks. Safe to delete locally.
+.ss/reports/
+.ss/.workflows-installed
+playwright-report/
+test-results/
+.lighthouseci/
+# slopstopper end
