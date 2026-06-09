@@ -22,6 +22,7 @@ pages:
   smoke:         /,/features.html,/tools.html,/feedback.html
   accessibility: /,/features.html,/tools.html,/feedback.html
   seo:           /,/features.html,/tools.html,/feedback.html
+  broken_links:  /,/features.html,/tools.html
 
 smoke:
   og_image_path: /og-image.png

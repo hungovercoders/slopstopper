@@ -112,11 +112,15 @@ jobs:
             exit 1
           fi
 
-      - name: Pages to audit (this repo)
+      - name: Pages to audit
         if: steps.url.outputs.use_local == 'true'
-        # CUSTOMISE FOR YOUR APP: comma-separated paths to audit. Defaults
-        # to '/' if unset.
-        run: echo "SEO_PAGES=/,/features.html,/tools.html,/feedback.html" >> "$GITHUB_ENV"
+        # Reads pages.seo from .slopstopper.yml. Falls back to '/' if not
+        # configured. Override per-repo in .slopstopper.yml:
+        #   pages:
+        #     seo: /,/blog,/about
+        run: |
+          PAGES=$(python3 .ss/scripts/load_config.py pages.seo /)
+          echo "SEO_PAGES=$PAGES" >> "$GITHUB_ENV"
 
       - name: Run SEO metatag audit
         id: audit

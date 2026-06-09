@@ -77,12 +77,19 @@ jobs:
             echo "url=https://slopstopper.dev" >> "$GITHUB_OUTPUT"
           fi
         
+      - name: Pages to smoke-check
+        # Reads pages.smoke from .slopstopper.yml. Falls back to '/' if not
+        # configured. Override per-repo in .slopstopper.yml:
+        #   pages:
+        #     smoke: /,/blog,/about
+        run: |
+          PAGES=$(python3 .ss/scripts/load_config.py pages.smoke /)
+          echo "SMOKE_PAGES=$PAGES" >> "$GITHUB_ENV"
+
       - name: Run smoke tests
         env:
           SMOKE_TEST_URL: ${{ steps.url.outputs.url }}
-          # CUSTOMISE FOR YOUR APP: comma-separated paths to smoke-check.
-          # Defaults to '/' if unset.
-          SMOKE_PAGES: '/,/features.html,/tools.html,/feedback.html'
+          SMOKE_PAGES: ${{ env.SMOKE_PAGES }}
         run: task ss:reliability:smoke:ci
 
       - name: Upload test results
