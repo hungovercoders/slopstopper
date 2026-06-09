@@ -323,6 +323,8 @@ Triggers that require revisiting this skill:
 
 The companion to this is `AGENTS.md` in the slopstopper repo: its "When making changes" table flags the skill as a follow-on target whenever a change of the above kind ships. If you're updating slopstopper itself and that table isn't pointing readers back here, fix that first.
 
+This skill is distributed to adopter machines via `install-skill.sh` in the slopstopper repo (which writes a single `~/.claude/skills/install-slopstopper/SKILL.md` file and validates the download starts with frontmatter). If you rename the skill, move its file, change the frontmatter contract, or otherwise change the shape of what gets fetched, update `install-skill.sh` and `docs/runbooks/INSTALL_SKILL.md` in the same change — otherwise the install-skill one-liner silently drifts away from what this skill expects to land at.
+
 ## Notes for the agent
 
 - The install is reversible by deleting the slopstopper-added files. Commit the install as its own commit so it's easy to revert.
