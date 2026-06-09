@@ -1,0 +1,56 @@
+# .slopstopper.yml — repo-level config for slopstopper.
+#
+# Seeded by install.sh. Survives subsequent install.sh re-runs (the
+# installer only creates this file if it doesn't already exist; it
+# never overwrites an existing one). Slopstopper scripts and workflows
+# that need a per-repo value read from here.
+#
+# See https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example
+# for the fully-populated schema reference.
+
+# ── Node version pin ─────────────────────────────────────────────────
+# Workflows use ${{ vars.SLOPSTOPPER_NODE_VERSION || '20' }} in their
+# setup-node steps. If your project needs Node 22+ (Astro 6, recent
+# Next, SvelteKit kit), bump this AND set the GitHub repo variable:
+#   gh variable set SLOPSTOPPER_NODE_VERSION --body "$(yq '.node_version' .slopstopper.yml)"
+node_version: '20'
+
+# ── Headers drift check adapter ──────────────────────────────────────
+# The ss:hygiene:csp-exceptions check enforces that every per-path CSP
+# relaxation in your header source has a matching entry in
+# docs/security/CSP_EXCEPTIONS.md.
+#
+# Set source to the path to your headers file. Common values:
+#   public/_headers         Cloudflare Pages, Cloudflare Workers Builds (assets), Netlify
+#   app/_headers            same convention served from app/
+#   worker/headers.json     Cloudflare Worker with JSON-driven headers
+#
+# Set source: null to skip the check entirely (use this if you manage
+# headers via framework middleware, platform config, etc., and want
+# to handle drift another way).
+headers:
+  source: null
+  # Adapter to use. Shipped: json, cloudflare-text. 'auto' infers from extension.
+  format: auto
+
+# ── Dynamic-check URLs ───────────────────────────────────────────────
+# Reliability + DAST workflows pick a URL based on the event.
+urls:
+  production:
+  preview:
+
+# Pages to exercise on each dynamic check (comma-separated paths).
+pages:
+  smoke:         /
+  accessibility: /
+  seo:           /
+
+# ── Smoke test customizations ────────────────────────────────────────
+smoke:
+  # Path to a site-wide og-image. Set to '' to skip the og-image
+  # assertion entirely (use if you ship per-post share images).
+  og_image_path: /og-image.png
+
+# ── Workflows to skip on this repo ───────────────────────────────────
+workflows:
+  disabled: []

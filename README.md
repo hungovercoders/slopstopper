@@ -164,24 +164,19 @@ delegates to the same definition). One source of truth.
 
 Most checks work out of the box. Things to wire up if you want the full suite:
 
+**[`.slopstopper.yml`](./.slopstopper.yml.example)** at the repo root is the canonical config carrier. install.sh seeds a starter file with `headers.source: null` and empty URLs so the first PR is green; you opt knobs in by editing the file. Survives reinstalls; never overwritten by `install.sh`. See the example for the full schema.
+
 **Repo secrets** (under your repo's Settings → Secrets and variables → Actions):
 
 - `COPILOT_GITHUB_TOKEN` — for the agentic doc-updater (`ss-hygiene-doc-updater`), a [gh-aw](https://github.github.com/gh-aw/) workflow that runs via the GitHub Copilot CLI engine. See the [gh-aw Copilot setup guide](https://github.github.com/gh-aw/reference/engines/#github-copilot-default) for how to generate the token. Also enable **Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests"** so the workflow can open its PRs directly instead of falling back to a tracking issue. Full setup + recompile runbook: [`docs/hygiene/DOC_UPDATER.md`](./docs/hygiene/DOC_UPDATER.md)
 
 No secrets are needed for deploy — Cloudflare Workers Builds is connected via the Cloudflare GitHub App and reads `wrangler.jsonc` directly from the repo.
 
-**Tunable env vars** (set in workflows or locally):
+**Tuning files** (`.slopstopper.yml` covers most config; these handle the rest):
 
-- `ACCESSIBILITY_TEST_URL` / `SMOKE_TEST_URL` / `BROKEN_LINKS_TEST_URL` / `LIGHTHOUSE_URL` — point the dynamic checks at your app
-- `ACCESSIBILITY_PAGES` / `SMOKE_PAGES` / `BROKEN_LINKS_PAGES` — comma-separated paths to audit (default `/`)
-- `ACCESSIBILITY_IMPACT` — `critical` / `serious` / `moderate` / `minor` (default `serious`) — see [`docs/reliability/ACCESSIBILITY.md`](./docs/reliability/ACCESSIBILITY.md)
-- `ACCESSIBILITY_THRESHOLD` — max violations before failing (default `0`)
-
-**Files you can edit** for permanent tuning:
-
-- Complexity caps — see [`docs/hygiene/COMPLEXITY_CONFIG.md`](./docs/hygiene/COMPLEXITY_CONFIG.md)
-- Lighthouse budgets — `.ss/lighthouserc.json` (PR/dev) and `.ss/lighthouserc.prod.json` (production)
-- Doc size thresholds — see [`docs/hygiene/DOCS_SIZE_MONITORING.md`](./docs/hygiene/DOCS_SIZE_MONITORING.md)
+- Complexity caps — [`docs/hygiene/COMPLEXITY_CONFIG.md`](./docs/hygiene/COMPLEXITY_CONFIG.md)
+- Lighthouse budgets — `.ss/lighthouserc.json` (PR) and `.ss/lighthouserc.prod.json` (production)
+- Doc size thresholds — [`docs/hygiene/DOCS_SIZE_MONITORING.md`](./docs/hygiene/DOCS_SIZE_MONITORING.md)
 
 ---
 

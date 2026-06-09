@@ -1,0 +1,76 @@
+# .slopstopper.yml — repo-level config for slopstopper.
+#
+# Survives install.sh re-runs (the installer only seeds it once if
+# .slopstopper.yml doesn't exist; it never overwrites an existing file).
+# Slopstopper scripts and workflows that need a per-repo value read from
+# here first.
+#
+# What lives here:
+#   - Defaults for env-var-driven checks (URLs, page lists, og-image path)
+#   - Tuning knobs that would otherwise be hardcoded into workflows and
+#     wiped on every reinstall
+#   - Adapter selection for the CSP-drift check (so adopters with
+#     different header-source formats are first-class, not second-class)
+#   - Workflows to skip on this repo
+#
+# What does NOT live here:
+#   - Secrets (use GitHub Actions secrets)
+#   - Anything platform-specific that's already a Cloudflare/Vercel/Netlify
+#     native config (e.g. wrangler.jsonc, vercel.json, netlify.toml)
+
+# ── Node version pin ─────────────────────────────────────────────────
+# Workflows use ${{ vars.SLOPSTOPPER_NODE_VERSION || '20' }} in their
+# setup-node steps. Set the repo variable from this value with:
+#   gh variable set SLOPSTOPPER_NODE_VERSION --body "$(yq '.node_version' .slopstopper.yml)"
+# Or set it directly via the GitHub repo settings UI.
+node_version: '20'
+
+# ── Headers drift check adapter ──────────────────────────────────────
+# The ss:hygiene:csp-exceptions check enforces that every per-path CSP
+# relaxation in your header source has a matching entry in
+# docs/security/CSP_EXCEPTIONS.md. Tell it where your headers live and
+# what format the file is in. Set source: null to skip the check
+# entirely (use this if you manage headers via framework middleware,
+# platform config, etc., and want to handle drift another way).
+headers:
+  # Path to the file the adapter parses. Common values:
+  #   worker/headers.json     — Cloudflare Worker with JSON-driven headers (slopstopper.dev pattern)
+  #   public/_headers         — Cloudflare/Netlify static-asset _headers convention
+  #   app/_headers            — same convention, served from app/ directory
+  source: worker/headers.json
+  # Adapter to use when parsing. Shipped adapters:
+  #   json              — [{for, values}, ...] JSON array
+  #   cloudflare-text   — Cloudflare _headers text format
+  # Set to 'auto' to infer from the file extension (json→json, no-ext→cloudflare-text).
+  format: json
+
+# ── Dynamic-check URLs ───────────────────────────────────────────────
+# Reliability + DAST workflows pick a URL based on the event:
+#   - push to main / scheduled  → urls.production
+#   - pull_request              → urls.preview (falls back to local build if unset)
+#   - workflow_dispatch         → arg, then preview, then production
+# Sync to GitHub repo variables with:
+#   bash .ss/scripts/sync-config-to-vars.sh   # (helper added by install.sh)
+urls:
+  production:
+  preview:
+
+# Pages to exercise on each dynamic check (comma-separated paths).
+pages:
+  smoke:         /
+  accessibility: /
+  seo:           /
+
+# ── Smoke test customizations ────────────────────────────────────────
+smoke:
+  # Path to a site-wide og-image. Set to '' to skip the og-image assertion
+  # entirely (use this if you ship per-post share images instead of one
+  # site-wide image).
+  og_image_path: /og-image.png
+
+# ── Workflows to skip on this repo ───────────────────────────────────
+# install.sh removes any workflow named here from .github/workflows/
+# (and remembers the deletion via .ss/.workflows-installed so re-runs
+# don't bring them back). Same semantics as manually deleting the file.
+workflows:
+  disabled: []

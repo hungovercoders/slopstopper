@@ -55,31 +55,31 @@ comm -23 \
 
 Any line in the output is an `ss-*.yml` workflow that exists upstream but isn't in your target. If any look relevant, copy them across directly from `https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/<name>` (and customize like the rest — Node version pin, URLs, page paths). Also worth flagging the gap upstream as an `install.sh` fix so the next adopter gets it for free.
 
-## Step 4 — Re-apply customizations that got wiped
+## Step 4 — Re-apply customizations that got wiped (much smaller than it used to be)
 
-The installer refreshes `Taskfile.ss.yml`, `.ss/scripts/`, and the `ss-*.yml` workflows wholesale. Anything you'd hand-edited in those files is gone. The common ones to re-apply:
+The installer refreshes `Taskfile.ss.yml`, `.ss/scripts/`, and the `ss-*.yml` workflows wholesale. Anything hand-edited in those files is gone — but `.slopstopper.yml` is **never** overwritten by the installer, so the bulk of customization (node version, headers source/format, URLs, pages, og-image path, disabled workflows) survives every re-run.
 
-**Node version pin.** Workflows ship pinned at `node-version: '20'` in their `actions/setup-node` step. Targets needing Node 22+ (Astro 6, recent Next, SvelteKit kit) hit `Node.js vXX is not supported` failures unless this pin is bumped. Bulk-edit the affected workflows. Long-term fix: pull the version from a single source (e.g. `engines.node` in `package.json`) but until that's upstream, hand-edit and commit.
+What still needs re-checking after an update:
 
-**Hardcoded URL defaults in dynamic-check workflows.** The reliability + DAST workflows look for `SMOKE_TEST_URL`, `ACCESSIBILITY_TEST_URL`, `LIGHTHOUSE_URL`, `SEO_TEST_URL`, `BROKEN_LINKS_TEST_URL`, `DAST_TEST_URL`. If you'd hardcoded these (option B in the URL-config tradeoff table), edit each workflow in three places:
+- **Anything you hand-edited inside `ss-*.yml` workflow files** beyond what `.slopstopper.yml` covers. Common case: extra workflow-level `permissions:` for a custom integration, or a non-standard schedule. Diff against upstream to find them.
+- **GitHub repo variables.** If `.slopstopper.yml` `node_version` changed, re-sync the `SLOPSTOPPER_NODE_VERSION` repo variable. If `urls.production` / `urls.preview` changed and you mirror them as repo variables, push those too:
 
-1. `workflow_dispatch.inputs.url.default:`
-2. The `elif [ "$EVENT_NAME" == "schedule" ]` branch's `echo "url=…"`
-3. The page list env var (`SMOKE_PAGES`, `ACCESSIBILITY_PAGES`, `SEO_PAGES`) — replace the default slopstopper.dev paths with the target site's actual paths.
+  ```bash
+  gh variable set SLOPSTOPPER_NODE_VERSION --body "$(grep '^node_version:' .slopstopper.yml | cut -d\' -f2)"
+  # plus any URL variables you mirror
+  ```
 
-If you keep getting bitten by this on every update, jump to Step 5.
+- **`.github/labeler.yml`** if upstream's labeler template added categories you want (the installer never overwrites your existing file, so new categories don't land automatically).
 
-## Step 5 — (One-time) migrate hardcoded URLs to GitHub repo variables
+## Step 5 — Spot newly-shipped knobs
 
-Hardcoded workflow edits are the friction point. If you've re-applied them twice or more, this is the time to migrate to GitHub repo variables — set once, persists across reinstalls:
+The `.slopstopper.yml.example` in the slopstopper repo is the schema reference. Diff it against your repo's `.slopstopper.yml`:
 
 ```bash
-gh variable set SMOKE_TEST_URL --body 'https://your-site.example.com'
-gh variable set ACCESSIBILITY_TEST_URL --body 'https://your-site.example.com'
-# ...etc for LIGHTHOUSE_URL, SEO_TEST_URL, BROKEN_LINKS_TEST_URL, DAST_TEST_URL
+diff <(curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/.slopstopper.yml.example) .slopstopper.yml
 ```
 
-The workflows read `${{ vars.<NAME> }}` with the workflow input as override, so repo variables become the steady-state default and hardcoded edits in Step 4 stop being necessary. (Page-list env vars are still per-workflow — those still need hand-editing if customised.)
+Any keys present upstream but missing locally are new knobs you can opt into. Most ship with sensible defaults so no action is required — but the diff is the easiest way to know what changed.
 
 ## Step 6 — Check for new task targets
 

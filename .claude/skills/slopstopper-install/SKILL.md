@@ -23,11 +23,11 @@ Before running anything, learn enough about the target to predict where it'll bi
 
 2. **Does the target already have GitHub Actions workflows?** Slopstopper adds 21 new `ss-*.yml` workflows. They're all `ss-`-prefixed so they group in the Actions UI, but the user should know they're getting that many checks running on every PR.
 
-3. **What `engines.node` does the target need?** Slopstopper workflows pin `node-version: '20'` in their `actions/setup-node` step. If the target needs Node 22+ (Astro 6, recent Next, SvelteKit kit), `npm run build` fails across every reliability/Playwright workflow with `Node.js vXX is not supported`. Predict it from the target's `package.json` `engines.node` and bump the workflows up front. The same edit is wiped by a future `install.sh` re-run, so commit the bump and re-apply if reinstalling.
+3. **What `engines.node` does the target need?** Slopstopper workflows read `${{ vars.SLOPSTOPPER_NODE_VERSION || '20' }}` for their `actions/setup-node` step. If the target needs Node 22+ (Astro 6, recent Next, SvelteKit kit), set `node_version:` in `.slopstopper.yml` AND run `gh variable set SLOPSTOPPER_NODE_VERSION --body 22` to push it into the repo variable that workflows read. One source of truth; survives `install.sh` re-runs.
 
 4. **What's the deploy model and serve story?** Reliability/DAST workflows can target either a deployed URL or a `server.js`-served local build on port 8080. If the target is anything other than a static site (Astro, Next, SvelteKit, a backend app) you'll need either a `server.js` shim or workflows pointed at a deployed environment. Pair this with the deploy model — Cloudflare Workers / Vercel / Netlify / GH Pages each call for a different answer.
 
-5. **How does the target manage security headers?** The CSP-exceptions drift check (`ss-hygiene-csp-exceptions-check.yml`) reads from `worker/headers.json` — slopstopper.dev's pattern. Sites that use an adapter, framework middleware, or platform config to set headers won't have that file and the check has nothing to guard. Flag for deletion if the target doesn't use the worker/headers.json pattern.
+5. **How does the target manage security headers?** The CSP-exceptions drift check reads from whatever you name in `.slopstopper.yml` `headers.source` (with `headers.format`). Shipped adapters: `json` (for `[{for, values}]` JSON files like slopstopper.dev's `worker/headers.json`), `cloudflare-text` (Cloudflare/Netlify native `_headers` text format), `auto` (infer from extension). Set `source: null` to skip the check entirely — adopters managing headers via framework middleware / `vercel.json` / etc. do this. The installer seeds `.slopstopper.yml` with `source: null` so first-PR is green even before you configure anything; you opt the check in by pointing it at your real headers file.
 
 6. **Does the target follow the Map Pattern for docs?** Three workflows — `ss-hygiene-docs-accuracy-check.yml`, `ss-hygiene-docs-structure-check.yml`, `ss-hygiene-docs-size-check.yml` — require a `docs/` directory with an `index.md` listing categories (each as a subdirectory with its own `README.md`). Two valid choices: set up the Map Pattern (see Step 5) or delete these three workflows. A half-built `docs/` directory will fail the structure check until the tree matches the index.
 
@@ -89,35 +89,48 @@ The installer's stdout summarises what's active vs what needs config — read it
 
 ## Step 4 — Post-install configuration
 
-### Add slopstopper outputs to `.gitignore`
+The installer seeds a `.slopstopper.yml` config file at the repo root (if one doesn't exist yet) plus sensible defaults for `.github/labeler.yml`, `public/_headers` (commented baseline), `.zap/rules.tsv` (common false positives commented), and appends a `.gitignore` block for `.ss/reports/` and friends. None of those overwrite existing files. The rest of post-install is editing `.slopstopper.yml` to point the dynamic checks at the right URLs and tuning a few knobs.
 
-The installer does NOT add `.ss/reports/` to `.gitignore`. The first time you run any check, it creates `.ss/reports/<check>/...` files. Add this block:
+### Edit `.slopstopper.yml`
 
+The seeded file is fully commented; the main knobs to fill in:
+
+```yaml
+node_version: '22'              # match your package.json engines.node
+
+headers:
+  source: public/_headers       # or worker/headers.json, or null to skip the check
+  format: cloudflare-text       # or json, or auto
+
+urls:
+  production: https://your-site.example.com
+  preview:    https://staging.your-site.example.com
+
+pages:
+  smoke:         /,/about,/pricing
+  accessibility: /,/about
+  seo:           /
+
+smoke:
+  og_image_path: /og-image.png  # set to '' if you use per-post share images
+
+workflows:
+  disabled: []                  # list any ss-*.yml workflows to remove on next install.sh
 ```
-# slopstopper local outputs
-.ss/reports/
-playwright-report/
-test-results/
-.lighthouseci/
+
+### Push the Node version to a GitHub repo variable
+
+Workflows read `${{ vars.SLOPSTOPPER_NODE_VERSION || '20' }}` — set the variable from `.slopstopper.yml`:
+
+```bash
+gh variable set SLOPSTOPPER_NODE_VERSION --body "$(grep '^node_version:' .slopstopper.yml | cut -d\' -f2)"
 ```
 
-### Configure URL env vars for dynamic checks
+### URLs: GitHub repo variables vs. hardcoded vs. inert
 
-The reliability checks (smoke, accessibility, Core Web Vitals, SEO, broken-links) and DAST need a URL to test against. Three options, in order of preference:
+`.slopstopper.yml` `urls.*` is the recommended path — survives `install.sh` re-runs. For per-environment overrides without editing the file, GitHub repo variables (`SMOKE_TEST_URL`, `ACCESSIBILITY_TEST_URL`, `LIGHTHOUSE_URL`, `SEO_TEST_URL`, `BROKEN_LINKS_TEST_URL`, `DAST_TEST_URL`) take precedence and live in repo settings.
 
-| Option | Where | Tradeoff |
-|---|---|---|
-| **GitHub repo variables** | Repo settings → Variables | Persists across reinstalls. Best for shared/public URLs. Requires `gh variable set` or dashboard click-ops. |
-| **Hardcode in workflows** | Edit `default:` lines and `echo "url=…"` in `ss-reliability-*.yml` | Works immediately, lives in source control. Gets wiped on every `install.sh` re-run — re-apply after each install. |
-| **Leave inert** | Do nothing | Workflows fail loudly on schedule. Fine if you only care about static-analysis checks. |
-
-The URLs each workflow looks for:
-- `SMOKE_TEST_URL`, `ACCESSIBILITY_TEST_URL`, `LIGHTHOUSE_URL`, `SEO_TEST_URL`, `BROKEN_LINKS_TEST_URL`, `DAST_TEST_URL`
-
-If the user picks hardcode, edit each workflow in three places:
-1. `workflow_dispatch.inputs.url.default:`
-2. The `elif [ "$EVENT_NAME" == "schedule" ]` branch's `echo "url=…"`
-3. The page list env var (`SMOKE_PAGES` / `ACCESSIBILITY_PAGES` / `SEO_PAGES`) — replace the default slopstopper.dev paths with the target site's actual paths.
+Hardcoding inside `ss-reliability-*.yml` workflow files still works but gets wiped on `install.sh` re-run — avoid unless you have a reason.
 
 ## Step 5 — Set up the Map Pattern (if keeping the docs-* checks)
 

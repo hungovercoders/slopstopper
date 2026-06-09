@@ -1,0 +1,21 @@
+# .zap/rules.tsv — seeded by slopstopper install.sh.
+#
+# OWASP ZAP rule overrides for the DAST scan. Two common false positives
+# for content-heavy sites ship commented-out below. Uncomment ONLY the
+# rules that apply to your site, and keep the `# why` line so the
+# exception is documented at the point of suppression.
+#
+# Format: <plugin-id>\tIGNORE\t# why this is accepted on this site
+# See https://www.zaproxy.org/docs/alerts/ for the plugin registry.
+#
+# Honoured by slopstopper's dast:analyze task AND by the DAST gate
+# (.ss/scripts/check-dast-alerts.py).
+
+# 90003	IGNORE	# SRI: GTM script and similar cross-domain scripts are
+#                # rotated by the third party; no stable SRI hash is viable
+
+# 10099	IGNORE	# Source Code Disclosure - SQL: false positive on tutorial
+#                # blog posts containing SQL code blocks (Databricks/Spark/
+#                # Cosmos emulator). ZAP's heuristic matches SQL syntax in
+#                # <pre><code> blocks as if the application were leaking
+#                # source code; it isn't
