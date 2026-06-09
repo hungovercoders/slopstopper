@@ -1,0 +1,27 @@
+# Cloudflare _headers file for the SlopStopper site.
+#
+# Translated from the previous worker/headers.json. Cloudflare's static-asset
+# pipeline applies these per response — no Worker needed. The CSP-exceptions
+# drift check at .ss/scripts/check-csp-exceptions.py parses this same file
+# and fails the build if any per-path relaxation here lacks a documented
+# entry in docs/security/CSP_EXCEPTIONS.md.
+#
+# Path matching: /* matches every URL; explicit paths override. Multiple
+# blocks for the same path merge (later wins per-header).
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Permissions-Policy: geolocation=(), camera=(), microphone=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Resource-Policy: same-origin
+
+/og-image.png
+  Cross-Origin-Resource-Policy: cross-origin
+
+/feedback.html
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://giscus.app; style-src 'self' 'unsafe-inline' https://giscus.app; frame-src https://giscus.app; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  Cross-Origin-Embedder-Policy: unsafe-none

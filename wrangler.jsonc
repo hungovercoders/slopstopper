@@ -1,14 +1,11 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "slopstopper",
-  "main": "worker/index.ts",
   "compatibility_date": "2026-06-01",
   "assets": {
     "directory": "./app",
-    "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "html_handling": "none",
-    "run_worker_first": true
+    "html_handling": "auto-trailing-slash"
   },
   "observability": {
     "enabled": true

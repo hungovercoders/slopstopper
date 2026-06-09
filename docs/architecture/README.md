@@ -1,17 +1,19 @@
 # Architecture
 
 Architecture structure and boundaries overview for this static site
-hosted on a Cloudflare Worker.
+served by Cloudflare Workers Builds.
 
 Notation: C4 (Context + Container).
 
 ## Scope
 
-- Static HTML/CSS/JS pages served in production by a Cloudflare
-  Worker with the `[assets]` binding.
+- Static HTML/CSS/JS pages served in production by Cloudflare Workers
+  Builds' static-asset pipeline (no Worker code).
 - Local development and DAST use `server.js`.
-- Security headers live in `worker/headers.json`. The Worker, the
-  local server and the CSP-drift gate all read the same file.
+- Security headers live in `app/_headers` (Cloudflare native). The
+  static-asset pipeline applies them in prod; `server.js` parses the
+  same file for local parity; the CSP-drift gate reads it too.
+- Redirects live in `app/_redirects` (Cloudflare native).
 
 ## Project Layout
 
@@ -22,11 +24,13 @@ slopstopper/
 ├── .ss/                      # Everything SlopStopper owns lives here
 │   ├── scripts/              # Python/shell analysis scripts called by tasks
 │   └── reports/              # Generated report output (.gitignored)
-├── app/                      # Static site — bound as the [assets] dir on the Worker
+├── app/                      # Static site — served by Cloudflare Workers Builds' asset pipeline
 │   ├── index.html            # Hero + Get Started + capability grid
 │   ├── features.html         # 5 category cards with YAML excerpts + mock reports
 │   ├── tools.html            # 15 tool cards with YAML/config excerpts
 │   ├── feedback.html         # Giscus comments embed (per-path CSP exception)
+│   ├── _headers              # Canonical header map — Cloudflare native format
+│   ├── _redirects            # Path redirects — Cloudflare native format
 │   ├── shared.css            # Brand system, components, layout primitives
 │   ├── copy.js               # Progressive-enhancement copy button; only runtime JS
 │   ├── manifest.webmanifest  # PWA manifest
@@ -36,11 +40,8 @@ slopstopper/
 ├── src/                      # TypeScript stubs (build target; runtime JS is limited to app/copy.js)
 ├── tests/                    # Playwright smoke + accessibility specs
 ├── install.sh                # Adopter installer
-├── wrangler.jsonc            # Cloudflare Worker + [assets] binding
-├── worker/                   # Cloudflare Worker — applies headers to every response
-│   ├── index.ts              # fetch handler: env.ASSETS.fetch + per-path headers
-│   └── headers.json          # Canonical header map (CSP, COOP/COEP, X-Frame-Options …)
-├── server.js                 # Local dev server — reads worker/headers.json for parity
+├── wrangler.jsonc            # Static-asset config (directory + html_handling); no Worker code
+├── server.js                 # Local dev server — parses app/_headers for prod parity
 ├── Taskfile.yml              # Thin root with `includes: { ss: ./Taskfile.ss.yml }`
 ├── Taskfile.ss.yml           # SlopStopper task definitions
 ├── README.md                 # Consumer-facing entry point
@@ -67,29 +68,31 @@ flowchart LR
 ```mermaid
 flowchart LR
     B[Browser]
-    WORKER[Cloudflare Worker\nworker/index.ts]
+    CFAP[Cloudflare Workers Builds\nstatic-asset pipeline]
     ASSETS[Static Assets\napp/index.html, app/features.html, app/tools.html, CSS, compiled JS]
-    HJSON[worker/headers.json\ncanonical header map]
+    HFILE[app/_headers\ncanonical header map]
+    RFILE[app/_redirects\npath redirects]
     DEV[Local Node Server\nserver.js]
 
-    B -->|Prod HTTPS requests| WORKER
-    WORKER -->|env.ASSETS.fetch| ASSETS
-    HJSON -->|imported by| WORKER
+    B -->|Prod HTTPS requests| CFAP
+    CFAP -->|serves| ASSETS
+    HFILE -->|consumed by| CFAP
+    RFILE -->|consumed by| CFAP
 
     B -->|Local HTTP requests| DEV
     DEV --> ASSETS
-    HJSON -->|loaded by| DEV
+    HFILE -->|parsed by| DEV
 ```
 
 ## Request Flow (Minimal)
 
 1. Browser requests a page.
-2. In production, the Cloudflare Worker fetches the asset via the
-   `[assets]` binding, then applies the per-path headers from
-   `worker/headers.json` before returning the response.
+2. In production, Cloudflare Workers Builds' static-asset pipeline
+   serves the file from `app/`, applies the per-path headers from
+   `app/_headers`, and honours redirects from `app/_redirects`. No
+   Worker code runs.
 3. In local/dev scanning, `server.js` serves the same `app/` directory
-   and loads the same `worker/headers.json` so prod and local stay
-   identical.
+   and parses the same `app/_headers` so prod and local stay identical.
 
 ## Development Loops
 

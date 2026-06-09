@@ -1,0 +1,13 @@
+# Cloudflare _redirects file for the SlopStopper site.
+#
+# Format: <from> <to> <status>
+#   200 = rewrite (URL stays the same, content from `to` is served)
+#   301 = permanent redirect (browser follows to `to`)
+#
+# Replaces what worker/index.ts used to do before Phase 0 migration:
+# the Worker handled the `/feedback` → `/feedback.html` redirect and
+# the `/` → `/index.html` rewrite. Cloudflare's static-asset pipeline
+# now does both natively via this file.
+
+/feedback   /feedback.html   301
+/           /index.html      200

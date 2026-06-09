@@ -153,7 +153,7 @@ jobs:
                     <li><strong>Doc Structure</strong> — Enforces <code>docs/index.md</code> as the documentation map; README / AGENTS.md / CLAUDE.md stay thin pointers</li>
                     <li><strong>Doc Accuracy</strong> — Documentation reflects the actual code</li>
                     <li><strong>Doc Size</strong> — Prevents documentation from going stale or unwieldy</li>
-                    <li><strong>CSP Exceptions Drift</strong> — Keeps <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> in sync so per-page CSP relaxations stay documented</li>
+                    <li><strong>CSP Exceptions Drift</strong> — Keeps <code>app/_headers</code> and <code>CSP_EXCEPTIONS.md</code> in sync so per-page CSP relaxations stay documented</li>
                     <li><strong>Auto-label PRs</strong> — PRs labelled from the paths changed</li>
                 </ul>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about Hygiene →</a>
@@ -201,14 +201,14 @@ on:
 on:
   pull_request:
     paths:
-      - 'worker/headers.json'
+      - 'app/_headers'
       - 'docs/security/CSP_EXCEPTIONS.md'
 jobs:
   check-csp-exceptions:
     steps:
       - uses: actions/checkout@v4
       - run: task ss:hygiene:csp-exceptions</code></pre></div>
-                        <p class="details__hint">Strict <code>default-src 'self'</code> CSP is the default. Per-path exceptions (e.g. Giscus on <code>/feedback.html</code>) must be documented in <code>CSP_EXCEPTIONS.md</code> with SRI hashes and a fallback. This check fails the build if <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> disagree.</p>
+                        <p class="details__hint">Strict <code>default-src 'self'</code> CSP is the default. Per-path exceptions (e.g. Giscus on <code>/feedback.html</code>) must be documented in <code>CSP_EXCEPTIONS.md</code> with SRI hashes and a fallback. This check fails the build if <code>app/_headers</code> and <code>CSP_EXCEPTIONS.md</code> disagree.</p>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-csp-exceptions-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
                         <br>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">View the exceptions doc →</a>
@@ -420,15 +420,13 @@ safe-outputs:
                     <div class="details__body">
                         <div class="codeblock codeblock--yaml"><pre><code>{
   "name": "slopstopper",
-  "main": "worker/index.ts",
   "compatibility_date": "2026-06-01",
   "assets": {
     "directory": "./app",
-    "binding": "ASSETS",
-    "run_worker_first": true
+    "html_handling": "auto-trailing-slash"
   }
 }</code></pre></div>
-                        <p class="details__hint">Cloudflare Workers Builds reads this file from the repo on every push, runs <code>npm run build</code>, and deploys the Worker with the <code>app/</code> directory bound as static assets. No GitHub Action involved.</p>
+                        <p class="details__hint">Cloudflare Workers Builds reads this file from the repo on every push, runs <code>npm run build</code>, and serves the <code>app/</code> directory directly via the static-asset pipeline. No Worker code. No GitHub Action.</p>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/wrangler.jsonc" rel="noopener noreferrer">View wrangler.jsonc →</a>
                     </div>
                 </details>
@@ -436,17 +434,14 @@ safe-outputs:
                 <details class="details">
                     <summary>Headers source-of-truth</summary>
                     <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>[
-  {
-    "for": "/*",
-    "values": {
-      "Content-Security-Policy": "default-src 'self'; ...",
-      "X-Frame-Options": "DENY"
-    }
-  }
-]</code></pre></div>
-                        <p class="details__hint">The Worker imports this JSON and applies per-path headers on every response. <code>server.js</code> (local dev / DAST) and the CSP-drift gate read the same file. One source of truth for prod and local.</p>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/worker/headers.json" rel="noopener noreferrer">View worker/headers.json →</a>
+                        <div class="codeblock codeblock--yaml"><pre><code>/*
+  Content-Security-Policy: default-src 'self'; ...
+  X-Frame-Options: DENY
+
+/og-image.png
+  Cross-Origin-Resource-Policy: cross-origin</code></pre></div>
+                        <p class="details__hint">Cloudflare's static-asset pipeline serves this file natively per request. <code>server.js</code> (local dev / DAST) parses the same file and the CSP-drift gate reads it too. One source of truth for prod and local.</p>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/app/_headers" rel="noopener noreferrer">View app/_headers →</a>
                     </div>
                 </details>
             </div>

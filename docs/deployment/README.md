@@ -4,12 +4,14 @@ How the SlopStopper site ships to production.
 
 ## Overview
 
-The site is hosted on Cloudflare. A Cloudflare Worker serves the static
-files in [`app/`](../../app/) via the `[assets]` binding and applies the
-per-path security headers defined in
-[`worker/headers.json`](../../worker/headers.json). **Cloudflare Workers
-Builds** (Cloudflare's Git integration) handles the build and deploy on
-every push and PR — there is **no** deploy workflow in this repo.
+The site is hosted on Cloudflare. The static files in [`app/`](../../app/)
+are served directly by Cloudflare Workers Builds' static-asset pipeline:
+per-path security headers come from [`app/_headers`](../../app/_headers)
+and redirects come from [`app/_redirects`](../../app/_redirects) — both
+native Cloudflare conventions. No Worker code is needed.
+**Cloudflare Workers Builds** (Cloudflare's Git integration) handles the
+build and deploy on every push and PR — there is **no** deploy workflow
+in this repo.
 
 ## Lifecycle
 
@@ -28,9 +30,9 @@ built-in capability with a GHA workflow only adds maintenance.
 
 | File | Purpose |
 | ---- | ------- |
-| [`wrangler.jsonc`](../../wrangler.jsonc) | Worker definition: name, compatibility date, entrypoint, `[assets]` binding pointing at `./app`. Workers Builds reads it. |
-| [`worker/index.ts`](../../worker/index.ts) | The Worker. Fetches the asset via `env.ASSETS.fetch(request)`, then applies headers from `worker/headers.json`. Also redirects `/feedback` → `/feedback.html`. |
-| [`worker/headers.json`](../../worker/headers.json) | Canonical header map. Three entries: `/*` (strict default), `/og-image.png` (cross-origin CORP), `/feedback.html` (Giscus CSP relaxation). The Worker, `server.js` and the CSP-drift gate all read this. |
+| [`wrangler.jsonc`](../../wrangler.jsonc) | Static-asset config: name, compatibility date, `assets.directory` pointing at `./app`, `html_handling: "auto-trailing-slash"` for native index resolution. Workers Builds reads it. |
+| [`app/_headers`](../../app/_headers) | Canonical header map. Three entries: `/*` (strict default), `/og-image.png` (cross-origin CORP), `/feedback.html` (Giscus CSP relaxation). Cloudflare serves it natively; `server.js` and the CSP-drift gate parse the same file. |
+| [`app/_redirects`](../../app/_redirects) | Native Cloudflare redirects. `/feedback /feedback.html 301` and `/ /index.html 200` (root rewrite). |
 
 The build command Workers Builds runs is `npm run build` (TypeScript
 compile of `src/` → `app/`). The pre-build asset render
@@ -81,7 +83,7 @@ runs locally before commits — the PNG outputs are checked in.
 
 You don't get a deploy workflow from `install.sh` — connect your
 repo in the Cloudflare dash and you're done. If you prefer a
-different host, delete `wrangler.jsonc` and `worker/` and wire up
-your own deploy. The header map in `worker/headers.json` is the only
-file the suite's CSP-drift gate cares about; everything else is
-optional.
+different host, delete `wrangler.jsonc` and wire up your own deploy.
+The header map in `app/_headers` (or `public/_headers` if that's
+where your build pipeline stages it) is the only file the suite's
+CSP-drift gate cares about; everything else is optional.

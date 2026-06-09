@@ -91,7 +91,7 @@ Workflow: `ss-hygiene-entry-files-check.yml` — runs on PRs/pushes touching `RE
 ### CSP Exceptions Drift Check
 
 Validates that every per-path CSP relaxation in
-[`worker/headers.json`](../../worker/headers.json) has a matching documented
+[`app/_headers`](../../app/_headers) has a matching documented
 entry in [`docs/security/CSP_EXCEPTIONS.md`](../security/CSP_EXCEPTIONS.md),
 and vice versa. Fails the build if either side has an entry the other lacks.
 
@@ -106,7 +106,7 @@ task ss:hygiene:csp-exceptions
 ```
 
 Workflow: `ss-hygiene-csp-exceptions-check.yml` — runs on PRs/pushes touching
-`worker/headers.json` or `docs/security/CSP_EXCEPTIONS.md`.
+`app/_headers` or `docs/security/CSP_EXCEPTIONS.md`.
 
 ## Quick Reference
 

@@ -91,10 +91,10 @@ app/feedback.css    ← Feedback styles
 app/copy.js         ← Runtime copy-button script (hand-authored, NOT compiled
                        from src/; opt-in via data-copyable on codeblocks)
 
-server.js           ← Local dev server (reads worker/headers.json, serves app/)
-wrangler.jsonc      ← Cloudflare Worker config: [assets] binding, compatibility date
-worker/index.ts     ← Worker entrypoint: fetches assets, applies headers
-worker/headers.json ← Canonical header map (CSP + COOP/COEP + …)
+app/_headers        ← Canonical header map (CSP + COOP/COEP + …), Cloudflare native
+app/_redirects      ← Path redirects (/feedback → /feedback.html, / → /index.html)
+server.js           ← Local dev server (parses app/_headers, serves app/)
+wrangler.jsonc      ← Static-asset config: directory + html_handling + compatibility date
 tsconfig.json       ← TypeScript config: src/ → app/
 ```
 

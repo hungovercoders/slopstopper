@@ -1,9 +1,10 @@
 /**
- * Static file server that reads security headers from worker/headers.json.
+ * Static file server that reads security headers from app/_headers.
  *
- * worker/headers.json is the single source of truth — the Cloudflare Worker
- * (worker/index.ts) and the CSP-drift gate (.ss/scripts/check-csp-exceptions.py)
- * read the same file. Used by DAST scanning and local development (`task start`).
+ * app/_headers is the single source of truth post-Phase-0 migration —
+ * Cloudflare serves it natively in production, and the CSP-drift gate
+ * (.ss/scripts/check-csp-exceptions.py) parses the same file. Used by
+ * DAST scanning and local development (`task start`).
  */
 const http = require('http');
 const fs = require('fs');
@@ -12,21 +13,52 @@ const path = require('path');
 const PORT = process.env.PORT || 8080;
 const ROOT = process.cwd();
 const SERVE_ROOT = path.join(ROOT, 'app');
-const HEADERS_PATH = path.join(ROOT, 'worker', 'headers.json');
+const HEADERS_PATH = path.join(ROOT, 'app', '_headers');
 
+/**
+ * Parse a Cloudflare `_headers` file into a list of {for, values} rules
+ * — same {for, values} shape used elsewhere in this file. Format:
+ *   /path-pattern
+ *     Header-Name: value
+ *     Another-Header: value
+ *
+ *   /other-pattern
+ *     ...
+ * Path patterns are at column 0; header lines are indented; '#' is a comment.
+ */
 function loadHeaderRules(headersPath) {
+  let raw;
   try {
-    const raw = fs.readFileSync(headersPath, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      console.warn(`Warning: ${headersPath} is not an array — no headers will be applied`);
-      return [];
-    }
-    return parsed.filter(r => r && typeof r.for === 'string' && r.values && typeof r.values === 'object');
+    raw = fs.readFileSync(headersPath, 'utf8');
   } catch (e) {
     console.warn(`Warning: could not read ${headersPath} (${e.message}) — no headers will be applied`);
     return [];
   }
+  const rules = [];
+  let currentPath = null;
+  let currentValues = {};
+  const flush = () => {
+    if (currentPath !== null) rules.push({ for: currentPath, values: currentValues });
+    currentPath = null;
+    currentValues = {};
+  };
+  for (const line of raw.split('\n')) {
+    const stripped = line.trim();
+    if (!stripped || stripped.startsWith('#')) continue;
+    if (!line.startsWith(' ') && !line.startsWith('\t')) {
+      flush();
+      currentPath = stripped;
+    } else if (currentPath !== null) {
+      const colon = stripped.indexOf(':');
+      if (colon > 0) {
+        const name = stripped.slice(0, colon).trim();
+        const value = stripped.slice(colon + 1).trim();
+        currentValues[name] = value;
+      }
+    }
+  }
+  flush();
+  return rules;
 }
 
 /**

@@ -51,8 +51,9 @@ between these.
 | Adding a new `slopstopper-*` skill | New `.claude/skills/<name>/SKILL.md`, [`install-skill.sh`](./install-skill.sh) `SKILLS` array, [`docs/runbooks/INSTALL_SKILLS.md`](./docs/runbooks/INSTALL_SKILLS.md) (trigger-table + What-lands + Uninstall), `README.md` link, `app/index.html` link, "When to hand off" pointers in each existing skill's closing section |
 | Editing `install-skill.sh` | [`docs/runbooks/INSTALL_SKILLS.md`](./docs/runbooks/INSTALL_SKILLS.md) (keep description aligned), `README.md` + `app/index.html` if the install command line changes |
 | New page | Add HTML + page-specific CSS in `app/`; link `app/shared.css` first; copy header/nav/footer; add to nav on the other pages; add to `tests/smoke.spec.ts` and `tests/accessibility.spec.ts` |
-| Headers / CSP | `worker/headers.json` (single source of truth — CSP changes are blast-radius, touch DAST tests too) |
-| Worker behaviour | `worker/index.ts` (path matching, redirects); `wrangler.jsonc` (assets binding, compatibility date) |
+| Headers / CSP | `app/_headers` (single source of truth — Cloudflare serves it natively; `server.js` parses it locally; CSP changes are blast-radius, touch DAST tests too) |
+| Path redirects | `app/_redirects` (Cloudflare native — e.g. `/feedback /feedback.html 301`) |
+| Static-asset serving config | `wrangler.jsonc` (`assets.directory`, `html_handling`, `not_found_handling`) |
 
 The right-hand column flags the [skill trio](./.claude/skills/) wherever a change would drift any of the three from reality — they name specific workflows, tasks and env vars, and silently rot if those change without them. Each skill's Step 10 (or equivalent closing section) carries the same instruction in the other direction.
 

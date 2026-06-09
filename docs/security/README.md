@@ -23,7 +23,7 @@ weakening the site-wide CSP.
 The full pattern — and the live list of exceptions — is in
 [`CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md). The
 [`ss:hygiene:csp-exceptions`](../../Taskfile.ss.yml) check enforces drift
-between `worker/headers.json` and that document.
+between `app/_headers` and that document.
 
 **For adopters:** this is the pattern to reuse the moment your site needs
 GTM, Sentry, Intercom or any analytics tag. Copy the schema, drop the
@@ -186,10 +186,10 @@ task ss:security:dast -- http://localhost:8080
 The DAST gate in this template (driven by [`.ss/scripts/check-dast-alerts.py`](../../.ss/scripts/check-dast-alerts.py)) consults [`docs/security/CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md) on every run:
 
 - **No `CSP_EXCEPTIONS.md` file?** Gate behaves exactly like a vanilla riskcode ≥ 2 cutoff — nothing changes for you. Adopters with no third-party scripts can ignore this section entirely.
-- **You added a third-party widget (GTM, Sentry, Intercom, Giscus…)?** Add a per-path entry to `worker/headers.json` for the affected path, *and* document it under `## Exceptions` in `CSP_EXCEPTIONS.md` using the schema in that file. Once it's documented, ZAP's CSP findings on that exact path stop blocking the build. They still appear in the PR comment under a separate "🛡 Documented CSP exceptions" section so they stay visible in review.
+- **You added a third-party widget (GTM, Sentry, Intercom, Giscus…)?** Add a per-path entry to `app/_headers` for the affected path, *and* document it under `## Exceptions` in `CSP_EXCEPTIONS.md` using the schema in that file. Once it's documented, ZAP's CSP findings on that exact path stop blocking the build. They still appear in the PR comment under a separate "🛡 Documented CSP exceptions" section so they stay visible in review.
 - **What still blocks even with an exception?** Any non-CSP finding (XSS, missing other headers, CSRF, etc.) on the same path; any finding at all on a non-documented path; any High-severity (riskcode 3) finding anywhere — including CSP High on a documented path. The exception only relaxes the *Medium-CSP-on-this-path* case; the rest of DAST coverage is unchanged.
 
-The companion check `ss:hygiene:csp-exceptions` (workflow `ss-hygiene-csp-exceptions-check.yml`) keeps `worker/headers.json` and `CSP_EXCEPTIONS.md` in sync — if either side drifts, the build fails before DAST even runs.
+The companion check `ss:hygiene:csp-exceptions` (workflow `ss-hygiene-csp-exceptions-check.yml`) keeps `app/_headers` and `CSP_EXCEPTIONS.md` in sync — if either side drifts, the build fails before DAST even runs.
 
 ---
 

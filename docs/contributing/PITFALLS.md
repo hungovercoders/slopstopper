@@ -31,7 +31,7 @@ before; the rule is "do the obvious thing the obvious way."
 - **Adding any external resource.** CSP blocks it silently in
   production; test in DevTools first. If the resource is genuinely
   required, open a per-path exception in
-  [`worker/headers.json`](../../worker/headers.json) and document it
+  [`app/_headers`](../../app/_headers) and document it
   in [`docs/security/CSP_EXCEPTIONS.md`](../security/CSP_EXCEPTIONS.md)
   — the `ss:hygiene:csp-exceptions` check fails the build if they
   drift apart.

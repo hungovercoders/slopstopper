@@ -4,24 +4,25 @@
 CSP-Exceptions Drift Detector
 
 The SlopStopper site ships a strict Content-Security-Policy on every
-path (the `/*` rule in `worker/headers.json`). Per-page CSP relaxations
-are permitted but must be documented in `docs/security/CSP_EXCEPTIONS.md`.
+path (the `/*` rule in `app/_headers`). Per-page CSP relaxations are
+permitted but must be documented in `docs/security/CSP_EXCEPTIONS.md`.
 
 This script enforces the contract:
 
-- Every non-`/*` entry in `worker/headers.json` whose `Content-Security-Policy`
+- Every non-`/*` entry in `app/_headers` whose `Content-Security-Policy`
   adds external origins must have a matching `## /<path>` heading in
   CSP_EXCEPTIONS.md
 - Every origin allowed by the CSP entry must be listed under
   `**Origin allowed:**` for that heading
 - Every CSP_EXCEPTIONS.md heading must correspond to a real
-  `worker/headers.json` entry (catches stale documentation)
+  `app/_headers` entry (catches stale documentation)
 
 Generates a report at .ss/reports/csp/csp-exceptions-report.{md,json}
 mirroring the docs-accuracy check.
 
 Exit codes:
-  0 — worker/headers.json and CSP_EXCEPTIONS.md agree
+  0 — app/_headers and CSP_EXCEPTIONS.md agree (or no headers file
+      exists, in which case the check has nothing to guard and skips)
   1 — drift detected (details in report)
   2 — required input files missing
 """
@@ -33,7 +34,7 @@ import re
 import sys
 from pathlib import Path
 
-HEADERS_JSON = Path("worker/headers.json")
+HEADERS_FILE = Path("app/_headers")
 EXCEPTIONS_DOC = Path("docs/security/CSP_EXCEPTIONS.md")
 REPORT_DIR = Path(".ss/reports/csp")
 
@@ -52,25 +53,58 @@ HEADING_RE = re.compile(r"^###\s+`?(/[^\s`]+)`?\s*$")
 FIELD_RE = re.compile(r"^-\s*\*\*([^:*]+):\*\*\s*(.*)$")
 
 
-# ── worker/headers.json reader ─────────────────────────────────────
+# ── _headers (Cloudflare format) reader ────────────────────────────
 
-def load_headers_json(headers_path: Path) -> list[dict]:
-    """Return list of {for: str, csp: str|None} for each entry in worker/headers.json."""
+def load_headers_file(headers_path: Path) -> list[dict]:
+    """Return list of {for: str, csp: str|None} for each rule block in a Cloudflare _headers file.
+
+    Format:
+        /path-pattern
+          Header-Name: value
+          Another-Header: value
+
+        /other-pattern
+          ...
+
+    Path patterns are at column 0; header lines are indented. Blank lines
+    and a new path-pattern at column 0 end the current block. Lines
+    starting with `#` are comments.
+    """
     if not headers_path.exists():
         return []
-    raw = json.loads(headers_path.read_text())
-    if not isinstance(raw, list):
-        return []
     rules: list[dict] = []
-    for entry in raw:
-        if not isinstance(entry, dict):
+    current_path: str | None = None
+    current_headers: dict[str, str] = {}
+
+    def flush() -> None:
+        nonlocal current_path, current_headers
+        if current_path is not None:
+            csp = current_headers.get("Content-Security-Policy")
+            rules.append({"for": current_path, "csp": csp})
+        current_path = None
+        current_headers = {}
+
+    for raw in headers_path.read_text().splitlines():
+        line = raw.rstrip()
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            # Blank or comment — don't end the block; comments inside a
+            # block are permitted by the Cloudflare format. Blank lines
+            # only end blocks if followed by a new path pattern, which
+            # the next iteration handles.
             continue
-        path = entry.get("for")
-        values = entry.get("values") or {}
-        if not isinstance(path, str) or not isinstance(values, dict):
+        # Path pattern: lives at column 0 (no leading whitespace).
+        if not line.startswith((" ", "\t")):
+            flush()
+            current_path = stripped
             continue
-        csp = values.get("Content-Security-Policy")
-        rules.append({"for": path, "csp": csp if isinstance(csp, str) else None})
+        # Header line: must be indented and contain a colon.
+        if current_path is None or ":" not in stripped:
+            continue
+        name, _, value = stripped.partition(":")
+        current_headers[name.strip()] = value.strip()
+
+    flush()
     return rules
 
 
@@ -155,14 +189,14 @@ def _headers_exception_map(rules: list[dict]) -> dict[str, set[str]]:
 
 
 def _issues_for_documented_path(path: str, required: set[str], entry: dict) -> list[dict]:
-    """All issues for a path that exists in both worker/headers.json and the doc."""
+    """All issues for a path that exists in both app/_headers and the doc."""
     issues: list[dict] = []
     missing_origins = required - entry["origins"]
     if missing_origins:
         issues.append({
             "severity": "error",
             "path": path,
-            "message": f"`{path}` allows {', '.join(sorted(missing_origins))} in worker/headers.json but those origins are not listed in CSP_EXCEPTIONS.md",
+            "message": f"`{path}` allows {', '.join(sorted(missing_origins))} in app/_headers but those origins are not listed in CSP_EXCEPTIONS.md",
         })
     missing_fields = REQUIRED_FIELDS - entry["fields_seen"]
     if missing_fields:
@@ -197,25 +231,25 @@ def compare(rules: list[dict], doc_entries: dict[str, dict]) -> list[dict]:
     issues: list[dict] = []
     headers_map = _headers_exception_map(rules)
 
-    # 1) Every headers.json exception must have a matching doc heading covering its origins
+    # 1) Every _headers exception must have a matching doc heading covering its origins
     for path, required in headers_map.items():
         entry = doc_entries.get(path)
         if entry is None:
             issues.append({
                 "severity": "error",
                 "path": path,
-                "message": f"`{path}` in worker/headers.json allows external origins ({', '.join(sorted(required))}) but has no entry in CSP_EXCEPTIONS.md",
+                "message": f"`{path}` in app/_headers allows external origins ({', '.join(sorted(required))}) but has no entry in CSP_EXCEPTIONS.md",
             })
             continue
         issues.extend(_issues_for_documented_path(path, required, entry))
 
-    # 2) Every doc heading must correspond to a real worker/headers.json entry (catch stale docs)
+    # 2) Every doc heading must correspond to a real app/_headers entry (catch stale docs)
     for path in doc_entries:
         if path not in headers_map:
             issues.append({
                 "severity": "error",
                 "path": path,
-                "message": f"`{path}` is documented in CSP_EXCEPTIONS.md but no matching CSP exception exists in worker/headers.json",
+                "message": f"`{path}` is documented in CSP_EXCEPTIONS.md but no matching CSP exception exists in app/_headers",
             })
 
     return issues
@@ -252,8 +286,8 @@ def _md_fix_section() -> list[str]:
         "## How to Fix",
         "",
         "- **Missing doc entry** → add a `### \\`/path\\`` heading under `## Exceptions` in `docs/security/CSP_EXCEPTIONS.md` with all required fields.",
-        "- **Mismatched origins** → make `Origin allowed` / `Directives added` in the doc list every external origin in the corresponding `worker/headers.json` entry.",
-        "- **Stale doc entry** → remove the heading, or restore the matching entry in `worker/headers.json`.",
+        "- **Mismatched origins** → make `Origin allowed` / `Directives added` in the doc list every external origin in the corresponding `app/_headers` entry.",
+        "- **Stale doc entry** → remove the heading, or restore the matching entry in `app/_headers`.",
         "- **Placeholder SRI** → recompute with the procedure documented in `CSP_EXCEPTIONS.md` and update both the doc and `app/feedback.html`.",
         "",
     ]
@@ -266,11 +300,11 @@ def _write_markdown_report(issues: list[dict], summary: dict) -> None:
         f"**Status:** {_overall_status(issues)}",
         "",
         f"- Documented exceptions in `docs/security/CSP_EXCEPTIONS.md`: {summary['doc_entries']}",
-        f"- CSP exceptions in `worker/headers.json` (non-`/*`): {summary['headers_exceptions']}",
+        f"- CSP exceptions in `app/_headers` (non-`/*`): {summary['headers_exceptions']}",
         "",
     ]
     if not issues:
-        lines.extend(["No drift detected. `worker/headers.json` and `CSP_EXCEPTIONS.md` agree.", ""])
+        lines.extend(["No drift detected. `app/_headers` and `CSP_EXCEPTIONS.md` agree.", ""])
     else:
         lines.extend(_md_issue_section("## ❌ Errors", "error", issues))
         lines.extend(_md_issue_section("## ⚠️ Warnings", "warn", issues))
@@ -288,7 +322,7 @@ def write_reports(issues: list[dict], summary: dict) -> None:
 
 def _print_results(headers_count: int, doc_count: int, issues: list[dict]) -> None:
     print("🔐 CSP exceptions check")
-    print(f"   worker/headers.json CSP exceptions: {headers_count}")
+    print(f"   app/_headers CSP exceptions: {headers_count}")
     print(f"   documented in CSP_EXCEPTIONS.md: {doc_count}")
     print("━" * 60)
     if not issues:
@@ -301,14 +335,18 @@ def _print_results(headers_count: int, doc_count: int, issues: list[dict]) -> No
 
 
 def main() -> int:
-    if not HEADERS_JSON.exists():
-        print("❌ worker/headers.json not found", file=sys.stderr)
-        return 2
+    # If no headers file exists at all, the check has nothing to guard.
+    # Skip gracefully rather than hard-failing — adopters who don't use the
+    # _headers pattern (some manage headers via framework middleware) get
+    # a clean skip instead of a noisy red.
+    if not HEADERS_FILE.exists():
+        print(f"ℹ  {HEADERS_FILE} not found — no headers file to check, skipping.")
+        return 0
     if not EXCEPTIONS_DOC.exists():
         print("❌ docs/security/CSP_EXCEPTIONS.md not found", file=sys.stderr)
         return 2
 
-    rules = load_headers_json(HEADERS_JSON)
+    rules = load_headers_file(HEADERS_FILE)
     doc_entries = parse_exceptions_doc(EXCEPTIONS_DOC)
     headers_count = len(_headers_exception_map(rules))
     issues = compare(rules, doc_entries)

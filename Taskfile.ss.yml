@@ -1260,9 +1260,9 @@ tasks:
     silent: false
 
   hygiene:csp-exceptions:
-    desc: Validate per-page CSP relaxations in worker/headers.json match docs/security/CSP_EXCEPTIONS.md
+    desc: Validate per-page CSP relaxations in app/_headers match docs/security/CSP_EXCEPTIONS.md
     summary: |
-      Parses worker/headers.json and docs/security/CSP_EXCEPTIONS.md and fails if
+      Parses app/_headers and docs/security/CSP_EXCEPTIONS.md and fails if
       either side has a per-path CSP exception the other doesn't document.
 
       Default site CSP is strict (`default-src 'self'; script-src 'self'`).
