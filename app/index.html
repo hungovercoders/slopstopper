@@ -119,18 +119,18 @@
         <section class="section" id="claude-code-skill">
             <span class="kicker">Claude Code users</span>
             <h2>Let the agent drive the install.</h2>
-            <p class="lede">A companion <a href="https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/install-slopstopper/SKILL.md" rel="noopener noreferrer">install-slopstopper skill</a> drops into your Claude Code profile so any project can ask the agent to add SlopStopper — pre-flight, install command, URL config, local-first verification loop, forward-looking gotcha table.</p>
+            <p class="lede">A trio of companion skills — <a href="https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-install/SKILL.md" rel="noopener noreferrer">slopstopper-install</a>, <a href="https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-update/SKILL.md" rel="noopener noreferrer">slopstopper-update</a>, <a href="https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-triage/SKILL.md" rel="noopener noreferrer">slopstopper-triage</a> — drops into your Claude Code profile so any project can ask the agent to add, refresh or triage SlopStopper. Claude Code auto-picks the right skill per prompt.</p>
             <div class="codeblock codeblock--sh" role="region" aria-label="Skill install command" data-copyable>
                 <pre><code>curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash</code></pre>
             </div>
             <details class="details">
                 <summary>What does this do?</summary>
                 <div class="details__body">
-                    <p>The script writes a single file — <code>~/.claude/skills/install-slopstopper/SKILL.md</code> — that Claude Code auto-discovers across every project on your machine. Any prompt asking to add SlopStopper (e.g. "install slopstopper", "add the slopstopper quality suite") triggers the skill, which walks the install end-to-end. Re-run any time to refresh to the latest version.</p>
+                    <p>The script writes three files — one per skill — under <code>~/.claude/skills/slopstopper-*/SKILL.md</code>, which Claude Code auto-discovers across every project on your machine. Different prompts trigger different skills: "install slopstopper" → <code>slopstopper-install</code>; "refresh slopstopper" → <code>slopstopper-update</code>; "fix this failing slopstopper check" → <code>slopstopper-triage</code>. Re-run any time to refresh all three to the latest version.</p>
                     <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/install-skill.sh" rel="noopener noreferrer">View install-skill.sh on GitHub →</a>
                 </div>
             </details>
-            <p class="docs-pointer">Full runbook: <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/runbooks/INSTALL_SKILL.md" rel="noopener noreferrer">docs/runbooks/INSTALL_SKILL.md →</a></p>
+            <p class="docs-pointer">Full runbook: <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/runbooks/INSTALL_SKILLS.md" rel="noopener noreferrer">docs/runbooks/INSTALL_SKILLS.md →</a></p>
         </section>
 
         <section class="section">

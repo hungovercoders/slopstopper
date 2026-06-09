@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# install-skill.sh — install the SlopStopper Claude Code skill.
+# install-skill.sh — install the SlopStopper Claude Code skills.
 #
 # The companion to install.sh: install.sh drops the quality suite into a
-# *repo*, this script drops the install-slopstopper skill into your
-# Claude Code *user profile* so it's available in every project on this
-# machine. Run it once per machine.
+# *repo*, this script drops the SlopStopper skill trio into your Claude
+# Code *user profile* so they're available in every project on this
+# machine. Run it once per machine; re-run any time to refresh.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash
@@ -14,19 +14,32 @@
 #   bash install-skill.sh
 #
 # What lands:
-#   ~/.claude/skills/install-slopstopper/SKILL.md
+#   ~/.claude/skills/slopstopper-install/SKILL.md   # first-time install
+#   ~/.claude/skills/slopstopper-update/SKILL.md    # refresh an existing install
+#   ~/.claude/skills/slopstopper-triage/SKILL.md    # diagnose a failing check
+#
+# Migration:
+#   If a previous version of this script installed the skill at
+#   ~/.claude/skills/install-slopstopper/, this script removes that
+#   obsolete directory after installing the trio. The single-skill name
+#   is replaced by `slopstopper-install` in the trio layout.
 #
 # What this affects:
-#   Nothing outside ~/.claude/skills/install-slopstopper/. Re-running the
-#   script overwrites the SKILL.md in place so you always get the latest
-#   guidance — the skill is small, self-contained, and safe to refresh.
+#   Nothing outside ~/.claude/skills/slopstopper-*/. Re-running the
+#   script overwrites each SKILL.md in place only if the upstream
+#   content differs — safe to refresh on a schedule.
 
 set -euo pipefail
 
 REPO_RAW="https://raw.githubusercontent.com/hungovercoders/slopstopper/main"
-SKILL_PATH=".claude/skills/install-slopstopper/SKILL.md"
-DEST_DIR="${HOME}/.claude/skills/install-slopstopper"
-DEST_FILE="${DEST_DIR}/SKILL.md"
+SKILLS=(
+  "slopstopper-install"
+  "slopstopper-update"
+  "slopstopper-triage"
+)
+OBSOLETE_SKILLS=(
+  "install-slopstopper"
+)
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,67 +52,94 @@ sep() { echo "──────────────────────
 
 # ── preflight ────────────────────────────────────────────────────────────────
 
-command -v curl >/dev/null 2>&1 || error "curl is required to fetch the skill. Install it and re-run."
+command -v curl >/dev/null 2>&1 || error "curl is required to fetch the skills. Install it and re-run."
 
 if [ ! -d "${HOME}/.claude" ]; then
   warn "${HOME}/.claude does not exist yet."
   info "That's fine — this script will create the skills directory. If you"
-  info "haven't installed Claude Code, Claude Code will pick the skill up"
+  info "haven't installed Claude Code, Claude Code will pick the skills up"
   info "automatically once you do (https://claude.com/claude-code)."
 fi
 
 sep
-echo "  🧠  SlopStopper — installing the Claude Code skill"
-echo "  Source : ${REPO_RAW}/${SKILL_PATH}"
-echo "  Target : ${DEST_FILE}"
+echo "  🧠  SlopStopper — installing the Claude Code skill trio"
+echo "  Source : ${REPO_RAW}/.claude/skills/<skill>/SKILL.md"
+echo "  Target : ${HOME}/.claude/skills/<skill>/SKILL.md"
 sep
 
-# ── install ──────────────────────────────────────────────────────────────────
+# ── install each skill ──────────────────────────────────────────────────────
 
-mkdir -p "${DEST_DIR}"
+# Atomic fetch via temp file per skill: only overwrite the destination
+# if the download succeeded AND looks like a Claude Code skill (frontmatter
+# present). An interrupted install can't leave a half-file behind.
+install_skill() {
+  local skill="$1"
+  local src="${REPO_RAW}/.claude/skills/${skill}/SKILL.md"
+  local dest_dir="${HOME}/.claude/skills/${skill}"
+  local dest_file="${dest_dir}/SKILL.md"
+  local tmp_file
+  tmp_file="$(mktemp)"
+  # shellcheck disable=SC2064 # we want $tmp_file expanded now, not on EXIT
+  trap "rm -f \"${tmp_file}\"" RETURN
 
-# Atomic fetch via temp file: only overwrite the destination if the
-# download succeeded, so an interrupted install can't leave a half-file
-# behind.
-TMP_FILE="$(mktemp)"
-trap 'rm -f "${TMP_FILE}"' EXIT
+  mkdir -p "${dest_dir}"
 
-if ! curl -fsSL "${REPO_RAW}/${SKILL_PATH}" -o "${TMP_FILE}"; then
-  error "Failed to download SKILL.md from ${REPO_RAW}/${SKILL_PATH}"
-fi
-
-# Sanity-check the file looks like a Claude Code skill (frontmatter present)
-# before we overwrite anything.
-if ! head -n 1 "${TMP_FILE}" | grep -q "^---$"; then
-  error "Downloaded file does not look like a Claude Code skill (no frontmatter). Aborting."
-fi
-
-if [ -f "${DEST_FILE}" ]; then
-  if cmp -s "${TMP_FILE}" "${DEST_FILE}"; then
-    success "Skill already up to date — no changes."
-  else
-    mv "${TMP_FILE}" "${DEST_FILE}"
-    success "Skill refreshed (existing SKILL.md was older)."
+  if ! curl -fsSL "${src}" -o "${tmp_file}"; then
+    error "Failed to download ${skill}/SKILL.md from ${src}"
   fi
-else
-  mv "${TMP_FILE}" "${DEST_FILE}"
-  success "Skill installed."
-fi
+
+  if ! head -n 1 "${tmp_file}" | grep -q "^---$"; then
+    error "Downloaded ${skill}/SKILL.md does not look like a Claude Code skill (no frontmatter). Aborting."
+  fi
+
+  if [ -f "${dest_file}" ]; then
+    if cmp -s "${tmp_file}" "${dest_file}"; then
+      success "${skill} already up to date — no changes."
+    else
+      mv "${tmp_file}" "${dest_file}"
+      success "${skill} refreshed."
+    fi
+  else
+    mv "${tmp_file}" "${dest_file}"
+    success "${skill} installed."
+  fi
+}
+
+for skill in "${SKILLS[@]}"; do
+  install_skill "${skill}"
+done
+
+# ── clean up obsolete skill directories ──────────────────────────────────────
+
+# Adopters who ran an earlier version of this script have an obsolete skill
+# at the old path. Remove it so their `~/.claude/skills/` only contains the
+# current trio. Safe because the trio supersedes the old one; we never
+# delete anything we didn't put there ourselves.
+for obsolete in "${OBSOLETE_SKILLS[@]}"; do
+  obsolete_dir="${HOME}/.claude/skills/${obsolete}"
+  if [ -d "${obsolete_dir}" ]; then
+    rm -rf "${obsolete_dir}"
+    info "Removed obsolete skill: ${obsolete} (replaced by slopstopper-install)"
+  fi
+done
 
 # ── post-install guidance ────────────────────────────────────────────────────
 
 sep
 echo ""
-echo "  🎉 Skill installed!"
+echo "  🎉 Skill trio installed!"
 echo ""
-echo "  Claude Code will auto-discover it in every project on this machine."
-echo "  Any prompt that asks to add SlopStopper — e.g. \"install slopstopper\""
-echo "  or \"add the slopstopper quality suite\" — will invoke the skill."
+echo "  Claude Code will auto-discover each one in every project on this"
+echo "  machine. The skill that triggers depends on what the prompt asks:"
 echo ""
-echo "  To install SlopStopper into a repo:"
+echo "    • \"install slopstopper\"           → slopstopper-install"
+echo "    • \"refresh / upgrade slopstopper\" → slopstopper-update"
+echo "    • \"fix this failing slopstopper check\" → slopstopper-triage"
+echo ""
+echo "  To install SlopStopper into a repo for the first time:"
 echo "    cd <your-repo>"
 echo "    curl -fsSL ${REPO_RAW}/install.sh | bash"
 echo ""
-echo "  Re-running this script later refreshes the skill to latest."
+echo "  Re-running this script later refreshes the trio to latest."
 echo ""
 sep

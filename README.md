@@ -108,7 +108,7 @@ task --list
 
 **First-run note:** the first time you run any check (e.g. `task ss:hygiene:complexity`), SlopStopper auto-installs the underlying tool (Lizard, Semgrep, Trivy, Gitleaks…) via pip or curl. Expect a one-time delay — subsequent runs are fast.
 
-**Using Claude Code?** Install the companion [`install-slopstopper`](./.claude/skills/install-slopstopper/SKILL.md) skill once per machine — Claude Code then auto-runs the install in any project on prompt. Runbook: [`docs/runbooks/INSTALL_SKILL.md`](./docs/runbooks/INSTALL_SKILL.md).
+**Using Claude Code?** Install the [`slopstopper-install`](./.claude/skills/slopstopper-install/SKILL.md) / [`slopstopper-update`](./.claude/skills/slopstopper-update/SKILL.md) / [`slopstopper-triage`](./.claude/skills/slopstopper-triage/SKILL.md) skill trio once per machine — Claude Code auto-picks the right one per prompt. Runbook: [`docs/runbooks/INSTALL_SKILLS.md`](./docs/runbooks/INSTALL_SKILLS.md).
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash
