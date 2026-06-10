@@ -38,8 +38,9 @@ unhelpful. The honest answer is a pattern:
    documented exception is correct behaviour — that's how you find
    *un*documented relaxations later. The DAST workflow on this repo
    consults this file via [the DAST gate script](../../.ss/scripts/check-dast-alerts.py):
-   ZAP CSP findings whose URL path is listed under `## Exceptions`
-   below are reported separately and do **not** fail the build, while
+   ZAP CSP findings whose URL path matches an entry under `## Exceptions`
+   below (exact paths and globs like `/*`, `/blog/*` are both supported)
+   are reported separately and do **not** fail the build, while
    any non-CSP finding or any High-severity (riskcode 3) CSP finding
    still blocks. PR comments call out the swallowed findings so they
    stay visible in review.
@@ -108,14 +109,15 @@ Re-run when the widget breaks after a third-party release.
 
 ## Adopters: how to use this in your own repo
 
-1. Keep your default `/*` entry in `worker/headers.json` (or your host's
-   equivalent) strict by default
+1. Keep your default `/*` entry in your headers source strict by default
 2. Add a new entry per page that needs a relaxation; **list the full
    replacement directives**, not just additions
-3. Add an entry to this file mirroring the schema above
+3. Add an entry to this file mirroring the schema above (paths support globs — `/*` covers all pages, `/blog/*` covers a subtree)
 4. Install `ss-hygiene-csp-exceptions-check.yml` via the SlopStopper
-   installer — the check enforces drift between `worker/headers.json`
-   and this file
+   installer. Configure `headers.source` (and `headers.format`) in
+   `.slopstopper.yml` to tell the check where your headers live —
+   `public/_headers`, `worker/headers.json`, etc. See
+   `.slopstopper.yml.example` for the full `headers:` block.
 5. Keep DAST in your pipeline. The SlopStopper DAST gate
    (`.ss/scripts/check-dast-alerts.py`) already consults this file:
    Medium-severity CSP findings on documented paths are surfaced in the

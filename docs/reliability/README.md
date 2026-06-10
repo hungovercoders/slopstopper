@@ -25,6 +25,20 @@ All reliability checks read their target URL and audit scope from environment va
 | `SEO_REQUIRE_OG_IMAGE` | `1` | SEO metatag check — set `0` to skip og:image presence check |
 | `SEO_VERIFY_OG_IMAGE` | `1` | SEO metatag check — set `0` to skip HEAD-fetching og:image |
 
+### Configuring pages via `.slopstopper.yml`
+
+For persistent per-repo page lists, use the `pages:` block in `.slopstopper.yml` instead of setting env vars in every workflow file. CI workflows read from it automatically:
+
+```yaml
+pages:
+  smoke:         /,/features.html,/tools.html
+  accessibility: /,/features.html
+  seo:           /,/features.html,/tools.html
+  broken_links:  /,/features.html,/tools.html
+```
+
+Env vars take precedence over `.slopstopper.yml` when both are set. `install.sh` seeds `.slopstopper.yml` with `pages.* = /` for all checks.
+
 ## Broken Link Checks
 
 The broken-link check can run against any site you provide via `BROKEN_LINKS_TEST_URL`.

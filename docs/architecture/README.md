@@ -36,6 +36,8 @@ slopstopper/
 ├── src/                      # TypeScript stubs (build target; runtime JS is limited to app/copy.js)
 ├── tests/                    # Playwright smoke + accessibility specs
 ├── install.sh                # Adopter installer
+├── .slopstopper.yml          # Adopter config: headers adapter, page lists, urls, node version
+├── .slopstopper.yml.example  # Fully-annotated schema reference
 ├── wrangler.jsonc            # Cloudflare Worker + [assets] binding
 ├── worker/                   # Cloudflare Worker — applies headers to every response
 │   ├── index.ts              # fetch handler: env.ASSETS.fetch + per-path headers
@@ -47,6 +49,21 @@ slopstopper/
 ├── AGENTS.md                 # Thin agent pointer (see docs/index.md map pattern)
 └── CONTRIBUTING.md → docs/contributing/README.md
 ```
+
+## Configuration (`.slopstopper.yml`)
+
+Adopter-specific tuning lives in `.slopstopper.yml` at the repo root. `install.sh` seeds this file once and never overwrites it, so knobs survive reinstalls. Slopstopper scripts and workflows read from it instead of requiring hardcoded values or env-var plumbing in every workflow file.
+
+| Key | Controls |
+|-----|----------|
+| `node_version` | Node.js version for all workflow `setup-node` steps. Set the matching GitHub repo variable to activate: `gh variable set SLOPSTOPPER_NODE_VERSION --body "$(yq '.node_version' .slopstopper.yml)"` |
+| `headers.source` + `headers.format` | Path and format of the headers file the CSP-drift check reads. Shipped adapters: `json` (Cloudflare Worker `headers.json`), `cloudflare-text` (`_headers` format), `auto` (inferred from extension). Set `source: null` to skip the drift check entirely. |
+| `urls.production` / `urls.preview` | Base URLs for reliability + DAST workflows |
+| `pages.*` | Comma-separated page paths for each reliability check (smoke, accessibility, seo, broken_links) |
+| `smoke.og_image_path` | Path to the site-wide og:image; `''` skips the assertion |
+| `workflows.disabled` | Workflow filenames to exclude from this repo (persists across reinstalls) |
+
+The fully-annotated schema is in [`.slopstopper.yml.example`](../../.slopstopper.yml.example).
 
 ## C4 – Level 1 (System Context)
 

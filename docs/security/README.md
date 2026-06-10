@@ -171,6 +171,7 @@ task ss:security:dast -- http://localhost:8080
 | ZAP not available? | The workflow uses Docker to run ZAP — no installation needed in CI |
 | Don't want DAST checks? | Delete `.github/workflows/ss-security-dast-check.yml` |
 | All my PRs fail DAST because I had to embed GTM / Intercom / etc.? | Document the CSP relaxation in [`CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md). The gate will swallow CSP-class findings on documented paths. See "DAST + CSP exceptions" below. |
+| Non-CSP false positives (SRI on rotating CDN scripts, SQL disclosure on tutorial pages)? | Add a `.zap/rules.tsv` allowlist. See "Suppressing non-CSP false positives" below. |
 
 ### Risk Level Reference
 
@@ -186,10 +187,26 @@ task ss:security:dast -- http://localhost:8080
 The DAST gate in this template (driven by [`.ss/scripts/check-dast-alerts.py`](../../.ss/scripts/check-dast-alerts.py)) consults [`docs/security/CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md) on every run:
 
 - **No `CSP_EXCEPTIONS.md` file?** Gate behaves exactly like a vanilla riskcode ≥ 2 cutoff — nothing changes for you. Adopters with no third-party scripts can ignore this section entirely.
-- **You added a third-party widget (GTM, Sentry, Intercom, Giscus…)?** Add a per-path entry to `worker/headers.json` for the affected path, *and* document it under `## Exceptions` in `CSP_EXCEPTIONS.md` using the schema in that file. Once it's documented, ZAP's CSP findings on that exact path stop blocking the build. They still appear in the PR comment under a separate "🛡 Documented CSP exceptions" section so they stay visible in review.
+- **You added a third-party widget (GTM, Sentry, Intercom, Giscus…)?** Add a per-path entry to your headers source for the affected path, *and* document it under `## Exceptions` in `CSP_EXCEPTIONS.md` using the schema in that file. Once it's documented, ZAP's CSP findings on that path stop blocking the build. They still appear in the PR comment under a separate "🛡 Documented CSP exceptions" section so they stay visible in review. Paths support globs: `/*`, `/blog/*`, or an exact path all work.
 - **What still blocks even with an exception?** Any non-CSP finding (XSS, missing other headers, CSRF, etc.) on the same path; any finding at all on a non-documented path; any High-severity (riskcode 3) finding anywhere — including CSP High on a documented path. The exception only relaxes the *Medium-CSP-on-this-path* case; the rest of DAST coverage is unchanged.
 
-The companion check `ss:hygiene:csp-exceptions` (workflow `ss-hygiene-csp-exceptions-check.yml`) keeps `worker/headers.json` and `CSP_EXCEPTIONS.md` in sync — if either side drifts, the build fails before DAST even runs.
+The companion check `ss:hygiene:csp-exceptions` (workflow `ss-hygiene-csp-exceptions-check.yml`) keeps your headers source and `CSP_EXCEPTIONS.md` in sync — if either side drifts, the build fails before DAST even runs.
+
+### Suppressing non-CSP false positives (`.zap/rules.tsv`)
+
+Some DAST findings can't be resolved via CSP exceptions because they aren't CSP-class. Two common examples for content-heavy sites:
+
+- **SRI Missing (plugin 90003)** — GTM and similar analytics scripts rotate per container update; no stable SRI hash is viable.
+- **Source Code Disclosure - SQL (plugin 10099)** — ZAP flags SQL syntax in tutorial blog posts as if the app were leaking source code.
+
+`install.sh` seeds a `.zap/rules.tsv` at the repo root with these two rules commented out — uncomment the ones that apply and keep the `# why` comment as documentation:
+
+```
+90003	IGNORE	# SRI: GTM script rotates, no stable SRI hash viable
+10099	IGNORE	# SQL disclosure: false positive on tutorial blog posts with SQL code blocks
+```
+
+The `dast:analyze` task passes this file to ZAP via `-c` when it's present (ZAP records those alerts as IGNORE in its summary). The gate (`check-dast-alerts.py`) also reads the same file and swallows alerts whose plugin ID appears as IGNORE — so neither ZAP nor the gate will block the build for those findings. High-severity (riskcode 3) findings still block in all cases regardless of suppressions.
 
 ---
 
@@ -211,8 +228,9 @@ The DAST workflow:
 | `.github/workflows/ss-security-dast-check.yml` | GitHub Actions workflow |
 | `Taskfile.yml` (`dast*` tasks) | Local task runner config |
 | `.ss/scripts/generate-dast-md.py` | Report generator |
-| `.ss/scripts/check-dast-alerts.py` | Pass/fail gate — filters documented CSP exceptions from the blocker count |
+| `.ss/scripts/check-dast-alerts.py` | Pass/fail gate — filters documented CSP exceptions and `.zap/rules.tsv` suppressions from the blocker count |
 | `docs/security/CSP_EXCEPTIONS.md` | Single source of truth for per-path CSP relaxations (optional — gate handles absence) |
+| `.zap/rules.tsv` | Optional per-repo ZAP rule allowlist — IGNORE entries suppress specific non-CSP false-positive plugin IDs; seeded with examples by `install.sh` |
 | `.gitignore` | Excludes `.ss/reports/dast/` |
 
 ## Key Configuration Points
