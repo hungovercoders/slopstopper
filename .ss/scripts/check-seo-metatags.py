@@ -217,6 +217,38 @@ def rewrite_origin(url: str, new_base: str) -> str:
     return urllib.parse.urlunparse((new.scheme, new.netloc, src.path, src.params, src.query, src.fragment))
 
 
+def _maybe_rewrite_og_image(og_image_abs: str, og_image_base: Optional[str]) -> tuple[str, bool]:
+    """Return (url_to_HEAD, was_rewritten). Only rewrites when bases differ."""
+    if not og_image_base:
+        return og_image_abs, False
+    src_origin = urllib.parse.urlparse(og_image_abs).netloc
+    override_origin = urllib.parse.urlparse(og_image_base).netloc
+    if not src_origin or not override_origin or src_origin == override_origin:
+        return og_image_abs, False
+    return rewrite_origin(og_image_abs, og_image_base), True
+
+
+def _verify_og_image(
+    tags: dict[str, str],
+    page_url: str,
+    og_image_base: Optional[str],
+    issues: list[str],
+) -> Optional[dict]:
+    """HEAD-check og:image (after optional origin rewrite); update issues; return image_check dict."""
+    og_image_abs = urllib.parse.urljoin(page_url, tags["og:image"])
+    head_url, rewritten = _maybe_rewrite_og_image(og_image_abs, og_image_base)
+    ok, detail = head_ok(head_url)
+    if not ok:
+        via = f" (origin-rewritten from {og_image_abs})" if rewritten else ""
+        issues.append(f"og:image not reachable ({head_url}){via}: {detail}")
+    return {
+        "url": head_url,
+        "original_url": og_image_abs if rewritten else None,
+        "ok": ok,
+        "detail": detail,
+    }
+
+
 def check_page(
     base: str,
     path: str,
@@ -250,32 +282,9 @@ def check_page(
     validate_open_graph_tags(tags, issues, require_og_image)
     validate_twitter_tags(tags, issues, notes, require_og_image)
 
-    # Verify og:image is reachable
     image_check: Optional[dict] = None
     if tags["og:image"] and verify_og_image:
-        # Normalise relative og:image against page URL
-        og_image_abs = urllib.parse.urljoin(page_url, tags["og:image"])
-        head_url = og_image_abs
-        rewritten = False
-        # Pre-deploy mode: page hard-codes production origin in og:image,
-        # but we're testing against a local/preview base. Swap origins so
-        # the HEAD check hits the artefact actually being shipped.
-        if og_image_base:
-            src_origin = urllib.parse.urlparse(og_image_abs).netloc
-            override_origin = urllib.parse.urlparse(og_image_base).netloc
-            if src_origin and override_origin and src_origin != override_origin:
-                head_url = rewrite_origin(og_image_abs, og_image_base)
-                rewritten = True
-        ok, detail = head_ok(head_url)
-        image_check = {
-            "url": head_url,
-            "original_url": og_image_abs if rewritten else None,
-            "ok": ok,
-            "detail": detail,
-        }
-        if not ok:
-            via = f" (origin-rewritten from {og_image_abs})" if rewritten else ""
-            issues.append(f"og:image not reachable ({head_url}){via}: {detail}")
+        image_check = _verify_og_image(tags, page_url, og_image_base, issues)
 
     return {
         "url": page_url,
