@@ -386,18 +386,11 @@ tasks:
         # Create reports directory
         mkdir -p .ss/reports/complexity
         
-        # Run lizard and generate text report (intermediate). Invoke as
-        # `python3 -m lizard` to bypass PATH and dodge lz4's clashing binary.
-        python3 -m lizard . \
-          -x "tests/*" \
-          -x ".ss/tests/*" \
-          -x ".github/*" \
-          -x "node_modules/*" \
-          -x ".git/*" \
-          -o ".ss/reports/complexity/complexity-report-raw.txt" \
-          || true
-
-        # Generate CSV report for structured data
+        # Single CSV pass — generate-complexity-md.py computes the summary
+        # from CSV rows directly. Lizard's CLI output formats are mutually
+        # exclusive (text/--csv/--xml/--html), so the previous text+CSV
+        # pair re-scanned the entire codebase twice for no extra signal.
+        # `python3 -m lizard` bypasses PATH and dodges lz4's clashing binary.
         python3 -m lizard . \
           -x "tests/*" \
           -x ".ss/tests/*" \
