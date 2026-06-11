@@ -31,7 +31,10 @@ jobs:
           set -e
           pip install --upgrade pip
           pip install lizard
-          lizard --version
+          # Always invoke via `python3 -m lizard` so PATH shadowing by
+          # lz4's clashing binary can't bite (irrelevant on the GitHub
+          # runner, but keeps CI and local behaviour identical).
+          python3 -m lizard --version
         shell: bash
       
       - name: Install Task

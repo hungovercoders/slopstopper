@@ -337,6 +337,14 @@ seed_template ".zap/rules.tsv" \
   "$SCRIPT_DIR/templates/zap-rules.tsv.example" \
   "$TARGET_DIR/.zap/rules.tsv"
 
+# .markdownlint.json — defaults that let real docs pass (MD013 off, etc.)
+# task ss:hygiene:lint runs `npx markdownlint "docs/**/*.md"`; markdownlint
+# auto-discovers the closest config upward, so seeding at repo root works
+# whether the adopter calls it from root or from docs/.
+seed_template ".markdownlint.json" \
+  "$SCRIPT_DIR/templates/markdownlint.json.example" \
+  "$TARGET_DIR/.markdownlint.json"
+
 # .gitignore — append the slopstopper block if not already present.
 # Idempotent re-append: the block is bracketed with markers so re-runs
 # detect the existing block and skip rather than duplicate.
