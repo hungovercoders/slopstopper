@@ -615,10 +615,32 @@ tasks:
       - |
         if ! command -v trivy &> /dev/null; then
           echo "📦 Installing Trivy..."
-          
+
           INSTALL_SUCCESS=0
-          
-          if command -v apt-get &> /dev/null && command -v wget &> /dev/null; then
+
+          # Trivy's GitHub release artefacts follow the naming convention
+          #   trivy_<version>_<OS>-<ARCH>.tar.gz
+          # where OS ∈ {Linux, macOS, FreeBSD, ...} and ARCH ∈ {64bit, ARM64, ...}.
+          # Detect both up front so the GitHub-releases fallback works on
+          # macOS and ARM64 Linux as well as the original x86_64 Linux path.
+          OS_RAW="$(uname -s)"
+          ARCH_RAW="$(uname -m)"
+          case "$OS_RAW" in
+            Linux)   TRIVY_OS="Linux" ;;
+            Darwin)  TRIVY_OS="macOS" ;;
+            FreeBSD) TRIVY_OS="FreeBSD" ;;
+            *)       TRIVY_OS="" ;;
+          esac
+          case "$ARCH_RAW" in
+            x86_64|amd64)  TRIVY_ARCH="64bit" ;;
+            arm64|aarch64) TRIVY_ARCH="ARM64" ;;
+            i?86)          TRIVY_ARCH="32bit" ;;
+            *)             TRIVY_ARCH="" ;;
+          esac
+
+          # Prefer the platform's package manager on Linux (apt) and macOS (brew),
+          # falling back to a direct GitHub-releases download when neither applies.
+          if [ "$TRIVY_OS" = "Linux" ] && command -v apt-get &> /dev/null && command -v wget &> /dev/null; then
             echo "Trying apt-get install..."
             wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
             echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee /etc/apt/sources.list.d/trivy.list
@@ -626,32 +648,39 @@ tasks:
               INSTALL_SUCCESS=1
             fi
           fi
-          
-          if [ $INSTALL_SUCCESS -eq 0 ] && command -v curl &> /dev/null; then
-            echo "Trying GitHub releases install..."
+
+          if [ $INSTALL_SUCCESS -eq 0 ] && [ "$TRIVY_OS" = "macOS" ] && command -v brew &> /dev/null; then
+            echo "Trying brew install..."
+            if brew install aquasecurity/trivy/trivy; then
+              INSTALL_SUCCESS=1
+            fi
+          fi
+
+          if [ $INSTALL_SUCCESS -eq 0 ] && command -v curl &> /dev/null && [ -n "$TRIVY_OS" ] && [ -n "$TRIVY_ARCH" ]; then
+            echo "Trying GitHub releases install (${TRIVY_OS}-${TRIVY_ARCH})..."
             TRIVY_VERSION=$(curl -s https://api.github.com/repos/aquasecurity/trivy/releases/latest | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
             if [ -n "$TRIVY_VERSION" ]; then
               mkdir -p "$HOME/.local/bin"
-              if curl -sfL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" | tar -xz -C "$HOME/.local/bin" trivy; then
+              if curl -sfL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_${TRIVY_OS}-${TRIVY_ARCH}.tar.gz" | tar -xz -C "$HOME/.local/bin" trivy; then
                 export PATH="$PATH:$HOME/.local/bin"
                 INSTALL_SUCCESS=1
               fi
             fi
           fi
-          
+
           if [ $INSTALL_SUCCESS -eq 0 ]; then
-            echo "❌ Failed to install Trivy"
+            echo "❌ Failed to install Trivy automatically (OS=${OS_RAW}, arch=${ARCH_RAW})"
             echo "Please install Trivy manually:"
             echo "  - https://trivy.dev/latest/getting-started/installation/"
             exit 1
           fi
         fi
-        
+
         if ! command -v trivy &> /dev/null; then
           echo "❌ Trivy installed but not found in PATH"
           exit 1
         fi
-        
+
         TRIVY_VERSION=$(trivy --version 2>&1 | head -1)
         echo "✅ $TRIVY_VERSION"
     silent: false
