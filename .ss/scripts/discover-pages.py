@@ -155,12 +155,20 @@ def _resolve_child_sitemap(parent: Path, loc: str) -> Optional[Path]:
 
 
 def _extract_paths_from_sitemap_xml(path: Path, seen: set[Path]) -> list[str]:
-    """Read a sitemap XML file; recurse into sitemap-index files."""
+    """Read a sitemap XML file; recurse into sitemap-index files.
+
+    The sitemap is local trusted build output (dist/client/sitemap-index.xml
+    or sibling fallbacks) produced by the adopter's own build process —
+    never adversary-controlled. Stdlib ElementTree's default parser since
+    Python 3.7.1 does not resolve external entities, so XXE is moot.
+    Defusedxml is avoided to keep the no-deps invariant of .ss/scripts/.
+    """
     if path in seen:
         return []
     seen.add(path)
     try:
-        tree = ET.parse(path)
+        # nosemgrep: python.lang.security.use-defused-xml-parse.use-defused-xml-parse
+        tree = ET.parse(path)  # nosec B314
     except ET.ParseError as e:
         log(f"⚠️  Failed to parse sitemap {path}: {e}")
         return []
