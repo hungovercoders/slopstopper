@@ -846,8 +846,21 @@ tasks:
             exit 1
           fi
 
-          # Replace localhost with Docker gateway IP for access from container
-          TARGET="http://172.17.0.1:8080"
+          # Replace localhost with a host-routable address from inside the ZAP
+          # container. The bridge gateway 172.17.0.1 works on Linux Docker
+          # (including ubuntu-latest runners in CI), but Docker Desktop on
+          # macOS does not route to it. Detect Darwin and use the magic
+          # host.docker.internal hostname instead — Docker Desktop wires it
+          # automatically. Same trick works on Windows.
+          DOCKER_HOST_TARGET="172.17.0.1"
+          if [ "$(uname -s)" = "Darwin" ]; then
+            DOCKER_HOST_TARGET="host.docker.internal"
+          fi
+          # Extract the original port so adopters running on a non-8080 port
+          # still hit the right place.
+          ORIGINAL_PORT="$(echo "$TARGET" | sed -E 's|https?://[^:/]+:?([0-9]+)?.*|\1|')"
+          ORIGINAL_PORT="${ORIGINAL_PORT:-8080}"
+          TARGET="http://${DOCKER_HOST_TARGET}:${ORIGINAL_PORT}"
           echo "📍 Using Docker-compatible target: $TARGET"
         fi
         
