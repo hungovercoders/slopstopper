@@ -174,6 +174,13 @@ tasks:
           exit 1
         fi
 
+        # Resolve SEO_PAGES from .slopstopper.yml the same way CI does, so local
+        # runs aren't asymmetric. --event=local skips reliability.coverage.*
+        # modes (those are CI-event-shaped) and falls through to pages.seo or /.
+        if [ -z "${SEO_PAGES+x}" ] && [ -f .slopstopper.yml ]; then
+          export SEO_PAGES="$(python3 .ss/scripts/discover-pages.py seo --event=local)"
+        fi
+
         python3 .ss/scripts/check-seo-metatags.py
     silent: false
 
@@ -228,6 +235,11 @@ tasks:
 
         echo "♿ Running accessibility audit against: $TARGET"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        # Resolve ACCESSIBILITY_PAGES from .slopstopper.yml the same way CI does.
+        if [ -z "${ACCESSIBILITY_PAGES+x}" ] && [ -f .slopstopper.yml ]; then
+          export ACCESSIBILITY_PAGES="$(python3 .ss/scripts/discover-pages.py accessibility --event=local)"
+        fi
 
         ACCESSIBILITY_TEST_URL="$TARGET" npx playwright test --config=.ss/playwright.config.js .ss/tests/accessibility.spec.ts --reporter=list
     silent: false
@@ -284,6 +296,11 @@ tasks:
 
         echo "🔗 Running broken-link checks against: $TARGET"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        # Resolve BROKEN_LINKS_PAGES from .slopstopper.yml the same way CI does.
+        if [ -z "${BROKEN_LINKS_PAGES+x}" ] && [ -f .slopstopper.yml ]; then
+          export BROKEN_LINKS_PAGES="$(python3 .ss/scripts/discover-pages.py broken_links --event=local)"
+        fi
 
         BROKEN_LINKS_TEST_URL="$TARGET" npx playwright test --config=.ss/playwright.config.js .ss/tests/broken-links.spec.ts --reporter=list
     silent: false
