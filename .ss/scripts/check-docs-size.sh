@@ -113,7 +113,10 @@ python3 ".ss/scripts/generate-docs-size-report.py" \
   --avg-size-kb "$AVG_SIZE_KB" \
   --largest-files "$LARGEST_FILES" \
   --has-alerts "$HAS_ALERTS" \
-  --alerts "$ALERTS"
+  --alerts "$ALERTS" \
+  --max-total-size-kb "$MAX_TOTAL_SIZE_KB" \
+  --max-file-size-kb "$MAX_FILE_SIZE_KB" \
+  --max-files "$MAX_FILES"
 
 echo "📁 Reports saved to: .ss/reports/docs/"
 echo "   • docs-size-report.md (human-readable)"

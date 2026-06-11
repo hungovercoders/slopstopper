@@ -24,6 +24,9 @@ def main():
     parser.add_argument("--largest-files", type=str, required=True)
     parser.add_argument("--has-alerts", type=str, required=True)
     parser.add_argument("--alerts", type=str, default="")
+    parser.add_argument("--max-total-size-kb", type=int, required=True)
+    parser.add_argument("--max-file-size-kb", type=int, required=True)
+    parser.add_argument("--max-files", type=int, required=True)
 
     args = parser.parse_args()
 
@@ -63,9 +66,9 @@ def main():
 
     report += f"""## Thresholds
 
-- **Max Total Size:** 150 KB
-- **Max File Size:** 20 KB
-- **Max File Count:** 15
+- **Max Total Size:** {args.max_total_size_kb} KB
+- **Max File Size:** {args.max_file_size_kb} KB
+- **Max File Count:** {args.max_files}
 
 ## Recommendations
 

@@ -41,7 +41,7 @@ Monitors overall documentation size and checks against configured thresholds:
 
 - **Total documentation size:** max 150 KB
 - **Individual file sizes:** max 20 KB
-- **Number of documentation files:** max 15
+- **Number of documentation files:** max 25
 
 This check is particularly important for AI-assisted development where documentation needs to fit within context windows efficiently. Running this check generates a detailed report in `.ss/reports/docs/docs-size-report.md`.
 

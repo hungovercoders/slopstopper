@@ -100,7 +100,7 @@ It contains:
 2. **Validation Phase**
    - Checks total documentation size against 150 KB limit
    - Checks individual file sizes against 20 KB limit
-   - Checks file count against 15 file limit
+   - Checks file count against 25 file limit
    - Identifies any violations
 
 3. **Reporting Phase**
