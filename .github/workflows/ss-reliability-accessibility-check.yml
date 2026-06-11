@@ -34,6 +34,12 @@ on:
         required: false
         default: '0'
         type: string
+      coverage_mode:
+        description: 'Force discovery mode (overrides .slopstopper.yml)'
+        required: false
+        default: ''
+        type: choice
+        options: ['', 'sitemap', 'changed']
 
 permissions:
   contents: read
@@ -52,6 +58,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          # discover-pages.py changed-mode needs git history vs the base branch.
+          # 0 = full history. Adds a couple of seconds; cost is negligible.
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -128,12 +138,22 @@ jobs:
 
       - name: Pages to audit
         if: steps.url.outputs.use_local == 'true'
-        # Reads pages.accessibility from .slopstopper.yml. Falls back to '/'
-        # if not configured. Override per-repo in .slopstopper.yml, e.g.:
-        #   pages:
-        #     accessibility: /,/blog,/about
+        env:
+          DISPATCH_MODE: ${{ github.event.inputs.coverage_mode }}
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+        # Calls discover-pages.py with the event-mapped mode. Falls through
+        # to pages.accessibility when reliability.coverage.* is unset, so
+        # existing adopters see no behaviour change.
         run: |
-          PAGES=$(python3 .ss/scripts/load_config.py pages.accessibility /)
+          case "${{ github.event_name }}" in
+            pull_request|pull_request_target) EVENT=pr ;;
+            push)              EVENT=main ;;
+            schedule)          EVENT=cron ;;
+            deployment_status) EVENT=main ;;
+            workflow_dispatch) EVENT="${DISPATCH_MODE:-main}" ;;
+            *)                 EVENT=main ;;
+          esac
+          PAGES=$(python3 .ss/scripts/discover-pages.py accessibility --event="$EVENT")
           echo "ACCESSIBILITY_PAGES=$PAGES" >> "$GITHUB_ENV"
 
       - name: Run accessibility audit

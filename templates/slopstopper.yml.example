@@ -40,11 +40,52 @@ urls:
   preview:
 
 # Pages to exercise on each dynamic check (comma-separated paths).
+# This is the hand-list path: simple, predictable, easy to skim. For
+# real adopters, prefer the `reliability:` block below to stop the list
+# going stale every time a new page or content type lands.
 pages:
   smoke:         /
   accessibility: /
   seo:           /
   broken_links:  /
+
+# ── Reliability coverage (sitemap + changed-pages) ───────────────────
+# Opt-in alternative to the hand-list above. When set, the accessibility
+# / SEO / broken-links checks resolve which paths to audit via:
+#
+#   sitemap   → every URL in dist/client/sitemap-index.xml (or fallback
+#               candidates like dist/sitemap.xml). Run `npm run build`
+#               first; CI workflows do this automatically.
+#   changed   → on PRs only: git diff origin/main...HEAD → map source
+#               files to URLs via the framework's source_to_url rules
+#               (Astro / Next.js / SvelteKit are auto-detected from
+#               their config files). Auto-escalates to sitemap when any
+#               changed file matches cross_cutting_paths.
+#   /a,/b     → explicit hand-list, same shape as pages.* above.
+#
+# When the resolved set is empty (no sitemap, no matched changed files,
+# git history missing), discovery falls through to sitemap, then to
+# pages.<check>, then to "/". Better to over-test than to silently
+# no-op a quality gate.
+#
+# cross_cutting_paths MUST use the inline-list form ([a, b]) — the
+# stdlib YAML subset in .ss/scripts/load_config.py doesn't parse the
+# multi-line "- item" form under nested keys. Tracked as a follow-up.
+#
+# reliability:
+#   coverage:
+#     pr:   changed
+#     main: sitemap
+#     cron: sitemap
+#     cross_cutting_paths: [
+#       'src/layouts/*',
+#       'src/components/Base*.astro',
+#       'src/components/Header.astro',
+#       'src/components/Footer.astro',
+#       'src/styles/*',
+#       'astro.config.*',
+#       'tailwind.config.*',
+#     ]
 
 # ── Smoke test customizations ────────────────────────────────────────
 smoke:
