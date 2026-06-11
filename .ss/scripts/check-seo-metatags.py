@@ -10,10 +10,18 @@ category covers core SEO (description, viewport, canonical, indexability)
 but does not flag missing OpenGraph or Twitter tags.
 
 Inputs (env vars):
-    SEO_TEST_URL       (required)  base URL, e.g. https://slopstopper.dev
-    SEO_PAGES          (default /) comma-separated paths to check
-    SEO_REQUIRE_OG_IMAGE  (default 1)  set to 0 to skip og:image presence check
-    SEO_VERIFY_OG_IMAGE   (default 1)  set to 0 to skip HEAD-fetching og:image
+    SEO_TEST_URL          (required)  base URL, e.g. https://slopstopper.dev
+    SEO_PAGES             (default /) comma-separated paths to check
+    SEO_REQUIRE_OG_IMAGE  (default 1) set to 0 to skip og:image presence check
+    SEO_VERIFY_OG_IMAGE   (default 1) set to 0 to skip HEAD-fetching og:image
+    SEO_OG_IMAGE_BASE     (optional)  if set, rewrite the origin of any
+                                      absolute og:image / twitter:image URL
+                                      to this base before HEAD-checking.
+                                      Use when testing a pre-deploy preview
+                                      (e.g. http://localhost:8080) where the
+                                      page already hard-codes the production
+                                      origin in its og:image. The page itself
+                                      is still fetched from SEO_TEST_URL.
 
 Outputs:
     .ss/reports/seo/seo-metatags-report.md   (human-readable)
@@ -202,7 +210,20 @@ def validate_twitter_tags(tags: dict[str, str], issues: list[str], notes: list[s
         issues.append("Missing twitter:image")
 
 
-def check_page(base: str, path: str, require_og_image: bool, verify_og_image: bool) -> dict:
+def rewrite_origin(url: str, new_base: str) -> str:
+    """Replace the scheme+netloc of url with those of new_base, preserving path/query/fragment."""
+    src = urllib.parse.urlparse(url)
+    new = urllib.parse.urlparse(new_base)
+    return urllib.parse.urlunparse((new.scheme, new.netloc, src.path, src.params, src.query, src.fragment))
+
+
+def check_page(
+    base: str,
+    path: str,
+    require_og_image: bool,
+    verify_og_image: bool,
+    og_image_base: Optional[str] = None,
+) -> dict:
     page_url = urllib.parse.urljoin(base.rstrip("/") + "/", path.lstrip("/"))
     issues: list[str] = []
     notes: list[str] = []
@@ -234,10 +255,27 @@ def check_page(base: str, path: str, require_og_image: bool, verify_og_image: bo
     if tags["og:image"] and verify_og_image:
         # Normalise relative og:image against page URL
         og_image_abs = urllib.parse.urljoin(page_url, tags["og:image"])
-        ok, detail = head_ok(og_image_abs)
-        image_check = {"url": og_image_abs, "ok": ok, "detail": detail}
+        head_url = og_image_abs
+        rewritten = False
+        # Pre-deploy mode: page hard-codes production origin in og:image,
+        # but we're testing against a local/preview base. Swap origins so
+        # the HEAD check hits the artefact actually being shipped.
+        if og_image_base:
+            src_origin = urllib.parse.urlparse(og_image_abs).netloc
+            override_origin = urllib.parse.urlparse(og_image_base).netloc
+            if src_origin and override_origin and src_origin != override_origin:
+                head_url = rewrite_origin(og_image_abs, og_image_base)
+                rewritten = True
+        ok, detail = head_ok(head_url)
+        image_check = {
+            "url": head_url,
+            "original_url": og_image_abs if rewritten else None,
+            "ok": ok,
+            "detail": detail,
+        }
         if not ok:
-            issues.append(f"og:image not reachable ({og_image_abs}): {detail}")
+            via = f" (origin-rewritten from {og_image_abs})" if rewritten else ""
+            issues.append(f"og:image not reachable ({head_url}){via}: {detail}")
 
     return {
         "url": page_url,
@@ -279,6 +317,8 @@ def append_tags(lines: list[str], tags: dict[str, str]) -> None:
 def append_image_check(lines: list[str], image_check: dict) -> None:
     icon = "✅" if image_check["ok"] else "❌"
     lines.append(f"**og:image fetch:** {icon} `{image_check['url']}` — {image_check['detail']}")
+    if image_check.get("original_url"):
+        lines.append(f"  _(origin rewritten from `{image_check['original_url']}` via `SEO_OG_IMAGE_BASE`)_")
     lines.append("")
 
 
@@ -334,13 +374,14 @@ def write_reports(results: list[dict], base: str) -> None:
     md_path.write_text(build_markdown_report(results, base, overall_pass))
 
 
-def read_config() -> tuple[str, list[str], bool, bool]:
+def read_config() -> tuple[str, list[str], bool, bool, Optional[str]]:
     base = os.environ.get("SEO_TEST_URL", "").strip()
     pages_raw = os.environ.get("SEO_PAGES", "/")
     pages = [p.strip() for p in pages_raw.split(",") if p.strip()] or ["/"]
     require_og_image = os.environ.get("SEO_REQUIRE_OG_IMAGE", "1") != "0"
     verify_og_image = os.environ.get("SEO_VERIFY_OG_IMAGE", "1") != "0"
-    return base, pages, require_og_image, verify_og_image
+    og_image_base = os.environ.get("SEO_OG_IMAGE_BASE", "").strip() or None
+    return base, pages, require_og_image, verify_og_image, og_image_base
 
 
 def print_results(results: list[dict]) -> None:
@@ -353,7 +394,7 @@ def print_results(results: list[dict]) -> None:
 
 
 def main() -> int:
-    base, pages, require_og_image, verify_og_image = read_config()
+    base, pages, require_og_image, verify_og_image, og_image_base = read_config()
     if not base:
         print("❌ Error: SEO_TEST_URL is required", file=sys.stderr)
         print("", file=sys.stderr)
@@ -363,9 +404,11 @@ def main() -> int:
 
     print(f"🔎 SEO metatag audit against: {base}")
     print(f"   Pages: {', '.join(pages)}")
+    if og_image_base:
+        print(f"   og:image origin override → {og_image_base}")
     print("━" * 60)
 
-    results = [check_page(base, p, require_og_image, verify_og_image) for p in pages]
+    results = [check_page(base, p, require_og_image, verify_og_image, og_image_base) for p in pages]
     write_reports(results, base)
 
     overall_pass = all(r["status"] == "pass" for r in results)

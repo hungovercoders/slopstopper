@@ -146,10 +146,19 @@ tasks:
         SEO_PAGES             - comma-separated paths (default: /)
         SEO_REQUIRE_OG_IMAGE  - 0 to skip og:image presence check (default: 1)
         SEO_VERIFY_OG_IMAGE   - 0 to skip HEAD-fetching og:image (default: 1)
+        SEO_OG_IMAGE_BASE     - rewrite absolute og:image / twitter:image
+                                origin to this base before HEAD-checking.
+                                Use when validating a pre-deploy preview
+                                (e.g. http://localhost:8080) where the
+                                page bakes in the production origin.
 
       Usage:
         task ss:reliability:seo -- https://your-site.example.com
         SEO_TEST_URL=https://your-site.example.com task ss:reliability:seo
+        # Pre-deploy local preview:
+        SEO_TEST_URL=http://localhost:8080 \
+          SEO_OG_IMAGE_BASE=http://localhost:8080 \
+          task ss:reliability:seo
     cmds:
       - |
         {{if .CLI_ARGS}}
