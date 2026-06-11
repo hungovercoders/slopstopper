@@ -5,12 +5,15 @@ import sys
 import tempfile
 import shutil
 import subprocess
-from pathlib import Path
+
+
+SCRIPT_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "scripts", "generate-complexity-md.py")
+)
 
 
 def setup_test_env():
     """Create a temporary directory for test files."""
-    # Create temp dir
     tmpdir = tempfile.mkdtemp()
     os.chdir(tmpdir)
     os.makedirs(".ss/reports/complexity", exist_ok=True)
@@ -23,176 +26,145 @@ def teardown_test_env(tmpdir):
     shutil.rmtree(tmpdir, ignore_errors=True)
 
 
+def run_script(tmpdir):
+    return subprocess.run(
+        ["python3", SCRIPT_PATH],
+        capture_output=True,
+        text=True,
+        cwd=tmpdir,
+    )
+
+
 def test_missing_csv_fails():
-    """Test that script fails when CSV report is missing."""
+    """Script should fail when CSV report is missing."""
     tmpdir = setup_test_env()
     try:
-        # Create raw report but no CSV
-        with open(".ss/reports/complexity/complexity-report-raw.txt", "w") as f:
-            f.write("Total nloc  = 100\n")
-        
-        result = subprocess.run(
-            ["python3", "/workspaces/slopstopper/.ss/scripts/generate-complexity-md.py"],
-            capture_output=True,
-            text=True,
-            cwd=tmpdir
-        )
-        
+        result = run_script(tmpdir)
         assert result.returncode != 0, "Script should fail when CSV is missing"
         assert "CSV report not found" in result.stderr, "Should report missing CSV"
         assert not os.path.exists(".ss/reports/complexity/complexity-report.md"), \
             "Should not generate report on error"
-        
         print("✅ test_missing_csv_fails passed")
     finally:
         teardown_test_env(tmpdir)
 
 
-def test_missing_raw_report_fails():
-    """Test that script fails when raw report is missing."""
-    tmpdir = setup_test_env()
-    try:
-        # Create CSV but no raw report
-        with open(".ss/reports/complexity/complexity-report.csv", "w") as f:
-            f.write("NLOC,CCN,Tokens,Params,Length,Location\n")
-            f.write("10,5,50,2,10,test.py:function_a\n")
-        
-        result = subprocess.run(
-            ["python3", "/workspaces/slopstopper/.ss/scripts/generate-complexity-md.py"],
-            capture_output=True,
-            text=True,
-            cwd=tmpdir
-        )
-        
-        assert result.returncode != 0, "Script should fail when raw report is missing"
-        assert "Raw report not found" in result.stderr, "Should report missing raw report"
-        
-        print("✅ test_missing_raw_report_fails passed")
-    finally:
-        teardown_test_env(tmpdir)
-
-
 def test_generates_report_with_valid_input():
-    """Test that script generates markdown report with valid input."""
+    """Script should generate markdown report with valid input."""
     tmpdir = setup_test_env()
     try:
-        # Create valid input files
         with open(".ss/reports/complexity/complexity-report.csv", "w") as f:
-            f.write("NLOC,CCN,Tokens,Params,Length,Location\n")
-            f.write("10,5,50,2,10,test.py:function_a\n")
-            f.write("15,8,75,3,15,test.py:function_b\n")
-        
-        with open(".ss/reports/complexity/complexity-report-raw.txt", "w") as f:
-            f.write("Total nloc  = 100\n")
-            f.write("Altogether 2 files are analyzed.\n")
-            f.write("TOTAL     2 (avg: 1) \t2 (avg: 1) \tNo thresholds exceeded.\n")
-        
-        result = subprocess.run(
-            ["python3", "/workspaces/slopstopper/.ss/scripts/generate-complexity-md.py"],
-            capture_output=True,
-            text=True,
-            cwd=tmpdir
-        )
-        
+            # Lizard --csv columns: nloc, ccn, tokens, params, length,
+            # location ("name@start-end@./path"), file_path, name, long_name,
+            # start_line, end_line.
+            f.write("10,5,50,2,10,function_a@1-10@./test.py,./test.py,function_a,function_a,1,10\n")
+            f.write("15,8,75,3,15,function_b@11-26@./test.py,./test.py,function_b,function_b,11,26\n")
+
+        result = run_script(tmpdir)
+
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
         assert os.path.exists(".ss/reports/complexity/complexity-report.md"), \
             "Should generate markdown report"
-        
+
         with open(".ss/reports/complexity/complexity-report.md", "r") as f:
             content = f.read()
-        
+
         assert "Code Complexity Analysis Report" in content, "Should have title"
         assert "✅ Complexity Status" in content, "Should show status when no high complexity"
         assert "No high-complexity items found" in content, "Should indicate clean status"
-        
+        assert "1 file analyzed." in content, "Should report file count"
+
         print("✅ test_generates_report_with_valid_input passed")
     finally:
         teardown_test_env(tmpdir)
 
 
 def test_identifies_high_complexity_items():
-    """Test that script identifies high complexity items (CCN > 10)."""
+    """Script should identify high complexity items (CCN > 10)."""
     tmpdir = setup_test_env()
     try:
-        # Create input with high complexity item
         with open(".ss/reports/complexity/complexity-report.csv", "w") as f:
-            f.write("NLOC,CCN,Tokens,Params,Length,Location\n")
-            f.write("10,5,50,2,10,code.py:simple_func\n")
-            f.write("50,15,200,5,50,code.py:complex_func\n")
-            f.write("20,8,100,3,20,code.py:medium_func\n")
-        
-        with open(".ss/reports/complexity/complexity-report-raw.txt", "w") as f:
-            f.write("Total nloc  = 100\n")
-            f.write("Altogether 3 files are analyzed.\n")
-            f.write("TOTAL     3 (avg: 1) \t3 (avg: 1) \tNo thresholds exceeded.\n")
-        
-        result = subprocess.run(
-            ["python3", "/workspaces/slopstopper/.ss/scripts/generate-complexity-md.py"],
-            capture_output=True,
-            text=True,
-            cwd=tmpdir
-        )
-        
+            f.write("10,5,50,2,10,simple_func@1-10@./code.py,./code.py,simple_func,simple_func,1,10\n")
+            f.write("50,15,200,5,50,complex_func@11-60@./code.py,./code.py,complex_func,complex_func,11,60\n")
+            f.write("20,8,100,3,20,medium_func@61-80@./code.py,./code.py,medium_func,medium_func,61,80\n")
+
+        result = run_script(tmpdir)
+
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
-        
+
         with open(".ss/reports/complexity/complexity-report.md", "r") as f:
             content = f.read()
-        
+
         assert "High Complexity Items (CCN > 10)" in content, \
             "Should identify high complexity section"
-        assert "code.py:complex_func" in content, "Should list high complexity function"
+        assert "complex_func@11-60@./code.py" in content, "Should list high complexity function"
         assert "15" in content, "Should show CCN value"
         assert "simple_func" not in content, "Should not list low complexity functions"
-        
+
         print("✅ test_identifies_high_complexity_items passed")
     finally:
         teardown_test_env(tmpdir)
 
 
 def test_report_includes_guidelines():
-    """Test that report includes guidelines."""
+    """Report should include guidelines."""
     tmpdir = setup_test_env()
     try:
-        # Create valid minimal input
         with open(".ss/reports/complexity/complexity-report.csv", "w") as f:
-            f.write("NLOC,CCN,Tokens,Params,Length,Location\n")
-        
-        with open(".ss/reports/complexity/complexity-report-raw.txt", "w") as f:
-            f.write("Total nloc  = 0\n")
-            f.write("Altogether 0 files are analyzed.\n")
-        
-        result = subprocess.run(
-            ["python3", "/workspaces/slopstopper/.ss/scripts/generate-complexity-md.py"],
-            capture_output=True,
-            text=True,
-            cwd=tmpdir
-        )
-        
+            pass
+
+        result = run_script(tmpdir)
+
         assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
-        
+
         with open(".ss/reports/complexity/complexity-report.md", "r") as f:
             content = f.read()
-        
+
         assert "Guidelines" in content, "Should include guidelines"
         assert "Cyclomatic Complexity (CCN)" in content, "Should explain CCN"
         assert "Function Length (NLOC)" in content, "Should explain NLOC"
         assert "Generated by [Lizard]" in content, "Should credit Lizard"
-        
+        assert "No functions analyzed." in content, "Should handle empty CSV"
+
         print("✅ test_report_includes_guidelines passed")
+    finally:
+        teardown_test_env(tmpdir)
+
+
+def test_summary_stats_computed_from_csv():
+    """Summary block should reflect totals/averages computed from the CSV rows."""
+    tmpdir = setup_test_env()
+    try:
+        with open(".ss/reports/complexity/complexity-report.csv", "w") as f:
+            f.write("10,2,40,1,10,f1@1-10@./a.py,./a.py,f1,f1,1,10\n")
+            f.write("20,4,80,2,20,f2@11-30@./a.py,./a.py,f2,f2,11,30\n")
+            f.write("30,6,120,3,30,f3@1-30@./b.py,./b.py,f3,f3,1,30\n")
+
+        result = run_script(tmpdir)
+        assert result.returncode == 0, f"Script should succeed. stderr: {result.stderr}"
+
+        with open(".ss/reports/complexity/complexity-report.md", "r") as f:
+            content = f.read()
+
+        # Total NLOC = 60, function count = 3, file count = 2.
+        assert "60" in content, "Should sum total NLOC"
+        assert "2 files analyzed." in content, "Should count distinct source files"
+
+        print("✅ test_summary_stats_computed_from_csv passed")
     finally:
         teardown_test_env(tmpdir)
 
 
 if __name__ == "__main__":
     print("\n🧪 Running complexity script tests...\n")
-    
+
     try:
         test_missing_csv_fails()
-        test_missing_raw_report_fails()
         test_generates_report_with_valid_input()
         test_identifies_high_complexity_items()
         test_report_includes_guidelines()
-        
+        test_summary_stats_computed_from_csv()
+
         print("\n✅ All tests passed!\n")
         sys.exit(0)
     except AssertionError as e:

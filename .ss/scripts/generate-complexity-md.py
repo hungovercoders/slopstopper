@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""Generate a Markdown complexity report from Lizard output.
+"""Generate a Markdown complexity report from Lizard's CSV output.
 
-This script is used both locally (via 'task complexity') and in CI/CD.
-It must reliably generate reports without silently hiding errors.
+Read the CSV produced by `python3 -m lizard . --csv` and emit a single
+Markdown report with a summary section, a high-complexity table (CCN > 10),
+and guidelines. Compute the summary stats (total NLOC, averages, function
+count, warning count) directly from the CSV rows — Lizard's CLI output
+formats are mutually exclusive so consuming a separate text file would
+mean scanning the codebase twice.
 """
 
 import os
@@ -12,101 +16,118 @@ import sys
 import traceback
 
 
-def read_csv_report(csv_path):
-    """Read CSV report and extract high complexity items."""
-    high_complexity_items = []
-    
+CCN_THRESHOLD = 10
+
+
+def read_csv_rows(csv_path):
+    """Read the CSV report and return [(nloc, ccn, tokens, params, length, location, file), ...].
+
+    Lizard's CSV layout (zero-indexed):
+      0: NLOC, 1: CCN, 2: tokens, 3: params, 4: length,
+      5: location ("function@start-end@./path"), 6: file path,
+      7: function name, 8: long name, 9: start_line, 10: end_line
+
+    Skips any leading header row (lizard's --csv output is headerless, but
+    fixtures sometimes include one — non-numeric rows are dropped).
+    """
     if not os.path.exists(csv_path):
         raise FileNotFoundError(f"CSV report not found at {csv_path}")
-    
+
+    rows = []
     try:
         with open(csv_path, "r") as f:
             reader = csv.reader(f)
             for row in reader:
-                if len(row) > 1:
-                    try:
-                        ccn = int(row[1])
-                        if ccn > 10:
-                            high_complexity_items.append(row)
-                    except ValueError:
-                        pass
+                if len(row) < 6:
+                    continue
+                try:
+                    nloc = int(row[0])
+                    ccn = int(row[1])
+                    tokens = int(row[2])
+                    params = int(row[3])
+                    length = int(row[4])
+                except ValueError:
+                    continue
+                location = row[5].strip('"')
+                if len(row) > 6 and row[6]:
+                    file_path = row[6].strip('"')
+                else:
+                    # Fallback: lizard's location is "function@start-end@./path";
+                    # take the last @-segment as the file. Older fixtures use
+                    # "path:line" — fall back to the pre-colon prefix in that case.
+                    if "@" in location:
+                        file_path = location.split("@")[-1]
+                    else:
+                        file_path = location.split(":")[0]
+                rows.append((nloc, ccn, tokens, params, length, location, file_path))
     except Exception as e:
         raise RuntimeError(f"Failed to read CSV report: {e}") from e
-    
-    return high_complexity_items
+
+    return rows
 
 
-def read_raw_report(raw_path):
-    """Extract summary from raw text report."""
-    if not os.path.exists(raw_path):
-        raise FileNotFoundError(f"Raw report not found at {raw_path}")
-    
-    try:
-        with open(raw_path, "r") as f:
-            raw_report = f.read()
-    except Exception as e:
-        raise RuntimeError(f"Failed to read raw report: {e}") from e
-    
-    # Find the summary section
-    lines = raw_report.split('\n')
-    summary_lines = []
-    in_summary = False
-    
-    for line in lines:
-        if "No thresholds exceeded" in line or "thresholds exceeded" in line:
-            summary_lines.append(line)
-            break
-        if in_summary:
-            summary_lines.append(line)
-        if "Total nloc" in line:
-            in_summary = True
-            summary_lines.append(line)
-    
-    return summary_lines
+def compute_summary_lines(rows):
+    """Build a lizard-style summary block from CSV rows."""
+    if not rows:
+        return [
+            "Total NLOC   Avg.NLOC  Avg.CCN  Avg.Tokens  Fun Cnt  Warning Cnt",
+            "----------------------------------------------------------------",
+            "         0        0.0      0.0         0.0        0            0",
+            "",
+            "No functions analyzed.",
+        ]
+
+    fun_cnt = len(rows)
+    total_nloc = sum(r[0] for r in rows)
+    avg_nloc = total_nloc / fun_cnt
+    avg_ccn = sum(r[1] for r in rows) / fun_cnt
+    avg_tokens = sum(r[2] for r in rows) / fun_cnt
+    warning_cnt = sum(1 for r in rows if r[1] > CCN_THRESHOLD)
+
+    files = {r[6] for r in rows}
+    file_count = len(files)
+    file_word = "file" if file_count == 1 else "files"
+
+    return [
+        "Total NLOC   Avg.NLOC  Avg.CCN  Avg.Tokens  Fun Cnt  Warning Cnt",
+        "----------------------------------------------------------------",
+        f"{total_nloc:>10}  {avg_nloc:>9.1f}  {avg_ccn:>7.1f}  {avg_tokens:>10.1f}  {fun_cnt:>7}  {warning_cnt:>11}",
+        "",
+        f"{file_count} {file_word} analyzed.",
+    ]
 
 
 def format_summary_section(summary_lines):
-    """Format summary section for markdown."""
     if not summary_lines:
         return ""
-    
     result = "```\n"
-    result += "\n".join(summary_lines[:15])
+    result += "\n".join(summary_lines)
     result += "\n```\n\n"
     return result
 
 
-def format_high_complexity_section(high_complexity_items):
-    """Format high complexity items section."""
-    if not high_complexity_items:
+def format_high_complexity_section(rows):
+    high = [r for r in rows if r[1] > CCN_THRESHOLD]
+    if not high:
         return "## ✅ Complexity Status\n\nNo high-complexity items found (all CCN ≤ 10)\n\n"
-    
+
     result = "## ⚠️ High Complexity Items (CCN > 10)\n\n"
     result += "| NLOC | CCN | Tokens | Params | Length | Location |\n"
     result += "|------|-----|--------|--------|--------|----------|\n"
-    
-    for item in high_complexity_items:
-        if len(item) > 5:
-            nloc = item[0]
-            ccn = item[1]
-            tokens = item[2]
-            params = item[3]
-            length = item[4]
-            location = item[5].strip('"') if len(item) > 5 else "unknown"
-            result += f"| {nloc} | {ccn} | {tokens} | {params} | {length} | `{location}` |\n"
-    
+    for nloc, ccn, tokens, params, length, location, _file in high:
+        result += f"| {nloc} | {ccn} | {tokens} | {params} | {length} | `{location}` |\n"
     return result
 
 
-def build_markdown_report(summary_lines, high_complexity_items):
-    """Build the complete markdown report."""
+def build_markdown_report(rows):
+    summary_lines = compute_summary_lines(rows)
+
     md_content = "# Code Complexity Analysis Report\n\n"
     md_content += f"**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
     md_content += "## Summary\n\n"
-    
     md_content += format_summary_section(summary_lines)
-    md_content += format_high_complexity_section(high_complexity_items)
-    
+    md_content += format_high_complexity_section(rows)
+
     md_content += "## Guidelines\n\n"
     md_content += "- **Cyclomatic Complexity (CCN)**: Measure of code complexity based on decision points\n"
     md_content += "  - **Good**: CCN ≤ 10\n"
@@ -121,12 +142,11 @@ def build_markdown_report(summary_lines, high_complexity_items):
     md_content += "- Reports location: `.ss/reports/complexity/`\n"
     md_content += "  - `complexity-report.md` (this file)\n"
     md_content += "  - `complexity-report.csv` (machine-readable)\n"
-    
+
     return md_content
 
 
 def write_report(report_path, content):
-    """Write markdown report to file."""
     try:
         with open(report_path, "w") as f:
             f.write(content)
@@ -135,21 +155,15 @@ def write_report(report_path, content):
 
 
 def main():
-    """Generate markdown report from complexity analysis files."""
     os.makedirs(".ss/reports/complexity", exist_ok=True)
-    
+
     csv_path = ".ss/reports/complexity/complexity-report.csv"
-    raw_path = ".ss/reports/complexity/complexity-report-raw.txt"
     report_path = ".ss/reports/complexity/complexity-report.md"
-    
-    # Read input files
-    high_complexity_items = read_csv_report(csv_path)
-    summary_lines = read_raw_report(raw_path)
-    
-    # Generate report
-    report_content = build_markdown_report(summary_lines, high_complexity_items)
+
+    rows = read_csv_rows(csv_path)
+    report_content = build_markdown_report(rows)
     write_report(report_path, report_content)
-    
+
     print("✅ Markdown report generated successfully")
     return 0
 
@@ -161,4 +175,3 @@ if __name__ == "__main__":
         print(f"❌ Error generating markdown report: {e}", file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
         sys.exit(1)
-

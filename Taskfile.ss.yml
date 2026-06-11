@@ -322,11 +322,17 @@ tasks:
     internal: true
     cmds:
       - |
-        if ! command -v lizard &> /dev/null; then
+        # Use `python3 -m lizard` everywhere instead of the bare `lizard`
+        # binary. On macOS with Homebrew, lz4 ships a binary called `lizard`
+        # that shadows pip-installed lizard on PATH and produces a cryptic
+        # "Lizard 0.x" output that breaks the analyser. Going through
+        # `python3 -m` bypasses PATH entirely and pins us to the python
+        # package we actually installed via pip.
+        if ! python3 -m lizard --version &> /dev/null; then
           echo "📦 Installing Lizard..."
-          
+
           INSTALL_SUCCESS=0
-          
+
           if command -v pip3 &> /dev/null; then
             echo "Trying pip3..."
             if pip3 install --user lizard; then
@@ -342,30 +348,27 @@ tasks:
             if sudo apt-get update && sudo apt-get install -y python3-pip && pip3 install --user lizard; then
               INSTALL_SUCCESS=1
             fi
-          elif command -v brew &> /dev/null; then
-            echo "Trying brew..."
-            if brew install lizard; then
-              INSTALL_SUCCESS=1
-            fi
           fi
-          
+
           if [ $INSTALL_SUCCESS -eq 0 ]; then
-            echo "❌ Failed to install Lizard with any available package manager"
+            echo "❌ Failed to install Lizard via pip"
             echo "Please install Lizard manually:"
-            echo "  - pip install lizard"
-            echo "  - brew install lizard"
+            echo "  - pip3 install --user lizard"
+            echo "  - python3 -m pip install --user lizard"
             echo "  - https://github.com/terryyin/lizard"
+            echo ""
+            echo "Note: do NOT install via 'brew install lizard' — that's lz4's lizard,"
+            echo "a completely different tool that will shadow the python package."
             exit 1
           fi
         fi
-        
-        # Verify installation succeeded
-        if ! command -v lizard &> /dev/null; then
-          echo "❌ Lizard installed but not found in PATH"
+
+        if ! python3 -m lizard --version &> /dev/null; then
+          echo "❌ Lizard installed but 'python3 -m lizard' still fails — check your Python environment"
           exit 1
         fi
-        
-        LIZARD_VERSION=$(lizard --version 2>&1)
+
+        LIZARD_VERSION=$(python3 -m lizard --version 2>&1)
         echo "✅ Lizard $LIZARD_VERSION"
     silent: false
 
@@ -383,18 +386,12 @@ tasks:
         # Create reports directory
         mkdir -p .ss/reports/complexity
         
-        # Run lizard and generate text report (intermediate)
-        lizard . \
-          -x "tests/*" \
-          -x ".ss/tests/*" \
-          -x ".github/*" \
-          -x "node_modules/*" \
-          -x ".git/*" \
-          -o ".ss/reports/complexity/complexity-report-raw.txt" \
-          || true
-        
-        # Generate CSV report for structured data
-        lizard . \
+        # Single CSV pass — generate-complexity-md.py computes the summary
+        # from CSV rows directly. Lizard's CLI output formats are mutually
+        # exclusive (text/--csv/--xml/--html), so the previous text+CSV
+        # pair re-scanned the entire codebase twice for no extra signal.
+        # `python3 -m lizard` bypasses PATH and dodges lz4's clashing binary.
+        python3 -m lizard . \
           -x "tests/*" \
           -x ".ss/tests/*" \
           -x ".github/*" \

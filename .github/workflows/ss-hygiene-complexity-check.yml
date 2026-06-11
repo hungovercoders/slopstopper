@@ -31,7 +31,10 @@ jobs:
           set -e
           pip install --upgrade pip
           pip install lizard
-          lizard --version
+          # task ss:hygiene:complexity's check-tool sub-task verifies
+          # `python3 -m lizard --version` itself, so we don't repeat it
+          # here. The task uses `python3 -m lizard` everywhere — bypasses
+          # PATH and dodges lz4's clashing binary on macOS.
         shell: bash
       
       - name: Install Task
@@ -101,7 +104,6 @@ jobs:
           path: |
             .ss/reports/complexity/complexity-report.md
             .ss/reports/complexity/complexity-report.csv
-            .ss/reports/complexity/complexity-report-raw.txt
           retention-days: 30
           if-no-files-found: warn
       
