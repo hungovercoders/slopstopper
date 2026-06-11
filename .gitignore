@@ -5,6 +5,11 @@ test-results/
 .ss/test-results/
 # SlopStopper-generated reports (all under .ss/reports/<category>/)
 .ss/reports/
+# Python bytecode under .ss/scripts/. .workflows-installed is deliberately
+# NOT ignored — it's the install marker that tracks adopter deletions
+# across re-runs and must be tracked.
+.ss/scripts/**/__pycache__/
+.ss/tests/**/__pycache__/
 # Local Netlify folder
 .netlify
 # TypeScript compiled output (copy.js is hand-written runtime JS, not a tsc artefact)

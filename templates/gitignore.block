@@ -1,7 +1,11 @@
 # slopstopper begin
 # Generated outputs from slopstopper checks. Safe to delete locally.
+# .ss/.workflows-installed is the source of truth for what install.sh
+# deployed last; it MUST be committed so that re-runs (CI or fresh
+# checkout) can respect adopter deletions. Don't add it here.
 .ss/reports/
-.ss/.workflows-installed
+.ss/scripts/**/__pycache__/
+.ss/tests/**/__pycache__/
 playwright-report/
 test-results/
 .lighthouseci/

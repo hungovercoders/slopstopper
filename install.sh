@@ -33,7 +33,7 @@
 #
 # Workflow set ships in three conceptual layers:
 #   1. Static analysis  — work on any code (SAST, Secrets, Trivy, complexity, doc checks)
-#   2. Web-app dynamic  — need a URL (Smoke, Accessibility, CWV, Playwright)
+#   2. Web-app dynamic  — need a URL (Smoke, Accessibility, CWV, DAST, SEO, Broken Links)
 #   3. Agentic updater  — needs COPILOT_GITHUB_TOKEN (gh-aw doc-updater)
 # Deploy is intentionally not a layer: connect your repo in the Cloudflare
 # dash (Workers & Pages → Create → Connect to Git) and you get production
@@ -96,11 +96,32 @@ preflight
 # Resolve the directory that contains this script.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)" || true
 
-# When piped through curl, BASH_SOURCE is not set and we need to clone.
-# Taskfile.ss.yml is the marker file that proves we're in the SlopStopper repo.
-if [ -z "$SCRIPT_DIR" ] || [ ! -f "$SCRIPT_DIR/Taskfile.ss.yml" ]; then
+# Resolve the absolute target so we can compare against SCRIPT_DIR. If they
+# are the same directory, the user is running install.sh from inside an
+# adopter repo and we MUST clone — otherwise the cp Taskfile.ss.yml step
+# would copy the existing Taskfile.ss.yml to itself, never picking up
+# upstream changes. Using Taskfile.ss.yml as the slopstopper-source marker
+# (the previous behaviour) failed exactly this case because the adopter has
+# their own Taskfile.ss.yml from a prior install.
+TARGET_ABS="$(cd "$TARGET_DIR" 2>/dev/null && pwd || echo "$TARGET_DIR")"
+
+# Decide whether SCRIPT_DIR is the genuine slopstopper repo. Markers:
+#  - templates/  (only slopstopper has it; adopters get the templates
+#    expanded into .slopstopper.yml, public/_headers, etc.)
+#  - install.sh  (this script itself, sanity check)
+#  - SCRIPT_DIR != TARGET_ABS (running install.sh from inside a target
+#    that happens to ship its own templates/ dir would still trigger this).
+SCRIPT_IS_SOURCE=0
+if [ -n "$SCRIPT_DIR" ] \
+   && [ -d "$SCRIPT_DIR/templates" ] \
+   && [ -f "$SCRIPT_DIR/install.sh" ] \
+   && [ "$SCRIPT_DIR" != "$TARGET_ABS" ]; then
+  SCRIPT_IS_SOURCE=1
+fi
+
+if [ "$SCRIPT_IS_SOURCE" -eq 0 ]; then
   if ! command -v git &>/dev/null; then
-    error "git is required when running via curl. Please install git and try again."
+    error "git is required when running install.sh from outside the SlopStopper repo. Please install git and try again."
   fi
 
   TMP_DIR="$(mktemp -d)"
@@ -165,7 +186,8 @@ success ".ss/tests/ installed (refreshed)"
 cp "$SCRIPT_DIR/.ss/playwright.config.js" "$TARGET_DIR/.ss/playwright.config.js"
 cp "$SCRIPT_DIR/.ss/lighthouserc.json" "$TARGET_DIR/.ss/lighthouserc.json"
 cp "$SCRIPT_DIR/.ss/lighthouserc.prod.json" "$TARGET_DIR/.ss/lighthouserc.prod.json"
-success ".ss/ Playwright + Lighthouse configs installed (refreshed)"
+cp "$SCRIPT_DIR/.ss/server.js" "$TARGET_DIR/.ss/server.js"
+success ".ss/ Playwright + Lighthouse configs + server.js installed (refreshed)"
 
 # 4. .github/workflows/ — install ss- prefixed generic workflows.
 WORKFLOWS_SRC="$SCRIPT_DIR/.github/workflows"
@@ -394,7 +416,7 @@ echo "       Complexity · Doc Structure · Doc Accuracy · Doc Size"
 echo "       Auto-label PRs · Workflow-failure tracker"
 echo ""
 echo "  ⏳ Active once you point them at your app (edit .slopstopper.yml):"
-echo "       Smoke · Accessibility · Core Web Vitals · DAST · Playwright"
+echo "       Smoke · Accessibility · Core Web Vitals · DAST · SEO · Broken Links"
 echo ""
 echo "     # in .slopstopper.yml:"
 echo "     urls:"
