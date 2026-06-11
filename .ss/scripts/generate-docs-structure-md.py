@@ -28,6 +28,34 @@ def read_json_report(json_path):
     return data
 
 
+def _format_expected_categories_section(categories):
+    """Render the 'Expected Categories' table from adopter-declared categories.
+
+    Previously hardcoded to slopstopper's own 8 categories, which was wrong for
+    every other adopter. categories comes from docs/index.md, parsed by
+    check-docs-structure.py and threaded through the JSON report.
+    """
+    if not categories:
+        return (
+            "## Expected Categories\n\n"
+            "_No categories declared in `docs/index.md`. Add a categories table "
+            "(see slopstopper's docs/index.md for the format) to enforce structure._\n\n"
+        )
+
+    lines = [
+        "## Expected Categories",
+        "",
+        "The following categories are defined in `docs/index.md`:",
+        "",
+        "| Category | Required | Status |",
+        "|----------|----------|--------|",
+    ]
+    for category in categories:
+        lines.append(f"| {category}/ | ✅ | Must exist with README.md |")
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
 def _format_violations_content(violations):
     """Format violations into markdown sections grouped by type."""
     content = f"Found **{len(violations)}** violation(s):\n\n"
@@ -84,23 +112,10 @@ The documentation structure is governed by [`docs/index.md`](../index.md). All d
         report += _format_violations_content(violations)
     else:
         report += "✅ No violations found\n\n"
-    
-    report += """## Expected Categories
 
-The following categories are defined in `docs/index.md`:
+    report += _format_expected_categories_section(data.get("expected_categories", []))
 
-| Category | Required | Status |
-|----------|----------|--------|
-| architecture/ | ✅ | Must exist with README.md |
-| contributing/ | ✅ | Must exist with README.md |
-| decisions/ | ✅ | Must exist with README.md |
-| deployment/ | ✅ | Must exist with README.md |
-| hygiene/ | ✅ | Must exist with README.md |
-| reliability/ | ✅ | Must exist with README.md |
-| runbooks/ | ✅ | Must exist with README.md |
-| security/ | ✅ | Must exist with README.md |
-
-## How to Fix
+    report += """## How to Fix
 
 1. **For missing directories or README.md files:**
    - Create the directory and add a README.md with its purpose

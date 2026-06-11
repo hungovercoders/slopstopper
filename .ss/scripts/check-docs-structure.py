@@ -78,7 +78,11 @@ def _check_unexpected_items(docs_path, expected_categories):
 
 
 def check_docs_structure():
-    """Validate docs structure against index.md governance."""
+    """Validate docs structure against index.md governance.
+
+    Returns (violations, expected_categories) so the report writer can render
+    the actual adopter-declared categories instead of hardcoding slopstopper's.
+    """
     docs_path = Path("docs")
 
     if not docs_path.exists():
@@ -88,27 +92,30 @@ def check_docs_structure():
     expected_categories = extract_categories_from_index()
     violations = _check_expected_categories(docs_path, expected_categories)
     violations += _check_unexpected_items(docs_path, expected_categories)
-    return violations
+    return violations, expected_categories
 
 
 def main():
     print("🔍 Validating documentation structure...")
-    
-    violations = check_docs_structure()
-    
+
+    violations, expected_categories = check_docs_structure()
+
     # Create report directory
     Path(".ss/reports/docs").mkdir(parents=True, exist_ok=True)
-    
-    # Write JSON report
+
+    # Write JSON report. expected_categories is what generate-docs-structure-md.py
+    # renders in its "Expected Categories" table — it's adopter-defined, not
+    # slopstopper-defined, so it MUST flow through here.
     report = {
         "violations": violations,
         "valid": len(violations) == 0,
-        "violation_count": len(violations)
+        "violation_count": len(violations),
+        "expected_categories": expected_categories,
     }
-    
+
     with open(".ss/reports/docs/docs-structure-report.json", "w") as f:
         json.dump(report, f, indent=2)
-    
+
     if violations:
         print(f"❌ Found {len(violations)} structure violation(s)")
         sys.exit(1)

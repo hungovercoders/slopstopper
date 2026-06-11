@@ -125,7 +125,18 @@ def _handle_doc_line(out: dict, state: dict, line: str) -> None:
     heading = HEADING_RE.match(line)
     if heading:
         _flush_doc_entry(out, state)
-        state["path"] = heading.group(1)
+        path = heading.group(1)
+        # /* is the site-wide CSP baseline, not a per-path exception.
+        # _headers_exception_map() skips /* on the headers side; doing the
+        # same here keeps the doc parser symmetric. A `### /*` heading
+        # under `## Exceptions` would otherwise be flagged as a stale doc
+        # entry (no matching headers rule, because the headers parser
+        # filtered /* out earlier).
+        if path == "/*":
+            state["path"] = None
+            state["current"] = None
+            return
+        state["path"] = path
         state["current"] = _new_entry()
         return
     if state["current"] is None:
