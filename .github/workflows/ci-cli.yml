@@ -1,0 +1,72 @@
+name: CI · slopstopper-cli
+
+# Internal CI for the slopstopper-cli Python package under cli/.
+# Not part of the distributed slopstopper suite — this workflow is
+# slopstopper.dev-internal and is NOT seeded into adopter repos by
+# install.sh. Adopters never receive cli/, so they never need to run
+# its tests.
+#
+# Two jobs:
+#   test    — pytest suite under cli/tests/
+#   parity  — runs each ported check via BOTH the legacy bash/python
+#             implementation under .ss/scripts/ and the CLI port, then
+#             diffs their reports. Any divergence fails CI. This is the
+#             load-bearing proof we can trust the CLI to replace each
+#             bash script.
+#
+# Both jobs delegate to cli/Taskfile.yml so the exact same command
+# developers run locally is what CI runs. As the CLI grows beyond
+# pytest (lint, type-check, build, packaging smoke test), add task
+# targets in cli/Taskfile.yml and steps here rather than spinning up
+# new ss-*-check.yml workflows.
+#
+# `paths:` covers cli/** AND every .ss/scripts/<script> the parity job
+# currently exercises. When a check is fully cut over (workflow
+# flipped, bash deleted), drop its bash path from this list.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'cli/**'
+      - '.github/workflows/ci-cli.yml'
+      - '.ss/scripts/check-docs-size.sh'
+      - '.ss/scripts/generate-docs-size-report.py'
+  push:
+    branches: [ main ]
+    paths:
+      - 'cli/**'
+      - '.github/workflows/ci-cli.yml'
+      - '.ss/scripts/check-docs-size.sh'
+      - '.ss/scripts/generate-docs-size-report.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install Task
+        run: curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
+      - name: Run CLI tests
+        run: task -t cli/Taskfile.yml test
+
+  parity:
+    name: bash↔cli parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install Task
+        run: curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
+      - name: Run parity diffs (bash vs CLI)
+        run: task -t cli/Taskfile.yml parity

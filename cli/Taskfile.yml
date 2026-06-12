@@ -1,0 +1,93 @@
+version: '3'
+
+# Tasks for the slopstopper-cli Python package.
+# Internal — this Taskfile is NOT part of the distributed slopstopper
+# suite and is not seeded into adopter repos. CI (`.github/workflows/ci-cli.yml`)
+# and local development must both call the targets here so versions and
+# tooling stay in sync across contexts.
+#
+# Invoke from anywhere in the repo:
+#
+#   task -t cli/Taskfile.yml test
+#   task -t cli/Taskfile.yml test -- -k docs_size   # filter
+#
+# or from cli/:
+#
+#   task test
+
+tasks:
+  install:
+    desc: Create cli/.venv and install slopstopper-cli with test extras
+    cmds:
+      - test -d .venv || python3 -m venv .venv
+      - .venv/bin/pip install --quiet --upgrade pip
+      - .venv/bin/pip install --quiet -e '.[test]'
+    sources:
+      - pyproject.toml
+    generates:
+      - .venv/pyvenv.cfg
+
+  test:
+    desc: Run the pytest suite
+    deps: [install]
+    cmds:
+      - .venv/bin/pytest tests/ {{.CLI_ARGS}}
+
+  parity:
+    desc: Verify CLI reports are byte-identical to the bash scripts they replace
+    summary: |
+      For each check that has been ported to the CLI, runs both the
+      legacy bash/python implementation under .ss/scripts/ and the CLI
+      port, then diffs their reports (excluding the timestamp line).
+      Any divergence fails CI — this is the load-bearing proof that
+      the CLI hasn't drifted from the bash scripts it will eventually
+      replace.
+
+      As more checks land, add a new section to the script below.
+      When a check is fully cut over (workflow flipped, bash script
+      deleted), remove its section.
+    deps: [install]
+    dir: '{{.TASKFILE_DIR}}/..'
+    cmds:
+      - |
+        set -e
+        TMP=$(mktemp -d)
+        trap 'rm -rf "$TMP"' EXIT
+        STRIP='^\*\*Generated:'
+        FAILED=0
+
+        check_parity() {
+          local name="$1"
+          local bash_cmd="$2"
+          local cli_cmd="$3"
+          local report_path="$4"
+
+          echo ""
+          echo "=== ${name} ==="
+          eval "$bash_cmd" > /dev/null
+          cp "$report_path" "$TMP/${name}-bash.md"
+          eval "$cli_cmd" > /dev/null
+          cp "$report_path" "$TMP/${name}-cli.md"
+          grep -vE "$STRIP" "$TMP/${name}-bash.md" > "$TMP/${name}-bash-stripped.md"
+          grep -vE "$STRIP" "$TMP/${name}-cli.md" > "$TMP/${name}-cli-stripped.md"
+          if diff -u "$TMP/${name}-bash-stripped.md" "$TMP/${name}-cli-stripped.md"; then
+            echo "✅ ${name} parity OK"
+          else
+            echo "❌ ${name} parity FAILED"
+            FAILED=1
+          fi
+        }
+
+        check_parity \
+          "hygiene-docs-size" \
+          "bash .ss/scripts/check-docs-size.sh" \
+          "cli/.venv/bin/slopstopper run hygiene:docs-size" \
+          ".ss/reports/docs/docs-size-report.md"
+
+        echo ""
+        if [ "$FAILED" -eq 0 ]; then
+          echo "All parity checks passed."
+        else
+          echo "One or more parity checks failed — see diff(s) above."
+          exit 1
+        fi
