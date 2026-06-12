@@ -76,11 +76,30 @@ def _pop_to_parent(stack: list, indent: int) -> object | None:
     return stack[-1][1]
 
 
-def _handle_list_item(parent: object, body: str) -> None:
+def _handle_list_item(parent: object, body: str, stack: list) -> None:
+    """Append a parsed list item to the parent container.
+
+    If the parent is an empty dict opened by `key:` with no value, this is
+    actually a block list — retroactively convert it to a list under the
+    grandparent (so the dict→list ambiguity inherent to YAML is resolved
+    on the first list item encountered).
+    """
     match = _LIST_ITEM_RE.match(body)
-    if not match or not isinstance(parent, list):
+    if not match:
         return
-    parent.append(_parse_scalar(match.group(1)))
+    value = _parse_scalar(match.group(1))
+    if isinstance(parent, list):
+        parent.append(value)
+        return
+    if isinstance(parent, dict) and not parent and len(stack) >= 2:
+        grandparent = stack[-2][1]
+        if isinstance(grandparent, dict):
+            for k, v in grandparent.items():
+                if v is parent:
+                    new_list: list = [value]
+                    grandparent[k] = new_list
+                    stack[-1] = (stack[-1][0], new_list)
+                    return
 
 
 def _handle_key_value(parent: object, indent: int, body: str, stack: list) -> None:
@@ -122,7 +141,7 @@ def _load_yaml_subset(path: Path) -> dict:
         if parent is None:
             return root
         if _LIST_ITEM_RE.match(body):
-            _handle_list_item(parent, body)
+            _handle_list_item(parent, body, stack)
         else:
             _handle_key_value(parent, indent, body, stack)
 
@@ -133,7 +152,7 @@ def _convert_empty_dicts_to_lists_if_needed(node: object, raw_yaml: str) -> obje
     if isinstance(node, dict):
         for key, value in list(node.items()):
             if isinstance(value, dict) and not value:
-                pattern = re.compile(rf"^{re.escape(key)}:\s*\n\s+-\s+", re.MULTILINE)
+                pattern = re.compile(rf"^\s*{re.escape(key)}:\s*\n\s+-\s+", re.MULTILINE)
                 if pattern.search(raw_yaml):
                     node[key] = []
             else:
