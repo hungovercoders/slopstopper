@@ -32,6 +32,7 @@ on:
       - '.github/workflows/ci-cli.yml'
       - '.ss/scripts/check-docs-size.sh'
       - '.ss/scripts/generate-docs-size-report.py'
+      - '.ss/scripts/check-entry-file-size.py'
   push:
     branches: [ main ]
     paths:
@@ -39,6 +40,7 @@ on:
       - '.github/workflows/ci-cli.yml'
       - '.ss/scripts/check-docs-size.sh'
       - '.ss/scripts/generate-docs-size-report.py'
+      - '.ss/scripts/check-entry-file-size.py'
   workflow_dispatch:
 
 permissions:
