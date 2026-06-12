@@ -148,6 +148,13 @@ tasks:
           ".ss/reports/docs/docs-structure-report.json" \
           ".ss/reports/docs/docs-structure-report.md"
 
+        check_parity \
+          "hygiene-docs-accuracy" \
+          "python3 .ss/scripts/check-docs-accuracy.py; python3 .ss/scripts/generate-docs-accuracy-md.py" \
+          "cli/.venv/bin/slopstopper run hygiene:docs-accuracy" \
+          ".ss/reports/docs/docs-accuracy-report.json" \
+          ".ss/reports/docs/docs-accuracy-report.md"
+
         echo ""
         if [ "$FAILED" -eq 0 ]; then
           echo "All parity checks passed."
