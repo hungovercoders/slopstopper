@@ -47,31 +47,21 @@ def test_resolve_url_none_when_neither_set(monkeypatch):
     assert accessibility._resolve_url(None) is None
 
 
-def test_discover_pages_returns_none_when_script_missing(isolated_cwd):
-    assert accessibility._discover_pages() is None
+def test_discover_pages_defaults_to_root_when_unconfigured(isolated_cwd):
+    # No .slopstopper.yml, no env vars — discovery falls through to "/"
+    assert accessibility._discover_pages() == "/"
 
 
-def test_discover_pages_returns_stdout_when_script_succeeds(monkeypatch, isolated_cwd):
-    accessibility.DISCOVER_PAGES.parent.mkdir(parents=True, exist_ok=True)
-    accessibility.DISCOVER_PAGES.write_text("# stub")
-
-    def fake_run(cmd, capture_output, text, check):
-        return subprocess.CompletedProcess(cmd, 0, stdout="/,/blog\n", stderr="")
-
-    monkeypatch.setattr(accessibility.subprocess, "run", fake_run)
+def test_discover_pages_returns_joined_paths(monkeypatch, isolated_cwd):
+    monkeypatch.setattr(accessibility.discovery, "discover", lambda check, event: ["/", "/blog"])
     assert accessibility._discover_pages() == "/,/blog"
 
 
-def test_discover_pages_returns_none_on_non_zero_exit(monkeypatch, isolated_cwd):
-    accessibility.DISCOVER_PAGES.parent.mkdir(parents=True, exist_ok=True)
-    accessibility.DISCOVER_PAGES.write_text("# stub")
+def test_discover_pages_returns_none_on_discovery_failure(monkeypatch, isolated_cwd):
+    def boom(check, event):
+        raise RuntimeError("boom")
 
-    monkeypatch.setattr(
-        accessibility.subprocess, "run",
-        lambda cmd, capture_output, text, check: subprocess.CompletedProcess(
-            cmd, 1, stdout="should ignore", stderr="error"
-        ),
-    )
+    monkeypatch.setattr(accessibility.discovery, "discover", boom)
     assert accessibility._discover_pages() is None
 
 

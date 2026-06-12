@@ -40,8 +40,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+from slopstopper import discovery
+
 SCRIPT_PATH = Path(".ss/scripts/check-seo-metatags.py")
-DISCOVER_PAGES = Path(".ss/scripts/discover-pages.py")
 
 
 def _parse_args(args: list[str] | None) -> argparse.Namespace:
@@ -69,21 +70,12 @@ def _resolve_url(parsed_url: str | None) -> str | None:
 
 
 def _discover_pages() -> str | None:
-    if not DISCOVER_PAGES.exists():
-        return None
+    """Resolve pages.seo via the in-CLI discovery module."""
     try:
-        result = subprocess.run(
-            [sys.executable, str(DISCOVER_PAGES), "seo", "--event=local"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if result.returncode != 0:
-            return None
-        out = result.stdout.strip()
-        return out or None
-    except OSError:
+        paths = discovery.discover("seo", "local")
+    except Exception:
         return None
+    return ",".join(paths) if paths else None
 
 
 def _build_env(parsed: argparse.Namespace, url: str) -> dict[str, str]:
