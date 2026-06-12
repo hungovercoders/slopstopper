@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 
 from slopstopper.checks import smoke
@@ -40,11 +41,16 @@ def test_resolve_url_returns_none_when_neither_set(monkeypatch):
 def test_build_env_threads_url_and_config_defaults(isolated_cwd, monkeypatch):
     monkeypatch.delenv("SMOKE_OG_IMAGE_PATH", raising=False)
     monkeypatch.delenv("SMOKE_PAGES", raising=False)
+    # GitHub Actions sets CI=true in the runner env. We're asserting that
+    # _build_env doesn't ADD CI when ci_mode=False, not that CI is absent
+    # from the caller's environment. Snapshot caller-CI before the call.
+    caller_ci = os.environ.get("CI")
     env = smoke._build_env("https://example.com", ci_mode=False)
     assert env["SMOKE_TEST_URL"] == "https://example.com"
     assert env["SMOKE_OG_IMAGE_PATH"] == "/og-image.png"
     assert env["SMOKE_PAGES"] == "/"
-    assert "CI" not in env or env.get("CI") != "true"
+    # ci_mode=False must not touch CI either direction
+    assert env.get("CI") == caller_ci
 
 
 def test_build_env_reads_config_keys(write_config, monkeypatch):
