@@ -35,6 +35,8 @@ on:
       - '.ss/scripts/check-entry-file-size.py'
       - '.ss/scripts/check-docs-structure.py'
       - '.ss/scripts/generate-docs-structure-md.py'
+      - '.ss/scripts/check-docs-accuracy.py'
+      - '.ss/scripts/generate-docs-accuracy-md.py'
   push:
     branches: [ main ]
     paths:
@@ -45,6 +47,8 @@ on:
       - '.ss/scripts/check-entry-file-size.py'
       - '.ss/scripts/check-docs-structure.py'
       - '.ss/scripts/generate-docs-structure-md.py'
+      - '.ss/scripts/check-docs-accuracy.py'
+      - '.ss/scripts/generate-docs-accuracy-md.py'
   workflow_dispatch:
 
 permissions:
