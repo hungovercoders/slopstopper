@@ -33,6 +33,8 @@ on:
       - '.ss/scripts/check-docs-size.sh'
       - '.ss/scripts/generate-docs-size-report.py'
       - '.ss/scripts/check-entry-file-size.py'
+      - '.ss/scripts/check-docs-structure.py'
+      - '.ss/scripts/generate-docs-structure-md.py'
   push:
     branches: [ main ]
     paths:
@@ -41,6 +43,8 @@ on:
       - '.ss/scripts/check-docs-size.sh'
       - '.ss/scripts/generate-docs-size-report.py'
       - '.ss/scripts/check-entry-file-size.py'
+      - '.ss/scripts/check-docs-structure.py'
+      - '.ss/scripts/generate-docs-structure-md.py'
   workflow_dispatch:
 
 permissions:
