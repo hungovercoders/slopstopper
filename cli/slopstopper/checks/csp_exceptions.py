@@ -270,7 +270,7 @@ def _print_results(headers_count: int, doc_count: int, issues: list[dict], sourc
     print("━" * 60)
 
 
-def run() -> int:
+def run(_args: list[str] | None = None) -> int:
     source_path, format_name, skip_reason = _resolve_source()
     if source_path is None:
         print(f"ℹ  CSP exceptions check: {skip_reason} — skipping.")

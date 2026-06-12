@@ -189,7 +189,7 @@ def _build_md_report(data: dict) -> str:
     return md
 
 
-def run() -> int:
+def run(_args: list[str] | None = None) -> int:
     if not _semgrep_available():
         print(_INSTALL_HELP)
         return 1

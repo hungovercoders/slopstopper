@@ -114,7 +114,7 @@ def _build_md_report(findings: list[dict]) -> str:
     return md
 
 
-def run() -> int:
+def run(_args: list[str] | None = None) -> int:
     if not _gitleaks_available():
         print(_INSTALL_HELP)
         return 1

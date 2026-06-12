@@ -215,7 +215,7 @@ def _check_structure(docs_dir: Path) -> tuple[list[dict], list[str]] | None:
     return violations, expected
 
 
-def run() -> int:
+def run(_args: list[str] | None = None) -> int:
     print("🔍 Validating documentation structure...")
 
     result = _check_structure(DOCS_DIR)
