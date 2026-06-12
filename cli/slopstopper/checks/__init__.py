@@ -7,6 +7,7 @@ from typing import Callable
 from slopstopper.checks import (
     complexity,
     csp_exceptions,
+    dependencies,
     docs_accuracy,
     docs_size,
     docs_structure,
@@ -22,6 +23,7 @@ REGISTRY: dict[str, Callable[[], int]] = {
     "hygiene:docs-size": docs_size.run,
     "hygiene:docs-structure": docs_structure.run,
     "hygiene:entry-files": entry_files.run,
+    "security:dependencies": dependencies.run,
     "security:sast": sast.run,
     "security:secrets": secrets.run,
 }
