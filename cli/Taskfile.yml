@@ -171,6 +171,17 @@ tasks:
           ".ss/reports/complexity/complexity-report.csv" \
           ".ss/reports/complexity/complexity-report.md"
 
+        # csp-exceptions exercises the headers-adapter pluggability seam.
+        # Both .json and .md outputs are byte-identical (no timestamp in
+        # either, so no strip needed — but the helper strips the same way
+        # regardless).
+        check_parity \
+          "hygiene-csp-exceptions" \
+          "python3 .ss/scripts/check-csp-exceptions.py" \
+          "cli/.venv/bin/slopstopper run hygiene:csp-exceptions" \
+          ".ss/reports/csp/csp-exceptions-report.json" \
+          ".ss/reports/csp/csp-exceptions-report.md"
+
         echo ""
         if [ "$FAILED" -eq 0 ]; then
           echo "All parity checks passed."
