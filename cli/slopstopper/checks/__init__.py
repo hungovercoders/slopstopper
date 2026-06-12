@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Callable, Optional
 
 from slopstopper.checks import (
+    accessibility,
     complexity,
     csp_exceptions,
     cwv,
@@ -26,6 +27,7 @@ REGISTRY: dict[str, Callable[[Optional[list[str]]], int]] = {
     "hygiene:docs-size": docs_size.run,
     "hygiene:docs-structure": docs_structure.run,
     "hygiene:entry-files": entry_files.run,
+    "reliability:accessibility": accessibility.run,
     "reliability:cwv": cwv.run,
     "reliability:smoke": smoke.run,
     "security:dast": dast.run,
