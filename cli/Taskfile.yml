@@ -231,6 +231,16 @@ tasks:
         # for the build_md_report layer; trust the bash workflow for
         # the live ZAP behaviour.
 
+        # reliability:smoke — intentionally NOT parity-tested. Playwright
+        # smoke runs hit a live URL and emit playwright's own HTML/list
+        # reporter output, not .ss/reports/*-report.{md,json} files we
+        # can diff. The CLI port is a thin subprocess wrapper around
+        # `npx playwright test`: args parsing, env construction and
+        # command building are exhaustively unit-tested in
+        # cli/tests/checks/test_smoke.py (18 tests). Trust the unit
+        # tests for the launch envelope; trust the bash workflow for
+        # the live playwright behaviour.
+
         echo ""
         if [ "$FAILED" -eq 0 ]; then
           echo "All parity checks passed."
