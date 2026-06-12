@@ -241,6 +241,15 @@ tasks:
         # tests for the launch envelope; trust the bash workflow for
         # the live playwright behaviour.
 
+        # reliability:cwv — intentionally NOT parity-tested. Lighthouse
+        # CI hits a live URL and emits its own HTML/JSON artifacts
+        # alongside thresholding output; nothing in .ss/reports/ to
+        # diff. CWV scores are also non-deterministic (TBT, LCP vary
+        # with network and CPU jitter on the runner). The CLI port is
+        # a thin subprocess wrapper around `npx lhci autorun`;
+        # args/url/config plumbing is unit-tested in
+        # cli/tests/checks/test_cwv.py (13 tests).
+
         echo ""
         if [ "$FAILED" -eq 0 ]; then
           echo "All parity checks passed."
