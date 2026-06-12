@@ -53,9 +53,13 @@ tasks:
         set -e
         TMP=$(mktemp -d)
         trap 'rm -rf "$TMP"' EXIT
-        # Strip timestamp lines from both .md (**Generated: ...) and .json
-        # ("generated_at": ...,) reports so parity isn't broken by clock drift.
-        STRIP='^\*\*Generated:|"generated_at"'
+        # Strip timestamp lines from both .md reports and .json reports so
+        # parity isn't broken by clock drift between bash and CLI runs.
+        # Patterns observed across checks:
+        #   **Generated:** YYYY-MM-DD ...     (docs-size, entry-files, docs-structure, docs-accuracy)
+        #   **Generated**: YYYY-MM-DD ...     (complexity — asterisks before colon)
+        #   "generated_at": "...",            (every JSON report)
+        STRIP='^\*\*Generated|"generated_at"'
         FAILED=0
 
         # check_parity NAME BASH_CMD CLI_CMD REPORT_PATH [REPORT_PATH...]
@@ -154,6 +158,18 @@ tasks:
           "cli/.venv/bin/slopstopper run hygiene:docs-accuracy" \
           ".ss/reports/docs/docs-accuracy-report.json" \
           ".ss/reports/docs/docs-accuracy-report.md"
+
+        # hygiene:complexity shells out to `python -m lizard`. The bash
+        # side calls the full task target (which check-installs lizard,
+        # runs lizard --csv, then runs generate-complexity-md.py); the CLI
+        # side does the same via subprocess. Both produce identical CSV
+        # and MD when run against the same tree.
+        check_parity \
+          "hygiene-complexity" \
+          "task ss:hygiene:complexity" \
+          "cli/.venv/bin/slopstopper run hygiene:complexity" \
+          ".ss/reports/complexity/complexity-report.csv" \
+          ".ss/reports/complexity/complexity-report.md"
 
         echo ""
         if [ "$FAILED" -eq 0 ]; then

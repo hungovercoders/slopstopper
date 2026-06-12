@@ -21,7 +21,14 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-test = ["pytest>=7"]
+test = [
+  "pytest>=7",
+  # `lizard` is invoked at runtime by hygiene:complexity via subprocess
+  # (`python -m lizard`). Not a runtime dep of slopstopper-cli itself —
+  # adopters install it themselves in production. Pulled into the test
+  # extra so CI parity + integration tests can exercise the real tool.
+  "lizard>=1.17",
+]
 
 [project.scripts]
 slopstopper = "slopstopper.cli:main"
