@@ -10,6 +10,11 @@ test-results/
 # across re-runs and must be tracked.
 .ss/scripts/**/__pycache__/
 .ss/tests/**/__pycache__/
+# CLI package build artefacts (in-tree CLI pivot — see cli/README.md)
+cli/**/__pycache__/
+cli/*.egg-info/
+cli/build/
+cli/dist/
 # Local Netlify folder
 .netlify
 # TypeScript compiled output (copy.js is hand-written runtime JS, not a tsc artefact)
