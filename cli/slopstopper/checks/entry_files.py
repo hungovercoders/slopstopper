@@ -154,7 +154,7 @@ def _print_summary(measurements: list[dict], status_line: str) -> None:
     print(f"📁 Reports saved to: {REPORT_DIR}/")
 
 
-def run() -> int:
+def run(_args: list[str] | None = None) -> int:
     max_words = _load_max_words()
     measurements, missing = _measure_all(max_words)
 

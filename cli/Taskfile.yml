@@ -217,6 +217,20 @@ tasks:
           "cli/.venv/bin/slopstopper run security:dependencies" \
           ".ss/reports/dependencies/dependencies-report.md"
 
+        # security:dast — intentionally NOT parity-tested. ZAP baseline
+        # scans actively probe a live server and the resulting alerts
+        # are non-deterministic between runs (probe ordering, instance
+        # counts, even alert presence for low-confidence rules), so a
+        # byte-diff between two consecutive scans would fail even at
+        # 100% logical parity. Each scan is also ~1m17s of Docker time
+        # — running both back-to-back costs more than the signal is
+        # worth. The MD generation logic in
+        # cli/slopstopper/checks/dast.py is a straight lift of
+        # .ss/scripts/generate-dast-md.py and is exhaustively unit-
+        # tested in cli/tests/checks/test_dast.py. Trust the unit tests
+        # for the build_md_report layer; trust the bash workflow for
+        # the live ZAP behaviour.
+
         echo ""
         if [ "$FAILED" -eq 0 ]; then
           echo "All parity checks passed."

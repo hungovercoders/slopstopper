@@ -197,7 +197,7 @@ def _build_md_report(rows: list[tuple]) -> str:
     return md
 
 
-def run() -> int:
+def run(_args: list[str] | None = None) -> int:
     if not _lizard_available():
         print(_LIZARD_INSTALL_HELP)
         return 1

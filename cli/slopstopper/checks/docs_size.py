@@ -201,7 +201,7 @@ def _print_terminal_summary(
     print()
 
 
-def run() -> int:
+def run(_args: list[str] | None = None) -> int:
     thresholds = _load_thresholds()
     files_with_size = [(p, p.stat().st_size) for p in _iter_doc_files()]
     stats = _compute_stats(files_with_size)

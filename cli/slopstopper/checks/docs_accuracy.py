@@ -250,7 +250,7 @@ def _build_md_report(data: dict, generated_at: str) -> str:
     return "\n".join(lines) + "\n"
 
 
-def run() -> int:
+def run(_args: list[str] | None = None) -> int:
     print("🔍 Checking documentation accuracy…")
 
     if not DOCS_DIR.is_dir():
