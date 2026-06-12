@@ -259,6 +259,16 @@ tasks:
         # subprocess. Args / env / discover-pages plumbing is unit-
         # tested in cli/tests/checks/test_accessibility.py (23 tests).
 
+        # reliability:broken-links — intentionally NOT parity-tested.
+        # Same shape as reliability:accessibility (Playwright spec
+        # against a live URL). Live HEAD probes are network-dependent;
+        # results vary with target uptime, redirects, third-party
+        # outbound link availability. Port plumbs --url,
+        # BROKEN_LINKS_TEST_URL / SMOKE_TEST_URL fallback, and
+        # BROKEN_LINKS_PAGES via discover-pages.py subprocess. Args
+        # / env / discover-pages plumbing is unit-tested in
+        # cli/tests/checks/test_broken_links.py (22 tests).
+
         echo ""
         if [ "$FAILED" -eq 0 ]; then
           echo "All parity checks passed."
