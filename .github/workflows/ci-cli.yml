@@ -6,9 +6,11 @@ name: CI · slopstopper-cli
 # install.sh. Adopters never receive cli/, so they never need to run
 # its tests.
 #
-# As the CLI grows beyond pytest (lint, type-check, build, packaging
-# smoke test), add those steps here rather than spinning up new
-# ss-*-check.yml workflows.
+# This workflow delegates to cli/Taskfile.yml so the exact same
+# command developers run locally (`task -t cli/Taskfile.yml test`) is
+# what CI runs. As the CLI grows beyond pytest (lint, type-check, build,
+# packaging smoke test), add task targets in cli/Taskfile.yml and
+# steps here rather than spinning up new ss-*-check.yml workflows.
 
 on:
   pull_request:
@@ -35,9 +37,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      - name: Install slopstopper-cli with test extras
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e ./cli[test]
-      - name: Run pytest
-        run: pytest cli/tests/
+      - name: Install Task
+        run: curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
+      - name: Run CLI tests
+        run: task -t cli/Taskfile.yml test

@@ -20,13 +20,22 @@ slopstopper run hygiene:docs-size
 
 ```bash
 # From the repo root:
-python3 -m venv cli/.venv
-cli/.venv/bin/pip install -e ./cli[test]
-cli/.venv/bin/pytest cli/tests/
+task -t cli/Taskfile.yml test
+
+# Or from cli/:
+task test
+
+# Filter to a single test:
+task -t cli/Taskfile.yml test -- -k docs_size
 ```
 
-CI runs the same suite via [`.github/workflows/ci-cli.yml`](../.github/workflows/ci-cli.yml).
-That workflow is slopstopper-internal — it is **not** part of the
+The same `task test` target is what CI runs (see
+[`.github/workflows/ci-cli.yml`](../.github/workflows/ci-cli.yml)), so
+local and CI invocations stay in sync. The Taskfile creates and reuses
+a project-local venv at `cli/.venv/` (gitignored) so it doesn't conflict
+with system Python under PEP 668.
+
+This workflow is slopstopper-internal — it is **not** part of the
 distributed `ss-*-check.yml` suite and is never seeded into adopter repos.
 
 ## Install (eventual, post-publish)
