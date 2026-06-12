@@ -222,43 +222,59 @@ def _build_md_report(data: dict) -> str:
     return md
 
 
+def _prepare_localhost_target(target: str) -> tuple[str | None, subprocess.Popen | None]:
+    """For a localhost target, ensure a server is running and rewrite the URL
+    to be reachable from inside the ZAP container.
+
+    Returns (rewritten_target, owned_server_proc). If a server we don't own
+    was already listening, owned_server_proc is None. If we can't bring a
+    server up, returns (None, None).
+    """
+    server_proc: subprocess.Popen | None = None
+    if not _localhost_responding():
+        server_proc = _start_local_server()
+        if server_proc is None and not _localhost_responding():
+            return None, None
+    rewritten = _docker_host_target(target)
+    print(f"📍 Using Docker-compatible target: {rewritten}")
+    return rewritten, server_proc
+
+
+def _print_summary(data: dict) -> None:
+    alerts = _collect_alerts(data)
+    blocking = len(alerts["3"]) + len(alerts["2"])
+    total = sum(len(v) for v in alerts.values())
+    if blocking > 0:
+        print(f"⚠️  Found {blocking} high/medium alert(s) (total {total})")
+    elif total > 0:
+        print(f"ℹ️  Found {total} alert(s) — none high/medium")
+    else:
+        print("✅ No alerts detected")
+    print(f"📁 Reports saved to: {REPORT_DIR}/")
+
+
 def run(args: list[str] | None = None) -> int:
     if not _docker_available():
         print("❌ Docker is required to run OWASP ZAP")
         print("Please install Docker: https://docs.docker.com/get-docker/")
         return 1
 
-    parsed = _parse_args(args)
-    target = parsed.target
-
+    target = _parse_args(args).target
     print(f"🌐 Running DAST analysis against {target}…")
 
     server_proc: subprocess.Popen | None = None
     try:
         if _target_is_localhost(target):
-            if not _localhost_responding():
-                server_proc = _start_local_server()
-                if server_proc is None and not _localhost_responding():
-                    print(f"❌ Nothing listening on {target} and no server.js to start.")
-                    print("   Start your app's server first, then re-run.")
-                    return 1
-            target = _docker_host_target(target)
-            print(f"📍 Using Docker-compatible target: {target}")
+            target, server_proc = _prepare_localhost_target(target)
+            if target is None:
+                print("❌ Nothing listening on localhost and no server.js to start.")
+                print("   Start your app's server first, then re-run.")
+                return 1
 
         _run_zap(target)
         data = _read_data()
         REPORT_MD.write_text(_build_md_report(data))
-
-        alerts = _collect_alerts(data)
-        blocking = len(alerts["3"]) + len(alerts["2"])
-        total = sum(len(v) for v in alerts.values())
-        if blocking > 0:
-            print(f"⚠️  Found {blocking} high/medium alert(s) (total {total})")
-        elif total > 0:
-            print(f"ℹ️  Found {total} alert(s) — none high/medium")
-        else:
-            print("✅ No alerts detected")
-        print(f"📁 Reports saved to: {REPORT_DIR}/")
+        _print_summary(data)
         return 0
     finally:
         if server_proc is not None:
