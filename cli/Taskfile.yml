@@ -53,24 +53,71 @@ tasks:
         set -e
         TMP=$(mktemp -d)
         trap 'rm -rf "$TMP"' EXIT
-        STRIP='^\*\*Generated:'
+        # Strip timestamp lines from both .md (**Generated: ...) and .json
+        # ("generated_at": ...,) reports so parity isn't broken by clock drift.
+        STRIP='^\*\*Generated:|"generated_at"'
         FAILED=0
 
+        # check_parity NAME BASH_CMD CLI_CMD REPORT_PATH [REPORT_PATH...]
+        # Each REPORT_PATH names a single file the check owns. Both
+        # implementations must write to the same paths; we diff every
+        # named file (timestamp-stripped). Explicit paths avoid
+        # accidentally diffing co-located reports owned by other checks.
         check_parity() {
           local name="$1"
           local bash_cmd="$2"
           local cli_cmd="$3"
-          local report_path="$4"
+          shift 3
+          local report_paths=("$@")
 
           echo ""
           echo "=== ${name} ==="
-          eval "$bash_cmd" > /dev/null
-          cp "$report_path" "$TMP/${name}-bash.md"
-          eval "$cli_cmd" > /dev/null
-          cp "$report_path" "$TMP/${name}-cli.md"
-          grep -vE "$STRIP" "$TMP/${name}-bash.md" > "$TMP/${name}-bash-stripped.md"
-          grep -vE "$STRIP" "$TMP/${name}-cli.md" > "$TMP/${name}-cli-stripped.md"
-          if diff -u "$TMP/${name}-bash-stripped.md" "$TMP/${name}-cli-stripped.md"; then
+
+          # Bash side. Exit code may legitimately be non-zero (some checks
+          # gate CI on violations); the report diff is what we're judging.
+          eval "$bash_cmd" > /dev/null 2>&1 || true
+          local i=0
+          for report_path in "${report_paths[@]}"; do
+            cp "$report_path" "$TMP/${name}-bash-${i}" 2>/dev/null || true
+            i=$((i + 1))
+          done
+
+          # CLI side.
+          eval "$cli_cmd" > /dev/null 2>&1 || true
+          i=0
+          for report_path in "${report_paths[@]}"; do
+            cp "$report_path" "$TMP/${name}-cli-${i}" 2>/dev/null || true
+            i=$((i + 1))
+          done
+
+          local check_failed=0
+          i=0
+          for report_path in "${report_paths[@]}"; do
+            local label="$(basename "$report_path")"
+            local bash_file="$TMP/${name}-bash-${i}"
+            local cli_file="$TMP/${name}-cli-${i}"
+            i=$((i + 1))
+            if [ ! -f "$bash_file" ]; then
+              echo "  ❌ ${label}: bash did not produce this report"
+              check_failed=1
+              continue
+            fi
+            if [ ! -f "$cli_file" ]; then
+              echo "  ❌ ${label}: CLI did not produce this report"
+              check_failed=1
+              continue
+            fi
+            grep -vE "$STRIP" "$bash_file" > "$TMP/${name}-${i}.bash-stripped" || true
+            grep -vE "$STRIP" "$cli_file" > "$TMP/${name}-${i}.cli-stripped" || true
+            if diff -u "$TMP/${name}-${i}.bash-stripped" "$TMP/${name}-${i}.cli-stripped"; then
+              echo "  ✅ ${label}"
+            else
+              echo "  ❌ ${label}"
+              check_failed=1
+            fi
+          done
+
+          if [ "$check_failed" -eq 0 ]; then
             echo "✅ ${name} parity OK"
           else
             echo "❌ ${name} parity FAILED"
@@ -83,6 +130,13 @@ tasks:
           "bash .ss/scripts/check-docs-size.sh" \
           "cli/.venv/bin/slopstopper run hygiene:docs-size" \
           ".ss/reports/docs/docs-size-report.md"
+
+        check_parity \
+          "hygiene-entry-files" \
+          "python3 .ss/scripts/check-entry-file-size.py" \
+          "cli/.venv/bin/slopstopper run hygiene:entry-files" \
+          ".ss/reports/entry-files/entry-file-size-report.md" \
+          ".ss/reports/entry-files/entry-file-size-report.json"
 
         echo ""
         if [ "$FAILED" -eq 0 ]; then
