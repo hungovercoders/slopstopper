@@ -206,6 +206,17 @@ tasks:
           "cli/.venv/bin/slopstopper run security:sast" \
           ".ss/reports/sast/sast-report.md"
 
+        # security:dependencies — only the MD report is parity-diffed.
+        # trivy's JSON includes CreatedAt, ReportID and ArtifactID that
+        # change every run. The MD is derived from `Results`→
+        # `Vulnerabilities`, the security-meaningful fields, so it
+        # provides the parity signal.
+        check_parity \
+          "security-dependencies" \
+          "task ss:security:vulnerability:all" \
+          "cli/.venv/bin/slopstopper run security:dependencies" \
+          ".ss/reports/dependencies/dependencies-report.md"
+
         echo ""
         if [ "$FAILED" -eq 0 ]; then
           echo "All parity checks passed."
