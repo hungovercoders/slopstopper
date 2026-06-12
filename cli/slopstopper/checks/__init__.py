@@ -18,6 +18,7 @@ from slopstopper.checks import (
     entry_files,
     sast,
     secrets,
+    seo,
     smoke,
 )
 
@@ -31,6 +32,7 @@ REGISTRY: dict[str, Callable[[Optional[list[str]]], int]] = {
     "reliability:accessibility": accessibility.run,
     "reliability:broken-links": broken_links.run,
     "reliability:cwv": cwv.run,
+    "reliability:seo": seo.run,
     "reliability:smoke": smoke.run,
     "security:dast": dast.run,
     "security:dependencies": dependencies.run,
