@@ -182,6 +182,18 @@ tasks:
           ".ss/reports/csp/csp-exceptions-report.json" \
           ".ss/reports/csp/csp-exceptions-report.md"
 
+        # security:secrets shells out to `gitleaks`. The bash side calls
+        # the canonical task (which check-installs gitleaks via
+        # secrets:check-tool), then the CLI subprocess-invokes the same
+        # gitleaks now on PATH. Order matters: bash first installs, then
+        # CLI uses what bash installed.
+        check_parity \
+          "security-secrets" \
+          "task ss:security:secrets" \
+          "cli/.venv/bin/slopstopper run security:secrets" \
+          ".ss/reports/secrets/secrets-report.json" \
+          ".ss/reports/secrets/secrets-report.md"
+
         echo ""
         if [ "$FAILED" -eq 0 ]; then
           echo "All parity checks passed."

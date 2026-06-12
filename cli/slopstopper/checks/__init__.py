@@ -11,6 +11,7 @@ from slopstopper.checks import (
     docs_size,
     docs_structure,
     entry_files,
+    secrets,
 )
 
 REGISTRY: dict[str, Callable[[], int]] = {
@@ -20,4 +21,5 @@ REGISTRY: dict[str, Callable[[], int]] = {
     "hygiene:docs-size": docs_size.run,
     "hygiene:docs-structure": docs_structure.run,
     "hygiene:entry-files": entry_files.run,
+    "security:secrets": secrets.run,
 }
