@@ -194,6 +194,18 @@ tasks:
           ".ss/reports/secrets/secrets-report.json" \
           ".ss/reports/secrets/secrets-report.md"
 
+        # security:sast — only the MD report is parity-diffed. semgrep's
+        # JSON output includes per-run timing data (total_time,
+        # max_memory_bytes, profiling_times…) that is naturally
+        # non-deterministic between back-to-back invocations. The MD is
+        # derived from `results` and `errors`, the security-meaningful
+        # fields, so it provides the parity signal.
+        check_parity \
+          "security-sast" \
+          "task ss:security:sast" \
+          "cli/.venv/bin/slopstopper run security:sast" \
+          ".ss/reports/sast/sast-report.md"
+
         echo ""
         if [ "$FAILED" -eq 0 ]; then
           echo "All parity checks passed."
