@@ -269,6 +269,17 @@ tasks:
         # / env / discover-pages plumbing is unit-tested in
         # cli/tests/checks/test_broken_links.py (22 tests).
 
+        # reliability:seo — intentionally NOT parity-tested. The CLI
+        # subprocess-invokes .ss/scripts/check-seo-metatags.py, which
+        # writes diffable .ss/reports/seo/*.{md,json} reports — but
+        # the underlying audit hits live URLs and HEAD-checks
+        # og:image hosts, so two back-to-back runs can disagree on
+        # transient network state. Args / env / discover-pages
+        # plumbing is unit-tested in cli/tests/checks/test_seo.py
+        # (18 tests). When the SEO script is lifted into the CLI
+        # package (next phase), this can become a true parity-eligible
+        # check if we standardise the URL fixture.
+
         echo ""
         if [ "$FAILED" -eq 0 ]; then
           echo "All parity checks passed."
