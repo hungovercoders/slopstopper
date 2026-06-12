@@ -250,6 +250,15 @@ tasks:
         # args/url/config plumbing is unit-tested in
         # cli/tests/checks/test_cwv.py (13 tests).
 
+        # reliability:accessibility — intentionally NOT parity-tested.
+        # Same shape as reliability:smoke (Playwright + axe-core,
+        # results in .ss/playwright-report/, no .ss/reports/*-report.*
+        # to diff; results can flicker on first paint timing). Port
+        # plumbs --url, ACCESSIBILITY_TEST_URL / SMOKE_TEST_URL
+        # fallback, and ACCESSIBILITY_PAGES via discover-pages.py
+        # subprocess. Args / env / discover-pages plumbing is unit-
+        # tested in cli/tests/checks/test_accessibility.py (23 tests).
+
         echo ""
         if [ "$FAILED" -eq 0 ]; then
           echo "All parity checks passed."
