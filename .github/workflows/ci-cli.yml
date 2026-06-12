@@ -1,0 +1,43 @@
+name: CI · slopstopper-cli
+
+# Internal CI for the slopstopper-cli Python package under cli/.
+# Not part of the distributed slopstopper suite — this workflow is
+# slopstopper.dev-internal and is NOT seeded into adopter repos by
+# install.sh. Adopters never receive cli/, so they never need to run
+# its tests.
+#
+# As the CLI grows beyond pytest (lint, type-check, build, packaging
+# smoke test), add those steps here rather than spinning up new
+# ss-*-check.yml workflows.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'cli/**'
+      - '.github/workflows/ci-cli.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'cli/**'
+      - '.github/workflows/ci-cli.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install slopstopper-cli with test extras
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ./cli[test]
+      - name: Run pytest
+        run: pytest cli/tests/

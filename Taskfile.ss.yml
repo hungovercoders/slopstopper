@@ -1249,26 +1249,6 @@ tasks:
         print("✅ No oversized markdown files found in docs")
         PY
 
-  hygiene:cli-tests:
-    desc: Run pytest against the slopstopper-cli package
-    summary: |
-      Runs the pytest suite under cli/tests/ against the slopstopper-cli
-      package. Uses a project-local venv at cli/.venv (created on first
-      run, reused after) so it doesn't conflict with system Python under
-      PEP 668.
-
-      Usage:
-        task ss:hygiene:cli-tests             # Run all CLI tests
-        task ss:hygiene:cli-tests -- -k name  # Filter to a single test
-    cmds:
-      - |
-        if [ ! -d cli/.venv ]; then
-          python3 -m venv cli/.venv
-        fi
-      - cli/.venv/bin/pip install --quiet --upgrade pip
-      - cli/.venv/bin/pip install --quiet -e ./cli[test]
-      - cli/.venv/bin/pytest cli/tests/ {{.CLI_ARGS}}
-
   hygiene:docs-size:
     desc: Monitor documentation size and check against thresholds
     summary: |

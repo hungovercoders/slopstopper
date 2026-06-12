@@ -16,6 +16,19 @@ slopstopper --version
 slopstopper run hygiene:docs-size
 ```
 
+## Run the tests
+
+```bash
+# From the repo root:
+python3 -m venv cli/.venv
+cli/.venv/bin/pip install -e ./cli[test]
+cli/.venv/bin/pytest cli/tests/
+```
+
+CI runs the same suite via [`.github/workflows/ci-cli.yml`](../.github/workflows/ci-cli.yml).
+That workflow is slopstopper-internal — it is **not** part of the
+distributed `ss-*-check.yml` suite and is never seeded into adopter repos.
+
 ## Install (eventual, post-publish)
 
 ```bash
