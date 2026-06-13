@@ -1,18 +1,22 @@
 name: SlopStopper · Hygiene - CSP Exceptions Drift Check
 
+# CLI-flipped workflow (Phase 2). Replaces task ss:hygiene:csp-exceptions
+# + ~50 lines of duplicated actions/github-script@v7 with one
+# `slopstopper emit` step. The check itself runs via the CLI and the
+# workflow's failure surfaces drift on main; no separate main-branch
+# issue is created (the check's exit-code gate is enough).
+
 on:
   pull_request:
     paths:
       - 'worker/headers.json'
       - 'docs/security/CSP_EXCEPTIONS.md'
-      - '.ss/scripts/check-csp-exceptions.py'
       - '.github/workflows/ss-hygiene-csp-exceptions-check.yml'
   push:
     branches: [main]
     paths:
       - 'worker/headers.json'
       - 'docs/security/CSP_EXCEPTIONS.md'
-      - '.ss/scripts/check-csp-exceptions.py'
       - '.github/workflows/ss-hygiene-csp-exceptions-check.yml'
   workflow_dispatch:
 
@@ -34,14 +38,21 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Task
+      - name: Install slopstopper-cli
         run: |
-          curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
-          task --version
+          # Pre-PyPI dogfood install. slopstopper.dev installs editable
+          # from local source; adopters (no cli/ dir) install from git.
+          # Once published, both branches collapse into:
+          #   pipx install slopstopper-cli==<pinned-version>
+          if [ -f cli/pyproject.toml ]; then
+            pip install -e ./cli
+          else
+            pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli"
+          fi
 
       - name: Run CSP exceptions check
         id: check
-        run: task ss:hygiene:csp-exceptions
+        run: slopstopper run hygiene:csp-exceptions
 
       - name: Upload report
         if: always()
@@ -52,49 +63,8 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-      - name: Comment on PR with drift summary
+      - name: Emit PR comment
         if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v7
         env:
-          JOB_STATUS: ${{ job.status }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        with:
-          script: |
-            const fs = require('fs');
-            const status = process.env.JOB_STATUS === 'success' ? '✅ PASSED' : '❌ FAILED';
-            const runUrl = process.env.RUN_URL;
-
-            let body = `## 🔐 CSP Exceptions Check ${status}\n\n`;
-            body += 'This check enforces that every per-path CSP relaxation in `worker/headers.json` is documented in `docs/security/CSP_EXCEPTIONS.md` — and vice versa.\n\n';
-
-            try {
-              const report = fs.readFileSync('.ss/reports/csp/csp-exceptions-report.md', 'utf8');
-              body += '<details><summary>Full report</summary>\n\n' + report + '\n</details>\n\n';
-            } catch (e) {
-              body += '_Report unavailable._\n\n';
-            }
-
-            body += `[View workflow run](${runUrl})\n`;
-
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const marker = '🔐 CSP Exceptions Check';
-            const existing = comments.find(c => c.user.type === 'Bot' && c.body.includes(marker));
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body
-              });
-            }
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: slopstopper emit hygiene:csp-exceptions --target pr-comment
