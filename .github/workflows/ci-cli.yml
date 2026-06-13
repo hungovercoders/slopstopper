@@ -62,6 +62,7 @@ on:
       - '.github/workflows/ss-security-sast-check.yml'
       - '.github/workflows/ss-security-vulnerability-all-check.yml'
       - '.github/workflows/ss-reliability-smoke-tests.yml'
+      - '.github/workflows/ss-reliability-broken-links-check.yml'
   push:
     branches: [ main ]
     paths:
@@ -99,6 +100,7 @@ on:
       - '.github/workflows/ss-security-sast-check.yml'
       - '.github/workflows/ss-security-vulnerability-all-check.yml'
       - '.github/workflows/ss-reliability-smoke-tests.yml'
+      - '.github/workflows/ss-reliability-broken-links-check.yml'
   workflow_dispatch:
 
 permissions:
