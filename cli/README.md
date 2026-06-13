@@ -9,7 +9,7 @@ The SlopStopper quality suite, packaged as a `pipx`-installable CLI.
 End-user (most adopters):
 
 ```bash
-pipx install git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli
+pipx install git+https://github.com/hungovercoders/slopstopper.git@v0.2.0#subdirectory=cli
 slopstopper --version
 slopstopper checks list
 slopstopper doctor

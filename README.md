@@ -7,7 +7,7 @@
 The CLI alone (most use cases):
 
 ```bash
-pipx install git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli
+pipx install git+https://github.com/hungovercoders/slopstopper.git@v0.2.0#subdirectory=cli
 slopstopper checks list             # see what's available
 slopstopper doctor                  # verify the external tools you'll need
 slopstopper run hygiene:docs-size   # run a check (writes .ss/reports/...)
@@ -41,12 +41,23 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
 
 ## Prerequisites
 
-- **Python 3.11+** — slopstopper-cli runs here; `pipx` recommended (`brew install pipx`)
-- **Node 20+** — Playwright, Lighthouse CI, markdownlint, bundled `slopstopper serve`
-- **Git + bash** — for `install.sh` and the CI workflows
-- **Task v3.x** *(optional)* — adopters who use `task` get a thin `task ss:*` shim layer
-- **Docker** — only needed for DAST (OWASP ZAP runs in a container)
-- **`gh` CLI** — only needed for `slopstopper emit` (PR comments / issues from CI)
+slopstopper-cli itself only needs Python. Each check subprocess-invokes its underlying tool (`semgrep`, `gitleaks`, `trivy`, `lizard`, `docker`, `node`) — deliberate licensing-boundary design. You install only the tools for checks you actually use; `slopstopper doctor` tells you what's installed and what's missing.
+
+- **Python 3.11+** — `pipx` recommended (`brew install pipx`)
+
+Per-check tools (skip if you've disabled the check):
+
+| Tool | Needed by | Install hint |
+| ---- | --------- | ------------ |
+| `node` 20+ | Reliability checks (Playwright + Lighthouse), `slopstopper serve` | [nodejs.org](https://nodejs.org/) |
+| `gh` | `slopstopper emit` (PR comments + issues from CI) | [cli.github.com](https://cli.github.com/) |
+| `lizard` | `hygiene:complexity` | `pip install --user lizard` (**not** brew — that's lz4) |
+| `semgrep` | `security:sast` | `pip install --user semgrep` |
+| `gitleaks` | `security:secrets` | `brew install gitleaks` |
+| `trivy` | `security:dependencies` | `brew install aquasecurity/trivy/trivy` |
+| `docker` | `security:dast` | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |
+
+Optional: **bash + git** (if using `install.sh`), **Task v3.x** (for the `task ss:*` shim layer).
 
 ## What gets installed
 

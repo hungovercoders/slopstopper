@@ -47,7 +47,7 @@ jobs:
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else
-            pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli"
+            pip install "git+https://github.com/hungovercoders/slopstopper.git@v0.2.0#subdirectory=cli"
           fi
 
       - name: Run documentation size check

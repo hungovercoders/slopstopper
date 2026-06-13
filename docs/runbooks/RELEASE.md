@@ -38,22 +38,33 @@ If in doubt, prefer a MINOR bump over a PATCH.
 
    The release workflow has a sanity-check step that fails the build if these diverge from the tag.
 
-4. **Commit + push** the CHANGELOG and version bumps as a single commit (`chore(release): bump version to X.Y.Z`). Open a PR if you want CI to pre-verify; otherwise push straight to `main` if you have permission.
+4. **Bump the pinned install URL** across docs, the website, `install.sh`, and every `ss-*-check.yml` workflow. The pattern to replace is `@vOLD#subdirectory=cli` → `@vNEW#subdirectory=cli`:
 
-5. **Tag + push.** Once the bump commit is on `main`:
+   ```bash
+   # From the repo root, swap the old tag for the new one everywhere:
+   git ls-files | xargs grep -l "@vOLD#subdirectory=cli" 2>/dev/null \
+     | xargs sed -i.bak "s|@vOLD#subdirectory=cli|@vNEW#subdirectory=cli|g" \
+     && find . -name '*.bak' -delete
+   ```
+
+   This keeps adopters' fresh installs pinned to a known-good release and slopstopper.dev's own CI (which uses the editable install when `cli/` is present) unaffected.
+
+5. **Commit + push** the CHANGELOG, version bumps and URL bumps as a single commit (`chore(release): bump version to X.Y.Z`). Open a PR if you want CI to pre-verify; otherwise push straight to `main` if you have permission.
+
+6. **Tag + push.** Once the bump commit is on `main`:
 
    ```bash
    git tag vX.Y.Z -m "X.Y.Z"
    git push origin vX.Y.Z
    ```
 
-6. **Watch the workflow.** The `SlopStopper · Release` workflow runs against the tag. It will:
+7. **Watch the workflow.** The `SlopStopper · Release` workflow runs against the tag. It will:
    - Verify versions match the tag.
    - Build wheel + sdist with `python -m build` (uses `hatchling`).
    - Extract the matching `## [X.Y.Z]` section from `CHANGELOG.md`.
    - Create the GitHub Release with that body and both artifacts attached.
 
-7. **Verify the release.** Open [Releases](https://github.com/hungovercoders/slopstopper/releases). Sanity-check the body, download the wheel, run `pipx install <path-to-wheel>` somewhere and confirm `slopstopper --version` matches.
+8. **Verify the release.** Open [Releases](https://github.com/hungovercoders/slopstopper/releases). Sanity-check the body, download the wheel, run `pipx install <path-to-wheel>` somewhere and confirm `slopstopper --version` matches.
 
 ## Manual re-release
 

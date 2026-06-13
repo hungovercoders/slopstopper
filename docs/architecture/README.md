@@ -29,7 +29,7 @@ slopstopper/
 │   ├── slopstopper/data/     # Bundled Playwright specs, lighthouserc dev/prod, server.js
 │   ├── slopstopper/templates.py / emit.py / discovery.py / config.py
 │   ├── tests/                # pytest suite (486 tests)
-│   └── pyproject.toml        # 0.2.0 Beta — install: `pipx install git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli`
+│   └── pyproject.toml        # 0.2.0 Beta — install: `pipx install git+https://github.com/hungovercoders/slopstopper.git@v0.2.0#subdirectory=cli`
 ├── app/                      # Static site — bound as the [assets] dir on the Worker
 │   ├── index.html            # Hero + Get Started (pipx install) + capability grid
 │   ├── features.html         # 5 category cards with workflow excerpts + mock reports
