@@ -53,6 +53,7 @@ on:
       # CLI's `slopstopper run` and `slopstopper emit` working, so the
       # CLI tests must run too. As more workflows flip, add them here.
       - '.github/workflows/ss-hygiene-docs-size-check.yml'
+      - '.github/workflows/ss-hygiene-entry-files-check.yml'
   push:
     branches: [ main ]
     paths:
@@ -81,6 +82,7 @@ on:
       # CLI's `slopstopper run` and `slopstopper emit` working, so the
       # CLI tests must run too. As more workflows flip, add them here.
       - '.github/workflows/ss-hygiene-docs-size-check.yml'
+      - '.github/workflows/ss-hygiene-entry-files-check.yml'
   workflow_dispatch:
 
 permissions:

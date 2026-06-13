@@ -36,6 +36,16 @@ REPORT_DIR = Path(".ss/reports/entry-files")
 REPORT_MD = REPORT_DIR / "entry-file-size-report.md"
 REPORT_JSON = REPORT_DIR / "entry-file-size-report.json"
 
+# Consumed by `slopstopper emit hygiene:entry-files --target pr-comment`.
+# The discriminator is byte-identical to the marker the legacy
+# actions/github-script@v7 block matched on, so the same bot comment
+# is reused after the workflow flip. No issue keys: the workflow gates
+# main with the check's own exit code, no main-branch issue is created.
+META = {
+    "report_path": str(REPORT_MD),
+    "comment_discriminator": "📏 Entry-File Budget Check",
+}
+
 _WORD_RE = re.compile(r"\S+")
 
 
