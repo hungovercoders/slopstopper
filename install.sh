@@ -335,9 +335,10 @@ seed_template() {
   success "$label: seeded $dst"
 }
 
-# .slopstopper.yml — config carrier
+# .slopstopper.yml — config carrier. Seeded from the repo-root example
+# (which doubles as the schema reference — single source of truth).
 seed_template ".slopstopper.yml" \
-  "$SCRIPT_DIR/templates/slopstopper.yml.example" \
+  "$SCRIPT_DIR/.slopstopper.yml.example" \
   "$TARGET_DIR/.slopstopper.yml"
 
 # .github/labeler.yml — config for ss-hygiene-auto-label-pr.yml
