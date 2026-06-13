@@ -1,14 +1,18 @@
 name: SlopStopper · Core Web Vitals
 
-on:
-  # Run against the preview/production URL after a successful deployment
-  deployment_status:
+# CLI-flipped workflow (Phase 2). Last reliability flip. Routes the
+# check through `slopstopper run reliability:cwv` (which is a thin
+# wrapper around `npx lhci autorun`) and converts the three
+# actions/github-script@v7 blocks (PR comment, issue create/update on
+# main, issue close on success) to inline `gh`. emit.py isn't a fit:
+# cwv.py doesn't render a markdown report; the threshold table is
+# built from the lhci JSON output in this workflow. Lifting that
+# rendering into the CLI is a follow-up.
 
-  # Run on schedule against production (daily at midnight UTC)
+on:
+  deployment_status:
   schedule:
     - cron: '0 0 * * *'
-
-  # Allow manual trigger with a custom URL
   workflow_dispatch:
     inputs:
       url:
@@ -16,13 +20,9 @@ on:
         required: true
         default: 'https://slopstopper.dev/'
         type: string
-
-  # Run against local server on pull requests
   pull_request:
     branches:
       - main
-
-  # Run against local server on pushes to main
   push:
     branches:
       - main
@@ -35,15 +35,12 @@ permissions:
 jobs:
   cwv:
     name: Core Web Vitals (Lighthouse CI)
-
-    # For deployment_status events, only run on successful deployments
     if: |
       github.event_name == 'pull_request' ||
       github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'schedule' ||
       (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success')
-
     runs-on: ubuntu-latest
 
     steps:
@@ -59,10 +56,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install slopstopper-cli
+        run: |
+          # Pre-PyPI dogfood install. slopstopper.dev installs editable
+          # from local source; adopters (no cli/ dir) install from git.
+          # Once published, both branches collapse into:
+          #   pipx install slopstopper-cli==<pinned-version>
+          if [ -f cli/pyproject.toml ]; then
+            pip install -e ./cli
+          else
+            pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli"
+          fi
+
       # ── Local server (PR / push to main) ────────────────────────────────────
-      # CUSTOMISE FOR YOUR APP: these two steps build and serve this repo's
-      # static site. Replace with your app's build/serve commands, or remove
-      # these steps and only audit deployed URLs.
+      # CUSTOMISE FOR YOUR APP: these two steps build and serve this
+      # repo's static site. Replace with your app's build/serve
+      # commands, or remove them and only audit deployed URLs.
       - name: Build site
         if: github.event_name == 'pull_request' || github.event_name == 'push'
         run: |
@@ -90,7 +104,6 @@ jobs:
             exit 1
           fi
 
-      # ── Determine audit URL and Lighthouse config ────────────────────────────
       - name: Determine audit URL
         id: audit-url
         env:
@@ -108,7 +121,6 @@ jobs:
           }
 
           if [ "$EVENT_NAME" == "pull_request" ] || [ "$EVENT_NAME" == "push" ]; then
-            # Local dev build — CWV-only thresholds, no preset
             echo "url=http://localhost:8080" >> "$GITHUB_OUTPUT"
             echo "config=.ss/lighthouserc.json" >> "$GITHUB_OUTPUT"
           elif [ "$EVENT_NAME" == "workflow_dispatch" ]; then
@@ -118,37 +130,31 @@ jobs:
           elif [ "$EVENT_NAME" == "deployment_status" ]; then
             SAFE_URL="$(validate_url "$DEPLOYMENT_URL")"
             echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
-            # Production deployment — use full preset including best-practices/SEO/accessibility
             echo "config=.ss/lighthouserc.prod.json" >> "$GITHUB_OUTPUT"
           else
-            # Scheduled run — use production URL with full preset
             echo "url=https://slopstopper.dev" >> "$GITHUB_OUTPUT"
             echo "config=.ss/lighthouserc.prod.json" >> "$GITHUB_OUTPUT"
           fi
 
-      # ── Run Lighthouse CI ────────────────────────────────────────────────────
       - name: Run Lighthouse CI
         id: lhci
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+          AUDIT_URL: ${{ steps.audit-url.outputs.url }}
+          LHCI_CONFIG: ${{ steps.audit-url.outputs.config }}
+        continue-on-error: true
         run: |
-          AUDIT_URL="${{ steps.audit-url.outputs.url }}"
           echo "🔍 Auditing: $AUDIT_URL"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          LHCI_CONFIG="${{ steps.audit-url.outputs.config }}"
           echo "📋 Using config: $LHCI_CONFIG"
-          npx lhci autorun \
-            --collect.url="$AUDIT_URL" \
-            --config="$LHCI_CONFIG" \
+          set -o pipefail
+          slopstopper run reliability:cwv -- --url "$AUDIT_URL" --config "$LHCI_CONFIG" \
             2>&1 | tee /tmp/lhci-output.txt
           echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
-        continue-on-error: true
 
       - name: Stop local server
         if: (github.event_name == 'pull_request' || github.event_name == 'push') && always()
         run: kill "$SERVER_PID" || true
 
-      # ── Parse results ────────────────────────────────────────────────────────
       - name: Parse Lighthouse results
         id: results
         run: |
@@ -179,11 +185,9 @@ jobs:
             console.log('Parsed metrics:\n' + out);
           "
 
-          # Extract the temporary-public-storage report URL if available
           REPORT_URL=$(grep -oE 'https://storage\.googleapis\.com/[^[:space:]]+' /tmp/lhci-output.txt 2>/dev/null | head -1 || true)
           echo "report_url=$REPORT_URL" >> "$GITHUB_OUTPUT"
 
-      # ── Upload artifacts ─────────────────────────────────────────────────────
       - name: Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -193,11 +197,10 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      # ── PR comment ───────────────────────────────────────────────────────────
       - name: Comment on PR with results
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PERFORMANCE: ${{ steps.results.outputs.performance }}
           LCP: ${{ steps.results.outputs.lcp }}
           TBT: ${{ steps.results.outputs.tbt }}
@@ -206,136 +209,117 @@ jobs:
           REPORT_URL: ${{ steps.results.outputs.report_url }}
           LHCI_EXIT: ${{ steps.lhci.outputs.exit_code }}
           AUDIT_URL: ${{ steps.audit-url.outputs.url }}
-        with:
-          script: |
+        run: |
+          # Build the threshold table via node (already a dep here for
+          # lhci) so we don't have to redo the int / float comparisons
+          # in bash. This used to live in the github-script block.
+          BODY=$(node -e "
             const perf = process.env.PERFORMANCE;
             const lcp  = process.env.LCP;
             const tbt  = process.env.TBT;
             const cls  = process.env.CLS;
-            const fcp  = process.env.FCP;
             const reportUrl = process.env.REPORT_URL;
             const passed = process.env.LHCI_EXIT === '0';
             const status = passed ? '✅ PASSED' : '❌ FAILED';
             const auditUrl = process.env.AUDIT_URL;
-
-            const lcpMs  = lcp  !== 'N/A' ? `${lcp} ms`  : 'N/A';
-            const tbtMs  = tbt  !== 'N/A' ? `${tbt} ms`  : 'N/A';
-            const fcpMs  = fcp  !== 'N/A' ? `${fcp} ms`  : 'N/A';
-            const perfPc = perf !== 'N/A' ? `${perf}/100` : 'N/A';
-
-            const thresholds = [
+            const lcpMs  = lcp !== 'N/A' ? lcp + ' ms'  : 'N/A';
+            const tbtMs  = tbt !== 'N/A' ? tbt + ' ms'  : 'N/A';
+            const perfPc = perf !== 'N/A' ? perf + '/100' : 'N/A';
+            const rows = [
               '| Metric | Threshold | Status |',
               '|--------|-----------|--------|',
-              `| Performance score | ≥ 70  | ${perf !== 'N/A' ? (parseInt(perf) >= 70 ? '✅' : '❌') : '⚠️'} ${perfPc} |`,
-              `| LCP               | ≤ 4 s | ${lcp  !== 'N/A' ? (parseInt(lcp)  <= 4000 ? '✅' : '❌') : '⚠️'} ${lcpMs} |`,
-              `| TBT               | ≤ 600 ms | ${tbt  !== 'N/A' ? (parseInt(tbt)  <= 600  ? '✅' : '❌') : '⚠️'} ${tbtMs} |`,
-              `| CLS               | ≤ 0.25 | ${cls  !== 'N/A' ? (parseFloat(cls) <= 0.25 ? '✅' : '❌') : '⚠️'} ${cls} |`,
+              '| Performance score | ≥ 70  | ' + (perf !== 'N/A' ? (parseInt(perf) >= 70 ? '✅' : '❌') : '⚠️') + ' ' + perfPc + ' |',
+              '| LCP               | ≤ 4 s | ' + (lcp  !== 'N/A' ? (parseInt(lcp)  <= 4000 ? '✅' : '❌') : '⚠️') + ' ' + lcpMs  + ' |',
+              '| TBT               | ≤ 600 ms | ' + (tbt  !== 'N/A' ? (parseInt(tbt)  <= 600  ? '✅' : '❌') : '⚠️') + ' ' + tbtMs  + ' |',
+              '| CLS               | ≤ 0.25 | ' + (cls  !== 'N/A' ? (parseFloat(cls) <= 0.25 ? '✅' : '❌') : '⚠️') + ' ' + cls + ' |',
             ].join('\n');
+            let out = '## 🚦 Core Web Vitals ' + status + '\n\n';
+            out += '**URL audited:** ' + auditUrl + '\n\n' + rows + '\n\n';
+            if (reportUrl) out += '[📊 Full Lighthouse Report](' + reportUrl + ')\n\n';
+            out += '### How to run locally\n\n\`\`\`bash\nslopstopper run reliability:cwv -- --url https://your-site.example.com\n\`\`\`\n';
+            process.stdout.write(out);
+          ")
 
-            let body = `## 🚦 Core Web Vitals ${status}\n\n`;
-            body += `**URL audited:** ${auditUrl}\n\n`;
-            body += thresholds + '\n\n';
-            if (reportUrl) body += `[📊 Full Lighthouse Report](${reportUrl})\n\n`;
-            body += `### How to run locally\n\n`;
-            body += `\`\`\`bash\n# Install Task (one-time)\ncurl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin\n\n# Run against a live URL\ntask ss:reliability:cwv -- https://your-site.example.com\n\`\`\`\n`;
+          marker='🚦 Core Web Vitals'
+          pr_number=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
+          existing=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments" \
+            --jq ".[] | select(.user.type==\"Bot\" and (.body | contains(\"$marker\"))) | .id" | head -n1)
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${existing}" -f body="$BODY"
+          else
+            gh pr comment "$pr_number" --body "$BODY"
+          fi
 
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body
-            });
-
-      # ── Fail the job if LHCI thresholds were not met ─────────────────────────
       - name: Enforce thresholds
         if: steps.lhci.outputs.exit_code != '0'
+        env:
+          PERFORMANCE: ${{ steps.results.outputs.performance }}
+          LCP: ${{ steps.results.outputs.lcp }}
+          TBT: ${{ steps.results.outputs.tbt }}
+          CLS: ${{ steps.results.outputs.cls }}
+          CFG: ${{ steps.audit-url.outputs.config }}
         run: |
-          echo "❌ Core Web Vitals thresholds not met. See ${{ steps.audit-url.outputs.config }} for configured limits."
+          echo "::error::Core Web Vitals thresholds not met. See $CFG for configured limits."
           echo ""
           echo "Metrics recorded:"
-          echo "  Performance : ${{ steps.results.outputs.performance }}/100  (threshold: ≥ 70)"
-          echo "  LCP         : ${{ steps.results.outputs.lcp }} ms            (threshold: ≤ 4000 ms)"
-          echo "  TBT         : ${{ steps.results.outputs.tbt }} ms            (threshold: ≤ 600 ms)"
-          echo "  CLS         : ${{ steps.results.outputs.cls }}               (threshold: ≤ 0.25)"
-          echo ""
-          echo "Update .ss/lighthouserc.json to adjust thresholds."
+          echo "  Performance : ${PERFORMANCE}/100  (threshold: ≥ 70)"
+          echo "  LCP         : ${LCP} ms           (threshold: ≤ 4000 ms)"
+          echo "  TBT         : ${TBT} ms           (threshold: ≤ 600 ms)"
+          echo "  CLS         : ${CLS}              (threshold: ≤ 0.25)"
           exit 1
 
-      # ── Create/update issue on main-branch failures ───────────────────────────
-      - name: Create/Update issue on main branch failure
+      - name: Open / update issue on CWV failure (main / schedule / deploy)
         if: |
           failure() && (
             (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
             github.event_name == 'schedule' ||
             github.event_name == 'deployment_status'
           )
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const title = '❌ Core Web Vitals Below Threshold';
-            const label = 'cwv-failure';
-            const auditUrl = '${{ steps.audit-url.outputs.url }}';
-            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUDIT_URL: ${{ steps.audit-url.outputs.url }}
+          PERFORMANCE: ${{ steps.results.outputs.performance }}
+          LCP: ${{ steps.results.outputs.lcp }}
+          TBT: ${{ steps.results.outputs.tbt }}
+          CLS: ${{ steps.results.outputs.cls }}
+        run: |
+          title='❌ Core Web Vitals Below Threshold'
+          label='cwv-failure'
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          body=$(cat <<EOF
+          ## Core Web Vitals Failure Detected
 
-            const body = [
-              `## Core Web Vitals Failure Detected`,
-              ``,
-              `**URL Audited:** ${auditUrl}`,
-              `**Run:** [#${context.runId}](${runUrl})`,
-              ``,
-              `| Metric | Value | Threshold |`,
-              `|--------|-------|-----------|`,
-              `| Performance | ${{ steps.results.outputs.performance }}/100 | ≥ 70 |`,
-              `| LCP | ${{ steps.results.outputs.lcp }} ms | ≤ 4000 ms |`,
-              `| TBT | ${{ steps.results.outputs.tbt }} ms | ≤ 600 ms |`,
-              `| CLS | ${{ steps.results.outputs.cls }} | ≤ 0.25 |`,
-              ``,
-              `## How to Investigate`,
-              ``,
-              `\`\`\`bash`,
-              `# Install Task (one-time)`,
-              `curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin`,
-              ``,
-              `# Run Core Web Vitals audit locally`,
-              `task ss:reliability:cwv -- ${auditUrl}`,
-              `\`\`\``,
-              ``,
-              `[View the failed workflow run](${runUrl})`,
-              ``,
-              `---`,
-              `*This issue was automatically created by the Core Web Vitals workflow.*`
-            ].join('\n');
+          **URL Audited:** ${AUDIT_URL}
+          **Run:** [#${GITHUB_RUN_ID}](${run_url})
 
-            const { data: openIssues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: [label]
-            });
+          | Metric | Value | Threshold |
+          |--------|-------|-----------|
+          | Performance | ${PERFORMANCE}/100 | ≥ 70 |
+          | LCP | ${LCP} ms | ≤ 4000 ms |
+          | TBT | ${TBT} ms | ≤ 600 ms |
+          | CLS | ${CLS} | ≤ 0.25 |
 
-            const existingIssue = openIssues.find(issue => issue.title === title);
+          ## How to Investigate
 
-            if (existingIssue) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: existingIssue.number,
-                body: [
-                  `## New Failure`,
-                  ``,
-                  `**Run:** [#${context.runId}](${runUrl})`,
-                  `**URL Audited:** ${auditUrl}`
-                ].join('\n')
-              });
-            } else {
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: title,
-                body: body,
-                labels: [label, 'reliability']
-              });
-            }
+          \`\`\`bash
+          slopstopper run reliability:cwv -- --url ${AUDIT_URL}
+          \`\`\`
+
+          [View the failed workflow run](${run_url})
+
+          ---
+          *This issue was automatically created by the Core Web Vitals workflow.*
+          EOF
+          )
+          existing=$(gh issue list --state open --label "$label" --search "in:title $title" --json number,title --jq ".[] | select(.title==\"$title\") | .number" | head -n1)
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "## New Failure
+
+          **Run:** [#${GITHUB_RUN_ID}](${run_url})
+          **URL Audited:** ${AUDIT_URL}"
+          else
+            gh issue create --title "$title" --body "$body" --label "$label" --label reliability
+          fi
 
       - name: Close CWV failure issue on success
         if: |
@@ -344,30 +328,13 @@ jobs:
             github.event_name == 'schedule' ||
             github.event_name == 'deployment_status'
           )
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const label = 'cwv-failure';
-            const title = '❌ Core Web Vitals Below Threshold';
-
-            const { data: openIssues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: [label]
-            });
-
-            for (const issue of openIssues.filter(i => i.title === title)) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                body: `✅ Core Web Vitals are now passing all thresholds. Closing this issue automatically.`
-              });
-              await github.rest.issues.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                state: 'closed'
-              });
-            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title='❌ Core Web Vitals Below Threshold'
+          label='cwv-failure'
+          numbers=$(gh issue list --state open --label "$label" --search "in:title $title" --json number,title --jq ".[] | select(.title==\"$title\") | .number")
+          for n in $numbers; do
+            gh issue comment "$n" --body "✅ Core Web Vitals are now passing all thresholds. Closing this issue automatically."
+            gh issue close "$n"
+          done
