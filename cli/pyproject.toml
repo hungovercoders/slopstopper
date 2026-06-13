@@ -57,13 +57,10 @@ Issues = "https://github.com/hungovercoders/slopstopper/issues"
 Documentation = "https://slopstopper.dev"
 
 [tool.hatch.build.targets.wheel]
+# `packages = ["slopstopper"]` includes the slopstopper/ tree (Python +
+# data files) automatically — no `force-include` needed; that block
+# caused a double-include error when building the wheel under hatchling.
 packages = ["slopstopper"]
-
-# Bundle Playwright specs + configs and the Lighthouse CI config inside
-# the wheel. The reliability checks resolve to these by default; an
-# adopter can still override by writing the same-named file under .ss/.
-[tool.hatch.build.targets.wheel.force-include]
-"slopstopper/data" = "slopstopper/data"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
