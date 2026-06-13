@@ -50,7 +50,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Optional
 
-from slopstopper import discovery
+from slopstopper import discovery, output
 
 
 REPORT_DIR = Path(".ss/reports/seo")
@@ -420,9 +420,9 @@ def _print_results(results: list[dict]) -> None:
     for r in results:
         icon = {"pass": "✅", "fail": "❌", "error": "💥"}.get(r["status"], "•")
         suffix = "" if r["status"] == "pass" else f" — {len(r['issues'])} issue(s)"
-        print(f"  {icon} {r['url']}{suffix}")
+        output._emit(f"  {icon} {r['url']}{suffix}")
         for issue in r["issues"]:
-            print(f"      - {issue}")
+            output._emit(f"      - {issue}")
 
 
 # ── CLI entrypoint ───────────────────────────────────────────────
@@ -478,10 +478,10 @@ def run(args: list[str] | None = None) -> int:
     parsed = _parse_args(args)
     url = _resolve_url(parsed.url)
     if not url:
-        print("❌ Error: SEO target URL is required")
-        print("Usage:")
-        print("  slopstopper run reliability:seo -- --url https://your-site.example.com")
-        print("  SEO_TEST_URL=https://your-site slopstopper run reliability:seo")
+        output.error("SEO target URL is required")
+        output._emit("Usage:")
+        output._emit("  slopstopper run reliability:seo -- --url https://your-site.example.com")
+        output._emit("  SEO_TEST_URL=https://your-site slopstopper run reliability:seo")
         return 1
 
     require_og_image = not parsed.no_require_og_image
@@ -489,27 +489,27 @@ def run(args: list[str] | None = None) -> int:
     og_image_base = parsed.og_image_base or os.environ.get("SEO_OG_IMAGE_BASE", "").strip() or None
     pages = _resolve_pages(parsed.pages)
 
-    print(f"🔎 SEO metatag audit against: {url}")
-    print(f"   Pages: {', '.join(pages)}")
+    output.status("🔎", f"SEO metatag audit against: {url}")
+    output._emit(f"   Pages: {', '.join(pages)}")
     if og_image_base:
-        print(f"   og:image origin override → {og_image_base}")
-    print("━" * 60)
+        output._emit(f"   og:image origin override → {og_image_base}")
+    output.separator()
 
     try:
         results = [
             _check_page(url, p, require_og_image, verify_og_image, og_image_base) for p in pages
         ]
     except ValueError as e:
-        print(f"❌ {e}")
+        output.error(str(e))
         return 1
 
     _write_reports(results, url)
     _print_results(results)
 
     overall_pass = all(r["status"] == "pass" for r in results)
-    print("━" * 60)
+    output.separator()
     if overall_pass:
-        print("✅ All pages pass.")
+        output.success("All pages pass.")
         return 0
-    print("❌ Failures detected. See .ss/reports/seo/seo-metatags-report.md for full details.")
+    output.error("Failures detected. See .ss/reports/seo/seo-metatags-report.md for full details.")
     return 1

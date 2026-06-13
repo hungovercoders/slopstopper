@@ -47,7 +47,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from slopstopper import dast_gate
+from slopstopper import dast_gate, output
 
 REPORT_DIR = Path(".ss/reports/dast")
 REPORT_JSON = REPORT_DIR / "dast-report.json"
@@ -116,11 +116,11 @@ def _start_local_server() -> subprocess.Popen | None:
     )
     for _ in range(30):
         if _localhost_responding():
-            print("✅ Server is ready")
+            output.success("Server is ready")
             return proc
         time.sleep(1)
     proc.terminate()
-    print("❌ Server failed to start within 30 seconds")
+    output.error("Server failed to start within 30 seconds")
     return None
 
 
@@ -268,7 +268,7 @@ def _prepare_localhost_target(target: str) -> tuple[str | None, subprocess.Popen
         if server_proc is None and not _localhost_responding():
             return None, None
     rewritten = _docker_host_target(target)
-    print(f"📍 Using Docker-compatible target: {rewritten}")
+    output.status("📍", f"Using Docker-compatible target: {rewritten}")
     return rewritten, server_proc
 
 
@@ -277,12 +277,12 @@ def _print_summary(data: dict) -> None:
     blocking = len(alerts["3"]) + len(alerts["2"])
     total = sum(len(v) for v in alerts.values())
     if blocking > 0:
-        print(f"⚠️  Found {blocking} high/medium alert(s) (total {total})")
+        output.warn(f"Found {blocking} high/medium alert(s) (total {total})")
     elif total > 0:
-        print(f"ℹ️  Found {total} alert(s) — none high/medium")
+        output.info(f"Found {total} alert(s) — none high/medium")
     else:
-        print("✅ No alerts detected")
-    print(f"📁 Reports saved to: {REPORT_DIR}/")
+        output.success("No alerts detected")
+    output.footer(REPORT_DIR, [REPORT_MD.name])
 
 
 def _run_gate(data: dict) -> int:
@@ -295,33 +295,33 @@ def _run_gate(data: dict) -> int:
     # Re-render the report with the swallowed-CSP preamble so the
     # bot comment surfaces what got filtered.
     REPORT_MD.write_text(_build_md_report(data, swallowed=swallowed))
-    print()
-    print(dast_gate.format_summary_text(blocking, swallowed))
+    output.blank()
+    output._emit(dast_gate.format_summary_text(blocking, swallowed))
     return 0 if blocking == 0 else 1
 
 
 def run(args: list[str] | None = None) -> int:
     if not _docker_available():
-        print("❌ Docker is required to run OWASP ZAP")
-        print("Please install Docker: https://docs.docker.com/get-docker/")
+        output.error("Docker is required to run OWASP ZAP")
+        output._emit("Please install Docker: https://docs.docker.com/get-docker/")
         return 1
 
     target = _parse_args(args).target
-    print(f"🌐 Running DAST analysis against {target}…")
+    output.status("🌐", f"Running DAST analysis against {target}…")
 
     server_proc: subprocess.Popen | None = None
     try:
         if _target_is_localhost(target):
             target, server_proc = _prepare_localhost_target(target)
             if target is None:
-                print("❌ Nothing listening on localhost and no server.js to start.")
-                print("   Start your app's server first, then re-run.")
+                output.error("Nothing listening on localhost and no server.js to start.")
+                output._emit("   Start your app's server first, then re-run.")
                 return 1
 
         _run_zap(target)
         data = _read_data()
         if not data:
-            print("❌ ZAP report missing or unparseable", file=sys.stderr)
+            output.error("ZAP report missing or unparseable")
             return 2
         REPORT_MD.write_text(_build_md_report(data))
         _print_summary(data)

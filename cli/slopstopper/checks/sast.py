@@ -27,6 +27,8 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+from slopstopper import output
+
 REPORT_DIR = Path(".ss/reports/sast")
 REPORT_JSON = REPORT_DIR / "sast-report.json"
 REPORT_MD = REPORT_DIR / "sast-report.md"
@@ -46,7 +48,7 @@ META = {
 }
 
 _INSTALL_HELP = (
-    "❌ semgrep is not installed.\n"
+    "semgrep is not installed.\n"
     "Install with:\n"
     "  pip3 install --user semgrep\n"
     "  brew install semgrep\n"
@@ -205,10 +207,10 @@ def _build_md_report(data: dict) -> str:
 
 def run(_args: list[str] | None = None) -> int:
     if not _semgrep_available():
-        print(_INSTALL_HELP)
+        output.error(_INSTALL_HELP)
         return 1
 
-    print("🔍 Running SAST analysis…")
+    output.running("Running SAST analysis…")
     _run_semgrep()
     data = _read_data()
     REPORT_MD.write_text(_build_md_report(data))
@@ -216,8 +218,10 @@ def run(_args: list[str] | None = None) -> int:
     results = data.get("results", [])
     if results:
         errors, warnings = _categorize_findings(results)
-        print(f"⚠️  Found {len(results)} finding(s): {len(errors)} error(s), {len(warnings)} warning(s)")
+        output.warn(
+            f"Found {len(results)} finding(s): {len(errors)} error(s), {len(warnings)} warning(s)"
+        )
     else:
-        print("✅ No findings detected")
-    print(f"📁 Reports saved to: {REPORT_DIR}/")
+        output.success("No findings detected")
+    output.footer(REPORT_DIR, [REPORT_MD.name])
     return 0

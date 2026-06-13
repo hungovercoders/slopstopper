@@ -24,6 +24,8 @@ import json
 import shutil
 import subprocess
 from datetime import datetime, timezone
+
+from slopstopper import output
 from pathlib import Path
 
 REPORT_DIR = Path(".ss/reports/dependencies")
@@ -45,7 +47,7 @@ META = {
 }
 
 _INSTALL_HELP = (
-    "❌ trivy is not installed.\n"
+    "trivy is not installed.\n"
     "Install with:\n"
     "  brew install aquasecurity/trivy/trivy     # macOS\n"
     "  sudo apt-get install trivy                # Debian/Ubuntu (with trivy apt repo)\n"
@@ -172,10 +174,10 @@ def _build_md_report(data: dict) -> str:
 
 def run(_args: list[str] | None = None) -> int:
     if not _trivy_available():
-        print(_INSTALL_HELP)
+        output.error(_INSTALL_HELP)
         return 1
 
-    print("🔍 Scanning dependencies for vulnerabilities…")
+    output.running("Scanning dependencies for vulnerabilities…")
     _run_trivy()
     data = _read_data()
     REPORT_MD.write_text(_build_md_report(data))
@@ -184,10 +186,10 @@ def run(_args: list[str] | None = None) -> int:
     total = len(critical) + len(high) + len(medium) + len(low)
     blocking = len(critical) + len(high)
     if blocking > 0:
-        print(f"⚠️  Found {blocking} CRITICAL/HIGH vulnerability(ies) (total {total})")
+        output.warn(f"Found {blocking} CRITICAL/HIGH vulnerability(ies) (total {total})")
     elif total > 0:
-        print(f"ℹ️  Found {total} vulnerability(ies) — none CRITICAL/HIGH")
+        output.info(f"Found {total} vulnerability(ies) — none CRITICAL/HIGH")
     else:
-        print("✅ No vulnerabilities detected")
-    print(f"📁 Reports saved to: {REPORT_DIR}/")
+        output.success("No vulnerabilities detected")
+    output.footer(REPORT_DIR, [REPORT_MD.name])
     return 0

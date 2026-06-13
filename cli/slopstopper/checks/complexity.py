@@ -32,6 +32,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from slopstopper import output
+
 REPORT_DIR = Path(".ss/reports/complexity")
 REPORT_CSV = REPORT_DIR / "complexity-report.csv"
 REPORT_MD = REPORT_DIR / "complexity-report.md"
@@ -63,7 +65,7 @@ LIZARD_EXCLUDES = (
 CCN_THRESHOLD = 10
 
 _LIZARD_INSTALL_HELP = (
-    "❌ lizard is not installed.\n"
+    "lizard is not installed.\n"
     "Install with:\n"
     "  pip3 install --user lizard\n"
     "  python3 -m pip install --user lizard\n"
@@ -213,10 +215,10 @@ def _build_md_report(rows: list[tuple]) -> str:
 
 def run(_args: list[str] | None = None) -> int:
     if not _lizard_available():
-        print(_LIZARD_INSTALL_HELP)
+        output.error(_LIZARD_INSTALL_HELP)
         return 1
 
-    print("🔍 Analyzing code complexity…")
+    output.running("Analyzing code complexity…")
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
 
     csv_text = _run_lizard()
@@ -227,11 +229,9 @@ def run(_args: list[str] | None = None) -> int:
 
     high_count = sum(1 for r in rows if r[1] > CCN_THRESHOLD)
     if high_count:
-        print(f"⚠️  Found {high_count} item(s) with cyclomatic complexity > 10")
+        output.warn(f"Found {high_count} item(s) with cyclomatic complexity > 10")
     else:
-        print("✅ No high-complexity items found (all CCN ≤ 10)")
+        output.success("No high-complexity items found (all CCN ≤ 10)")
 
-    print(f"📁 Reports saved to: {REPORT_DIR}/")
-    print(f"   • {REPORT_MD.name}")
-    print(f"   • {REPORT_CSV.name}")
+    output.footer(REPORT_DIR, [REPORT_MD.name, REPORT_CSV.name])
     return 0

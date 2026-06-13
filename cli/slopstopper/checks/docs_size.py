@@ -21,7 +21,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from slopstopper import config
+from slopstopper import config, output
 
 DOCS_DIR = Path("docs")
 ARCHIVE_PREFIX = Path("docs/archive")
@@ -188,36 +188,40 @@ def _print_terminal_summary(
     alerts: list[str],
     thresholds: dict[str, int],
 ) -> None:
-    print()
-    print("📚 Documentation Size Monitor")
-    print("━" * 56)
-    print()
-    print("📊 Documentation Statistics:")
-    print("━" * 56)
-    print(f"  Total Files:        {BLUE}{stats['file_count']}{NC}")
-    print(f"  Total Size:         {BLUE}{stats['total_size_kb']} KB{NC}")
-    print(f"  Estimated Tokens:   {BLUE}~{stats['estimated_tokens']}{NC}")
-    print(f"  Average File Size:  {BLUE}{stats['avg_size_kb']} KB{NC}")
-    print()
-    print("📈 Largest Files:")
-    print("━" * 56)
-    print(largest_files)
-    print()
-    print("📋 Threshold Limits:")
-    print("━" * 56)
-    print(f"  Max Total Size:     {BLUE}{thresholds['max_total_size_kb']} KB{NC}")
-    print(f"  Max File Size:      {BLUE}{thresholds['max_file_size_kb']} KB{NC}")
-    print(f"  Max File Count:     {BLUE}{thresholds['max_files']}{NC}")
-    print()
+    # The structural output (headers, separators, blank lines) goes
+    # through the shared output module so --quiet suppresses all of it.
+    # The colored data lines are emitted via output._emit() so they
+    # also disappear under --quiet.
+    output.blank()
+    output.status("📚", "Documentation Size Monitor")
+    output.separator()
+    output.blank()
+    output.status("📊", "Documentation Statistics:")
+    output.separator()
+    output._emit(f"  Total Files:        {BLUE}{stats['file_count']}{NC}")
+    output._emit(f"  Total Size:         {BLUE}{stats['total_size_kb']} KB{NC}")
+    output._emit(f"  Estimated Tokens:   {BLUE}~{stats['estimated_tokens']}{NC}")
+    output._emit(f"  Average File Size:  {BLUE}{stats['avg_size_kb']} KB{NC}")
+    output.blank()
+    output.status("📈", "Largest Files:")
+    output.separator()
+    output._emit(largest_files)
+    output.blank()
+    output.status("📋", "Threshold Limits:")
+    output.separator()
+    output._emit(f"  Max Total Size:     {BLUE}{thresholds['max_total_size_kb']} KB{NC}")
+    output._emit(f"  Max File Size:      {BLUE}{thresholds['max_file_size_kb']} KB{NC}")
+    output._emit(f"  Max File Count:     {BLUE}{thresholds['max_files']}{NC}")
+    output.blank()
     if alerts:
-        print(f"{RED}❌ Status: THRESHOLDS EXCEEDED{NC}")
-        print()
-        print("⚠️  Alerts:")
-        print("━" * 56)
-        print("\n".join(alerts))
+        output._emit(f"{RED}❌ Status: THRESHOLDS EXCEEDED{NC}", force=True)
+        output.blank()
+        output.status("⚠️", "Alerts:")
+        output.separator()
+        output._emit("\n".join(alerts))
     else:
-        print(f"{GREEN}✅ Status: Within acceptable limits{NC}")
-    print()
+        output._emit(f"{GREEN}✅ Status: Within acceptable limits{NC}")
+    output.blank()
 
 
 def run(_args: list[str] | None = None) -> int:
@@ -237,7 +241,5 @@ def run(_args: list[str] | None = None) -> int:
         thresholds=thresholds,
     ))
 
-    print(f"📁 Reports saved to: {REPORT_DIR}/")
-    print(f"   • {REPORT_FILE.name} (human-readable)")
-    print()
+    output.footer(REPORT_DIR, [f"{REPORT_FILE.name} (human-readable)"])
     return 0

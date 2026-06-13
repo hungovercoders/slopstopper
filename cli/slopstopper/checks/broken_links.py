@@ -44,7 +44,7 @@ import os
 import shutil
 import subprocess
 
-from slopstopper import discovery, templates
+from slopstopper import discovery, output, templates
 
 SPEC_NAME = "broken-links"
 
@@ -104,24 +104,24 @@ def _build_cmd(ci_mode: bool) -> list[str]:
 
 def run(args: list[str] | None = None) -> int:
     if not _npx_available():
-        print("❌ npx is not available — install Node.js to run Playwright tests")
+        output.error("npx is not available — install Node.js to run Playwright tests")
         return 1
 
     parsed = _parse_args(args)
     url = _resolve_url(parsed.url)
     if not url:
-        print("❌ Error: broken-links target URL is required")
-        print("Usage:")
-        print("  slopstopper run reliability:broken-links -- --url https://your-site.example.com")
-        print("  BROKEN_LINKS_TEST_URL=https://your-site slopstopper run reliability:broken-links")
+        output.error("broken-links target URL is required")
+        output._emit("Usage:")
+        output._emit("  slopstopper run reliability:broken-links -- --url https://your-site.example.com")
+        output._emit("  BROKEN_LINKS_TEST_URL=https://your-site slopstopper run reliability:broken-links")
         return 1
 
     spec = templates.playwright_spec(SPEC_NAME)
     if not spec.exists():
-        print(f"❌ Broken-links spec not found at {spec}")
+        output.error(f"Broken-links spec not found at {spec}")
         return 1
 
-    print(f"🔗 Running broken-link checks against: {url}")
+    output.status("🔗", f"Running broken-link checks against: {url}")
     env = _build_env(url, parsed.ci)
     cmd = _build_cmd(parsed.ci)
     result = subprocess.run(cmd, env=env, check=False)

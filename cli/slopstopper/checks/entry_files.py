@@ -28,7 +28,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from slopstopper import config
+from slopstopper import config, output
 
 ENTRY_FILES = ("README.md", "AGENTS.md", "CLAUDE.md")
 DEFAULT_MAX_WORDS = 1500
@@ -157,17 +157,17 @@ def _build_json_report(
 
 
 def _print_summary(measurements: list[dict], status_line: str) -> None:
-    print("📏 Entry-file size budget check")
-    print("━" * 56)
+    output.status("📏", "Entry-file size budget check")
+    output.separator()
     for m in measurements:
         marker = "❌" if m["over_budget"] else "✅"
-        print(
+        output._emit(
             f"  {marker} {m['file']:<14} {m['words']:>5} words  "
             f"(budget {m['budget']}, headroom {m['headroom']:+d})"
         )
-    print()
-    print(status_line)
-    print(f"📁 Reports saved to: {REPORT_DIR}/")
+    output.blank()
+    output._emit(status_line)
+    output.footer(REPORT_DIR, [REPORT_MD.name])
 
 
 def run(_args: list[str] | None = None) -> int:
@@ -175,7 +175,7 @@ def run(_args: list[str] | None = None) -> int:
     measurements, missing = _measure_all(max_words)
 
     if missing:
-        print(f"❌ Required entry files not found: {', '.join(missing)}")
+        output.error(f"Required entry files not found: {', '.join(missing)}")
         return 2
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)

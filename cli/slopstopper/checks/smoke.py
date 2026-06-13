@@ -39,7 +39,7 @@ import os
 import shutil
 import subprocess
 
-from slopstopper import config, templates
+from slopstopper import config, output, templates
 
 SPEC_NAME = "smoke"
 
@@ -82,19 +82,19 @@ def _build_cmd(ci_mode: bool) -> list[str]:
 
 def run(args: list[str] | None = None) -> int:
     if not _npx_available():
-        print("❌ npx is not available — install Node.js to run Playwright tests")
+        output.error("npx is not available — install Node.js to run Playwright tests")
         return 1
 
     parsed = _parse_args(args)
     url = _resolve_url(parsed.url)
     if not url:
-        print("❌ Error: smoke target URL is required")
-        print("Usage:")
-        print("  slopstopper run reliability:smoke -- --url https://your-site.example.com")
-        print("  SMOKE_TEST_URL=https://your-site slopstopper run reliability:smoke")
+        output.error("smoke target URL is required")
+        output._emit("Usage:")
+        output._emit("  slopstopper run reliability:smoke -- --url https://your-site.example.com")
+        output._emit("  SMOKE_TEST_URL=https://your-site slopstopper run reliability:smoke")
         return 1
 
-    print(f"🔍 Running smoke tests against: {url}")
+    output.running(f"Running smoke tests against: {url}")
     env = _build_env(url, parsed.ci)
     cmd = _build_cmd(parsed.ci)
     result = subprocess.run(cmd, env=env, check=False)

@@ -4,19 +4,36 @@ build-backend = "hatchling.build"
 
 [project]
 name = "slopstopper-cli"
-version = "0.1.0"
-description = "Slopstopper quality suite — checks, report generation, GH-API emission."
+version = "0.2.0"
+description = "Portable code-quality suite — security, hygiene, reliability."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [{ name = "Richard Griffiths" }]
-keywords = ["ci", "quality", "checks", "linting", "slopstopper"]
+keywords = [
+  "ci",
+  "quality",
+  "checks",
+  "linting",
+  "security",
+  "accessibility",
+  "lighthouse",
+  "playwright",
+  "slopstopper",
+]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Testing",
+  "Topic :: Security",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Operating System :: POSIX",
+  "Operating System :: MacOS",
 ]
 dependencies = []
 
@@ -36,6 +53,8 @@ slopstopper = "slopstopper.cli:main"
 [project.urls]
 Homepage = "https://slopstopper.dev"
 Source = "https://github.com/hungovercoders/slopstopper"
+Issues = "https://github.com/hungovercoders/slopstopper/issues"
+Documentation = "https://slopstopper.dev"
 
 [tool.hatch.build.targets.wheel]
 packages = ["slopstopper"]
