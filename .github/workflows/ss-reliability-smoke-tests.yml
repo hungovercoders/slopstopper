@@ -1,22 +1,29 @@
 name: SlopStopper · Reliability Smoke Tests
 
+# CLI-flipped workflow (Phase 2). The smoke check has a different shape
+# from the hygiene/security flips: there is no PR-comment block, and
+# the failure/recovery issue body is built from workflow context (URL,
+# run number) rather than a markdown report file. emit.py is built
+# around report files, so it isn't a fit here — instead we route the
+# check itself through `slopstopper run reliability:smoke` and keep
+# the small `gh` blocks for issue create / comment / close inline.
+# Same trick we used for docs-accuracy's auto-close-on-clean.
+#
+# CLI changes vs pre-flip:
+#   - `slopstopper run reliability:smoke -- --ci` replaces the
+#     `task ss:reliability:smoke:ci` shim (and its bash dispatch).
+#   - The CLI smoke check already reads `pages.smoke` from
+#     .slopstopper.yml via config.get(), so the old "Pages to
+#     smoke-check" extraction step is gone.
+
 on:
-  # Run on every pull request to main (against local build)
   pull_request:
     branches: [main]
-
-  # Run on push to main (against local build)
   push:
     branches: [main]
-
-  # Run after successful deployments
   deployment_status:
-
-  # Run on schedule (every hour)
   schedule:
     - cron: '0 * * * *'
-
-  # Allow manual trigger with custom URL (blank = local build)
   workflow_dispatch:
     inputs:
       url:
@@ -27,37 +34,47 @@ on:
 
 jobs:
   smoke-test:
-    # For deployment events, only run when the deployment succeeded
     if: |
       github.event_name != 'deployment_status' ||
       github.event.deployment_status.state == 'success'
-    
     runs-on: ubuntu-latest
-
     permissions:
+      contents: read
       issues: write
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ vars.SLOPSTOPPER_NODE_VERSION || '20' }}
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Install Task
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install slopstopper-cli
         run: |
-          curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
-          task --version
-        
+          # Pre-PyPI dogfood install. slopstopper.dev installs editable
+          # from local source; adopters (no cli/ dir) install from git.
+          # Once published, both branches collapse into:
+          #   pipx install slopstopper-cli==<pinned-version>
+          if [ -f cli/pyproject.toml ]; then
+            pip install -e ./cli
+          else
+            pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli"
+          fi
+
       - name: Determine test URL
         id: url
         env:
@@ -86,17 +103,15 @@ jobs:
             echo "url=https://slopstopper.dev" >> "$GITHUB_OUTPUT"
             echo "use_local=false" >> "$GITHUB_OUTPUT"
           else
-            # PR / push / manual without URL → smoke local build
             echo "url=http://localhost:8080" >> "$GITHUB_OUTPUT"
             echo "use_local=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Start local server (PR / push builds)
         if: steps.url.outputs.use_local == 'true'
-        # CUSTOMISE FOR YOUR APP: this step is wired for a static site
-        # (build + node server.js). Replace with whatever starts your
-        # app on port 8080 — or set use_local=false in the Determine
-        # test URL step and point SMOKE_TEST_URL at a deployed environment.
+        # CUSTOMISE FOR YOUR APP: wired for a static site (build + node
+        # server.js). Replace with whatever starts your app on port
+        # 8080 — or point SMOKE_TEST_URL at a deployed environment.
         run: |
           if [ -f server.js ] && [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then
             npm run build
@@ -114,20 +129,10 @@ jobs:
             exit 1
           fi
 
-      - name: Pages to smoke-check
-        # Reads pages.smoke from .slopstopper.yml. Falls back to '/' if not
-        # configured. Override per-repo in .slopstopper.yml:
-        #   pages:
-        #     smoke: /,/blog,/about
-        run: |
-          PAGES=$(python3 .ss/scripts/load_config.py pages.smoke /)
-          echo "SMOKE_PAGES=$PAGES" >> "$GITHUB_ENV"
-
       - name: Run smoke tests
         env:
           SMOKE_TEST_URL: ${{ steps.url.outputs.url }}
-          SMOKE_PAGES: ${{ env.SMOKE_PAGES }}
-        run: task ss:reliability:smoke:ci
+        run: slopstopper run reliability:smoke -- --ci
 
       - name: Stop local server
         if: steps.url.outputs.use_local == 'true' && always()
@@ -143,110 +148,72 @@ jobs:
             .ss/playwright-report/
           retention-days: 30
           if-no-files-found: ignore
-          
-      - name: Comment on deployment (if applicable)
+
+      - name: Comment on deployment commit (if applicable)
         if: github.event_name == 'deployment_status' && always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const testStatus = '${{ job.status }}' === 'success' ? '✅ PASSED' : '❌ FAILED';
-            const url = '${{ steps.url.outputs.url }}';
-            
-            github.rest.repos.createCommitComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: context.sha,
-              body: `## Smoke Test Results ${testStatus}\n\nTested URL: ${url}\n\n[View detailed results](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`
-            });
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          URL: ${{ steps.url.outputs.url }}
+          STATUS: ${{ job.status }}
+        run: |
+          status_marker=$([ "$STATUS" = "success" ] && echo "✅ PASSED" || echo "❌ FAILED")
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/comments" \
+            -f body="## Smoke Test Results ${status_marker}
 
-      - name: Create/Update issue on smoke test failure
+          Tested URL: ${URL}
+
+          [View detailed results](${run_url})"
+
+      - name: Open / update issue on smoke failure
         if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const title = '❌ Smoke Tests Failing';
-            const label = 'smoke-test-failure';
-            const url = '${{ steps.url.outputs.url }}';
-            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          URL: ${{ steps.url.outputs.url }}
+        run: |
+          title='❌ Smoke Tests Failing'
+          label='smoke-test-failure'
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          body=$(cat <<EOF
+          ## Smoke Test Failure Detected
 
-            const body = [
-              `## Smoke Test Failure Detected`,
-              ``,
-              `**URL Tested:** ${url}`,
-              `**Run:** [#${context.runId}](${runUrl})`,
-              ``,
-              `The smoke tests are failing on the deployed site.`,
-              ``,
-              `## How to Investigate`,
-              ``,
-              `\`\`\`bash`,
-              `SMOKE_TEST_URL="${url}" task ss:reliability:smoke`,
-              `\`\`\``,
-              ``,
-              `[View the failed workflow run](${runUrl})`,
-              ``,
-              `---`,
-              `*This issue was automatically created by the Reliability Smoke Tests workflow.*`
-            ].join('\n');
+          **URL Tested:** ${URL}
+          **Run:** [#${GITHUB_RUN_ID}](${run_url})
 
-            const { data: openIssues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: [label]
-            });
+          The smoke tests are failing on the deployed site.
 
-            const existingIssue = openIssues.find(issue => issue.title === title);
+          ## How to Investigate
 
-            if (existingIssue) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: existingIssue.number,
-                body: [
-                  `## New Failure`,
-                  ``,
-                  `**Time:** ${new Date().toISOString()}`,
-                  `**URL Tested:** ${url}`,
-                  `**Run:** [#${context.runId}](${runUrl})`
-                ].join('\n')
-              });
-            } else {
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: title,
-                body: body,
-                labels: [label, 'reliability']
-              });
-            }
+          \`\`\`bash
+          SMOKE_TEST_URL="${URL}" slopstopper run reliability:smoke
+          \`\`\`
 
-      - name: Close smoke test failure issue on success
+          [View the failed workflow run](${run_url})
+
+          ---
+          *This issue was automatically created by the Reliability Smoke Tests workflow.*
+          EOF
+          )
+          existing=$(gh issue list --state open --label "$label" --search "in:title $title" --json number,title --jq ".[] | select(.title==\"$title\") | .number" | head -n1)
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "## New Failure
+
+          **Time:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          **URL Tested:** ${URL}
+          **Run:** [#${GITHUB_RUN_ID}](${run_url})"
+          else
+            gh issue create --title "$title" --body "$body" --label "$label" --label reliability
+          fi
+
+      - name: Close smoke failure issue on success
         if: success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const label = 'smoke-test-failure';
-            const title = '❌ Smoke Tests Failing';
-
-            const { data: openIssues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: [label]
-            });
-
-            for (const issue of openIssues.filter(i => i.title === title)) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                body: `✅ Smoke tests are now passing. Closing this issue automatically.`
-              });
-              await github.rest.issues.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                state: 'closed'
-              });
-            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title='❌ Smoke Tests Failing'
+          label='smoke-test-failure'
+          numbers=$(gh issue list --state open --label "$label" --search "in:title $title" --json number,title --jq ".[] | select(.title==\"$title\") | .number")
+          for n in $numbers; do
+            gh issue comment "$n" --body "✅ Smoke tests are now passing. Closing this issue automatically."
+            gh issue close "$n"
+          done
