@@ -91,12 +91,12 @@
             <p class="lede">SlopStopper is a Python CLI plus the GitHub Actions workflows that drive it. Install the CLI alone for local use, or run the all-in-one installer to also seed the workflows + Taskfile shim into a repo.</p>
             <h3 class="install-heading">Just the CLI</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install slopstopper-cli via pipx" data-copyable>
-                <pre><code>pipx install slopstopper-cli
+                <pre><code>pipx install git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli
 slopstopper checks list
 slopstopper doctor
 slopstopper run hygiene:docs-size</code></pre>
             </div>
-            <p class="install-subnote">Every check, every report, every PR comment goes through this CLI. <code>pipx upgrade slopstopper-cli</code> keeps it fresh.</p>
+            <p class="install-subnote">Installing from git while we get the PyPI release pipeline up; the short <code>pipx install slopstopper-cli</code> form lands soon. <code>pipx upgrade slopstopper-cli</code> already keeps it fresh either way.</p>
             <h3 class="install-heading">Full suite into a repo</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install full suite" data-copyable>
                 <pre><code>curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash</code></pre>
@@ -112,7 +112,7 @@ slopstopper run hygiene:docs-size</code></pre>
             <div class="steps">
                 <div class="step">
                     <h3>Install</h3>
-                    <p><code>pipx install slopstopper-cli</code>. Add workflows via <code>install.sh</code> when you're ready for CI.</p>
+                    <p>Run the <code>pipx install</code> one-liner above. Add workflows via <code>install.sh</code> when you're ready for CI.</p>
                 </div>
                 <div class="step">
                     <h3>Customise</h3>
