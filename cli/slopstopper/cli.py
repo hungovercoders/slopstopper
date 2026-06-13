@@ -379,6 +379,22 @@ def _add_doctor(sub) -> None:
 # ── main entry point ─────────────────────────────────────────────
 
 
+# Top-level subcommand dispatch table. Each entry takes the parsed
+# argparse Namespace and returns an exit code. Keeping the routing
+# data-driven keeps main()'s cyclomatic complexity flat as the CLI
+# gains subcommands.
+_DISPATCHERS = {
+    "run":       lambda a: _dispatch_run(a.check, a.check_args),
+    "emit":      lambda a: _dispatch_emit(a.check, a.target),
+    "discover":  lambda a: _dispatch_discover(a.check, a.event),
+    "config":    lambda a: _dispatch_config_get(a.key, a.default),
+    "templates": lambda a: _dispatch_templates(a.templates_action, getattr(a, "name", None)),
+    "serve":     lambda a: _dispatch_serve(),
+    "checks":    lambda a: _dispatch_checks_list(a.category, a.json),
+    "doctor":    lambda a: _dispatch_doctor(),
+}
+
+
 def main(argv: list[str] | None = None) -> int:
     """Parse argv and dispatch.
 
@@ -396,30 +412,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     args = parser.parse_args(argv)
-
     output.set_quiet(bool(getattr(args, "quiet", False)))
 
-    if args.command == "run":
-        return _dispatch_run(args.check, args.check_args)
-    if args.command == "emit":
-        return _dispatch_emit(args.check, args.target)
-    if args.command == "discover":
-        return _dispatch_discover(args.check, args.event)
-    if args.command == "config":
-        if args.config_action == "get":
-            return _dispatch_config_get(args.key, args.default)
-    if args.command == "templates":
-        return _dispatch_templates(args.templates_action, getattr(args, "name", None))
-    if args.command == "serve":
-        return _dispatch_serve()
-    if args.command == "checks":
-        if args.checks_action == "list":
-            return _dispatch_checks_list(args.category, args.json)
-    if args.command == "doctor":
-        return _dispatch_doctor()
-
-    parser.error(f"unknown command: {args.command}")
-    return 2
+    dispatcher = _DISPATCHERS.get(args.command)
+    if dispatcher is None:
+        parser.error(f"unknown command: {args.command}")
+        return 2
+    return dispatcher(args)
 
 
 # ── dispatchers ──────────────────────────────────────────────────
