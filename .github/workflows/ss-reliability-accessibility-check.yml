@@ -1,22 +1,21 @@
 name: SlopStopper · Accessibility Check
 
+# CLI-flipped workflow (Phase 2). Combines the shapes of the smoke
+# and broken-links flips: route the check through
+# `slopstopper run reliability:accessibility`, convert the PR-comment
+# block to inline `gh` with find-or-update dedup (fixes the
+# duplicate-on-every-push regression), convert the issue create /
+# comment / close blocks to inline `gh` (emit.py isn't a fit because
+# the bodies are built from workflow context, not a report file).
+
 on:
-  # Run on every pull request to main
   pull_request:
     branches: [main]
-
-  # Run on push to main
   push:
     branches: [main]
-
-  # Run after successful deployments
   deployment_status:
-
-  # Run on a daily schedule
   schedule:
     - cron: '0 6 * * *'
-
-  # Allow manual trigger with a custom URL
   workflow_dispatch:
     inputs:
       url:
@@ -49,7 +48,6 @@ permissions:
 jobs:
   accessibility:
     name: Accessibility Audit (axe-core / WCAG 2.1 AA)
-    # For deployment events, only run when the deployment succeeded
     if: |
       github.event_name != 'deployment_status' ||
       github.event.deployment_status.state == 'success'
@@ -59,8 +57,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # discover-pages.py changed-mode needs git history vs the base branch.
-          # 0 = full history. Adds a couple of seconds; cost is negligible.
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -75,10 +71,22 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Install Task
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install slopstopper-cli
         run: |
-          curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
-          task --version
+          # Pre-PyPI dogfood install. slopstopper.dev installs editable
+          # from local source; adopters (no cli/ dir) install from git.
+          # Once published, both branches collapse into:
+          #   pipx install slopstopper-cli==<pinned-version>
+          if [ -f cli/pyproject.toml ]; then
+            pip install -e ./cli
+          else
+            pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli"
+          fi
 
       - name: Determine audit URL
         id: url
@@ -108,17 +116,15 @@ jobs:
             echo "url=https://slopstopper.dev" >> "$GITHUB_OUTPUT"
             echo "use_local=false" >> "$GITHUB_OUTPUT"
           else
-            # PR / push / manual without URL → audit local build
             echo "url=http://localhost:8080" >> "$GITHUB_OUTPUT"
             echo "use_local=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Start local server (PR / push builds)
         if: steps.url.outputs.use_local == 'true'
-        # CUSTOMISE FOR YOUR APP: this step is wired for this repo's static
-        # site (build + node server.js). Replace with whatever starts your
-        # app on port 8080 — or set use_local=false in the Determine audit
-        # URL step and point ACCESSIBILITY_TEST_URL at a deployed environment.
+        # CUSTOMISE FOR YOUR APP: wired for a static site (build + node
+        # server.js). Replace with whatever starts your app on port
+        # 8080 — or point ACCESSIBILITY_TEST_URL at a deployed env.
         run: |
           if [ -f server.js ] && [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then
             npm run build
@@ -141,9 +147,6 @@ jobs:
         env:
           DISPATCH_MODE: ${{ github.event.inputs.coverage_mode }}
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
-        # Calls discover-pages.py with the event-mapped mode. Falls through
-        # to pages.accessibility when reliability.coverage.* is unset, so
-        # existing adopters see no behaviour change.
         run: |
           case "${{ github.event_name }}" in
             pull_request|pull_request_target) EVENT=pr ;;
@@ -162,9 +165,7 @@ jobs:
           ACCESSIBILITY_TEST_URL: ${{ steps.url.outputs.url }}
           ACCESSIBILITY_IMPACT: ${{ github.event.inputs.impact || 'serious' }}
           ACCESSIBILITY_THRESHOLD: ${{ github.event.inputs.threshold || '0' }}
-          # ACCESSIBILITY_PAGES is set by the "Pages to audit" step above when
-          # auditing a local build. Defaults to '/' otherwise.
-        run: task ss:reliability:accessibility:ci
+        run: slopstopper run reliability:accessibility -- --ci
 
       - name: Stop local server
         if: steps.url.outputs.use_local == 'true' && always()
@@ -181,132 +182,100 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-      - name: Comment on PR with accessibility results
+      - name: Comment on PR with results
         if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v7
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JOB_STATUS: ${{ job.status }}
           INPUT_IMPACT: ${{ github.event.inputs.impact || 'serious' }}
           INPUT_THRESHOLD: ${{ github.event.inputs.threshold || '0' }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        with:
-          script: |
-            const status    = process.env.JOB_STATUS === 'success' ? '✅ PASSED' : '❌ FAILED';
-            const impact    = process.env.INPUT_IMPACT;
-            const threshold = process.env.INPUT_THRESHOLD;
-            const runUrl    = process.env.RUN_URL;
+        run: |
+          status_marker=$([ "$JOB_STATUS" = "success" ] && echo "✅ PASSED" || echo "❌ FAILED")
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          failure_note=""
+          if [ "$JOB_STATUS" != "success" ]; then
+            failure_note=$'\n> ⚠️ Violations were detected. See workflow logs for details.\n'
+          fi
+          body=$(cat <<EOF
+          ## ♿ Accessibility Audit ${status_marker}
 
-            let body = `## ♿ Accessibility Audit ${status}\n\n`;
-            body += `**Standard:** WCAG 2.1 AA  `;
-            body += `**Min impact:** \`${impact}\`  `;
-            body += `**Max violations allowed:** ${threshold}\n\n`;
+          **Standard:** WCAG 2.1 AA  **Min impact:** \`${INPUT_IMPACT}\`  **Max violations allowed:** ${INPUT_THRESHOLD}
+          ${failure_note}
+          ### 🔍 How to Check Locally
 
-            if (process.env.JOB_STATUS !== 'success') {
-              body += '> ⚠️ Violations were detected. See workflow logs for details.\n\n';
-            }
+          \`\`\`bash
+          # Audit the local build
+          slopstopper run reliability:accessibility
 
-            body += '### 🔍 How to Check Locally\n\n';
-            body += '```bash\n';
-            body += '# Audit the local build\n';
-            body += 'task ss:reliability:accessibility\n\n';
-            body += '# Or audit a deployed URL\n';
-            body += 'task ss:reliability:accessibility -- https://your-site.example.com\n';
-            body += '```\n\n';
-            body += `[Full report in workflow artifacts](${runUrl})\n`;
+          # Or audit a deployed URL
+          slopstopper run reliability:accessibility -- --url https://your-site.example.com
+          \`\`\`
 
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body
-            });
+          [Full report in workflow artifacts](${run_url})
+          EOF
+          )
+          marker='♿ Accessibility Audit'
+          pr_number=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
+          existing=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments" \
+            --jq ".[] | select(.user.type==\"Bot\" and (.body | contains(\"$marker\"))) | .id" | head -n1)
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${existing}" -f body="$body"
+          else
+            gh pr comment "$pr_number" --body "$body"
+          fi
 
-      - name: Create/Update issue on main with violations
+      - name: Open / update issue on accessibility failure (main)
         if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const title = '♿ Accessibility Violations Detected on Main Branch';
-            const label = 'accessibility';
-            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const sha = context.sha.slice(0, 7);
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title='♿ Accessibility Violations Detected on Main Branch'
+          label='accessibility'
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          sha_short="${GITHUB_SHA:0:7}"
+          body=$(cat <<EOF
+          ## Accessibility Audit Failure
 
-            const body = [
-              `## Accessibility Audit Failure`,
-              ``,
-              `**Commit:** [\`${sha}\`](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha})`,
-              `**Run:** [#${context.runId}](${runUrl})`,
-              ``,
-              `Accessibility violations above the configured impact threshold were found on the main branch.`,
-              ``,
-              `## How to Reproduce Locally`,
-              ``,
-              '```bash',
-              '# Start the local server',
-              'npm run build && node server.js &',
-              '',
-              '# Run accessibility audit',
-              'task ss:reliability:accessibility -- http://localhost:8080',
-              '```',
-              ``,
-              `[View the failed workflow run](${runUrl})`,
-              ``,
-              `---`,
-              `*This issue was automatically created by the Accessibility Check workflow.*`
-            ].join('\n');
+          **Commit:** [\`${sha_short}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})
+          **Run:** [#${GITHUB_RUN_ID}](${run_url})
 
-            const { data: openIssues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: [label]
-            });
+          Accessibility violations above the configured impact threshold were found on the main branch.
 
-            const existing = openIssues.find(i => i.title === title);
+          ## How to Reproduce Locally
 
-            if (existing) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: existing.number,
-                body: `## New Failure\n\n**Time:** ${new Date().toISOString()}\n**Run:** [#${context.runId}](${runUrl})`
-              });
-            } else {
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title,
-                body,
-                labels: [label, 'reliability']
-              });
-            }
+          \`\`\`bash
+          # Start the local server
+          npm run build && node server.js &
 
-      - name: Close accessibility issue on success
+          # Run accessibility audit
+          slopstopper run reliability:accessibility -- --url http://localhost:8080
+          \`\`\`
+
+          [View the failed workflow run](${run_url})
+
+          ---
+          *This issue was automatically created by the Accessibility Check workflow.*
+          EOF
+          )
+          existing=$(gh issue list --state open --label "$label" --search "in:title $title" --json number,title --jq ".[] | select(.title==\"$title\") | .number" | head -n1)
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "## New Failure
+
+          **Time:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          **Run:** [#${GITHUB_RUN_ID}](${run_url})"
+          else
+            gh issue create --title "$title" --body "$body" --label "$label" --label reliability
+          fi
+
+      - name: Close accessibility issue on success (main)
         if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const label = 'accessibility';
-            const title = '♿ Accessibility Violations Detected on Main Branch';
-
-            const { data: openIssues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: [label]
-            });
-
-            for (const issue of openIssues.filter(i => i.title === title)) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                body: `✅ Accessibility audit is now passing. Closing this issue automatically.`
-              });
-              await github.rest.issues.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                state: 'closed'
-              });
-            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title='♿ Accessibility Violations Detected on Main Branch'
+          label='accessibility'
+          numbers=$(gh issue list --state open --label "$label" --search "in:title $title" --json number,title --jq ".[] | select(.title==\"$title\") | .number")
+          for n in $numbers; do
+            gh issue comment "$n" --body "✅ Accessibility audit is now passing. Closing this issue automatically."
+            gh issue close "$n"
+          done
