@@ -5,13 +5,17 @@ description: Install slopstopper into a repo for the first time. Use when a user
 
 # Install slopstopper
 
-You're being asked to install slopstopper into an existing repo. Slopstopper is a portable suite of GitHub Actions, Task targets, and analysis scripts that drops a consistent quality pipeline into any repository. This skill walks you through doing that responsibly — and, critically, getting every check green **locally** before pushing, so the first CI run is a confirmation pass rather than a discovery pass.
+You're being asked to install slopstopper into an existing repo. Slopstopper is a portable suite of GitHub Actions plus a `slopstopper-cli` Python package that owns every check's logic. The install drops a consistent quality pipeline into any repository. This skill walks you through doing that responsibly — and, critically, getting every check green **locally** before pushing, so the first CI run is a confirmation pass rather than a discovery pass.
 
-The install ships ~21 GitHub Actions workflows in one shot, merges devDeps into `package.json`, and creates a `Taskfile.yml` if the target doesn't have one. That's a lot of moving parts. Don't run it blind — work through the pre-flight first, then drive every check to green locally before opening a PR.
+The install ships ~21 GitHub Actions workflows in one shot, pip-installs `slopstopper-cli` (via pipx), merges devDeps into `package.json`, and creates a `Taskfile.yml` if the target doesn't have one. That's a lot of moving parts. Don't run it blind — work through the pre-flight first, then drive every check to green locally before opening a PR.
+
+**The CLI is the single source of truth for every check.** Every workflow boils down to two CLI commands: `slopstopper run <category>:<check>` (executes the check, writes reports under `.ss/reports/`) and `slopstopper emit <category>:<check> --target {pr-comment,issue}` (posts the report to GitHub). Reliability checks also use `slopstopper discover <check> --event=<event>` (resolves which pages to audit) and the installer itself uses `slopstopper config get <key>` to read `.slopstopper.yml`. No bash scripts under `.ss/scripts/` any more — pure Python, one package, one upgrade path.
 
 ## Step 1 — Pre-flight: read the target repo before installing
 
 Before running anything, learn enough about the target to predict where it'll bite you:
+
+0. **Is `python3` available?** Hard prereq — `install.sh` errors out without it because the first thing it does is pip-install `slopstopper-cli` (pipx-preferred, `pip install --user` fallback). The CLI runs every check, so no Python = no slopstopper. If `pipx` is also installed the CLI lands in its own venv (cleanest); without `pipx` it goes into `~/.local/bin` via `pip --user`. Make sure that directory is on `$PATH` (it should be on modern macOS/Linux setups, but isn't always on minimal CI containers).
 
 1. **Does the target have an existing `Taskfile.yml`?** If yes, the installer prints include instructions instead of overwriting — you (or the user) need to manually add:
    ```yaml
@@ -31,7 +35,7 @@ Before running anything, learn enough about the target to predict where it'll bi
 
 6. **Does the target follow the Map Pattern for docs?** Three workflows — `ss-hygiene-docs-accuracy-check.yml`, `ss-hygiene-docs-structure-check.yml`, `ss-hygiene-docs-size-check.yml` — require a `docs/` directory with an `index.md` listing categories (each as a subdirectory with its own `README.md`). Two valid choices: set up the Map Pattern (see Step 5) or delete these three workflows. A half-built `docs/` directory will fail the structure check until the tree matches the index.
 
-7. **Does the target serve a site-wide `/og-image.png` with `Cross-Origin-Resource-Policy: cross-origin`?** The slopstopper Playwright smoke test (`.ss/tests/smoke.spec.ts`) asserts that `/og-image.png` returns 200, has `Content-Type: image/png`, and the CORP header set to `cross-origin` (so social platforms can embed it). Targets that use per-post share images instead won't have it. Either add a 1200×630 `og-image.png` at the site root with CORP configured for that path (Astro/Cloudflare adapter respects `public/_headers`), or restrict the Playwright suite to skip the smoke spec for that target.
+7. **Does the target serve a site-wide `/og-image.png` with `Cross-Origin-Resource-Policy: cross-origin`?** The slopstopper Playwright smoke test (`.ss/tests/smoke.spec.ts`, or the bundled `cli/slopstopper/data/tests/smoke.spec.ts` when no `.ss/` override is present) asserts that `/og-image.png` returns 200, has `Content-Type: image/png`, and the CORP header set to `cross-origin` (so social platforms can embed it). Targets that use per-post share images instead won't have it. Either add a 1200×630 `og-image.png` at the site root with CORP configured for that path (Astro/Cloudflare adapter respects `public/_headers`), or set `smoke.og_image_path: ''` in `.slopstopper.yml` to skip the assertion.
 
 8. **Existing `package.json` devDeps that might collide?** Slopstopper merges in `@axe-core/playwright`, `@lhci/cli`, `@playwright/test`, `markdownlint-cli`, `typescript`. Spot collisions ahead of time.
 
@@ -53,7 +57,7 @@ From the target repo root, run the canonical one-liner:
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 ```
 
-The installer is idempotent. Re-running it pulls newer checks but respects deletions (tracked via `.ss/.workflows-installed`). All slopstopper files live under the `ss` namespace — your repo's existing files are not touched.
+The installer is idempotent. Re-running it pulls newer checks but respects deletions (tracked via `.ss/.workflows-installed`), and refreshes `slopstopper-cli` via `pipx upgrade` (or re-runs `pip install --user --upgrade` when pipx isn't available). All slopstopper files live under the `ss` namespace — your repo's existing files are not touched. If a pre-CLI install left a `.ss/scripts/` directory behind, the installer scrubs it on first run.
 
 If the user prefers to review the script first:
 ```bash
@@ -65,14 +69,17 @@ bash install.sh [TARGET_DIR]
 
 Sanity-check the install dropped what you expect:
 
-- `Taskfile.ss.yml` — all slopstopper task definitions
-- `Taskfile.yml` — created if missing (otherwise: needs manual `includes:` block per Step 1.1)
-- `.ss/scripts/` — Python+shell analyzers
-- `.ss/tests/` — Playwright specs (smoke, accessibility, broken-links)
-- `.ss/playwright.config.js`, `.ss/lighthouserc.json`, `.ss/lighthouserc.prod.json`
-- `.ss/.workflows-installed` — manifest of installed workflows (tracks deletions on reinstall; commit this)
-- `.github/workflows/ss-*.yml` — the curated installer set (~21 files)
-- `package.json` — devDeps merged
+- `slopstopper-cli` — installed system-wide via `pipx` (preferred) or `pip install --user`. Confirm with `slopstopper --version`. Every check runs through this.
+- `Taskfile.ss.yml` — thin `task ss:*` shims that each call `slopstopper run <category>:<check>` under the covers. Useful for adopters who already drive their dev loop with `task`.
+- `Taskfile.yml` — created if missing (otherwise: needs manual `includes:` block per Step 1.1).
+- `.ss/tests/` — Playwright specs (smoke, accessibility, broken-links). The CLI prefers these over its own bundled copies under `cli/slopstopper/data/tests/`, so adopters can customize without forking the package.
+- `.ss/playwright.config.js`, `.ss/lighthouserc.json`, `.ss/lighthouserc.prod.json` — same override pattern: `.ss/` wins, CLI package data is the fallback.
+- `.ss/server.js` — tiny static-server shim for serving the built site on `:8080` during the local loop.
+- `.ss/.workflows-installed` — manifest of installed workflows (tracks deletions on reinstall; commit this).
+- `.github/workflows/ss-*.yml` — the curated installer set (~21 files). Each workflow body is now ~8 lines: install CLI, `slopstopper run …`, `slopstopper emit … --target pr-comment|issue`.
+- `package.json` — devDeps merged.
+
+**What's NOT there any more** (if you're updating from a pre-CLI install): `.ss/scripts/`. Every Python/bash script that used to live there is now in `slopstopper-cli`. The installer scrubs the directory on re-run, so don't be alarmed if the old contents are gone.
 
 **Confirm the installed set matches upstream.** `install.sh` uses a hardcoded `GENERIC_WORKFLOWS` array, not a wildcard over slopstopper's `.github/workflows/ss-*.yml`. The two can drift — slopstopper may ship a workflow that the installer hasn't been updated to include. To catch this:
 
@@ -240,7 +247,9 @@ The "powered by slopstopper" badge uses a static shields.io URL (`https://img.sh
 
 ## Step 7 — Drive every check to green locally, **before** pushing
 
-This is the spine of a good install. Every slopstopper check has a local `task ss:*` equivalent. Running them locally in a tight loop — fix, re-run, fix, re-run — is an order of magnitude faster than pushing and waiting on CI for each iteration. The goal of this step is that the first CI run on the target's PR is a **confirmation pass**, not a discovery pass.
+This is the spine of a good install. Every slopstopper check has a local equivalent — either `task ss:<category>:<action>` (thin shim) or `slopstopper run <category>:<action>` directly. Running them locally in a tight loop — fix, re-run, fix, re-run — is an order of magnitude faster than pushing and waiting on CI for each iteration. The goal of this step is that the first CI run on the target's PR is a **confirmation pass**, not a discovery pass.
+
+**Both surfaces work; pick one consistently.** The `task ss:*` shims read `.slopstopper.yml`, set the env vars the CLI expects, and invoke `slopstopper run …`. If you don't already use `task` in the target repo, calling `slopstopper run hygiene:docs-size` directly is equally valid (and skips the Taskfile load).
 
 **Two passes, in order:**
 
@@ -250,36 +259,44 @@ Run the two static aggregates first. They cover every static workflow that ships
 
 ```bash
 npm install                  # pulls merged devDeps once
-task ss:hygiene:test         # complexity + docs-* + entry-files + lint + structure + size
-task ss:security:scan        # SAST + secrets + dependency CVEs + DAST (will need URL — skip via SKIP_DAST or run after Pass B)
+task ss:hygiene:test         # lint + structure + size + docs-size + docs-structure + docs-accuracy + entry-files + complexity
+task ss:security:scan        # SAST + secrets + dependency CVEs + DAST (DAST needs URL — skip or run after Pass B)
 ```
 
-If `task ss:security:scan` complains about a missing DAST URL, run security checks individually instead:
+Or call each check via the CLI directly:
 
 ```bash
-task ss:security:secrets         # Gitleaks — fast, usually surfaces something
-task ss:security:sast            # Semgrep
-task ss:security:vulnerability:all  # Trivy (CVE scan of dependencies)
+slopstopper run security:secrets           # Gitleaks — fast, usually surfaces something
+slopstopper run security:sast              # Semgrep
+slopstopper run security:dependencies      # Trivy (CVE scan of dependencies)
+slopstopper run hygiene:complexity         # lizard
+slopstopper run hygiene:docs-accuracy      # repo-relative link resolver
+slopstopper run hygiene:docs-structure     # Map Pattern validator
+slopstopper run hygiene:docs-size          # docs/ size budget
+slopstopper run hygiene:entry-files        # README/AGENTS/CLAUDE word budget
+slopstopper run hygiene:csp-exceptions     # if headers.source is configured
 ```
 
-For each failure: fix the root cause locally, re-run **just that one task** to confirm, and only move on once green. Anticipated issues during Pass A are listed in the table below.
+For each failure: fix the root cause locally, re-run **just that one check** to confirm, and only move on once green. Anticipated issues during Pass A are covered in `slopstopper-triage`.
 
 ### Pass B — Dynamic checks (need a URL + a built site)
 
-The reliability and DAST workflows assert behaviour on a running site. The fastest local loop is to build once, serve via a tiny `server.js` shim on `localhost:8080`, then run each dynamic task against `http://localhost:8080`.
+The reliability and DAST workflows assert behaviour on a running site. The fastest local loop is to build once, serve via the installed `.ss/server.js` shim on `localhost:8080`, then run each dynamic check against `http://localhost:8080`.
 
 ```bash
 npm run build                                # target's own build
-node server.js &                             # static server on :8080 (see "Anticipated issues" below if missing)
-SMOKE_TEST_URL=http://localhost:8080 task ss:reliability:smoke
-ACCESSIBILITY_TEST_URL=http://localhost:8080 task ss:reliability:accessibility
-CWV_URL=http://localhost:8080 task ss:reliability:cwv
-SEO_TEST_URL=http://localhost:8080 task ss:reliability:seo
-BROKEN_LINKS_TEST_URL=http://localhost:8080 task ss:reliability:links
-DAST_TEST_URL=http://localhost:8080 task ss:security:dast    # needs Docker for OWASP ZAP
+node .ss/server.js &                         # static server on :8080
+SMOKE_TEST_URL=http://localhost:8080 slopstopper run reliability:smoke
+ACCESSIBILITY_TEST_URL=http://localhost:8080 slopstopper run reliability:accessibility
+CWV_URL=http://localhost:8080 slopstopper run reliability:cwv
+SEO_TEST_URL=http://localhost:8080 slopstopper run reliability:seo
+BROKEN_LINKS_TEST_URL=http://localhost:8080 slopstopper run reliability:broken-links
+DAST_TEST_URL=http://localhost:8080 slopstopper run security:dast    # needs Docker for OWASP ZAP
 ```
 
-`task ss:security:dast` is the heaviest local check (pulls and runs the OWASP ZAP container) — leave it for last in the loop. Skip it locally if Docker isn't installed and run it on CI only.
+The Taskfile equivalents work the same way: `task ss:reliability:smoke -- http://localhost:8080`, `task ss:security:dast -- http://localhost:8080`, etc.
+
+`slopstopper run security:dast` is the heaviest local check (pulls and runs the OWASP ZAP container) — leave it for last in the loop. Skip it locally if Docker isn't installed and run it on CI only.
 
 Iterate the same way as Pass A: fix root cause locally, re-run the single task, move on once green.
 
@@ -325,10 +342,12 @@ This skill names specific files, env vars, workflow IDs, the `GENERIC_WORKFLOWS`
 
 Triggers that require revisiting this skill:
 
-- A workflow is added, removed, or renamed under `slopstopper/.github/workflows/ss-*.yml` → update the workflow count in the intro, Step 1.2, and Step 3; add/remove the matching local-task row in Step 7's Pass A or Pass B; add/remove the badge example in Step 6. (The per-check failure entry lives in `slopstopper-triage` — update there too.)
+- A workflow is added, removed, or renamed under `slopstopper/.github/workflows/ss-*.yml` → update the workflow count in the intro, Step 1.2, and Step 3; add/remove the matching local-CLI row in Step 7's Pass A or Pass B; add/remove the badge example in Step 6. (The per-check failure entry lives in `slopstopper-triage` — update there too.)
 - The `GENERIC_WORKFLOWS` array in `slopstopper/install.sh` changes → confirm the "What just landed" inventory in Step 3 still matches.
-- A `task ss:*` target is renamed in `slopstopper/Taskfile.ss.yml` → update the matching command in Step 7's Pass A or Pass B (and the equivalent in `slopstopper-update` Step 7 + `slopstopper-triage`'s reproduce table).
+- A check is added or renamed in `cli/slopstopper/checks/__init__.py`'s `REGISTRY` → update Step 7's `slopstopper run` list (and the equivalent in `slopstopper-update` Step 7 + `slopstopper-triage`'s reproduce table).
+- A `task ss:*` shim is renamed in `slopstopper/Taskfile.ss.yml` → update the matching command in Step 7's Pass A or Pass B (and the equivalents in `slopstopper-update` + `slopstopper-triage`).
 - A new env var is introduced for a dynamic check → add to the URL-defaults list in Step 4 and to the Pass B example in Step 7 (and the equivalents in `slopstopper-update`).
+- A new `slopstopper` subcommand is added (e.g. `init`, `inspect`) → mention in the intro and surface in the relevant Step.
 
 The companion to this is `AGENTS.md` in the slopstopper repo: its "When making changes" table flags the skill as a follow-on target whenever a change of the above kind ships. If you're updating slopstopper itself and that table isn't pointing readers back here, fix that first.
 

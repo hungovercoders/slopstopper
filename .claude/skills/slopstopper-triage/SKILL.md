@@ -7,11 +7,13 @@ description: Diagnose and fix a failing slopstopper check. Use when a user repor
 
 You're being asked to fix a slopstopper check that's failing. This skill is reactive — it assumes the install is in place and at least one check is red. If the user is mid-install, the install playbook (`slopstopper-install` Step 7) already handed off here; if they're refreshing an existing install, `slopstopper-update` handed off here. Either way, the procedure is the same.
 
+Every check now runs through `slopstopper-cli`. The workflow body for each `ss-*.yml` is ~8 lines: install the CLI, `slopstopper run <category>:<check>`, `slopstopper emit <category>:<check> --target {pr-comment,issue}`. So the local reproducer is always `slopstopper run …` (or its `task ss:*` shim).
+
 The shape of the fix depends on which of three things you're looking at:
 
 1. **A real finding** — the check is right, the code is wrong. Fix the code.
 2. **A false positive** — the check's heuristic is misfiring on this codebase. Suppress narrowly via the check's documented mechanism, always with a `# why` comment.
-3. **A threshold too tight for this repo** — the check itself is correct, but its config doesn't fit this codebase's reality. Tune in the relevant `docs/<loop>/<CONFIG>.md`.
+3. **A threshold too tight for this repo** — the check itself is correct, but its config doesn't fit this codebase's reality. Tune in `.slopstopper.yml` (most knobs live there) or the relevant `docs/<loop>/<CONFIG>.md` for the few that aren't config-driven yet.
 
 Don't apply blanket suppressions and don't loosen thresholds without writing down why.
 
@@ -20,36 +22,38 @@ Don't apply blanket suppressions and don't loosen thresholds without writing dow
 Slopstopper workflows follow the naming pattern `ss-<loop>-<action>-check.yml`. Decode:
 
 - **`<loop>`** = `security`, `hygiene`, `reliability` → maps to `docs/<loop>/README.md` for the loop-level overview.
-- **`<action>`** = `sast`, `secrets`, `complexity`, `docs-accuracy`, etc. → maps to a specific `task ss:<loop>:<action>` target.
+- **`<action>`** = `sast`, `secrets`, `complexity`, `docs-accuracy`, etc. → maps to a specific check name `<loop>:<action>` in the CLI's `REGISTRY` (`cli/slopstopper/checks/__init__.py`).
 
-If the user only gave you the workflow URL or a failing CI badge, click through to the workflow file under `.github/workflows/` in the target repo and read the `run:` step — it usually calls a single `task ss:*` command.
+If the user only gave you the workflow URL or a failing CI badge, click through to the workflow file under `.github/workflows/` in the target repo and read the `run:` step — every slopstopper workflow now calls `slopstopper run <category>:<check>` directly (with `slopstopper emit … --target pr-comment|issue` afterwards). The check name in that command is the same one you use locally.
 
 ## Step 2 — Reproduce locally
 
-Every slopstopper workflow has a local `task ss:*` equivalent. Run that, not the workflow. The local loop is an order of magnitude faster than pushing to CI per iteration.
+Every slopstopper workflow's logic lives inside `slopstopper-cli`. Run `slopstopper run <category>:<check>` locally (or its `task ss:*` shim) — same code, same exit codes, same reports. The local loop is an order of magnitude faster than pushing to CI per iteration.
 
-| Workflow | Local task | Needs URL? | Needs build? | Needs Docker? |
-|---|---|---|---|---|
-| `ss-security-sast-check.yml` | `task ss:security:sast` | – | – | – |
-| `ss-security-secrets-check.yml` | `task ss:security:secrets` | – | – | – |
-| `ss-security-vulnerability-all-check.yml` | `task ss:security:vulnerability:all` | – | – | – |
-| `ss-security-vulnerability-new-check.yml` | (CI-only — Dependency Review) | – | – | – |
-| `ss-security-dast-check.yml` | `task ss:security:dast` | ✓ | ✓ (if local) | ✓ |
-| `ss-hygiene-complexity-check.yml` | `task ss:hygiene:complexity` | – | – | – |
-| `ss-hygiene-csp-exceptions-check.yml` | `task ss:hygiene:csp-exceptions` | – | – | – |
-| `ss-hygiene-docs-accuracy-check.yml` | `task ss:hygiene:docs-accuracy` | – | – | – |
-| `ss-hygiene-docs-size-check.yml` | `task ss:hygiene:docs-size` | – | – | – |
-| `ss-hygiene-docs-structure-check.yml` | `task ss:hygiene:docs-structure` | – | – | – |
-| `ss-hygiene-entry-files-check.yml` | `task ss:hygiene:entry-files` | – | – | – |
-| `ss-hygiene-auto-label-pr.yml` | (CI-only — needs PR context) | – | – | – |
-| `ss-reliability-smoke-tests.yml` | `task ss:reliability:smoke -- <URL>` | ✓ | ✓ (if URL is local) | – |
-| `ss-reliability-accessibility-check.yml` | `task ss:reliability:accessibility -- <URL>` | ✓ | ✓ | – |
-| `ss-reliability-core-web-vitals.yml` | `task ss:reliability:cwv -- <URL>` | ✓ | ✓ | – |
-| `ss-reliability-seo-check.yml` | `task ss:reliability:seo -- <URL>` | ✓ | ✓ | – |
-| `ss-reliability-broken-links-check.yml` | `task ss:reliability:links -- <URL>` | ✓ | ✓ | – |
-| `ss-workflow-failure-issue.yml` | (CI-only — operational, runs on workflow_run) | – | – | – |
+| Workflow | Local command (CLI) | Taskfile shim | Needs URL? | Needs build? | Needs Docker? |
+|---|---|---|---|---|---|
+| `ss-security-sast-check.yml` | `slopstopper run security:sast` | `task ss:security:sast` | – | – | – |
+| `ss-security-secrets-check.yml` | `slopstopper run security:secrets` | `task ss:security:secrets` | – | – | – |
+| `ss-security-vulnerability-all-check.yml` | `slopstopper run security:dependencies` | `task ss:security:vulnerability:all` | – | – | – |
+| `ss-security-vulnerability-new-check.yml` | (CI-only — Dependency Review action) | – | – | – | – |
+| `ss-security-dast-check.yml` | `slopstopper run security:dast -- --target <URL>` | `task ss:security:dast -- <URL>` | ✓ | ✓ (if local) | ✓ |
+| `ss-hygiene-complexity-check.yml` | `slopstopper run hygiene:complexity` | `task ss:hygiene:complexity` | – | – | – |
+| `ss-hygiene-csp-exceptions-check.yml` | `slopstopper run hygiene:csp-exceptions` | `task ss:hygiene:csp-exceptions` | – | – | – |
+| `ss-hygiene-docs-accuracy-check.yml` | `slopstopper run hygiene:docs-accuracy` | `task ss:hygiene:docs-accuracy` | – | – | – |
+| `ss-hygiene-docs-size-check.yml` | `slopstopper run hygiene:docs-size` | `task ss:hygiene:docs-size` | – | – | – |
+| `ss-hygiene-docs-structure-check.yml` | `slopstopper run hygiene:docs-structure` | `task ss:hygiene:docs-structure` | – | – | – |
+| `ss-hygiene-entry-files-check.yml` | `slopstopper run hygiene:entry-files` | `task ss:hygiene:entry-files` | – | – | – |
+| `ss-hygiene-auto-label-pr.yml` | (CI-only — needs PR context) | – | – | – | – |
+| `ss-reliability-smoke-tests.yml` | `SMOKE_TEST_URL=<URL> slopstopper run reliability:smoke` | `task ss:reliability:smoke -- <URL>` | ✓ | ✓ (if URL is local) | – |
+| `ss-reliability-accessibility-check.yml` | `ACCESSIBILITY_TEST_URL=<URL> slopstopper run reliability:accessibility` | `task ss:reliability:accessibility -- <URL>` | ✓ | ✓ | – |
+| `ss-reliability-core-web-vitals.yml` | `CWV_URL=<URL> slopstopper run reliability:cwv` | `task ss:reliability:cwv -- <URL>` | ✓ | ✓ | – |
+| `ss-reliability-seo-check.yml` | `SEO_TEST_URL=<URL> slopstopper run reliability:seo` | `task ss:reliability:seo -- <URL>` | ✓ | ✓ | – |
+| `ss-reliability-broken-links-check.yml` | `BROKEN_LINKS_TEST_URL=<URL> slopstopper run reliability:broken-links` | `task ss:reliability:links -- <URL>` | ✓ | ✓ | – |
+| `ss-workflow-failure-issue.yml` | (CI-only — operational, runs on workflow_run) | – | – | – | – |
 
-For dynamic checks (`URL ✓`): pass the URL via the `--` arg, or set the matching env var (`SMOKE_TEST_URL`, `DAST_TEST_URL`, etc.). Pointing at `http://localhost:8080` with a `server.js` shim serving the built site is the fastest local loop.
+For dynamic checks (`URL ✓`): set the matching env var, or pass the URL via the `--` arg on the Taskfile shim. Pointing at `http://localhost:8080` with `node .ss/server.js` serving the built site is the fastest local loop.
+
+If a reliability workflow's failure is about *which pages it audited* rather than what it found, the page-list comes from `slopstopper discover <check> --event=<event>` — run that directly to see the resolved set before reproducing the check itself.
 
 ## Step 3 — Read the report
 
@@ -91,7 +95,7 @@ The check's heuristic is misfiring on this codebase. Use the check's documented 
 | DAST — other rule false positives | `.zap/rules.tsv` → `<plugin-id>\tIGNORE\t# why` | Per-rule, site-wide |
 | Accessibility (axe-core) | `disabledRules` in the spec, or scope the spec to exclude the offending selector | Per-rule or per-element |
 | Vulnerability (Trivy) | `.trivyignore` with the CVE ID + a `# why` line | Per-CVE |
-| Complexity (lizard) | `# nolint` on the function, or raise the threshold in `docs/hygiene/COMPLEXITY_CONFIG.md` | Per-function or repo-wide |
+| Complexity (lizard) | `# nolint` on the function, or raise the threshold in `docs/hygiene/README.md` complexity config block | Per-function or repo-wide |
 
 Each suppression is a documented gate exception, not a way to quiet findings that should be fixed. The PR that adds it is the place reviewers catch it.
 
@@ -111,8 +115,8 @@ Config-driven knobs (no file edit needed beyond `.slopstopper.yml`):
 
 Tunings that are NOT yet config-driven (require code/file edits):
 
-- `docs/hygiene/COMPLEXITY_CONFIG.md` — lizard cyclomatic complexity caps.
-- `.ss/lighthouserc.json` (or the bundled `cli/slopstopper/data/lighthouserc.json`) — Core Web Vitals thresholds.
+- `docs/hygiene/README.md` complexity config — lizard cyclomatic complexity caps.
+- `.ss/lighthouserc.json` (or the bundled `cli/slopstopper/data/lighthouserc.json`) — Core Web Vitals thresholds. Edit the `.ss/` copy if you want adopter-side persistence; the CLI prefers it over the package-data fallback.
 
 Tuning is a real decision — when you raise a threshold, leave a `# why` comment in `.slopstopper.yml` so the next maintainer doesn't roll it back. Don't tune to silence noise; tune to match a deliberate design decision.
 
@@ -128,18 +132,20 @@ Common failures, with diagnostic step and the file the fix lives in. Categories 
 | `task ss:hygiene:docs-accuracy` flags backtick-quoted filenames that don't resolve | Grep the docs for the bare filename — does the file exist anywhere under the repo? | Old docs reference renamed/moved files, or use bare filenames the resolver can't find | Fix the link in the doc; use repo-relative paths (`scripts/foo.sh`, not bare `foo.sh`) | code (docs) |
 | `task ss:hygiene:docs-structure` fails with `❌ docs/ directory not found` or category mismatch | `ls docs/` against the table in `docs/index.md` | Target doesn't follow the Map Pattern, or has an undocumented dir | Set up the Map Pattern (`slopstopper-install` Step 5 has the template) OR delete the three docs-* workflows | code (docs) OR delete check |
 | `task ss:hygiene:csp-exceptions` reports "no headers.source configured" with exit 0 | `cat .slopstopper.yml \| grep -A2 headers:` | `.slopstopper.yml` `headers.source` is null (the seeded default) | If you want the check active, set `headers.source` to your headers file (e.g. `public/_headers`) and `headers.format` to match (`cloudflare-text` for `_headers` files, `json` for JSON arrays, `auto` to infer). Otherwise this is harmless. | config |
-| `task ss:hygiene:csp-exceptions` reports "Unknown headers.format" | Run `python3 -c "from slopstopper import headers_adapters; print(list(headers_adapters.ADAPTERS.keys()))"` | `.slopstopper.yml` `headers.format` doesn't match a shipped adapter | Set `headers.format` to one of the listed adapter names or `auto`. If you need a format slopstopper doesn't ship, add a module under `cli/slopstopper/headers_adapters/` and register it in `__init__.py`'s `ADAPTERS`. | config (or new adapter) |
+| `slopstopper run hygiene:csp-exceptions` reports "Unknown headers.format" | Run `python3 -c "from slopstopper import headers_adapters; print(list(headers_adapters.ADAPTERS.keys()))"` | `.slopstopper.yml` `headers.format` doesn't match a shipped adapter | Set `headers.format` to one of the listed adapter names or `auto`. If you need a format slopstopper doesn't ship, add a module under `cli/slopstopper/headers_adapters/` and register it in `__init__.py`'s `ADAPTERS`. | config (or new adapter) |
 | `task ss:hygiene:entry-files` fails with one of README/AGENTS/CLAUDE over 1500 words | Run the task — the report names the file + word count | Entry file has bloated with content that belongs under `docs/<category>/` | Move the bulk into the appropriate category README; the entry file should be a pointer | code (docs) |
 | `task ss:reliability:smoke` fails: `expected /og-image.png to return 200` or wrong CORP header | `cat .slopstopper.yml \| grep -A2 smoke:` then `curl -I http://localhost:8080$(yq '.smoke.og_image_path' .slopstopper.yml)` | Site doesn't have a site-wide og-image at the configured path, OR local server isn't applying prod headers | Either (a) add the og-image at the configured path with `Cross-Origin-Resource-Policy: cross-origin`, OR (b) set `smoke.og_image_path: ''` in `.slopstopper.yml` to skip the assertion (use this if you ship per-post share images instead) | config OR code |
-| Reliability or DAST tasks fail at "Start local server" / connection refused | `ls server.js` | No `server.js` at repo root serving the build on port 8080 | (a) add a `server.js` shim that serves the built output and applies the platform's header file per request, OR (b) point each workflow at a deployed URL via the `*_TEST_URL` env vars | code |
+| Reliability or DAST tasks fail at "Start local server" / connection refused | `ls .ss/server.js` | No server on `localhost:8080` | (a) start the installed shim: `node .ss/server.js &` (it serves the built output and applies `public/_headers` per request), OR (b) point each workflow at a deployed URL via the `*_TEST_URL` env vars | code |
+| `slopstopper run reliability:<check>` audits only `/` when you expected the full sitemap, or audits `/` on a PR you expected to skip | Run `slopstopper discover <check> --event=<event>` (events: `local`, `pr`, `main`, `cron`) to see the resolved page list | `reliability.coverage.<event>` is in hand-list mode (default) instead of `sitemap` / `changed` | Opt into `sitemap` on `main`/`cron` or `changed` on `pr` in `.slopstopper.yml` (see `.slopstopper.yml.example`). The check itself is fine — discovery is the lever. | config |
 | `task ss:security:dast` reports `Content Security Policy (CSP) Header Not Set`, `X-Frame-Options Missing`, `Cross-Origin-*-Policy Missing` | Inspect headers: `curl -I http://localhost:8080/` | Site has no security headers configured | Add headers via the platform (Cloudflare: `public/_headers`; Vercel: `vercel.json`; Netlify: `_headers` or `netlify.toml`). Baseline below | code |
 | `task ss:security:dast` reports a CSP finding on a page that genuinely needs the relaxation (Giscus, GTM, etc.) | The page legitimately loads a third-party script/iframe that the strict CSP blocks | Per-path CSP relaxation is real and needs documenting | `docs/security/CSP_EXCEPTIONS.md` under `## Exceptions` with a `### /path` heading (glob patterns supported). The DAST gate swallows CSP findings only on documented paths | suppress |
 | `task ss:security:dast` reports a ZAP rule that's structurally wrong for this target (SRI on rotating GTM script; SQL Disclosure on blog posts with code blocks) | The flagged finding is genuinely wrong for content-heavy sites | ZAP heuristic doesn't fit | `.zap/rules.tsv` with the plugin ID marked `IGNORE` and a `# why` comment | suppress |
 | `task ss:reliability:accessibility` reports `color-contrast`, `link-in-text-block`, or `label-title-only` on DOM that belongs to a third-party widget (cookie banner, chat, search UI, embedded video) | The failing HTML belongs to a runtime-injected widget, not your source | Widget injects its stylesheet at runtime after your CSS — wins on load order. The page owns the violations regardless of authorship | Scope CSS overrides to the widget's root class; use `!important` (runtime-injected styles can't be beaten on specificity alone if loaded last); add `text-decoration: underline` for `link-in-text-block`; add `aria-label` via small post-init script for inputs missing labels | code (CSS / JS) |
 | `ss-security-vulnerability-new-check.yml` fails with `Dependency review is not supported on this repository` | Repo Settings → Code security and analysis → Dependency graph status | `actions/dependency-review-action` needs GHAS on a private repo OR Dependency Graph enabled on a public repo | Toggle the setting (admin action), OR delete the workflow | repo-admin OR delete check |
 | `ss-hygiene-auto-label-pr.yml` fails with `The config file was not found at .github/labeler.yml` | `ls .github/labeler.yml` | A pre-`install.sh`-seeding install OR you deleted the seeded file | Re-run `install.sh` to re-seed (it won't overwrite an existing file), or tune the seeded labeler.yml's globs to match your repo's directory structure | config |
-| `task ss:hygiene:complexity` flags a function with high cyclomatic complexity and the function is genuinely well-factored | Read the function — is it actually complex or just long-tabular? | Default complexity cap is too tight for this codebase's patterns | Raise the threshold in `docs/hygiene/COMPLEXITY_CONFIG.md` with a `## why` note | tune |
-| Lighthouse CWV check fails Performance / LCP / TBT / CLS thresholds | `task ss:reliability:cwv -- <URL>` and read the report's audit-level breakdown | Site has a genuine perf issue OR the threshold doesn't match the target's nature | Real → optimise (image sizing, render-blocking JS, etc.). Threshold mismatch → tune in `.ss/lighthouserc.json` with the change documented in `docs/reliability/CORE_WEB_VITALS.md` | code OR tune |
+| `slopstopper run hygiene:complexity` flags a function with high cyclomatic complexity and the function is genuinely well-factored | Read the function — is it actually complex or just long-tabular? | Default complexity cap is too tight for this codebase's patterns | Raise the threshold in `docs/hygiene/README.md` complexity section with a `## why` note | tune |
+| Lighthouse CWV check fails Performance / LCP / TBT / CLS thresholds | `CWV_URL=<URL> slopstopper run reliability:cwv` and read the report's audit-level breakdown | Site has a genuine perf issue OR the threshold doesn't match the target's nature | Real → optimise (image sizing, render-blocking JS, etc.). Threshold mismatch → tune in `.ss/lighthouserc.json` (adopter override) with the change documented in `docs/reliability/README.md` Core Web Vitals section | code OR tune |
+| A check's behaviour disagrees with what slopstopper-cli ships upstream | `slopstopper --version`; compare against [`cli/pyproject.toml`](https://github.com/hungovercoders/slopstopper/blob/main/cli/pyproject.toml) | CLI version on PATH is stale | `pipx upgrade slopstopper-cli` (or re-run `install.sh` to refresh both CLI and workflows). Confirm new version with `slopstopper --version`. | environment |
 
 ### Baseline security headers (for the missing-headers row above)
 
@@ -160,13 +166,14 @@ Tune `script-src` / `connect-src` to the actual third parties the site loads. `'
 
 ## Step 6 — When the fix is broader than one check
 
-If multiple checks fail with the same root cause, batch-fix once and re-run all affected tasks instead of fixing each in isolation. Common patterns:
+If multiple checks fail with the same root cause, batch-fix once and re-run all affected checks instead of fixing each in isolation. Common patterns:
 
 - **Node version pin bump** → fixes Core Web Vitals + Accessibility + SEO + Playwright + Smoke + DAST in one edit.
 - **Adding `public/_headers` with a security-headers baseline** → fixes DAST's missing-header alerts AND the smoke spec's CORP header check.
 - **Setting up the Map Pattern** (`docs/index.md` + per-category READMEs) → fixes docs-structure + docs-size + docs-accuracy together.
+- **Upgrading `slopstopper-cli`** → if a default tuning was widened upstream, multiple checks go green at once. `pipx upgrade slopstopper-cli` then re-run the aggregates.
 
-The aggregates make this fast: `task ss:hygiene:test` re-runs every hygiene check; `task ss:security:scan` re-runs every security check. Use them after a batch fix to confirm the whole class is closed.
+The aggregates make this fast: `task ss:hygiene:test` re-runs every hygiene check; `task ss:security:scan` re-runs every security check. Both are just sequenced `slopstopper run …` calls under the hood, so adopters who skip the Taskfile can chain the CLI invocations directly.
 
 ## Step 7 — When to delete the check instead of fixing it
 
@@ -189,10 +196,12 @@ Don't delete a check just because it's failing. The bar is *"this check has noth
 
 Update this skill when:
 
-- A new workflow is added under `slopstopper/.github/workflows/ss-*.yml` → add a row to Step 2's workflow→task table and a row to Step 5's gotcha table (with a forward-looking diagnostic step and fix location, not citing the install that surfaced it).
+- A new workflow is added under `slopstopper/.github/workflows/ss-*.yml` → add a row to Step 2's workflow→CLI table and a row to Step 5's gotcha table (with a forward-looking diagnostic step and fix location, not citing the install that surfaced it).
 - A workflow is renamed or removed → update both tables.
-- A `task ss:*` target is renamed in `slopstopper/Taskfile.ss.yml` → update Step 2's table.
+- A check is added or renamed in `cli/slopstopper/checks/__init__.py`'s `REGISTRY` → update Step 2's table (CLI column AND Taskfile-shim column, since the shim mirrors the CLI name).
+- A `task ss:*` shim is renamed in `slopstopper/Taskfile.ss.yml` → update Step 2's Taskfile-shim column.
+- A new `slopstopper` subcommand ships (e.g. `init`, `inspect`) → mention in the intro and the relevant Step.
 - A new suppression mechanism becomes available for an existing check (e.g. a new `.zap/rules.tsv`-shaped file for a different tool) → add a row to Step 4's suppression table.
-- A new tuning config file is added under `docs/<loop>/` → add to Step 4's tuning list.
+- A new config-driven knob is added to a check (`config.get("<x>")` in the check module) → add to Step 4's "Config-driven knobs" table, with the default mirroring `.slopstopper.yml.example`.
 
 The AGENTS.md "When making changes" table in the slopstopper repo flags this skill alongside `slopstopper-install` and `slopstopper-update` whenever a change of the above kind ships.

@@ -5,7 +5,9 @@ description: Update an existing slopstopper installation in place. Use when a us
 
 # Update slopstopper
 
-You're being asked to refresh an existing slopstopper installation in a repo that already has it. The install is idempotent, so the mechanical part is "re-run the installer" — but a few classes of customization get wiped on every re-run, and a few classes of upstream change need manual catch-up because the installer doesn't drag everything across. This skill walks the steady-state upgrade flow so nothing important gets missed.
+You're being asked to refresh an existing slopstopper installation in a repo that already has it. The install is idempotent, so the mechanical part is "re-run the installer" — which also re-pulls `slopstopper-cli` from upstream (via `pipx upgrade` or `pip install --user --upgrade`). A few classes of customization get wiped on every re-run, and a few classes of upstream change need manual catch-up because the installer doesn't drag everything across. This skill walks the steady-state upgrade flow so nothing important gets missed.
+
+**The CLI is the upgrade path for every check's logic.** Each check used to be a Python/bash script under `.ss/scripts/`; now it's a module inside `slopstopper-cli`, and `install.sh` ships the CLI itself. That means a re-run picks up new behaviour in checks without touching adopter files — and a pre-CLI install gets its old `.ss/scripts/` scrubbed clean automatically.
 
 If the target doesn't have slopstopper installed yet, this is the wrong skill — use `slopstopper-install` instead. If you're triaging a check that's failing right now, use `slopstopper-triage`.
 
@@ -28,17 +30,21 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
 ```
 
 What this refreshes (always, on every run):
-- `Taskfile.ss.yml`
-- `.ss/scripts/`
-- `.ss/tests/`
-- `.ss/playwright.config.js`, `.ss/lighthouserc.json`, `.ss/lighthouserc.prod.json`
-- Each workflow in `install.sh`'s `GENERIC_WORKFLOWS` array — provided it's still present in the target's `.github/workflows/`
+- `slopstopper-cli` — `pipx upgrade slopstopper-cli` (preferred) or `pip install --user --upgrade <git url>` fallback. Confirm with `slopstopper --version`.
+- `Taskfile.ss.yml` — thin `task ss:*` shims that all call `slopstopper run …` under the hood.
+- `.ss/tests/` — Playwright specs (smoke, accessibility, broken-links). Wholesale replacement; the CLI prefers these over its own bundled copies under `cli/slopstopper/data/tests/`.
+- `.ss/playwright.config.js`, `.ss/lighthouserc.json`, `.ss/lighthouserc.prod.json`, `.ss/server.js` — same override pattern.
+- Each workflow in `install.sh`'s `GENERIC_WORKFLOWS` array — provided it's still present in the target's `.github/workflows/`. The workflow body itself is short now (~8 lines: install CLI, `slopstopper run …`, `slopstopper emit …`), so most updates are CLI-version bumps invisible to the workflow YAML.
+
+What it scrubs (on a pre-CLI install):
+- `.ss/scripts/` — the entire directory. Every Python/bash script that used to live there is now bundled in `slopstopper-cli`. The installer detects the directory and removes it; commit the deletion as part of the upgrade PR.
 
 What it leaves alone:
-- Any workflow you've deleted (tracked via `.ss/.workflows-installed` — the marker file is the source of truth, commit it)
-- Your existing `Taskfile.yml` if you have one (just verifies the include is present, otherwise prints the block to paste)
-- Anything in `package.json` apart from devDependencies merges
-- Your own files outside the `ss` namespace
+- Any workflow you've deleted (tracked via `.ss/.workflows-installed` — the marker file is the source of truth, commit it).
+- `.slopstopper.yml` — never overwritten. All config (URLs, headers source, thresholds, disabled workflows) survives every re-run.
+- Your existing `Taskfile.yml` if you have one (just verifies the include is present, otherwise prints the block to paste).
+- Anything in `package.json` apart from devDependencies merges.
+- Your own files outside the `ss` namespace.
 
 The installer's stdout summarises what was installed, refreshed, or skipped as a previously-deleted item. Read it and relay to the user — especially if anything was added (a newly-shipped upstream workflow showing up for the first time) or skipped (a workflow you deleted that the installer is honouring).
 
@@ -57,15 +63,17 @@ Any line in the output is an `ss-*.yml` workflow that exists upstream but isn't 
 
 ## Step 4 — Re-apply customizations that got wiped (much smaller than it used to be)
 
-The installer refreshes `Taskfile.ss.yml`, `.ss/scripts/`, and the `ss-*.yml` workflows wholesale. Anything hand-edited in those files is gone — but `.slopstopper.yml` is **never** overwritten by the installer, so the bulk of customization (node version, headers source/format, URLs, pages, og-image path, disabled workflows) survives every re-run.
+The installer refreshes `Taskfile.ss.yml`, the `.ss/` overlay, and the `ss-*.yml` workflows wholesale. Anything hand-edited in those files is gone — but `.slopstopper.yml` is **never** overwritten by the installer, so the bulk of customization (node version, headers source/format, URLs, pages, og-image path, disabled workflows, hygiene thresholds) survives every re-run.
 
 What still needs re-checking after an update:
 
-- **Anything you hand-edited inside `ss-*.yml` workflow files** beyond what `.slopstopper.yml` covers. Common case: extra workflow-level `permissions:` for a custom integration, or a non-standard schedule. Diff against upstream to find them.
+- **Anything you hand-edited inside `ss-*.yml` workflow files** beyond what `.slopstopper.yml` covers. Common case: extra workflow-level `permissions:` for a custom integration, a non-standard schedule, or workflow-level env vars beyond the documented URL/PAGES set. Diff against upstream to find them.
+- **Anything you hand-edited inside `.ss/tests/*.spec.ts`, `.ss/playwright.config.js`, or `.ss/lighthouserc.json`.** These are refreshed wholesale on every install. If you need persistent customization, fork the spec under a different name and update `pages.smoke|accessibility|broken_links` in `.slopstopper.yml` to skip the bundled one, OR upstream the change.
 - **GitHub repo variables.** If `.slopstopper.yml` `node_version` changed, re-sync the `SLOPSTOPPER_NODE_VERSION` repo variable. If `urls.production` / `urls.preview` changed and you mirror them as repo variables, push those too:
 
   ```bash
-  gh variable set SLOPSTOPPER_NODE_VERSION --body "$(grep '^node_version:' .slopstopper.yml | cut -d\' -f2)"
+  NODE_VER=$(slopstopper config get node_version 20)
+  gh variable set SLOPSTOPPER_NODE_VERSION --body "$NODE_VER"
   # plus any URL variables you mirror
   ```
 
@@ -89,31 +97,48 @@ Surfaces worth checking explicitly:
 
 If a previously-failing check started passing after an update without any code change, eyeball whether a default got loosened upstream — those are flagged in the slopstopper changelog.
 
-## Step 6 — Check for new task targets
+## Step 6 — Check for new checks and task targets
 
-Re-running the installer refreshes `Taskfile.ss.yml`, which may now expose new `task ss:*` targets that weren't there last time. Eyeball the list:
+Two surfaces to scan after an upgrade:
 
-```bash
-task --list | grep '^\* ss:'
-```
+1. **The CLI's check registry.** `slopstopper --help` lists subcommands; the canonical list of check names is in `cli/slopstopper/checks/__init__.py`'s `REGISTRY` dict upstream. If a new check landed (e.g. `reliability:<new-check>`), it's runnable as `slopstopper run reliability:<new-check>` even before any workflow ships it.
+2. **The Taskfile shims.** Re-running the installer refreshes `Taskfile.ss.yml`, which mirrors every CLI check as a `task ss:*` shim. Eyeball:
 
-If anything looks unfamiliar, check `Taskfile.ss.yml` for the `desc:` and `summary:` to understand what it does. New tasks are usually surfaced as part of a new workflow — if you skipped the workflow in Step 3 you'll see the task in here regardless, since `Taskfile.ss.yml` is refreshed wholesale.
+   ```bash
+   task --list | grep '^\* ss:'
+   ```
 
-Flag any new tasks the user might want to wire into local pre-commit hooks or the standard dev loop.
+If anything looks unfamiliar, check `Taskfile.ss.yml` for the `desc:` and `summary:` (each shim documents the env vars it forwards). New checks are usually surfaced as part of a new workflow — if you skipped the workflow in Step 3 you'll see the task here regardless, since `Taskfile.ss.yml` is refreshed wholesale.
+
+Flag any new checks the user might want to wire into local pre-commit hooks or the standard dev loop.
 
 ## Step 7 — Re-run the static aggregates locally before pushing
 
 Same loop as `slopstopper-install` Step 7, condensed because the build / Playwright deps are already in place:
 
 ```bash
-task ss:hygiene:test    # complexity + docs-* + entry-files + lint + structure + size
+task ss:hygiene:test    # lint + structure + size + docs-* + entry-files + complexity
 task ss:security:scan   # SAST + secrets + dependency CVEs (+ DAST if a URL is wired)
+```
+
+Or hit each check via the CLI directly without the Taskfile detour:
+
+```bash
+slopstopper run hygiene:docs-size
+slopstopper run hygiene:docs-structure
+slopstopper run hygiene:docs-accuracy
+slopstopper run hygiene:entry-files
+slopstopper run hygiene:complexity
+slopstopper run hygiene:csp-exceptions
+slopstopper run security:secrets
+slopstopper run security:sast
+slopstopper run security:dependencies
 ```
 
 Anything that comes back red is one of two things:
 
 1. **A new check** that just landed and is hitting your repo for the first time → hand off to `slopstopper-triage` for the per-check playbook.
-2. **An existing check** with a stricter tuning than before (e.g. complexity threshold tightened in the new `Taskfile.ss.yml`) → check the config under `docs/<loop>/` for tunable values; `slopstopper-triage` also covers this.
+2. **An existing check** with a stricter default tuning than before (e.g. complexity threshold tightened in the new CLI release) → check `.slopstopper.yml.example` for the canonical schema and the per-check defaults; `slopstopper-triage` covers when to tune vs. fix.
 
 Don't push until the local loop is green. The point of running the aggregates first is to keep the upgrade-PR's CI run as a confirmation pass, not a discovery pass — same principle as a fresh install.
 
@@ -130,8 +155,10 @@ Push to a PR branch. CI should mirror local. If a CI-only check goes red (Depend
 
 Update this skill when:
 
-- The installer's behaviour changes (new tracked-files mechanism, different deletion semantics, additional refresh targets) → update Step 2's "what this refreshes / leaves alone" lists.
-- A new env var is introduced for a dynamic check → add to Step 4's list and Step 5's `gh variable set` example.
+- The installer's behaviour changes (new tracked-files mechanism, different deletion semantics, additional refresh targets, CLI install path change) → update Step 2's "what this refreshes / scrubs / leaves alone" lists.
+- A new check is added to `cli/slopstopper/checks/__init__.py`'s `REGISTRY` → mention it in Step 6 and add to Step 7's `slopstopper run` list (and the equivalents in `slopstopper-install` Step 7 + `slopstopper-triage`'s reproduce table).
+- A new env var is introduced for a dynamic check → add to Step 4's list and Step 4's `gh variable set` example.
+- A new `slopstopper` subcommand ships (e.g. `init`, `inspect`) → mention in the intro and the relevant Step.
 - A new hardcoded-on-reinstall surface emerges (e.g. another file the installer overwrites that users commonly hand-edit) → add to Step 4.
 - The trio gains a fourth skill → update the Step 1 description of what `install-skill.sh` refreshes and the "When to hand off" pointers.
 
