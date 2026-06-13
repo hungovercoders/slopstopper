@@ -185,7 +185,7 @@ fi
 # If an `.ss/` overlay (specs, playwright config, lighthouse config) is
 # already present in the target, the CLI's templates module prefers
 # those files over the package data — same shape as the workflows.
-SLOPSTOPPER_CLI_GIT="git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli"
+SLOPSTOPPER_CLI_GIT="https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl"
 
 install_cli() {
   if command -v pipx &>/dev/null; then

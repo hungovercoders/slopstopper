@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli" && pip install semgrep
+      - run: pip install "https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl" && pip install semgrep
       - run: slopstopper run security:sast
       - if: github.event_name == 'pull_request'
         run: slopstopper emit security:sast --target pr-comment</code></pre></div>
@@ -104,7 +104,7 @@ jobs:
     name: Dynamic Application Security Testing with OWASP ZAP
     steps:
       - uses: actions/checkout@v4
-      - run: pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli"
+      - run: pip install "https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl"
       - run: npm ci &amp;&amp; npm run build &amp;&amp; slopstopper serve &amp;
       - run: slopstopper run security:dast -- --target http://localhost:8080
       - if: github.event_name == 'pull_request'
@@ -126,7 +126,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - run: pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli" && curl -sL gitleaks/install.sh | bash
+      - run: pip install "https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl" && curl -sL gitleaks/install.sh | bash
       - run: slopstopper run security:secrets
       - if: github.event_name == 'pull_request'
         run: slopstopper emit security:secrets --target pr-comment</code></pre></div>
@@ -146,7 +146,7 @@ jobs:
     name: Scan Dependencies with Trivy
     steps:
       - uses: actions/checkout@v4
-      - run: pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli" && brew install aquasecurity/trivy/trivy
+      - run: pip install "https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl" && brew install aquasecurity/trivy/trivy
       - run: slopstopper run security:dependencies
       - if: github.event_name == 'pull_request'
         run: slopstopper emit security:dependencies --target pr-comment</code></pre></div>
@@ -183,7 +183,7 @@ jobs:
     name: Check Code Complexity with Lizard
     steps:
       - uses: actions/checkout@v4
-      - run: pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli" lizard
+      - run: pip install "https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl" lizard
       - run: slopstopper run hygiene:complexity
       - if: github.event_name == 'pull_request'
         run: slopstopper emit hygiene:complexity --target pr-comment</code></pre></div>
@@ -223,7 +223,7 @@ jobs:
   check-csp-exceptions:
     steps:
       - uses: actions/checkout@v4
-      - run: pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli"
+      - run: pip install "https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl"
       - run: slopstopper run hygiene:csp-exceptions
       - if: github.event_name == 'pull_request'
         run: slopstopper emit hygiene:csp-exceptions --target pr-comment</code></pre></div>
@@ -278,7 +278,7 @@ jobs:
   smoke-test:
     steps:
       - uses: actions/checkout@v4
-      - run: pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli" &amp;&amp; npm ci
+      - run: pip install "https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl" &amp;&amp; npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
       - run: slopstopper run reliability:smoke -- --ci
       - if: github.event_name == 'pull_request'
@@ -302,7 +302,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli" &amp;&amp; npm ci
+      - run: pip install "https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl" &amp;&amp; npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
       - run: slopstopper run reliability:broken-links -- --ci
       - if: github.event_name == 'pull_request'
@@ -325,7 +325,7 @@ jobs:
     name: Accessibility Audit (axe-core / WCAG 2.1 AA)
     steps:
       - uses: actions/checkout@v4
-      - run: pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli" &amp;&amp; npm ci
+      - run: pip install "https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl" &amp;&amp; npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
       - run: slopstopper run reliability:accessibility -- --ci
       - if: github.event_name == 'pull_request'
@@ -348,7 +348,7 @@ jobs:
     name: Core Web Vitals (Lighthouse CI)
     steps:
       - uses: actions/checkout@v4
-      - run: pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli" &amp;&amp; npm ci &amp;&amp; npm run build
+      - run: pip install "https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl" &amp;&amp; npm ci &amp;&amp; npm run build
       - run: slopstopper serve &amp;
       - run: slopstopper run reliability:cwv -- --url http://localhost:8080
       - if: github.event_name == 'pull_request'
@@ -371,7 +371,7 @@ jobs:
     name: SEO Metatag Audit (OpenGraph + Twitter Card + canonical)
     steps:
       - uses: actions/checkout@v4
-      - run: pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli" &amp;&amp; npm ci
+      - run: pip install "https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl" &amp;&amp; npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
       - run: slopstopper run reliability:seo   # title, description, canonical,
                                                # og:*, twitter:*, og:image fetch

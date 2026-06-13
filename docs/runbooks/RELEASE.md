@@ -38,22 +38,40 @@ If in doubt, prefer a MINOR bump over a PATCH.
 
    The release workflow has a sanity-check step that fails the build if these diverge from the tag.
 
-4. **Commit + push** the CHANGELOG and version bumps as a single commit (`chore(release): bump version to X.Y.Z`). Open a PR if you want CI to pre-verify; otherwise push straight to `main` if you have permission.
+4. **Bump the pinned wheel URL** across docs, the website, `install.sh`, and every `ss-*-check.yml` workflow. Adopters install the pre-built wheel attached to the GitHub Release, not a git URL — so the version appears twice (release path + filename). The pattern is:
 
-5. **Tag + push.** Once the bump commit is on `main`:
+   ```
+   https://github.com/hungovercoders/slopstopper/releases/download/vX.Y.Z/slopstopper_cli-X.Y.Z-py3-none-any.whl
+   ```
+
+   One-liner to swap the version everywhere:
+
+   ```bash
+   # From the repo root — replace OLD and NEW with the version numbers (no leading v):
+   OLD=0.2.0 NEW=0.3.0
+   git ls-files | xargs grep -l "releases/download/v$OLD" 2>/dev/null \
+     | xargs sed -i.bak -e "s|releases/download/v$OLD/slopstopper_cli-$OLD|releases/download/v$NEW/slopstopper_cli-$NEW|g" \
+     && find . -name '*.bak' -delete
+   ```
+
+   The release tag URL (e.g. `releases/tag/v0.2.0`) also appears in user-facing copy as a "see the release" link — bump those too. Slopstopper.dev's own CI uses the editable install of `cli/` when `cli/pyproject.toml` is present, so it dogfoods `main` regardless of the pinned wheel URL.
+
+5. **Commit + push** the CHANGELOG, version bumps and URL bumps as a single commit (`chore(release): bump version to X.Y.Z`). Open a PR if you want CI to pre-verify; otherwise push straight to `main` if you have permission.
+
+6. **Tag + push.** Once the bump commit is on `main`:
 
    ```bash
    git tag vX.Y.Z -m "X.Y.Z"
    git push origin vX.Y.Z
    ```
 
-6. **Watch the workflow.** The `SlopStopper · Release` workflow runs against the tag. It will:
+7. **Watch the workflow.** The `SlopStopper · Release` workflow runs against the tag. It will:
    - Verify versions match the tag.
    - Build wheel + sdist with `python -m build` (uses `hatchling`).
    - Extract the matching `## [X.Y.Z]` section from `CHANGELOG.md`.
    - Create the GitHub Release with that body and both artifacts attached.
 
-7. **Verify the release.** Open [Releases](https://github.com/hungovercoders/slopstopper/releases). Sanity-check the body, download the wheel, run `pipx install <path-to-wheel>` somewhere and confirm `slopstopper --version` matches.
+8. **Verify the release.** Open [Releases](https://github.com/hungovercoders/slopstopper/releases). Sanity-check the body, download the wheel, run `pipx install <path-to-wheel>` somewhere and confirm `slopstopper --version` matches.
 
 ## Manual re-release
 
