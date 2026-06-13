@@ -32,12 +32,12 @@ import argparse
 import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
+
+from slopstopper import discovery
 
 SPEC_PATH = Path(".ss/tests/broken-links.spec.ts")
 PLAYWRIGHT_CONFIG = Path(".ss/playwright.config.js")
-DISCOVER_PAGES = Path(".ss/scripts/discover-pages.py")
 
 
 def _parse_args(args: list[str] | None) -> argparse.Namespace:
@@ -63,21 +63,12 @@ def _resolve_url(parsed_url: str | None) -> str | None:
 
 
 def _discover_pages() -> str | None:
-    if not DISCOVER_PAGES.exists():
-        return None
+    """Resolve pages.broken_links via the in-CLI discovery module."""
     try:
-        result = subprocess.run(
-            [sys.executable, str(DISCOVER_PAGES), "broken_links", "--event=local"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if result.returncode != 0:
-            return None
-        out = result.stdout.strip()
-        return out or None
-    except OSError:
+        paths = discovery.discover("broken_links", "local")
+    except Exception:
         return None
+    return ",".join(paths) if paths else None
 
 
 def _build_env(url: str, ci_mode: bool) -> dict[str, str]:

@@ -47,33 +47,20 @@ def test_resolve_url_none_when_neither_set(monkeypatch):
     assert seo._resolve_url(None) is None
 
 
-def test_discover_pages_returns_none_when_script_missing(isolated_cwd):
-    assert seo._discover_pages() is None
+def test_discover_pages_defaults_to_root_when_unconfigured(isolated_cwd):
+    assert seo._discover_pages() == "/"
 
 
-def test_discover_pages_returns_stdout_when_script_succeeds(monkeypatch, isolated_cwd):
-    seo.DISCOVER_PAGES.parent.mkdir(parents=True, exist_ok=True)
-    seo.DISCOVER_PAGES.write_text("# stub")
-
-    monkeypatch.setattr(
-        seo.subprocess, "run",
-        lambda cmd, capture_output, text, check: subprocess.CompletedProcess(
-            cmd, 0, stdout="/,/blog\n", stderr=""
-        ),
-    )
+def test_discover_pages_returns_joined_paths(monkeypatch, isolated_cwd):
+    monkeypatch.setattr(seo.discovery, "discover", lambda check, event: ["/", "/blog"])
     assert seo._discover_pages() == "/,/blog"
 
 
-def test_discover_pages_returns_none_on_non_zero_exit(monkeypatch, isolated_cwd):
-    seo.DISCOVER_PAGES.parent.mkdir(parents=True, exist_ok=True)
-    seo.DISCOVER_PAGES.write_text("# stub")
+def test_discover_pages_returns_none_on_discovery_failure(monkeypatch, isolated_cwd):
+    def boom(check, event):
+        raise RuntimeError("boom")
 
-    monkeypatch.setattr(
-        seo.subprocess, "run",
-        lambda cmd, capture_output, text, check: subprocess.CompletedProcess(
-            cmd, 1, stdout="ignore", stderr="error"
-        ),
-    )
+    monkeypatch.setattr(seo.discovery, "discover", boom)
     assert seo._discover_pages() is None
 
 
