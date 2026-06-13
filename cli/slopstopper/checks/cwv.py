@@ -73,10 +73,16 @@ def _parse_args(args: list[str] | None) -> argparse.Namespace:
     p = argparse.ArgumentParser(prog="slopstopper run reliability:cwv", add_help=False)
     p.add_argument("--url", default=None, help="Site URL to audit (else $CWV_URL)")
     p.add_argument(
+        "--prod",
+        action="store_true",
+        help="Use the stricter prod lighthouserc (default: dev). "
+        "Workflows pass this on deployment_status / schedule events.",
+    )
+    p.add_argument(
         "--config",
         default=None,
-        help="Lighthouse CI config path (default: resolves via templates "
-        "module — .ss/lighthouserc.json override, else package data)",
+        help="Explicit Lighthouse CI config path. Overrides --prod resolution. "
+        "Default resolution: .ss/lighthouserc[.prod].json override, else package data.",
     )
     p.add_argument("--help", "-h", action="help")
     return p.parse_args(args or [])
@@ -248,7 +254,9 @@ def run(args: list[str] | None = None) -> int:
         print("  CWV_URL=https://your-site slopstopper run reliability:cwv")
         return 1
 
-    config_path = Path(parsed.config) if parsed.config else templates.lighthouserc()
+    config_path = (
+        Path(parsed.config) if parsed.config else templates.lighthouserc(prod=parsed.prod)
+    )
     if not config_path.exists():
         print(f"❌ Lighthouse CI config not found at {config_path}")
         return 1

@@ -25,6 +25,7 @@ PACKAGE_DATA_DIR = Path(__file__).resolve().parent / "data"
 
 PLAYWRIGHT_CONFIG_NAME = "playwright.config.js"
 LIGHTHOUSERC_NAME = "lighthouserc.json"
+LIGHTHOUSERC_PROD_NAME = "lighthouserc.prod.json"
 
 
 def _override_dir() -> Path:
@@ -46,12 +47,21 @@ def playwright_config() -> Path:
     return PACKAGE_DATA_DIR / PLAYWRIGHT_CONFIG_NAME
 
 
-def lighthouserc() -> Path:
-    """Resolve the Lighthouse CI config path."""
-    override = _override_dir() / LIGHTHOUSERC_NAME
+def lighthouserc(prod: bool = False) -> Path:
+    """Resolve the Lighthouse CI config path.
+
+    ``prod=True`` picks the stricter `lighthouserc.prod.json` (extra
+    asserts on accessibility / best-practices, plus speed-index and
+    interactive). Used by the CWV check when the workflow is auditing
+    a deployed URL on `deployment_status` or `schedule` events; the
+    default `lighthouserc.json` is used on PR / push to main where the
+    site is built locally.
+    """
+    name = LIGHTHOUSERC_PROD_NAME if prod else LIGHTHOUSERC_NAME
+    override = _override_dir() / name
     if override.exists():
         return override
-    return PACKAGE_DATA_DIR / LIGHTHOUSERC_NAME
+    return PACKAGE_DATA_DIR / name
 
 
 def playwright_spec(name: str) -> Path:

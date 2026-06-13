@@ -23,10 +23,11 @@
 #                               #   printed in that case)
 #   Taskfile.ss.yml             # all SlopStopper task shims; always
 #                               #   refreshed on re-run so updates flow through
-#   .ss/tests/                  # portable Playwright + report-generator specs
-#   .ss/playwright.config.js    # Playwright config scoped to .ss/tests/
-#   .ss/lighthouserc.json       # Lighthouse CI budgets (PR/dev)
-#   .ss/lighthouserc.prod.json  # Lighthouse CI budgets (production)
+#   .ss/server.js               # static-site shim for the local CI loop
+#                               #   (only file still seeded into .ss/; bundled
+#                               #   Playwright specs / configs / lighthouserc
+#                               #   live inside slopstopper-cli, override via
+#                               #   .ss/<same-name> if you need to customize)
 #   .ss/reports/                # SlopStopper-owned scan/report output dirs
 #   .github/workflows/ss-*      # all SlopStopper workflows are ss- prefixed
 #                               #   so they group together in the Actions UI
@@ -208,23 +209,18 @@ install_cli() {
 
 install_cli
 
-# 4. .ss/ overlay — adopter-customisable specs, Playwright/Lighthouse
-#    configs, and the local-server shim. The CLI's templates module
-#    prefers files under .ss/ when present and otherwise reads from its
-#    own package data, so this overlay is optional for vanilla adopters.
-#    We still seed it for backward compat + as a starting point for
-#    customisation. Always refreshed on re-run.
+# 4. .ss/ overlay — minimal by design. The CLI's templates module
+#    resolves Playwright specs / Playwright config / lighthouserc paths
+#    by looking under .ss/<same-name> first and falling back to the
+#    package data bundled in slopstopper-cli. So we only seed the one
+#    file we can't ship in the wheel — `.ss/server.js`, the static
+#    local-CI server (adopter-tuned: ports, headers file, build dir).
+#    Adopters who want to customize a Playwright spec or lighthouserc
+#    write that file under .ss/ themselves; the CLI picks it up.
 mkdir -p "$TARGET_DIR/.ss"
 
-rm -rf "$TARGET_DIR/.ss/tests"
-cp -r "$SCRIPT_DIR/.ss/tests" "$TARGET_DIR/.ss/tests"
-success ".ss/tests/ installed (refreshed)"
-
-cp "$SCRIPT_DIR/.ss/playwright.config.js" "$TARGET_DIR/.ss/playwright.config.js"
-cp "$SCRIPT_DIR/.ss/lighthouserc.json" "$TARGET_DIR/.ss/lighthouserc.json"
-cp "$SCRIPT_DIR/.ss/lighthouserc.prod.json" "$TARGET_DIR/.ss/lighthouserc.prod.json"
 cp "$SCRIPT_DIR/.ss/server.js" "$TARGET_DIR/.ss/server.js"
-success ".ss/ Playwright + Lighthouse configs + server.js installed (refreshed)"
+success ".ss/server.js installed (refreshed)"
 
 # Clean up any legacy .ss/scripts/ left over from pre-CLI installs —
 # every script previously copied into adopter repos is now bundled in
@@ -233,6 +229,33 @@ success ".ss/ Playwright + Lighthouse configs + server.js installed (refreshed)"
 if [ -d "$TARGET_DIR/.ss/scripts" ]; then
   rm -rf "$TARGET_DIR/.ss/scripts"
   success ".ss/scripts/ removed (logic now lives in slopstopper-cli)"
+fi
+
+# Clean up legacy byte-equal template copies from pre-lift installs.
+# If an adopter has customised any of these, leave the file alone — the
+# CLI's templates resolver will keep using the .ss/ override.
+# Detection: compare bytes against the package data shipped in the wheel
+# the adopter just installed.
+DATA_DIR="$(python3 -c 'import slopstopper, pathlib; print(pathlib.Path(slopstopper.__file__).resolve().parent / "data")' 2>/dev/null || true)"
+if [ -n "$DATA_DIR" ] && [ -d "$DATA_DIR" ]; then
+  scrub_if_byte_equal() {
+    local rel="$1"
+    local adopter="$TARGET_DIR/.ss/$rel"
+    local pkg="$DATA_DIR/$rel"
+    if [ -e "$adopter" ] && [ -e "$pkg" ] && cmp -s "$adopter" "$pkg"; then
+      rm -rf "$adopter"
+      success ".ss/$rel removed (unmodified copy of package-data fallback)"
+    fi
+  }
+  scrub_if_byte_equal "playwright.config.js"
+  scrub_if_byte_equal "lighthouserc.json"
+  scrub_if_byte_equal "lighthouserc.prod.json"
+  if [ -d "$TARGET_DIR/.ss/tests" ] && [ -d "$DATA_DIR/tests" ]; then
+    if diff -rq "$TARGET_DIR/.ss/tests" "$DATA_DIR/tests" >/dev/null 2>&1; then
+      rm -rf "$TARGET_DIR/.ss/tests"
+      success ".ss/tests/ removed (unmodified copy of package-data fallback)"
+    fi
+  fi
 fi
 
 # 4. .github/workflows/ — install ss- prefixed generic workflows.

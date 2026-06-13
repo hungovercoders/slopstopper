@@ -119,20 +119,22 @@ jobs:
             printf '%s' "$url"
           }
 
+          # `prod` toggles the stricter lighthouserc (deployment_status,
+          # schedule, and the no-event fallback all use it).
           if [ "$EVENT_NAME" == "pull_request" ] || [ "$EVENT_NAME" == "push" ]; then
             echo "url=http://localhost:8080" >> "$GITHUB_OUTPUT"
-            echo "config=.ss/lighthouserc.json" >> "$GITHUB_OUTPUT"
+            echo "prod=false" >> "$GITHUB_OUTPUT"
           elif [ "$EVENT_NAME" == "workflow_dispatch" ]; then
             SAFE_URL="$(validate_url "$INPUT_URL")"
             echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
-            echo "config=.ss/lighthouserc.json" >> "$GITHUB_OUTPUT"
+            echo "prod=false" >> "$GITHUB_OUTPUT"
           elif [ "$EVENT_NAME" == "deployment_status" ]; then
             SAFE_URL="$(validate_url "$DEPLOYMENT_URL")"
             echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
-            echo "config=.ss/lighthouserc.prod.json" >> "$GITHUB_OUTPUT"
+            echo "prod=true" >> "$GITHUB_OUTPUT"
           else
             echo "url=https://slopstopper.dev" >> "$GITHUB_OUTPUT"
-            echo "config=.ss/lighthouserc.prod.json" >> "$GITHUB_OUTPUT"
+            echo "prod=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run Core Web Vitals audit
@@ -140,12 +142,15 @@ jobs:
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
           AUDIT_URL: ${{ steps.audit-url.outputs.url }}
-          LHCI_CONFIG: ${{ steps.audit-url.outputs.config }}
+          IS_PROD: ${{ steps.audit-url.outputs.prod }}
         continue-on-error: true
         run: |
-          echo "🔍 Auditing: $AUDIT_URL"
-          echo "📋 Using config: $LHCI_CONFIG"
-          slopstopper run reliability:cwv -- --url "$AUDIT_URL" --config "$LHCI_CONFIG"
+          echo "🔍 Auditing: $AUDIT_URL  (prod=$IS_PROD)"
+          if [ "$IS_PROD" = "true" ]; then
+            slopstopper run reliability:cwv -- --url "$AUDIT_URL" --prod
+          else
+            slopstopper run reliability:cwv -- --url "$AUDIT_URL"
+          fi
 
       - name: Stop local server
         if: (github.event_name == 'pull_request' || github.event_name == 'push') && always()
