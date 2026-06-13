@@ -15,12 +15,23 @@ Ports the bash reliability:accessibility flow:
 
 Subprocess-invokes `npx playwright`. Playwright is Apache-2.0, axe-core
 is MPL-2.0; the slopstopper-cli wheel ships zero code from either —
-both bind in via the adopter's node_modules. Discover-pages.py is
-still an adopter-vendored Python script today (subprocess-invoked
-here for parity); lifting it into the package is a follow-up.
+both bind in via the adopter's node_modules. Page discovery uses the
+in-CLI slopstopper.discovery module.
 
 Falls back to SMOKE_TEST_URL when ACCESSIBILITY_TEST_URL is unset,
 matching the bash flow exactly.
+
+Configuration (.slopstopper.yml — all optional):
+
+    pages:
+      accessibility: /,/blog,/about
+    reliability:
+      coverage:
+        pr: changed     # see slopstopper.discovery for the resolution order
+        main: sitemap
+
+See .slopstopper.yml.example for the canonical schema and coverage
+modes.
 
 Exit codes:
   0 — playwright tests passed

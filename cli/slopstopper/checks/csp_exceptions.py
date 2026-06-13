@@ -2,8 +2,16 @@
 
 Ports .ss/scripts/check-csp-exceptions.py. Enforces that every per-path
 CSP relaxation in the configured header source is documented in
-`docs/security/CSP_EXCEPTIONS.md`, and vice versa. Header source and
-format come from `.slopstopper.yml`'s `headers:` keys.
+`docs/security/CSP_EXCEPTIONS.md`, and vice versa.
+
+Configuration (.slopstopper.yml):
+
+    headers:
+      source: worker/headers.json   # path to header file (set to null to skip)
+      format: json                  # json | cloudflare-text | auto
+
+See .slopstopper.yml.example for the canonical schema and supported
+adapters.
 
 Exit codes mirror the bash:
   0 — source and doc agree (or no source configured — graceful skip)

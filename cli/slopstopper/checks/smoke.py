@@ -14,10 +14,18 @@ Ports the bash reliability:smoke flow:
                       --reporter=list[,html]
 
 Subprocess-invokes `npx playwright` — Playwright is Apache-2.0; the
-slopstopper-cli wheel ships zero Playwright code. The test specs at
-.ss/tests/smoke.spec.ts and the Playwright config at
-.ss/playwright.config.js are still adopter-vendored today (lifting them
-into package data is a separate follow-up; see plan).
+slopstopper-cli wheel ships zero Playwright code. The test specs and
+Playwright config are bundled in the wheel; adopters can override by
+writing same-named files under .ss/ (see slopstopper.templates).
+
+Configuration (.slopstopper.yml — all optional):
+
+    pages:
+      smoke: /,/blog,/about       # which paths to smoke-test
+    smoke:
+      og_image_path: /og-image.png  # '' to skip the og-image assertion
+
+See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
   0 — playwright tests passed

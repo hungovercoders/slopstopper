@@ -1,13 +1,19 @@
 """Documentation size monitor.
 
 Ports .ss/scripts/check-docs-size.sh + generate-docs-size-report.py into
-one self-contained check. Reads thresholds from .slopstopper.yml's
-hygiene.docs_size.* keys (defaulting to today's hardcoded values), writes
-.ss/reports/docs/docs-size-report.md, and prints a coloured summary to
-stdout. Exits 0 always — alerts are reported, not enforced.
+one self-contained check. Writes .ss/reports/docs/docs-size-report.md
+and prints a coloured summary to stdout. Exits 0 always — alerts are
+reported, not enforced.
 
-Goal during the CLI pivot: byte-equivalent report output to the bash
-script (modulo the timestamp line), so adopters see no diff on migration.
+Configuration (.slopstopper.yml — all keys optional):
+
+    hygiene:
+      docs_size:
+        max_total_size_kb: 150   # total .md under docs/ (excl. docs/archive/**)
+        max_file_size_kb: 20     # largest single doc
+        max_files: 25            # total doc count
+
+See .slopstopper.yml.example for the canonical schema.
 """
 
 from __future__ import annotations

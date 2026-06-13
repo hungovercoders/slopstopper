@@ -18,6 +18,21 @@ CLI surface:
 Stdlib-only (urllib + HTMLParser). Writes
 .ss/reports/seo/seo-metatags-report.{md,json}.
 
+Configuration (.slopstopper.yml — all optional):
+
+    pages:
+      seo: /,/blog,/about
+    reliability:
+      coverage:
+        pr: changed     # see slopstopper.discovery for the resolution order
+        main: sitemap
+
+Env-var equivalents the CLI also honours (precedence: flag > env > config > "/"):
+  SEO_TEST_URL, SEO_PAGES, SEO_REQUIRE_OG_IMAGE, SEO_VERIFY_OG_IMAGE,
+  SEO_OG_IMAGE_BASE.
+
+See .slopstopper.yml.example for the canonical schema.
+
 Exit codes:
   0 — all pages passed
   1 — failures detected, URL missing, or unsafe-scheme URL supplied

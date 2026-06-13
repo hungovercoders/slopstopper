@@ -1,16 +1,21 @@
 # .slopstopper.yml — repo-level config for slopstopper.
 #
-# Survives install.sh re-runs (the installer only seeds it once if
-# .slopstopper.yml doesn't exist; it never overwrites an existing file).
+# This file serves a dual role:
+#   - Schema reference: the canonical inventory of every key slopstopper
+#     checks and workflows read. Adopters and agents link to it.
+#   - Adopter seed: install.sh copies this file into adopter repos as
+#     `.slopstopper.yml` on first install. Existing files are never
+#     overwritten — re-running install.sh is safe.
+#
 # Slopstopper scripts and workflows that need a per-repo value read from
-# here first.
+# here first. Defaults below are the values used when a key is unset.
 #
 # What lives here:
 #   - Defaults for env-var-driven checks (URLs, page lists, og-image path)
-#   - Tuning knobs that would otherwise be hardcoded into workflows and
-#     wiped on every reinstall
-#   - Adapter selection for the CSP-drift check (so adopters with
-#     different header-source formats are first-class, not second-class)
+#   - Per-check thresholds that would otherwise be hardcoded into scripts
+#     and wiped on every reinstall
+#   - Adapter selection for the CSP-drift check (so adopters with different
+#     header-source formats are first-class, not second-class)
 #   - Workflows to skip on this repo
 #
 # What does NOT live here:
@@ -20,29 +25,32 @@
 
 # ── Node version pin ─────────────────────────────────────────────────
 # Workflows use ${{ vars.SLOPSTOPPER_NODE_VERSION || '20' }} in their
-# setup-node steps. Set the repo variable from this value with:
+# setup-node steps. If your project needs Node 22+ (Astro 6, recent
+# Next, SvelteKit), bump this AND set the GitHub repo variable:
 #   gh variable set SLOPSTOPPER_NODE_VERSION --body "$(yq '.node_version' .slopstopper.yml)"
 # Or set it directly via the GitHub repo settings UI.
 node_version: '20'
 
 # ── Headers drift check adapter ──────────────────────────────────────
-# The ss:hygiene:csp-exceptions check enforces that every per-path CSP
+# The hygiene:csp-exceptions check enforces that every per-path CSP
 # relaxation in your header source has a matching entry in
-# docs/security/CSP_EXCEPTIONS.md. Tell it where your headers live and
-# what format the file is in. Set source: null to skip the check
-# entirely (use this if you manage headers via framework middleware,
-# platform config, etc., and want to handle drift another way).
+# docs/security/CSP_EXCEPTIONS.md, and vice versa.
+#
+# Set source to the path to your headers file. Common values:
+#   public/_headers         Cloudflare Pages, Cloudflare Workers Builds, Netlify
+#   app/_headers            same convention served from app/
+#   worker/headers.json     Cloudflare Worker with JSON-driven headers
+#
+# Set source: null to skip the check entirely (use this if you manage
+# headers via framework middleware, platform config, etc., and want to
+# handle drift another way).
 headers:
-  # Path to the file the adapter parses. Common values:
-  #   worker/headers.json     — Cloudflare Worker with JSON-driven headers (slopstopper.dev pattern)
-  #   public/_headers         — Cloudflare/Netlify static-asset _headers convention
-  #   app/_headers            — same convention, served from app/ directory
-  source: worker/headers.json
-  # Adapter to use when parsing. Shipped adapters:
-  #   json              — [{for, values}, ...] JSON array
-  #   cloudflare-text   — Cloudflare _headers text format
-  # Set to 'auto' to infer from the file extension (json→json, no-ext→cloudflare-text).
-  format: json
+  source: null
+  # Adapter to use when parsing. Shipped:
+  #   json              [{for, values}, ...] JSON array
+  #   cloudflare-text   Cloudflare _headers text format
+  #   auto              infer from extension (json→json, no-ext→cloudflare-text)
+  format: auto
 
 # ── Dynamic-check URLs ───────────────────────────────────────────────
 # Reliability + DAST workflows pick a URL based on the event:
@@ -55,9 +63,13 @@ urls:
   production:
   preview:
 
-# Pages to exercise on each dynamic check (comma-separated paths).
-# Workflows read these via .ss/scripts/load_config.py and fall back to '/'
-# if unset. Override per check, e.g. `accessibility: /,/blog,/about`.
+# ── Pages to audit on each dynamic check ─────────────────────────────
+# Hand-list of paths each reliability check audits. Simple and predictable,
+# but goes stale every time a new page or content type lands. For larger
+# sites, prefer the `reliability.coverage.*` block below — it derives the
+# list from your sitemap or git diff automatically.
+#
+# Defaults to '/' for every check when unset.
 pages:
   smoke:         /
   accessibility: /
@@ -70,6 +82,62 @@ smoke:
   # entirely (use this if you ship per-post share images instead of one
   # site-wide image).
   og_image_path: /og-image.png
+
+# ── Hygiene-check thresholds ─────────────────────────────────────────
+# Every hygiene check reads its own thresholds from here. Values shown
+# are the defaults used when a key is unset. Tune when a check fails for
+# a reason that's actually fine (e.g. you intentionally have 30 docs
+# pages, and `max_files: 25` is the wrong shape for you — not your docs).
+# Don't tune to silence noise; tune to match a deliberate design decision.
+hygiene:
+  docs_size:
+    # Total markdown size under docs/ before the report flags an alert.
+    # Excludes docs/archive/**.
+    max_total_size_kb: 150
+    # Largest single doc before the report flags it.
+    max_file_size_kb: 20
+    # Total number of doc files before the report flags it.
+    max_files: 25
+  entry_files:
+    # Hard cap for entry files (README.md, CLAUDE.md, AGENTS.md, etc.).
+    # ~1500 words ≈ ~2000 tokens — see docs/hygiene/ for the rationale.
+    max_words: 1500
+
+# ── Reliability coverage modes ───────────────────────────────────────
+# Opt-in alternative to the hand-list above. When set, accessibility,
+# seo and broken_links resolve which paths to audit via:
+#
+#   sitemap   → every URL in dist/client/sitemap-index.xml (or fallback
+#               candidates like dist/sitemap.xml). Run `npm run build`
+#               first; CI workflows do this automatically.
+#   changed   → on PRs only: git diff origin/main...HEAD → map source
+#               files to URLs via framework source_to_url rules (Astro /
+#               Next.js / SvelteKit auto-detected from config files).
+#               Auto-escalates to sitemap when any changed file matches
+#               cross_cutting_paths.
+#   /a,/b     → explicit hand-list, same shape as pages.* above.
+#
+# When the resolved set is empty (no sitemap, no matched changed files,
+# git history missing), discovery falls through gracefully: changed →
+# sitemap → pages.<check> → "/". Better to over-test than to silently
+# no-op a quality gate.
+#
+# Unset = fall back to pages.<check>.
+#
+# reliability:
+#   coverage:
+#     pr: changed
+#     main: sitemap
+#     cron: sitemap
+#     # When a `changed`-mode PR touches one of these glob-matched files,
+#     # the check escalates to a full sitemap sweep (because the change
+#     # is cross-cutting and would affect every page). Empty list = never
+#     # escalate.
+#     cross_cutting_paths:
+#       - 'src/layouts/**'
+#       - 'astro.config.*'
+#       - 'tailwind.config.*'
+#       - 'package.json'
 
 # ── Workflows to skip on this repo ───────────────────────────────────
 # install.sh removes any workflow named here from .github/workflows/
