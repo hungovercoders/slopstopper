@@ -69,7 +69,7 @@ jobs:
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else
-            pip install "git+https://github.com/hungovercoders/slopstopper.git@v0.2.0#subdirectory=cli"
+            pip install "https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl"
           fi
 
       # ── Local server (PR / push to main) ────────────────────────────────────

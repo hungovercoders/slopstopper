@@ -7,13 +7,13 @@
 The CLI alone (most use cases):
 
 ```bash
-pipx install git+https://github.com/hungovercoders/slopstopper.git@v0.2.0#subdirectory=cli
+pipx install https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl
 slopstopper checks list             # see what's available
 slopstopper doctor                  # verify the external tools you'll need
 slopstopper run hygiene:docs-size   # run a check (writes .ss/reports/...)
 ```
 
-> Installing from git while we get the PyPI release pipeline up. Once `slopstopper-cli` is on PyPI the command will collapse to `pipx install slopstopper-cli` — `pipx upgrade slopstopper-cli` already works for refresh either way.
+> Installing the pre-built wheel attached to the [v0.2.0 GitHub Release](https://github.com/hungovercoders/slopstopper/releases/tag/v0.2.0). Once `slopstopper-cli` lands on PyPI this collapses to `pipx install slopstopper-cli`. `pipx upgrade slopstopper-cli` works regardless of source.
 
 The full suite into a repo (CLI + GitHub Actions workflows + Taskfile shim + config seed):
 

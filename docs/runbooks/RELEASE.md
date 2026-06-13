@@ -38,16 +38,23 @@ If in doubt, prefer a MINOR bump over a PATCH.
 
    The release workflow has a sanity-check step that fails the build if these diverge from the tag.
 
-4. **Bump the pinned install URL** across docs, the website, `install.sh`, and every `ss-*-check.yml` workflow. The pattern to replace is `@vOLD#subdirectory=cli` → `@vNEW#subdirectory=cli`:
+4. **Bump the pinned wheel URL** across docs, the website, `install.sh`, and every `ss-*-check.yml` workflow. Adopters install the pre-built wheel attached to the GitHub Release, not a git URL — so the version appears twice (release path + filename). The pattern is:
+
+   ```
+   https://github.com/hungovercoders/slopstopper/releases/download/vX.Y.Z/slopstopper_cli-X.Y.Z-py3-none-any.whl
+   ```
+
+   One-liner to swap the version everywhere:
 
    ```bash
-   # From the repo root, swap the old tag for the new one everywhere:
-   git ls-files | xargs grep -l "@vOLD#subdirectory=cli" 2>/dev/null \
-     | xargs sed -i.bak "s|@vOLD#subdirectory=cli|@vNEW#subdirectory=cli|g" \
+   # From the repo root — replace OLD and NEW with the version numbers (no leading v):
+   OLD=0.2.0 NEW=0.3.0
+   git ls-files | xargs grep -l "releases/download/v$OLD" 2>/dev/null \
+     | xargs sed -i.bak -e "s|releases/download/v$OLD/slopstopper_cli-$OLD|releases/download/v$NEW/slopstopper_cli-$NEW|g" \
      && find . -name '*.bak' -delete
    ```
 
-   This keeps adopters' fresh installs pinned to a known-good release and slopstopper.dev's own CI (which uses the editable install when `cli/` is present) unaffected.
+   The release tag URL (e.g. `releases/tag/v0.2.0`) also appears in user-facing copy as a "see the release" link — bump those too. Slopstopper.dev's own CI uses the editable install of `cli/` when `cli/pyproject.toml` is present, so it dogfoods `main` regardless of the pinned wheel URL.
 
 5. **Commit + push** the CHANGELOG, version bumps and URL bumps as a single commit (`chore(release): bump version to X.Y.Z`). Open a PR if you want CI to pre-verify; otherwise push straight to `main` if you have permission.
 

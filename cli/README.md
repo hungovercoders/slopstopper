@@ -9,13 +9,13 @@ The SlopStopper quality suite, packaged as a `pipx`-installable CLI.
 End-user (most adopters):
 
 ```bash
-pipx install git+https://github.com/hungovercoders/slopstopper.git@v0.2.0#subdirectory=cli
+pipx install https://github.com/hungovercoders/slopstopper/releases/download/v0.2.0/slopstopper_cli-0.2.0-py3-none-any.whl
 slopstopper --version
 slopstopper checks list
 slopstopper doctor
 ```
 
-> Installing from git until the PyPI release pipeline is up. Once published the command collapses to `pipx install slopstopper-cli`. `pipx upgrade slopstopper-cli` already works for refresh.
+> Installing the pre-built wheel from the [v0.2.0 GitHub Release](https://github.com/hungovercoders/slopstopper/releases/tag/v0.2.0). Once `slopstopper-cli` lands on PyPI this collapses to `pipx install slopstopper-cli`. `pipx upgrade slopstopper-cli` works regardless of source.
 
 Development (editable, from a clone of this repo):
 
