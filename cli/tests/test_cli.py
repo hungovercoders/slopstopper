@@ -237,6 +237,56 @@ def test_templates_eject_unknown_returns_2(isolated_cwd, capsys):
     assert "unknown template" in capsys.readouterr().err
 
 
+# ── serve subcommand ──────────────────────────────────────────────
+
+
+def test_serve_returns_1_when_node_missing(monkeypatch, isolated_cwd, capsys):
+    monkeypatch.setattr(cli.shutil, "which", lambda _: None)
+    rc = cli.main(["serve"])
+    assert rc == 1
+    assert "node is not available" in capsys.readouterr().err
+
+
+def test_serve_execs_node_with_resolved_server_js(monkeypatch, isolated_cwd):
+    captured: dict = {}
+
+    def fake_execvp(file, args):
+        captured["file"] = file
+        captured["args"] = args
+        # execvp doesn't return on success — to make the test path return,
+        # we just don't raise. _dispatch_serve will fall through to its
+        # "unreachable" return 1.
+
+    monkeypatch.setattr(cli.shutil, "which", lambda _: "/usr/bin/node")
+    monkeypatch.setattr(cli.os, "execvp", fake_execvp)
+
+    cli.main(["serve"])
+    assert captured["file"] == "node"
+    assert captured["args"][0] == "node"
+    # Should resolve to the bundled server.js (no .ss/ override in the
+    # isolated cwd).
+    assert captured["args"][1].endswith("server.js")
+
+
+def test_serve_prefers_ss_override(monkeypatch, isolated_cwd):
+    override = isolated_cwd / ".ss" / "server.js"
+    override.parent.mkdir(parents=True, exist_ok=True)
+    override.write_text("// custom")
+
+    captured: dict = {}
+
+    def fake_execvp(file, args):
+        captured["args"] = args
+
+    monkeypatch.setattr(cli.shutil, "which", lambda _: "/usr/bin/node")
+    monkeypatch.setattr(cli.os, "execvp", fake_execvp)
+
+    cli.main(["serve"])
+    # Resolved path should be the override, not the bundled file.
+    from pathlib import Path
+    assert Path(captured["args"][1]) == Path(".ss/server.js")
+
+
 def test_config_get_default_default_is_empty_string(monkeypatch, capsys):
     """Matches the bash load_config.py shim: missing key + no default = ''"""
     captured = {}

@@ -114,9 +114,14 @@ def test_list_templates_returns_known_names():
     assert "playwright.config.js" in names
     assert "lighthouserc.json" in names
     assert "lighthouserc.prod.json" in names
+    assert "server.js" in names
     assert "tests/smoke.spec.ts" in names
     # Sorted for stable output.
     assert names == sorted(names)
+
+
+def test_bundled_server_js_exists():
+    assert (templates.PACKAGE_DATA_DIR / templates.SERVER_JS_NAME).exists()
 
 
 def test_template_path_returns_bundled_when_not_ejected(isolated_cwd):

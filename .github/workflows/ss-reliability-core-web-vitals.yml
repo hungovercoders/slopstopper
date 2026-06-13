@@ -88,20 +88,15 @@ jobs:
       - name: Start local server
         if: github.event_name == 'pull_request' || github.event_name == 'push'
         run: |
-          if [ -f server.js ]; then
-            node server.js &
-            echo "SERVER_PID=$!" >> "$GITHUB_ENV"
-            for i in $(seq 1 15); do
-              if curl -s http://localhost:8080 > /dev/null; then
-                echo "✅ Server is ready"
-                break
-              fi
-              sleep 1
-            done
-          else
-            echo "ℹ️  No server.js — customise this step or only audit deployed URLs."
-            exit 1
-          fi
+          slopstopper serve &
+          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 15); do
+            if curl -s http://localhost:8080 > /dev/null; then
+              echo "✅ Server is ready"
+              break
+            fi
+            sleep 1
+          done
 
       - name: Determine audit URL
         id: audit-url

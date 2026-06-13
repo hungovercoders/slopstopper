@@ -30,7 +30,7 @@ built-in capability with a GHA workflow only adds maintenance.
 | ---- | ------- |
 | [`wrangler.jsonc`](../../wrangler.jsonc) | Worker definition: name, compatibility date, entrypoint, `[assets]` binding pointing at `./app`. Workers Builds reads it. |
 | [`worker/index.ts`](../../worker/index.ts) | The Worker. Fetches the asset via `env.ASSETS.fetch(request)`, then applies headers from `worker/headers.json`. Also redirects `/feedback` → `/feedback.html`. |
-| [`worker/headers.json`](../../worker/headers.json) | Canonical header map. Three entries: `/*` (strict default), `/og-image.png` (cross-origin CORP), `/feedback.html` (Giscus CSP relaxation). The Worker, `server.js` and the CSP-drift gate all read this. |
+| [`worker/headers.json`](../../worker/headers.json) | Canonical header map. Three entries: `/*` (strict default), `/og-image.png` (cross-origin CORP), `/feedback.html` (Giscus CSP relaxation). The Worker, `slopstopper serve` and the CSP-drift gate all read this. |
 
 The build command Workers Builds runs is `npm run build` (TypeScript
 compile of `src/` → `app/`). The pre-build asset render

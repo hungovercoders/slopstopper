@@ -26,6 +26,7 @@ OVERRIDE_ROOT = Path(".ss")
 PLAYWRIGHT_CONFIG_NAME = "playwright.config.js"
 LIGHTHOUSERC_NAME = "lighthouserc.json"
 LIGHTHOUSERC_PROD_NAME = "lighthouserc.prod.json"
+SERVER_JS_NAME = "server.js"
 
 
 # ── inventory ────────────────────────────────────────────────────
@@ -47,6 +48,10 @@ TEMPLATES: dict[str, tuple[Path, Path]] = {
     LIGHTHOUSERC_PROD_NAME: (
         PACKAGE_DATA_DIR / LIGHTHOUSERC_PROD_NAME,
         OVERRIDE_ROOT / LIGHTHOUSERC_PROD_NAME,
+    ),
+    SERVER_JS_NAME: (
+        PACKAGE_DATA_DIR / SERVER_JS_NAME,
+        OVERRIDE_ROOT / SERVER_JS_NAME,
     ),
     "tests/smoke.spec.ts": (
         PACKAGE_DATA_DIR / "tests" / "smoke.spec.ts",

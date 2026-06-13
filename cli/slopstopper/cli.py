@@ -22,14 +22,21 @@ Subcommands today:
                                       would use (override-or-bundled).
   templates eject <name>            — copy the bundled template into .ss/
                                       so the adopter can customise it.
+  serve                             — run the bundled static server
+                                      (`.ss/server.js` override wins) via
+                                      node. Replaces the process so a
+                                      backgrounded `slopstopper serve &`
+                                      gives bash the right PID for kill.
 
-Future: init, inspect, serve.
+Future: init, inspect.
 """
 
 from __future__ import annotations
 
 import argparse
 import importlib
+import os
+import shutil
 import sys
 
 from slopstopper import __version__, config, discovery, emit as emit_mod, templates
@@ -129,6 +136,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     templates_eject.add_argument("name", help="Template name (see `slopstopper templates list`)")
 
+    sub.add_parser(
+        "serve",
+        help=(
+            "Run the bundled static server (auto-detect SERVE_ROOT, optional "
+            "SS_SERVER_HEADERS). Replaces the process so backgrounded "
+            "`slopstopper serve &` gives bash the right PID for kill."
+        ),
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "run":
@@ -142,6 +158,8 @@ def main(argv: list[str] | None = None) -> int:
             return _dispatch_config_get(args.key, args.default)
     if args.command == "templates":
         return _dispatch_templates(args.templates_action, getattr(args, "name", None))
+    if args.command == "serve":
+        return _dispatch_serve()
 
     parser.error(f"unknown command: {args.command}")
     return 2
@@ -190,6 +208,24 @@ def _dispatch_discover(check_name: str, event: str) -> int:
         return 2
     print(",".join(paths))
     return 0
+
+
+def _dispatch_serve() -> int:
+    """Replace the current process with `node <bundled or ejected server.js>`.
+
+    Using execvp (not subprocess) means a backgrounded `slopstopper serve
+    &` in bash gets the right PID via `$!` — bash sees node, and
+    `kill $SERVER_PID` actually stops the listener.
+    """
+    if not shutil.which("node"):
+        print("❌ node is not available — install Node.js to run the local server", file=sys.stderr)
+        return 1
+    server_path = templates.template_path(templates.SERVER_JS_NAME)
+    if not server_path.exists():
+        print(f"❌ Bundled server.js not found at {server_path}", file=sys.stderr)
+        return 1
+    os.execvp("node", ["node", str(server_path)])
+    return 1  # unreachable — execvp doesn't return on success
 
 
 def _dispatch_templates(action: str, name: str | None) -> int:
