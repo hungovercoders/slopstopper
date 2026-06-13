@@ -1,32 +1,72 @@
 """Core Web Vitals audit (Lighthouse CI wrapper).
 
-Ports the bash reliability:cwv flow:
+Implements the reliability:cwv flow:
 
-  task ss:reliability:cwv -- https://your-site.example.com
+  slopstopper run reliability:cwv -- --url https://your-site.example.com
 
   which is, under the covers:
 
-  npx lhci autorun --collect.url="$CWV_URL" --config=.ss/lighthouserc.json
+  npx lhci autorun --collect.url="$CWV_URL" --config=<resolved lhci config>
 
 Subprocess-invokes `npx lhci` — Lighthouse CI is Apache-2.0; the
-slopstopper-cli wheel ships zero Lighthouse code. The .ss/lighthouserc.json
-config (and any *-ci variant) is still adopter-vendored today; lifting
-into package data is a follow-up.
+slopstopper-cli wheel ships zero Lighthouse code.
+
+After lhci finishes, cwv.py reads the latest `.lighthouseci/lhr-*.json`,
+extracts the four headline metrics (Performance, LCP, TBT, CLS) plus
+FCP, and writes `.ss/reports/cwv/cwv-report.md` with the threshold
+table. emit.py then handles PR-comment / issue from that report — same
+shape as every other check.
+
+Configuration: thresholds and the lhci config path live in the
+`.ss/lighthouserc.json` override (or the package-data fallback under
+`cli/slopstopper/data/lighthouserc.json`). cwv.py's threshold-table
+limits mirror that file so the rendered table matches what lhci
+actually enforced.
 
 Exit codes:
   0 — lhci passed all thresholds
-  non-zero — lhci failed thresholds or URL/config missing
+  non-zero — lhci failed thresholds (report still written) or URL/config missing
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 from slopstopper import templates
+
+
+REPORT_DIR = Path(".ss/reports/cwv")
+REPORT_MD = REPORT_DIR / "cwv-report.md"
+LHCI_DIR = Path(".lighthouseci")
+
+# Threshold table — kept in lockstep with `.ss/lighthouserc.json`'s
+# `assertions` block so the rendered table reflects what lhci actually
+# enforced. If you tune the lhci config, mirror the change here.
+THRESHOLDS = {
+    "performance": ("Performance score", "≥ 70", 70, "min"),
+    "lcp":         ("LCP", "≤ 4 s",    4000, "max"),
+    "tbt":         ("TBT", "≤ 600 ms",  600, "max"),
+    "cls":         ("CLS", "≤ 0.25",  0.25, "max"),
+}
+
+# Consumed by `slopstopper emit reliability:cwv --target pr-comment|issue`.
+# Discriminator `🚦 Core Web Vitals` matches the pre-flip github-script
+# block's PR comment heading so the same bot comment is reused after
+# the workflow flip.
+META = {
+    "report_path": str(REPORT_MD),
+    "comment_discriminator": "🚦 Core Web Vitals",
+    "issue_title": "❌ Core Web Vitals Below Threshold",
+    "issue_labels": ["cwv-failure", "reliability"],
+    "issue_followup": "🔔 Core Web Vitals failure recurred in commit",
+}
 
 
 def _parse_args(args: list[str] | None) -> argparse.Namespace:
@@ -58,6 +98,142 @@ def _build_cmd(url: str, config_path: str) -> list[str]:
     ]
 
 
+def _run_lhci(cmd: list[str]) -> tuple[int, str]:
+    """Run lhci, tee its output to our stdout, and return (exit_code, captured_output)."""
+    proc = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
+    )
+    chunks: list[str] = []
+    assert proc.stdout is not None
+    for line in proc.stdout:
+        sys.stdout.write(line)
+        sys.stdout.flush()
+        chunks.append(line)
+    rc = proc.wait()
+    return rc, "".join(chunks)
+
+
+# ── lhci JSON parsing + report rendering ─────────────────────────
+
+
+def _latest_lhr_json() -> Path | None:
+    if not LHCI_DIR.exists():
+        return None
+    reports = sorted(LHCI_DIR.glob("lhr-*.json"))
+    return reports[-1] if reports else None
+
+
+def _extract_metrics(lhr: dict) -> dict[str, float | None]:
+    """Pull the four headline metrics + FCP from a Lighthouse result JSON."""
+    categories = lhr.get("categories") or {}
+    audits = lhr.get("audits") or {}
+    perf_cat = categories.get("performance") or {}
+
+    def _audit_value(key: str) -> float | None:
+        audit = audits.get(key) or {}
+        value = audit.get("numericValue")
+        return float(value) if isinstance(value, (int, float)) else None
+
+    perf_score = perf_cat.get("score")
+    return {
+        "performance": round(perf_score * 100) if isinstance(perf_score, (int, float)) else None,
+        "lcp": _audit_value("largest-contentful-paint"),
+        "tbt": _audit_value("total-blocking-time"),
+        "cls": _audit_value("cumulative-layout-shift"),
+        "fcp": _audit_value("first-contentful-paint"),
+    }
+
+
+def _format_value(metric: str, value: float | None) -> str:
+    if value is None:
+        return "N/A"
+    if metric == "performance":
+        return f"{int(value)}/100"
+    if metric == "cls":
+        return f"{value:.3f}"
+    return f"{int(round(value))} ms"
+
+
+def _passes(metric: str, value: float | None) -> bool | None:
+    if value is None:
+        return None
+    _, _, threshold, direction = THRESHOLDS[metric]
+    return value >= threshold if direction == "min" else value <= threshold
+
+
+def _icon(passed: bool | None) -> str:
+    if passed is None:
+        return "⚠️"
+    return "✅" if passed else "❌"
+
+
+def _extract_report_url(output: str) -> str | None:
+    """lhci prints the storage URL to stdout. Capture the first one."""
+    match = re.search(r"https://storage\.googleapis\.com/\S+", output)
+    return match.group(0) if match else None
+
+
+def _build_report_md(
+    url: str,
+    metrics: dict[str, float | None],
+    report_url: str | None,
+    overall_pass: bool,
+) -> str:
+    status = "✅ PASSED" if overall_pass else "❌ FAILED"
+    lines: list[str] = [
+        f"## 🚦 Core Web Vitals {status}",
+        "",
+        f"**URL audited:** {url}",
+        "",
+        "| Metric | Threshold | Status |",
+        "|--------|-----------|--------|",
+    ]
+    for key, (label, threshold_str, _, _) in THRESHOLDS.items():
+        value = metrics.get(key)
+        lines.append(
+            f"| {label} | {threshold_str} | {_icon(_passes(key, value))} {_format_value(key, value)} |"
+        )
+    lines.append("")
+    if report_url:
+        lines.append(f"[📊 Full Lighthouse Report]({report_url})")
+        lines.append("")
+    lines.append("### How to run locally")
+    lines.append("")
+    lines.append("```bash")
+    lines.append("slopstopper run reliability:cwv -- --url https://your-site.example.com")
+    lines.append("```")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _write_report(url: str, output: str, lhci_exit: int) -> None:
+    """Parse the latest lhr-*.json + lhci stdout, and write the markdown report."""
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    lhr_path = _latest_lhr_json()
+    if lhr_path is None:
+        REPORT_MD.write_text(
+            "## 🚦 Core Web Vitals ⚠️ NO REPORT\n\n"
+            "Lighthouse CI did not produce a report JSON under `.lighthouseci/`. "
+            "Check the lhci output above for the cause.\n"
+        )
+        return
+    try:
+        lhr = json.loads(lhr_path.read_text())
+    except (OSError, json.JSONDecodeError) as e:
+        REPORT_MD.write_text(
+            f"## 🚦 Core Web Vitals ⚠️ PARSE ERROR\n\nCould not parse {lhr_path}: {e}\n"
+        )
+        return
+    metrics = _extract_metrics(lhr)
+    report_url = _extract_report_url(output)
+    REPORT_MD.write_text(
+        _build_report_md(url, metrics, report_url, overall_pass=lhci_exit == 0)
+    )
+
+
+# ── CLI entrypoint ───────────────────────────────────────────────
+
+
 def run(args: list[str] | None = None) -> int:
     if not _npx_available():
         print("❌ npx is not available — install Node.js to run Lighthouse CI")
@@ -79,5 +255,7 @@ def run(args: list[str] | None = None) -> int:
 
     print(f"🚦 Running Core Web Vitals audit against: {url}")
     cmd = _build_cmd(url, str(config_path))
-    result = subprocess.run(cmd, check=False)
-    return result.returncode
+    rc, captured = _run_lhci(cmd)
+    _write_report(url, captured, rc)
+    print(f"📝 Report written to {REPORT_MD}")
+    return rc
