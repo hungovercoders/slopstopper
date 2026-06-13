@@ -22,6 +22,19 @@ ARCHIVE_PREFIX = Path("docs/archive")
 REPORT_DIR = Path(".ss/reports/docs")
 REPORT_FILE = REPORT_DIR / "docs-size-report.md"
 
+# Consumed by `slopstopper emit hygiene:docs-size --target {pr-comment,issue}`.
+# Strings are byte-for-byte identical to the discriminator / title / labels
+# the legacy actions/github-script@v7 block in
+# .github/workflows/ss-hygiene-docs-size-check.yml used, so the same bot
+# comments/issues are matched after the workflow flip.
+META = {
+    "report_path": str(REPORT_FILE),
+    "comment_discriminator": "📚 Documentation Size Report",
+    "issue_title": "📚 Documentation Size Exceeds Thresholds",
+    "issue_labels": ["documentation-size", "maintenance"],
+    "issue_followup": "🔔 Documentation size thresholds exceeded again in commit",
+}
+
 DEFAULT_MAX_TOTAL_SIZE_KB = 150
 DEFAULT_MAX_FILE_SIZE_KB = 20
 DEFAULT_MAX_FILES = 25
