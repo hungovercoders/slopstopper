@@ -30,12 +30,10 @@ import argparse
 import os
 import shutil
 import subprocess
-from pathlib import Path
 
-from slopstopper import config
+from slopstopper import config, templates
 
-SPEC_PATH = Path(".ss/tests/smoke.spec.ts")
-PLAYWRIGHT_CONFIG = Path(".ss/playwright.config.js")
+SPEC_NAME = "smoke"
 
 
 def _parse_args(args: list[str] | None) -> argparse.Namespace:
@@ -68,8 +66,8 @@ def _build_cmd(ci_mode: bool) -> list[str]:
     reporter = "list,html" if ci_mode else "list"
     return [
         "npx", "playwright", "test",
-        f"--config={PLAYWRIGHT_CONFIG}",
-        str(SPEC_PATH),
+        f"--config={templates.playwright_config()}",
+        str(templates.playwright_spec(SPEC_NAME)),
         f"--reporter={reporter}",
     ]
 
@@ -86,11 +84,6 @@ def run(args: list[str] | None = None) -> int:
         print("Usage:")
         print("  slopstopper run reliability:smoke -- --url https://your-site.example.com")
         print("  SMOKE_TEST_URL=https://your-site slopstopper run reliability:smoke")
-        return 1
-
-    if not SPEC_PATH.exists():
-        print(f"❌ Smoke spec not found at {SPEC_PATH}")
-        print("   The spec is vendored under .ss/tests/ by the installer.")
         return 1
 
     print(f"🔍 Running smoke tests against: {url}")

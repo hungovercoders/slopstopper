@@ -13,7 +13,8 @@ from slopstopper.checks import cwv
 def test_parse_args_defaults():
     parsed = cwv._parse_args(None)
     assert parsed.url is None
-    assert parsed.config == str(cwv.LHCI_CONFIG)
+    # config defaults to None — resolution happens in run() via templates
+    assert parsed.config is None
 
 
 def test_parse_args_explicit():
@@ -69,17 +70,17 @@ def test_run_returns_one_when_url_missing(monkeypatch, isolated_cwd, capsys):
     assert "CWV target URL is required" in capsys.readouterr().out
 
 
-def test_run_returns_one_when_config_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_one_when_explicit_config_missing(monkeypatch, isolated_cwd, capsys):
+    """An explicit --config that doesn't exist still errors out. The
+    default (no --config flag) resolves via templates and always finds
+    something."""
     monkeypatch.setattr(cwv, "_npx_available", lambda: True)
-    rc = cwv.run(["--url", "https://example.com"])
+    rc = cwv.run(["--url", "https://example.com", "--config", "missing.json"])
     assert rc == 1
     assert "Lighthouse CI config not found" in capsys.readouterr().out
 
 
 def test_run_invokes_lhci_with_expected_args(monkeypatch, isolated_cwd):
-    cwv.LHCI_CONFIG.parent.mkdir(parents=True, exist_ok=True)
-    cwv.LHCI_CONFIG.write_text("{}")
-
     captured: dict = {}
 
     def fake_run(cmd, check):
@@ -93,13 +94,11 @@ def test_run_invokes_lhci_with_expected_args(monkeypatch, isolated_cwd):
     assert rc == 0
     assert captured["cmd"][:3] == ["npx", "lhci", "autorun"]
     assert "--collect.url=https://example.com" in captured["cmd"]
-    assert f"--config={cwv.LHCI_CONFIG}" in captured["cmd"]
+    # default resolution lands on the bundled lighthouserc.json
+    assert any("lighthouserc.json" in arg for arg in captured["cmd"])
 
 
 def test_run_propagates_lhci_failure(monkeypatch, isolated_cwd):
-    cwv.LHCI_CONFIG.parent.mkdir(parents=True, exist_ok=True)
-    cwv.LHCI_CONFIG.write_text("{}")
-
     monkeypatch.setattr(cwv, "_npx_available", lambda: True)
     monkeypatch.setattr(
         cwv.subprocess, "run",

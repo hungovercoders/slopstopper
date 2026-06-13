@@ -33,12 +33,10 @@ import argparse
 import os
 import shutil
 import subprocess
-from pathlib import Path
 
-from slopstopper import discovery
+from slopstopper import discovery, templates
 
-SPEC_PATH = Path(".ss/tests/accessibility.spec.ts")
-PLAYWRIGHT_CONFIG = Path(".ss/playwright.config.js")
+SPEC_NAME = "accessibility"
 
 
 def _parse_args(args: list[str] | None) -> argparse.Namespace:
@@ -91,8 +89,8 @@ def _build_cmd(ci_mode: bool) -> list[str]:
     reporter = "list,html" if ci_mode else "list"
     return [
         "npx", "playwright", "test",
-        f"--config={PLAYWRIGHT_CONFIG}",
-        str(SPEC_PATH),
+        f"--config={templates.playwright_config()}",
+        str(templates.playwright_spec(SPEC_NAME)),
         f"--reporter={reporter}",
     ]
 
@@ -111,8 +109,9 @@ def run(args: list[str] | None = None) -> int:
         print("  ACCESSIBILITY_TEST_URL=https://your-site slopstopper run reliability:accessibility")
         return 1
 
-    if not SPEC_PATH.exists():
-        print(f"❌ Accessibility spec not found at {SPEC_PATH}")
+    spec = templates.playwright_spec(SPEC_NAME)
+    if not spec.exists():
+        print(f"❌ Accessibility spec not found at {spec}")
         print("   The spec is vendored under .ss/tests/ by the installer.")
         return 1
 
