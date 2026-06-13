@@ -66,6 +66,7 @@ on:
       - '.github/workflows/ss-reliability-accessibility-check.yml'
       - '.github/workflows/ss-reliability-seo-check.yml'
       - '.github/workflows/ss-reliability-core-web-vitals.yml'
+      - '.github/workflows/ss-security-dast-check.yml'
   push:
     branches: [ main ]
     paths:
@@ -107,6 +108,7 @@ on:
       - '.github/workflows/ss-reliability-accessibility-check.yml'
       - '.github/workflows/ss-reliability-seo-check.yml'
       - '.github/workflows/ss-reliability-core-web-vitals.yml'
+      - '.github/workflows/ss-security-dast-check.yml'
   workflow_dispatch:
 
 permissions:

@@ -10,6 +10,7 @@ Ports the bash security:dast flow:
         zap-baseline.py -t <TARGET> -J dast-report.json -I
         [-c .zap/rules.tsv]
   + python3 .ss/scripts/generate-dast-md.py
+  + python3 .ss/scripts/check-dast-alerts.py
 
 into one self-contained check. The only check today that takes a CLI
 arg (`--target URL`); plumbed through `slopstopper run security:dast
@@ -18,9 +19,18 @@ arg (`--target URL`); plumbed through `slopstopper run security:dast
 ZAP is Apache-2.0. Subprocess-invokes `docker` to run the official
 ZAP image — slopstopper-cli wheel ships zero ZAP code.
 
+After ZAP finishes, the in-CLI dast_gate module decides which
+findings should block. CSP findings on paths documented in
+`docs/security/CSP_EXCEPTIONS.md` (or rule-IDs marked IGNORE in
+`.zap/rules.tsv`) are filtered out — see dast_gate's docstring for
+the full rules. The swallowed-CSP block is prepended to the report
+MD so the PR bot comment keeps showing what got filtered.
+
 Exit codes:
-  0 — analysis completed (gating happens at the workflow level)
-  1 — Docker is not installed, or nothing listening on a localhost target
+  0 — ZAP ran and the gate found no blocking alerts
+  1 — gate found blocking alerts (riskcode >= 2 on a non-swallowed
+      finding) OR Docker not installed / localhost not reachable
+  2 — ZAP report missing or unparseable (treat as misconfig)
 """
 
 from __future__ import annotations
@@ -32,15 +42,32 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
+
+from slopstopper import dast_gate
 
 REPORT_DIR = Path(".ss/reports/dast")
 REPORT_JSON = REPORT_DIR / "dast-report.json"
 REPORT_MD = REPORT_DIR / "dast-report.md"
 
 DEFAULT_TARGET = "http://localhost:8080"
+
+# Consumed by `slopstopper emit security:dast --target {pr-comment,issue}`.
+# Discriminator `DAST Analysis` matches both the pre-flip JS heading
+# ("## 🌐 DAST Analysis") and the post-flip report H1 ("# DAST
+# Analysis Report") so the same bot comment is reused after the
+# workflow flip. Issue title, labels, and follow-up are byte-identical
+# to the legacy block.
+META = {
+    "report_path": str(REPORT_MD),
+    "comment_discriminator": "DAST Analysis",
+    "issue_title": "⚠️ DAST Security Alerts in Main Branch",
+    "issue_labels": ["dast", "security"],
+    "issue_followup": "🔔 DAST blocking alerts detected again in commit",
+}
 
 RISK_LABELS = {
     "3": "High",
@@ -185,13 +212,18 @@ def _generated_at() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def _build_md_report(data: dict) -> str:
+def _build_md_report(data: dict, swallowed: list[dict] | None = None) -> str:
     alerts = _collect_alerts(data)
     high, medium, low, info = alerts["3"], alerts["2"], alerts["1"], alerts["0"]
     total = sum(len(v) for v in alerts.values())
 
     md = "# DAST Analysis Report\n\n"
     md += f"**Generated**: {_generated_at()}\n\n"
+    # Pre-emit-flip the workflow's JS prepended this block from
+    # dast-gate.json. Now the report owns it directly so the bot
+    # comment shows which findings were filtered.
+    if swallowed:
+        md += dast_gate.swallowed_preamble_md(swallowed) + "\n"
     md += "## Summary\n\n"
 
     if total == 0:
@@ -253,6 +285,21 @@ def _print_summary(data: dict) -> None:
     print(f"📁 Reports saved to: {REPORT_DIR}/")
 
 
+def _run_gate(data: dict) -> int:
+    """Apply the CSP-exception gate and write its outputs.
+
+    Returns 0 if no blocking alerts remain, 1 otherwise.
+    """
+    blocking, swallowed = dast_gate.compute_gate(data)
+    dast_gate.write_gate_report(blocking, swallowed)
+    # Re-render the report with the swallowed-CSP preamble so the
+    # bot comment surfaces what got filtered.
+    REPORT_MD.write_text(_build_md_report(data, swallowed=swallowed))
+    print()
+    print(dast_gate.format_summary_text(blocking, swallowed))
+    return 0 if blocking == 0 else 1
+
+
 def run(args: list[str] | None = None) -> int:
     if not _docker_available():
         print("❌ Docker is required to run OWASP ZAP")
@@ -273,9 +320,12 @@ def run(args: list[str] | None = None) -> int:
 
         _run_zap(target)
         data = _read_data()
+        if not data:
+            print("❌ ZAP report missing or unparseable", file=sys.stderr)
+            return 2
         REPORT_MD.write_text(_build_md_report(data))
         _print_summary(data)
-        return 0
+        return _run_gate(data)
     finally:
         if server_proc is not None:
             server_proc.terminate()

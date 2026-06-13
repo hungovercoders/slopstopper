@@ -206,6 +206,13 @@ def test_run_clean_when_no_alerts(monkeypatch, isolated_cwd, capsys):
 
 
 def test_run_with_blocking_alerts(monkeypatch, isolated_cwd, capsys):
+    """run() returns 1 when the gate detects blocking alerts.
+
+    Pre-Phase-2 the gate was external (workflow) so run() always
+    exited 0. Post-Phase-2 the gate is wired into the check itself,
+    so blocking alerts surface as a non-zero exit. The summary and
+    report content are unchanged.
+    """
     def fake_zap(_target):
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps(_zap_payload(HIGH_ALERT, MEDIUM_ALERT, LOW_ALERT)))
@@ -213,9 +220,10 @@ def test_run_with_blocking_alerts(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_run_zap", fake_zap)
     rc = dast.run(["--target", "https://example.com"])
-    assert rc == 0
+    assert rc == 1
     out = capsys.readouterr().out
     assert "Found 2 high/medium" in out
+    assert "blocking finding(s)" in out
     md = dast.REPORT_MD.read_text()
     assert "SQL Injection" in md
     assert "Content Security Policy Missing" in md
