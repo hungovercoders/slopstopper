@@ -54,9 +54,22 @@ from slopstopper import discovery
 
 
 REPORT_DIR = Path(".ss/reports/seo")
+REPORT_MD = REPORT_DIR / "seo-metatags-report.md"
 USER_AGENT = "SlopStopper-SEO-Check/1.0"
 TIMEOUT_SECONDS = 15
 ALLOWED_SCHEMES = ("http", "https")
+
+# Consumed by `slopstopper emit reliability:seo --target pr-comment`.
+# Discriminator `🔎 SEO` matches both the pre-flip JS heading
+# ("## 🔎 SEO Metatag Audit") and the post-flip report H1
+# ("# 🔎 SEO / Social-Share Metatag Report"), so the same bot comment
+# is reused after the workflow flip. No issue keys: the check's exit
+# code fails the workflow on missing tags, no main-branch issue is
+# created.
+META = {
+    "report_path": str(REPORT_MD),
+    "comment_discriminator": "🔎 SEO",
+}
 
 
 # ── safety ───────────────────────────────────────────────────────
