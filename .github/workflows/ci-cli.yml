@@ -55,6 +55,7 @@ on:
       - '.github/workflows/ss-hygiene-docs-size-check.yml'
       - '.github/workflows/ss-hygiene-entry-files-check.yml'
       - '.github/workflows/ss-hygiene-docs-structure-check.yml'
+      - '.github/workflows/ss-hygiene-complexity-check.yml'
   push:
     branches: [ main ]
     paths:
@@ -85,6 +86,7 @@ on:
       - '.github/workflows/ss-hygiene-docs-size-check.yml'
       - '.github/workflows/ss-hygiene-entry-files-check.yml'
       - '.github/workflows/ss-hygiene-docs-structure-check.yml'
+      - '.github/workflows/ss-hygiene-complexity-check.yml'
   workflow_dispatch:
 
 permissions:
