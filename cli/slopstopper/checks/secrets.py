@@ -23,6 +23,8 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+from slopstopper import output
+
 REPORT_DIR = Path(".ss/reports/secrets")
 REPORT_JSON = REPORT_DIR / "secrets-report.json"
 REPORT_MD = REPORT_DIR / "secrets-report.md"
@@ -42,7 +44,7 @@ META = {
 }
 
 _INSTALL_HELP = (
-    "❌ gitleaks is not installed.\n"
+    "gitleaks is not installed.\n"
     "Install with:\n"
     "  brew install gitleaks                   # macOS\n"
     "  sudo apt-get install gitleaks           # Debian/Ubuntu (recent versions)\n"
@@ -130,17 +132,17 @@ def _build_md_report(findings: list[dict]) -> str:
 
 def run(_args: list[str] | None = None) -> int:
     if not _gitleaks_available():
-        print(_INSTALL_HELP)
+        output.error(_INSTALL_HELP)
         return 1
 
-    print("🔑 Running secrets detection…")
+    output.status("🔑", "Running secrets detection…")
     _run_gitleaks()
     findings = _read_findings()
     REPORT_MD.write_text(_build_md_report(findings))
 
     if findings:
-        print(f"⚠️  Found {len(findings)} secret(s) — revoke and remove immediately")
+        output.warn(f"Found {len(findings)} secret(s) — revoke and remove immediately")
     else:
-        print("✅ No secrets detected")
-    print(f"📁 Reports saved to: {REPORT_DIR}/")
+        output.success("No secrets detected")
+    output.footer(REPORT_DIR, [REPORT_MD.name])
     return 0

@@ -192,7 +192,7 @@ def test_run_returns_two_when_doc_missing(isolated_cwd, write_config, capsys):
     write_config("headers:\n  source: headers.json\n  format: json\n")
     rc = csp_exceptions.run()
     assert rc == 2
-    assert "CSP_EXCEPTIONS.md not found" in capsys.readouterr().err
+    assert "CSP_EXCEPTIONS.md not found" in capsys.readouterr().out
 
 
 def test_run_returns_two_on_unknown_format(isolated_cwd, write_config, capsys):
@@ -201,7 +201,7 @@ def test_run_returns_two_on_unknown_format(isolated_cwd, write_config, capsys):
     write_config("headers:\n  source: headers.json\n  format: bogus\n")
     rc = csp_exceptions.run()
     assert rc == 2
-    assert "Unknown headers.format" in capsys.readouterr().err
+    assert "Unknown headers.format" in capsys.readouterr().out
 
 
 def test_run_returns_one_on_drift(isolated_cwd, write_config):

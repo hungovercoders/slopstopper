@@ -39,7 +39,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from slopstopper import templates
+from slopstopper import output, templates
 
 
 REPORT_DIR = Path(".ss/reports/cwv")
@@ -242,28 +242,28 @@ def _write_report(url: str, output: str, lhci_exit: int) -> None:
 
 def run(args: list[str] | None = None) -> int:
     if not _npx_available():
-        print("❌ npx is not available — install Node.js to run Lighthouse CI")
+        output.error("npx is not available — install Node.js to run Lighthouse CI")
         return 1
 
     parsed = _parse_args(args)
     url = _resolve_url(parsed.url)
     if not url:
-        print("❌ Error: CWV target URL is required")
-        print("Usage:")
-        print("  slopstopper run reliability:cwv -- --url https://your-site.example.com")
-        print("  CWV_URL=https://your-site slopstopper run reliability:cwv")
+        output.error("CWV target URL is required")
+        output._emit("Usage:")
+        output._emit("  slopstopper run reliability:cwv -- --url https://your-site.example.com")
+        output._emit("  CWV_URL=https://your-site slopstopper run reliability:cwv")
         return 1
 
     config_path = (
         Path(parsed.config) if parsed.config else templates.lighthouserc(prod=parsed.prod)
     )
     if not config_path.exists():
-        print(f"❌ Lighthouse CI config not found at {config_path}")
+        output.error(f"Lighthouse CI config not found at {config_path}")
         return 1
 
-    print(f"🚦 Running Core Web Vitals audit against: {url}")
+    output.status("🚦", f"Running Core Web Vitals audit against: {url}")
     cmd = _build_cmd(url, str(config_path))
     rc, captured = _run_lhci(cmd)
     _write_report(url, captured, rc)
-    print(f"📝 Report written to {REPORT_MD}")
+    output.footer(REPORT_DIR, [REPORT_MD.name])
     return rc

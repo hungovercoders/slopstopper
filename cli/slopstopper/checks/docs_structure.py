@@ -19,6 +19,8 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+from slopstopper import output
+
 DOCS_DIR = Path("docs")
 INDEX_PATH = DOCS_DIR / "index.md"
 REPORT_DIR = Path(".ss/reports/docs")
@@ -216,11 +218,11 @@ def _build_md_report(data: dict, generated_at: str) -> str:
 
 def _check_structure(docs_dir: Path) -> tuple[list[dict], list[str]] | None:
     if not docs_dir.exists():
-        print("❌ docs/ directory not found")
+        output.error("docs/ directory not found")
         return None
     index_path = docs_dir / "index.md"
     if not index_path.exists():
-        print("❌ docs/index.md not found")
+        output.error("docs/index.md not found")
         return None
     expected = _extract_categories(index_path.read_text())
     violations = _check_expected_categories(docs_dir, expected)
@@ -229,7 +231,7 @@ def _check_structure(docs_dir: Path) -> tuple[list[dict], list[str]] | None:
 
 
 def run(_args: list[str] | None = None) -> int:
-    print("🔍 Validating documentation structure...")
+    output.running("Validating documentation structure…")
 
     result = _check_structure(DOCS_DIR)
     if result is None:
@@ -248,7 +250,9 @@ def run(_args: list[str] | None = None) -> int:
     REPORT_MD.write_text(_build_md_report(data, _generated_at()))
 
     if violations:
-        print(f"❌ Found {len(violations)} structure violation(s)")
+        output.error(f"Found {len(violations)} structure violation(s)")
+        output.footer(REPORT_DIR, [REPORT_MD.name])
         return 1
-    print("✅ Documentation structure is valid")
+    output.success("Documentation structure is valid")
+    output.footer(REPORT_DIR, [REPORT_MD.name])
     return 0

@@ -23,10 +23,16 @@ def test_run_unknown_check_returns_2(capsys):
     assert "known checks" in err
 
 
-def test_no_command_errors(capsys):
-    with pytest.raises(SystemExit) as exc:
-        cli.main([])
-    assert exc.value.code != 0
+def test_bare_invocation_prints_banner_and_exits_zero(capsys):
+    """No args → friendly banner + exit 0 (not an error)."""
+    rc = cli.main([])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "slopstopper" in out
+    assert "Commands:" in out
+    assert "Quick start:" in out
+    assert "run" in out
+    assert "doctor" in out
 
 
 # ── emit subcommand ──────────────────────────────────────────────
@@ -299,3 +305,150 @@ def test_config_get_default_default_is_empty_string(monkeypatch, capsys):
     assert rc == 0
     assert captured["default"] == ""
     assert capsys.readouterr().out == "\n"
+
+
+# ── checks list subcommand ────────────────────────────────────────
+
+
+def test_checks_list_prints_every_registered_check(isolated_cwd, capsys):
+    rc = cli.main(["checks", "list"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    # Spot-check a few known names from REGISTRY.
+    assert "hygiene:docs-size" in out
+    assert "security:secrets" in out
+    assert "reliability:cwv" in out
+
+
+def test_checks_list_filters_by_category(isolated_cwd, capsys):
+    rc = cli.main(["checks", "list", "--category", "security"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "security:secrets" in out
+    # Hygiene checks shouldn't appear under --category=security.
+    assert "hygiene:docs-size" not in out
+
+
+def test_checks_list_json_emits_machine_readable(isolated_cwd, capsys):
+    import json
+    rc = cli.main(["checks", "list", "--json"])
+    assert rc == 0
+    data = json.loads(capsys.readouterr().out)
+    assert isinstance(data, list)
+    names = {e["name"] for e in data}
+    assert "hygiene:docs-size" in names
+    assert all("summary" in e for e in data)
+
+
+def test_checks_list_empty_category_says_so(isolated_cwd, capsys, monkeypatch):
+    # Force the filtered list to be empty by patching the registry view.
+    monkeypatch.setattr(cli, "REGISTRY", {})
+    rc = cli.main(["checks", "list", "--category", "security"])
+    assert rc == 0
+    assert "No checks registered" in capsys.readouterr().out
+
+
+# ── doctor subcommand ─────────────────────────────────────────────
+
+
+def test_doctor_passes_when_all_tools_present(isolated_cwd, capsys, monkeypatch):
+    monkeypatch.setattr(cli.shutil, "which", lambda _: "/usr/bin/stub")
+    monkeypatch.setattr(cli, "_tool_version", lambda _: "stub 1.0")
+    rc = cli.main(["doctor"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "All required tools available" in out
+    # Each tool from _DOCTOR_TOOLS should be listed.
+    for tool, _, _ in cli._DOCTOR_TOOLS:
+        assert tool in out
+
+
+def test_doctor_fails_when_required_tool_missing(isolated_cwd, capsys, monkeypatch):
+    """Missing trivy with security:dependencies enabled → exit 1."""
+    monkeypatch.setattr(cli.shutil, "which", lambda tool: None if tool == "trivy" else "/x")
+    monkeypatch.setattr(cli, "_tool_version", lambda _: "")
+    monkeypatch.setattr(cli, "_disabled_workflows", lambda: set())
+    rc = cli.main(["doctor"])
+    assert rc == 1
+    out = capsys.readouterr().out
+    assert "trivy" in out
+    assert "not installed" in out
+    assert "required tool(s) missing" in out
+
+
+def test_doctor_skips_disabled_check_tools(isolated_cwd, capsys, monkeypatch):
+    """Missing semgrep is fine if security:sast is in workflows.disabled."""
+    monkeypatch.setattr(
+        cli.shutil, "which", lambda tool: None if tool == "semgrep" else "/x"
+    )
+    monkeypatch.setattr(cli, "_tool_version", lambda _: "")
+    monkeypatch.setattr(
+        cli, "_disabled_workflows", lambda: {"ss-security-sast-check.yml"}
+    )
+    rc = cli.main(["doctor"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "disabled in .slopstopper.yml" in out
+
+
+def test_doctor_fails_when_node_or_gh_missing(isolated_cwd, capsys, monkeypatch):
+    """node and gh are needed by the CLI itself (no disabled-bypass)."""
+    monkeypatch.setattr(cli.shutil, "which", lambda tool: None if tool == "node" else "/x")
+    monkeypatch.setattr(cli, "_tool_version", lambda _: "")
+    rc = cli.main(["doctor"])
+    assert rc == 1
+    out = capsys.readouterr().out
+    assert "node" in out
+    assert "the CLI itself" in out
+
+
+# ── --quiet global flag ───────────────────────────────────────────
+
+
+def test_quiet_flag_suppresses_check_output(isolated_cwd, capsys, monkeypatch):
+    """--quiet flips output.QUIET so check decorations vanish."""
+    from slopstopper import output as out_mod
+
+    seen = {}
+
+    def fake_run(_args):
+        out_mod.running("would be hidden")
+        out_mod.success("would be hidden")
+        seen["quiet"] = out_mod.QUIET
+        return 0
+
+    monkeypatch.setitem(cli.REGISTRY, "hygiene:test-fake", fake_run)
+    rc = cli.main(["--quiet", "run", "hygiene:test-fake"])
+    assert rc == 0
+    assert seen["quiet"] is True
+    # No "would be hidden" lines on stdout.
+    assert "would be hidden" not in capsys.readouterr().out
+
+
+def test_quiet_flag_does_not_suppress_errors(isolated_cwd, capsys, monkeypatch):
+    """--quiet still lets errors through (they're load-bearing)."""
+    from slopstopper import output as out_mod
+
+    def fake_run(_args):
+        out_mod.error("critical error must show")
+        return 1
+
+    monkeypatch.setitem(cli.REGISTRY, "hygiene:test-fake-err", fake_run)
+    rc = cli.main(["--quiet", "run", "hygiene:test-fake-err"])
+    assert rc == 1
+    assert "critical error must show" in capsys.readouterr().out
+
+
+def test_quiet_default_is_off(isolated_cwd, capsys, monkeypatch):
+    """Without --quiet, the QUIET flag stays False."""
+    from slopstopper import output as out_mod
+
+    seen = {}
+
+    def fake_run(_args):
+        seen["quiet"] = out_mod.QUIET
+        return 0
+
+    monkeypatch.setitem(cli.REGISTRY, "hygiene:test-fake-default", fake_run)
+    cli.main(["run", "hygiene:test-fake-default"])
+    assert seen["quiet"] is False

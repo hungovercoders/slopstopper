@@ -45,7 +45,7 @@ import os
 import shutil
 import subprocess
 
-from slopstopper import discovery, templates
+from slopstopper import discovery, output, templates
 
 SPEC_NAME = "accessibility"
 
@@ -108,25 +108,25 @@ def _build_cmd(ci_mode: bool) -> list[str]:
 
 def run(args: list[str] | None = None) -> int:
     if not _npx_available():
-        print("❌ npx is not available — install Node.js to run Playwright tests")
+        output.error("npx is not available — install Node.js to run Playwright tests")
         return 1
 
     parsed = _parse_args(args)
     url = _resolve_url(parsed.url)
     if not url:
-        print("❌ Error: accessibility target URL is required")
-        print("Usage:")
-        print("  slopstopper run reliability:accessibility -- --url https://your-site.example.com")
-        print("  ACCESSIBILITY_TEST_URL=https://your-site slopstopper run reliability:accessibility")
+        output.error("accessibility target URL is required")
+        output._emit("Usage:")
+        output._emit("  slopstopper run reliability:accessibility -- --url https://your-site.example.com")
+        output._emit("  ACCESSIBILITY_TEST_URL=https://your-site slopstopper run reliability:accessibility")
         return 1
 
     spec = templates.playwright_spec(SPEC_NAME)
     if not spec.exists():
-        print(f"❌ Accessibility spec not found at {spec}")
-        print("   The spec is vendored under .ss/tests/ by the installer.")
+        output.error(f"Accessibility spec not found at {spec}")
+        output._emit("   The spec is bundled inside slopstopper-cli; reinstall to repair.")
         return 1
 
-    print(f"♿ Running accessibility audit against: {url}")
+    output.status("♿", f"Running accessibility audit against: {url}")
     env = _build_env(url, parsed.ci)
     cmd = _build_cmd(parsed.ci)
     result = subprocess.run(cmd, env=env, check=False)

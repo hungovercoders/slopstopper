@@ -26,7 +26,7 @@ import re
 import sys
 from pathlib import Path
 
-from slopstopper import config, headers_adapters
+from slopstopper import config, headers_adapters, output
 
 EXCEPTIONS_DOC = Path("docs/security/CSP_EXCEPTIONS.md")
 REPORT_DIR = Path(".ss/reports/csp")
@@ -276,37 +276,36 @@ def _write_reports(issues: list[dict], summary: dict) -> None:
 
 
 def _print_results(headers_count: int, doc_count: int, issues: list[dict], source_label: str) -> None:
-    print("🔐 CSP exceptions check")
-    print(f"   source: {source_label}")
-    print(f"   CSP exceptions in source: {headers_count}")
-    print(f"   documented in CSP_EXCEPTIONS.md: {doc_count}")
-    print("━" * 60)
+    output.status("🔐", "CSP exceptions check")
+    output._emit(f"   source: {source_label}")
+    output._emit(f"   CSP exceptions in source: {headers_count}")
+    output._emit(f"   documented in CSP_EXCEPTIONS.md: {doc_count}")
+    output.separator()
     if not issues:
-        print("✅ No drift detected.")
+        output.success("No drift detected.")
         return
     for i in issues:
         icon = "❌" if i["severity"] == "error" else "⚠️ "
-        print(f"   {icon} {i['path']}: {i['message']}")
-    print("━" * 60)
+        output._emit(f"   {icon} {i['path']}: {i['message']}")
+    output.separator()
 
 
 def run(_args: list[str] | None = None) -> int:
     source_path, format_name, skip_reason = _resolve_source()
     if source_path is None:
-        print(f"ℹ  CSP exceptions check: {skip_reason} — skipping.")
+        output.info(f"CSP exceptions check: {skip_reason} — skipping.")
         return 0
     if skip_reason:
-        print(f"ℹ  CSP exceptions check: {skip_reason} — skipping.")
+        output.info(f"CSP exceptions check: {skip_reason} — skipping.")
         return 0
     if format_name not in {*headers_adapters.ADAPTERS.keys(), "auto"}:
-        print(
-            f"❌ Unknown headers.format '{format_name}' in .slopstopper.yml. "
-            f"Known: {', '.join(sorted(headers_adapters.ADAPTERS.keys()))} or 'auto'.",
-            file=sys.stderr,
+        output.error(
+            f"Unknown headers.format '{format_name}' in .slopstopper.yml. "
+            f"Known: {', '.join(sorted(headers_adapters.ADAPTERS.keys()))} or 'auto'."
         )
         return 2
     if not EXCEPTIONS_DOC.exists():
-        print("❌ docs/security/CSP_EXCEPTIONS.md not found", file=sys.stderr)
+        output.error("docs/security/CSP_EXCEPTIONS.md not found")
         return 2
 
     rules = headers_adapters.parse(source_path, format_name)
@@ -323,8 +322,8 @@ def run(_args: list[str] | None = None) -> int:
     _print_results(headers_count, len(doc_entries), issues, str(source_path))
 
     if any(i["severity"] == "error" for i in issues):
-        print("❌ Drift detected. See .ss/reports/csp/csp-exceptions-report.md for full details.")
+        output.error("Drift detected. See .ss/reports/csp/csp-exceptions-report.md for full details.")
         return 1
     if issues:
-        print("⚠️  Warnings only — passing.")
+        output.warn("Warnings only — passing.")
     return 0

@@ -23,6 +23,8 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+from slopstopper import output
+
 REPORT_DIR = Path(".ss/reports/docs")
 REPORT_JSON = REPORT_DIR / "docs-accuracy-report.json"
 REPORT_MD = REPORT_DIR / "docs-accuracy-report.md"
@@ -265,10 +267,10 @@ def _build_md_report(data: dict, generated_at: str) -> str:
 
 
 def run(_args: list[str] | None = None) -> int:
-    print("🔍 Checking documentation accuracy…")
+    output.running("Checking documentation accuracy…")
 
     if not DOCS_DIR.is_dir():
-        print("❌ docs/ directory not found")
+        output.error("docs/ directory not found")
         return 1
 
     valid_tasks = _get_taskfile_tasks()
@@ -286,9 +288,11 @@ def run(_args: list[str] | None = None) -> int:
     REPORT_MD.write_text(_build_md_report(data, _generated_at()))
 
     if issues:
-        print(f"⚠️  Found {len(issues)} accuracy issue(s)")
+        output.warn(f"Found {len(issues)} accuracy issue(s)")
         for issue in issues:
-            print(f"  {issue['file']}:{issue['line']} — {issue['message']}")
+            output._emit(f"  {issue['file']}:{issue['line']} — {issue['message']}")
+        output.footer(REPORT_DIR, [REPORT_MD.name])
         return 1
-    print("✅ Documentation accuracy checks passed")
+    output.success("Documentation accuracy checks passed")
+    output.footer(REPORT_DIR, [REPORT_MD.name])
     return 0
