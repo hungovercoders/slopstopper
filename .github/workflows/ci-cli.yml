@@ -30,10 +30,6 @@ on:
     paths:
       - 'cli/**'
       - '.github/workflows/ci-cli.yml'
-      - '.ss/scripts/generate-secrets-md.py'
-      - '.ss/scripts/generate-sast-md.py'
-      - '.ss/scripts/generate-dependencies-md.py'
-      - '.ss/scripts/generate-dast-md.py'
       - '.ss/playwright.config.js'
       - '.ss/lighthouserc.json'
       - '.ss/tests/smoke.spec.ts'
@@ -62,10 +58,6 @@ on:
     paths:
       - 'cli/**'
       - '.github/workflows/ci-cli.yml'
-      - '.ss/scripts/generate-secrets-md.py'
-      - '.ss/scripts/generate-sast-md.py'
-      - '.ss/scripts/generate-dependencies-md.py'
-      - '.ss/scripts/generate-dast-md.py'
       - '.ss/playwright.config.js'
       - '.ss/lighthouserc.json'
       - '.ss/tests/smoke.spec.ts'

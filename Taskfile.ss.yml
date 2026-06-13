@@ -342,17 +342,14 @@ tasks:
 
   security:
     internal: true
-    desc: Run all security checks (SAST, vulnerabilities, DAST, secrets)
+    desc: Run all security checks (SAST, vulnerabilities, DAST, secrets) via slopstopper-cli
     summary: |
-      Runs the full security suite: SAST (Semgrep), vulnerability scanning (Trivy),
-      DAST (OWASP ZAP), and secrets detection (Gitleaks).
+      Runs the full security suite via slopstopper-cli: SAST (Semgrep),
+      vulnerability scanning (Trivy), DAST (OWASP ZAP), and secrets
+      detection (Gitleaks).
 
-      Usage:
-        task security                           # Run all checks
-        task sast                               # SAST only
-        task ss:vulnerability:all                  # Vulnerability scan only
-        task dast -- http://localhost:8080      # DAST only
-        task secrets                            # Secrets detection only
+      Each underlying tool must be installed on PATH — the CLI does
+      NOT auto-install them. See each tool's docs for setup.
     cmds:
       - task: sast
       - task: vulnerability:all
@@ -362,608 +359,59 @@ tasks:
 
   sast:
     internal: true
-    desc: Run static application security testing using Semgrep
+    desc: Run static application security testing using Semgrep (via slopstopper-cli)
     summary: |
-      Performs SAST on the codebase using Semgrep.
-      Generates both JSON and Markdown reports.
+      Subprocess-invokes `semgrep` (must be installed on PATH):
+        pip install --user semgrep
 
       Usage:
-        task sast           # Run analysis
+        task sast
     cmds:
-      - task: sast:check-tool
-      - task: sast:analyze
-      - task: sast:report
-    silent: false
-
-  sast:check-tool:
-    desc: Check if Semgrep is installed, install if necessary
-    internal: true
-    cmds:
-      - |
-        if ! command -v semgrep &> /dev/null; then
-          echo "📦 Installing Semgrep..."
-          
-          INSTALL_SUCCESS=0
-          
-          if command -v pip3 &> /dev/null; then
-            echo "Trying pip3..."
-            if pip3 install --user semgrep; then
-              INSTALL_SUCCESS=1
-            fi
-          elif command -v pip &> /dev/null; then
-            echo "Trying pip..."
-            if pip install --user semgrep; then
-              INSTALL_SUCCESS=1
-            fi
-          fi
-          
-          if [ $INSTALL_SUCCESS -eq 0 ]; then
-            echo "❌ Failed to install Semgrep"
-            echo "Please install Semgrep manually:"
-            echo "  - pip install semgrep"
-            echo "  - https://semgrep.dev/docs/getting-started/"
-            exit 1
-          fi
-        fi
-        
-        if ! command -v semgrep &> /dev/null; then
-          echo "❌ Semgrep installed but not found in PATH"
-          exit 1
-        fi
-        
-        SEMGREP_VERSION=$(semgrep --version 2>&1)
-        echo "✅ Semgrep $SEMGREP_VERSION"
-    silent: false
-
-  sast:analyze:
-    desc: Run Semgrep SAST analysis and generate reports
-    internal: true
-    dir: .
-    cmds:
-      - |
-        echo ""
-        echo "🔍 Running SAST analysis..."
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        
-        mkdir -p .ss/reports/sast
-        
-        semgrep \
-          --config=auto \
-          --json \
-          --output=".ss/reports/sast/sast-report.json" \
-          --exclude="node_modules" \
-          --exclude=".git" \
-          . \
-          || true
-        
-        python3 .ss/scripts/generate-sast-md.py
-        
-        echo "✅ Analysis complete"
-    silent: false
-
-  sast:report:
-    desc: Display formatted SAST report
-    internal: true
-    cmds:
-      - |
-        echo ""
-        echo "🔍 SAST REPORT"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        
-        if [ ! -f .ss/reports/sast/sast-report.md ]; then
-          echo "❌ SAST report not generated!"
-          exit 1
-        fi
-        
-        cat .ss/reports/sast/sast-report.md
-        
-        echo ""
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        echo "📁 Reports saved to: .ss/reports/sast/"
-        echo "   • sast-report.md (human-readable)"
-        echo "   • sast-report.json (machine-readable)"
-        echo ""
-        
-        if [ -f .ss/reports/sast/sast-report.json ]; then
-          ERROR_COUNT=$(python3 -c "
-        import json, sys
-        with open('.ss/reports/sast/sast-report.json') as f:
-          data = json.load(f)
-        errors = [r for r in data.get('results', []) if r.get('extra', {}).get('severity', '').upper() == 'ERROR']
-        print(len(errors))
-        " 2>/dev/null || echo "0")
-          if [ "$ERROR_COUNT" -gt 0 ]; then
-            echo "⚠️  Found $ERROR_COUNT error-severity finding(s)"
-            echo ""
-          else
-            echo "✅ No error-severity findings detected"
-            echo ""
-          fi
-        fi
+      - slopstopper run security:sast
     silent: false
 
   vulnerability:all:
     internal: true
-    desc: Run vulnerability scanning using Trivy
+    desc: Run vulnerability scanning using Trivy (via slopstopper-cli)
     summary: |
-      Scans project dependencies for known CVEs using Trivy.
-      Generates both JSON and Markdown reports.
+      Subprocess-invokes `trivy` (must be installed on PATH). See
+      https://trivy.dev/latest/getting-started/installation/.
 
       Usage:
-        task ss:vulnerability:all           # Run scan
+        task ss:vulnerability:all
     cmds:
-      - task: vulnerability:all:check-tool
-      - task: vulnerability:all:analyze
-      - task: vulnerability:all:report
-    silent: false
-
-  vulnerability:all:check-tool:
-    desc: Check if Trivy is installed, install if necessary
-    internal: true
-    cmds:
-      - |
-        if ! command -v trivy &> /dev/null; then
-          echo "📦 Installing Trivy..."
-
-          INSTALL_SUCCESS=0
-
-          # Trivy's GitHub release artefacts follow the naming convention
-          #   trivy_<version>_<OS>-<ARCH>.tar.gz
-          # where OS ∈ {Linux, macOS, FreeBSD, ...} and ARCH ∈ {64bit, ARM64, ...}.
-          # Detect both up front so the GitHub-releases fallback works on
-          # macOS and ARM64 Linux as well as the original x86_64 Linux path.
-          OS_RAW="$(uname -s)"
-          ARCH_RAW="$(uname -m)"
-          case "$OS_RAW" in
-            Linux)   TRIVY_OS="Linux" ;;
-            Darwin)  TRIVY_OS="macOS" ;;
-            FreeBSD) TRIVY_OS="FreeBSD" ;;
-            *)       TRIVY_OS="" ;;
-          esac
-          case "$ARCH_RAW" in
-            x86_64|amd64)  TRIVY_ARCH="64bit" ;;
-            arm64|aarch64) TRIVY_ARCH="ARM64" ;;
-            i?86)          TRIVY_ARCH="32bit" ;;
-            *)             TRIVY_ARCH="" ;;
-          esac
-
-          # Prefer the platform's package manager on Linux (apt) and macOS (brew),
-          # falling back to a direct GitHub-releases download when neither applies.
-          if [ "$TRIVY_OS" = "Linux" ] && command -v apt-get &> /dev/null && command -v wget &> /dev/null; then
-            echo "Trying apt-get install..."
-            wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-            echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee /etc/apt/sources.list.d/trivy.list
-            if sudo apt-get update -qq && sudo apt-get install -y trivy; then
-              INSTALL_SUCCESS=1
-            fi
-          fi
-
-          if [ $INSTALL_SUCCESS -eq 0 ] && [ "$TRIVY_OS" = "macOS" ] && command -v brew &> /dev/null; then
-            echo "Trying brew install..."
-            if brew install aquasecurity/trivy/trivy; then
-              INSTALL_SUCCESS=1
-            fi
-          fi
-
-          if [ $INSTALL_SUCCESS -eq 0 ] && command -v curl &> /dev/null && [ -n "$TRIVY_OS" ] && [ -n "$TRIVY_ARCH" ]; then
-            echo "Trying GitHub releases install (${TRIVY_OS}-${TRIVY_ARCH})..."
-            TRIVY_VERSION=$(curl -s https://api.github.com/repos/aquasecurity/trivy/releases/latest | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
-            if [ -n "$TRIVY_VERSION" ]; then
-              mkdir -p "$HOME/.local/bin"
-              if curl -sfL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_${TRIVY_OS}-${TRIVY_ARCH}.tar.gz" | tar -xz -C "$HOME/.local/bin" trivy; then
-                export PATH="$PATH:$HOME/.local/bin"
-                INSTALL_SUCCESS=1
-              fi
-            fi
-          fi
-
-          if [ $INSTALL_SUCCESS -eq 0 ]; then
-            echo "❌ Failed to install Trivy automatically (OS=${OS_RAW}, arch=${ARCH_RAW})"
-            echo "Please install Trivy manually:"
-            echo "  - https://trivy.dev/latest/getting-started/installation/"
-            exit 1
-          fi
-        fi
-
-        if ! command -v trivy &> /dev/null; then
-          echo "❌ Trivy installed but not found in PATH"
-          exit 1
-        fi
-
-        TRIVY_VERSION=$(trivy --version 2>&1 | head -1)
-        echo "✅ $TRIVY_VERSION"
-    silent: false
-
-  vulnerability:all:analyze:
-    desc: Run Trivy dependency scan and generate reports
-    internal: true
-    dir: .
-    cmds:
-      - |
-        echo ""
-        echo "🔍 Scanning dependencies for vulnerabilities..."
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        
-        mkdir -p .ss/reports/dependencies
-        
-        trivy fs \
-          --format json \
-          --output ".ss/reports/dependencies/dependencies-report.json" \
-          --skip-dirs node_modules \
-          --skip-dirs .git \
-          . \
-          || true
-        
-        python3 .ss/scripts/generate-dependencies-md.py
-        
-        echo "✅ Scan complete"
-    silent: false
-
-  vulnerability:all:report:
-    desc: Display formatted dependency vulnerability report
-    internal: true
-    cmds:
-      - |
-        echo ""
-        echo "📦 DEPENDENCY VULNERABILITY REPORT"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        
-        if [ ! -f .ss/reports/dependencies/dependencies-report.md ]; then
-          echo "❌ Dependency report not generated!"
-          exit 1
-        fi
-        
-        cat .ss/reports/dependencies/dependencies-report.md
-        
-        echo ""
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        echo "📁 Reports saved to: .ss/reports/dependencies/"
-        echo "   • dependencies-report.md (human-readable)"
-        echo "   • dependencies-report.json (machine-readable)"
-        echo ""
-        
-        if [ -f .ss/reports/dependencies/dependencies-report.json ]; then
-          VULN_COUNT=$(python3 -c "
-        import json, sys
-        with open('.ss/reports/dependencies/dependencies-report.json') as f:
-          data = json.load(f)
-        count = 0
-        for r in data.get('Results', []):
-          for v in r.get('Vulnerabilities', []):
-            if v.get('Severity', '').upper() in ('CRITICAL', 'HIGH'):
-              count += 1
-        print(count)
-        " 2>/dev/null || echo "0")
-          if [ "$VULN_COUNT" -gt 0 ]; then
-            echo "⚠️  Found $VULN_COUNT CRITICAL/HIGH vulnerability(ies)"
-            echo ""
-          else
-            echo "✅ No CRITICAL/HIGH vulnerabilities detected"
-            echo ""
-          fi
-        fi
+      - slopstopper run security:dependencies
     silent: false
 
   dast:
     internal: true
-    desc: Run dynamic application security testing using OWASP ZAP
+    desc: Run dynamic application security testing using OWASP ZAP (via slopstopper-cli)
     summary: |
-      Performs DAST against a running site using OWASP ZAP (requires Docker).
-      Generates both JSON and Markdown reports.
+      Subprocess-invokes `docker run ghcr.io/zaproxy/zaproxy:stable
+      zap-baseline.py` (Docker must be running). The CLI also runs the
+      CSP-exception gate against the resulting JSON — see
+      docs/security/CSP_EXCEPTIONS.md.
 
       Usage:
-        # Start your app's server first, then:
         task ss:security:dast -- http://localhost:8080
         task ss:security:dast -- https://staging.example.com
     vars:
       TARGET: '{{default "http://localhost:8080" .CLI_ARGS}}'
     cmds:
-      - task: dast:check-tool
-      - task: dast:analyze
-        vars:
-          TARGET: '{{.TARGET}}'
-      - task: dast:report
-    silent: false
-
-  dast:check-tool:
-    desc: Check if Docker (for ZAP) is available
-    internal: true
-    cmds:
-      - |
-        if ! command -v docker &> /dev/null; then
-          echo "❌ Docker is required to run OWASP ZAP"
-          echo "Please install Docker: https://docs.docker.com/get-docker/"
-          exit 1
-        fi
-        
-        DOCKER_VERSION=$(docker --version 2>&1)
-        echo "✅ $DOCKER_VERSION"
-    silent: false
-
-  dast:analyze:
-    desc: Run OWASP ZAP baseline scan and generate reports
-    internal: true
-    dir: .
-    vars:
-      TARGET: '{{default "http://localhost:8080" .TARGET}}'
-    cmds:
-      - |
-        echo ""
-        echo "🌐 Running DAST analysis against {{.TARGET}}..."
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        
-        mkdir -p .ss/reports/dast
-        chmod 777 .ss/reports/dast
-        
-        # Check if target is localhost — if so, this repo's server.js may need to be started.
-        # For a consumer, start your own server before running DAST against localhost.
-        TARGET="{{.TARGET}}"
-        if [[ "$TARGET" == *"localhost"* ]] || [[ "$TARGET" == "http://127.0.0.1"* ]]; then
-          if [ -f server.js ] && ! curl -sf http://localhost:8080 > /dev/null 2>&1; then
-            echo "🚀 Starting this repo's server.js..."
-            node server.js > /dev/null 2>&1 &
-            SERVER_PID=$!
-
-            echo "⏳ Waiting for server to be ready..."
-            for i in {1..30}; do
-              if curl -s http://localhost:8080 > /dev/null 2>&1; then
-                echo "✅ Server is ready"
-                break
-              fi
-              if [ $i -eq 30 ]; then
-                echo "❌ Server failed to start within 30 seconds"
-                kill $SERVER_PID 2>/dev/null || true
-                exit 1
-              fi
-              sleep 1
-            done
-
-            trap "kill $SERVER_PID 2>/dev/null || true" EXIT
-          elif ! curl -sf http://localhost:8080 > /dev/null 2>&1; then
-            echo "❌ Nothing listening on $TARGET and no server.js to start."
-            echo "   Start your app's server first, then re-run this task."
-            exit 1
-          fi
-
-          # Replace localhost with a host-routable address from inside the ZAP
-          # container. The bridge gateway 172.17.0.1 works on Linux Docker
-          # (including ubuntu-latest runners in CI), but Docker Desktop on
-          # macOS does not route to it. Detect Darwin and use the magic
-          # host.docker.internal hostname instead — Docker Desktop wires it
-          # automatically. Same trick works on Windows.
-          DOCKER_HOST_TARGET="172.17.0.1"
-          if [ "$(uname -s)" = "Darwin" ]; then
-            DOCKER_HOST_TARGET="host.docker.internal"
-          fi
-          # Extract the original port so adopters running on a non-8080 port
-          # still hit the right place.
-          ORIGINAL_PORT="$(echo "$TARGET" | sed -E 's|https?://[^:/]+:?([0-9]+)?.*|\1|')"
-          ORIGINAL_PORT="${ORIGINAL_PORT:-8080}"
-          TARGET="http://${DOCKER_HOST_TARGET}:${ORIGINAL_PORT}"
-          echo "📍 Using Docker-compatible target: $TARGET"
-        fi
-        
-        # Honour consumer-side ZAP rule overrides at .zap/rules.tsv if present.
-        # Format (tab-separated): <plugin-id>\tIGNORE\t# why this is accepted.
-        # Lets adopters silence false-positive rules (e.g. SRI on a GTM-served
-        # script with rotating content, SQL Source Code Disclosure firing on
-        # blog posts containing SQL code blocks) without modifying slopstopper.
-        # Keep the list short and document each entry — every line is a
-        # justified gate exception, not a way to quiet findings you should fix.
-        ZAP_RULES_VOL=""
-        ZAP_RULES_FLAG=""
-        if [ -f .zap/rules.tsv ]; then
-          ZAP_RULES_VOL="-v $(pwd)/.zap:/zap/wrk/.zap:ro"
-          ZAP_RULES_FLAG="-c .zap/rules.tsv"
-        fi
-        docker run --rm \
-          -v "$(pwd)/.ss/reports/dast:/zap/wrk/:rw" \
-          $ZAP_RULES_VOL \
-          ghcr.io/zaproxy/zaproxy:stable \
-          zap-baseline.py \
-          -t "$TARGET" \
-          -J "dast-report.json" \
-          -I \
-          $ZAP_RULES_FLAG \
-          || true
-        
-        python3 .ss/scripts/generate-dast-md.py
-        
-        echo "✅ Analysis complete"
-    silent: false
-
-  dast:report:
-    desc: Display formatted DAST report
-    internal: true
-    cmds:
-      - |
-        echo ""
-        echo "🌐 DAST REPORT"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        
-        if [ ! -f .ss/reports/dast/dast-report.md ]; then
-          echo "❌ DAST report not generated!"
-          exit 1
-        fi
-        
-        cat .ss/reports/dast/dast-report.md
-        
-        echo ""
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        echo "📁 Reports saved to: .ss/reports/dast/"
-        echo "   • dast-report.md (human-readable)"
-        echo "   • dast-report.json (machine-readable)"
-        echo ""
-        
-        if [ -f .ss/reports/dast/dast-report.json ]; then
-          ALERT_COUNT=$(python3 -c "
-        import json, sys
-        with open('.ss/reports/dast/dast-report.json') as f:
-          data = json.load(f)
-        count = 0
-        for site in data.get('site', []):
-          for alert in site.get('alerts', []):
-            if int(alert.get('riskcode', 0)) >= 2:
-              count += 1
-        print(count)
-        " 2>/dev/null || echo "0")
-          if [ "$ALERT_COUNT" -gt 0 ]; then
-            echo "⚠️  Found $ALERT_COUNT medium/high alert(s)"
-            echo ""
-          else
-            echo "✅ No medium/high alerts detected"
-            echo ""
-          fi
-        fi
+      - slopstopper run security:dast -- --target {{.TARGET}}
     silent: false
 
   secrets:
     internal: true
-    desc: Run secrets detection using Gitleaks
+    desc: Run secrets detection using Gitleaks (via slopstopper-cli)
     summary: |
-      Scans the codebase and git history for hardcoded credentials using Gitleaks.
-      Generates both JSON and Markdown reports.
+      Subprocess-invokes `gitleaks` (must be installed on PATH). See
+      https://gitleaks.io/.
 
       Usage:
-        task secrets           # Run detection
+        task secrets
     cmds:
-      - task: secrets:check-tool
-      - task: secrets:analyze
-      - task: secrets:report
-    silent: false
-
-  secrets:check-tool:
-    desc: Check if Gitleaks is installed, install if necessary
-    internal: true
-    cmds:
-      - |
-        if ! command -v gitleaks &> /dev/null; then
-          echo "📦 Installing Gitleaks..."
-          
-          INSTALL_SUCCESS=0
-          
-          if command -v curl &> /dev/null; then
-            echo "Trying GitHub releases..."
-            
-            # Detect OS and architecture
-            OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-            ARCH=$(uname -m)
-            case "$ARCH" in
-              x86_64) ARCH="x64" ;;
-              aarch64|arm64) ARCH="arm64" ;;
-              *) ARCH="x64" ;;
-            esac
-            case "$OS" in
-              darwin) OS="darwin" ;;
-              linux)  OS="linux" ;;
-              *)      OS="linux" ;;
-            esac
-            
-            LATEST=$(curl -s https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
-            DOWNLOAD_URL="https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_${LATEST}_${OS}_${ARCH}.tar.gz"
-            
-            mkdir -p ~/.local/bin
-            if curl -sSfL "$DOWNLOAD_URL" | tar -xz -C ~/.local/bin gitleaks 2>/dev/null; then
-              export PATH="$PATH:$HOME/.local/bin"
-              INSTALL_SUCCESS=1
-            fi
-          fi
-          
-          if [ $INSTALL_SUCCESS -eq 0 ]; then
-            echo "❌ Failed to install Gitleaks"
-            echo "Please install Gitleaks manually:"
-            echo "  - https://gitleaks.io/"
-            exit 1
-          fi
-        fi
-        
-        if ! command -v gitleaks &> /dev/null; then
-          echo "❌ Gitleaks installed but not found in PATH"
-          exit 1
-        fi
-        
-        GITLEAKS_VERSION=$(gitleaks version 2>&1)
-        echo "✅ Gitleaks $GITLEAKS_VERSION"
-    silent: false
-
-  secrets:analyze:
-    desc: Run Gitleaks secrets detection and generate reports
-    internal: true
-    dir: .
-    cmds:
-      - |
-        echo ""
-        echo "🔑 Running secrets detection..."
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        
-        mkdir -p .ss/reports/secrets
-        
-        # Run gitleaks against full git history; exit code 1 means secrets found, which is expected
-        gitleaks detect \
-          --source=. \
-          --report-format=json \
-          --report-path=".ss/reports/secrets/secrets-report.json" \
-          || true
-        
-        python3 .ss/scripts/generate-secrets-md.py
-        
-        echo "✅ Detection complete"
-    silent: false
-
-  secrets:report:
-    desc: Display formatted secrets detection report
-    internal: true
-    cmds:
-      - |
-        echo ""
-        echo "🔑 SECRETS DETECTION REPORT"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        
-        if [ ! -f .ss/reports/secrets/secrets-report.md ]; then
-          echo "❌ Secrets report not generated!"
-          exit 1
-        fi
-        
-        cat .ss/reports/secrets/secrets-report.md
-        
-        echo ""
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        echo "📁 Reports saved to: .ss/reports/secrets/"
-        echo "   • secrets-report.md (human-readable)"
-        echo "   • secrets-report.json (machine-readable)"
-        echo ""
-        
-        if [ -f .ss/reports/secrets/secrets-report.json ]; then
-          SECRET_COUNT=$(python3 -c "
-        import json, sys
-        with open('.ss/reports/secrets/secrets-report.json') as f:
-          content = f.read().strip()
-        if not content or content == 'null':
-          print(0)
-        else:
-          data = json.loads(content)
-          print(len(data) if isinstance(data, list) else 0)
-        " 2>/dev/null || echo "0")
-          if [ "$SECRET_COUNT" -gt 0 ]; then
-            echo "⚠️  Found $SECRET_COUNT secret(s) — revoke and remove immediately"
-            echo ""
-          else
-            echo "✅ No secrets detected"
-            echo ""
-          fi
-        fi
+      - slopstopper run security:secrets
     silent: false
 
   contributing:setup:
