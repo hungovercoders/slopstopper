@@ -49,7 +49,7 @@ task ss:reliability:links
 ```bash
 BROKEN_LINKS_TEST_URL=https://your-site.example.com \
 BROKEN_LINKS_PAGES="/,/features.html,/tools.html" \
-task ss:reliability:links:ci
+CI=true task ss:reliability:links
 ```
 
 For live `slopstopper.dev`, the workflow seeds `/,/features.html,/tools.html` so links from the three main pages are validated on every scheduled/deploy/PR run.
@@ -94,7 +94,7 @@ SMOKE_TEST_URL=https://your-site.example.com \
 For GitHub Actions or other CI environments, use the CI-specific task:
 
 ```bash
-SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke:ci
+SMOKE_TEST_URL=https://your-site.example.com CI=true task ss:reliability:smoke
 ```
 
 This enables:
@@ -146,7 +146,7 @@ jobs:
       - name: Run smoke tests
         env:
           SMOKE_TEST_URL: ${{ github.event.inputs.url || 'https://your-site.example.com' }}
-        run: task ss:reliability:smoke:ci
+        run: slopstopper run reliability:smoke -- --ci
         
       - name: Upload test results
         if: always()

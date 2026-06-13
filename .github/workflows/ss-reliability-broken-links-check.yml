@@ -5,10 +5,9 @@ name: SlopStopper · Broken Links Check
 # context only, so emit.py isn't a fit. The check runs via the CLI,
 # and the small PR-comment block uses `gh pr comment` directly.
 #
-# Discovery is still invoked via .ss/scripts/discover-pages.py for now
-# (it sets BROKEN_LINKS_PAGES, which the CLI check picks up via env).
-# A future PR can add `slopstopper discover` as a subcommand and drop
-# the bash script — keeping it here to keep this flip mechanical.
+# Discovery runs via `slopstopper discover` (the CLI replacement for
+# the bash script; see #224). It sets BROKEN_LINKS_PAGES which the
+# CLI check picks up via env.
 
 on:
   pull_request:
@@ -48,7 +47,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # discover-pages.py changed-mode needs git history vs the base branch.
+          # `slopstopper discover --event=pr` runs in changed-mode and
+          # needs git history vs the base branch.
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -131,7 +131,7 @@ jobs:
         env:
           DISPATCH_MODE: ${{ github.event.inputs.coverage_mode }}
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
-        # Maps GH event → discover-pages.py's --event flag. Falls
+        # Maps GH event → slopstopper discover's --event flag. Falls
         # through to pages.broken_links when reliability.coverage.* is
         # unset, so existing adopters see no behaviour change.
         run: |

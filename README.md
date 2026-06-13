@@ -154,8 +154,8 @@ task ss:reliability:accessibility     # locally
 task ss:security:sast                 # locally
 ```
 
-The CI workflows call the same `task` targets (or a `:ci` variant that
-delegates to the same definition). One source of truth.
+CI calls the same `slopstopper run <check>` the `task` targets shim
+into (workflows pass `-- --ci`). One source of truth.
 
 ---
 
