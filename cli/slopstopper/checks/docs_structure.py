@@ -25,6 +25,19 @@ REPORT_DIR = Path(".ss/reports/docs")
 REPORT_JSON = REPORT_DIR / "docs-structure-report.json"
 REPORT_MD = REPORT_DIR / "docs-structure-report.md"
 
+# Consumed by `slopstopper emit hygiene:docs-structure --target {pr-comment,issue}`.
+# Strings are byte-for-byte identical to the discriminator / title / labels
+# the legacy actions/github-script@v7 block in
+# .github/workflows/ss-hygiene-docs-structure-check.yml used, so the same
+# bot comments/issues are matched after the workflow flip.
+META = {
+    "report_path": str(REPORT_MD),
+    "comment_discriminator": "📋 Documentation Structure",
+    "issue_title": "📋 Documentation Structure Issues",
+    "issue_labels": ["documentation-structure", "documentation"],
+    "issue_followup": "🔔 Documentation structure issues detected again in commit",
+}
+
 # Files allowed at the top level of docs/ without being declared in
 # the categories table. Mirrors the bash check exactly.
 ALLOWED_TOP_FILES = {"index.md", "README.md", "AGENTS.md", "CONTRIBUTING.md"}

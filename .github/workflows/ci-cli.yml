@@ -54,6 +54,7 @@ on:
       # CLI tests must run too. As more workflows flip, add them here.
       - '.github/workflows/ss-hygiene-docs-size-check.yml'
       - '.github/workflows/ss-hygiene-entry-files-check.yml'
+      - '.github/workflows/ss-hygiene-docs-structure-check.yml'
   push:
     branches: [ main ]
     paths:
@@ -83,6 +84,7 @@ on:
       # CLI tests must run too. As more workflows flip, add them here.
       - '.github/workflows/ss-hygiene-docs-size-check.yml'
       - '.github/workflows/ss-hygiene-entry-files-check.yml'
+      - '.github/workflows/ss-hygiene-docs-structure-check.yml'
   workflow_dispatch:
 
 permissions:
