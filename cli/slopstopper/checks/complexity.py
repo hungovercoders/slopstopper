@@ -36,6 +36,20 @@ REPORT_DIR = Path(".ss/reports/complexity")
 REPORT_CSV = REPORT_DIR / "complexity-report.csv"
 REPORT_MD = REPORT_DIR / "complexity-report.md"
 
+# Consumed by `slopstopper emit hygiene:complexity --target {pr-comment,issue}`.
+# The comment_discriminator is the H1 of the generated report — pre-flip the
+# JS prepended its own "## 📊 Code Complexity Analysis" heading, but the
+# report itself starts with "# Code Complexity Analysis Report", so the
+# substring "Code Complexity Analysis" matches the same comment after the
+# flip. Issue strings are byte-for-byte identical to the legacy block.
+META = {
+    "report_path": str(REPORT_MD),
+    "comment_discriminator": "Code Complexity Analysis",
+    "issue_title": "⚠️ Code Complexity Issues in Main Branch",
+    "issue_labels": ["code-complexity", "technical-debt"],
+    "issue_followup": "🔔 Code complexity issues detected again in commit",
+}
+
 # Exclude tests, generated files, vendored deps from the scan. Same list
 # as Taskfile.ss.yml's hygiene:complexity:analyze.
 LIZARD_EXCLUDES = (
