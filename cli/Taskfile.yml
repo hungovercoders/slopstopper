@@ -188,58 +188,14 @@ tasks:
           fi
         }
 
-        check_parity \
-          "hygiene-docs-size" \
-          "bash .ss/scripts/check-docs-size.sh" \
-          "cli/.venv/bin/slopstopper run hygiene:docs-size" \
-          ".ss/reports/docs/docs-size-report.md"
-
-        check_parity \
-          "hygiene-entry-files" \
-          "python3 .ss/scripts/check-entry-file-size.py" \
-          "cli/.venv/bin/slopstopper run hygiene:entry-files" \
-          ".ss/reports/entry-files/entry-file-size-report.md" \
-          ".ss/reports/entry-files/entry-file-size-report.json"
-
-        # docs-structure is a two-script bash flow: check writes JSON,
-        # generate reads JSON and writes MD. Chain them so the parity
-        # snapshot captures both outputs.
-        check_parity \
-          "hygiene-docs-structure" \
-          "python3 .ss/scripts/check-docs-structure.py; python3 .ss/scripts/generate-docs-structure-md.py" \
-          "cli/.venv/bin/slopstopper run hygiene:docs-structure" \
-          ".ss/reports/docs/docs-structure-report.json" \
-          ".ss/reports/docs/docs-structure-report.md"
-
-        check_parity \
-          "hygiene-docs-accuracy" \
-          "python3 .ss/scripts/check-docs-accuracy.py; python3 .ss/scripts/generate-docs-accuracy-md.py" \
-          "cli/.venv/bin/slopstopper run hygiene:docs-accuracy" \
-          ".ss/reports/docs/docs-accuracy-report.json" \
-          ".ss/reports/docs/docs-accuracy-report.md"
-
-        # hygiene:complexity shells out to `python -m lizard`. The bash
-        # side calls the full task target (which check-installs lizard,
-        # runs lizard --csv, then runs generate-complexity-md.py); the CLI
-        # side does the same via subprocess. Both produce identical CSV
-        # and MD when run against the same tree.
-        check_parity \
-          "hygiene-complexity" \
-          "task ss:hygiene:complexity" \
-          "cli/.venv/bin/slopstopper run hygiene:complexity" \
-          ".ss/reports/complexity/complexity-report.csv" \
-          ".ss/reports/complexity/complexity-report.md"
-
-        # csp-exceptions exercises the headers-adapter pluggability seam.
-        # Both .json and .md outputs are byte-identical (no timestamp in
-        # either, so no strip needed — but the helper strips the same way
-        # regardless).
-        check_parity \
-          "hygiene-csp-exceptions" \
-          "python3 .ss/scripts/check-csp-exceptions.py" \
-          "cli/.venv/bin/slopstopper run hygiene:csp-exceptions" \
-          ".ss/reports/csp/csp-exceptions-report.json" \
-          ".ss/reports/csp/csp-exceptions-report.md"
+        # Hygiene parity rows were removed when the hygiene category's
+        # bash scripts were deleted — `.ss/scripts/check-docs-size.sh`,
+        # `check-entry-file-size.py`, `check-docs-structure.py` (+
+        # `generate-docs-structure-md.py`), `check-docs-accuracy.py` (+
+        # `generate-docs-accuracy-md.py`), `generate-complexity-md.py`,
+        # and `check-csp-exceptions.py` (+ `headers_adapters/`) no
+        # longer exist. The hygiene checks now run only via the CLI;
+        # see `cli/tests/checks/test_*.py` for the per-check coverage.
 
         # security:secrets shells out to `gitleaks`. The bash side calls
         # the canonical task (which check-installs gitleaks via

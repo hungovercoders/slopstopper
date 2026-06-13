@@ -329,146 +329,15 @@ tasks:
 
 
   hygiene:complexity:
-    desc: Analyze code complexity using Lizard
+    desc: Analyze code complexity using Lizard (via slopstopper-cli)
     summary: |
       Performs code complexity analysis on the codebase using Lizard.
-      Generates both text and CSV reports with configurable thresholds.
-      
+      Generates both MD and CSV reports under .ss/reports/complexity/.
+
       Usage:
-        task ss:hygiene:complexity           # Run analysis
-        task ss:hygiene:complexity -- -v     # Verbose output
+        task ss:hygiene:complexity
     cmds:
-      - task: hygiene:complexity:check-tool
-      - task: hygiene:complexity:analyze
-      - task: hygiene:complexity:report
-    silent: false
-
-  hygiene:complexity:check-tool:
-    desc: Check if Lizard is installed, install if necessary
-    internal: true
-    cmds:
-      - |
-        # Use `python3 -m lizard` everywhere instead of the bare `lizard`
-        # binary. On macOS with Homebrew, lz4 ships a binary called `lizard`
-        # that shadows pip-installed lizard on PATH and produces a cryptic
-        # "Lizard 0.x" output that breaks the analyser. Going through
-        # `python3 -m` bypasses PATH entirely and pins us to the python
-        # package we actually installed via pip.
-        if ! python3 -m lizard --version &> /dev/null; then
-          echo "📦 Installing Lizard..."
-
-          INSTALL_SUCCESS=0
-
-          if command -v pip3 &> /dev/null; then
-            echo "Trying pip3..."
-            if pip3 install --user lizard; then
-              INSTALL_SUCCESS=1
-            fi
-          elif command -v pip &> /dev/null; then
-            echo "Trying pip..."
-            if pip install --user lizard; then
-              INSTALL_SUCCESS=1
-            fi
-          elif command -v sudo &> /dev/null && command -v apt-get &> /dev/null; then
-            echo "Trying apt-get..."
-            if sudo apt-get update && sudo apt-get install -y python3-pip && pip3 install --user lizard; then
-              INSTALL_SUCCESS=1
-            fi
-          fi
-
-          if [ $INSTALL_SUCCESS -eq 0 ]; then
-            echo "❌ Failed to install Lizard via pip"
-            echo "Please install Lizard manually:"
-            echo "  - pip3 install --user lizard"
-            echo "  - python3 -m pip install --user lizard"
-            echo "  - https://github.com/terryyin/lizard"
-            echo ""
-            echo "Note: do NOT install via 'brew install lizard' — that's lz4's lizard,"
-            echo "a completely different tool that will shadow the python package."
-            exit 1
-          fi
-        fi
-
-        if ! python3 -m lizard --version &> /dev/null; then
-          echo "❌ Lizard installed but 'python3 -m lizard' still fails — check your Python environment"
-          exit 1
-        fi
-
-        LIZARD_VERSION=$(python3 -m lizard --version 2>&1)
-        echo "✅ Lizard $LIZARD_VERSION"
-    silent: false
-
-  hygiene:complexity:analyze:
-    desc: Run Lizard analysis and generate reports
-    internal: true
-    dir: .
-    cmds:
-      - |
-        echo ""
-        echo "🔍 Analyzing code complexity..."
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        
-        # Create reports directory
-        mkdir -p .ss/reports/complexity
-        
-        # Single CSV pass — generate-complexity-md.py computes the summary
-        # from CSV rows directly. Lizard's CLI output formats are mutually
-        # exclusive (text/--csv/--xml/--html), so the previous text+CSV
-        # pair re-scanned the entire codebase twice for no extra signal.
-        # `python3 -m lizard` bypasses PATH and dodges lz4's clashing binary.
-        python3 -m lizard . \
-          -x "tests/*" \
-          -x ".ss/tests/*" \
-          -x ".github/*" \
-          -x "node_modules/*" \
-          -x ".git/*" \
-          --csv > ".ss/reports/complexity/complexity-report.csv" \
-          || true
-        
-        # Convert to markdown using Python
-        python3 .ss/scripts/generate-complexity-md.py
-        
-        echo "✅ Analysis complete"
-    silent: false
-
-  hygiene:complexity:report:
-    desc: Display formatted complexity report
-    internal: true
-    cmds:
-      - |
-        echo ""
-        echo "📊 COMPLEXITY REPORT"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        
-        if [ ! -f .ss/reports/complexity/complexity-report.md ]; then
-          echo "❌ Complexity report not generated!"
-          echo "This indicates an error in the analysis step. Check the logs above."
-          exit 1
-        fi
-        
-        cat .ss/reports/complexity/complexity-report.md
-        
-        echo ""
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        echo "📁 Reports saved to: .ss/reports/complexity/"
-        echo "   • complexity-report.md (human-readable)"
-        echo "   • complexity-report.csv (machine-readable)"
-        echo ""
-        
-        # Check for high complexity issues (CCN in column 2, indexed as $2)
-        if [ -f .ss/reports/complexity/complexity-report.csv ]; then
-          HIGH_COMPLEXITY=$(awk -F',' '$2 > 10' .ss/reports/complexity/complexity-report.csv | wc -l)
-          if [ "$HIGH_COMPLEXITY" -gt 0 ]; then
-            echo "⚠️  Found $HIGH_COMPLEXITY item(s) with cyclomatic complexity > 10"
-            echo ""
-          else
-            echo "✅ No high-complexity items found (all CCN ≤ 10)"
-            echo ""
-          fi
-        fi
+      - slopstopper run hygiene:complexity
     silent: false
 
   security:
@@ -1250,71 +1119,33 @@ tasks:
         PY
 
   hygiene:docs-size:
-    desc: Monitor documentation size and check against thresholds
+    desc: Monitor documentation size against configured thresholds (via slopstopper-cli)
     summary: |
-      Analyzes documentation size against configured thresholds:
-      - Total documentation size (max 150 KB)
-      - Individual file sizes (max 20 KB)
-      - Number of documentation files (max 15)
-      
-      Generates a detailed report in .ss/reports/docs/docs-size-report.md
-      
+      Analyzes documentation size against thresholds tunable in .slopstopper.yml:
+        hygiene:
+          docs_size:
+            max_total_size_kb: 150
+            max_file_size_kb: 20
+            max_files: 25
+
+      Generates a report at .ss/reports/docs/docs-size-report.md.
+
       Usage:
-        task ss:hygiene:docs-size    # Run size monitoring
+        task ss:hygiene:docs-size
     cmds:
-      - bash .ss/scripts/check-docs-size.sh
+      - slopstopper run hygiene:docs-size
 
   hygiene:docs-structure:
-    desc: Validate documentation structure matches governance model
+    desc: Validate documentation structure matches the governance model (via slopstopper-cli)
     summary: |
-      Validates that the documentation directory structure matches
-      the governance model defined in docs/index.md.
-      
-      Checks:
-      - All expected categories exist with README.md files
-      - No unexpected files or directories outside the index
-      - Identifies deviations for discussion
-      
+      Validates that the docs/ tree matches the governance model
+      declared in docs/index.md. Generates JSON + MD reports under
+      .ss/reports/docs/.
+
       Usage:
-        task ss:hygiene:docs-structure    # Validate structure
+        task ss:hygiene:docs-structure
     cmds:
-      - task: hygiene:docs-structure:check
-      - task: hygiene:docs-structure:report
-    silent: false
-
-  hygiene:docs-structure:check:
-    desc: Check documentation structure and generate report
-    internal: true
-    cmds:
-      - python3 .ss/scripts/check-docs-structure.py || true
-    silent: false
-
-  hygiene:docs-structure:report:
-    desc: Generate markdown documentation structure report
-    internal: true
-    cmds:
-      - |
-        python3 .ss/scripts/generate-docs-structure-md.py
-        
-        echo ""
-        echo "📋 DOCUMENTATION STRUCTURE REPORT"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        
-        if [ ! -f .ss/reports/docs/docs-structure-report.md ]; then
-          echo "❌ Documentation structure report not generated!"
-          exit 1
-        fi
-        
-        cat .ss/reports/docs/docs-structure-report.md
-        
-        echo ""
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        echo "📁 Reports saved to: .ss/reports/docs/"
-        echo "   • docs-structure-report.md (human-readable)"
-        echo "   • docs-structure-report.json (machine-readable)"
-        echo ""
+      - slopstopper run hygiene:docs-structure
     silent: false
 
   hygiene:entry-files:
@@ -1332,30 +1163,25 @@ tasks:
       Usage:
         task ss:hygiene:entry-files
     cmds:
-      - python3 .ss/scripts/check-entry-file-size.py
+      - slopstopper run hygiene:entry-files
     silent: false
 
   hygiene:csp-exceptions:
-    desc: Validate per-page CSP relaxations in worker/headers.json match docs/security/CSP_EXCEPTIONS.md
+    desc: Validate per-page CSP relaxations match docs/security/CSP_EXCEPTIONS.md (via slopstopper-cli)
     summary: |
-      Parses worker/headers.json and docs/security/CSP_EXCEPTIONS.md and fails if
-      either side has a per-path CSP exception the other doesn't document.
-
-      Default site CSP is strict (`default-src 'self'; script-src 'self'`).
-      Per-page exceptions are allowed for vetted third-party widgets
-      (Giscus, GTM, Sentry, etc.) but MUST be documented and SRI-pinned.
-
-      See docs/security/CSP_EXCEPTIONS.md for the pattern adopters can
-      reuse in their own repos.
+      Parses the headers source (worker/headers.json by default; pluggable
+      via headers.source in .slopstopper.yml) and docs/security/CSP_EXCEPTIONS.md
+      and fails if either side has a per-path CSP exception the other doesn't
+      document.
 
       Usage:
         task ss:hygiene:csp-exceptions
     cmds:
-      - python3 .ss/scripts/check-csp-exceptions.py
+      - slopstopper run hygiene:csp-exceptions
     silent: false
 
   hygiene:docs-accuracy:
-    desc: Check documentation for broken links, stale task/workflow refs
+    desc: Check documentation for broken links + stale refs (via slopstopper-cli)
     summary: |
       Scans all markdown files under docs/ for accuracy issues:
       - Broken internal markdown links
@@ -1366,43 +1192,7 @@ tasks:
       Usage:
         task ss:hygiene:docs-accuracy
     cmds:
-      - task: hygiene:docs-accuracy:check
-      - task: hygiene:docs-accuracy:report
-    silent: false
-
-  hygiene:docs-accuracy:check:
-    desc: Run accuracy checks and produce JSON report
-    internal: true
-    cmds:
-      - python3 .ss/scripts/check-docs-accuracy.py || true
-    silent: false
-
-  hygiene:docs-accuracy:report:
-    desc: Generate markdown accuracy report
-    internal: true
-    cmds:
-      - |
-        python3 .ss/scripts/generate-docs-accuracy-md.py
-
-        echo ""
-        echo "🔎 DOCUMENTATION ACCURACY REPORT"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-
-        if [ ! -f .ss/reports/docs/docs-accuracy-report.md ]; then
-          echo "❌ Accuracy report not generated!"
-          exit 1
-        fi
-
-        cat .ss/reports/docs/docs-accuracy-report.md
-
-        echo ""
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-        echo "📁 Reports saved to: .ss/reports/docs/"
-        echo "   • docs-accuracy-report.md (human-readable)"
-        echo "   • docs-accuracy-report.json (machine-readable)"
-        echo ""
+      - slopstopper run hygiene:docs-accuracy
     silent: false
 
   hygiene:test:
