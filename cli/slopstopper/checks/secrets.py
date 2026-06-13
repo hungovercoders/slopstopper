@@ -27,6 +27,20 @@ REPORT_DIR = Path(".ss/reports/secrets")
 REPORT_JSON = REPORT_DIR / "secrets-report.json"
 REPORT_MD = REPORT_DIR / "secrets-report.md"
 
+# Consumed by `slopstopper emit security:secrets --target {pr-comment,issue}`.
+# Discriminator substring `Secrets Detection` matches both the pre-flip JS
+# heading ("## 🔑 Secrets Detection") and the post-flip report H1
+# ("# Secrets Detection Report"), so the same bot comment is reused after
+# the workflow flip. Issue title, labels, and follow-up string are
+# byte-identical to the legacy block.
+META = {
+    "report_path": str(REPORT_MD),
+    "comment_discriminator": "Secrets Detection",
+    "issue_title": "⚠️ Secrets Detected in Main Branch",
+    "issue_labels": ["secrets", "security"],
+    "issue_followup": "🔔 Secrets detected again in commit",
+}
+
 _INSTALL_HELP = (
     "❌ gitleaks is not installed.\n"
     "Install with:\n"

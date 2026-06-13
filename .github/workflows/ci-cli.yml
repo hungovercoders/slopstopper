@@ -58,6 +58,7 @@ on:
       - '.github/workflows/ss-hygiene-complexity-check.yml'
       - '.github/workflows/ss-hygiene-docs-accuracy-check.yml'
       - '.github/workflows/ss-hygiene-csp-exceptions-check.yml'
+      - '.github/workflows/ss-security-secrets-check.yml'
   push:
     branches: [ main ]
     paths:
@@ -91,6 +92,7 @@ on:
       - '.github/workflows/ss-hygiene-complexity-check.yml'
       - '.github/workflows/ss-hygiene-docs-accuracy-check.yml'
       - '.github/workflows/ss-hygiene-csp-exceptions-check.yml'
+      - '.github/workflows/ss-security-secrets-check.yml'
   workflow_dispatch:
 
 permissions:
