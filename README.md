@@ -174,7 +174,7 @@ No secrets are needed for deploy — Cloudflare Workers Builds is connected via 
 **Tuning files** (`.slopstopper.yml` covers most config; these handle the rest):
 
 - Complexity gate — CCN > 10 threshold lives in `.github/workflows/ss-hygiene-complexity-check.yml` (awk filter on the lizard CSV)
-- Lighthouse budgets — `.ss/lighthouserc.json` (PR) and `.ss/lighthouserc.prod.json` (production)
+- Lighthouse budgets — bundled in `cli/slopstopper/data/lighthouserc{,.prod}.json`; override via `.ss/`
 - Doc size thresholds — `hygiene.docs_size.*` keys in [`.slopstopper.yml.example`](./.slopstopper.yml.example) (`max_total_size_kb`, `max_file_size_kb`, `max_files`)
 
 ---
