@@ -1,0 +1,121 @@
+name: SlopStopper · Release
+
+# Tag-triggered release flow. On any `v*.*.*` push tag, build the
+# wheel + sdist with hatch, extract the matching section from
+# CHANGELOG.md as the release notes, and create a GitHub Release with
+# both artifacts attached. PyPI publish is intentionally NOT wired up
+# yet — that needs the Trusted Publisher trust relationship set up on
+# PyPI's side first. Until then, this workflow lands a "real" GitHub
+# Release every tag and you can publish to PyPI manually with
+# `twine upload dist/*` when ready.
+#
+# Pushing the tag:
+#   git tag v0.2.0 -m "0.2.0"
+#   git push origin v0.2.0
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to (re-)release (e.g. v0.2.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write     # create GitHub Releases + upload assets
+
+jobs:
+  build-and-release:
+    name: Build wheel + sdist, create GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # CHANGELOG diff and git describe both need full history.
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Resolve tag + version
+        id: tag
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          TAG="${INPUT_TAG:-$REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "🏷  Releasing $TAG  (version $VERSION)"
+
+      - name: Sanity-check pyproject + __init__ versions match the tag
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          PYPROJECT_VER=$(grep -m1 '^version = ' cli/pyproject.toml | sed -E 's/version = "(.*)"/\1/')
+          INIT_VER=$(grep -m1 '__version__' cli/slopstopper/__init__.py | sed -E 's/__version__ = "(.*)"/\1/')
+          echo "pyproject:     $PYPROJECT_VER"
+          echo "__init__.py:   $INIT_VER"
+          echo "tag (without v): $VERSION"
+          if [ "$PYPROJECT_VER" != "$VERSION" ] || [ "$INIT_VER" != "$VERSION" ]; then
+            echo "::error::Version mismatch — bump cli/pyproject.toml and cli/slopstopper/__init__.py to match the tag before releasing."
+            exit 1
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build tooling
+        run: pip install --upgrade build
+
+      - name: Build wheel + sdist
+        working-directory: cli
+        run: python -m build
+
+      - name: List built artifacts
+        run: ls -la cli/dist/
+
+      - name: Extract release notes for this version from CHANGELOG.md
+        id: notes
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          # Pull the section between `## [VERSION]` and the next `## [`.
+          # If we can't find one, fall back to a generic body so the
+          # release still lands.
+          python3 <<'PY' > release-notes.md
+          import os, re, sys
+          version = os.environ["VERSION"]
+          text = open("CHANGELOG.md").read()
+          pattern = rf"##\s*\[{re.escape(version)}\][^\n]*\n(.*?)(?=\n##\s*\[|\Z)"
+          m = re.search(pattern, text, re.DOTALL)
+          if m:
+              sys.stdout.write(m.group(1).strip() + "\n")
+          else:
+              sys.stdout.write(
+                  f"Release {version}. See CHANGELOG.md on the repo for details.\n"
+              )
+          PY
+          echo "--- release notes preview ---"
+          head -40 release-notes.md
+          echo "------------------------------"
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          # Skip if a release already exists for this tag (idempotent re-runs).
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "ℹ️  Release $TAG already exists — uploading any missing artifacts only."
+            gh release upload "$TAG" cli/dist/* --clobber
+          else
+            gh release create "$TAG" cli/dist/* \
+              --title "slopstopper-cli ${TAG#v}" \
+              --notes-file release-notes.md
+          fi
