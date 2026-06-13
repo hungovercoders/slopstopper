@@ -24,6 +24,10 @@ def test_bundled_lighthouserc_exists():
     assert (templates.PACKAGE_DATA_DIR / templates.LIGHTHOUSERC_NAME).exists()
 
 
+def test_bundled_lighthouserc_prod_exists():
+    assert (templates.PACKAGE_DATA_DIR / templates.LIGHTHOUSERC_PROD_NAME).exists()
+
+
 def test_bundled_spec_files_present():
     tests_dir = templates.PACKAGE_DATA_DIR / "tests"
     assert (tests_dir / "smoke.spec.ts").exists()
@@ -44,6 +48,29 @@ def test_lighthouserc_falls_back_to_package_data(isolated_cwd):
     assert templates.lighthouserc() == (
         templates.PACKAGE_DATA_DIR / templates.LIGHTHOUSERC_NAME
     )
+
+
+def test_lighthouserc_prod_falls_back_to_package_data(isolated_cwd):
+    assert templates.lighthouserc(prod=True) == (
+        templates.PACKAGE_DATA_DIR / templates.LIGHTHOUSERC_PROD_NAME
+    )
+
+
+def test_lighthouserc_prod_override_wins(isolated_cwd):
+    override = isolated_cwd / ".ss" / "lighthouserc.prod.json"
+    override.parent.mkdir(parents=True, exist_ok=True)
+    override.write_text("{}")
+    resolved = templates.lighthouserc(prod=True)
+    assert resolved == Path(".ss/lighthouserc.prod.json")
+
+
+def test_lighthouserc_dev_ignores_prod_override(isolated_cwd):
+    """A prod override mustn't get picked up when prod=False."""
+    override = isolated_cwd / ".ss" / "lighthouserc.prod.json"
+    override.parent.mkdir(parents=True, exist_ok=True)
+    override.write_text("{}")
+    resolved = templates.lighthouserc(prod=False)
+    assert resolved == (templates.PACKAGE_DATA_DIR / templates.LIGHTHOUSERC_NAME)
 
 
 def test_playwright_spec_falls_back_to_package_data(isolated_cwd):

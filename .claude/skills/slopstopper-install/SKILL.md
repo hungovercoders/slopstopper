@@ -72,14 +72,27 @@ Sanity-check the install dropped what you expect:
 - `slopstopper-cli` — installed system-wide via `pipx` (preferred) or `pip install --user`. Confirm with `slopstopper --version`. Every check runs through this.
 - `Taskfile.ss.yml` — thin `task ss:*` shims that each call `slopstopper run <category>:<check>` under the covers. Useful for adopters who already drive their dev loop with `task`.
 - `Taskfile.yml` — created if missing (otherwise: needs manual `includes:` block per Step 1.1).
-- `.ss/tests/` — Playwright specs (smoke, accessibility, broken-links). The CLI prefers these over its own bundled copies under `cli/slopstopper/data/tests/`, so adopters can customize without forking the package.
-- `.ss/playwright.config.js`, `.ss/lighthouserc.json`, `.ss/lighthouserc.prod.json` — same override pattern: `.ss/` wins, CLI package data is the fallback.
-- `.ss/server.js` — tiny static-server shim for serving the built site on `:8080` during the local loop.
+- `.ss/server.js` — tiny static-server shim for serving the built site on `:8080` during the local loop. The **only** file the installer seeds into `.ss/` for a fresh adopter — every other CLI-managed file (Playwright specs, Playwright config, lighthouserc dev + prod) lives inside the slopstopper-cli wheel and only lands in `.ss/` if you opt in by writing a same-named override there.
 - `.ss/.workflows-installed` — manifest of installed workflows (tracks deletions on reinstall; commit this).
 - `.github/workflows/ss-*.yml` — the curated installer set (~21 files). Each workflow body is now ~8 lines: install CLI, `slopstopper run …`, `slopstopper emit … --target pr-comment|issue`.
 - `package.json` — devDeps merged.
 
-**What's NOT there any more** (if you're updating from a pre-CLI install): `.ss/scripts/`. Every Python/bash script that used to live there is now in `slopstopper-cli`. The installer scrubs the directory on re-run, so don't be alarmed if the old contents are gone.
+**What's NOT there any more** (if you're updating from a pre-CLI install): `.ss/scripts/` (every Python/bash script lives in `slopstopper-cli`); and `.ss/playwright.config.js`, `.ss/lighthouserc.json`, `.ss/lighthouserc.prod.json`, `.ss/tests/` (now bundled in the wheel — installer scrubs unmodified byte-equal copies on re-run, but leaves customized files alone since they'll override via the CLI's templates resolver).
+
+### Want to customize a Playwright spec or lighthouserc?
+
+The CLI looks for `.ss/<filename>` first and falls back to the wheel's bundled copy. So to customize, copy the wheel's file into `.ss/` and edit it there:
+
+```bash
+# Find the wheel's bundled copy:
+python3 -c 'import slopstopper, pathlib; print(pathlib.Path(slopstopper.__file__).parent / "data")'
+
+# Eject the file you want to customize:
+cp "$(python3 -c 'import slopstopper, pathlib; print(pathlib.Path(slopstopper.__file__).parent / "data" / "lighthouserc.json")')" .ss/lighthouserc.json
+$EDITOR .ss/lighthouserc.json
+```
+
+The CLI picks it up on the next run. Caveat: customizations don't auto-merge with upstream changes — you own the file once you eject. The installer's byte-equality scrub will leave it alone.
 
 **Confirm the installed set matches upstream.** `install.sh` uses a hardcoded `GENERIC_WORKFLOWS` array, not a wildcard over slopstopper's `.github/workflows/ss-*.yml`. The two can drift — slopstopper may ship a workflow that the installer hasn't been updated to include. To catch this:
 

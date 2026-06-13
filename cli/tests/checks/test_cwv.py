@@ -22,6 +22,53 @@ def test_parse_args_explicit():
     parsed = cwv._parse_args(["--url", "https://example.com", "--config", "custom.json"])
     assert parsed.url == "https://example.com"
     assert parsed.config == "custom.json"
+    assert parsed.prod is False
+
+
+def test_parse_args_prod_flag():
+    parsed = cwv._parse_args(["--url", "https://example.com", "--prod"])
+    assert parsed.prod is True
+
+
+def test_run_with_prod_uses_prod_lighthouserc(monkeypatch, isolated_cwd):
+    import json as _json
+    captured: dict = {}
+
+    def fake_run_lhci(cmd):
+        captured["cmd"] = cmd
+        lhci = Path(".lighthouseci")
+        lhci.mkdir()
+        (lhci / "lhr-1.json").write_text(_json.dumps(_sample_lhr()))
+        return 0, ""
+
+    monkeypatch.setattr(cwv, "_npx_available", lambda: True)
+    monkeypatch.setattr(cwv, "_run_lhci", fake_run_lhci)
+
+    rc = cwv.run(["--url", "https://example.com", "--prod"])
+    assert rc == 0
+    config_arg = next(a for a in captured["cmd"] if a.startswith("--config="))
+    assert "lighthouserc.prod.json" in config_arg
+
+
+def test_run_without_prod_uses_dev_lighthouserc(monkeypatch, isolated_cwd):
+    import json as _json
+    captured: dict = {}
+
+    def fake_run_lhci(cmd):
+        captured["cmd"] = cmd
+        lhci = Path(".lighthouseci")
+        lhci.mkdir()
+        (lhci / "lhr-1.json").write_text(_json.dumps(_sample_lhr()))
+        return 0, ""
+
+    monkeypatch.setattr(cwv, "_npx_available", lambda: True)
+    monkeypatch.setattr(cwv, "_run_lhci", fake_run_lhci)
+
+    rc = cwv.run(["--url", "https://example.com"])
+    assert rc == 0
+    config_arg = next(a for a in captured["cmd"] if a.startswith("--config="))
+    # Dev config is plain `lighthouserc.json`, not `.prod.json`.
+    assert config_arg.endswith("lighthouserc.json")
 
 
 def test_resolve_url_prefers_flag(monkeypatch):

@@ -88,7 +88,7 @@ Run the workflow manually from the **Actions** tab with optional inputs:
 
 ## Pages Audited
 
-The portable spec at [`.ss/tests/accessibility.spec.ts`](../../.ss/tests/accessibility.spec.ts) reads the page list from the `ACCESSIBILITY_PAGES` env var (comma-separated; defaults to `/`). For this repo's CI, the accessibility workflow sets:
+The portable spec at [`cli/slopstopper/data/tests/accessibility.spec.ts`](../../cli/slopstopper/data/tests/accessibility.spec.ts) reads the page list from the `ACCESSIBILITY_PAGES` env var (comma-separated; defaults to `/`). For this repo's CI, the accessibility workflow sets:
 
 ```yaml
 ACCESSIBILITY_PAGES: /,/features.html,/tools.html
@@ -184,7 +184,7 @@ Update `ACCESSIBILITY_THRESHOLD` in the workflow `workflow_dispatch` default and
 
 **Tests timeout:**
 - Check the target URL is reachable
-- Increase the Playwright timeout in `.ss/playwright.config.js`
+- Increase the Playwright timeout by ejecting the bundled config: `cp "$(python3 -c 'import slopstopper, pathlib; print(pathlib.Path(slopstopper.__file__).parent / "data" / "playwright.config.js")')" .ss/playwright.config.js` and edit there
 
 ## Related Documentation
 

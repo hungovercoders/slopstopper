@@ -32,12 +32,12 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
 What this refreshes (always, on every run):
 - `slopstopper-cli` — `pipx upgrade slopstopper-cli` (preferred) or `pip install --user --upgrade <git url>` fallback. Confirm with `slopstopper --version`.
 - `Taskfile.ss.yml` — thin `task ss:*` shims that all call `slopstopper run …` under the hood.
-- `.ss/tests/` — Playwright specs (smoke, accessibility, broken-links). Wholesale replacement; the CLI prefers these over its own bundled copies under `cli/slopstopper/data/tests/`.
-- `.ss/playwright.config.js`, `.ss/lighthouserc.json`, `.ss/lighthouserc.prod.json`, `.ss/server.js` — same override pattern.
+- `.ss/server.js` — the only file the installer seeds into `.ss/`. Wholesale replacement.
 - Each workflow in `install.sh`'s `GENERIC_WORKFLOWS` array — provided it's still present in the target's `.github/workflows/`. The workflow body itself is short now (~8 lines: install CLI, `slopstopper run …`, `slopstopper emit …`), so most updates are CLI-version bumps invisible to the workflow YAML.
 
-What it scrubs (on a pre-CLI install):
-- `.ss/scripts/` — the entire directory. Every Python/bash script that used to live there is now bundled in `slopstopper-cli`. The installer detects the directory and removes it; commit the deletion as part of the upgrade PR.
+What it scrubs:
+- `.ss/scripts/` — pre-CLI installs leave this directory behind. Every Python/bash script that used to live there is now bundled in `slopstopper-cli`. The installer detects the directory and removes it; commit the deletion as part of the upgrade PR.
+- Byte-equal copies of `.ss/playwright.config.js`, `.ss/lighthouserc.json`, `.ss/lighthouserc.prod.json`, `.ss/tests/` — these used to be seeded by `install.sh` but now live in the wheel. The installer checks each against the package-data copy and only removes the file if it's identical. Customized files survive and continue to override via the CLI's templates resolver.
 
 What it leaves alone:
 - Any workflow you've deleted (tracked via `.ss/.workflows-installed` — the marker file is the source of truth, commit it).

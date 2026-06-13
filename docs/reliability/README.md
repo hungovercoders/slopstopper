@@ -82,12 +82,13 @@ SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke
 SMOKE_TEST_URL=https://your-site.example.com npm run test:smoke
 ```
 
-**Using Playwright CLI:**
+**Using the CLI directly:**
 
 ```bash
-SMOKE_TEST_URL=https://your-site.example.com \
-  npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts
+SMOKE_TEST_URL=https://your-site.example.com slopstopper run reliability:smoke
 ```
+
+The CLI resolves the Playwright config and spec from the slopstopper-cli wheel (or your `.ss/` overrides if you've ejected them).
 
 ### Running in CI/CD
 
@@ -168,11 +169,11 @@ jobs:
 
 ### Test Configuration
 
-The portable spec is configured via [`.ss/playwright.config.js`](../../.ss/playwright.config.js) — `testDir: './tests'` resolves to `.ss/tests/` so SlopStopper's specs never collide with your own `tests/` directory.
+The portable spec is configured via [`cli/slopstopper/data/playwright.config.js`](../../cli/slopstopper/data/playwright.config.js) — bundled in the slopstopper-cli wheel. `testDir: './tests'` resolves to the bundled spec directory so SlopStopper's specs never collide with your own `tests/` directory. If you need to customize, copy the file into your repo's `.ss/` directory (same basename) and the CLI's templates resolver picks it up.
 
 ### Adding pages to the smoke check
 
-The portable smoke spec at [`.ss/tests/smoke.spec.ts`](../../.ss/tests/smoke.spec.ts) iterates over `SMOKE_PAGES`. To add coverage, set the env var — no code changes needed:
+The portable smoke spec at [`cli/slopstopper/data/tests/smoke.spec.ts`](../../cli/slopstopper/data/tests/smoke.spec.ts) iterates over `SMOKE_PAGES`. To add coverage, set the env var — no code changes needed:
 
 ```bash
 SMOKE_TEST_URL=https://your-site.example.com \
@@ -180,7 +181,7 @@ SMOKE_TEST_URL=https://your-site.example.com \
   task ss:reliability:smoke
 ```
 
-For assertions beyond "page returns 200 and loads cleanly" (e.g. specific element visibility), add your own specs under your repo's own `tests/` directory — those are picked up by a `playwright.config.js` you write in your repo root, not by SlopStopper's `.ss/playwright.config.js`.
+For assertions beyond "page returns 200 and loads cleanly" (e.g. specific element visibility), add your own specs under your repo's own `tests/` directory — those are picked up by a `playwright.config.js` you write in your repo root, not by SlopStopper's bundled config.
 
 ### Best Practices
 
