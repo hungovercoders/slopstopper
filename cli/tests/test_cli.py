@@ -172,6 +172,71 @@ def test_config_get_prints_empty_when_none(monkeypatch, capsys):
     assert capsys.readouterr().out == "\n"
 
 
+# ── templates subcommand ──────────────────────────────────────────
+
+
+def test_templates_list_prints_each_with_status(isolated_cwd, capsys):
+    rc = cli.main(["templates", "list"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "playwright.config.js" in out
+    assert "lighthouserc.json" in out
+    assert "(bundled)" in out
+    assert "(ejected" not in out
+
+
+def test_templates_list_marks_ejected(isolated_cwd, capsys):
+    override = isolated_cwd / ".ss" / "lighthouserc.json"
+    override.parent.mkdir(parents=True, exist_ok=True)
+    override.write_text("{}")
+    rc = cli.main(["templates", "list"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    # The ejected entry carries the override marker; others remain bundled.
+    assert "lighthouserc.json  (ejected" in out
+    assert "playwright.config.js  (bundled)" in out
+
+
+def test_templates_path_prints_resolved(isolated_cwd, capsys):
+    rc = cli.main(["templates", "path", "lighthouserc.json"])
+    assert rc == 0
+    out = capsys.readouterr().out.strip()
+    assert out.endswith("lighthouserc.json")
+
+
+def test_templates_path_unknown_returns_2(isolated_cwd, capsys):
+    rc = cli.main(["templates", "path", "not-a-template"])
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "unknown template" in err
+    assert "known templates" in err
+
+
+def test_templates_eject_creates_override(isolated_cwd, capsys):
+    rc = cli.main(["templates", "eject", "lighthouserc.json"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "ejected" in out
+    assert (isolated_cwd / ".ss" / "lighthouserc.json").exists()
+
+
+def test_templates_eject_no_clobber(isolated_cwd, capsys):
+    override = isolated_cwd / ".ss" / "lighthouserc.json"
+    override.parent.mkdir(parents=True, exist_ok=True)
+    override.write_text("{ \"keep_me\": true }")
+    rc = cli.main(["templates", "eject", "lighthouserc.json"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "already exists" in out
+    assert override.read_text() == "{ \"keep_me\": true }"
+
+
+def test_templates_eject_unknown_returns_2(isolated_cwd, capsys):
+    rc = cli.main(["templates", "eject", "not-a-template"])
+    assert rc == 2
+    assert "unknown template" in capsys.readouterr().err
+
+
 def test_config_get_default_default_is_empty_string(monkeypatch, capsys):
     """Matches the bash load_config.py shim: missing key + no default = ''"""
     captured = {}

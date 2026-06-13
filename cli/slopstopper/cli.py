@@ -16,8 +16,14 @@ Subcommands today:
                                       default (or empty string). Drop-in
                                       replacement for the bash-side
                                       .ss/scripts/load_config.py CLI shim.
+  templates list                    — list bundled templates and whether
+                                      each one is ejected to .ss/.
+  templates path <name>             — print the absolute path the resolver
+                                      would use (override-or-bundled).
+  templates eject <name>            — copy the bundled template into .ss/
+                                      so the adopter can customise it.
 
-Future: init, inspect.
+Future: init, inspect, serve.
 """
 
 from __future__ import annotations
@@ -26,7 +32,7 @@ import argparse
 import importlib
 import sys
 
-from slopstopper import __version__, config, discovery, emit as emit_mod
+from slopstopper import __version__, config, discovery, emit as emit_mod, templates
 from slopstopper.checks import REGISTRY
 
 
@@ -103,6 +109,26 @@ def main(argv: list[str] | None = None) -> int:
         help="Fallback printed when the key is missing or null (default: empty string)",
     )
 
+    templates_parser = sub.add_parser(
+        "templates",
+        help="Inspect and eject bundled templates (Playwright specs/config, lighthouserc).",
+    )
+    templates_sub = templates_parser.add_subparsers(dest="templates_action", required=True)
+    templates_sub.add_parser(
+        "list",
+        help="List bundled template names and whether each is ejected to .ss/",
+    )
+    templates_path = templates_sub.add_parser(
+        "path",
+        help="Print the resolved path (override-or-bundled) for a template",
+    )
+    templates_path.add_argument("name", help="Template name (see `slopstopper templates list`)")
+    templates_eject = templates_sub.add_parser(
+        "eject",
+        help="Copy the bundled template into .ss/<name> for customisation",
+    )
+    templates_eject.add_argument("name", help="Template name (see `slopstopper templates list`)")
+
     args = parser.parse_args(argv)
 
     if args.command == "run":
@@ -114,6 +140,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "config":
         if args.config_action == "get":
             return _dispatch_config_get(args.key, args.default)
+    if args.command == "templates":
+        return _dispatch_templates(args.templates_action, getattr(args, "name", None))
 
     parser.error(f"unknown command: {args.command}")
     return 2
@@ -162,6 +190,41 @@ def _dispatch_discover(check_name: str, event: str) -> int:
         return 2
     print(",".join(paths))
     return 0
+
+
+def _dispatch_templates(action: str, name: str | None) -> int:
+    """Route the `templates {list, path, eject}` subcommands."""
+    if action == "list":
+        for n in templates.list_templates():
+            mark = "(ejected → .ss/)" if templates.is_ejected(n) else "(bundled)"
+            print(f"{n}  {mark}")
+        return 0
+    if action == "path":
+        try:
+            print(templates.template_path(name))  # type: ignore[arg-type]
+        except KeyError:
+            print(f"❌ unknown template: {name}", file=sys.stderr)
+            print(
+                f"   known templates: {', '.join(templates.list_templates())}", file=sys.stderr
+            )
+            return 2
+        return 0
+    if action == "eject":
+        try:
+            dest, was_new = templates.eject(name)  # type: ignore[arg-type]
+        except KeyError:
+            print(f"❌ unknown template: {name}", file=sys.stderr)
+            print(
+                f"   known templates: {', '.join(templates.list_templates())}", file=sys.stderr
+            )
+            return 2
+        if was_new:
+            print(f"✅ ejected to {dest}")
+        else:
+            print(f"ℹ️  {dest} already exists — left in place (will keep overriding the bundle)")
+        return 0
+    print(f"❌ unknown templates action: {action}", file=sys.stderr)
+    return 2
 
 
 def _dispatch_emit(check_name: str, target: str) -> int:
