@@ -2,11 +2,12 @@
 
 **Deterministic, automated quality feedback for AI-driven development — drop it into any repo with one command.**
 
-SlopStopper is a portable suite of GitHub Actions workflows, Task targets and
-analysis scripts that you install into an existing repository to get a
-consistent quality pipeline: security, hygiene, reliability, accessibility,
-performance, and operational automation — all running on every pull request
-and push to `main`.
+SlopStopper is a portable code-quality suite — security, hygiene, reliability,
+accessibility, performance, operational automation — delivered as a Python CLI
+(`slopstopper-cli`) plus the GitHub Actions workflows that drive it. One
+`pipx install` gets the CLI; the all-in-one `install.sh` also seeds the
+workflows, Taskfile shim, and config into your repo. Every check runs on every
+pull request and push to `main`.
 
 📍 **Live reference site:** see [slopstopper.dev](https://slopstopper.dev/) — built with the same suite it advertises.
 
@@ -52,60 +53,53 @@ Deployed via [Cloudflare Workers Builds](https://developers.cloudflare.com/worke
 
 ## Prerequisites
 
-- **Bash + Git** — installer + workflow runners
-- **Node 20+** — Playwright, Lighthouse CI, markdownlint, TypeScript build
-- **Python 3.10+** — all analysis scripts (`.ss/scripts/`) are Python
-- **Task v3.x** — canonical interface for every check; `curl -sL https://taskfile.dev/install.sh | sh`
+- **Python 3.11+** — slopstopper-cli runs here; `pipx` recommended (`brew install pipx`)
+- **Node 20+** — Playwright, Lighthouse CI, markdownlint, bundled `slopstopper serve`
+- **Git + bash** — for `install.sh` and the CI workflows
+- **Task v3.x** *(optional)* — adopters who use `task` get a thin `task ss:*` shim layer
 - **Docker** — only needed for DAST (OWASP ZAP runs in a container)
+- **`gh` CLI** — only needed for `slopstopper emit` (PR comments / issues from CI)
 
 ## Install
 
-From inside the repo you want to add SlopStopper to:
+The CLI alone:
+
+```bash
+pipx install slopstopper-cli
+slopstopper checks list             # see what's available
+slopstopper doctor                  # verify the external tools you need
+```
+
+The full suite into an existing repo (CLI + workflows + Taskfile + config seed):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 ```
 
-Or, if you prefer to review the script first (recommended):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh -o install.sh
-bash install.sh [TARGET_DIR]
-```
-
-The installer is idempotent — re-run any time to pull in new checks.
-Everything SlopStopper owns lives under the `ss` namespace so it can't
-clash with files you already have, and SlopStopper-owned files
-(`Taskfile.ss.yml`, `.ss/`, `.github/workflows/ss-*.yml`) are refreshed on
-re-run.
+`install.sh` is idempotent — re-run any time to refresh workflows and `slopstopper-cli`. Everything SlopStopper owns lives under the `ss` namespace so it can't clash with files you already have.
 
 ### What gets installed
 
 | Item | Description |
 | ---- | ----------- |
-| `Taskfile.ss.yml` | All SlopStopper task definitions (always refreshed on re-run) |
-| `Taskfile.yml` | Thin root file with `includes: { ss: ./Taskfile.ss.yml }` — created if you don't have one; if you do, the installer prints the block to paste in |
-| `.ss/scripts/` | Python/shell analysis scripts (always refreshed) |
-| `.ss/reports/` | Generated scan output — `.gitignore`d |
-| `.github/workflows/ss-*.yml` | Security, hygiene, reliability and operational workflows — all `ss-` prefixed and named `SlopStopper · …` so they group together in your Actions UI |
+| `slopstopper-cli` (Python) | The product — every check runs through this. `pipx upgrade slopstopper-cli` refreshes the lot. |
+| `.github/workflows/ss-*.yml` | Security, hygiene, reliability and operational workflows — all `ss-` prefixed |
+| `Taskfile.ss.yml` | Thin `task ss:*` shims that call the CLI — convenient for the local dev loop |
+| `Taskfile.yml` | Created if missing (else: prints the include block to paste in) |
+| `.slopstopper.yml` | Config seed — URLs, headers, thresholds, page lists (never overwritten on re-run) |
+| `.ss/reports/` | Where the CLI writes reports — `.gitignore`d |
 | `package.json` | Created (or `devDependencies` merged into an existing file) |
+
+Bundled Playwright specs, lighthouserc dev/prod, and the local-CI static server live inside the wheel — `slopstopper templates eject <name>` copies one into `.ss/` if you want to customise it.
 
 ### After installing
 
 ```bash
-# 1. Install the Task runner (if you don't have it)
-curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
-
-# 2. Install npm dependencies
-npm install
-
-# 3. See all available tasks
-task --list
-
-# 4. Open a pull request — every check runs automatically
+slopstopper checks list             # what checks exist
+slopstopper doctor                  # external tools state (node/gh/lizard/semgrep/gitleaks/trivy/docker)
+slopstopper run hygiene:docs-size   # run one
+task --list                          # see the task ss:* shim equivalents
 ```
-
-**First-run note:** the first time you run any check (e.g. `task ss:hygiene:complexity`), SlopStopper auto-installs the underlying tool (Lizard, Semgrep, Trivy, Gitleaks…) via pip or curl. Expect a one-time delay — subsequent runs are fast.
 
 **Using Claude Code?** Install the [`slopstopper-install`](./.claude/skills/slopstopper-install/SKILL.md) / [`slopstopper-update`](./.claude/skills/slopstopper-update/SKILL.md) / [`slopstopper-triage`](./.claude/skills/slopstopper-triage/SKILL.md) skill trio once per machine — Claude Code auto-picks the right one per prompt. Runbook: [`docs/runbooks/INSTALL_SKILLS.md`](./docs/runbooks/INSTALL_SKILLS.md).
 
@@ -143,19 +137,13 @@ Deploy is intentionally not a layer: connect your repo in the Cloudflare dash (W
 
 ### Same commands, both loops
 
-Every check is just a `task ss:<name>` command, defined once in
-`Taskfile.ss.yml`. You run it locally for instant feedback. CI runs the
-exact same command. No drift between what you ran and what the pipeline
-ran — fast inner loop, consistent outer loop, identical behaviour.
+CI runs `slopstopper run <category>:<check>`. You run the same thing locally — same code, same report. The `task ss:*` shims are thin wrappers around the CLI for adopters who already drive their dev loop with `task`.
 
 ```bash
-task ss:hygiene:complexity            # locally
-task ss:reliability:accessibility     # locally
-task ss:security:sast                 # locally
+slopstopper run hygiene:complexity            # CLI
+task ss:reliability:accessibility             # equivalent via the shim
+slopstopper run security:sast --quiet         # suppress decorative output (CI logs)
 ```
-
-CI calls the same `slopstopper run <check>` the `task` targets shim
-into (workflows pass `-- --ci`). One source of truth.
 
 ---
 
@@ -181,9 +169,13 @@ No secrets are needed for deploy — Cloudflare Workers Builds is connected via 
 
 ## Update
 
-Re-run the installer to pull in new checks or updated scripts. Existing files
-aren't overwritten, so your customisations are preserved — review the diff
-afterwards.
+CLI only:
+
+```bash
+pipx upgrade slopstopper-cli
+```
+
+Full suite (refreshes CLI + workflows + Taskfile shim — `.slopstopper.yml` and customisations survive):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash

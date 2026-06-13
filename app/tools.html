@@ -59,8 +59,26 @@
 
         <div class="card-grid">
             <div class="card">
+                <h2>🐍 slopstopper-cli</h2>
+                <p>The Python package shipped to PyPI (well — soon). Every check, every report, every PR comment goes through this CLI. <code>pipx install slopstopper-cli</code> gets you the lot.</p>
+                <details class="details">
+                    <summary>CLI surface</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--sh"><pre><code>slopstopper checks list                       # see what's available
+slopstopper doctor                            # verify external tools
+slopstopper run hygiene:docs-size             # run a check (writes .ss/reports/...)
+slopstopper emit hygiene:docs-size --target pr-comment
+slopstopper templates eject playwright.config.js
+slopstopper serve                              # bundled static server</code></pre></div>
+                        <p class="details__hint">Bare <code>slopstopper</code> prints a command grid + Quick-start block. Every subcommand has examples in <code>--help</code>.</p>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/tree/main/cli" rel="noopener noreferrer">View slopstopper-cli on GitHub →</a>
+                    </div>
+                </details>
+            </div>
+
+            <div class="card">
                 <h2>⚙️ GitHub Actions</h2>
-                <p>All checks run as GitHub Actions workflows triggered on every pull request and push to main — security, hygiene, reliability, accessibility, performance and deployment in one pipeline.</p>
+                <p>All checks run as GitHub Actions workflows triggered on every pull request and push to main. Each workflow body is ~8 lines: install the CLI, <code>slopstopper run …</code>, <code>slopstopper emit …</code>.</p>
                 <details class="details">
                     <summary>See it in action</summary>
                     <div class="details__body">
@@ -73,18 +91,18 @@
 
             <div class="card">
                 <h2>📋 Task</h2>
-                <p>A Taskfile.yml defines the single source of truth for build, test, lint and scan commands so developers, AI agents and CI all run the same thing.</p>
+                <p>A thin <code>task ss:*</code> shim layer wraps the CLI so adopters who already drive their dev loop with <a href="https://taskfile.dev" rel="noopener noreferrer">Task</a> can keep doing so. Same exit codes, same reports.</p>
                 <details class="details">
                     <summary>Taskfile excerpt</summary>
                     <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>version: '3'
-tasks:
-  contributing:build:    { cmds: ['npm run build'] }
-  contributing:run:      { cmds: ['node server.js'] }
-  contributing:test:     { cmds: ['npx playwright test --config=.ss/playwright.config.js'] }
+                        <div class="codeblock codeblock--yaml"><pre><code>tasks:
+  hygiene:docs-size:
+    cmds: [slopstopper run hygiene:docs-size]
   reliability:accessibility:
-    cmds: ['npx playwright test --config=.ss/playwright.config.js .ss/tests/accessibility.spec.ts']</code></pre></div>
-                        <p class="details__hint">Run from your repo with <code>task ss:contributing:build</code>, <code>task ss:reliability:accessibility</code>, etc.</p>
+    cmds:
+      - "{{if .CLI_ARGS}}export ACCESSIBILITY_TEST_URL={{.CLI_ARGS}}{{end}}"
+      - slopstopper run reliability:accessibility</code></pre></div>
+                        <p class="details__hint">Run from your repo with <code>task ss:hygiene:docs-size</code>, <code>task ss:reliability:accessibility -- https://example.com</code>, etc.</p>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.ss.yml" rel="noopener noreferrer">View Taskfile.ss.yml →</a>
                     </div>
                 </details>
@@ -92,21 +110,19 @@ tasks:
 
             <div class="card">
                 <h2>🎭 Playwright</h2>
-                <p>Portable smoke, broken-link and accessibility specs live under <code>.ss/tests/</code> with their own <code>.ss/playwright.config.js</code>, so they never collide with your repo's own <code>tests/</code> directory.</p>
+                <p>Portable smoke, broken-link and accessibility specs ship inside the slopstopper-cli wheel — adopters don't vendor them. Run <code>slopstopper templates eject playwright.config.js</code> to customise.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
                 <details class="details">
-                    <summary>.ss/playwright.config.js</summary>
+                    <summary>playwright.config.js (bundled)</summary>
                     <div class="details__body">
                         <div class="codeblock codeblock--yaml"><pre><code>export default defineConfig({
-  testDir: './tests',                 // resolves to .ss/tests
+  testDir: './tests',                 // points at the bundled spec dir
   use: {
     baseURL: process.env.SMOKE_TEST_URL || 'http://localhost:8080',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.ss/playwright.config.js" rel="noopener noreferrer">View .ss/playwright.config.js →</a>
-                        <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-playwright-tests.yml" rel="noopener noreferrer">View workflow →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/data/playwright.config.js" rel="noopener noreferrer">View cli/slopstopper/data/playwright.config.js →</a>
                     </div>
                 </details>
             </div>
@@ -269,7 +285,7 @@ on:
   schedule: [ { cron: '0 6 * * *' } ]    # daily</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-accessibility-check.yml" rel="noopener noreferrer">View source →</a>
                         <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.ss/tests/accessibility.spec.ts" rel="noopener noreferrer">View accessibility spec →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/data/tests/accessibility.spec.ts" rel="noopener noreferrer">View accessibility spec →</a>
                     </div>
                 </details>
             </div>
@@ -279,7 +295,7 @@ on:
                 <p>Measures Core Web Vitals (LCP, INP, CLS) plus performance, accessibility, best-practice and SEO category scores on every PR and nightly against production.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
                 <details class="details">
-                    <summary>.ss/lighthouserc.json</summary>
+                    <summary>lighthouserc.json (bundled)</summary>
                     <div class="details__body">
                         <div class="codeblock codeblock--yaml"><pre><code>{
   "ci": {
@@ -293,7 +309,8 @@ on:
     }
   }
 }</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.ss/lighthouserc.json" rel="noopener noreferrer">View .ss/lighthouserc.json →</a>
+                        <p class="details__hint">Eject with <code>slopstopper templates eject lighthouserc.json</code> to customise.</p>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/data/lighthouserc.json" rel="noopener noreferrer">View bundled lighthouserc.json →</a>
                         <br>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-core-web-vitals.yml" rel="noopener noreferrer">View workflow →</a>
                     </div>

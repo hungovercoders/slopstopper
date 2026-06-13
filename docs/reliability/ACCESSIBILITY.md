@@ -184,7 +184,7 @@ Update `ACCESSIBILITY_THRESHOLD` in the workflow `workflow_dispatch` default and
 
 **Tests timeout:**
 - Check the target URL is reachable
-- Increase the Playwright timeout by ejecting the bundled config: `cp "$(python3 -c 'import slopstopper, pathlib; print(pathlib.Path(slopstopper.__file__).parent / "data" / "playwright.config.js")')" .ss/playwright.config.js` and edit there
+- Increase the Playwright timeout by ejecting the bundled config — run `slopstopper templates eject playwright.config.js` and edit the copy that lands in your `.ss/` directory
 
 ## Related Documentation
 

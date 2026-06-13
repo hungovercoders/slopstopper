@@ -38,10 +38,15 @@ What to include:
 
 In scope:
 
-- Code in this repository (`Taskfile.ss.yml`, `.ss/scripts/`,
-  `.github/workflows/ss-*.yml`, `install.sh`, the `app/` site).
-- Documentation that, if followed, would lead an adopter into an
-  insecure configuration.
+- The **slopstopper-cli** Python package under `cli/slopstopper/` —
+  every check, the emit/discovery/templates/serve subcommands, and
+  the bundled `data/` (Playwright specs, lighthouserc, server.js).
+- The **GitHub Actions workflows** under `.github/workflows/ss-*.yml`
+  that adopter repos copy from.
+- The **adopter installer** (`install.sh`) and the slopstopper.dev
+  site (`app/`, `worker/index.ts`, `worker/headers.json`).
+- The `Taskfile.ss.yml` shim adopters get and any docs that, if
+  followed, would lead an adopter into an insecure configuration.
 
 Out of scope:
 
