@@ -60,6 +60,7 @@ on:
       - '.github/workflows/ss-hygiene-csp-exceptions-check.yml'
       - '.github/workflows/ss-security-secrets-check.yml'
       - '.github/workflows/ss-security-sast-check.yml'
+      - '.github/workflows/ss-security-vulnerability-all-check.yml'
   push:
     branches: [ main ]
     paths:
@@ -95,6 +96,7 @@ on:
       - '.github/workflows/ss-hygiene-csp-exceptions-check.yml'
       - '.github/workflows/ss-security-secrets-check.yml'
       - '.github/workflows/ss-security-sast-check.yml'
+      - '.github/workflows/ss-security-vulnerability-all-check.yml'
   workflow_dispatch:
 
 permissions:

@@ -30,6 +30,20 @@ REPORT_DIR = Path(".ss/reports/dependencies")
 REPORT_JSON = REPORT_DIR / "dependencies-report.json"
 REPORT_MD = REPORT_DIR / "dependencies-report.md"
 
+# Consumed by `slopstopper emit security:dependencies --target {pr-comment,issue}`.
+# Discriminator `Dependency Vulnerability` matches both the pre-flip JS
+# heading ("## 📦 Dependency Vulnerability Scan") and the post-flip
+# report H1 ("# Dependency Vulnerability Report"), so the same bot
+# comment is reused after the workflow flip. Issue title, labels, and
+# follow-up string are byte-identical to the legacy block.
+META = {
+    "report_path": str(REPORT_MD),
+    "comment_discriminator": "Dependency Vulnerability",
+    "issue_title": "⚠️ Dependency Vulnerabilities in Main Branch",
+    "issue_labels": ["dependencies", "security"],
+    "issue_followup": "🔔 Dependency vulnerabilities detected again in commit",
+}
+
 _INSTALL_HELP = (
     "❌ trivy is not installed.\n"
     "Install with:\n"
