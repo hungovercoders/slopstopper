@@ -3,13 +3,11 @@
   "version": "1.0.0",
   "description": "SlopStopper – deterministic feedback for AI-driven development",
   "scripts": {
-    "build": "tsc",
-    "start": "node server.js",
-    "test": "playwright test --config=.ss/playwright.config.js",
-    "test:headed": "playwright test --config=.ss/playwright.config.js --headed",
-    "test:smoke": "playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts",
-    "test:accessibility": "playwright test --config=.ss/playwright.config.js .ss/tests/accessibility.spec.ts",
-    "test:links": "playwright test --config=.ss/playwright.config.js .ss/tests/broken-links.spec.ts"
+    "build": "echo 'Static site — no build step. Cloudflare Workers ships app/ as-is.'",
+    "start": "slopstopper serve",
+    "test": "slopstopper run reliability:smoke",
+    "test:accessibility": "slopstopper run reliability:accessibility",
+    "test:links": "slopstopper run reliability:broken-links"
   },
   "keywords": [
     "cloudflare",
@@ -22,7 +20,6 @@
     "@axe-core/playwright": "^4.11.1",
     "@lhci/cli": "^0.14.0",
     "@playwright/test": "^1.40.0",
-    "markdownlint-cli": "^0.47.0",
-    "typescript": "^5.9.3"
+    "markdownlint-cli": "^0.47.0"
   }
 }

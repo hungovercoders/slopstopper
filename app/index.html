@@ -87,26 +87,36 @@
 
         <section class="section" id="get-started">
             <span class="kicker">Get started</span>
-            <h2>One command. Whole pipeline.</h2>
-            <p class="lede">Drop SlopStopper into your repo and you get the full bundle: security, hygiene, reliability, accessibility, performance and deployment checks — all running on every PR.</p>
-            <div class="codeblock codeblock--sh" role="region" aria-label="Install command" data-copyable>
+            <h2>Install the CLI. Run checks anywhere.</h2>
+            <p class="lede">SlopStopper is a Python CLI plus the GitHub Actions workflows that drive it. Install the CLI alone for local use, or run the all-in-one installer to also seed the workflows + Taskfile shim into a repo.</p>
+            <h3 class="install-heading">Just the CLI</h3>
+            <div class="codeblock codeblock--sh" role="region" aria-label="Install slopstopper-cli via pipx" data-copyable>
+                <pre><code>pipx install slopstopper-cli
+slopstopper checks list
+slopstopper doctor
+slopstopper run hygiene:docs-size</code></pre>
+            </div>
+            <p class="install-subnote">Every check, every report, every PR comment goes through this CLI. <code>pipx upgrade slopstopper-cli</code> keeps it fresh.</p>
+            <h3 class="install-heading">Full suite into a repo</h3>
+            <div class="codeblock codeblock--sh" role="region" aria-label="Install full suite" data-copyable>
                 <pre><code>curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash</code></pre>
             </div>
             <details class="details">
                 <summary>What does this do?</summary>
                 <div class="details__body">
-                    <p>The installer clones the SlopStopper template into your current repo and drops everything under the <code>ss</code> namespace: <code>.ss/scripts/</code> for the helpers, <code>Taskfile.ss.yml</code> for the task definitions, and <code>.github/workflows/ss-*.yml</code> for the CI checks. A thin root <code>Taskfile.yml</code> wires it all together via <code>includes:</code>. It's idempotent — re-run any time to pull in new checks.</p>
+                    <p>The installer pip-installs <code>slopstopper-cli</code> (pipx-preferred), then seeds your repo with the <code>.github/workflows/ss-*.yml</code> CI checks, a thin <code>Taskfile.ss.yml</code> of <code>task ss:*</code> shims that call the CLI, and a <code>.slopstopper.yml</code> starter config. Idempotent — re-run any time to refresh.</p>
+                    <p>Bundled Playwright specs, lighthouserc, and the local-CI static server (<code>slopstopper serve</code>) live inside the wheel. Run <code>slopstopper templates eject &lt;name&gt;</code> to customise any of them.</p>
                     <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/install.sh" rel="noopener noreferrer">View install.sh on GitHub →</a>
                 </div>
             </details>
             <div class="steps">
                 <div class="step">
                     <h3>Install</h3>
-                    <p>Run the one-liner from inside your repo. Workflows and scripts copy in.</p>
+                    <p><code>pipx install slopstopper-cli</code>. Add workflows via <code>install.sh</code> when you're ready for CI.</p>
                 </div>
                 <div class="step">
                     <h3>Customise</h3>
-                    <p>Tune complexity thresholds, accessibility impact level and Lighthouse budgets to suit.</p>
+                    <p>Tune complexity thresholds, page lists, headers source — everything via <code>.slopstopper.yml</code>.</p>
                 </div>
                 <div class="step">
                     <h3>Open a PR</h3>

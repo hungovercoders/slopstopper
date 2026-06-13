@@ -18,30 +18,32 @@ Notation: C4 (Context + Container).
 ```
 slopstopper/
 ├── .github/workflows/        # All SlopStopper workflows are `ss-*.yml`
-│                             #   (copilot-setup-steps.yml stays bare — platform-fixed)
-├── .ss/                      # Everything SlopStopper owns lives here
-│   ├── scripts/              # Python/shell analysis scripts called by tasks
-│   └── reports/              # Generated report output (.gitignored)
+│                             #   (each is ~8 lines: install CLI, `slopstopper run …`, `slopstopper emit …`)
+├── .ss/                      # SlopStopper-owned (adopter side)
+│   ├── reports/              # CLI writes here (.gitignored)
+│   └── .workflows-installed  # Manifest of installed workflows (commit this)
+├── cli/                      # slopstopper-cli — the Python package shipped via pipx
+│   ├── slopstopper/cli.py    # argparse dispatcher + bare-invocation banner
+│   ├── slopstopper/output.py # Shared formatters + `--quiet` toggle
+│   ├── slopstopper/checks/   # One module per check (security/hygiene/reliability)
+│   ├── slopstopper/data/     # Bundled Playwright specs, lighthouserc dev/prod, server.js
+│   ├── slopstopper/templates.py / emit.py / discovery.py / config.py
+│   ├── tests/                # pytest suite (486 tests)
+│   └── pyproject.toml        # 0.2.0 Beta — `pipx install slopstopper-cli`
 ├── app/                      # Static site — bound as the [assets] dir on the Worker
-│   ├── index.html            # Hero + Get Started + capability grid
-│   ├── features.html         # 5 category cards with YAML excerpts + mock reports
-│   ├── tools.html            # 15 tool cards with YAML/config excerpts
+│   ├── index.html            # Hero + Get Started (pipx install) + capability grid
+│   ├── features.html         # 5 category cards with workflow excerpts + mock reports
+│   ├── tools.html            # Tool cards (incl. slopstopper-cli itself)
 │   ├── feedback.html         # Giscus comments embed (per-path CSP exception)
-│   ├── shared.css            # Brand system, components, layout primitives
-│   ├── copy.js               # Progressive-enhancement copy button; only runtime JS
-│   ├── manifest.webmanifest  # PWA manifest
-│   ├── robots.txt            # Allows all, points at the sitemap
-│   └── sitemap.xml           # Lists indexable pages
+│   ├── shared.css / copy.js / manifest.webmanifest / robots.txt / sitemap.xml
 ├── docs/                     # Documentation hub — see docs/index.md
-├── src/                      # TypeScript stubs (build target; runtime JS is limited to app/copy.js)
-├── tests/                    # Playwright smoke + accessibility specs
-├── install.sh                # Adopter installer
+├── install.sh                # Adopter installer (pip-installs the CLI + seeds workflows)
 ├── wrangler.jsonc            # Cloudflare Worker + [assets] binding
 ├── worker/                   # Cloudflare Worker — applies headers to every response
 │   ├── index.ts              # fetch handler: env.ASSETS.fetch + per-path headers
 │   └── headers.json          # Canonical header map (CSP, COOP/COEP, X-Frame-Options …)
 ├── Taskfile.yml              # Thin root with `includes: { ss: ./Taskfile.ss.yml }`
-├── Taskfile.ss.yml           # SlopStopper task definitions
+├── Taskfile.ss.yml           # `task ss:*` shims that call `slopstopper run …`
 ├── README.md                 # Consumer-facing entry point
 ├── AGENTS.md                 # Thin agent pointer (see docs/index.md map pattern)
 └── CONTRIBUTING.md → docs/contributing/README.md
