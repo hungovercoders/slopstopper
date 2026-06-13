@@ -33,6 +33,18 @@ REPORT_DIR = Path(".ss/reports/csp")
 REPORT_JSON = REPORT_DIR / "csp-exceptions-report.json"
 REPORT_MD = REPORT_DIR / "csp-exceptions-report.md"
 
+# Consumed by `slopstopper emit hygiene:csp-exceptions --target pr-comment`.
+# The discriminator substring `🔐 CSP Exceptions` appears in both legacy
+# bot comments (pre-flip JS heading "🔐 CSP Exceptions Check") and the
+# post-flip body (report H1 "🔐 CSP Exceptions Report"), so a single bot
+# comment is reused across the migration. No issue keys: this check fails
+# the workflow on drift via its own exit code, no main-branch issue is
+# created.
+META = {
+    "report_path": str(REPORT_MD),
+    "comment_discriminator": "🔐 CSP Exceptions",
+}
+
 REQUIRED_FIELDS = {
     "Origin allowed",
     "Directives added",
