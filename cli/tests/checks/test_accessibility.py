@@ -104,7 +104,7 @@ def test_build_cmd_default_reporter():
     assert cmd[0] == "npx"
     assert "playwright" in cmd
     assert "--reporter=list" in cmd
-    assert str(accessibility.SPEC_PATH) in cmd
+    assert any("accessibility.spec.ts" in arg for arg in cmd)
 
 
 def test_build_cmd_ci_uses_list_html_reporter():
@@ -138,17 +138,7 @@ def test_run_returns_one_when_url_missing(monkeypatch, isolated_cwd, capsys):
     assert "accessibility target URL is required" in capsys.readouterr().out
 
 
-def test_run_returns_one_when_spec_missing(monkeypatch, isolated_cwd, capsys):
-    monkeypatch.setattr(accessibility, "_npx_available", lambda: True)
-    rc = accessibility.run(["--url", "https://example.com"])
-    assert rc == 1
-    assert "Accessibility spec not found" in capsys.readouterr().out
-
-
 def test_run_invokes_playwright(monkeypatch, isolated_cwd):
-    accessibility.SPEC_PATH.parent.mkdir(parents=True, exist_ok=True)
-    accessibility.SPEC_PATH.write_text("// fake spec")
-
     captured: dict = {}
 
     def fake_run(cmd, env, check):
@@ -168,9 +158,6 @@ def test_run_invokes_playwright(monkeypatch, isolated_cwd):
 
 
 def test_run_ci_mode_threads_html_reporter(monkeypatch, isolated_cwd):
-    accessibility.SPEC_PATH.parent.mkdir(parents=True, exist_ok=True)
-    accessibility.SPEC_PATH.write_text("// fake spec")
-
     captured: dict = {}
 
     def fake_run(cmd, env, check):
@@ -189,9 +176,6 @@ def test_run_ci_mode_threads_html_reporter(monkeypatch, isolated_cwd):
 
 
 def test_run_propagates_playwright_failure(monkeypatch, isolated_cwd):
-    accessibility.SPEC_PATH.parent.mkdir(parents=True, exist_ok=True)
-    accessibility.SPEC_PATH.write_text("// fake spec")
-
     monkeypatch.setattr(accessibility, "_npx_available", lambda: True)
     monkeypatch.setattr(accessibility, "_discover_pages", lambda: None)
     monkeypatch.setattr(

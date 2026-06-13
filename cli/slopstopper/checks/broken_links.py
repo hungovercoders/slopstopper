@@ -32,12 +32,10 @@ import argparse
 import os
 import shutil
 import subprocess
-from pathlib import Path
 
-from slopstopper import discovery
+from slopstopper import discovery, templates
 
-SPEC_PATH = Path(".ss/tests/broken-links.spec.ts")
-PLAYWRIGHT_CONFIG = Path(".ss/playwright.config.js")
+SPEC_NAME = "broken-links"
 
 
 def _parse_args(args: list[str] | None) -> argparse.Namespace:
@@ -87,8 +85,8 @@ def _build_cmd(ci_mode: bool) -> list[str]:
     reporter = "list,html" if ci_mode else "list"
     return [
         "npx", "playwright", "test",
-        f"--config={PLAYWRIGHT_CONFIG}",
-        str(SPEC_PATH),
+        f"--config={templates.playwright_config()}",
+        str(templates.playwright_spec(SPEC_NAME)),
         f"--reporter={reporter}",
     ]
 
@@ -107,9 +105,9 @@ def run(args: list[str] | None = None) -> int:
         print("  BROKEN_LINKS_TEST_URL=https://your-site slopstopper run reliability:broken-links")
         return 1
 
-    if not SPEC_PATH.exists():
-        print(f"❌ Broken-links spec not found at {SPEC_PATH}")
-        print("   The spec is vendored under .ss/tests/ by the installer.")
+    spec = templates.playwright_spec(SPEC_NAME)
+    if not spec.exists():
+        print(f"❌ Broken-links spec not found at {spec}")
         return 1
 
     print(f"🔗 Running broken-link checks against: {url}")

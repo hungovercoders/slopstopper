@@ -26,7 +26,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-LHCI_CONFIG = Path(".ss/lighthouserc.json")
+from slopstopper import templates
 
 
 def _parse_args(args: list[str] | None) -> argparse.Namespace:
@@ -34,8 +34,9 @@ def _parse_args(args: list[str] | None) -> argparse.Namespace:
     p.add_argument("--url", default=None, help="Site URL to audit (else $CWV_URL)")
     p.add_argument(
         "--config",
-        default=str(LHCI_CONFIG),
-        help=f"Lighthouse CI config path (default: {LHCI_CONFIG})",
+        default=None,
+        help="Lighthouse CI config path (default: resolves via templates "
+        "module — .ss/lighthouserc.json override, else package data)",
     )
     p.add_argument("--help", "-h", action="help")
     return p.parse_args(args or [])
@@ -71,10 +72,9 @@ def run(args: list[str] | None = None) -> int:
         print("  CWV_URL=https://your-site slopstopper run reliability:cwv")
         return 1
 
-    config_path = Path(parsed.config)
+    config_path = Path(parsed.config) if parsed.config else templates.lighthouserc()
     if not config_path.exists():
         print(f"❌ Lighthouse CI config not found at {config_path}")
-        print("   The config is vendored under .ss/ by the installer.")
         return 1
 
     print(f"🚦 Running Core Web Vitals audit against: {url}")
