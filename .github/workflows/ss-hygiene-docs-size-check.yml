@@ -9,11 +9,13 @@ on:
   pull_request:
     paths:
       - 'docs/**'
+      - '.github/workflows/ss-hygiene-docs-size-check.yml'
   push:
     branches:
       - main
     paths:
       - 'docs/**'
+      - '.github/workflows/ss-hygiene-docs-size-check.yml'
   workflow_dispatch:
 
 permissions:

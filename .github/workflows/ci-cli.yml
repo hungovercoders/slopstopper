@@ -49,6 +49,10 @@ on:
       - '.ss/tests/smoke.spec.ts'
       - '.ss/tests/accessibility.spec.ts'
       - '.ss/tests/broken-links.spec.ts'
+      # Flipped ss-*-check.yml workflows — changes here depend on the
+      # CLI's `slopstopper run` and `slopstopper emit` working, so the
+      # CLI tests must run too. As more workflows flip, add them here.
+      - '.github/workflows/ss-hygiene-docs-size-check.yml'
   push:
     branches: [ main ]
     paths:
@@ -73,6 +77,10 @@ on:
       - '.ss/tests/smoke.spec.ts'
       - '.ss/tests/accessibility.spec.ts'
       - '.ss/tests/broken-links.spec.ts'
+      # Flipped ss-*-check.yml workflows — changes here depend on the
+      # CLI's `slopstopper run` and `slopstopper emit` working, so the
+      # CLI tests must run too. As more workflows flip, add them here.
+      - '.github/workflows/ss-hygiene-docs-size-check.yml'
   workflow_dispatch:
 
 permissions:
