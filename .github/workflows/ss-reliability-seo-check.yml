@@ -142,7 +142,7 @@ jobs:
             workflow_dispatch) EVENT="${DISPATCH_MODE:-main}" ;;
             *)                 EVENT=main ;;
           esac
-          PAGES=$(python3 .ss/scripts/discover-pages.py seo --event="$EVENT")
+          PAGES=$(slopstopper discover seo --event="$EVENT")
           echo "SEO_PAGES=$PAGES" >> "$GITHUB_ENV"
 
       - name: Run SEO metatag audit

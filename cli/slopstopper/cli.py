@@ -5,6 +5,11 @@ Subcommands today:
   emit <check> --target {pr-comment,issue}
                                     — post the report MD to the current PR
                                       or create/update a tracking issue on main
+  discover <check> --event=<event>  — resolve pages.<check> via sitemap /
+                                      changed-pages / explicit list and print
+                                      a comma-separated path list to stdout
+                                      (drop-in replacement for the bash-side
+                                      .ss/scripts/discover-pages.py).
 
 Future: init, inspect.
 """
@@ -15,7 +20,7 @@ import argparse
 import importlib
 import sys
 
-from slopstopper import __version__, emit as emit_mod
+from slopstopper import __version__, discovery, emit as emit_mod
 from slopstopper.checks import REGISTRY
 
 
@@ -56,12 +61,33 @@ def main(argv: list[str] | None = None) -> int:
         help="Where to send the report",
     )
 
+    discover_parser = sub.add_parser(
+        "discover",
+        help="Resolve pages.<check> for a reliability check and print the list to stdout",
+    )
+    # Accept both `broken-links` (hyphen, slopstopper-style) and
+    # `broken_links` (underscore, matches the bash script's args) so this
+    # is a strict superset of `.ss/scripts/discover-pages.py`'s CLI.
+    discover_parser.add_argument(
+        "check",
+        choices=discovery.CHECKS + ("broken-links",),
+        help="Reliability check whose pages to resolve",
+    )
+    discover_parser.add_argument(
+        "--event",
+        choices=discovery.EVENTS,
+        default="local",
+        help="CI event that drives discovery mode (default: local)",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "run":
         return _dispatch_run(args.check, args.check_args)
     if args.command == "emit":
         return _dispatch_emit(args.check, args.target)
+    if args.command == "discover":
+        return _dispatch_discover(args.check, args.event)
 
     parser.error(f"unknown command: {args.command}")
     return 2
@@ -73,6 +99,26 @@ def _dispatch_run(check_name: str, check_args: list[str]) -> int:
         print(f"   known checks: {', '.join(sorted(REGISTRY))}", file=sys.stderr)
         return 2
     return REGISTRY[check_name](check_args)
+
+
+def _dispatch_discover(check_name: str, event: str) -> int:
+    """Resolve pages for `check_name` under `event` and print comma-joined paths.
+
+    Mirrors the bash `.ss/scripts/discover-pages.py` exit codes:
+      0 — at least one path resolved (printed to stdout)
+      1 — internal error (logged to stderr)
+      2 — no path resolved (nothing printed)
+    """
+    normalised = check_name.replace("-", "_")
+    try:
+        paths = discovery.discover(normalised, event)
+    except Exception as e:  # noqa: BLE001
+        print(f"❌ internal discovery error: {e}", file=sys.stderr)
+        return 1
+    if not paths:
+        return 2
+    print(",".join(paths))
+    return 0
 
 
 def _dispatch_emit(check_name: str, target: str) -> int:
