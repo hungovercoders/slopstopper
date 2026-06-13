@@ -3,7 +3,7 @@
 SlopStopper ships two complementary SEO-flavoured checks:
 
 1. **Lighthouse SEO category** — runs as part of `ss:reliability:cwv`, gated at score ≥ 0.9 (see [`.ss/lighthouserc.json`](../../.ss/lighthouserc.json)). Covers core SEO basics: meta description, `viewport`, `lang`, canonical, robots, indexability, link-text quality.
-2. **SEO metatag check** — `ss:reliability:seo`, runs the script at [`.ss/scripts/check-seo-metatags.py`](../../.ss/scripts/check-seo-metatags.py). Validates the social-share tags Lighthouse does **not** flag (OpenGraph + Twitter Card) plus reachability of the OG image.
+2. **SEO metatag check** — `ss:reliability:seo`, implemented in [`cli/slopstopper/checks/seo.py`](../../cli/slopstopper/checks/seo.py). Validates the social-share tags Lighthouse does **not** flag (OpenGraph + Twitter Card) plus reachability of the OG image.
 
 The metatag check is intentionally Python stdlib only — no new dependencies on top of Python 3.
 

@@ -2,329 +2,108 @@ version: '3'
 
 tasks:
   reliability:smoke:
-    desc: Run smoke tests against a live URL
+    desc: Run smoke tests against a live URL (via slopstopper-cli)
     summary: |
-      Runs critical smoke tests against a deployed site to verify basic functionality.
-      
+      Subprocess-invokes `npx playwright test` against the smoke spec
+      bundled in the CLI. Reads `pages.smoke` + `smoke.og_image_path`
+      from .slopstopper.yml.
+
       Usage:
         task ss:reliability:smoke -- https://your-site.example.com
         SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke
-        
-      Used for:
-        - Production health checks
-        - Post-deployment verification
-        - Scheduled reliability monitoring
     cmds:
       - |
-        {{if .CLI_ARGS}}
-          export SMOKE_TEST_URL="{{.CLI_ARGS}}"
-        {{end}}
-
-        if [ -z "$SMOKE_TEST_URL" ]; then
-          echo "❌ Error: SMOKE_TEST_URL is required"
-          echo ""
-          echo "Usage:"
-          echo "  task ss:reliability:smoke -- https://your-site.example.com"
-          echo "  SMOKE_TEST_URL=https://example.com task ss:reliability:smoke"
-          exit 1
-        fi
-
-        # Pull og-image path from .slopstopper.yml smoke.og_image_path if not
-        # already set in the environment. Default '/og-image.png' preserves
-        # backward compat; adopters with no site-wide og-image set it to ''.
-        if [ -z "${SMOKE_OG_IMAGE_PATH+x}" ] && [ -f .slopstopper.yml ]; then
-          export SMOKE_OG_IMAGE_PATH="$(python3 .ss/scripts/load_config.py smoke.og_image_path /og-image.png)"
-        fi
-
-        echo "🔍 Running smoke tests against: $SMOKE_TEST_URL"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-        SMOKE_TEST_URL="$SMOKE_TEST_URL" SMOKE_OG_IMAGE_PATH="${SMOKE_OG_IMAGE_PATH-/og-image.png}" npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts --reporter=list
-    silent: false
-
-  reliability:smoke:ci:
-    desc: Run smoke tests in CI mode with retries
-    summary: |
-      Runs smoke tests with CI-specific configuration (retries, single worker).
-      Intended for GitHub Actions and automated testing.
-
-      Usage:
-        SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke:ci
-    cmds:
-      - |
-        if [ -z "$SMOKE_TEST_URL" ]; then
-          echo "❌ Error: SMOKE_TEST_URL environment variable is required"
-          exit 1
-        fi
-
-        if [ -z "${SMOKE_OG_IMAGE_PATH+x}" ] && [ -f .slopstopper.yml ]; then
-          export SMOKE_OG_IMAGE_PATH="$(python3 .ss/scripts/load_config.py smoke.og_image_path /og-image.png)"
-        fi
-
-        echo "🔍 Running smoke tests (CI mode) against: $SMOKE_TEST_URL"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-        CI=true SMOKE_TEST_URL="$SMOKE_TEST_URL" SMOKE_OG_IMAGE_PATH="${SMOKE_OG_IMAGE_PATH-/og-image.png}" npx playwright test --config=.ss/playwright.config.js .ss/tests/smoke.spec.ts --reporter=list,html
+        {{if .CLI_ARGS}}export SMOKE_TEST_URL="{{.CLI_ARGS}}"{{end}}
+        slopstopper run reliability:smoke
     silent: false
 
   reliability:cwv:
-    desc: Run a Core Web Vitals (Lighthouse CI) audit against a live URL
+    desc: Run a Core Web Vitals (Lighthouse CI) audit (via slopstopper-cli)
     summary: |
-      Runs a Lighthouse CI audit against a deployed site and checks Core Web
-      Vitals against the thresholds defined in .ss/lighthouserc.json.
+      Subprocess-invokes `npx lhci autorun` against the configured
+      Lighthouse CI thresholds (.ss/lighthouserc.json by default).
 
-      Usage:
-        task ss:reliability:cwv -- https://your-site.example.com
-        CWV_URL=https://your-site.example.com task ss:reliability:cwv
-
-      Thresholds (see .ss/lighthouserc.json):
+      Thresholds (default lighthouserc.json):
         - Performance score  ≥ 70
         - LCP                ≤ 4 s
         - TBT                ≤ 600 ms
         - CLS                ≤ 0.25
-    cmds:
-      - |
-        {{if .CLI_ARGS}}
-          export CWV_URL="{{.CLI_ARGS}}"
-        {{end}}
-        
-        if [ -z "$CWV_URL" ]; then
-          echo "❌ Error: CWV_URL is required"
-          echo ""
-          echo "Usage:"
-          echo "  task ss:reliability:cwv -- https://your-site.example.com"
-          echo "  CWV_URL=https://example.com task ss:reliability:cwv"
-          exit 1
-        fi
-        
-        echo "🚦 Running Core Web Vitals audit against: $CWV_URL"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        
-        npx lhci autorun \
-          --collect.url="$CWV_URL" \
-          --config=.ss/lighthouserc.json
-    silent: false
 
-  reliability:cwv:ci:
-    desc: Run Core Web Vitals audit in CI mode
-    summary: |
-      Runs a Lighthouse CI audit with CI-specific settings.
-      Intended for GitHub Actions and automated testing.
-      
       Usage:
-        CWV_URL=https://your-site.example.com task ss:reliability:cwv:ci
+        task ss:reliability:cwv -- https://your-site.example.com
+        CWV_URL=https://your-site.example.com task ss:reliability:cwv
     cmds:
       - |
-        if [ -z "$CWV_URL" ]; then
-          echo "❌ Error: CWV_URL environment variable is required"
-          exit 1
-        fi
-        
-        echo "🚦 Running Core Web Vitals audit (CI mode) against: $CWV_URL"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        
-        npx lhci autorun \
-          --collect.url="$CWV_URL" \
-          --config=.ss/lighthouserc.json
+        {{if .CLI_ARGS}}export CWV_URL="{{.CLI_ARGS}}"{{end}}
+        slopstopper run reliability:cwv
     silent: false
 
   reliability:seo:
-    desc: Validate SEO + social-share metatags on a live URL
+    desc: Validate SEO + social-share metatags on a live URL (via slopstopper-cli)
     summary: |
-      Fetches one or more pages and asserts the presence of the metadata
-      that social-share crawlers (Slack, Twitter/X, LinkedIn, Discord) and
-      SEO indexers rely on: title, meta description, canonical, viewport,
-      OpenGraph (og:title/description/type/url/image) and Twitter Card
-      (twitter:card/title/description/image). Also HEAD-checks og:image
-      to confirm it is reachable and returns image/* content.
+      Fetches one or more pages and asserts the presence of `<title>`,
+      meta description, canonical, viewport, OpenGraph (og:title /
+      description / type / url / image) and Twitter Card (twitter:card
+      / title / description / image). Also HEAD-checks og:image to
+      confirm it is reachable and returns image/* content.
 
-      Complements ss:reliability:cwv — Lighthouse's SEO category covers
-      core indexability but does not flag missing OG / Twitter tags.
-
-      Configuration (environment variables):
+      Configuration (environment variables; SEO_PAGES is also read
+      from .slopstopper.yml's `pages.seo`):
         SEO_TEST_URL          - base URL to audit (required)
         SEO_PAGES             - comma-separated paths (default: /)
         SEO_REQUIRE_OG_IMAGE  - 0 to skip og:image presence check (default: 1)
         SEO_VERIFY_OG_IMAGE   - 0 to skip HEAD-fetching og:image (default: 1)
         SEO_OG_IMAGE_BASE     - rewrite absolute og:image / twitter:image
-                                origin to this base before HEAD-checking.
-                                Use when validating a pre-deploy preview
-                                (e.g. http://localhost:8080) where the
-                                page bakes in the production origin.
+                                origin to this base before HEAD-checking
 
       Usage:
         task ss:reliability:seo -- https://your-site.example.com
         SEO_TEST_URL=https://your-site.example.com task ss:reliability:seo
-        # Pre-deploy local preview:
-        SEO_TEST_URL=http://localhost:8080 \
-          SEO_OG_IMAGE_BASE=http://localhost:8080 \
-          task ss:reliability:seo
     cmds:
       - |
-        {{if .CLI_ARGS}}
-          export SEO_TEST_URL="{{.CLI_ARGS}}"
-        {{end}}
-
-        if [ -z "$SEO_TEST_URL" ]; then
-          echo "❌ Error: SEO_TEST_URL is required"
-          echo ""
-          echo "Usage:"
-          echo "  task ss:reliability:seo -- https://your-site.example.com"
-          echo "  SEO_TEST_URL=https://example.com task ss:reliability:seo"
-          exit 1
-        fi
-
-        # Resolve SEO_PAGES from .slopstopper.yml the same way CI does, so local
-        # runs aren't asymmetric. --event=local skips reliability.coverage.*
-        # modes (those are CI-event-shaped) and falls through to pages.seo or /.
-        if [ -z "${SEO_PAGES+x}" ] && [ -f .slopstopper.yml ]; then
-          export SEO_PAGES="$(python3 .ss/scripts/discover-pages.py seo --event=local)"
-        fi
-
-        python3 .ss/scripts/check-seo-metatags.py
-    silent: false
-
-  reliability:seo:ci:
-    desc: Validate SEO + social-share metatags (CI mode)
-    summary: |
-      Same as ss:reliability:seo, intended for GitHub Actions.
-
-      Usage:
-        SEO_TEST_URL=https://your-site.example.com task ss:reliability:seo:ci
-    cmds:
-      - |
-        if [ -z "$SEO_TEST_URL" ]; then
-          echo "❌ Error: SEO_TEST_URL environment variable is required"
-          exit 1
-        fi
-
-        echo "🔎 Running SEO metatag audit (CI mode) against: $SEO_TEST_URL"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-        python3 .ss/scripts/check-seo-metatags.py
+        {{if .CLI_ARGS}}export SEO_TEST_URL="{{.CLI_ARGS}}"{{end}}
+        slopstopper run reliability:seo
     silent: false
 
   reliability:accessibility:
-    desc: Run accessibility audit against a live URL
+    desc: Run accessibility audit against a live URL (via slopstopper-cli)
     summary: |
-      Audits all pages for WCAG 2.1 AA violations using axe-core + Playwright.
+      Subprocess-invokes `npx playwright test` against the
+      accessibility spec bundled in the CLI. Reads
+      `pages.accessibility` from .slopstopper.yml.
 
       Configuration (environment variables):
-        ACCESSIBILITY_TEST_URL  - URL to audit (required; also accepts SMOKE_TEST_URL / BASE_URL)
-        ACCESSIBILITY_IMPACT    - Minimum impact to flag: critical|serious|moderate|minor (default: serious)
-        ACCESSIBILITY_THRESHOLD - Max allowed violations before failing (default: 0)
+        ACCESSIBILITY_TEST_URL  - URL to audit (required; also accepts SMOKE_TEST_URL)
+        ACCESSIBILITY_IMPACT    - critical|serious|moderate|minor (default: serious)
+        ACCESSIBILITY_THRESHOLD - max allowed violations (default: 0)
 
       Usage:
         task ss:reliability:accessibility -- https://your-site.example.com
         ACCESSIBILITY_TEST_URL=https://your-site.example.com task ss:reliability:accessibility
     cmds:
       - |
-        {{if .CLI_ARGS}}
-          export ACCESSIBILITY_TEST_URL="{{.CLI_ARGS}}"
-        {{end}}
-
-        TARGET="${ACCESSIBILITY_TEST_URL:-${SMOKE_TEST_URL:-}}"
-        if [ -z "$TARGET" ]; then
-          echo "❌ Error: ACCESSIBILITY_TEST_URL is required"
-          echo ""
-          echo "Usage:"
-          echo "  task ss:reliability:accessibility -- https://your-site.example.com"
-          echo "  ACCESSIBILITY_TEST_URL=https://example.com task ss:reliability:accessibility"
-          exit 1
-        fi
-
-        echo "♿ Running accessibility audit against: $TARGET"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-        # Resolve ACCESSIBILITY_PAGES from .slopstopper.yml the same way CI does.
-        if [ -z "${ACCESSIBILITY_PAGES+x}" ] && [ -f .slopstopper.yml ]; then
-          export ACCESSIBILITY_PAGES="$(python3 .ss/scripts/discover-pages.py accessibility --event=local)"
-        fi
-
-        ACCESSIBILITY_TEST_URL="$TARGET" npx playwright test --config=.ss/playwright.config.js .ss/tests/accessibility.spec.ts --reporter=list
-    silent: false
-
-  reliability:accessibility:ci:
-    desc: Run accessibility audit in CI mode with retries
-    summary: |
-      Runs accessibility audit with CI-specific configuration (retries, single worker, HTML report).
-      Intended for GitHub Actions and automated testing.
-
-      Usage:
-        ACCESSIBILITY_TEST_URL=https://your-site.example.com task ss:reliability:accessibility:ci
-    cmds:
-      - |
-        TARGET="${ACCESSIBILITY_TEST_URL:-${SMOKE_TEST_URL:-}}"
-        if [ -z "$TARGET" ]; then
-          echo "❌ Error: ACCESSIBILITY_TEST_URL environment variable is required"
-          exit 1
-        fi
-
-        echo "♿ Running accessibility audit (CI mode) against: $TARGET"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-        ACCESSIBILITY_TEST_URL="$TARGET" CI=true npx playwright test --config=.ss/playwright.config.js .ss/tests/accessibility.spec.ts --reporter=list,html
+        {{if .CLI_ARGS}}export ACCESSIBILITY_TEST_URL="{{.CLI_ARGS}}"{{end}}
+        slopstopper run reliability:accessibility
     silent: false
 
   reliability:links:
-    desc: Run broken-link checks against a live URL
+    desc: Run broken-link checks against a live URL (via slopstopper-cli)
     summary: |
-      Checks internal navigation links for broken destinations.
+      Subprocess-invokes `npx playwright test` against the
+      broken-links spec bundled in the CLI. Reads
+      `pages.broken_links` from .slopstopper.yml.
 
       Configuration (environment variables):
-        BROKEN_LINKS_TEST_URL - URL to audit (required; also accepts SMOKE_TEST_URL / BASE_URL)
-        BROKEN_LINKS_PAGES    - Comma-separated paths to scan for links (default: /)
+        BROKEN_LINKS_TEST_URL - URL to audit (required; also accepts SMOKE_TEST_URL)
+        BROKEN_LINKS_PAGES    - comma-separated paths to scan (default: /)
 
       Usage:
         task ss:reliability:links -- https://your-site.example.com
         BROKEN_LINKS_TEST_URL=https://your-site.example.com task ss:reliability:links
     cmds:
       - |
-        {{if .CLI_ARGS}}
-          export BROKEN_LINKS_TEST_URL="{{.CLI_ARGS}}"
-        {{end}}
-
-        TARGET="${BROKEN_LINKS_TEST_URL:-${SMOKE_TEST_URL:-}}"
-        if [ -z "$TARGET" ]; then
-          echo "❌ Error: BROKEN_LINKS_TEST_URL is required"
-          echo ""
-          echo "Usage:"
-          echo "  task ss:reliability:links -- https://your-site.example.com"
-          echo "  BROKEN_LINKS_TEST_URL=https://example.com task ss:reliability:links"
-          exit 1
-        fi
-
-        echo "🔗 Running broken-link checks against: $TARGET"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-        # Resolve BROKEN_LINKS_PAGES from .slopstopper.yml the same way CI does.
-        if [ -z "${BROKEN_LINKS_PAGES+x}" ] && [ -f .slopstopper.yml ]; then
-          export BROKEN_LINKS_PAGES="$(python3 .ss/scripts/discover-pages.py broken_links --event=local)"
-        fi
-
-        BROKEN_LINKS_TEST_URL="$TARGET" npx playwright test --config=.ss/playwright.config.js .ss/tests/broken-links.spec.ts --reporter=list
-    silent: false
-
-  reliability:links:ci:
-    desc: Run broken-link checks in CI mode with retries
-    summary: |
-      Runs broken-link checks with CI-specific configuration (retries, single worker, HTML report).
-      Intended for GitHub Actions and automated testing.
-
-      Usage:
-        BROKEN_LINKS_TEST_URL=https://your-site.example.com task ss:reliability:links:ci
-    cmds:
-      - |
-        TARGET="${BROKEN_LINKS_TEST_URL:-${SMOKE_TEST_URL:-}}"
-        if [ -z "$TARGET" ]; then
-          echo "❌ Error: BROKEN_LINKS_TEST_URL environment variable is required"
-          exit 1
-        fi
-
-        echo "🔗 Running broken-link checks (CI mode) against: $TARGET"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-        BROKEN_LINKS_TEST_URL="$TARGET" CI=true npx playwright test --config=.ss/playwright.config.js .ss/tests/broken-links.spec.ts --reporter=list,html
+        {{if .CLI_ARGS}}export BROKEN_LINKS_TEST_URL="{{.CLI_ARGS}}"{{end}}
+        slopstopper run reliability:broken-links
     silent: false
 
 
