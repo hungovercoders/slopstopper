@@ -68,3 +68,70 @@ def test_emit_requires_target_flag(capsys):
     assert exc.value.code != 0
     err = capsys.readouterr().err
     assert "required" in err or "--target" in err
+
+
+# ── discover subcommand ───────────────────────────────────────────
+
+
+def test_discover_prints_comma_joined_paths(monkeypatch, capsys):
+    captured = {}
+
+    def fake_discover(check, event):
+        captured["check"] = check
+        captured["event"] = event
+        return ["/", "/blog", "/about"]
+
+    monkeypatch.setattr(cli.discovery, "discover", fake_discover)
+    rc = cli.main(["discover", "smoke", "--event", "pr"])
+    assert rc == 0
+    assert capsys.readouterr().out.strip() == "/,/blog,/about"
+    assert captured == {"check": "smoke", "event": "pr"}
+
+
+def test_discover_returns_2_when_no_paths(monkeypatch, capsys):
+    monkeypatch.setattr(cli.discovery, "discover", lambda check, event: [])
+    rc = cli.main(["discover", "broken_links", "--event", "main"])
+    assert rc == 2
+    assert capsys.readouterr().out == ""
+
+
+def test_discover_accepts_hyphen_alias_for_broken_links(monkeypatch):
+    """`broken-links` (hyphen, slopstopper-style) maps to the same
+    underscore-form `broken_links` the discovery module expects."""
+    captured = {}
+
+    def fake_discover(check, event):
+        captured["check"] = check
+        return ["/"]
+
+    monkeypatch.setattr(cli.discovery, "discover", fake_discover)
+    rc = cli.main(["discover", "broken-links", "--event", "local"])
+    assert rc == 0
+    assert captured["check"] == "broken_links"
+
+
+def test_discover_returns_1_on_internal_error(monkeypatch, capsys):
+    def boom(check, event):
+        raise RuntimeError("kaboom")
+
+    monkeypatch.setattr(cli.discovery, "discover", boom)
+    rc = cli.main(["discover", "seo", "--event", "cron"])
+    assert rc == 1
+    assert "kaboom" in capsys.readouterr().err
+
+
+def test_discover_rejects_unknown_check(capsys):
+    with pytest.raises(SystemExit):
+        cli.main(["discover", "nope", "--event", "local"])
+
+
+def test_discover_default_event_is_local(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(
+        cli.discovery,
+        "discover",
+        lambda check, event: captured.update({"event": event}) or ["/"],
+    )
+    rc = cli.main(["discover", "smoke"])
+    assert rc == 0
+    assert captured["event"] == "local"
