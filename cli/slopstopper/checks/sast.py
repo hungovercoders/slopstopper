@@ -31,6 +31,20 @@ REPORT_DIR = Path(".ss/reports/sast")
 REPORT_JSON = REPORT_DIR / "sast-report.json"
 REPORT_MD = REPORT_DIR / "sast-report.md"
 
+# Consumed by `slopstopper emit security:sast --target {pr-comment,issue}`.
+# Discriminator `SAST Analysis` matches both the pre-flip JS heading
+# ("## 🔍 SAST Analysis") and the post-flip report H1 ("# SAST Analysis
+# Report"), so the same bot comment is reused after the workflow flip.
+# Issue title, labels, and follow-up string are byte-identical to the
+# legacy block.
+META = {
+    "report_path": str(REPORT_MD),
+    "comment_discriminator": "SAST Analysis",
+    "issue_title": "⚠️ SAST Issues in Main Branch",
+    "issue_labels": ["sast", "security"],
+    "issue_followup": "🔔 SAST error-severity findings detected again in commit",
+}
+
 _INSTALL_HELP = (
     "❌ semgrep is not installed.\n"
     "Install with:\n"
