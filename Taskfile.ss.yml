@@ -201,7 +201,7 @@ tasks:
   contributing:assets:
     desc: Re-render SVG source assets (og-image, apple-touch-icon) to PNG via Playwright
     cmds:
-      - node .ss/scripts/render-static-assets.js
+      - node scripts/render-static-assets.js
 
   contributing:build:
     desc: Build the project (if a build script is defined)

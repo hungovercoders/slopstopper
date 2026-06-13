@@ -1,16 +1,16 @@
 """Smoke tests against a live URL (Playwright wrapper).
 
-Ports the bash reliability:smoke flow:
+Implements the reliability:smoke flow:
 
-  task ss:reliability:smoke -- https://your-site.example.com
+  slopstopper run reliability:smoke -- --url https://your-site.example.com
 
   which is, under the covers:
 
   SMOKE_TEST_URL=...
-  SMOKE_OG_IMAGE_PATH=$(python3 load_config.py smoke.og_image_path /og-image.png)
-  SMOKE_PAGES=$(python3 load_config.py pages.smoke /)
-  npx playwright test --config=.ss/playwright.config.js
-                      .ss/tests/smoke.spec.ts
+  SMOKE_OG_IMAGE_PATH=<smoke.og_image_path from .slopstopper.yml>
+  SMOKE_PAGES=<pages.smoke from .slopstopper.yml>
+  npx playwright test --config=<resolved playwright config>
+                      <resolved smoke spec>
                       --reporter=list[,html]
 
 Subprocess-invokes `npx playwright` — Playwright is Apache-2.0; the
