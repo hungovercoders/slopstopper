@@ -27,6 +27,20 @@ REPORT_DIR = Path(".ss/reports/docs")
 REPORT_JSON = REPORT_DIR / "docs-accuracy-report.json"
 REPORT_MD = REPORT_DIR / "docs-accuracy-report.md"
 
+# Consumed by `slopstopper emit hygiene:docs-accuracy --target {pr-comment,issue}`.
+# Discriminator matches the H1 of the report ("# 🔎 Documentation Accuracy Report")
+# so the same bot comment is reused after the workflow flip. Issue title,
+# labels, and follow-up string are byte-identical to the legacy block. The
+# pre-flip workflow's "close issue when clean" behaviour stays in YAML (see
+# the workflow's final step) — emit.py only handles create/update, not close.
+META = {
+    "report_path": str(REPORT_MD),
+    "comment_discriminator": "🔎 Documentation Accuracy",
+    "issue_title": "🔎 Documentation Accuracy Issues",
+    "issue_labels": ["documentation-accuracy", "documentation"],
+    "issue_followup": "🔔 Documentation accuracy issues detected again",
+}
+
 DOCS_DIR = Path("docs")
 ROOT_ENTRY_FILES = ("README.md", "AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md")
 
