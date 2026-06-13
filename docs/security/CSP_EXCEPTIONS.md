@@ -37,7 +37,7 @@ unhelpful. The honest answer is a pattern:
 5. **Let DAST keep flagging the relaxed pages.** A scanner flagging a
    documented exception is correct behaviour — that's how you find
    *un*documented relaxations later. The DAST workflow on this repo
-   consults this file via [the DAST gate script](../../.ss/scripts/check-dast-alerts.py):
+   consults this file via [the DAST gate module](../../cli/slopstopper/dast_gate.py):
    ZAP CSP findings whose URL path is listed under `## Exceptions`
    below are reported separately and do **not** fail the build, while
    any non-CSP finding or any High-severity (riskcode 3) CSP finding
@@ -117,7 +117,7 @@ Re-run when the widget breaks after a third-party release.
    installer — the check enforces drift between `worker/headers.json`
    and this file
 5. Keep DAST in your pipeline. The SlopStopper DAST gate
-   (`.ss/scripts/check-dast-alerts.py`) already consults this file:
+   (`cli/slopstopper/dast_gate.py`) already consults this file:
    Medium-severity CSP findings on documented paths are surfaced in the
    PR comment but do **not** block the build. Undocumented relaxations
    still fail DAST, as does any non-CSP finding or any High-severity

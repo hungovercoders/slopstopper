@@ -197,40 +197,13 @@ tasks:
         # longer exist. The hygiene checks now run only via the CLI;
         # see `cli/tests/checks/test_*.py` for the per-check coverage.
 
-        # security:secrets shells out to `gitleaks`. The bash side calls
-        # the canonical task (which check-installs gitleaks via
-        # secrets:check-tool), then the CLI subprocess-invokes the same
-        # gitleaks now on PATH. Order matters: bash first installs, then
-        # CLI uses what bash installed.
-        check_parity \
-          "security-secrets" \
-          "task ss:security:secrets" \
-          "cli/.venv/bin/slopstopper run security:secrets" \
-          ".ss/reports/secrets/secrets-report.json" \
-          ".ss/reports/secrets/secrets-report.md"
-
-        # security:sast — only the MD report is parity-diffed. semgrep's
-        # JSON output includes per-run timing data (total_time,
-        # max_memory_bytes, profiling_times…) that is naturally
-        # non-deterministic between back-to-back invocations. The MD is
-        # derived from `results` and `errors`, the security-meaningful
-        # fields, so it provides the parity signal.
-        check_parity \
-          "security-sast" \
-          "task ss:security:sast" \
-          "cli/.venv/bin/slopstopper run security:sast" \
-          ".ss/reports/sast/sast-report.md"
-
-        # security:dependencies — only the MD report is parity-diffed.
-        # trivy's JSON includes CreatedAt, ReportID and ArtifactID that
-        # change every run. The MD is derived from `Results`→
-        # `Vulnerabilities`, the security-meaningful fields, so it
-        # provides the parity signal.
-        check_parity \
-          "security-dependencies" \
-          "task ss:security:vulnerability:all" \
-          "cli/.venv/bin/slopstopper run security:dependencies" \
-          ".ss/reports/dependencies/dependencies-report.md"
+        # Security parity rows were removed when the security category's
+        # bash scripts were deleted — `generate-secrets-md.py`,
+        # `generate-sast-md.py`, `generate-dependencies-md.py`,
+        # `generate-dast-md.py`, and `check-dast-alerts.py` no longer
+        # exist. The security checks now run only via the CLI; see
+        # `cli/tests/checks/test_*.py` (+ `tests/test_dast_gate.py`
+        # for the lifted DAST gate) for the per-check coverage.
 
         # security:dast — intentionally NOT parity-tested. ZAP baseline
         # scans actively probe a live server and the resulting alerts

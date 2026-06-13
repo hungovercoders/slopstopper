@@ -97,8 +97,8 @@ The SAST workflow:
 | File | Purpose |
 |------|---------|
 | `.github/workflows/ss-security-sast-check.yml` | GitHub Actions workflow |
-| `Taskfile.yml` (`sast*` tasks) | Local task runner config |
-| `.ss/scripts/generate-sast-md.py` | Report generator |
+| `Taskfile.ss.yml` (`sast` task) | Local task runner shim → `slopstopper run security:sast` |
+| `cli/slopstopper/checks/sast.py` | Check implementation (subprocess-invokes Semgrep, renders MD report) |
 | `.gitignore` | Excludes `.ss/reports/sast/` |
 
 ## Key Configuration Points
@@ -183,7 +183,7 @@ task ss:security:dast -- http://localhost:8080
 
 ### DAST + CSP exceptions
 
-The DAST gate in this template (driven by [`.ss/scripts/check-dast-alerts.py`](../../.ss/scripts/check-dast-alerts.py)) consults [`docs/security/CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md) on every run:
+The DAST gate in this template (driven by [`cli/slopstopper/dast_gate.py`](../../cli/slopstopper/dast_gate.py)) consults [`docs/security/CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md) on every run:
 
 - **No `CSP_EXCEPTIONS.md` file?** Gate behaves exactly like a vanilla riskcode ≥ 2 cutoff — nothing changes for you. Adopters with no third-party scripts can ignore this section entirely.
 - **You added a third-party widget (GTM, Sentry, Intercom, Giscus…)?** Add a per-path entry to `worker/headers.json` for the affected path, *and* document it under `## Exceptions` in `CSP_EXCEPTIONS.md` using the schema in that file. Once it's documented, ZAP's CSP findings on that exact path stop blocking the build. They still appear in the PR comment under a separate "🛡 Documented CSP exceptions" section so they stay visible in review.
@@ -209,9 +209,9 @@ The DAST workflow:
 | File | Purpose |
 |------|---------|
 | `.github/workflows/ss-security-dast-check.yml` | GitHub Actions workflow |
-| `Taskfile.yml` (`dast*` tasks) | Local task runner config |
-| `.ss/scripts/generate-dast-md.py` | Report generator |
-| `.ss/scripts/check-dast-alerts.py` | Pass/fail gate — filters documented CSP exceptions from the blocker count |
+| `Taskfile.ss.yml` (`dast` task) | Local task runner shim → `slopstopper run security:dast` |
+| `cli/slopstopper/checks/dast.py` | Check implementation (subprocess-invokes Docker + OWASP ZAP, renders MD report) |
+| `cli/slopstopper/dast_gate.py` | Pass/fail gate — filters documented CSP exceptions from the blocker count |
 | `docs/security/CSP_EXCEPTIONS.md` | Single source of truth for per-path CSP relaxations (optional — gate handles absence) |
 | `.gitignore` | Excludes `.ss/reports/dast/` |
 
@@ -321,8 +321,8 @@ The dependency scanning workflow:
 | File | Purpose |
 |------|---------|
 | `.github/workflows/ss-security-vulnerability-all-check.yml` | GitHub Actions workflow |
-| `Taskfile.yml` (`dependencies*` tasks) | Local task runner config |
-| `.ss/scripts/generate-dependencies-md.py` | Report generator |
+| `Taskfile.ss.yml` (`vulnerability:all` task) | Local task runner shim → `slopstopper run security:dependencies` |
+| `cli/slopstopper/checks/dependencies.py` | Check implementation (subprocess-invokes Trivy, renders MD report) |
 | `.gitignore` | Excludes `.ss/reports/dependencies/` |
 
 ## Key Configuration Points
@@ -408,8 +408,8 @@ The secrets workflow:
 | File | Purpose |
 |------|---------|
 | `.github/workflows/ss-security-secrets-check.yml` | GitHub Actions workflow |
-| `Taskfile.yml` (`secrets*` tasks) | Local task runner config |
-| `.ss/scripts/generate-secrets-md.py` | Report generator |
+| `Taskfile.ss.yml` (`secrets` task) | Local task runner shim → `slopstopper run security:secrets` |
+| `cli/slopstopper/checks/secrets.py` | Check implementation (subprocess-invokes Gitleaks, renders MD report) |
 | `.gitignore` | Excludes `.ss/reports/secrets/` |
 
 ## Suppressing False Positives
