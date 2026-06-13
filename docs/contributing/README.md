@@ -25,9 +25,8 @@ Run `task --list` for the full set. The most-used ones:
 | Task | What it does |
 | ---- | ------------ |
 | `task ss:contributing:setup` | Install dependencies |
-| `task ss:contributing:build` | TypeScript build (`tsc`) |
-| `task ss:contributing:run` | Local dev server on port 8080 |
-| `task ss:contributing:test` | Playwright smoke + a11y suite |
+| `task ss:contributing:run` | Local dev server on port 8080 (via `slopstopper serve`) |
+| `task ss:contributing:test` | Playwright smoke + a11y suite (via the CLI) |
 | `task ss:contributing:lint` | Lint checks |
 | `task ss:hygiene:complexity` | Cyclomatic complexity check (Lizard) |
 | `task ss:hygiene:entry-files` | Enforce <2k token budget on entry files |
@@ -50,7 +49,6 @@ Run these before opening a PR. Each one mirrors the equivalent CI check
 exactly:
 
 ```bash
-task ss:contributing:build           # TypeScript build
 task ss:contributing:run              # Local server on :8080
 task ss:contributing:test             # Playwright smoke + a11y
 task ss:reliability:accessibility     # axe-core audit
@@ -59,9 +57,9 @@ task ss:hygiene:test                  # Full hygiene suite
 task ss:security:sast                 # Semgrep
 ```
 
-Or run the underlying npm scripts if you don't have Task installed
-(`npm start`, `npm run build`, `npm test`) — but **prefer `task`** so your
-behaviour matches CI exactly.
+Or call the CLI directly if you'd rather skip the `task` shim layer
+(`slopstopper serve &`, `slopstopper run reliability:smoke`, etc.) —
+the shims are thin and call the same code path either way.
 
 ## Workflow
 
