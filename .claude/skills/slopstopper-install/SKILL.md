@@ -81,18 +81,16 @@ Sanity-check the install dropped what you expect:
 
 ### Want to customize a Playwright spec or lighthouserc?
 
-The CLI looks for `.ss/<filename>` first and falls back to the wheel's bundled copy. So to customize, copy the wheel's file into `.ss/` and edit it there:
+The CLI looks for `.ss/<filename>` first and falls back to the wheel's bundled copy. Use `slopstopper templates` to list, locate, and eject:
 
 ```bash
-# Find the wheel's bundled copy:
-python3 -c 'import slopstopper, pathlib; print(pathlib.Path(slopstopper.__file__).parent / "data")'
-
-# Eject the file you want to customize:
-cp "$(python3 -c 'import slopstopper, pathlib; print(pathlib.Path(slopstopper.__file__).parent / "data" / "lighthouserc.json")')" .ss/lighthouserc.json
+slopstopper templates list                       # see what's bundled + what's already ejected
+slopstopper templates path lighthouserc.json     # print the resolved path (override-or-bundled)
+slopstopper templates eject lighthouserc.json    # copy bundled → .ss/lighthouserc.json
 $EDITOR .ss/lighthouserc.json
 ```
 
-The CLI picks it up on the next run. Caveat: customizations don't auto-merge with upstream changes — you own the file once you eject. The installer's byte-equality scrub will leave it alone.
+The CLI picks up the override on the next run. Caveat: customizations don't auto-merge with upstream changes — you own the file once you eject. `slopstopper templates eject` won't overwrite an existing `.ss/<filename>`, and the installer's byte-equality scrub leaves customized files alone.
 
 **Confirm the installed set matches upstream.** `install.sh` uses a hardcoded `GENERIC_WORKFLOWS` array, not a wildcard over slopstopper's `.github/workflows/ss-*.yml`. The two can drift — slopstopper may ship a workflow that the installer hasn't been updated to include. To catch this:
 

@@ -116,7 +116,7 @@ jobs:
         if: steps.url.outputs.use_local == 'true'
         run: |
           npm run build
-          node server.js &
+          slopstopper serve &
           echo "SERVER_PID=$!" >> "$GITHUB_ENV"
           for i in $(seq 1 10); do
             if curl -s http://localhost:8080 > /dev/null; then

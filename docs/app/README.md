@@ -91,7 +91,8 @@ app/feedback.css    ← Feedback styles
 app/copy.js         ← Runtime copy-button script (hand-authored, NOT compiled
                        from src/; opt-in via data-copyable on codeblocks)
 
-server.js           ← Local dev server (reads worker/headers.json, serves app/)
+slopstopper serve   ← Local dev server (bundled in slopstopper-cli;
+                       auto-detects worker/headers.json + serves from app/)
 wrangler.jsonc      ← Cloudflare Worker config: [assets] binding, compatibility date
 worker/index.ts     ← Worker entrypoint: fetches assets, applies headers
 worker/headers.json ← Canonical header map (CSP + COOP/COEP + …)

@@ -23,12 +23,14 @@
 #                               #   printed in that case)
 #   Taskfile.ss.yml             # all SlopStopper task shims; always
 #                               #   refreshed on re-run so updates flow through
-#   .ss/server.js               # static-site shim for the local CI loop
-#                               #   (only file still seeded into .ss/; bundled
-#                               #   Playwright specs / configs / lighthouserc
-#                               #   live inside slopstopper-cli, override via
-#                               #   .ss/<same-name> if you need to customize)
+#   .ss/.workflows-installed    # manifest of installed workflows (commit this)
 #   .ss/reports/                # SlopStopper-owned scan/report output dirs
+#                               # (every CLI-managed file — Playwright specs,
+#                               # Playwright config, lighthouserc dev/prod,
+#                               # server.js — lives in the slopstopper-cli
+#                               # wheel. To customise, `slopstopper templates
+#                               # eject <name>` writes the file into .ss/ and
+#                               # the CLI's templates resolver prefers it.)
 #   .github/workflows/ss-*      # all SlopStopper workflows are ss- prefixed
 #                               #   so they group together in the Actions UI
 #                               #   and cannot clash with your existing workflows
@@ -209,18 +211,13 @@ install_cli() {
 
 install_cli
 
-# 4. .ss/ overlay — minimal by design. The CLI's templates module
-#    resolves Playwright specs / Playwright config / lighthouserc paths
-#    by looking under .ss/<same-name> first and falling back to the
-#    package data bundled in slopstopper-cli. So we only seed the one
-#    file we can't ship in the wheel — `.ss/server.js`, the static
-#    local-CI server (adopter-tuned: ports, headers file, build dir).
-#    Adopters who want to customize a Playwright spec or lighthouserc
-#    write that file under .ss/ themselves; the CLI picks it up.
+# 4. .ss/ overlay — nothing is seeded by default. Every CLI-managed
+#    file (Playwright specs, Playwright config, lighthouserc dev/prod,
+#    server.js) lives inside slopstopper-cli and is resolved at runtime
+#    via .ss/ override → package-data fallback. Adopters who want to
+#    customise a file run `slopstopper templates eject <name>` to copy
+#    the bundled version into .ss/<name>.
 mkdir -p "$TARGET_DIR/.ss"
-
-cp "$SCRIPT_DIR/.ss/server.js" "$TARGET_DIR/.ss/server.js"
-success ".ss/server.js installed (refreshed)"
 
 # Clean up any legacy .ss/scripts/ left over from pre-CLI installs —
 # every script previously copied into adopter repos is now bundled in
@@ -250,6 +247,7 @@ if [ -n "$DATA_DIR" ] && [ -d "$DATA_DIR" ]; then
   scrub_if_byte_equal "playwright.config.js"
   scrub_if_byte_equal "lighthouserc.json"
   scrub_if_byte_equal "lighthouserc.prod.json"
+  scrub_if_byte_equal "server.js"
   if [ -d "$TARGET_DIR/.ss/tests" ] && [ -d "$DATA_DIR/tests" ]; then
     if diff -rq "$TARGET_DIR/.ss/tests" "$DATA_DIR/tests" >/dev/null 2>&1; then
       rm -rf "$TARGET_DIR/.ss/tests"

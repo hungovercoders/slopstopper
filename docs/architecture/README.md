@@ -9,7 +9,7 @@ Notation: C4 (Context + Container).
 
 - Static HTML/CSS/JS pages served in production by a Cloudflare
   Worker with the `[assets]` binding.
-- Local development and DAST use `server.js`.
+- Local development and DAST use `slopstopper serve` (the bundled static server inside slopstopper-cli).
 - Security headers live in `worker/headers.json`. The Worker, the
   local server and the CSP-drift gate all read the same file.
 
@@ -40,7 +40,6 @@ slopstopper/
 ├── worker/                   # Cloudflare Worker — applies headers to every response
 │   ├── index.ts              # fetch handler: env.ASSETS.fetch + per-path headers
 │   └── headers.json          # Canonical header map (CSP, COOP/COEP, X-Frame-Options …)
-├── server.js                 # Local dev server — reads worker/headers.json for parity
 ├── Taskfile.yml              # Thin root with `includes: { ss: ./Taskfile.ss.yml }`
 ├── Taskfile.ss.yml           # SlopStopper task definitions
 ├── README.md                 # Consumer-facing entry point
@@ -70,7 +69,7 @@ flowchart LR
     WORKER[Cloudflare Worker\nworker/index.ts]
     ASSETS[Static Assets\napp/index.html, app/features.html, app/tools.html, CSS, compiled JS]
     HJSON[worker/headers.json\ncanonical header map]
-    DEV[Local Node Server\nserver.js]
+    DEV[Local Node Server\nslopstopper serve]
 
     B -->|Prod HTTPS requests| WORKER
     WORKER -->|env.ASSETS.fetch| ASSETS
@@ -87,9 +86,9 @@ flowchart LR
 2. In production, the Cloudflare Worker fetches the asset via the
    `[assets]` binding, then applies the per-path headers from
    `worker/headers.json` before returning the response.
-3. In local/dev scanning, `server.js` serves the same `app/` directory
-   and loads the same `worker/headers.json` so prod and local stay
-   identical.
+3. In local/dev scanning, `slopstopper serve` (bundled inside
+   slopstopper-cli) serves the same `app/` directory and auto-detects
+   the same `worker/headers.json` so prod and local stay identical.
 
 ## Development Loops
 

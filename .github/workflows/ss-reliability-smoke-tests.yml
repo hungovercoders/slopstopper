@@ -109,25 +109,24 @@ jobs:
 
       - name: Start local server (PR / push builds)
         if: steps.url.outputs.use_local == 'true'
-        # CUSTOMISE FOR YOUR APP: wired for a static site (build + node
-        # server.js). Replace with whatever starts your app on port
-        # 8080 — or point SMOKE_TEST_URL at a deployed environment.
+        # CUSTOMISE FOR YOUR APP: by default this runs `npm run build`
+        # then `slopstopper serve` (the bundled static server). Point
+        # SMOKE_TEST_URL at a deployed environment to skip the local
+        # serve. To use your own server, eject the bundled one with
+        # `slopstopper templates eject server.js` and edit `.ss/server.js`.
         run: |
-          if [ -f server.js ] && [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then
+          if [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then
             npm run build
-            node server.js &
-            echo "SERVER_PID=$!" >> "$GITHUB_ENV"
-            for i in $(seq 1 10); do
-              if curl -s http://localhost:8080 > /dev/null; then
-                echo "✅ Server ready"
-                break
-              fi
-              sleep 1
-            done
-          else
-            echo "ℹ️  No server.js to start. Customise this step or set SMOKE_TEST_URL."
-            exit 1
           fi
+          slopstopper serve &
+          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 10); do
+            if curl -s http://localhost:8080 > /dev/null; then
+              echo "✅ Server ready"
+              break
+            fi
+            sleep 1
+          done
 
       - name: Run smoke tests
         env:
