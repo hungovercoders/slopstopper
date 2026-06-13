@@ -44,6 +44,11 @@ on:
       - '.ss/scripts/generate-sast-md.py'
       - '.ss/scripts/generate-dependencies-md.py'
       - '.ss/scripts/generate-dast-md.py'
+      - '.ss/playwright.config.js'
+      - '.ss/lighthouserc.json'
+      - '.ss/tests/smoke.spec.ts'
+      - '.ss/tests/accessibility.spec.ts'
+      - '.ss/tests/broken-links.spec.ts'
   push:
     branches: [ main ]
     paths:
@@ -63,6 +68,11 @@ on:
       - '.ss/scripts/generate-sast-md.py'
       - '.ss/scripts/generate-dependencies-md.py'
       - '.ss/scripts/generate-dast-md.py'
+      - '.ss/playwright.config.js'
+      - '.ss/lighthouserc.json'
+      - '.ss/tests/smoke.spec.ts'
+      - '.ss/tests/accessibility.spec.ts'
+      - '.ss/tests/broken-links.spec.ts'
   workflow_dispatch:
 
 permissions:
@@ -81,6 +91,16 @@ jobs:
         run: curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
       - name: Run CLI tests
         run: task -t cli/Taskfile.yml test
+
+  templates-sync:
+    name: templates sync (.ss/ ↔ cli/slopstopper/data/)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Task
+        run: curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
+      - name: Verify .ss/ template copies match source-of-truth
+        run: task -t cli/Taskfile.yml templates-sync-check
 
   parity:
     name: bash↔cli parity
