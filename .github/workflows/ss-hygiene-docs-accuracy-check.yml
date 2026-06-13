@@ -1,11 +1,18 @@
 name: SlopStopper · Hygiene - Documentation Accuracy Check
 
+# CLI-flipped workflow (Phase 2). Replaces task ss:hygiene:docs-accuracy
+# + three `actions/github-script@v7` blocks (PR comment, issue create
+# /update on push/schedule, issue auto-close on clean) with two
+# `slopstopper emit` steps + one small inline `gh` block that closes
+# the tracking issue when docs are clean. emit.py intentionally only
+# does create/update; the auto-close is a docs-accuracy quirk that
+# stays in YAML rather than getting generalised into the META schema.
+
 on:
-  # ── Weekly schedule (every Monday at 07:00 UTC) ──
+  # Weekly schedule (every Monday at 07:00 UTC)
   schedule:
     - cron: '0 7 * * 1'
 
-  # ── Also run on PRs/pushes that touch docs or project structure ──
   pull_request:
     paths:
       - 'docs/**'
@@ -41,7 +48,6 @@ on:
       - 'server.js'
       - '.github/workflows/**'
 
-  # ── Manual trigger ──
   workflow_dispatch:
 
 permissions:
@@ -60,181 +66,57 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install Task
+      - name: Install slopstopper-cli
         run: |
-          curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
-          task --version
-
-      - name: Run documentation accuracy check
-        id: accuracy
-        run: |
-          python3 .ss/scripts/check-docs-accuracy.py
-          python3 .ss/scripts/generate-docs-accuracy-md.py
-
-          if [ -f .ss/reports/docs/docs-accuracy-report.json ]; then
-            ISSUE_COUNT=$(python3 -c "
-          import json
-          with open('.ss/reports/docs/docs-accuracy-report.json') as f:
-            data = json.load(f)
-          print(data.get('issue_count', 0))
-          " 2>/dev/null || echo "0")
-            echo "issue_count=$ISSUE_COUNT" >> $GITHUB_OUTPUT
-
-            if [ "$ISSUE_COUNT" -gt 0 ]; then
-              echo "has_issues=true" >> $GITHUB_OUTPUT
-            else
-              echo "has_issues=false" >> $GITHUB_OUTPUT
-            fi
+          # Pre-PyPI dogfood install. slopstopper.dev installs editable
+          # from local source; adopters (no cli/ dir) install from git.
+          # Once published, both branches collapse into:
+          #   pipx install slopstopper-cli==<pinned-version>
+          if [ -f cli/pyproject.toml ]; then
+            pip install -e ./cli
           else
-            echo "issue_count=0" >> $GITHUB_OUTPUT
-            echo "has_issues=false" >> $GITHUB_OUTPUT
+            pip install "git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli"
           fi
 
-      - name: Copy report for workflow
-        run: cp .ss/reports/docs/docs-accuracy-report.md docs-accuracy-report.md || true
+      - name: Run documentation accuracy check
+        id: check
+        continue-on-error: true
+        run: slopstopper run hygiene:docs-accuracy
 
-      # ── PR comment ──
-      - name: Comment on PR with accuracy report
-        if: github.event_name == 'pull_request' && steps.accuracy.outputs.has_issues == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
+      - name: Emit PR comment
+        if: github.event_name == 'pull_request' && steps.check.outcome == 'failure'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: slopstopper emit hygiene:docs-accuracy --target pr-comment
 
-            let reportContent = '';
-            try {
-              reportContent = fs.readFileSync('docs-accuracy-report.md', 'utf8');
-            } catch (e) {
-              reportContent = '❌ Failed to read accuracy report';
-            }
-
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-
-            const marker = '🔎 Documentation Accuracy';
-            const botComment = comments.find(c =>
-              c.user.type === 'Bot' && c.body.includes(marker)
-            );
-
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: reportContent
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: reportContent
-              });
-            }
-
-      # ── Issue creation on main push or schedule ──
-      - name: Create or update issue when accuracy problems found
-        if: >
+      - name: Emit issue (push / schedule / dispatch — when issues found)
+        if: >-
           (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-          && steps.accuracy.outputs.has_issues == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
+          && steps.check.outcome == 'failure'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: slopstopper emit hygiene:docs-accuracy --target issue
 
-            let reportContent = 'Unable to read accuracy report';
-            try {
-              reportContent = fs.readFileSync('docs-accuracy-report.md', 'utf8');
-            } catch (e) {
-              console.log('Report not found:', e.message);
-            }
-
-            const label = 'documentation-accuracy';
-            const title = '🔎 Documentation Accuracy Issues';
-            const body = `Documentation accuracy checks have detected stale or broken references.
-
-            ## Report
-            ${reportContent}
-
-            ## To Fix
-            \`\`\`bash
-            task ss:hygiene:docs-accuracy
-            \`\`\`
-
-            Review each issue, update the docs to match the current project, then re-run the check.
-
-            ---
-            *This issue was automatically created by the Documentation Accuracy Check workflow.*
-            ${context.sha ? `Commit: ${context.sha}` : ''}`.replace(/^            /gm, '');
-
-            // Check for existing open issue with same label
-            const { data: issues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: label
-            });
-
-            if (issues.length > 0) {
-              await github.rest.issues.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issues[0].number,
-                body: body
-              });
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issues[0].number,
-                body: `🔔 Documentation accuracy issues detected again (${context.sha || 'scheduled run'})`
-              });
-            } else {
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: title,
-                body: body,
-                labels: [label, 'documentation']
-              });
-            }
-
-      # ── Close issue when clean ──
-      - name: Close issue when docs are clean
-        if: >
+      - name: Auto-close issue when clean
+        if: >-
           (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-          && steps.accuracy.outputs.has_issues == 'false'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const label = 'documentation-accuracy';
-            const { data: issues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: label
-            });
-
-            for (const issue of issues) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                body: '✅ Documentation accuracy checks now pass. Closing automatically.'
-              });
-              await github.rest.issues.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                state: 'closed'
-              });
-            }
+          && steps.check.outcome == 'success'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # docs-accuracy uniquely auto-closes its tracking issue when
+          # docs are clean. emit.py doesn't generalise "close" yet — small
+          # gh-CLI loop here keeps the behaviour without bloating the
+          # shared emit module.
+          numbers=$(gh issue list --state open --label documentation-accuracy --json number --jq '.[].number')
+          for n in $numbers; do
+            gh issue comment "$n" --body "✅ Documentation accuracy checks now pass. Closing automatically."
+            gh issue close "$n"
+          done
 
       - name: Upload accuracy report
         if: always()
@@ -243,3 +125,9 @@ jobs:
           name: docs-accuracy-report
           path: .ss/reports/docs/docs-accuracy-report.md
           retention-days: 30
+
+      - name: Fail job if issues
+        if: steps.check.outcome == 'failure'
+        run: |
+          echo "::error::Documentation accuracy issues detected. See report."
+          exit 1
