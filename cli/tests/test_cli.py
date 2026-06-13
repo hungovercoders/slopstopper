@@ -135,3 +135,52 @@ def test_discover_default_event_is_local(monkeypatch):
     rc = cli.main(["discover", "smoke"])
     assert rc == 0
     assert captured["event"] == "local"
+
+
+# ── config get subcommand ─────────────────────────────────────────
+
+
+def test_config_get_prints_scalar(monkeypatch, capsys):
+    monkeypatch.setattr(cli.config, "get", lambda key, default: "https://example.com")
+    rc = cli.main(["config", "get", "urls.production"])
+    assert rc == 0
+    assert capsys.readouterr().out.strip() == "https://example.com"
+
+
+def test_config_get_prints_list_comma_joined(monkeypatch, capsys):
+    monkeypatch.setattr(
+        cli.config, "get", lambda key, default: ["ss-foo-check.yml", "ss-bar-check.yml"]
+    )
+    rc = cli.main(["config", "get", "workflows.disabled"])
+    assert rc == 0
+    assert capsys.readouterr().out.strip() == "ss-foo-check.yml,ss-bar-check.yml"
+
+
+def test_config_get_uses_default_when_missing(monkeypatch, capsys):
+    # config.get returns whatever default was passed; emulate the
+    # "missing" path by returning the default directly.
+    monkeypatch.setattr(cli.config, "get", lambda key, default: default)
+    rc = cli.main(["config", "get", "no.such.key", "fallback"])
+    assert rc == 0
+    assert capsys.readouterr().out.strip() == "fallback"
+
+
+def test_config_get_prints_empty_when_none(monkeypatch, capsys):
+    monkeypatch.setattr(cli.config, "get", lambda key, default: None)
+    rc = cli.main(["config", "get", "headers.source"])
+    assert rc == 0
+    assert capsys.readouterr().out == "\n"
+
+
+def test_config_get_default_default_is_empty_string(monkeypatch, capsys):
+    """Matches the bash load_config.py shim: missing key + no default = ''"""
+    captured = {}
+    monkeypatch.setattr(
+        cli.config,
+        "get",
+        lambda key, default: captured.update({"default": default}) or default,
+    )
+    rc = cli.main(["config", "get", "no.such.key"])
+    assert rc == 0
+    assert captured["default"] == ""
+    assert capsys.readouterr().out == "\n"

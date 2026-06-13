@@ -16,12 +16,13 @@
 #
 # Layout installed (all SlopStopper-owned files are under the `ss` namespace):
 #
+#   slopstopper-cli             # pip-installed (`pipx` preferred); every
+#                               #   check now runs via `slopstopper run ...`.
 #   Taskfile.yml                # thin root; created on fresh installs, left
 #                               #   alone if you already have one (instructions
 #                               #   printed in that case)
-#   Taskfile.ss.yml             # all SlopStopper task definitions; always
+#   Taskfile.ss.yml             # all SlopStopper task shims; always
 #                               #   refreshed on re-run so updates flow through
-#   .ss/scripts/                # Python/shell analysis scripts; always refreshed
 #   .ss/tests/                  # portable Playwright + report-generator specs
 #   .ss/playwright.config.js    # Playwright config scoped to .ss/tests/
 #   .ss/lighthouserc.json       # Lighthouse CI budgets (PR/dev)
@@ -68,8 +69,8 @@ preflight() {
   local missing_soft=()
 
   command -v git     >/dev/null 2>&1 || missing_hard+=("git")
+  command -v python3 >/dev/null 2>&1 || missing_hard+=("python3 (slopstopper-cli is a Python package): https://www.python.org/downloads/")
   command -v node    >/dev/null 2>&1 || missing_soft+=("node (Playwright, Lighthouse CI, markdownlint, TypeScript): https://nodejs.org/")
-  command -v python3 >/dev/null 2>&1 || missing_soft+=("python3 (analysis scripts under .ss/scripts): https://www.python.org/downloads/")
   command -v task    >/dev/null 2>&1 || missing_soft+=("task (canonical interface — every check is 'task ss:...'): https://taskfile.dev/installation/")
   command -v docker  >/dev/null 2>&1 || info "Docker not found — only needed for DAST (task ss:security:dast). Skipping check."
 
@@ -172,12 +173,48 @@ else
   success "Taskfile.yml installed"
 fi
 
-# 3. .ss/scripts/, .ss/tests/, playwright + lighthouse configs — all
-#    SlopStopper-owned and always refreshed on re-run.
+# 3. slopstopper-cli — install (or refresh) the Python CLI that every
+#    check runs through. `pipx` is preferred (isolates the install in
+#    its own venv); falls back to `pip install --user` if pipx is
+#    unavailable. Pre-PyPI, the install is git-based — once the wheel
+#    ships to PyPI both branches collapse to a pinned version.
+#
+# If an `.ss/` overlay (specs, playwright config, lighthouse config) is
+# already present in the target, the CLI's templates module prefers
+# those files over the package data — same shape as the workflows.
+SLOPSTOPPER_CLI_GIT="git+https://github.com/hungovercoders/slopstopper.git@main#subdirectory=cli"
+
+install_cli() {
+  if command -v pipx &>/dev/null; then
+    if pipx list 2>/dev/null | grep -q "slopstopper-cli"; then
+      info "Refreshing slopstopper-cli via pipx…"
+      pipx upgrade slopstopper-cli 2>/dev/null \
+        || pipx install --force "$SLOPSTOPPER_CLI_GIT" >/dev/null
+    else
+      info "Installing slopstopper-cli via pipx…"
+      pipx install "$SLOPSTOPPER_CLI_GIT" >/dev/null
+    fi
+  else
+    warn "pipx not found — falling back to 'pip install --user'."
+    warn "Install pipx for the cleanest experience: https://pipx.pypa.io/"
+    python3 -m pip install --user --upgrade "$SLOPSTOPPER_CLI_GIT" >/dev/null
+  fi
+
+  if ! command -v slopstopper &>/dev/null; then
+    error "slopstopper-cli install succeeded but the 'slopstopper' binary is not on PATH. Check your shell's PATH (pipx puts binaries in \$HOME/.local/bin)."
+  fi
+  success "slopstopper-cli installed ($(slopstopper --version 2>&1))"
+}
+
+install_cli
+
+# 4. .ss/ overlay — adopter-customisable specs, Playwright/Lighthouse
+#    configs, and the local-server shim. The CLI's templates module
+#    prefers files under .ss/ when present and otherwise reads from its
+#    own package data, so this overlay is optional for vanilla adopters.
+#    We still seed it for backward compat + as a starting point for
+#    customisation. Always refreshed on re-run.
 mkdir -p "$TARGET_DIR/.ss"
-rm -rf "$TARGET_DIR/.ss/scripts"
-cp -r "$SCRIPT_DIR/.ss/scripts" "$TARGET_DIR/.ss/scripts"
-success ".ss/scripts/ installed (refreshed)"
 
 rm -rf "$TARGET_DIR/.ss/tests"
 cp -r "$SCRIPT_DIR/.ss/tests" "$TARGET_DIR/.ss/tests"
@@ -188,6 +225,15 @@ cp "$SCRIPT_DIR/.ss/lighthouserc.json" "$TARGET_DIR/.ss/lighthouserc.json"
 cp "$SCRIPT_DIR/.ss/lighthouserc.prod.json" "$TARGET_DIR/.ss/lighthouserc.prod.json"
 cp "$SCRIPT_DIR/.ss/server.js" "$TARGET_DIR/.ss/server.js"
 success ".ss/ Playwright + Lighthouse configs + server.js installed (refreshed)"
+
+# Clean up any legacy .ss/scripts/ left over from pre-CLI installs —
+# every script previously copied into adopter repos is now bundled in
+# slopstopper-cli (or was a slopstopper.dev-internal helper that didn't
+# belong in adopter repos).
+if [ -d "$TARGET_DIR/.ss/scripts" ]; then
+  rm -rf "$TARGET_DIR/.ss/scripts"
+  success ".ss/scripts/ removed (logic now lives in slopstopper-cli)"
+fi
 
 # 4. .github/workflows/ — install ss- prefixed generic workflows.
 WORKFLOWS_SRC="$SCRIPT_DIR/.github/workflows"
@@ -389,8 +435,8 @@ fi
 # config file drive deletions instead of "delete file and trust the
 # marker" — both work, but config-driven is easier to audit and survive
 # clone-and-rebuild.
-if [ -f "$TARGET_DIR/.slopstopper.yml" ] && command -v python3 &>/dev/null; then
-  DISABLED="$(cd "$TARGET_DIR" && python3 "$SCRIPT_DIR/.ss/scripts/load_config.py" workflows.disabled 2>/dev/null || true)"
+if [ -f "$TARGET_DIR/.slopstopper.yml" ] && command -v slopstopper &>/dev/null; then
+  DISABLED="$(cd "$TARGET_DIR" && slopstopper config get workflows.disabled 2>/dev/null || true)"
   if [ -n "$DISABLED" ]; then
     DISABLED_COUNT=0
     IFS=',' read -ra DISABLED_LIST <<< "$DISABLED"

@@ -10,6 +10,12 @@ Subcommands today:
                                       a comma-separated path list to stdout
                                       (drop-in replacement for the bash-side
                                       .ss/scripts/discover-pages.py).
+  config get <key> [<default>]      — read a value from .slopstopper.yml.
+                                      Scalars print as-is; lists print
+                                      comma-joined; null/missing prints the
+                                      default (or empty string). Drop-in
+                                      replacement for the bash-side
+                                      .ss/scripts/load_config.py CLI shim.
 
 Future: init, inspect.
 """
@@ -20,7 +26,7 @@ import argparse
 import importlib
 import sys
 
-from slopstopper import __version__, discovery, emit as emit_mod
+from slopstopper import __version__, config, discovery, emit as emit_mod
 from slopstopper.checks import REGISTRY
 
 
@@ -80,6 +86,23 @@ def main(argv: list[str] | None = None) -> int:
         help="CI event that drives discovery mode (default: local)",
     )
 
+    config_parser = sub.add_parser(
+        "config",
+        help="Read values from .slopstopper.yml",
+    )
+    config_sub = config_parser.add_subparsers(dest="config_action", required=True)
+    config_get = config_sub.add_parser(
+        "get",
+        help="Print the value at a dot-path key, or the default if missing",
+    )
+    config_get.add_argument("key", help="Dot-path into .slopstopper.yml (e.g. workflows.disabled)")
+    config_get.add_argument(
+        "default",
+        nargs="?",
+        default="",
+        help="Fallback printed when the key is missing or null (default: empty string)",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "run":
@@ -88,6 +111,9 @@ def main(argv: list[str] | None = None) -> int:
         return _dispatch_emit(args.check, args.target)
     if args.command == "discover":
         return _dispatch_discover(args.check, args.event)
+    if args.command == "config":
+        if args.config_action == "get":
+            return _dispatch_config_get(args.key, args.default)
 
     parser.error(f"unknown command: {args.command}")
     return 2
@@ -99,6 +125,23 @@ def _dispatch_run(check_name: str, check_args: list[str]) -> int:
         print(f"   known checks: {', '.join(sorted(REGISTRY))}", file=sys.stderr)
         return 2
     return REGISTRY[check_name](check_args)
+
+
+def _dispatch_config_get(key: str, default: str) -> int:
+    """Print the value at `key`, matching the bash load_config.py shape.
+
+    Scalars print as-is. Lists print comma-joined. Missing / null
+    values print the `default` argument (which itself defaults to an
+    empty string).
+    """
+    value = config.get(key, default)
+    if value is None:
+        print("")
+    elif isinstance(value, list):
+        print(",".join(str(v) for v in value))
+    else:
+        print(value)
+    return 0
 
 
 def _dispatch_discover(check_name: str, event: str) -> int:
