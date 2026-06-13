@@ -81,6 +81,14 @@ diff <(curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/m
 
 Any keys present upstream but missing locally are new knobs you can opt into. Most ship with sensible defaults so no action is required — but the diff is the easiest way to know what changed.
 
+Surfaces worth checking explicitly:
+
+- **`hygiene.docs_size.*` / `hygiene.entry_files.max_words`** — per-check thresholds. Defaults are intentionally tight (150 KB / 25 files / 1500 words). If a `docs-size` or `entry-files` alert started firing post-upgrade, the threshold knob is usually what's wanted — not deleting docs.
+- **`reliability.coverage.{pr,main,cron}`** — page-discovery modes. Adopters with a sitemap should opt in to `sitemap` on main and `changed` on PRs; otherwise reliability checks only audit `/` by default.
+- **`reliability.coverage.cross_cutting_paths`** — escalation triggers for `changed` mode. If a PR-only audit skipped pages that should have been included, this is the lever.
+
+If a previously-failing check started passing after an update without any code change, eyeball whether a default got loosened upstream — those are flagged in the slopstopper changelog.
+
 ## Step 6 — Check for new task targets
 
 Re-running the installer refreshes `Taskfile.ss.yml`, which may now expose new `task ss:*` targets that weren't there last time. Eyeball the list:

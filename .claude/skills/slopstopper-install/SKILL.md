@@ -118,6 +118,22 @@ workflows:
   disabled: []                  # list any ss-*.yml workflows to remove on next install.sh
 ```
 
+### Optional: tune the hygiene thresholds
+
+Every hygiene check reads its own thresholds from `.slopstopper.yml`, falling back to a sensible default when unset. You don't need to touch these to get started — but if a check fires for a reason that's actually fine (e.g. your repo intentionally has 30 docs pages, or your `CLAUDE.md` is meaningfully longer than 1500 words for project reasons), tune the cap rather than dropping content. Don't tune to silence noise; tune to match a deliberate design decision.
+
+```yaml
+hygiene:
+  docs_size:
+    max_total_size_kb: 150   # default — total .md under docs/ (excl. archive/)
+    max_file_size_kb: 20     # default — largest single doc
+    max_files: 25            # default — total doc count
+  entry_files:
+    max_words: 1500          # default — README.md, CLAUDE.md, AGENTS.md, etc.
+```
+
+Larger sites should also opt into `reliability.coverage.*` modes so accessibility/SEO/broken-links audit the whole sitemap on main and only changed pages on PRs — see [`.slopstopper.yml.example`](https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example) for the schema reference and resolution order.
+
 ### Push the Node version to a GitHub repo variable
 
 Workflows read `${{ vars.SLOPSTOPPER_NODE_VERSION || '20' }}` — set the variable from `.slopstopper.yml`:

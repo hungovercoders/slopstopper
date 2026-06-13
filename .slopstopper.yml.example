@@ -71,6 +71,56 @@ smoke:
   # site-wide image).
   og_image_path: /og-image.png
 
+# ── Hygiene-check thresholds ─────────────────────────────────────────
+# Every hygiene check reads its own thresholds from here, falling back
+# to the defaults shown if a key is unset. Raise them for monorepos /
+# heavy docs, lower them if your repo is small and you want tighter
+# limits. Adopters typically only need to tune these when a check
+# starts failing for a reason that's actually fine (e.g. you intentionally
+# have 30 docs pages, max_files: 25 is wrong for you — not your docs).
+hygiene:
+  docs_size:
+    # Total markdown size under docs/ before the report flags an alert.
+    # Includes every .md file except docs/archive/**.
+    max_total_size_kb: 150
+    # Largest single doc before the report flags it.
+    max_file_size_kb: 20
+    # Total number of doc files before the report flags it.
+    max_files: 25
+  entry_files:
+    # Hard cap for entry files (README.md, CLAUDE.md, AGENTS.md, etc.).
+    # ~1500 words ≈ ~2000 tokens — see docs/hygiene/ for the rationale.
+    max_words: 1500
+
+# ── Reliability coverage modes ───────────────────────────────────────
+# Each reliability check (accessibility, seo, broken_links, smoke) needs
+# to know which pages to audit. By default it uses pages.<check> above.
+# For larger sites, opt into one of the smarter modes per CI event:
+#   "sitemap"      — read every <loc> in dist/client/sitemap-index.xml
+#                    (or sibling fallbacks). Requires a build step before
+#                    the check; great for "audit everything on main".
+#   "changed"      — diff origin/main...HEAD, map each changed source
+#                    file to its output URL (Astro / Next / SvelteKit
+#                    auto-detected). PR-only; falls back to sitemap if
+#                    git history is missing. Great for "fast PR audits".
+#   "/,/path,..."  — explicit comma-separated list (overrides pages.<check>).
+#
+# Unset keys fall back to pages.<check>.
+reliability:
+  coverage:
+    pr: changed
+    main: sitemap
+    cron: sitemap
+    # When a changed-mode PR touches one of these glob-matched files,
+    # the check escalates to a full sitemap sweep (because the change is
+    # cross-cutting and would affect every page). Empty list = never
+    # escalate.
+    cross_cutting_paths:
+      - 'src/layouts/**'
+      - 'astro.config.*'
+      - 'tailwind.config.*'
+      - 'package.json'
+
 # ── Workflows to skip on this repo ───────────────────────────────────
 # install.sh removes any workflow named here from .github/workflows/
 # (and remembers the deletion via .ss/.workflows-installed so re-runs

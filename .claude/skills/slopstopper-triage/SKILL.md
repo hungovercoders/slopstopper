@@ -95,17 +95,26 @@ The check's heuristic is misfiring on this codebase. Use the check's documented 
 
 Each suppression is a documented gate exception, not a way to quiet findings that should be fixed. The PR that adds it is the place reviewers catch it.
 
-### Threshold too tight — tune in `docs/<loop>/<CONFIG>.md`
+### Threshold too tight — tune in `.slopstopper.yml`
 
-The check is correct but the default threshold doesn't fit this repo. Common tuning files:
+The check is correct but the default threshold doesn't fit this repo. **First check `.slopstopper.yml`** — many checks read their thresholds from there, falling back to a hardcoded default when unset. The example file ([`.slopstopper.yml.example`](https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example)) is the canonical schema reference.
+
+Config-driven knobs (no file edit needed beyond `.slopstopper.yml`):
+
+| Check | Keys | Defaults |
+| --- | --- | --- |
+| `hygiene:docs-size` | `hygiene.docs_size.max_total_size_kb` / `.max_file_size_kb` / `.max_files` | 150 / 20 / 25 |
+| `hygiene:entry-files` | `hygiene.entry_files.max_words` | 1500 |
+| `reliability:smoke` | `pages.smoke`, `smoke.og_image_path` | `/`, `/og-image.png` |
+| `reliability:{accessibility,seo,broken_links}` | `pages.<check>`, `reliability.coverage.<event>` | `/`, hand-list mode |
+| `hygiene:csp-exceptions` | `headers.source`, `headers.format` | unset (graceful skip) |
+
+Tunings that are NOT yet config-driven (require code/file edits):
 
 - `docs/hygiene/COMPLEXITY_CONFIG.md` — lizard cyclomatic complexity caps.
-- `docs/hygiene/DOCS_SIZE_MONITORING.md` — docs-size byte budgets.
-- `.ss/lighthouserc.json` — Core Web Vitals thresholds (LCP, TBT, CLS, Performance score).
-- The `1500` constant in `.ss/scripts/check-entry-file-size.py` for entry-file token budgets.
-- The `25` constant for max doc file count in `check-docs-size.sh`.
+- `.ss/lighthouserc.json` (or the bundled `cli/slopstopper/data/lighthouserc.json`) — Core Web Vitals thresholds.
 
-Tuning is a real decision — document why in the relevant `docs/<loop>/<CONFIG>.md` so the next maintainer doesn't roll it back.
+Tuning is a real decision — when you raise a threshold, leave a `# why` comment in `.slopstopper.yml` so the next maintainer doesn't roll it back. Don't tune to silence noise; tune to match a deliberate design decision.
 
 ## Step 5 — Per-symptom gotcha table
 

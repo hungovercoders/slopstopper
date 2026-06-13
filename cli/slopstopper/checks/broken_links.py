@@ -14,12 +14,23 @@ Ports the bash reliability:links flow:
                       --reporter=list[,html]
 
 Subprocess-invokes `npx playwright`. Playwright is Apache-2.0; the
-slopstopper-cli wheel ships zero Playwright code. discover-pages.py
-is still adopter-vendored today (subprocess-invoked here for parity);
-lifting it into the package is a follow-up.
+slopstopper-cli wheel ships zero Playwright code. Page discovery uses
+the in-CLI slopstopper.discovery module.
 
 Falls back to SMOKE_TEST_URL when BROKEN_LINKS_TEST_URL is unset,
 matching the bash flow exactly.
+
+Configuration (.slopstopper.yml — all optional):
+
+    pages:
+      broken_links: /,/blog,/about
+    reliability:
+      coverage:
+        pr: changed     # see slopstopper.discovery for the resolution order
+        main: sitemap
+
+See .slopstopper.yml.example for the canonical schema and coverage
+modes.
 
 Exit codes:
   0 — playwright tests passed

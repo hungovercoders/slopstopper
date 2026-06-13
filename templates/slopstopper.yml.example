@@ -93,6 +93,20 @@ smoke:
   # assertion entirely (use if you ship per-post share images).
   og_image_path: /og-image.png
 
+# ── Hygiene-check thresholds ─────────────────────────────────────────
+# Every hygiene check reads its own thresholds from here. Defaults shown
+# are what the check uses if the key is unset. Tune when a check fails
+# for a reason that's actually fine (e.g. you intentionally have 30 docs
+# pages and `max_files: 25` is the wrong shape for you — not your docs).
+#
+# hygiene:
+#   docs_size:
+#     max_total_size_kb: 150   # all .md under docs/ (excluding docs/archive/**)
+#     max_file_size_kb: 20     # largest single doc
+#     max_files: 25            # total doc count
+#   entry_files:
+#     max_words: 1500          # README.md, CLAUDE.md, AGENTS.md, etc.
+
 # ── Workflows to skip on this repo ───────────────────────────────────
 workflows:
   disabled: []

@@ -5,9 +5,15 @@ principle declared in docs/index.md: agent entry files (README.md,
 AGENTS.md, CLAUDE.md) stay under a word budget so they don't crowd
 the context window of every agent conversation.
 
-Reads the budget from .slopstopper.yml's hygiene.entry_files.max_words
-key (defaulting to 1500 — ≈ 2k tokens for English prose). Writes a
-markdown report and a JSON report under .ss/reports/entry-files/.
+Writes a markdown report and a JSON report under .ss/reports/entry-files/.
+
+Configuration (.slopstopper.yml — optional):
+
+    hygiene:
+      entry_files:
+        max_words: 1500   # ≈ 2k tokens for English prose
+
+See .slopstopper.yml.example for the canonical schema.
 
 Exit codes mirror the bash version:
   0 — all entry files within budget
