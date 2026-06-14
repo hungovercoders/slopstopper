@@ -25,7 +25,9 @@ on:
         type: string
 
 permissions:
-  contents: write     # create GitHub Releases + upload assets
+  contents: write       # create GitHub Releases + upload assets
+  id-token: write       # OIDC token for keyless Sigstore signing (attestation)
+  attestations: write   # store the build provenance attestation on the repo
 
 jobs:
   build-and-release:
@@ -79,6 +81,19 @@ jobs:
 
       - name: List built artifacts
         run: ls -la cli/dist/
+
+      # Sign the wheel + sdist with keyless Sigstore (GitHub OIDC). The
+      # attestation goes to the public transparency log and is attached
+      # to the repo's attestations index. Adopters verify with:
+      #
+      #   gh attestation verify <wheel> --owner hungovercoders
+      #
+      # No keys to manage, no token rotation — the OIDC token is scoped
+      # to this workflow run.
+      - name: Generate build provenance attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: 'cli/dist/*'
 
       - name: Extract release notes for this version from CHANGELOG.md
         id: notes
