@@ -7,13 +7,13 @@
 The CLI alone (most use cases):
 
 ```bash
-pipx install https://github.com/hungovercoders/slopstopper/releases/download/v0.2.1/slopstopper_cli-0.2.1-py3-none-any.whl
+pipx install slopstopper-cli
 slopstopper checks list             # see what's available
 slopstopper doctor                  # verify the external tools you'll need
 slopstopper run hygiene:docs-size   # run a check (writes .ss/reports/...)
 ```
 
-> Installing the pre-built wheel attached to the [v0.2.1 GitHub Release](https://github.com/hungovercoders/slopstopper/releases/tag/v0.2.1). Once `slopstopper-cli` lands on PyPI this collapses to `pipx install slopstopper-cli`. `pipx upgrade slopstopper-cli` works regardless of source.
+> Published to PyPI on every release tag. `pipx upgrade slopstopper-cli` pulls the latest. Each release is also attached to [GitHub Releases](https://github.com/hungovercoders/slopstopper/releases/latest) with a Sigstore build-provenance attestation — verify with `gh attestation verify <wheel> --owner hungovercoders`.
 
 The full suite into a repo (CLI + GitHub Actions workflows + Taskfile shim + config seed):
 
@@ -35,6 +35,7 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
 - [Contribute](#contribute)
 - [For agents (Claude, Copilot, Cursor)](#agents)
 - [Dogfooded here — slopstopper.dev](#dogfooded-here--slopstopperdev)
+- [Acknowledgements](#acknowledgements)
 - [License](#license)
 
 > 🗺️ **Documentation map:** [`docs/index.md`](./docs/index.md) is the single index of all project documentation. This README, [`AGENTS.md`](./AGENTS.md) and [`CLAUDE.md`](./CLAUDE.md) are deliberately thin entry points — all three defer to the map.
@@ -203,6 +204,10 @@ Deployed via [Cloudflare Workers Builds](https://developers.cloudflare.com/worke
 ### See it in action
 
 📍 [**slopstopper.dev**](https://slopstopper.dev/) — live reference site, runs every check in this README on every change. Browse [Features](https://slopstopper.dev/features.html) to see each check's YAML and a mock report, or [Tools](https://slopstopper.dev/tools.html) for the technology stack.
+
+## Acknowledgements
+
+slopstopper-cli ships with no third-party Python dependencies — every check invokes its tool via `subprocess` only. Full credit, licences and upstream links for every tool we drive (Semgrep, Gitleaks, Trivy, Lizard, OWASP ZAP, Playwright, axe-core, Lighthouse CI, markdownlint-cli, Docker, GitHub CLI, Node.js) live in [`ATTRIBUTIONS.md`](./ATTRIBUTIONS.md).
 
 ## License
 

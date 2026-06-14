@@ -91,12 +91,12 @@
             <p class="lede">SlopStopper is a Python CLI plus the GitHub Actions workflows that drive it. Install the CLI alone for local use, or run the all-in-one installer to also seed the workflows + Taskfile shim into a repo.</p>
             <h3 class="install-heading">Just the CLI</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install slopstopper-cli via pipx" data-copyable>
-                <pre><code>pipx install https://github.com/hungovercoders/slopstopper/releases/download/v0.2.1/slopstopper_cli-0.2.1-py3-none-any.whl
+                <pre><code>pipx install slopstopper-cli
 slopstopper checks list
 slopstopper doctor
 slopstopper run hygiene:docs-size</code></pre>
             </div>
-            <p class="install-subnote">Installing the pre-built wheel attached to the <a href="https://github.com/hungovercoders/slopstopper/releases/tag/v0.2.1">v0.2.1 GitHub Release</a>. The short <code>pipx install slopstopper-cli</code> form lands once PyPI is wired up; <code>pipx upgrade slopstopper-cli</code> works regardless. The CLI itself only needs Python — per-check tools (<code>node</code>, <code>semgrep</code>, <code>gitleaks</code>, <code>trivy</code>, <code>lizard</code>, <code>docker</code>) install per the checks you actually use; run <code>slopstopper doctor</code> to see what's missing.</p>
+            <p class="install-subnote">Published to PyPI on every release tag; <code>pipx upgrade slopstopper-cli</code> pulls the latest. The <a href="https://github.com/hungovercoders/slopstopper/releases/latest">latest GitHub Release</a> also carries a Sigstore build-provenance attestation — verify with <code>gh attestation verify &lt;wheel&gt; --owner hungovercoders</code>. The CLI itself only needs Python — per-check tools (<code>node</code>, <code>semgrep</code>, <code>gitleaks</code>, <code>trivy</code>, <code>lizard</code>, <code>docker</code>) install per the checks you actually use; run <code>slopstopper doctor</code> to see what's missing.</p>
             <h3 class="install-heading">Full suite into a repo</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install full suite" data-copyable>
                 <pre><code>curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash</code></pre>

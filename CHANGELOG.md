@@ -8,6 +8,30 @@ The release workflow (`.github/workflows/ss-release.yml`) reads the section matc
 
 Nothing yet.
 
+## [0.3.0] - 2026-06-14
+
+First release published to PyPI. Adopter docs, the website, `install.sh` and every `ss-*-check.yml` workflow stop pinning a wheel URL — they all install `slopstopper-cli` by name, so future releases land everywhere automatically with no doc churn.
+
+### Added
+
+- **PyPI distribution.** `pipx install slopstopper-cli` (and `pipx upgrade slopstopper-cli`) is now the canonical install. Released to PyPI on every `v*.*.*` tag via the OIDC Trusted Publisher flow — no API tokens, no manual `twine upload`. The release workflow's new `Publish to PyPI` step uses `pypa/gh-action-pypi-publish@release/v1` with `skip-existing: true` for idempotent re-runs.
+- **LICENSE bundled in the wheel.** Added `cli/LICENSE` (verbatim copy of the root MIT licence) and `license-files = ["LICENSE"]` to `cli/pyproject.toml`. PyPI displays the licence correctly and `python -m zipfile -l` confirms it ships at the wheel root.
+- **`ATTRIBUTIONS.md` at repo root.** Canonical third-party crediting for every tool slopstopper-cli subprocess-invokes (Semgrep, Gitleaks, Trivy, OWASP ZAP, Playwright, axe-core, Lighthouse CI, Lizard, markdownlint-cli, Docker, GitHub CLI, Node.js) plus build-time GitHub Actions. Linked from `README.md`, `cli/README.md`, `app/tools.html`, and `cli/pyproject.toml`'s `Acknowledgements` URL.
+- **`maintainers` field** on `cli/pyproject.toml` so PyPI has a contact for the project.
+- **`Changelog` + `Acknowledgements` URLs** on the PyPI project page (`[project.urls]`).
+- **Per-tool licence badges** on every card in `app/tools.html` plus a footer linking to `ATTRIBUTIONS.md`.
+
+### Changed
+
+- **`install.sh`** no longer carries a pinned wheel URL constant. Installs/refreshes from PyPI directly via `pipx install slopstopper-cli` (or `python3 -m pip install --user --upgrade slopstopper-cli` fallback).
+- **All 15 `ss-*-check.yml` workflows** install with `pip install slopstopper-cli` instead of the pinned `releases/download/v0.2.1/slopstopper_cli-0.2.1-py3-none-any.whl` URL. Adopter CI tracks the latest release automatically.
+- **`docs/runbooks/RELEASE.md`** rewritten around the new flow. The "Bump the pinned wheel URL" step and its `sed` one-liner are gone. The "Manual PyPI publish" section is gone (automated). New section: "One-time PyPI Trusted Publisher setup".
+- **READMEs + website install commands** all show `pipx install slopstopper-cli`; release-tag links go to `releases/latest` rather than a pinned version.
+
+### Notes for adopters
+
+Existing adopter repos keep working — their installed workflows still install slopstopper-cli 0.2.1 from the GitHub Release URL until they next run `install.sh`, which rewrites their workflows to the new `pip install slopstopper-cli` shape. No forced migration.
+
 ## [0.2.1] - 2026-06-14
 
 ### Added

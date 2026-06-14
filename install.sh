@@ -177,30 +177,28 @@ else
 fi
 
 # 3. slopstopper-cli — install (or refresh) the Python CLI that every
-#    check runs through. `pipx` is preferred (isolates the install in
-#    its own venv); falls back to `pip install --user` if pipx is
-#    unavailable. Pre-PyPI, the install is git-based — once the wheel
-#    ships to PyPI both branches collapse to a pinned version.
+#    check runs through. Pulled from PyPI, so adopters always get the
+#    latest release without us having to bump a pinned wheel URL across
+#    docs and workflows on every cut. `pipx` is preferred (isolates the
+#    install in its own venv); falls back to `pip install --user`.
 #
 # If an `.ss/` overlay (specs, playwright config, lighthouse config) is
 # already present in the target, the CLI's templates module prefers
 # those files over the package data — same shape as the workflows.
-SLOPSTOPPER_CLI_GIT="https://github.com/hungovercoders/slopstopper/releases/download/v0.2.1/slopstopper_cli-0.2.1-py3-none-any.whl"
-
 install_cli() {
   if command -v pipx &>/dev/null; then
     if pipx list 2>/dev/null | grep -q "slopstopper-cli"; then
       info "Refreshing slopstopper-cli via pipx…"
       pipx upgrade slopstopper-cli 2>/dev/null \
-        || pipx install --force "$SLOPSTOPPER_CLI_GIT" >/dev/null
+        || pipx install --force slopstopper-cli >/dev/null
     else
       info "Installing slopstopper-cli via pipx…"
-      pipx install "$SLOPSTOPPER_CLI_GIT" >/dev/null
+      pipx install slopstopper-cli >/dev/null
     fi
   else
     warn "pipx not found — falling back to 'pip install --user'."
     warn "Install pipx for the cleanest experience: https://pipx.pypa.io/"
-    python3 -m pip install --user --upgrade "$SLOPSTOPPER_CLI_GIT" >/dev/null
+    python3 -m pip install --user --upgrade slopstopper-cli >/dev/null
   fi
 
   if ! command -v slopstopper &>/dev/null; then
