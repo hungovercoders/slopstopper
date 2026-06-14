@@ -55,8 +55,12 @@ jobs:
         env:
           VERSION: ${{ steps.tag.outputs.version }}
         run: |
-          PYPROJECT_VER=$(grep -m1 '^version = ' cli/pyproject.toml | sed -E 's/version = "(.*)"/\1/')
-          INIT_VER=$(grep -m1 '__version__' cli/slopstopper/__init__.py | sed -E 's/__version__ = "(.*)"/\1/')
+          # Use [^"]+ to bound the capture and .* on both sides so any
+          # trailing content (e.g. release-please's
+          # `# x-release-please-version` marker on __init__.py) is
+          # consumed cleanly instead of being included in the version.
+          PYPROJECT_VER=$(grep -m1 '^version = ' cli/pyproject.toml | sed -E 's/.*= "([^"]+)".*/\1/')
+          INIT_VER=$(grep -m1 '__version__' cli/slopstopper/__init__.py | sed -E 's/.*= "([^"]+)".*/\1/')
           echo "pyproject:     $PYPROJECT_VER"
           echo "__init__.py:   $INIT_VER"
           echo "tag (without v): $VERSION"
