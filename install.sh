@@ -172,7 +172,17 @@ if [ -f "$TARGET_DIR/Taskfile.yml" ]; then
     echo ""
   fi
 else
-  cp "$SCRIPT_DIR/Taskfile.yml" "$TARGET_DIR/Taskfile.yml"
+  # Write a minimal root Taskfile inline rather than copying slopstopper's
+  # own — slopstopper's root file carries `contributing:*` + `decisions:*`
+  # tasks that are scoped to working on slopstopper itself, not the suite
+  # being shipped to adopters.
+  cat > "$TARGET_DIR/Taskfile.yml" <<'YAML'
+version: '3'
+
+includes:
+  ss:
+    taskfile: ./Taskfile.ss.yml
+YAML
   success "Taskfile.yml installed"
 fi
 
@@ -425,10 +435,10 @@ seed_template ".zap/rules.tsv" \
   "$SCRIPT_DIR/templates/zap-rules.tsv.example" \
   "$TARGET_DIR/.zap/rules.tsv"
 
-# .markdownlint.json — defaults that let real docs pass (MD013 off, etc.)
-# task ss:hygiene:lint runs `npx markdownlint "docs/**/*.md"`; markdownlint
-# auto-discovers the closest config upward, so seeding at repo root works
-# whether the adopter calls it from root or from docs/.
+# .markdownlint.json — defaults that let real docs pass (MD013 off, etc.).
+# Adopters invoke markdownlint directly (`npx markdownlint "docs/**/*.md"`);
+# markdownlint auto-discovers the closest config upward, so seeding at repo
+# root works whether they call it from root or from docs/.
 seed_template ".markdownlint.json" \
   "$SCRIPT_DIR/templates/markdownlint.json.example" \
   "$TARGET_DIR/.markdownlint.json"

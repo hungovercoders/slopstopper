@@ -117,7 +117,7 @@ Flag any new checks the user might want to wire into local pre-commit hooks or t
 Same loop as `slopstopper-install` Step 7, condensed because the build / Playwright deps are already in place:
 
 ```bash
-task ss:hygiene:test    # lint + structure + size + docs-* + entry-files + complexity
+task ss:hygiene:test    # docs-size + docs-structure + docs-accuracy + entry-files + csp-exceptions + complexity
 task ss:security:scan   # SAST + secrets + dependency CVEs (+ DAST if a URL is wired)
 ```
 

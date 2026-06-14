@@ -270,7 +270,7 @@ Run the two static aggregates first. They cover every static workflow that ships
 
 ```bash
 npm install                  # pulls merged devDeps once
-task ss:hygiene:test         # lint + structure + size + docs-size + docs-structure + docs-accuracy + entry-files + complexity
+task ss:hygiene:test         # docs-size + docs-structure + docs-accuracy + entry-files + csp-exceptions + complexity
 task ss:security:scan        # SAST + secrets + dependency CVEs + DAST (DAST needs URL — skip or run after Pass B)
 ```
 

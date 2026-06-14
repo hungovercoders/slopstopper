@@ -33,9 +33,9 @@ Each category has a README that defines its purpose. Content within categories i
 | -------- | ------- | ------ | ----- |
 | [app/](app/) | What the site does and how pages are organised | [README](app/README.md) | — |
 | [architecture/](architecture/) | System structure and boundaries | [README](architecture/README.md) | — |
-| [decisions/](decisions/) | Significant decisions and rationale | [README](decisions/README.md) | `task ss:decisions:*` |
+| [decisions/](decisions/) | Significant decisions and rationale | [README](decisions/README.md) | `task decisions:*` |
 | [deployment/](deployment/) | Release and environment workflows | [README](deployment/README.md) | — |
-| [contributing/](contributing/) | Contributor workflow and expectations | [README](contributing/README.md) | `task ss:contributing:*` |
+| [contributing/](contributing/) | Contributor workflow and expectations | [README](contributing/README.md) | `task contributing:*` |
 | [hygiene/](hygiene/) | Quality gates and maintenance | [README](hygiene/README.md) | `task ss:hygiene:*` |
 | [reliability/](reliability/) | Service level and incident response | [README](reliability/README.md) | `task ss:reliability:*` |
 | [runbooks/](runbooks/) | Operational procedures | [README](runbooks/README.md) | — |

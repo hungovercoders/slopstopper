@@ -1,19 +1,134 @@
-# Root Taskfile — thin integration layer.
+# Root Taskfile for slopstopper itself.
 #
-# SlopStopper's tasks are defined in Taskfile.ss.yml under the `ss` namespace.
-# Run any of them with the prefix:
+# Two task surfaces live here:
+#   1. `task ss:*` — the adopter-facing quality suite, included from
+#      ./Taskfile.ss.yml. This is what gets shipped to adopter repos
+#      by install.sh.
+#   2. `task contributing:*` and `task decisions:*` — slopstopper-internal
+#      tooling for working on the site/CLI/governance. These are NOT
+#      shipped to adopters.
 #
-#   task ss:hygiene:complexity
-#   task ss:security:sast
-#   task ss:reliability:accessibility
-#   task --list                       # see everything
-#
-# This file is the consumer-facing integration point. If you adopt
-# SlopStopper into a repo that already has a Taskfile.yml, add the
-# `includes` block below to your existing file instead of overwriting it.
+# See `task --list-all` for the full surface.
 
 version: '3'
 
 includes:
   ss:
     taskfile: ./Taskfile.ss.yml
+
+tasks:
+  # ───────────── Contributing — slopstopper's own dev loop ─────────────
+
+  contributing:setup:
+    desc: Install project dependencies
+    cmds:
+      - npm install
+
+  contributing:assets:
+    desc: Re-render SVG source assets (og-image, apple-touch-icon) to PNG via Playwright
+    cmds:
+      - node scripts/render-static-assets.js
+
+  contributing:build:
+    desc: Build the project (if a build script is defined)
+    cmds:
+      - |
+        if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.build ? 0 : 1)"; then
+          npm run build {{.CLI_ARGS}}
+        else
+          echo "ℹ️  No build script defined in package.json; nothing to build for this static project."
+        fi
+
+  contributing:lint:
+    desc: Run lint checks
+    cmds:
+      - |
+        if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.lint ? 0 : 1)"; then
+          npm run lint {{.CLI_ARGS}}
+        else
+          files="docs/**/*.md"
+          if [ -f CONTRIBUTING.md ]; then
+            files="$files CONTRIBUTING.md"
+          fi
+          npx markdownlint $files
+        fi
+
+  contributing:run:
+    desc: Run local development server (this repo's server.js, if present)
+    cmds:
+      - |
+        if [ -f server.js ]; then
+          node server.js
+        else
+          echo "ℹ️  No server.js found in this repo — SlopStopper does not ship a generic dev server."
+          echo "    Start your app's own server, then run SlopStopper tasks against its URL,"
+          echo "    e.g. SMOKE_TEST_URL=http://localhost:3000 task ss:reliability:smoke"
+        fi
+
+  contributing:start:
+    desc: Start local development server
+    cmds:
+      - task: contributing:run
+
+  contributing:test:
+    desc: Run Playwright tests (root config if present, otherwise SlopStopper's portable suite)
+    cmds:
+      - |
+        if [ -f playwright.config.js ] || [ -f playwright.config.ts ]; then
+          npx playwright test {{.CLI_ARGS}}
+        elif [ -f .ss/playwright.config.js ]; then
+          npx playwright test --config=.ss/playwright.config.js {{.CLI_ARGS}}
+        else
+          echo "ℹ️  No playwright config found — nothing to run."
+        fi
+
+  contributing:test:headed:
+    desc: Run Playwright tests with headed browser
+    cmds:
+      - |
+        if [ -f playwright.config.js ] || [ -f playwright.config.ts ]; then
+          npx playwright test --headed {{.CLI_ARGS}}
+        elif [ -f .ss/playwright.config.js ]; then
+          npx playwright test --config=.ss/playwright.config.js --headed {{.CLI_ARGS}}
+        else
+          echo "ℹ️  No playwright config found — nothing to run."
+        fi
+
+  # ───────────── Decisions — slopstopper's ADR governance ─────────────
+
+  decisions:validate:
+    desc: Validate decisions documentation baseline
+    cmds:
+      - |
+        if [ ! -f docs/decisions/DECISIONS.md ]; then
+          echo "❌ docs/decisions/DECISIONS.md not found"
+          exit 1
+        fi
+        if [ ! -f docs/decisions/DECISION_TEMPLATE.md ]; then
+          echo "❌ docs/decisions/DECISION_TEMPLATE.md not found"
+          exit 1
+        fi
+        if ! grep -q "| Date | Decision | Status | Rationale | Notes |" docs/decisions/DECISIONS.md; then
+          echo "❌ docs/decisions/DECISIONS.md is missing the decisions table header"
+          exit 1
+        fi
+        echo "✅ Decisions documentation baseline is valid"
+
+  decisions:new:
+    desc: Create a new decision note from template (use SLUG=<name>)
+    vars:
+      DATE:
+        sh: date +%F
+    cmds:
+      - |
+        if [ -z "{{.SLUG}}" ]; then
+          echo "❌ Missing SLUG. Usage: task decisions:new SLUG=<decision-name>"
+          exit 1
+        fi
+        target="docs/decisions/{{.DATE}}-{{.SLUG}}.md"
+        if [ -f "$target" ]; then
+          echo "❌ $target already exists"
+          exit 1
+        fi
+        cp docs/decisions/DECISION_TEMPLATE.md "$target"
+        echo "✅ Created $target"

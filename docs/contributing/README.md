@@ -24,10 +24,10 @@ Run `task --list` for the full set. The most-used ones:
 
 | Task | What it does |
 | ---- | ------------ |
-| `task ss:contributing:setup` | Install dependencies |
-| `task ss:contributing:run` | Local dev server on port 8080 (via `slopstopper serve`) |
-| `task ss:contributing:test` | Playwright smoke + a11y suite (via the CLI) |
-| `task ss:contributing:lint` | Lint checks |
+| `task contributing:setup` | Install dependencies |
+| `task contributing:run` | Local dev server on port 8080 (via `slopstopper serve`) |
+| `task contributing:test` | Playwright smoke + a11y suite (via the CLI) |
+| `task contributing:lint` | Lint checks |
 | `task ss:hygiene:complexity` | Cyclomatic complexity check (Lizard) |
 | `task ss:hygiene:entry-files` | Enforce <2k token budget on entry files |
 | `task ss:hygiene:docs-accuracy` | Catch broken links + stale task/workflow refs |
@@ -49,8 +49,8 @@ Run these before opening a PR. Each one mirrors the equivalent CI check
 exactly:
 
 ```bash
-task ss:contributing:run              # Local server on :8080
-task ss:contributing:test             # Playwright smoke + a11y
+task contributing:run                 # Local server on :8080
+task contributing:test                # Playwright smoke + a11y
 task ss:reliability:accessibility     # axe-core audit
 task ss:reliability:cwv               # Lighthouse CI
 task ss:hygiene:test                  # Full hygiene suite

@@ -1,8 +1,16 @@
 version: '3'
 
+# Adopter-facing task shims. Each task here is a thin wrapper around
+# `slopstopper run <category>:<check>` — same code path as CI.
+#
+# Discoverable via `task --list-all`. Skip this file entirely if you
+# prefer calling the CLI directly (the shims and the CLI are equivalent).
+
 tasks:
+  # ───────────── Reliability (need a URL) ─────────────
+
   reliability:smoke:
-    desc: Run smoke tests against a live URL (via slopstopper-cli)
+    desc: Run smoke tests against a live URL
     summary: |
       Subprocess-invokes `npx playwright test` against the smoke spec
       bundled in the CLI. Reads `pages.smoke` + `smoke.og_image_path`
@@ -15,10 +23,9 @@ tasks:
       - |
         {{if .CLI_ARGS}}export SMOKE_TEST_URL="{{.CLI_ARGS}}"{{end}}
         slopstopper run reliability:smoke
-    silent: false
 
   reliability:cwv:
-    desc: Run a Core Web Vitals (Lighthouse CI) audit (via slopstopper-cli)
+    desc: Run a Core Web Vitals (Lighthouse CI) audit
     summary: |
       Subprocess-invokes `npx lhci autorun` against the configured
       Lighthouse CI thresholds (.ss/lighthouserc.json by default).
@@ -36,10 +43,9 @@ tasks:
       - |
         {{if .CLI_ARGS}}export CWV_URL="{{.CLI_ARGS}}"{{end}}
         slopstopper run reliability:cwv
-    silent: false
 
   reliability:seo:
-    desc: Validate SEO + social-share metatags on a live URL (via slopstopper-cli)
+    desc: Validate SEO + social-share metatags on a live URL
     summary: |
       Fetches one or more pages and asserts the presence of `<title>`,
       meta description, canonical, viewport, OpenGraph (og:title /
@@ -63,10 +69,9 @@ tasks:
       - |
         {{if .CLI_ARGS}}export SEO_TEST_URL="{{.CLI_ARGS}}"{{end}}
         slopstopper run reliability:seo
-    silent: false
 
   reliability:accessibility:
-    desc: Run accessibility audit against a live URL (via slopstopper-cli)
+    desc: Run accessibility audit against a live URL
     summary: |
       Subprocess-invokes `npx playwright test` against the
       accessibility spec bundled in the CLI. Reads
@@ -84,10 +89,9 @@ tasks:
       - |
         {{if .CLI_ARGS}}export ACCESSIBILITY_TEST_URL="{{.CLI_ARGS}}"{{end}}
         slopstopper run reliability:accessibility
-    silent: false
 
   reliability:links:
-    desc: Run broken-link checks against a live URL (via slopstopper-cli)
+    desc: Run broken-link checks against a live URL
     summary: |
       Subprocess-invokes `npx playwright test` against the
       broken-links spec bundled in the CLI. Reads
@@ -104,11 +108,11 @@ tasks:
       - |
         {{if .CLI_ARGS}}export BROKEN_LINKS_TEST_URL="{{.CLI_ARGS}}"{{end}}
         slopstopper run reliability:broken-links
-    silent: false
 
+  # ───────────── Hygiene (static analysis) ─────────────
 
   hygiene:complexity:
-    desc: Analyze code complexity using Lizard (via slopstopper-cli)
+    desc: Analyze code complexity using Lizard
     summary: |
       Performs code complexity analysis on the codebase using Lizard.
       Generates both MD and CSV reports under .ss/reports/complexity/.
@@ -117,236 +121,9 @@ tasks:
         task ss:hygiene:complexity
     cmds:
       - slopstopper run hygiene:complexity
-    silent: false
-
-  security:
-    internal: true
-    desc: Run all security checks (SAST, vulnerabilities, DAST, secrets) via slopstopper-cli
-    summary: |
-      Runs the full security suite via slopstopper-cli: SAST (Semgrep),
-      vulnerability scanning (Trivy), DAST (OWASP ZAP), and secrets
-      detection (Gitleaks).
-
-      Each underlying tool must be installed on PATH — the CLI does
-      NOT auto-install them. See each tool's docs for setup.
-    cmds:
-      - task: sast
-      - task: vulnerability:all
-      - task: dast
-      - task: secrets
-    silent: false
-
-  sast:
-    internal: true
-    desc: Run static application security testing using Semgrep (via slopstopper-cli)
-    summary: |
-      Subprocess-invokes `semgrep` (must be installed on PATH):
-        pip install --user semgrep
-
-      Usage:
-        task sast
-    cmds:
-      - slopstopper run security:sast
-    silent: false
-
-  vulnerability:all:
-    internal: true
-    desc: Run vulnerability scanning using Trivy (via slopstopper-cli)
-    summary: |
-      Subprocess-invokes `trivy` (must be installed on PATH). See
-      https://trivy.dev/latest/getting-started/installation/.
-
-      Usage:
-        task ss:vulnerability:all
-    cmds:
-      - slopstopper run security:dependencies
-    silent: false
-
-  dast:
-    internal: true
-    desc: Run dynamic application security testing using OWASP ZAP (via slopstopper-cli)
-    summary: |
-      Subprocess-invokes `docker run ghcr.io/zaproxy/zaproxy:stable
-      zap-baseline.py` (Docker must be running). The CLI also runs the
-      CSP-exception gate against the resulting JSON — see
-      docs/security/CSP_EXCEPTIONS.md.
-
-      Usage:
-        task ss:security:dast -- http://localhost:8080
-        task ss:security:dast -- https://staging.example.com
-    vars:
-      TARGET: '{{default "http://localhost:8080" .CLI_ARGS}}'
-    cmds:
-      - slopstopper run security:dast -- --target {{.TARGET}}
-    silent: false
-
-  secrets:
-    internal: true
-    desc: Run secrets detection using Gitleaks (via slopstopper-cli)
-    summary: |
-      Subprocess-invokes `gitleaks` (must be installed on PATH). See
-      https://gitleaks.io/.
-
-      Usage:
-        task secrets
-    cmds:
-      - slopstopper run security:secrets
-    silent: false
-
-  contributing:setup:
-    desc: Install project dependencies
-    cmds:
-      - npm install
-
-  contributing:assets:
-    desc: Re-render SVG source assets (og-image, apple-touch-icon) to PNG via Playwright
-    cmds:
-      - node scripts/render-static-assets.js
-
-  contributing:build:
-    desc: Build the project (if a build script is defined)
-    cmds:
-      - |
-        if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.build ? 0 : 1)"; then
-          npm run build {{.CLI_ARGS}}
-        else
-          echo "ℹ️  No build script defined in package.json; nothing to build for this static project."
-        fi
-
-  contributing:lint:
-    desc: Run lint checks
-    cmds:
-      - |
-        if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.lint ? 0 : 1)"; then
-          npm run lint {{.CLI_ARGS}}
-        else
-          files="docs/**/*.md"
-          if [ -f CONTRIBUTING.md ]; then
-            files="$files CONTRIBUTING.md"
-          fi
-          npx markdownlint $files
-        fi
-
-  contributing:run:
-    desc: Run local development server (this repo's server.js, if present)
-    cmds:
-      - |
-        if [ -f server.js ]; then
-          node server.js
-        else
-          echo "ℹ️  No server.js found in this repo — SlopStopper does not ship a generic dev server."
-          echo "    Start your app's own server, then run SlopStopper tasks against its URL,"
-          echo "    e.g. SMOKE_TEST_URL=http://localhost:3000 task ss:reliability:smoke"
-        fi
-
-  contributing:test:
-    desc: Run Playwright tests (root config if present, otherwise SlopStopper's portable suite)
-    cmds:
-      - |
-        if [ -f playwright.config.js ] || [ -f playwright.config.ts ]; then
-          npx playwright test {{.CLI_ARGS}}
-        elif [ -f .ss/playwright.config.js ]; then
-          npx playwright test --config=.ss/playwright.config.js {{.CLI_ARGS}}
-        else
-          echo "ℹ️  No playwright config found — nothing to run."
-        fi
-
-  contributing:test:headed:
-    desc: Run Playwright tests with headed browser
-    cmds:
-      - |
-        if [ -f playwright.config.js ] || [ -f playwright.config.ts ]; then
-          npx playwright test --headed {{.CLI_ARGS}}
-        elif [ -f .ss/playwright.config.js ]; then
-          npx playwright test --config=.ss/playwright.config.js --headed {{.CLI_ARGS}}
-        else
-          echo "ℹ️  No playwright config found — nothing to run."
-        fi
-
-  contributing:test:complexity:
-    desc: Run complexity report generation tests
-    cmds:
-      - python3 .ss/tests/generate_complexity_report.test.py
-
-  contributing:test:security:
-    desc: Run all security report generation tests
-    cmds:
-      - task: contributing:test:sast
-      - task: contributing:test:dependencies
-      - task: contributing:test:dast
-      - task: contributing:test:secrets
-
-  contributing:test:sast:
-    desc: Run SAST report generation tests
-    cmds:
-      - python3 .ss/tests/generate_sast_report.test.py
-
-  contributing:test:vulnerability:
-    desc: Run vulnerability report generation tests
-    cmds:
-      - python3 .ss/tests/generate_dependencies_report.test.py
-
-  contributing:test:dast:
-    desc: Run DAST report generation tests
-    cmds:
-      - python3 .ss/tests/generate_dast_report.test.py
-
-  contributing:test:secrets:
-    desc: Run secrets detection report generation tests
-    cmds:
-      - python3 .ss/tests/generate_secrets_report.test.py
-
-  contributing:start:
-    desc: Start local development server
-    cmds:
-      - task: contributing:run
-
-  # Hygiene tasks
-  hygiene:lint:
-    desc: Lint documentation markdown files
-    cmds:
-      - npx markdownlint "docs/**/*.md"
-
-  hygiene:structure:
-    desc: Verify documentation index exists
-    cmds:
-      - |
-        if [ ! -f docs/index.md ]; then
-          echo "❌ docs/index.md not found"
-          exit 1
-        fi
-        echo "✅ docs/index.md found"
-
-  hygiene:size:
-    desc: Check for oversized markdown files in docs
-    cmds:
-      - |
-        python3 - <<'PY'
-        import glob
-        import pathlib
-        import re
-        import sys
-
-        max_words = 2500
-        violations = []
-
-        for path in glob.glob('docs/**/*.md', recursive=True):
-          text = pathlib.Path(path).read_text(encoding='utf-8')
-          words = len(re.findall(r"\\b\\w+\\b", text))
-          if words > max_words:
-            violations.append((path, words))
-
-        if violations:
-          print(f"❌ Found {len(violations)} oversized doc file(s) (>{max_words} words):")
-          for path, words in violations:
-            print(f"  - {path}: {words} words")
-          sys.exit(1)
-
-        print("✅ No oversized markdown files found in docs")
-        PY
 
   hygiene:docs-size:
-    desc: Monitor documentation size against configured thresholds (via slopstopper-cli)
+    desc: Monitor documentation size against configured thresholds
     summary: |
       Analyzes documentation size against thresholds tunable in .slopstopper.yml:
         hygiene:
@@ -363,7 +140,7 @@ tasks:
       - slopstopper run hygiene:docs-size
 
   hygiene:docs-structure:
-    desc: Validate documentation structure matches the governance model (via slopstopper-cli)
+    desc: Validate documentation structure matches the governance model
     summary: |
       Validates that the docs/ tree matches the governance model
       declared in docs/index.md. Generates JSON + MD reports under
@@ -373,7 +150,6 @@ tasks:
         task ss:hygiene:docs-structure
     cmds:
       - slopstopper run hygiene:docs-structure
-    silent: false
 
   hygiene:entry-files:
     desc: Enforce <2k token budget on agent entry files (README.md, AGENTS.md, CLAUDE.md)
@@ -391,10 +167,9 @@ tasks:
         task ss:hygiene:entry-files
     cmds:
       - slopstopper run hygiene:entry-files
-    silent: false
 
   hygiene:csp-exceptions:
-    desc: Validate per-page CSP relaxations match docs/security/CSP_EXCEPTIONS.md (via slopstopper-cli)
+    desc: Validate per-page CSP relaxations match docs/security/CSP_EXCEPTIONS.md
     summary: |
       Parses the headers source (worker/headers.json by default; pluggable
       via headers.source in .slopstopper.yml) and docs/security/CSP_EXCEPTIONS.md
@@ -405,10 +180,9 @@ tasks:
         task ss:hygiene:csp-exceptions
     cmds:
       - slopstopper run hygiene:csp-exceptions
-    silent: false
 
   hygiene:docs-accuracy:
-    desc: Check documentation for broken links + stale refs (via slopstopper-cli)
+    desc: Check documentation for broken links + stale refs
     summary: |
       Scans all markdown files under docs/ for accuracy issues:
       - Broken internal markdown links
@@ -420,100 +194,72 @@ tasks:
         task ss:hygiene:docs-accuracy
     cmds:
       - slopstopper run hygiene:docs-accuracy
-    silent: false
 
   hygiene:test:
-    desc: Run all hygiene checks for code and documentation
+    desc: Run all hygiene checks (docs-size, docs-structure, docs-accuracy, entry-files, csp-exceptions, complexity)
     cmds:
-      - task: hygiene:lint
-      - task: hygiene:structure
-      - task: hygiene:size
       - task: hygiene:docs-size
       - task: hygiene:docs-structure
       - task: hygiene:docs-accuracy
       - task: hygiene:entry-files
+      - task: hygiene:csp-exceptions
       - task: hygiene:complexity
 
-  # Security tasks
-  security:scan:
-    desc: Run full security scan suite
-    cmds:
-      - task: security
+  # ───────────── Security (need external tools on PATH) ─────────────
 
   security:sast:
-    desc: Run static application security testing
-    cmds:
-      - task: sast
-
-  security:vulnerability:all:
-    desc: Run vulnerability scanning
-    cmds:
-      - task: vulnerability:all
-
-  security:dast:
-    desc: Run dynamic application security testing
-    cmds:
-      - task: dast
-
-  security:secrets:
-    desc: Run secrets detection
-    cmds:
-      - task: secrets
-
-  # Decisions tasks
-  decisions:validate:
-    desc: Validate decisions documentation baseline
-    cmds:
-      - |
-        if [ ! -f docs/decisions/DECISIONS.md ]; then
-          echo "❌ docs/decisions/DECISIONS.md not found"
-          exit 1
-        fi
-        if [ ! -f docs/decisions/DECISION_TEMPLATE.md ]; then
-          echo "❌ docs/decisions/DECISION_TEMPLATE.md not found"
-          exit 1
-        fi
-        if ! grep -q "| Date | Decision | Status | Rationale | Notes |" docs/decisions/DECISIONS.md; then
-          echo "❌ docs/decisions/DECISIONS.md is missing the decisions table header"
-          exit 1
-        fi
-        echo "✅ Decisions documentation baseline is valid"
-
-  decisions:new:
-    desc: Create a new decision note from template (use SLUG=<name>)
-    vars:
-      DATE:
-        sh: date +%F
-    cmds:
-      - |
-        if [ -z "{{.SLUG}}" ]; then
-          echo "❌ Missing SLUG. Usage: task ss:decisions:new SLUG=<decision-name>"
-          exit 1
-        fi
-        target="docs/decisions/{{.DATE}}-{{.SLUG}}.md"
-        if [ -f "$target" ]; then
-          echo "❌ $target already exists"
-          exit 1
-        fi
-        cp docs/decisions/DECISION_TEMPLATE.md "$target"
-        echo "✅ Created $target"
-
-  install:
-    desc: Install SlopStopper tooling into another repository (use TARGET=<path>)
+    desc: Run static application security testing using Semgrep
     summary: |
-      Installs the SlopStopper tooling (Taskfile, scripts, and GitHub workflows)
-      into a target repository directory.
+      Subprocess-invokes `semgrep` (must be installed on PATH):
+        pip install --user semgrep
 
       Usage:
-        task install TARGET=/path/to/other-repo
-        task install                              # installs into current directory
-
-      What gets installed:
-        - Taskfile.yml          (skipped if already present)
-        - .ss/scripts/             (skipped if already present)
-        - .github/workflows/    (generic hygiene, security, and reliability workflows)
-        - package.json          (created or devDependencies merged)
-    vars:
-      TARGET: '{{.TARGET | default "."}}'
+        task ss:security:sast
     cmds:
-      - bash "{{.TASKFILE_DIR}}/install.sh" "{{.TARGET}}"
+      - slopstopper run security:sast
+
+  security:vulnerability:all:
+    desc: Run vulnerability scanning using Trivy
+    summary: |
+      Subprocess-invokes `trivy` (must be installed on PATH). See
+      https://trivy.dev/latest/getting-started/installation/.
+
+      Usage:
+        task ss:security:vulnerability:all
+    cmds:
+      - slopstopper run security:dependencies
+
+  security:dast:
+    desc: Run dynamic application security testing using OWASP ZAP
+    summary: |
+      Subprocess-invokes `docker run ghcr.io/zaproxy/zaproxy:stable
+      zap-baseline.py` (Docker must be running). The CLI also runs the
+      CSP-exception gate against the resulting JSON — see
+      docs/security/CSP_EXCEPTIONS.md.
+
+      Usage:
+        task ss:security:dast -- http://localhost:8080
+        task ss:security:dast -- https://staging.example.com
+    vars:
+      TARGET: '{{default "http://localhost:8080" .CLI_ARGS}}'
+    cmds:
+      - slopstopper run security:dast -- --target {{.TARGET}}
+
+  security:secrets:
+    desc: Run secrets detection using Gitleaks
+    summary: |
+      Subprocess-invokes `gitleaks` (must be installed on PATH). See
+      https://gitleaks.io/.
+
+      Usage:
+        task ss:security:secrets
+    cmds:
+      - slopstopper run security:secrets
+
+  security:scan:
+    desc: Run full security scan suite (SAST + vulnerabilities + DAST + secrets)
+    cmds:
+      - task: security:sast
+      - task: security:vulnerability:all
+      - task: security:dast
+      - task: security:secrets

@@ -15,27 +15,6 @@ Analyzes code complexity using Lizard to identify overly complex functions and m
 task ss:hygiene:complexity
 ```
 
-### Documentation Linting
-Validates markdown syntax and formatting using markdownlint. Ensures consistent style across all documentation files.
-
-```bash
-task ss:hygiene:lint
-```
-
-### Documentation Structure
-Verifies that the documentation index file exists at `docs/index.md`. This ensures proper documentation organization.
-
-```bash
-task ss:hygiene:structure
-```
-
-### File Size Checks
-Checks individual markdown files to ensure they don't exceed the 2,500 word limit. This keeps documents focused and manageable.
-
-```bash
-task ss:hygiene:size
-```
-
 ### Documentation Size Monitoring
 Monitors overall documentation size and checks against configured thresholds:
 
@@ -118,9 +97,6 @@ task ss:hygiene:test
 Run individual checks:
 ```bash
 task ss:hygiene:complexity        # Analyze code complexity
-task ss:hygiene:lint              # Check markdown formatting
-task ss:hygiene:structure         # Verify documentation index exists
-task ss:hygiene:size              # Check individual file sizes
 task ss:hygiene:docs-size         # Monitor overall documentation size
 task ss:hygiene:entry-files       # Enforce <2k token budget on entry files
 task ss:hygiene:docs-structure    # Validate structure matches governance
