@@ -60,7 +60,8 @@
         <div class="card-grid">
             <div class="card">
                 <h2>🐍 slopstopper-cli</h2>
-                <p>The Python package every check, report and PR comment goes through. Install the <a href="https://github.com/hungovercoders/slopstopper/releases/tag/v0.2.1">v0.2.1 release</a> wheel — the short <code>pipx install slopstopper-cli</code> form lands once PyPI is wired up.</p>
+                <span class="tool-license">MIT</span>
+                <p>The Python package every check, report and PR comment goes through. Install with <code>pipx install slopstopper-cli</code> — see the <a href="https://github.com/hungovercoders/slopstopper/releases/latest">latest release</a> for changelog and signed artifacts.</p>
                 <details class="details">
                     <summary>CLI surface</summary>
                     <div class="details__body">
@@ -78,6 +79,7 @@ slopstopper serve                              # bundled static server</code></p
 
             <div class="card">
                 <h2>⚙️ GitHub Actions</h2>
+                <span class="tool-license">Platform</span>
                 <p>All checks run as GitHub Actions workflows triggered on every pull request and push to main. Each workflow body is ~8 lines: install the CLI, <code>slopstopper run …</code>, <code>slopstopper emit …</code>.</p>
                 <details class="details">
                     <summary>See it in action</summary>
@@ -91,6 +93,7 @@ slopstopper serve                              # bundled static server</code></p
 
             <div class="card">
                 <h2>📋 Task</h2>
+                <span class="tool-license">MIT</span>
                 <p>A thin <code>task ss:*</code> shim layer wraps the CLI so adopters who already drive their dev loop with <a href="https://taskfile.dev" rel="noopener noreferrer">Task</a> can keep doing so. Same exit codes, same reports.</p>
                 <details class="details">
                     <summary>Taskfile excerpt</summary>
@@ -110,6 +113,7 @@ slopstopper serve                              # bundled static server</code></p
 
             <div class="card">
                 <h2>🎭 Playwright</h2>
+                <span class="tool-license">Apache-2.0</span>
                 <p>Portable smoke, broken-link and accessibility specs ship inside the slopstopper-cli wheel — adopters don't vendor them. Run <code>slopstopper templates eject playwright.config.js</code> to customise.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
                 <details class="details">
@@ -129,6 +133,7 @@ slopstopper serve                              # bundled static server</code></p
 
             <div class="card">
                 <h2>🔷 TypeScript</h2>
+                <span class="tool-license">Apache-2.0</span>
                 <p>All application and test code is written in TypeScript for static type safety, reducing a whole class of bugs before code is even run.</p>
                 <details class="details">
                     <summary>tsconfig.json</summary>
@@ -148,6 +153,7 @@ slopstopper serve                              # bundled static server</code></p
 
             <div class="card">
                 <h2>🐍 Python</h2>
+                <span class="tool-license">PSF-2.0</span>
                 <p>Reporting scripts that generate structured JSON reports for security, complexity, documentation and dependency checks used across CI workflows.</p>
                 <details class="details">
                     <summary>See the scripts</summary>
@@ -159,6 +165,7 @@ slopstopper serve                              # bundled static server</code></p
 
             <div class="card">
                 <h2>🟧 Cloudflare</h2>
+                <span class="tool-license">Platform</span>
                 <p>Static site served by Cloudflare Workers with the <code>[assets]</code> binding. Workers Builds watches the repo: pushes deploy to prod, PRs get preview URLs, closing a PR cleans up — no GitHub Actions needed.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/deployment/README.md" rel="noopener noreferrer">Learn more about Deployment →</a>
                 <details class="details">
@@ -183,6 +190,7 @@ slopstopper serve                              # bundled static server</code></p
 
             <div class="card">
                 <h2>🔍 Semgrep</h2>
+                <span class="tool-license">LGPL-2.1</span>
                 <p>Fast static application security testing (SAST). Scans source code for vulnerability patterns and OWASP-style issues before code is merged.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/README.md" rel="noopener noreferrer">Learn more about Security →</a>
                 <details class="details">
@@ -201,6 +209,7 @@ slopstopper serve                              # bundled static server</code></p
 
             <div class="card">
                 <h2>🕷️ OWASP ZAP</h2>
+                <span class="tool-license">Apache-2.0</span>
                 <p>Dynamic application security testing (DAST). Probes a running deployment for common web vulnerabilities such as XSS, injection and insecure headers.</p>
                 <details class="details">
                     <summary>Workflow excerpt</summary>
@@ -218,6 +227,7 @@ slopstopper serve                              # bundled static server</code></p
 
             <div class="card">
                 <h2>🛡️ Trivy</h2>
+                <span class="tool-license">Apache-2.0</span>
                 <p>Scans project dependencies for known CVEs on every pull request and push, with severity-based gating to prevent vulnerable packages from reaching production.</p>
                 <details class="details">
                     <summary>Workflow excerpt</summary>
@@ -235,6 +245,7 @@ slopstopper serve                              # bundled static server</code></p
 
             <div class="card">
                 <h2>🔑 Gitleaks</h2>
+                <span class="tool-license">MIT</span>
                 <p>Inspects every commit for accidentally committed credentials, tokens and other secrets, blocking pull requests when high-confidence matches are found.</p>
                 <details class="details">
                     <summary>Workflow excerpt</summary>
@@ -253,6 +264,7 @@ slopstopper serve                              # bundled static server</code></p
 
             <div class="card">
                 <h2>🐛 Bandit &amp; Lizard</h2>
+                <span class="tool-license">Apache-2.0 · MIT</span>
                 <p>Bandit performs Python-focused security analysis and Lizard enforces cyclomatic complexity limits so code stays auditable and maintainable.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/COMPLEXITY_CONFIG.md" rel="noopener noreferrer">Learn more about Complexity config →</a>
                 <details class="details">
@@ -272,6 +284,7 @@ slopstopper serve                              # bundled static server</code></p
 
             <div class="card">
                 <h2>♿ axe-core</h2>
+                <span class="tool-license">MPL-2.0</span>
                 <p>Industry-standard accessibility engine, run via Playwright on every page to flag WCAG 2.1 AA violations on PRs, after deploys and on a daily schedule.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/ACCESSIBILITY.md" rel="noopener noreferrer">Learn more about Accessibility →</a>
                 <details class="details">
@@ -292,6 +305,7 @@ on:
 
             <div class="card">
                 <h2>⚡ Lighthouse CI</h2>
+                <span class="tool-license">Apache-2.0</span>
                 <p>Measures Core Web Vitals (LCP, INP, CLS) plus performance, accessibility, best-practice and SEO category scores on every PR and nightly against production.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
                 <details class="details">
@@ -319,6 +333,7 @@ on:
 
             <div class="card">
                 <h2>🔎 SEO Metatag Check</h2>
+                <span class="tool-license">MIT</span>
                 <p>Fetches each page and asserts the full set of social-share + indexer metadata: <code>&lt;title&gt;</code>, meta description, canonical, viewport, OpenGraph (og:title/description/type/url/image) and Twitter Card (twitter:card/title/description/image). HEAD-fetches <code>og:image</code> to confirm it is reachable. Stdlib Python — no new dependencies.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/SEO.md" rel="noopener noreferrer">Learn more about SEO check config →</a>
                 <details class="details">
@@ -339,6 +354,7 @@ on:
 
             <div class="card">
                 <h2>📝 markdownlint</h2>
+                <span class="tool-license">MIT</span>
                 <p>Lints all documentation as part of the hygiene checks, keeping markdown style, headings and link structure consistent across the repo.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/DOCS_SIZE_MONITORING.md" rel="noopener noreferrer">Learn more about Doc monitoring →</a>
                 <details class="details">
@@ -354,6 +370,11 @@ on:
                 </details>
             </div>
         </div>
+
+        <p class="attribution-footer">
+            slopstopper-cli ships with no third-party Python dependencies — every tool above is invoked via <code>subprocess</code> only.
+            Full attribution, licences and upstream links: <a href="https://github.com/hungovercoders/slopstopper/blob/main/ATTRIBUTIONS.md" rel="noopener noreferrer">ATTRIBUTIONS.md</a>.
+        </p>
     </main>
     <footer>
         <p>

@@ -2,20 +2,20 @@
 
 The SlopStopper quality suite, packaged as a `pipx`-installable CLI.
 
-> **Status: 0.2.1 Beta.** Every check in the [public catalogue](https://slopstopper.dev/features.html) runs through this package. The CI workflows under `.github/workflows/ss-*.yml` install `slopstopper-cli` and call `slopstopper run <category>:<check>` — same code path you use locally.
+> **Status: Beta.** Every check in the [public catalogue](https://slopstopper.dev/features.html) runs through this package. The CI workflows under `.github/workflows/ss-*.yml` install `slopstopper-cli` and call `slopstopper run <category>:<check>` — same code path you use locally.
 
 ## Install
 
 End-user (most adopters):
 
 ```bash
-pipx install https://github.com/hungovercoders/slopstopper/releases/download/v0.2.1/slopstopper_cli-0.2.1-py3-none-any.whl
+pipx install slopstopper-cli
 slopstopper --version
 slopstopper checks list
 slopstopper doctor
 ```
 
-> Installing the pre-built wheel from the [v0.2.1 GitHub Release](https://github.com/hungovercoders/slopstopper/releases/tag/v0.2.1). Once `slopstopper-cli` lands on PyPI this collapses to `pipx install slopstopper-cli`. `pipx upgrade slopstopper-cli` works regardless of source.
+> Published to PyPI on every release tag. `pipx upgrade slopstopper-cli` pulls the latest. Each release is also attached to the [latest GitHub Release](https://github.com/hungovercoders/slopstopper/releases/latest) with a Sigstore build-provenance attestation — verify with `gh attestation verify <wheel> --owner hungovercoders`.
 
 Development (editable, from a clone of this repo):
 
@@ -79,3 +79,11 @@ This workflow is slopstopper-internal — it is **not** part of the distributed 
 ## Skills for agents
 
 The trio under [`.claude/skills/slopstopper-{install,update,triage}/SKILL.md`](../.claude/skills/) is the long-form playbook for Claude Code agents working with this CLI. Update them when you add or rename a check, env var, or `task ss:*` target.
+
+## Acknowledgements
+
+slopstopper-cli ships with no third-party Python dependencies — every check invokes its tool via `subprocess` only. Full credit, licences and upstream links for every tool we drive live in [`ATTRIBUTIONS.md`](../ATTRIBUTIONS.md).
+
+## License
+
+MIT — see [LICENSE](./LICENSE).

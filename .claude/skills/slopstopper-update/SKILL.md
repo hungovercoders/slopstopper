@@ -30,7 +30,7 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
 ```
 
 What this refreshes (always, on every run):
-- `slopstopper-cli` — `pipx upgrade slopstopper-cli` (preferred) or `pip install --user --upgrade <git url>` fallback. Confirm with `slopstopper --version`.
+- `slopstopper-cli` — `pipx upgrade slopstopper-cli` (preferred) or `pip install --user --upgrade slopstopper-cli` fallback. Pulled from PyPI, so always lands the latest release. Confirm with `slopstopper --version`.
 - `Taskfile.ss.yml` — thin `task ss:*` shims that all call `slopstopper run …` under the hood.
 - `.ss/server.js` — the only file the installer seeds into `.ss/`. Wholesale replacement.
 - Each workflow in `install.sh`'s `GENERIC_WORKFLOWS` array — provided it's still present in the target's `.github/workflows/`. The workflow body itself is short now (~8 lines: install CLI, `slopstopper run …`, `slopstopper emit …`), so most updates are CLI-version bumps invisible to the workflow YAML.

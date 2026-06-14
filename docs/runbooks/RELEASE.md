@@ -1,6 +1,6 @@
 # Cutting a release
 
-slopstopper-cli ships via GitHub Releases. The [`ss-release.yml`](../../.github/workflows/ss-release.yml) workflow fires on any `v*.*.*` tag push, builds the wheel + sdist, and creates a GitHub Release with notes pulled from [`CHANGELOG.md`](../../CHANGELOG.md). PyPI publishing is intentionally **not** automated yet — that needs a Trusted Publisher trust relationship set up on PyPI first.
+slopstopper-cli ships via PyPI and GitHub Releases on every `v*.*.*` tag. The [`ss-release.yml`](../../.github/workflows/ss-release.yml) workflow fires on the tag push, builds the wheel + sdist, attaches them to a GitHub Release with notes pulled from [`CHANGELOG.md`](../../CHANGELOG.md), signs them with a Sigstore build-provenance attestation, and uploads to PyPI via the OIDC Trusted Publisher flow. No URL bumping, no manual `twine upload`.
 
 ## When to bump
 
@@ -36,46 +36,49 @@ If in doubt, prefer a MINOR bump over a PATCH.
    - `cli/pyproject.toml` → `version = "X.Y.Z"`
    - `cli/slopstopper/__init__.py` → `__version__ = "X.Y.Z"`
 
-   The release workflow has a sanity-check step that fails the build if these diverge from the tag.
+   The release workflow has a sanity-check step that fails the build if these diverge from the tag. **No other file needs editing** — adopter workflows, `install.sh`, READMEs and the website all pull `slopstopper-cli` from PyPI by name; the version isn't pinned in any of them.
 
-4. **Bump the pinned wheel URL** across docs, the website, `install.sh`, and every `ss-*-check.yml` workflow. Adopters install the pre-built wheel attached to the GitHub Release, not a git URL — so the version appears twice (release path + filename). The pattern is:
+4. **Commit + push** the CHANGELOG and version bumps as a single commit (`chore(release): bump version to X.Y.Z`). Open a PR if you want CI to pre-verify; otherwise push straight to `main` if you have permission.
 
-   ```
-   https://github.com/hungovercoders/slopstopper/releases/download/vX.Y.Z/slopstopper_cli-X.Y.Z-py3-none-any.whl
-   ```
-
-   One-liner to swap the version everywhere:
-
-   ```bash
-   # From the repo root — replace OLD and NEW with the version numbers (no leading v):
-   OLD=0.2.0 NEW=0.3.0
-   git ls-files | xargs grep -l "releases/download/v$OLD" 2>/dev/null \
-     | xargs sed -i.bak -e "s|releases/download/v$OLD/slopstopper_cli-$OLD|releases/download/v$NEW/slopstopper_cli-$NEW|g" \
-     && find . -name '*.bak' -delete
-   ```
-
-   The release tag URL (e.g. `releases/tag/v0.2.1`) also appears in user-facing copy as a "see the release" link — bump those too. Slopstopper.dev's own CI uses the editable install of `cli/` when `cli/pyproject.toml` is present, so it dogfoods `main` regardless of the pinned wheel URL.
-
-5. **Commit + push** the CHANGELOG, version bumps and URL bumps as a single commit (`chore(release): bump version to X.Y.Z`). Open a PR if you want CI to pre-verify; otherwise push straight to `main` if you have permission.
-
-6. **Tag + push.** Once the bump commit is on `main`:
+5. **Tag + push.** Once the bump commit is on `main`:
 
    ```bash
    git tag vX.Y.Z -m "X.Y.Z"
    git push origin vX.Y.Z
    ```
 
-7. **Watch the workflow.** The `SlopStopper · Release` workflow runs against the tag. It will:
+6. **Watch the workflow.** The `SlopStopper · Release` workflow runs against the tag. It will:
    - Verify versions match the tag.
    - Build wheel + sdist with `python -m build` (uses `hatchling`).
+   - Generate a Sigstore build-provenance attestation against the built artifacts.
    - Extract the matching `## [X.Y.Z]` section from `CHANGELOG.md`.
    - Create the GitHub Release with that body and both artifacts attached.
+   - **Publish to PyPI** via `pypa/gh-action-pypi-publish@release/v1` over OIDC.
 
-8. **Verify the release.** Open [Releases](https://github.com/hungovercoders/slopstopper/releases). Sanity-check the body, download the wheel, run `pipx install <path-to-wheel>` somewhere and confirm `slopstopper --version` matches.
+   Expected log line for the publish step: `Uploading distributions to https://upload.pypi.org/legacy/`. If it fails after the GitHub Release was already created, the PyPI upload is idempotent (`skip-existing: true`) — re-run from the Actions tab and the GitHub Release step will skip (release exists) while the PyPI step retries the upload.
+
+7. **Verify the release end-to-end:**
+
+   ```bash
+   # PyPI:
+   pip index versions slopstopper-cli                    # should list X.Y.Z
+   pipx install --force slopstopper-cli                  # or `pipx upgrade slopstopper-cli`
+   slopstopper --version                                 # X.Y.Z
+
+   # GitHub Release + attestation:
+   gh release download vX.Y.Z --pattern '*.whl'
+   gh attestation verify slopstopper_cli-X.Y.Z-py3-none-any.whl --owner hungovercoders
+   ```
+
+   A successful attestation verify prints the workflow run + commit SHA that produced the wheel and exits 0.
 
 ## Manual re-release
 
-If the workflow fails partway, fix the cause then trigger it from the Actions tab → `SlopStopper · Release` → `Run workflow` → enter the tag. The job is idempotent: if a Release already exists for the tag, the workflow uploads any missing artifacts and exits.
+If the workflow fails partway, fix the cause then trigger it from the Actions tab → `SlopStopper · Release` → `Run workflow` → enter the tag. The job is idempotent end-to-end:
+
+- GitHub Release already exists → upload missing artifacts only.
+- Attestation already issued → re-runs harmlessly against the same artifacts.
+- PyPI version already published → `skip-existing: true` short-circuits the upload step rather than failing.
 
 ## Verifying build provenance
 
@@ -84,21 +87,26 @@ Every wheel and sdist in a release ≥ v0.2.1 ships with a Sigstore build-proven
 Adopters verify with the `gh` CLI:
 
 ```bash
-# Download the wheel from the release page first, then:
-gh attestation verify slopstopper_cli-0.2.1-py3-none-any.whl --owner hungovercoders
+# Download the wheel from the release page first (or via `gh release download`), then:
+gh attestation verify slopstopper_cli-X.Y.Z-py3-none-any.whl --owner hungovercoders
 ```
 
 A successful verification prints the workflow run + commit SHA that produced the wheel. A tampered wheel (or one not from this repo) makes the command exit non-zero.
 
 No keys are managed manually — `attest-build-provenance` uses the workflow's keyless OIDC token via Sigstore, and the attestation lands in the public transparency log (Rekor). Free for public repos.
 
-## Manual PyPI publish (until Trusted Publisher is set up)
+## One-time PyPI Trusted Publisher setup
 
-Once the GitHub Release lands, the artifacts are at `cli/dist/`. From a clean local checkout of the tag:
+This trust relationship has to be created in PyPI's dashboard before the first PyPI publish from `ss-release.yml` can succeed. It's a one-shot task per project.
 
-```bash
-cd cli && python -m build
-pipx run twine upload dist/*
-```
+1. **Reserve the project name.** If `slopstopper-cli` is not yet on PyPI, use the **Pending Publisher** flow — no first manual upload is needed before the trust relationship exists.
 
-You'll be prompted for a PyPI API token (use a project-scoped one — never the account-wide token). Once Trusted Publisher OIDC is configured on PyPI's side, we'll add a `publish-pypi` job to `ss-release.yml` and this manual step goes away.
+   - Log in at <https://pypi.org/> → Account settings → Publishing → "Add a new pending publisher".
+   - Fill: **PyPI project name** `slopstopper-cli`, **Owner** `hungovercoders`, **Repository name** `slopstopper`, **Workflow filename** `ss-release.yml`, **Environment** (leave blank for now).
+   - Save. The first publish from `ss-release.yml` will create the project under your account.
+
+2. **For an already-published project.** Go to <https://pypi.org/manage/project/slopstopper-cli/settings/publishing/> → "Add a new publisher" with the same Owner / Repository / Workflow fields as above.
+
+3. **Recommended hardening (post-first-publish).** Add a GitHub Environment named `pypi` to the slopstopper repo with required reviewers, then edit the `Publish to PyPI` step in `ss-release.yml` to declare `environment: pypi`. Re-add the publisher on PyPI with that environment name. From then on every PyPI publish requires a click-through approval.
+
+The PyPI Trusted Publisher flow is the same OIDC trust pattern used by the Sigstore attestation step — no API tokens to manage, no secrets in repo settings, and the credentials cannot be exfiltrated because they are short-lived per-workflow-run tokens issued by GitHub's OIDC provider.
