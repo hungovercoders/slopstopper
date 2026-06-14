@@ -36,8 +36,24 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
+      # Mint a short-lived GitHub App installation token instead of using
+      # GITHUB_TOKEN. Two reasons:
+      #   * PRs opened by GITHUB_TOKEN have all their `pull_request`
+      #     workflows silently skipped (anti-recursion). App-authored PRs
+      #     are exempt, so PR CI runs automatically with no approval click.
+      #   * Tags pushed by GITHUB_TOKEN don't fire other tag-triggered
+      #     workflows (same anti-recursion rule). App-pushed tags do —
+      #     so the v* tag this workflow creates auto-fires ss-release.yml.
+      - name: Mint App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_PRIVATE_KEY }}
+
       - name: Run release-please
         uses: googleapis/release-please-action@v4
         with:
+          token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
