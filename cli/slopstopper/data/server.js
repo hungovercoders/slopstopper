@@ -115,6 +115,42 @@ function parseJsonRules(headersPath) {
 }
 
 
+function _headerBlockLines(block) {
+	return block
+		.split('\n')
+		.map(l => l.replace(/\r$/, ''))
+		.filter(l => l.trim() && !l.trim().startsWith('#'));
+}
+
+
+function _parseHeaderEntries(lines) {
+	// Lines after the path pattern are `Name: value` pairs. Skip
+	// entries without a colon or with an empty name.
+	const values = {};
+	for (let i = 1; i < lines.length; i++) {
+		const colon = lines[i].indexOf(':');
+		if (colon === -1) continue;
+		const name = lines[i].slice(0, colon).trim();
+		if (!name) continue;
+		values[name] = lines[i].slice(colon + 1).trim();
+	}
+	return values;
+}
+
+
+function _parseHeaderBlock(block) {
+	// Returns one {for, values} rule, or null if the block doesn't
+	// open with a path pattern or has no header entries.
+	const lines = _headerBlockLines(block);
+	if (lines.length === 0) return null;
+	const pattern = lines[0].trim();
+	if (!pattern.startsWith('/')) return null;
+	const values = _parseHeaderEntries(lines);
+	if (Object.keys(values).length === 0) return null;
+	return { for: pattern, values };
+}
+
+
 function parseCloudflareHeaders(headersPath) {
 	// Cloudflare/Netlify _headers grammar:
 	//   * Blank lines separate rule blocks.
@@ -122,8 +158,8 @@ function parseCloudflareHeaders(headersPath) {
 	//   * First non-comment line of a block is the path pattern
 	//     (e.g. `/*`, `/foo`, `/blog/*`).
 	//   * Subsequent indented lines are `Name: value` headers.
-	// We tolerate trailing-comment lines inside a block by stripping
-	// pure-comment lines before parsing the block.
+	// Per-block parsing is delegated so this function stays under
+	// the CCN-10 cap enforced by `ss:hygiene:complexity`.
 	let text;
 	try {
 		text = fs.readFileSync(headersPath, 'utf8');
@@ -132,29 +168,9 @@ function parseCloudflareHeaders(headersPath) {
 		return [];
 	}
 	const rules = [];
-	const blocks = text.split(/\n\s*\n/);
-	for (const block of blocks) {
-		const lines = block
-			.split('\n')
-			.map(l => l.replace(/\r$/, ''))
-			.filter(l => l.trim() && !l.trim().startsWith('#'));
-		if (lines.length === 0) continue;
-		const pattern = lines[0].trim();
-		// First line must look like a path pattern. Otherwise this is
-		// a stray indented block (probably commented-out content) and
-		// we skip it rather than emit a junk rule.
-		if (!pattern.startsWith('/')) continue;
-		const values = {};
-		for (let i = 1; i < lines.length; i++) {
-			const colon = lines[i].indexOf(':');
-			if (colon === -1) continue;
-			const name = lines[i].slice(0, colon).trim();
-			const value = lines[i].slice(colon + 1).trim();
-			if (name) values[name] = value;
-		}
-		if (Object.keys(values).length > 0) {
-			rules.push({ for: pattern, values });
-		}
+	for (const block of text.split(/\n\s*\n/)) {
+		const rule = _parseHeaderBlock(block);
+		if (rule) rules.push(rule);
 	}
 	return rules;
 }
