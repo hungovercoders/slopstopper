@@ -168,7 +168,11 @@ def test_run_clean_when_no_vulns(monkeypatch, isolated_cwd, capsys):
     assert "No vulnerabilities detected" in dependencies.REPORT_MD.read_text()
 
 
-def test_run_with_blocking_vulns_returns_zero(monkeypatch, isolated_cwd, capsys):
+def test_run_exits_two_on_critical_or_high(monkeypatch, isolated_cwd, capsys):
+    """Local/CI gate parity: HIGH+ findings make this check exit non-zero
+    so adopters' local `task ss:security:vulnerability:all` agrees with
+    the CI workflow without a separate post-processing gate step."""
+
     def fake_trivy():
         dependencies.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dependencies.REPORT_JSON.write_text(
@@ -178,8 +182,7 @@ def test_run_with_blocking_vulns_returns_zero(monkeypatch, isolated_cwd, capsys)
     monkeypatch.setattr(dependencies, "_trivy_available", lambda: True)
     monkeypatch.setattr(dependencies, "_run_trivy", fake_trivy)
     rc = dependencies.run()
-    # Bash flow doesn't gate at this layer; gating happens in CI.
-    assert rc == 0
+    assert rc == 2, "CRITICAL+HIGH findings must produce a non-zero exit code"
     out = capsys.readouterr().out
     assert "Found 2 CRITICAL/HIGH" in out
     md = dependencies.REPORT_MD.read_text()
@@ -188,6 +191,8 @@ def test_run_with_blocking_vulns_returns_zero(monkeypatch, isolated_cwd, capsys)
 
 
 def test_run_with_only_medium_or_low(monkeypatch, isolated_cwd, capsys):
+    """MEDIUM/LOW only → exit 0 (still reported, but doesn't block)."""
+
     def fake_trivy():
         dependencies.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dependencies.REPORT_JSON.write_text(

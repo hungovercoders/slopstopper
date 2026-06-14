@@ -14,8 +14,13 @@ trivy code. Trivy itself is Apache-2.0 so the boundary is gentler
 than semgrep's, but the discipline is identical.
 
 Exit codes:
-  0 — analysis completed (gating happens at the workflow level)
+  0 — analysis completed with no CRITICAL/HIGH vulnerabilities
   1 — trivy is not installed
+  2 — CRITICAL/HIGH vulnerabilities detected (local/CI gate parity:
+      the CI workflow used to add a separate "fail job if HIGH+" step
+      after this check; having the check itself exit non-zero means
+      the local `task ss:security:vulnerability:all` and the CI run
+      agree without divergent post-processing)
 """
 
 from __future__ import annotations
@@ -192,4 +197,8 @@ def run(_args: list[str] | None = None) -> int:
     else:
         output.success("No vulnerabilities detected")
     output.footer(REPORT_DIR, [REPORT_MD.name])
-    return 0
+    # Exit non-zero on CRITICAL/HIGH so local `task ss:security:vulnerability:all`
+    # and the CI workflow gate the same way. Anything below HIGH is reported
+    # but doesn't block — same threshold the CI workflow previously enforced
+    # in a separate post-processing step.
+    return 2 if blocking > 0 else 0
