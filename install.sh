@@ -196,11 +196,32 @@ fi
 # already present in the target, the CLI's templates module prefers
 # those files over the package data — same shape as the workflows.
 install_cli() {
+  # Escape hatch used by cli/tests/test_install.py so the bash-side
+  # install tests don't have to hit PyPI on every run. Adopter-facing
+  # docs don't mention this — it's strictly an internal test affordance.
+  if [ "${SKIP_CLI_INSTALL:-0}" = "1" ]; then
+    info "Skipping slopstopper-cli install (SKIP_CLI_INSTALL=1)"
+    return 0
+  fi
+
+  # Capture the pre-install version (empty if not installed). After
+  # installing/upgrading, compare against the post-install version and
+  # warn if pipx silently kept a stale build. Catches the "0.1.0 reported
+  # as just-installed" failure mode that swallowing stderr used to mask.
+  local pre_version=""
+  if command -v slopstopper &>/dev/null; then
+    pre_version="$(slopstopper --version 2>&1 || true)"
+  fi
+
   if command -v pipx &>/dev/null; then
     if pipx list 2>/dev/null | grep -q "slopstopper-cli"; then
       info "Refreshing slopstopper-cli via pipx…"
-      pipx upgrade slopstopper-cli 2>/dev/null \
-        || pipx install --force slopstopper-cli >/dev/null
+      # Do NOT swallow stderr — pipx upgrade failures used to vanish
+      # silently and the success message lied about the version.
+      if ! pipx upgrade slopstopper-cli; then
+        warn "pipx upgrade failed — falling through to 'pipx install --force'."
+        pipx install --force slopstopper-cli >/dev/null
+      fi
     else
       info "Installing slopstopper-cli via pipx…"
       pipx install slopstopper-cli >/dev/null
@@ -214,7 +235,20 @@ install_cli() {
   if ! command -v slopstopper &>/dev/null; then
     error "slopstopper-cli install succeeded but the 'slopstopper' binary is not on PATH. Check your shell's PATH (pipx puts binaries in \$HOME/.local/bin)."
   fi
-  success "slopstopper-cli installed ($(slopstopper --version 2>&1))"
+
+  local post_version
+  post_version="$(slopstopper --version 2>&1 || true)"
+  success "slopstopper-cli installed ($post_version)"
+
+  # If an upgrade was supposed to happen (pre_version was non-empty) and
+  # the version string didn't change, surface that loudly. pipx sometimes
+  # claims success when the version on PyPI is the same as the local
+  # build; that's fine. But a genuinely stale local install + a silently-
+  # failed upgrade looks identical from the success line — so we warn
+  # rather than error, and tell the adopter how to force a refresh.
+  if [ -n "$pre_version" ] && [ "$pre_version" = "$post_version" ]; then
+    warn "Version unchanged after upgrade attempt ($post_version). If you expected a newer release, run 'pipx install --force slopstopper-cli' to refresh."
+  fi
 }
 
 install_cli
@@ -309,8 +343,30 @@ MARKER_FILE="$TARGET_DIR/.ss/.workflows-installed"
 # is in this list AND missing from the consumer's repo now, they deleted it
 # and we won't re-add it. Compatible with bash 3.2 (no associative arrays).
 was_previously_installed() {
+  [ "$IGNORE_STALE_MARKER" -eq 1 ] && return 1
   [ -f "$MARKER_FILE" ] && grep -Fxq "$1" "$MARKER_FILE"
 }
+
+# Stale-marker detection: a marker lists every workflow as previously-
+# installed but zero `ss-*.yml` files exist on disk. The only realistic
+# explanation is the marker was left over from a prior branch (e.g. a
+# revert) and the deletion-respect logic would now skip every workflow,
+# yielding a silent zero-workflows install. A real user would not delete
+# all 20 workflows; treat this as a stale marker and re-install fresh.
+#
+# Use `find` rather than `ls` for the count — `ls path/glob*` returns
+# non-zero when the glob has no matches, which combines with `set -e -o
+# pipefail` to abort the script. `find` returns 0 even on no matches.
+IGNORE_STALE_MARKER=0
+if [ -f "$MARKER_FILE" ]; then
+  on_disk_count=$(find "$WORKFLOWS_DST" -maxdepth 1 -name 'ss-*.yml' -type f 2>/dev/null | wc -l | tr -d ' ')
+  marker_count=$(grep -c '^ss-' "$MARKER_FILE" 2>/dev/null || true)
+  [ -z "$marker_count" ] && marker_count=0
+  if [ "$on_disk_count" = "0" ] && [ "$marker_count" -gt 0 ]; then
+    IGNORE_STALE_MARKER=1
+    warn "Stale .ss/.workflows-installed detected ($marker_count entries, 0 workflows on disk) — treating as a fresh install and re-adding all workflows. If you genuinely deleted every workflow, set workflows.disabled in .slopstopper.yml instead so the choice survives re-runs."
+  fi
+fi
 
 INSTALLED_WORKFLOWS=0
 REFRESHED_WORKFLOWS=0
@@ -422,13 +478,40 @@ seed_template ".github/labeler.yml" \
   "$TARGET_DIR/.github/labeler.yml"
 
 # public/_headers — Cloudflare/Netlify static-asset header baseline (commented out)
-if [ -d "$TARGET_DIR/public" ]; then
-  seed_template "public/_headers" \
-    "$SCRIPT_DIR/templates/_headers.example" \
-    "$TARGET_DIR/public/_headers"
-else
-  info "public/_headers: no public/ directory in target — skipping (add one and re-run if you want the baseline)"
-fi
+#
+# Idempotent append-with-markers (same pattern as the .gitignore block
+# below). Adopters often arrive with a public/_headers that holds only
+# cache rules; a plain skip-if-exists would deny them the security
+# baseline forever. Instead: detect our begin-marker; append the block
+# bracketed by markers if it isn't there yet; leave existing content
+# untouched. The block ships fully commented so adopters opt in by
+# uncommenting — same default safety as the fresh-install case.
+seed_headers_block() {
+  if [ ! -d "$TARGET_DIR/public" ]; then
+    info "public/_headers: no public/ directory in target — skipping (add one and re-run if you want the baseline)"
+    return 0
+  fi
+  local dst="$TARGET_DIR/public/_headers"
+  local src="$SCRIPT_DIR/templates/_headers.example"
+  if [ ! -f "$src" ]; then
+    return 0
+  fi
+  if [ -f "$dst" ] && grep -Fq "# slopstopper security headers begin" "$dst" 2>/dev/null; then
+    info "public/_headers: slopstopper security headers block already present — leaving it alone"
+    return 0
+  fi
+  mkdir -p "$(dirname "$dst")"
+  if [ -f "$dst" ] && [ -s "$dst" ]; then
+    printf '\n' >> "$dst"
+    cat "$src" >> "$dst"
+    success "public/_headers: appended slopstopper security headers block (commented; uncomment to enable)"
+  else
+    cat "$src" > "$dst"
+    success "public/_headers: seeded $dst"
+  fi
+}
+
+seed_headers_block
 
 # .zap/rules.tsv — ZAP rule overrides (entries commented; uncomment what applies)
 seed_template ".zap/rules.tsv" \
