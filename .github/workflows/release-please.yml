@@ -1,0 +1,43 @@
+name: SlopStopper · Release Please
+
+# Watches `main` for conventional-commit pushes and maintains a perpetual
+# "Release PR" that:
+#   * regenerates the CHANGELOG.md section for the next version,
+#   * bumps `cli/pyproject.toml` `version` and
+#     `cli/slopstopper/__init__.py` `__version__` in lockstep,
+#   * waits to be merged.
+#
+# Merging the Release PR pushes the bump commit and creates the matching
+# `vX.Y.Z` tag + GitHub Release with notes generated from the commits
+# since the previous tag. The tag push triggers `ss-release.yml`, which
+# builds + attests + publishes to PyPI and uploads artifacts to the
+# already-created GitHub Release (its create-or-upload step is idempotent).
+#
+# So the full release flow becomes: write conventional-commit PRs,
+# review the rolling Release PR, merge it when ready. No manual CHANGELOG
+# edits, no manual version bumps, no manual tagging.
+#
+# Bumping policy (see release-please-config.json):
+#   * `feat:`  → MINOR bump (pre-1.0 behaviour via `bump-minor-pre-major: true`)
+#   * `fix:`   → PATCH bump
+#   * `feat!:` or `BREAKING CHANGE:` footer → MINOR pre-1.0 (we explicitly
+#     keep `bump-patch-for-minor-pre-major: false` so breaking changes don't
+#     stay buried in a patch bump). Will switch to MAJOR once we cut 1.0.0.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run release-please
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
