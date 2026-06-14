@@ -70,6 +70,20 @@ def _build_env(url: str, ci_mode: bool) -> dict[str, str]:
     return env
 
 
+def _ensure_playwright_assets_ejected() -> None:
+    """Auto-eject the playwright config and the spec we're about to run.
+
+    The bundled assets live inside the pipx venv where node_modules
+    can't be resolved by Playwright. Ejecting into `.ss/` (in the
+    adopter's CWD) puts them next to node_modules. Idempotent: silent
+    on re-runs.
+    """
+    for name in (templates.PLAYWRIGHT_CONFIG_NAME, f"tests/{SPEC_NAME}.spec.ts"):
+        dest, was_new = templates.ensure_ejected(name)
+        if was_new:
+            output.info(f"ejected {dest} (Playwright must run from a path with node_modules reachable)")
+
+
 def _build_cmd(ci_mode: bool) -> list[str]:
     reporter = "list,html" if ci_mode else "list"
     return [
@@ -95,6 +109,7 @@ def run(args: list[str] | None = None) -> int:
         return 1
 
     output.running(f"Running smoke tests against: {url}")
+    _ensure_playwright_assets_ejected()
     env = _build_env(url, parsed.ci)
     cmd = _build_cmd(parsed.ci)
     result = subprocess.run(cmd, env=env, check=False)

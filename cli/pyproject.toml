@@ -38,16 +38,20 @@ classifiers = [
   "Operating System :: POSIX",
   "Operating System :: MacOS",
 ]
-dependencies = []
+dependencies = [
+  # `lizard` is invoked at runtime by hygiene:complexity via subprocess
+  # (`python -m lizard` against sys.executable). When slopstopper-cli is
+  # installed via pipx, sys.executable resolves to the pipx venv — which
+  # is where lizard must live too, otherwise `python -m lizard` fails
+  # even though `brew install lizard` (a different `lz4` tool) is on PATH.
+  # Promoting lizard from a test extra to a runtime dependency means
+  # pipx installs it into the same venv and the check works out of the box.
+  "lizard>=1.17",
+]
 
 [project.optional-dependencies]
 test = [
   "pytest>=7",
-  # `lizard` is invoked at runtime by hygiene:complexity via subprocess
-  # (`python -m lizard`). Not a runtime dep of slopstopper-cli itself —
-  # adopters install it themselves in production. Pulled into the test
-  # extra so CI parity + integration tests can exercise the real tool.
-  "lizard>=1.17",
 ]
 
 [project.scripts]
