@@ -6,6 +6,10 @@ The release workflow (`.github/workflows/ss-release.yml`) reads the section matc
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.2.1] - 2026-06-14
+
 ### Added
 
 - **Build provenance attestations** on release artifacts. The release workflow now signs every wheel and sdist with `actions/attest-build-provenance@v2` (Sigstore keyless OIDC). Adopters verify with `gh attestation verify <wheel> --owner hungovercoders` — proves the artifact came from this repo's release pipeline, not a tampered upload. See [`docs/runbooks/RELEASE.md`](docs/runbooks/RELEASE.md#verifying-build-provenance).
