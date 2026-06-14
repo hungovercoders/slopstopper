@@ -105,6 +105,25 @@ def eject(name: str) -> tuple[Path, bool]:
     return override, True
 
 
+def ensure_ejected(name: str) -> tuple[Path, bool]:
+    """Auto-eject `<name>` if no override exists.
+
+    Returns (destination_path, was_new) — same shape as `eject()`.
+
+    Used by the reliability checks before they invoke `npx playwright`:
+    Playwright resolves `@playwright/test` from the directory of its
+    own config, and the bundled config lives inside the pipx venv where
+    no `node_modules` is reachable. Ejecting the config (and the spec
+    Playwright is about to run) into `.ss/` puts them in the adopter's
+    CWD where node_modules IS reachable.
+
+    Silent when the override already exists; the caller is responsible
+    for emitting a one-line info message on first eject so the new
+    `.ss/<name>` file isn't surprising to the adopter.
+    """
+    return eject(name)
+
+
 # ── back-compat thin wrappers used by the check modules ──────────
 
 

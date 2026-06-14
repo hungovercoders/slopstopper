@@ -197,3 +197,26 @@ def test_playwright_spec_override_only_for_named_check(isolated_cwd):
     assert a11y_resolved == (
         templates.PACKAGE_DATA_DIR / "tests" / "accessibility.spec.ts"
     )
+
+
+# ── ensure_ejected (auto-eject helper used by reliability checks) ─
+
+
+def test_ensure_ejected_copies_when_missing(isolated_cwd):
+    dest, was_new = templates.ensure_ejected("playwright.config.js")
+    assert was_new is True
+    assert dest == Path(".ss/playwright.config.js")
+    assert dest.exists()
+    # Content matches the bundled file (sanity that we copied not symlinked).
+    bundled = (templates.PACKAGE_DATA_DIR / "playwright.config.js").read_text()
+    assert dest.read_text() == bundled
+
+
+def test_ensure_ejected_is_silent_when_already_present(isolated_cwd):
+    override = isolated_cwd / ".ss" / "playwright.config.js"
+    override.parent.mkdir(parents=True, exist_ok=True)
+    override.write_text("// customised")
+    dest, was_new = templates.ensure_ejected("playwright.config.js")
+    assert was_new is False
+    assert dest == Path(".ss/playwright.config.js")
+    assert override.read_text() == "// customised"

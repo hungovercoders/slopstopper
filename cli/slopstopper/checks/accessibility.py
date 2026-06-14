@@ -96,6 +96,19 @@ def _build_env(url: str, ci_mode: bool) -> dict[str, str]:
     return env
 
 
+def _ensure_playwright_assets_ejected() -> None:
+    """Auto-eject the playwright config and the spec we're about to run.
+
+    The bundled assets live inside the pipx venv where node_modules
+    can't be resolved by Playwright. Ejecting into `.ss/` puts them in
+    the adopter's CWD where node_modules IS reachable. Idempotent.
+    """
+    for name in (templates.PLAYWRIGHT_CONFIG_NAME, f"tests/{SPEC_NAME}.spec.ts"):
+        dest, was_new = templates.ensure_ejected(name)
+        if was_new:
+            output.info(f"ejected {dest} (Playwright must run from a path with node_modules reachable)")
+
+
 def _build_cmd(ci_mode: bool) -> list[str]:
     reporter = "list,html" if ci_mode else "list"
     return [
@@ -120,6 +133,7 @@ def run(args: list[str] | None = None) -> int:
         output._emit("  ACCESSIBILITY_TEST_URL=https://your-site slopstopper run reliability:accessibility")
         return 1
 
+    _ensure_playwright_assets_ejected()
     spec = templates.playwright_spec(SPEC_NAME)
     if not spec.exists():
         output.error(f"Accessibility spec not found at {spec}")

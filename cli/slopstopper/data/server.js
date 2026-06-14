@@ -8,21 +8,26 @@
  * prefers the override.
  *
  * Usage:
- *   slopstopper serve                                # auto-detect SERVE_ROOT, no headers
+ *   slopstopper serve                                # auto-detect SERVE_ROOT + headers
  *   SERVE_ROOT=dist/client slopstopper serve         # explicit root
  *   PORT=8000 slopstopper serve                      # alternative port
- *   SS_SERVER_HEADERS=worker/headers.json slopstopper serve   # apply headers
+ *   SS_SERVER_HEADERS=public/_headers slopstopper serve   # explicit headers file
  *
  * Auto-detect probes ./dist/client, ./dist, ./build, ./out, ./public,
  * ./app in that order and picks the first one containing index.html.
  * Pretty URLs: /foo → /foo.html or /foo/index.html (whichever exists).
  *
- * Headers (optional): if SS_SERVER_HEADERS is set (or ./worker/headers.json
- * exists), the file is read as a JSON array of {for: <path-pattern>,
- * values: {Header-Name: value}} rules and applied per-path. Pattern
- * syntax matches Cloudflare's headers rules: exact paths, or `/prefix/*`
- * / `/*` globs. Used by DAST scans that assert specific security
- * headers locally.
+ * Headers (optional). Both Cloudflare/Netlify native `_headers` text
+ * format and slopstopper.dev's `worker/headers.json` JSON shape are
+ * supported, picked by extension or file content. Auto-detect probes
+ * (in order): `worker/headers.json`, `public/_headers`. Set
+ * SS_SERVER_HEADERS to point at a specific file. Pattern syntax
+ * matches Cloudflare's headers rules: exact paths, `/prefix/*`, `/*`.
+ *
+ * Known gap vs Cloudflare's edge: this server doesn't strip headers
+ * Cloudflare strips automatically (e.g. `Server`). For DAST purposes
+ * the parity is close enough — the security headers we care about
+ * (CSP, X-Frame-Options, COOP/CORP, etc.) are what the scanner checks.
  */
 
 'use strict';
@@ -64,15 +69,38 @@ function findHeadersFile() {
 		}
 		return abs;
 	}
-	// Auto-detect slopstopper.dev-shape header file. Adopters who use
-	// a different format can convert to JSON and point SS_SERVER_HEADERS at it.
-	const defaultPath = path.resolve(CWD, 'worker/headers.json');
-	return fs.existsSync(defaultPath) ? defaultPath : null;
+	// Auto-detect in priority order. worker/headers.json first because
+	// it's slopstopper.dev's own shape; public/_headers second because
+	// it's the Cloudflare/Netlify native format every adopter on those
+	// platforms already has.
+	for (const candidate of ['worker/headers.json', 'public/_headers']) {
+		const abs = path.resolve(CWD, candidate);
+		if (fs.existsSync(abs)) return abs;
+	}
+	return null;
 }
 
 
-function loadHeaderRules(headersPath) {
-	if (!headersPath) return [];
+function pickParser(headersPath) {
+	// Sniff by extension first (cheap, unambiguous for the two formats
+	// we ship). Fall back to inspecting first non-comment line: JSON
+	// arrays start with `[`; Cloudflare _headers starts with a path
+	// pattern (`/`).
+	if (headersPath.endsWith('.json')) return parseJsonRules;
+	const lower = headersPath.toLowerCase();
+	if (lower.endsWith('_headers') || lower.includes('/_headers')) return parseCloudflareHeaders;
+	try {
+		const text = fs.readFileSync(headersPath, 'utf8');
+		const firstSignificant = text.split('\n').map(l => l.trim()).find(l => l && !l.startsWith('#'));
+		if (firstSignificant && firstSignificant.startsWith('[')) return parseJsonRules;
+	} catch (_) {
+		/* fall through to cloudflare default */
+	}
+	return parseCloudflareHeaders;
+}
+
+
+function parseJsonRules(headersPath) {
 	try {
 		const parsed = JSON.parse(fs.readFileSync(headersPath, 'utf8'));
 		if (!Array.isArray(parsed)) {
@@ -84,6 +112,58 @@ function loadHeaderRules(headersPath) {
 		console.warn(`Warning: could not read ${headersPath} (${e.message}) — no headers will be applied`);
 		return [];
 	}
+}
+
+
+function parseCloudflareHeaders(headersPath) {
+	// Cloudflare/Netlify _headers grammar:
+	//   * Blank lines separate rule blocks.
+	//   * Lines starting with `#` are comments (whole-line only).
+	//   * First non-comment line of a block is the path pattern
+	//     (e.g. `/*`, `/foo`, `/blog/*`).
+	//   * Subsequent indented lines are `Name: value` headers.
+	// We tolerate trailing-comment lines inside a block by stripping
+	// pure-comment lines before parsing the block.
+	let text;
+	try {
+		text = fs.readFileSync(headersPath, 'utf8');
+	} catch (e) {
+		console.warn(`Warning: could not read ${headersPath} (${e.message}) — no headers will be applied`);
+		return [];
+	}
+	const rules = [];
+	const blocks = text.split(/\n\s*\n/);
+	for (const block of blocks) {
+		const lines = block
+			.split('\n')
+			.map(l => l.replace(/\r$/, ''))
+			.filter(l => l.trim() && !l.trim().startsWith('#'));
+		if (lines.length === 0) continue;
+		const pattern = lines[0].trim();
+		// First line must look like a path pattern. Otherwise this is
+		// a stray indented block (probably commented-out content) and
+		// we skip it rather than emit a junk rule.
+		if (!pattern.startsWith('/')) continue;
+		const values = {};
+		for (let i = 1; i < lines.length; i++) {
+			const colon = lines[i].indexOf(':');
+			if (colon === -1) continue;
+			const name = lines[i].slice(0, colon).trim();
+			const value = lines[i].slice(colon + 1).trim();
+			if (name) values[name] = value;
+		}
+		if (Object.keys(values).length > 0) {
+			rules.push({ for: pattern, values });
+		}
+	}
+	return rules;
+}
+
+
+function loadHeaderRules(headersPath) {
+	if (!headersPath) return [];
+	const parser = pickParser(headersPath);
+	return parser(headersPath);
 }
 
 
@@ -106,9 +186,12 @@ function headersForPath(rules, urlPath) {
 }
 
 
-const SERVE_ROOT = findServeRoot();
-const HEADERS_PATH = findHeadersFile();
-const HEADER_RULES = loadHeaderRules(HEADERS_PATH);
+// Module-level constants the request handler closes over. Initialised
+// inside the require.main guard so `require('./server.js')` from a test
+// harness doesn't trigger SERVE_ROOT detection (which exits 1 when
+// CWD has no build output — fine for `slopstopper serve`, fatal for
+// unit tests of just the parsers).
+let SERVE_ROOT, HEADERS_PATH, HEADER_RULES;
 
 
 const MIME = {
@@ -199,10 +282,27 @@ const server = http.createServer((req, res) => {
 });
 
 
-server.listen(PORT, () => {
-	console.log(`Slopstopper server: http://localhost:${PORT}`);
-	console.log(`Serving from: ${path.relative(CWD, SERVE_ROOT) || '.'}`);
-	if (HEADERS_PATH) {
-		console.log(`Applying headers from: ${path.relative(CWD, HEADERS_PATH)} (${HEADER_RULES.length} rule${HEADER_RULES.length === 1 ? '' : 's'})`);
-	}
-});
+// Only listen when invoked directly via `node server.js`. When the file
+// is `require`d by a test harness, the parser functions are reachable
+// via module.exports below without spawning a real listener.
+if (require.main === module) {
+	SERVE_ROOT = findServeRoot();
+	HEADERS_PATH = findHeadersFile();
+	HEADER_RULES = loadHeaderRules(HEADERS_PATH);
+	server.listen(PORT, () => {
+		console.log(`Slopstopper server: http://localhost:${PORT}`);
+		console.log(`Serving from: ${path.relative(CWD, SERVE_ROOT) || '.'}`);
+		if (HEADERS_PATH) {
+			console.log(`Applying headers from: ${path.relative(CWD, HEADERS_PATH)} (${HEADER_RULES.length} rule${HEADER_RULES.length === 1 ? '' : 's'})`);
+		}
+	});
+}
+
+module.exports = {
+	parseCloudflareHeaders,
+	parseJsonRules,
+	pickParser,
+	loadHeaderRules,
+	matchesPattern,
+	headersForPath,
+};

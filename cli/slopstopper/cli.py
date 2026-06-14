@@ -589,10 +589,17 @@ def _dispatch_checks_list(category: str | None, as_json: bool) -> int:
 # Each entry: tool name → (check-name-that-needs-it, install hint).
 # A "check-name-that-needs-it" of None means the tool is needed by the
 # CLI itself (gh for emit, node for several reliability checks).
+#
+# Note on lizard: it used to appear here as an external binary, which
+# was misleading — `brew install lizard` ships lz4's lizard (different
+# tool), and the real Python lizard had to be `pipx inject`ed into
+# the slopstopper-cli venv before hygiene:complexity worked. lizard
+# is now a runtime dependency of slopstopper-cli (see pyproject.toml),
+# so it's always in the venv that `python -m lizard` resolves against.
+# Doctor no longer needs to check for it.
 _DOCTOR_TOOLS: list[tuple[str, str | None, str]] = [
     ("node", None, "Install Node.js (https://nodejs.org/) — required by Playwright, Lighthouse, server"),
     ("gh", None, "Install GitHub CLI (https://cli.github.com/) — required by `slopstopper emit`"),
-    ("lizard", "hygiene:complexity", "pip install --user lizard  (don't use brew install lizard — that's lz4)"),
     ("semgrep", "security:sast", "pip install --user semgrep  or  brew install semgrep"),
     ("gitleaks", "security:secrets", "brew install gitleaks  or  apt-get install gitleaks"),
     ("trivy", "security:dependencies", "brew install aquasecurity/trivy/trivy  or  see https://trivy.dev"),
