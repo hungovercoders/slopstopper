@@ -1,13 +1,13 @@
 name: SlopStopper · Broken Links Check
 
-# CLI-flipped workflow (Phase 2). Same shape as the smoke flip: there
-# is no markdown report and the PR-comment body is built from workflow
-# context only, so emit.py isn't a fit. The check runs via the CLI,
-# and the small PR-comment block uses `gh pr comment` directly.
-#
-# Discovery runs via `slopstopper discover` (the CLI replacement for
-# the bash script; see #224). It sets BROKEN_LINKS_PAGES which the
-# CLI check picks up via env.
+# Crawls the deployed site for broken internal links via Playwright.
+# Page list resolved by `slopstopper discover` (reads
+# pages.broken_links from .slopstopper.yml, falls back to sitemap or
+# changed-files heuristics) and surfaced via the BROKEN_LINKS_PAGES
+# env var. Triggers: PR, push to main, daily schedule, Cloudflare
+# deployment events. Emits a rolling PR comment and a main-branch
+# tracking issue; auto-closes on a clean run.
+# Docs: docs/reliability/README.md.
 
 on:
   pull_request:
@@ -70,10 +70,8 @@ jobs:
 
       - name: Install slopstopper-cli
         run: |
-          # Pre-PyPI dogfood install. slopstopper.dev installs editable
-          # from local source; adopters (no cli/ dir) install from git.
-          # Once published, both branches collapse into:
-          #   pipx install slopstopper-cli==<pinned-version>
+          # Editable install when run inside slopstopper.dev itself
+          # (cli/ source present); PyPI install for adopter repos.
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else
@@ -192,10 +190,9 @@ jobs:
           [Full report in workflow artifacts](${run_url})
           EOF
           )
-          # Match the existing bot comment by the H2 marker and update,
-          # else create. (Pre-flip used createComment only — this fixes
-          # the duplicates-on-every-push regression seen in the legacy
-          # checks; same dedup approach as the emit-routed flips.)
+          # Match the existing bot comment by the H2 marker and update
+          # in place, else create. Keeps one rolling comment per PR
+          # rather than appending on every push.
           marker='🔗 Broken Links Check'
           pr_number=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
           existing=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments" \

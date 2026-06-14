@@ -1,9 +1,10 @@
 name: SlopStopper · Hygiene - Documentation Structure Check
 
-# CLI-flipped workflow (Phase 2). Replaces task ss:hygiene:docs-structure
-# + two `actions/github-script@v7` blocks (PR comment + main-branch
-# issue) with two `slopstopper emit` steps. The check exits non-zero
-# when violations are found, so `steps.check.outcome` gates emission.
+# Validates documentation directory structure (Map Pattern) and the
+# docs/index.md catalogue against the actual tree. Triggers: PR, push
+# to main. Emits a rolling PR comment and a main-branch tracking
+# issue on violations.
+# Docs: docs/hygiene/README.md.
 
 on:
   pull_request:
@@ -42,10 +43,8 @@ jobs:
 
       - name: Install slopstopper-cli
         run: |
-          # Pre-PyPI dogfood install. slopstopper.dev installs editable
-          # from local source; adopters (no cli/ dir) install from git.
-          # Once published, both branches collapse into:
-          #   pipx install slopstopper-cli==<pinned-version>
+          # Editable install when run inside slopstopper.dev itself
+          # (cli/ source present); PyPI install for adopter repos.
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else

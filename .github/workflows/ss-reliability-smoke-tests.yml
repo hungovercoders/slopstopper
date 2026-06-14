@@ -1,20 +1,12 @@
 name: SlopStopper · Reliability Smoke Tests
 
-# CLI-flipped workflow (Phase 2). The smoke check has a different shape
-# from the hygiene/security flips: there is no PR-comment block, and
-# the failure/recovery issue body is built from workflow context (URL,
-# run number) rather than a markdown report file. emit.py is built
-# around report files, so it isn't a fit here — instead we route the
-# check itself through `slopstopper run reliability:smoke` and keep
-# the small `gh` blocks for issue create / comment / close inline.
-# Same trick we used for docs-accuracy's auto-close-on-clean.
-#
-# CLI changes vs pre-flip:
-#   - `slopstopper run reliability:smoke -- --ci` replaces the
-#     `task ss:reliability:smoke:ci` shim (and its bash dispatch).
-#   - The CLI smoke check already reads `pages.smoke` from
-#     .slopstopper.yml via config.get(), so the old "Pages to
-#     smoke-check" extraction step is gone.
+# Runs Playwright smoke tests against the deployed site (or local
+# `slopstopper serve` for PR builds). Page list comes from
+# pages.smoke in .slopstopper.yml. Triggers: PR, push to main, hourly
+# schedule, Cloudflare deployment events. Failure raises a
+# main-branch tracking issue with the run URL; recovery auto-closes
+# it. No PR comment — exit code is the signal.
+# Docs: docs/reliability/README.md.
 
 on:
   pull_request:
@@ -65,10 +57,8 @@ jobs:
 
       - name: Install slopstopper-cli
         run: |
-          # Pre-PyPI dogfood install. slopstopper.dev installs editable
-          # from local source; adopters (no cli/ dir) install from git.
-          # Once published, both branches collapse into:
-          #   pipx install slopstopper-cli==<pinned-version>
+          # Editable install when run inside slopstopper.dev itself
+          # (cli/ source present); PyPI install for adopter repos.
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else

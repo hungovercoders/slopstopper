@@ -1,12 +1,12 @@
 name: SlopStopper · Core Web Vitals
 
-# CLI-flipped workflow (Phase 2). The CWV check now renders its own
-# threshold table inside cwv.py (lifted from the github-script JS
-# block) and writes .ss/reports/cwv/cwv-report.md. emit.py handles
-# PR-comment find-or-update and main-branch issue create/update, same
-# shape as every other Phase-2 flip. Auto-close on a green main /
-# schedule / deploy still uses inline `gh issue close` because emit
-# doesn't model that.
+# Measures Core Web Vitals (LCP, FID, CLS) with Lighthouse CI against
+# the thresholds in cli/slopstopper/data/lighthouserc{,.prod}.json.
+# Triggers: PR, push to main, daily schedule, Cloudflare deployment
+# events. Emits a rolling PR comment with the threshold table and a
+# main-branch tracking issue on regressions; auto-closes the issue
+# on a green run.
+# Docs: docs/reliability/README.md.
 
 on:
   deployment_status:
@@ -62,10 +62,8 @@ jobs:
 
       - name: Install slopstopper-cli
         run: |
-          # Pre-PyPI dogfood install. slopstopper.dev installs editable
-          # from local source; adopters (no cli/ dir) install from git.
-          # Once published, both branches collapse into:
-          #   pipx install slopstopper-cli==<pinned-version>
+          # Editable install when run inside slopstopper.dev itself
+          # (cli/ source present); PyPI install for adopter repos.
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else

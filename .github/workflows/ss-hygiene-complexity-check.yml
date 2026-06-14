@@ -1,13 +1,9 @@
 name: SlopStopper · Code Complexity Check
 
-# CLI-flipped workflow (Phase 2). Replaces task ss:hygiene:complexity
-# + two `actions/github-script@v7` blocks with `slopstopper emit` steps.
-# Behavioural note: the pre-flip PR-comment block always *created* a new
-# comment (never updated), so duplicate complexity comments would
-# accumulate on each push. Post-flip, the emit module finds-or-updates
-# via the "Code Complexity Analysis" substring discriminator, so each
-# PR shows one rolling comment. The main-branch issue path was already
-# find-or-update — same shape post-flip.
+# Detects high-complexity functions (CCN > 10) with Lizard.
+# Triggers: PR, push to main. Emits a rolling PR comment (updated
+# in-place per push) and a main-branch tracking issue on findings.
+# Docs: docs/hygiene/README.md.
 
 on:
   pull_request:
@@ -42,10 +38,8 @@ jobs:
 
       - name: Install slopstopper-cli
         run: |
-          # Pre-PyPI dogfood install. slopstopper.dev installs editable
-          # from local source; adopters (no cli/ dir) install from git.
-          # Once published, both branches collapse into:
-          #   pipx install slopstopper-cli==<pinned-version>
+          # Editable install when run inside slopstopper.dev itself
+          # (cli/ source present); PyPI install for adopter repos.
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else
