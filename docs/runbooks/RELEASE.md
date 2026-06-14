@@ -54,7 +54,7 @@ If in doubt, prefer a MINOR bump over a PATCH.
      && find . -name '*.bak' -delete
    ```
 
-   The release tag URL (e.g. `releases/tag/v0.2.0`) also appears in user-facing copy as a "see the release" link — bump those too. Slopstopper.dev's own CI uses the editable install of `cli/` when `cli/pyproject.toml` is present, so it dogfoods `main` regardless of the pinned wheel URL.
+   The release tag URL (e.g. `releases/tag/v0.2.1`) also appears in user-facing copy as a "see the release" link — bump those too. Slopstopper.dev's own CI uses the editable install of `cli/` when `cli/pyproject.toml` is present, so it dogfoods `main` regardless of the pinned wheel URL.
 
 5. **Commit + push** the CHANGELOG, version bumps and URL bumps as a single commit (`chore(release): bump version to X.Y.Z`). Open a PR if you want CI to pre-verify; otherwise push straight to `main` if you have permission.
 
@@ -85,7 +85,7 @@ Adopters verify with the `gh` CLI:
 
 ```bash
 # Download the wheel from the release page first, then:
-gh attestation verify slopstopper_cli-0.2.0-py3-none-any.whl --owner hungovercoders
+gh attestation verify slopstopper_cli-0.2.1-py3-none-any.whl --owner hungovercoders
 ```
 
 A successful verification prints the workflow run + commit SHA that produced the wheel. A tampered wheel (or one not from this repo) makes the command exit non-zero.
