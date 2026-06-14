@@ -11,8 +11,8 @@ This directory records significant decisions and their rationale for the project
 ## Tasks
 
 ```bash
-task ss:decisions:validate   # Validate the decisions log
-task ss:decisions:new SLUG=<name>  # Create a new decision note from template
+task decisions:validate            # Validate the decisions log
+task decisions:new SLUG=<name>     # Create a new decision note from template
 ```
 
 ---

@@ -24,8 +24,8 @@ Thanks for considering a contribution. The full contributor guide lives at:
 ## Quick checks before pushing
 
 ```bash
-task ss:contributing:build               # TypeScript build
-task ss:contributing:test                # Playwright smoke + a11y
+task contributing:build                  # TypeScript build
+task contributing:test                   # Playwright smoke + a11y
 task ss:reliability:accessibility        # axe-core WCAG 2.1 AA
 task ss:hygiene:complexity               # Lizard cap
 task ss:security:sast                    # Semgrep

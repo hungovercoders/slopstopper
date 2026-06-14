@@ -34,7 +34,7 @@ built-in capability with a GHA workflow only adds maintenance.
 
 The build command Workers Builds runs is `npm run build` (TypeScript
 compile of `src/` → `app/`). The pre-build asset render
-(`task ss:contributing:assets`, which renders SVG → PNG via Playwright)
+(`task contributing:assets`, which renders SVG → PNG via Playwright)
 runs locally before commits — the PNG outputs are checked in.
 
 ## Visibility
