@@ -1,10 +1,11 @@
 name: SlopStopper · SAST Analysis
 
-# CLI-flipped workflow (Phase 2). Mirrors the secrets flip — two
-# `slopstopper emit` steps replace ~80 lines of duplicated
-# actions/github-script@v7. The CLI check exits 0 always; the workflow
-# gates fail/emit-issue on the count of ERROR-severity findings in the
-# Semgrep JSON output.
+# Runs Semgrep static analysis. Workflow gates fail and emit-issue
+# on the count of ERROR-severity findings in the Semgrep JSON;
+# INFO/WARNING findings are reported but non-blocking. Triggers: PR,
+# push to main. Emits a rolling PR comment with all findings and a
+# main-branch tracking issue on ERROR-severity regressions.
+# Docs: docs/security/README.md.
 
 on:
   pull_request:
@@ -39,10 +40,8 @@ jobs:
 
       - name: Install slopstopper-cli
         run: |
-          # Pre-PyPI dogfood install. slopstopper.dev installs editable
-          # from local source; adopters (no cli/ dir) install from git.
-          # Once published, both branches collapse into:
-          #   pipx install slopstopper-cli==<pinned-version>
+          # Editable install when run inside slopstopper.dev itself
+          # (cli/ source present); PyPI install for adopter repos.
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else

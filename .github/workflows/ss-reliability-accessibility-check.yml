@@ -1,12 +1,11 @@
 name: SlopStopper · Accessibility Check
 
-# CLI-flipped workflow (Phase 2). Combines the shapes of the smoke
-# and broken-links flips: route the check through
-# `slopstopper run reliability:accessibility`, convert the PR-comment
-# block to inline `gh` with find-or-update dedup (fixes the
-# duplicate-on-every-push regression), convert the issue create /
-# comment / close blocks to inline `gh` (emit.py isn't a fit because
-# the bodies are built from workflow context, not a report file).
+# Audits accessibility against WCAG 2.1 AA using axe-core via
+# Playwright. Triggers: PR, push to main, daily schedule, Cloudflare
+# deployment events. Emits a rolling PR comment (find-or-update by
+# H2 marker) and a main-branch tracking issue on violations;
+# auto-closes the issue on a clean run.
+# Docs: docs/reliability/ACCESSIBILITY.md.
 
 on:
   pull_request:
@@ -78,10 +77,8 @@ jobs:
 
       - name: Install slopstopper-cli
         run: |
-          # Pre-PyPI dogfood install. slopstopper.dev installs editable
-          # from local source; adopters (no cli/ dir) install from git.
-          # Once published, both branches collapse into:
-          #   pipx install slopstopper-cli==<pinned-version>
+          # Editable install when run inside slopstopper.dev itself
+          # (cli/ source present); PyPI install for adopter repos.
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else

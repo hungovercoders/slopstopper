@@ -1,13 +1,11 @@
 name: SlopStopper · DAST Analysis
 
-# CLI-flipped workflow (Phase 2). The dast check now runs ZAP AND
-# applies the CSP-exception gate in one call — the 236-line
-# `.ss/scripts/check-dast-alerts.py` was lifted into
-# `cli/slopstopper/dast_gate.py` in this PR. The report MD now
-# includes the swallowed-CSP preamble directly, so `slopstopper emit`
-# posts the same content the legacy github-script block used to
-# assemble. Two `slopstopper emit` steps replace ~90 lines of
-# duplicated github-script JS.
+# Runs OWASP ZAP baseline scan against a running app and gates on
+# alerts not declared in docs/security/CSP_EXCEPTIONS.md. Triggers:
+# PR, push to main. Emits a rolling PR comment (with the
+# swallowed-CSP preamble inline) and a main-branch tracking issue on
+# real findings.
+# Docs: docs/security/README.md.
 
 on:
   pull_request:
@@ -37,10 +35,8 @@ jobs:
 
       - name: Install slopstopper-cli
         run: |
-          # Pre-PyPI dogfood install. slopstopper.dev installs editable
-          # from local source; adopters (no cli/ dir) install from git.
-          # Once published, both branches collapse into:
-          #   pipx install slopstopper-cli==<pinned-version>
+          # Editable install when run inside slopstopper.dev itself
+          # (cli/ source present); PyPI install for adopter repos.
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else

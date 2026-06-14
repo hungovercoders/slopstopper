@@ -1,11 +1,12 @@
 name: SlopStopper · SEO Metatag Check
 
-# CLI-flipped workflow (Phase 2). The SEO check writes a markdown
-# report (.ss/reports/seo/seo-metatags-report.md), so emit.py is the
-# right fit here — same shape as the hygiene/security flips.
-# Replaces ~35 lines of duplicated actions/github-script@v7 with one
-# `slopstopper emit` step. No main-branch issue: the check's exit
-# code fails the workflow on missing tags, which is enough signal.
+# Validates `<title>`, meta description, canonical, OpenGraph, and
+# Twitter Card metatags on the deployed site (and HEAD-fetches
+# og:image to confirm reachability). Triggers: PR, push to main,
+# daily schedule, Cloudflare deployment events. Emits a rolling PR
+# comment; workflow fails on missing/invalid tags — no separate
+# main-branch issue (exit code is the signal).
+# Docs: docs/reliability/SEO.md.
 
 on:
   pull_request:
@@ -60,10 +61,8 @@ jobs:
 
       - name: Install slopstopper-cli
         run: |
-          # Pre-PyPI dogfood install. slopstopper.dev installs editable
-          # from local source; adopters (no cli/ dir) install from git.
-          # Once published, both branches collapse into:
-          #   pipx install slopstopper-cli==<pinned-version>
+          # Editable install when run inside slopstopper.dev itself
+          # (cli/ source present); PyPI install for adopter repos.
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else

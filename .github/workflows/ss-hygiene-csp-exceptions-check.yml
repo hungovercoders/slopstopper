@@ -1,10 +1,10 @@
 name: SlopStopper · Hygiene - CSP Exceptions Drift Check
 
-# CLI-flipped workflow (Phase 2). Replaces task ss:hygiene:csp-exceptions
-# + ~50 lines of duplicated actions/github-script@v7 with one
-# `slopstopper emit` step. The check itself runs via the CLI and the
-# workflow's failure surfaces drift on main; no separate main-branch
-# issue is created (the check's exit-code gate is enough).
+# Validates that CSP exceptions declared in code (suppressions,
+# allowlists) match docs/security/CSP_EXCEPTIONS.md. Triggers: PR,
+# push to main. Workflow fails on drift; no separate main-branch
+# issue (exit code is the signal).
+# Docs: docs/security/CSP_EXCEPTIONS.md.
 
 on:
   pull_request:
@@ -40,10 +40,8 @@ jobs:
 
       - name: Install slopstopper-cli
         run: |
-          # Pre-PyPI dogfood install. slopstopper.dev installs editable
-          # from local source; adopters (no cli/ dir) install from git.
-          # Once published, both branches collapse into:
-          #   pipx install slopstopper-cli==<pinned-version>
+          # Editable install when run inside slopstopper.dev itself
+          # (cli/ source present); PyPI install for adopter repos.
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else

@@ -1,10 +1,10 @@
 name: SlopStopper · Hygiene - Entry-File Budget Check
 
-# CLI-flipped workflow (Phase 2). Replaces task ss:hygiene:entry-files
-# + ~50 lines of duplicated actions/github-script@v7 with a single
-# `slopstopper emit` step. The check itself runs via the CLI and the
-# workflow's failure surfaces over-budget files on main; no separate
-# main-branch issue is created (the check's exit-code gate is enough).
+# Enforces word-count budgets on root-level entry files (README.md,
+# AGENTS.md, CLAUDE.md). Triggers: PR, push to main. Emits a rolling
+# PR comment; workflow fails on over-budget — no separate main-branch
+# issue (exit code is the signal).
+# Docs: docs/hygiene/README.md.
 
 on:
   pull_request:
@@ -42,10 +42,8 @@ jobs:
 
       - name: Install slopstopper-cli
         run: |
-          # Pre-PyPI dogfood install. slopstopper.dev installs editable
-          # from local source; adopters (no cli/ dir) install from git.
-          # Once published, both branches collapse into:
-          #   pipx install slopstopper-cli==<pinned-version>
+          # Editable install when run inside slopstopper.dev itself
+          # (cli/ source present); PyPI install for adopter repos.
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else

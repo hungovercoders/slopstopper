@@ -1,12 +1,11 @@
 name: SlopStopper · Hygiene - Documentation Accuracy Check
 
-# CLI-flipped workflow (Phase 2). Replaces task ss:hygiene:docs-accuracy
-# + three `actions/github-script@v7` blocks (PR comment, issue create
-# /update on push/schedule, issue auto-close on clean) with two
-# `slopstopper emit` steps + one small inline `gh` block that closes
-# the tracking issue when docs are clean. emit.py intentionally only
-# does create/update; the auto-close is a docs-accuracy quirk that
-# stays in YAML rather than getting generalised into the META schema.
+# Scans the repo for documentation references that no longer match
+# the code or links they describe. Triggers: PR, push to main, weekly
+# schedule. Emits a rolling PR comment, opens/updates a main-branch
+# tracking issue on findings, and auto-closes the issue when docs are
+# clean.
+# Docs: docs/hygiene/README.md.
 
 on:
   # Weekly schedule (every Monday at 07:00 UTC)
@@ -72,10 +71,8 @@ jobs:
 
       - name: Install slopstopper-cli
         run: |
-          # Pre-PyPI dogfood install. slopstopper.dev installs editable
-          # from local source; adopters (no cli/ dir) install from git.
-          # Once published, both branches collapse into:
-          #   pipx install slopstopper-cli==<pinned-version>
+          # Editable install when run inside slopstopper.dev itself
+          # (cli/ source present); PyPI install for adopter repos.
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else
@@ -108,10 +105,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # docs-accuracy uniquely auto-closes its tracking issue when
-          # docs are clean. emit.py doesn't generalise "close" yet — small
-          # gh-CLI loop here keeps the behaviour without bloating the
-          # shared emit module.
+          # Auto-close any open tracking issue when docs are clean.
+          # emit.py models only create/update, so the close path lives
+          # here as a small inline gh loop.
           numbers=$(gh issue list --state open --label documentation-accuracy --json number --jq '.[].number')
           for n in $numbers; do
             gh issue comment "$n" --body "✅ Documentation accuracy checks now pass. Closing automatically."
