@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # CHANGELOG diff and git describe both need full history.
           fetch-depth: 0
@@ -66,7 +66,7 @@ jobs:
           fi
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -89,7 +89,7 @@ jobs:
       # No keys to manage, no token rotation — the OIDC token is scoped
       # to this workflow run.
       - name: Generate build provenance attestation
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: 'cli/dist/*'
 
