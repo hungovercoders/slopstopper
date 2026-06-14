@@ -4,6 +4,19 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.5.1](https://github.com/hungovercoders/slopstopper/compare/v0.5.0...v0.5.1) (2026-06-14)
+
+
+### Bug Fixes
+
+* **cli:** exit non-zero on HIGH+ vulnerabilities to match CI gate behaviour ([2f5854b](https://github.com/hungovercoders/slopstopper/commit/2f5854bdba7e9013bc7819de51b43b1755a9b62d))
+* **cli:** exit non-zero on HIGH+ vulnerabilities to match CI gate behaviour ([80be098](https://github.com/hungovercoders/slopstopper/commit/80be098886f2edd9549b331115b0cce8d56e25a9))
+* **cli:** make complexity, playwright, serve work out of the box ([07ee735](https://github.com/hungovercoders/slopstopper/commit/07ee735d19b44443fa396ef01de79020860452ff))
+* **cli:** make complexity, playwright, serve work out of the box ([70cf72e](https://github.com/hungovercoders/slopstopper/commit/70cf72e64e7a6473457fb24c7f375e29c1e2ad7f))
+* **install:** three install.sh issues found by first real adopter ([29bbff8](https://github.com/hungovercoders/slopstopper/commit/29bbff8eb5381e3092365c491144ab04439fce33))
+* **install:** three install.sh issues found by first real adopter ([f3ddb84](https://github.com/hungovercoders/slopstopper/commit/f3ddb8497b6db9d188da882a33eecab99ef0fad2))
+* **server.js:** split parseCloudflareHeaders to satisfy CCN &lt; 10 ([f7d059c](https://github.com/hungovercoders/slopstopper/commit/f7d059c4d02b74d1feb68eb60a02b1462148d323))
+
 ## [0.5.0](https://github.com/hungovercoders/slopstopper/compare/v0.4.1...v0.5.0) (2026-06-14)
 
 
