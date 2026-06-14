@@ -1,14 +1,20 @@
-# public/_headers — seeded by slopstopper install.sh.
+# slopstopper security headers begin
+#
+# Seeded by slopstopper install.sh. The block is wrapped with the
+# begin/end markers above and below so re-runs detect "already
+# appended" and don't duplicate the block. Adopters can move, edit, or
+# delete the entries between the markers — the only requirement for
+# the idempotency check is that the begin marker line survives.
 #
 # Native Cloudflare/Netlify _headers format. Cloudflare Workers Builds
-# (with assets) and Netlify both serve these per response. Uncomment the
-# block to enable a slopstopper-baseline security header policy.
+# (with assets) and Netlify both serve these per response. Uncomment
+# the entries to enable a slopstopper-baseline security header policy.
 #
 # The CSP below is opinionated for static sites that load Google Tag
 # Manager. Tune `script-src` and `connect-src` to the third parties
 # *your* site actually loads. Document any per-page CSP relaxations in
-# docs/security/CSP_EXCEPTIONS.md and slopstopper's ss:hygiene:csp-exceptions
-# check will keep them honest.
+# docs/security/CSP_EXCEPTIONS.md and slopstopper's
+# ss:hygiene:csp-exceptions check will keep them honest.
 #
 # CRITICAL: edit before uncommenting. These are defaults, not law.
 
@@ -23,3 +29,5 @@
 
 # /og-image.png
 #   Cross-Origin-Resource-Policy: cross-origin
+
+# slopstopper security headers end
