@@ -473,17 +473,31 @@ task_step = re.compile(
     r"          repo-token: \$\{\{ secrets\.GITHUB_TOKEN \}\}\n"
 )
 
+# Two Taskfile shims have aliases that don't match the underlying CLI
+# check name (the shim name matches the workflow filename for adopter
+# clarity; the CLI uses domain naming). Map them when rewriting:
+SHIM_TO_CLI = {
+    "reliability:links":          "reliability:broken-links",
+    "security:vulnerability:all": "security:dependencies",
+}
+
+def rewrite(match: re.Match) -> str:
+    shim = match.group(1)
+    cli = SHIM_TO_CLI.get(shim, shim)
+    trailer = match.group(2)
+    return f"slopstopper run {cli}{trailer}"
+
 # Order matters: handle the `-- ` separator form first, then bare invocations.
-invoke_with_args = re.compile(r"task ss:([a-z][a-z0-9_:-]+) -- ")
-invoke_bare      = re.compile(r"task ss:([a-z][a-z0-9_:-]+)")
+invoke_with_args = re.compile(r"task ss:([a-z][a-z0-9_:-]+)( -- )")
+invoke_bare      = re.compile(r"task ss:([a-z][a-z0-9_:-]+)()")
 
 transformed = 0
 for path in sorted(workflows_dst.glob("ss-*.yml")):
     text = path.read_text()
     original = text
     text = task_step.sub("\n", text)
-    text = invoke_with_args.sub(r"slopstopper run \1 ", text)
-    text = invoke_bare.sub(r"slopstopper run \1", text)
+    text = invoke_with_args.sub(rewrite, text)
+    text = invoke_bare.sub(rewrite, text)
     if text != original:
         path.write_text(text)
         transformed += 1
