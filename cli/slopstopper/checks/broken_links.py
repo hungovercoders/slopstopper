@@ -53,6 +53,12 @@ def _parse_args(args: list[str] | None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="slopstopper run reliability:broken-links", add_help=False
     )
+    p.add_argument(
+        "url_positional",
+        nargs="?",
+        default=None,
+        help="Site URL to scan (alternative to --url; e.g. http://localhost:8080)",
+    )
     p.add_argument("--url", default=None, help="Site URL to scan")
     p.add_argument("--ci", action="store_true", help="CI mode: html reporter, CI=true")
     p.add_argument("--help", "-h", action="help")
@@ -121,7 +127,7 @@ def run(args: list[str] | None = None) -> int:
         return 1
 
     parsed = _parse_args(args)
-    url = _resolve_url(parsed.url)
+    url = _resolve_url(parsed.url_positional or parsed.url)
     if not url:
         output.error("broken-links target URL is required")
         output._emit("Usage:")

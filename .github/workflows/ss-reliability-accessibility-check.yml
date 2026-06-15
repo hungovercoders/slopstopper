@@ -85,6 +85,12 @@ jobs:
             pip install slopstopper-cli
           fi
 
+      - name: Install Task runner
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Determine audit URL
         id: url
         env:
@@ -158,10 +164,9 @@ jobs:
       - name: Run accessibility audit
         id: audit
         env:
-          ACCESSIBILITY_TEST_URL: ${{ steps.url.outputs.url }}
           ACCESSIBILITY_IMPACT: ${{ github.event.inputs.impact || 'serious' }}
           ACCESSIBILITY_THRESHOLD: ${{ github.event.inputs.threshold || '0' }}
-        run: slopstopper run reliability:accessibility -- --ci
+        run: task ss:reliability:accessibility -- ${{ steps.url.outputs.url }} --ci
 
       - name: Stop local server
         if: steps.url.outputs.use_local == 'true' && always()
@@ -200,11 +205,7 @@ jobs:
           ### 🔍 How to Check Locally
 
           \`\`\`bash
-          # Audit the local build
-          slopstopper run reliability:accessibility
-
-          # Or audit a deployed URL
-          slopstopper run reliability:accessibility -- --url https://your-site.example.com
+          task ss:reliability:accessibility -- https://your-site.example.com
           \`\`\`
 
           [Full report in workflow artifacts](${run_url})
@@ -244,7 +245,7 @@ jobs:
           npm run build && slopstopper serve &
 
           # Run accessibility audit
-          slopstopper run reliability:accessibility -- --url http://localhost:8080
+          task ss:reliability:accessibility -- http://localhost:8080
           \`\`\`
 
           [View the failed workflow run](${run_url})

@@ -21,6 +21,13 @@ repo. Conformant with [agents.md](https://agents.md).
 > invoked under the `ss` namespace (`task ss:hygiene:complexity`). GitHub
 > Actions use `ss-category-action-check.yml` (e.g.
 > `ss-hygiene-complexity-check.yml`).
+>
+> **`task ss:<check>` is the canonical interface** — humans, agents AND CI all
+> go through it, so the suite shares one invocation surface with everything
+> else in the codebase. The underlying `slopstopper-cli` is the implementation
+> the shims call; it's not a parallel surface to promote. Adopters who'd
+> rather skip Task in their CI can install with `--no-task` and get workflows
+> that call the CLI directly — but the canonical contract is Task.
 
 ## What SlopStopper is
 

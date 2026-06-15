@@ -430,6 +430,12 @@ def _print_results(results: list[dict]) -> None:
 
 def _parse_args(args: list[str] | None) -> argparse.Namespace:
     p = argparse.ArgumentParser(prog="slopstopper run reliability:seo", add_help=False)
+    p.add_argument(
+        "url_positional",
+        nargs="?",
+        default=None,
+        help="Site URL to audit (alternative to --url; e.g. http://localhost:8080)",
+    )
     p.add_argument("--url", default=None, help="Site URL to audit")
     p.add_argument("--pages", default=None, help="Comma-separated paths (default: /)")
     p.add_argument(
@@ -476,7 +482,7 @@ def _resolve_pages(parsed_pages: str | None) -> list[str]:
 
 def run(args: list[str] | None = None) -> int:
     parsed = _parse_args(args)
-    url = _resolve_url(parsed.url)
+    url = _resolve_url(parsed.url_positional or parsed.url)
     if not url:
         output.error("SEO target URL is required")
         output._emit("Usage:")

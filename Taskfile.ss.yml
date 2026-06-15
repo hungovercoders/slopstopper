@@ -1,10 +1,16 @@
 version: '3'
 
-# Adopter-facing task shims. Each task here is a thin wrapper around
-# `slopstopper run <category>:<check>` — same code path as CI.
+# Canonical adopter interface for the slopstopper quality suite.
 #
-# Discoverable via `task --list-all`. Skip this file entirely if you
-# prefer calling the CLI directly (the shims and the CLI are equivalent).
+# This Taskfile is THE entry point — humans, agents and CI all invoke
+# checks through `task ss:<category>:<check>`. The underlying
+# `slopstopper-cli` is the implementation each shim calls; it is not
+# a parallel surface to promote to adopters.
+#
+# Workflows in .github/workflows/ss-*-check.yml install the Task
+# runner and go through these shims by default. Adopters who don't
+# want Task in their CI can re-run install.sh with --no-task to get
+# workflows post-processed to call slopstopper-cli directly.
 
 tasks:
   # ───────────── Reliability (need a URL) ─────────────
@@ -18,11 +24,10 @@ tasks:
 
       Usage:
         task ss:reliability:smoke -- https://your-site.example.com
+        task ss:reliability:smoke -- https://your-site.example.com --ci
         SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke
     cmds:
-      - |
-        {{if .CLI_ARGS}}export SMOKE_TEST_URL="{{.CLI_ARGS}}"{{end}}
-        slopstopper run reliability:smoke
+      - slopstopper run reliability:smoke -- {{.CLI_ARGS}}
 
   reliability:cwv:
     desc: Run a Core Web Vitals (Lighthouse CI) audit
@@ -38,11 +43,10 @@ tasks:
 
       Usage:
         task ss:reliability:cwv -- https://your-site.example.com
+        task ss:reliability:cwv -- https://your-site.example.com --prod
         CWV_URL=https://your-site.example.com task ss:reliability:cwv
     cmds:
-      - |
-        {{if .CLI_ARGS}}export CWV_URL="{{.CLI_ARGS}}"{{end}}
-        slopstopper run reliability:cwv
+      - slopstopper run reliability:cwv -- {{.CLI_ARGS}}
 
   reliability:seo:
     desc: Validate SEO + social-share metatags on a live URL
@@ -66,9 +70,7 @@ tasks:
         task ss:reliability:seo -- https://your-site.example.com
         SEO_TEST_URL=https://your-site.example.com task ss:reliability:seo
     cmds:
-      - |
-        {{if .CLI_ARGS}}export SEO_TEST_URL="{{.CLI_ARGS}}"{{end}}
-        slopstopper run reliability:seo
+      - slopstopper run reliability:seo -- {{.CLI_ARGS}}
 
   reliability:accessibility:
     desc: Run accessibility audit against a live URL
@@ -84,11 +86,10 @@ tasks:
 
       Usage:
         task ss:reliability:accessibility -- https://your-site.example.com
+        task ss:reliability:accessibility -- https://your-site.example.com --ci
         ACCESSIBILITY_TEST_URL=https://your-site.example.com task ss:reliability:accessibility
     cmds:
-      - |
-        {{if .CLI_ARGS}}export ACCESSIBILITY_TEST_URL="{{.CLI_ARGS}}"{{end}}
-        slopstopper run reliability:accessibility
+      - slopstopper run reliability:accessibility -- {{.CLI_ARGS}}
 
   reliability:links:
     desc: Run broken-link checks against a live URL
@@ -103,11 +104,10 @@ tasks:
 
       Usage:
         task ss:reliability:links -- https://your-site.example.com
+        task ss:reliability:links -- https://your-site.example.com --ci
         BROKEN_LINKS_TEST_URL=https://your-site.example.com task ss:reliability:links
     cmds:
-      - |
-        {{if .CLI_ARGS}}export BROKEN_LINKS_TEST_URL="{{.CLI_ARGS}}"{{end}}
-        slopstopper run reliability:broken-links
+      - slopstopper run reliability:broken-links -- {{.CLI_ARGS}}
 
   # ───────────── Hygiene (static analysis) ─────────────
 
@@ -240,10 +240,8 @@ tasks:
       Usage:
         task ss:security:dast -- http://localhost:8080
         task ss:security:dast -- https://staging.example.com
-    vars:
-      TARGET: '{{default "http://localhost:8080" .CLI_ARGS}}'
     cmds:
-      - slopstopper run security:dast -- --target {{.TARGET}}
+      - slopstopper run security:dast -- {{.CLI_ARGS}}
 
   security:secrets:
     desc: Run secrets detection using Gitleaks

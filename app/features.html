@@ -85,7 +85,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: pip install slopstopper-cli && pip install semgrep
-      - run: slopstopper run security:sast
+      - run: task ss:security:sast
       - if: github.event_name == 'pull_request'
         run: slopstopper emit security:sast --target pr-comment</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-sast-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
@@ -106,7 +106,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: pip install slopstopper-cli
       - run: npm ci &amp;&amp; npm run build &amp;&amp; slopstopper serve &amp;
-      - run: slopstopper run security:dast -- --target http://localhost:8080
+      - run: task ss:security:dast -- http://localhost:8080
       - if: github.event_name == 'pull_request'
         run: slopstopper emit security:dast --target pr-comment</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-dast-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
@@ -127,7 +127,7 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
       - run: pip install slopstopper-cli && curl -sL gitleaks/install.sh | bash
-      - run: slopstopper run security:secrets
+      - run: task ss:security:secrets
       - if: github.event_name == 'pull_request'
         run: slopstopper emit security:secrets --target pr-comment</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-secrets-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
@@ -147,7 +147,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: pip install slopstopper-cli && brew install aquasecurity/trivy/trivy
-      - run: slopstopper run security:dependencies
+      - run: task ss:security:dependencies
       - if: github.event_name == 'pull_request'
         run: slopstopper emit security:dependencies --target pr-comment</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-vulnerability-all-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
@@ -184,7 +184,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: pip install slopstopper-cli lizard
-      - run: slopstopper run hygiene:complexity
+      - run: task ss:hygiene:complexity
       - if: github.event_name == 'pull_request'
         run: slopstopper emit hygiene:complexity --target pr-comment</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-complexity-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
@@ -224,7 +224,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: pip install slopstopper-cli
-      - run: slopstopper run hygiene:csp-exceptions
+      - run: task ss:hygiene:csp-exceptions
       - if: github.event_name == 'pull_request'
         run: slopstopper emit hygiene:csp-exceptions --target pr-comment</code></pre></div>
                         <p class="details__hint">Strict <code>default-src 'self'</code> CSP is the default. Per-path exceptions (e.g. Giscus on <code>/feedback.html</code>) must be documented in <code>CSP_EXCEPTIONS.md</code> with SRI hashes and a fallback. This check fails the build if <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> disagree.</p>
@@ -280,7 +280,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: pip install slopstopper-cli &amp;&amp; npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
-      - run: slopstopper run reliability:smoke -- --ci
+      - run: task ss:reliability:smoke -- --ci
       - if: github.event_name == 'pull_request'
         run: slopstopper emit reliability:smoke --target pr-comment</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-smoke-tests.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
@@ -304,7 +304,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: pip install slopstopper-cli &amp;&amp; npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
-      - run: slopstopper run reliability:broken-links -- --ci
+      - run: task ss:reliability:links -- --ci
       - if: github.event_name == 'pull_request'
         run: slopstopper emit reliability:broken-links --target pr-comment</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-broken-links-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
@@ -327,7 +327,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: pip install slopstopper-cli &amp;&amp; npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
-      - run: slopstopper run reliability:accessibility -- --ci
+      - run: task ss:reliability:accessibility -- --ci
       - if: github.event_name == 'pull_request'
         run: slopstopper emit reliability:accessibility --target pr-comment</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-accessibility-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
@@ -350,7 +350,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: pip install slopstopper-cli &amp;&amp; npm ci &amp;&amp; npm run build
       - run: slopstopper serve &amp;
-      - run: slopstopper run reliability:cwv -- --url http://localhost:8080
+      - run: task ss:reliability:cwv -- --url http://localhost:8080
       - if: github.event_name == 'pull_request'
         run: slopstopper emit reliability:cwv --target pr-comment</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-core-web-vitals.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
@@ -373,7 +373,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: pip install slopstopper-cli &amp;&amp; npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
-      - run: slopstopper run reliability:seo   # title, description, canonical,
+      - run: task ss:reliability:seo   # title, description, canonical,
                                                # og:*, twitter:*, og:image fetch
       - if: github.event_name == 'pull_request'
         run: slopstopper emit reliability:seo --target pr-comment</code></pre></div>

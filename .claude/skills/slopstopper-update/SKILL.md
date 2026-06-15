@@ -121,19 +121,21 @@ task ss:hygiene:test    # docs-size + docs-structure + docs-accuracy + entry-fil
 task ss:security:scan   # SAST + secrets + dependency CVEs (+ DAST if a URL is wired)
 ```
 
-Or hit each check via the CLI directly without the Taskfile detour:
+Or invoke each shim individually:
 
 ```bash
-slopstopper run hygiene:docs-size
-slopstopper run hygiene:docs-structure
-slopstopper run hygiene:docs-accuracy
-slopstopper run hygiene:entry-files
-slopstopper run hygiene:complexity
-slopstopper run hygiene:csp-exceptions
-slopstopper run security:secrets
-slopstopper run security:sast
-slopstopper run security:dependencies
+task ss:hygiene:docs-size
+task ss:hygiene:docs-structure
+task ss:hygiene:docs-accuracy
+task ss:hygiene:entry-files
+task ss:hygiene:complexity
+task ss:hygiene:csp-exceptions
+task ss:security:secrets
+task ss:security:sast
+task ss:security:vulnerability:all
 ```
+
+(If the target was installed with `--no-task`, replace `task ss:<X>` with `slopstopper run <X>` throughout — same code path, same exit codes.)
 
 Anything that comes back red is one of two things:
 

@@ -43,6 +43,12 @@ jobs:
             pip install slopstopper-cli
           fi
 
+      - name: Install Task runner
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
@@ -67,7 +73,7 @@ jobs:
       - name: Run DAST analysis + gate
         id: dast
         continue-on-error: true
-        run: slopstopper run security:dast -- --target http://localhost:8080
+        run: task ss:security:dast -- http://localhost:8080
 
       - name: Stop local server
         if: always()

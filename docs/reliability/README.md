@@ -85,7 +85,7 @@ SMOKE_TEST_URL=https://your-site.example.com npm run test:smoke
 **Using the CLI directly:**
 
 ```bash
-SMOKE_TEST_URL=https://your-site.example.com slopstopper run reliability:smoke
+SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke
 ```
 
 The CLI resolves the Playwright config and spec from the slopstopper-cli wheel (or your `.ss/` overrides if you've ejected them).
@@ -147,7 +147,7 @@ jobs:
       - name: Run smoke tests
         env:
           SMOKE_TEST_URL: ${{ github.event.inputs.url || 'https://your-site.example.com' }}
-        run: slopstopper run reliability:smoke -- --ci
+        run: task ss:reliability:smoke -- --ci
         
       - name: Upload test results
         if: always()

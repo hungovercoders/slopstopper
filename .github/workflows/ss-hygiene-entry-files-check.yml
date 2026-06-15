@@ -50,9 +50,15 @@ jobs:
             pip install slopstopper-cli
           fi
 
+      - name: Install Task runner
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run entry-file budget check
         id: check
-        run: slopstopper run hygiene:entry-files
+        run: task ss:hygiene:entry-files
 
       - name: Upload report
         if: always()

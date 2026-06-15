@@ -79,7 +79,13 @@ RISK_LABELS = {
 
 def _parse_args(args: list[str] | None) -> argparse.Namespace:
     p = argparse.ArgumentParser(prog="slopstopper run security:dast", add_help=False)
-    p.add_argument("--target", default=DEFAULT_TARGET)
+    p.add_argument(
+        "url_positional",
+        nargs="?",
+        default=None,
+        help="Site URL to scan (alternative to --target; e.g. http://localhost:8080)",
+    )
+    p.add_argument("--target", default=DEFAULT_TARGET, help="Site URL to scan (default: http://localhost:8080)")
     p.add_argument("--help", "-h", action="help")
     return p.parse_args(args or [])
 
@@ -306,7 +312,8 @@ def run(args: list[str] | None = None) -> int:
         output._emit("Please install Docker: https://docs.docker.com/get-docker/")
         return 1
 
-    target = _parse_args(args).target
+    parsed = _parse_args(args)
+    target = parsed.url_positional or parsed.target
     output.status("🌐", f"Running DAST analysis against {target}…")
 
     server_proc: subprocess.Popen | None = None

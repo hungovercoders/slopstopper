@@ -71,6 +71,12 @@ META = {
 
 def _parse_args(args: list[str] | None) -> argparse.Namespace:
     p = argparse.ArgumentParser(prog="slopstopper run reliability:cwv", add_help=False)
+    p.add_argument(
+        "url_positional",
+        nargs="?",
+        default=None,
+        help="Site URL to audit (alternative to --url; e.g. http://localhost:8080)",
+    )
     p.add_argument("--url", default=None, help="Site URL to audit (else $CWV_URL)")
     p.add_argument(
         "--prod",
@@ -246,7 +252,7 @@ def run(args: list[str] | None = None) -> int:
         return 1
 
     parsed = _parse_args(args)
-    url = _resolve_url(parsed.url)
+    url = _resolve_url(parsed.url_positional or parsed.url)
     if not url:
         output.error("CWV target URL is required")
         output._emit("Usage:")

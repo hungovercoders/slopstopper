@@ -80,7 +80,7 @@ Run the workflow manually from the **Actions** tab with optional inputs:
 ### What the Workflow Does
 
 1. Starts the local Node.js server (PR/push builds) or uses the deployment URL
-2. Runs `slopstopper run reliability:accessibility -- --ci` which executes the accessibility spec via Playwright
+2. Runs `task ss:reliability:accessibility -- --ci` which executes the accessibility spec via Playwright
 3. Uploads the Playwright HTML report as a workflow artifact (30-day retention)
 4. Posts a PR comment with the audit result and a local reproduction command
 5. Creates (or updates) a GitHub issue when violations land on `main`

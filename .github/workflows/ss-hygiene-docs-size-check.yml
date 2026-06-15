@@ -49,10 +49,16 @@ jobs:
             pip install slopstopper-cli
           fi
 
+      - name: Install Task runner
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run documentation size check
         id: check
         run: |
-          slopstopper run hygiene:docs-size
+          task ss:hygiene:docs-size
           # The report is canonical (.ss/reports/docs/docs-size-report.md).
           # We set has_alerts from the report content — the check itself
           # is non-blocking and always exits 0; the workflow's gating is

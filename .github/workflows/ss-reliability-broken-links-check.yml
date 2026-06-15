@@ -78,6 +78,12 @@ jobs:
             pip install slopstopper-cli
           fi
 
+      - name: Install Task runner
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Determine check URL
         id: url
         env:
@@ -146,9 +152,8 @@ jobs:
 
       - name: Run broken-link checks
         env:
-          BROKEN_LINKS_TEST_URL: ${{ steps.url.outputs.url }}
           BROKEN_LINKS_PAGES: ${{ env.BROKEN_LINKS_PAGES }}
-        run: slopstopper run reliability:broken-links -- --ci
+        run: task ss:reliability:links -- ${{ steps.url.outputs.url }} --ci
 
       - name: Stop local server
         if: always() && steps.url.outputs.use_local == 'true'
@@ -182,9 +187,7 @@ jobs:
           ### 🔍 How to Check Locally
 
           \`\`\`bash
-          BROKEN_LINKS_TEST_URL=https://your-site.example.com slopstopper run reliability:broken-links
-
-          slopstopper run reliability:broken-links -- --url https://your-site.example.com
+          task ss:reliability:links -- https://your-site.example.com
           \`\`\`
 
           [Full report in workflow artifacts](${run_url})

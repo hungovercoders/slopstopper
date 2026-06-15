@@ -94,7 +94,7 @@ slopstopper serve                              # bundled static server</code></p
             <div class="card">
                 <h2>📋 Task</h2>
                 <span class="tool-license">MIT</span>
-                <p>A thin <code>task ss:*</code> shim layer wraps the CLI so adopters who already drive their dev loop with <a href="https://taskfile.dev" rel="noopener noreferrer">Task</a> can keep doing so. Same exit codes, same reports.</p>
+                <p><code>task ss:*</code> is the canonical interface — humans, agents and CI all invoke checks through it. Adopters get one consistent invocation surface across the suite and the rest of their codebase. Re-run install.sh with <code>--no-task</code> to skip Task entirely; workflows will call <a href="https://taskfile.dev" rel="noopener noreferrer">the CLI</a> directly.</p>
                 <details class="details">
                     <summary>Taskfile excerpt</summary>
                     <div class="details__body">
@@ -102,9 +102,7 @@ slopstopper serve                              # bundled static server</code></p
   hygiene:docs-size:
     cmds: [slopstopper run hygiene:docs-size]
   reliability:accessibility:
-    cmds:
-      - "{{if .CLI_ARGS}}export ACCESSIBILITY_TEST_URL={{.CLI_ARGS}}{{end}}"
-      - slopstopper run reliability:accessibility</code></pre></div>
+    cmds: [slopstopper run reliability:accessibility -- "{{.CLI_ARGS}}"]</code></pre></div>
                         <p class="details__hint">Run from your repo with <code>task ss:hygiene:docs-size</code>, <code>task ss:reliability:accessibility -- https://example.com</code>, etc.</p>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.ss.yml" rel="noopener noreferrer">View Taskfile.ss.yml →</a>
                     </div>

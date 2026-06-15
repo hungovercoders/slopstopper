@@ -82,6 +82,36 @@ flowchart LR
     HJSON -->|loaded by| DEV
 ```
 
+## Single-route invocation: `task ss:*`
+
+SlopStopper exposes one canonical entry point for any check: `task ss:<category>:<name>`. Humans, agents AND CI all invoke through it, so the suite shares the same invocation surface as everything else in the codebase (`task build`, `task deploy`, `task lint`).
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Humans / Agents / CI                                           │
+│                                                                 │
+│       task ss:hygiene:complexity                                │
+│       task ss:reliability:smoke -- http://localhost:8080        │
+│       task ss:security:scan                                     │
+└────────────────────────┬────────────────────────────────────────┘
+                         │   Taskfile.ss.yml shims
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  slopstopper-cli (Python, PyPI)                                 │
+│                                                                 │
+│       slopstopper run <category>:<name> [--url URL] [--ci]      │
+└────────────────────────┬────────────────────────────────────────┘
+                         │   subprocess
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  External tools (semgrep, lizard, trivy, playwright, zap, ...)  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+Adopters who don't want Task in their CI pass `--no-task` to `install.sh` and get workflows that call the CLI directly — same execution path, same exit codes, same reports. The Task layer is the surface to promote; the CLI is the implementation each shim calls into.
+
+See [`Taskfile.ss.yml`](../../Taskfile.ss.yml) for the shipped shim catalogue.
+
 ## Request Flow (Minimal)
 
 1. Browser requests a page.

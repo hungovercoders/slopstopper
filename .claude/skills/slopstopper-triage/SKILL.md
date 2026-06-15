@@ -24,34 +24,34 @@ Slopstopper workflows follow the naming pattern `ss-<loop>-<action>-check.yml`. 
 - **`<loop>`** = `security`, `hygiene`, `reliability` → maps to `docs/<loop>/README.md` for the loop-level overview.
 - **`<action>`** = `sast`, `secrets`, `complexity`, `docs-accuracy`, etc. → maps to a specific check name `<loop>:<action>` in the CLI's `REGISTRY` (`cli/slopstopper/checks/__init__.py`).
 
-If the user only gave you the workflow URL or a failing CI badge, click through to the workflow file under `.github/workflows/` in the target repo and read the `run:` step — every slopstopper workflow now calls `slopstopper run <category>:<check>` directly (with `slopstopper emit … --target pr-comment|issue` afterwards). The check name in that command is the same one you use locally.
+If the user only gave you the workflow URL or a failing CI badge, click through to the workflow file under `.github/workflows/` in the target repo and read the `run:` step — Task-mode workflows call `task ss:<category>:<check>`; `--no-task` mode workflows call `slopstopper run <category>:<check>` directly. Either way the check name is the same one you use locally.
 
 ## Step 2 — Reproduce locally
 
-Every slopstopper workflow's logic lives inside `slopstopper-cli`. Run `slopstopper run <category>:<check>` locally (or its `task ss:*` shim) — same code, same exit codes, same reports. The local loop is an order of magnitude faster than pushing to CI per iteration.
+`task ss:*` is the canonical local interface — same shipped Task in the target's repo as CI uses. Run `task ss:<category>:<check>` and you get the same code path, same exit codes, same reports. The local loop is an order of magnitude faster than pushing to CI per iteration. If the target was installed with `--no-task`, fall back to `slopstopper run <category>:<check>` directly — works identically.
 
-| Workflow | Local command (CLI) | Taskfile shim | Needs URL? | Needs build? | Needs Docker? |
+| Workflow | Canonical (Task) | Underlying CLI | Needs URL? | Needs build? | Needs Docker? |
 |---|---|---|---|---|---|
-| `ss-security-sast-check.yml` | `slopstopper run security:sast` | `task ss:security:sast` | – | – | – |
-| `ss-security-secrets-check.yml` | `slopstopper run security:secrets` | `task ss:security:secrets` | – | – | – |
-| `ss-security-vulnerability-all-check.yml` | `slopstopper run security:dependencies` | `task ss:security:vulnerability:all` | – | – | – |
+| `ss-security-sast-check.yml` | `task ss:security:sast` | `slopstopper run security:sast` | – | – | – |
+| `ss-security-secrets-check.yml` | `task ss:security:secrets` | `slopstopper run security:secrets` | – | – | – |
+| `ss-security-vulnerability-all-check.yml` | `task ss:security:vulnerability:all` | `slopstopper run security:dependencies` | – | – | – |
 | `ss-security-vulnerability-new-check.yml` | (CI-only — Dependency Review action) | – | – | – | – |
-| `ss-security-dast-check.yml` | `slopstopper run security:dast -- --target <URL>` | `task ss:security:dast -- <URL>` | ✓ | ✓ (if local) | ✓ |
-| `ss-hygiene-complexity-check.yml` | `slopstopper run hygiene:complexity` | `task ss:hygiene:complexity` | – | – | – |
-| `ss-hygiene-csp-exceptions-check.yml` | `slopstopper run hygiene:csp-exceptions` | `task ss:hygiene:csp-exceptions` | – | – | – |
-| `ss-hygiene-docs-accuracy-check.yml` | `slopstopper run hygiene:docs-accuracy` | `task ss:hygiene:docs-accuracy` | – | – | – |
-| `ss-hygiene-docs-size-check.yml` | `slopstopper run hygiene:docs-size` | `task ss:hygiene:docs-size` | – | – | – |
-| `ss-hygiene-docs-structure-check.yml` | `slopstopper run hygiene:docs-structure` | `task ss:hygiene:docs-structure` | – | – | – |
-| `ss-hygiene-entry-files-check.yml` | `slopstopper run hygiene:entry-files` | `task ss:hygiene:entry-files` | – | – | – |
+| `ss-security-dast-check.yml` | `task ss:security:dast -- <URL>` | `slopstopper run security:dast <URL>` | ✓ | ✓ (if local) | ✓ |
+| `ss-hygiene-complexity-check.yml` | `task ss:hygiene:complexity` | `slopstopper run hygiene:complexity` | – | – | – |
+| `ss-hygiene-csp-exceptions-check.yml` | `task ss:hygiene:csp-exceptions` | `slopstopper run hygiene:csp-exceptions` | – | – | – |
+| `ss-hygiene-docs-accuracy-check.yml` | `task ss:hygiene:docs-accuracy` | `slopstopper run hygiene:docs-accuracy` | – | – | – |
+| `ss-hygiene-docs-size-check.yml` | `task ss:hygiene:docs-size` | `slopstopper run hygiene:docs-size` | – | – | – |
+| `ss-hygiene-docs-structure-check.yml` | `task ss:hygiene:docs-structure` | `slopstopper run hygiene:docs-structure` | – | – | – |
+| `ss-hygiene-entry-files-check.yml` | `task ss:hygiene:entry-files` | `slopstopper run hygiene:entry-files` | – | – | – |
 | `ss-hygiene-auto-label-pr.yml` | (CI-only — needs PR context) | – | – | – | – |
-| `ss-reliability-smoke-tests.yml` | `SMOKE_TEST_URL=<URL> slopstopper run reliability:smoke` | `task ss:reliability:smoke -- <URL>` | ✓ | ✓ (if URL is local) | – |
-| `ss-reliability-accessibility-check.yml` | `ACCESSIBILITY_TEST_URL=<URL> slopstopper run reliability:accessibility` | `task ss:reliability:accessibility -- <URL>` | ✓ | ✓ | – |
-| `ss-reliability-core-web-vitals.yml` | `CWV_URL=<URL> slopstopper run reliability:cwv` | `task ss:reliability:cwv -- <URL>` | ✓ | ✓ | – |
-| `ss-reliability-seo-check.yml` | `SEO_TEST_URL=<URL> slopstopper run reliability:seo` | `task ss:reliability:seo -- <URL>` | ✓ | ✓ | – |
-| `ss-reliability-broken-links-check.yml` | `BROKEN_LINKS_TEST_URL=<URL> slopstopper run reliability:broken-links` | `task ss:reliability:links -- <URL>` | ✓ | ✓ | – |
+| `ss-reliability-smoke-tests.yml` | `task ss:reliability:smoke -- <URL>` | `slopstopper run reliability:smoke <URL>` | ✓ | ✓ (if URL is local) | – |
+| `ss-reliability-accessibility-check.yml` | `task ss:reliability:accessibility -- <URL>` | `slopstopper run reliability:accessibility <URL>` | ✓ | ✓ | – |
+| `ss-reliability-core-web-vitals.yml` | `task ss:reliability:cwv -- <URL>` | `slopstopper run reliability:cwv <URL>` | ✓ | ✓ | – |
+| `ss-reliability-seo-check.yml` | `task ss:reliability:seo -- <URL>` | `slopstopper run reliability:seo <URL>` | ✓ | ✓ | – |
+| `ss-reliability-broken-links-check.yml` | `task ss:reliability:links -- <URL>` | `slopstopper run reliability:broken-links <URL>` | ✓ | ✓ | – |
 | `ss-workflow-failure-issue.yml` | (CI-only — operational, runs on workflow_run) | – | – | – | – |
 
-For dynamic checks (`URL ✓`): set the matching env var, or pass the URL via the `--` arg on the Taskfile shim. Pointing at `http://localhost:8080` with `node .ss/server.js` serving the built site is the fastest local loop.
+For dynamic checks (`URL ✓`): pass the URL as a bare-positional arg after `--` (Task) or directly (CLI). Pointing at `http://localhost:8080` with `node .ss/server.js` serving the built site is the fastest local loop.
 
 If a reliability workflow's failure is about *which pages it audited* rather than what it found, the page-list comes from `slopstopper discover <check> --event=<event>` — run that directly to see the resolved set before reproducing the check itself.
 
