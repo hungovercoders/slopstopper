@@ -4,6 +4,20 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.6.0](https://github.com/hungovercoders/slopstopper/compare/v0.5.1...v0.6.0) (2026-06-15)
+
+
+### Features
+
+* **canonical:** make task ss:* the single invocation surface — CI included ([821ddd3](https://github.com/hungovercoders/slopstopper/commit/821ddd3de3c04d5dda98f3c6d8126c88e7172ca5))
+* **canonical:** make task ss:* the single invocation surface — CI included ([392b729](https://github.com/hungovercoders/slopstopper/commit/392b729faaa790926a7254a1fd685de1dfde1ddd))
+
+
+### Bug Fixes
+
+* **canonical:** emit + docs-accuracy follow-ups for the alignment refactor ([5fdc656](https://github.com/hungovercoders/slopstopper/commit/5fdc65635be55b57b2bd1ed6f595d272b3a4e8f8))
+* **canonical:** handle shim/CLI name aliases in workflow + --no-task transform ([ba92c75](https://github.com/hungovercoders/slopstopper/commit/ba92c75f4cb315df3a938980c0f628222b29bdd8))
+
 ## [0.5.1](https://github.com/hungovercoders/slopstopper/compare/v0.5.0...v0.5.1) (2026-06-14)
 
 
