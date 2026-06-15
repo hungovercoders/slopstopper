@@ -763,25 +763,23 @@ safe-outputs:
                         <ul class="bridge__list">
                             <li><code>task ss:hygiene:complexity</code></li>
                             <li><code>task ss:security:sast</code></li>
-                            <li><code>task ss:reliability:accessibility:ci</code></li>
-                            <li><code>task ss:reliability:smoke:ci</code></li>
+                            <li><code>task ss:reliability:accessibility</code></li>
+                            <li><code>task ss:reliability:smoke</code></li>
                         </ul>
                     </div>
                 </div>
                 <details class="details">
                     <summary>What a Taskfile entry looks like</summary>
                     <div class="details__body">
-                        <p>Definitions inside <code>Taskfile.ss.yml</code> use bare names. The root <code>Taskfile.yml</code> imports them under the <code>ss</code> namespace via <code>includes:</code>, so you invoke them with the prefix (<code>task ss:reliability:accessibility</code>):</p>
+                        <p>Definitions inside <code>Taskfile.ss.yml</code> use bare names. The root <code>Taskfile.yml</code> imports them under the <code>ss</code> namespace via <code>includes:</code>, so you invoke them with the prefix (<code>task ss:reliability:accessibility</code>). Each shim is a thin pass-through to <code>slopstopper-cli</code>, which owns the heavy lifting (Playwright, axe-core, Lighthouse CI, Semgrep, Trivy, ZAP, etc.) — the Taskfile is just the canonical invocation surface:</p>
                         <div class="codeblock codeblock--yaml"><pre><code># Taskfile.ss.yml — bare names, defined under the `ss` namespace
 reliability:accessibility:
-  desc: Run axe-core accessibility audit against a URL
+  desc: Run accessibility audit against a live URL
   cmds:
-    - npx playwright test tests/accessibility.spec.ts
+    - slopstopper run reliability:accessibility -- {{.CLI_ARGS}}
 
-reliability:accessibility:ci:
-  desc: Same audit, wired for CI artifacts
-  cmds:
-    - task: reliability:accessibility</code></pre></div>
+# Pass a URL and flags through `--`:
+#   task ss:reliability:accessibility -- https://example.com --ci</code></pre></div>
                         <p>And the wiring in the root <code>Taskfile.yml</code> is just:</p>
                         <div class="codeblock codeblock--yaml"><pre><code># Taskfile.yml — thin integration layer
 version: '3'

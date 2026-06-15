@@ -18,9 +18,9 @@ tasks:
   reliability:smoke:
     desc: Run smoke tests against a live URL
     summary: |
-      Subprocess-invokes `npx playwright test` against the smoke spec
-      bundled in the CLI. Reads `pages.smoke` + `smoke.og_image_path`
-      from .slopstopper.yml.
+      Run portable smoke tests (page loads + OG-image reachability)
+      against a live URL. Reads `pages.smoke` and `smoke.og_image_path`
+      from `.slopstopper.yml`.
 
       Usage:
         task ss:reliability:smoke -- https://your-site.example.com
@@ -32,8 +32,9 @@ tasks:
   reliability:cwv:
     desc: Run a Core Web Vitals (Lighthouse CI) audit
     summary: |
-      Subprocess-invokes `npx lhci autorun` against the configured
-      Lighthouse CI thresholds (.ss/lighthouserc.json by default).
+      Run a Core Web Vitals (Lighthouse CI) audit against a live URL
+      using the bundled thresholds (override at `.ss/lighthouserc.json`
+      or `.ss/lighthouserc.prod.json` if present).
 
       Thresholds (default lighthouserc.json):
         - Performance score  ≥ 70
@@ -75,9 +76,8 @@ tasks:
   reliability:accessibility:
     desc: Run accessibility audit against a live URL
     summary: |
-      Subprocess-invokes `npx playwright test` against the
-      accessibility spec bundled in the CLI. Reads
-      `pages.accessibility` from .slopstopper.yml.
+      Run a WCAG 2.1 AA accessibility audit against a live URL.
+      Reads `pages.accessibility` from `.slopstopper.yml`.
 
       Configuration (environment variables):
         ACCESSIBILITY_TEST_URL  - URL to audit (required; also accepts SMOKE_TEST_URL)
@@ -94,9 +94,9 @@ tasks:
   reliability:broken-links:
     desc: Run broken-link checks against a live URL
     summary: |
-      Subprocess-invokes `npx playwright test` against the
-      broken-links spec bundled in the CLI. Reads
-      `pages.broken_links` from .slopstopper.yml.
+      Crawl internal anchors from configured pages and fail on
+      4xx/5xx destinations. Reads `pages.broken_links` from
+      `.slopstopper.yml`.
 
       Configuration (environment variables):
         BROKEN_LINKS_TEST_URL - URL to audit (required; also accepts SMOKE_TEST_URL)
