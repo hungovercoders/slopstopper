@@ -55,7 +55,7 @@ Per-check tools (skip if you've disabled the check):
 | `lizard` | `hygiene:complexity` | `pip install --user lizard` (**not** brew — that's lz4) |
 | `semgrep` | `security:sast` | `pip install --user semgrep` |
 | `gitleaks` | `security:secrets` | `brew install gitleaks` |
-| `trivy` | `security:dependencies` | `brew install aquasecurity/trivy/trivy` |
+| `trivy` | `security:vulnerability:all` | `brew install aquasecurity/trivy/trivy` |
 | `docker` | `security:dast` | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |
 
 Optional: **bash + git** (if using `install.sh`), **Task v3.x** (for the `task ss:*` shim layer).

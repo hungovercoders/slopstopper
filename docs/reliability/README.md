@@ -36,12 +36,12 @@ rate limits, or bot protections outside your control.
 
 ```bash
 # Pass URL directly
-task ss:reliability:links -- https://your-site.example.com
+task ss:reliability:broken-links -- https://your-site.example.com
 
 # Or set environment variables
 BROKEN_LINKS_TEST_URL=https://your-site.example.com \
 BROKEN_LINKS_PAGES="/,/features.html,/tools.html" \
-task ss:reliability:links
+task ss:reliability:broken-links
 ```
 
 ### Running broken-link checks in CI/CD
@@ -49,7 +49,7 @@ task ss:reliability:links
 ```bash
 BROKEN_LINKS_TEST_URL=https://your-site.example.com \
 BROKEN_LINKS_PAGES="/,/features.html,/tools.html" \
-CI=true task ss:reliability:links
+CI=true task ss:reliability:broken-links
 ```
 
 For live `slopstopper.dev`, the workflow seeds `/,/features.html,/tools.html` so links from the three main pages are validated on every scheduled/deploy/PR run.

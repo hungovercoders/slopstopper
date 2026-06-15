@@ -34,7 +34,7 @@ If the user only gave you the workflow URL or a failing CI badge, click through 
 |---|---|---|---|---|---|
 | `ss-security-sast-check.yml` | `task ss:security:sast` | `slopstopper run security:sast` | – | – | – |
 | `ss-security-secrets-check.yml` | `task ss:security:secrets` | `slopstopper run security:secrets` | – | – | – |
-| `ss-security-vulnerability-all-check.yml` | `task ss:security:vulnerability:all` | `slopstopper run security:dependencies` | – | – | – |
+| `ss-security-vulnerability-all-check.yml` | `task ss:security:vulnerability:all` | `slopstopper run security:vulnerability:all` | – | – | – |
 | `ss-security-vulnerability-new-check.yml` | (CI-only — Dependency Review action) | – | – | – | – |
 | `ss-security-dast-check.yml` | `task ss:security:dast -- <URL>` | `slopstopper run security:dast <URL>` | ✓ | ✓ (if local) | ✓ |
 | `ss-hygiene-complexity-check.yml` | `task ss:hygiene:complexity` | `slopstopper run hygiene:complexity` | – | – | – |
@@ -48,7 +48,7 @@ If the user only gave you the workflow URL or a failing CI badge, click through 
 | `ss-reliability-accessibility-check.yml` | `task ss:reliability:accessibility -- <URL>` | `slopstopper run reliability:accessibility <URL>` | ✓ | ✓ | – |
 | `ss-reliability-core-web-vitals.yml` | `task ss:reliability:cwv -- <URL>` | `slopstopper run reliability:cwv <URL>` | ✓ | ✓ | – |
 | `ss-reliability-seo-check.yml` | `task ss:reliability:seo -- <URL>` | `slopstopper run reliability:seo <URL>` | ✓ | ✓ | – |
-| `ss-reliability-broken-links-check.yml` | `task ss:reliability:links -- <URL>` | `slopstopper run reliability:broken-links <URL>` | ✓ | ✓ | – |
+| `ss-reliability-broken-links-check.yml` | `task ss:reliability:broken-links -- <URL>` | `slopstopper run reliability:broken-links <URL>` | ✓ | ✓ | – |
 | `ss-workflow-failure-issue.yml` | (CI-only — operational, runs on workflow_run) | – | – | – | – |
 
 For dynamic checks (`URL ✓`): pass the URL as a bare-positional arg after `--` (Task) or directly (CLI). Pointing at `http://localhost:8080` with `node .ss/server.js` serving the built site is the fastest local loop.

@@ -1,8 +1,8 @@
 """Broken-link checks (Playwright wrapper).
 
-Ports the bash reliability:links flow:
+Ports the bash reliability:broken-links flow:
 
-  task ss:reliability:links -- https://your-site.example.com
+  task ss:reliability:broken-links -- https://your-site.example.com
 
   which is, under the covers:
 

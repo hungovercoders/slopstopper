@@ -548,7 +548,11 @@ def _dispatch_emit(check_name: str, target: str) -> int:
 
 def _check_summary(check_name: str) -> str:
     """First non-empty line of the check module's docstring, or ''."""
-    module_name = "slopstopper.checks." + check_name.split(":")[1].replace("-", "_")
+    # Drop the category, join remaining segments with underscores so multi-
+    # segment names like `security:vulnerability:all` resolve to the
+    # `vulnerability_all` module.
+    parts = check_name.split(":")[1:]
+    module_name = "slopstopper.checks." + "_".join(parts).replace("-", "_")
     try:
         module = importlib.import_module(module_name)
     except ImportError:
@@ -602,7 +606,7 @@ _DOCTOR_TOOLS: list[tuple[str, str | None, str]] = [
     ("gh", None, "Install GitHub CLI (https://cli.github.com/) — required by `slopstopper emit`"),
     ("semgrep", "security:sast", "pip install --user semgrep  or  brew install semgrep"),
     ("gitleaks", "security:secrets", "brew install gitleaks  or  apt-get install gitleaks"),
-    ("trivy", "security:dependencies", "brew install aquasecurity/trivy/trivy  or  see https://trivy.dev"),
+    ("trivy", "security:vulnerability:all", "brew install aquasecurity/trivy/trivy  or  see https://trivy.dev"),
     ("docker", "security:dast", "Install Docker Desktop (https://docs.docker.com/get-docker/)"),
 ]
 

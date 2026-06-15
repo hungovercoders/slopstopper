@@ -11,7 +11,6 @@ from slopstopper.checks import (
     csp_exceptions,
     cwv,
     dast,
-    dependencies,
     docs_accuracy,
     docs_size,
     docs_structure,
@@ -20,6 +19,7 @@ from slopstopper.checks import (
     secrets,
     seo,
     smoke,
+    vulnerability_all,
 )
 
 REGISTRY: dict[str, Callable[[Optional[list[str]]], int]] = {
@@ -35,7 +35,7 @@ REGISTRY: dict[str, Callable[[Optional[list[str]]], int]] = {
     "reliability:seo": seo.run,
     "reliability:smoke": smoke.run,
     "security:dast": dast.run,
-    "security:dependencies": dependencies.run,
     "security:sast": sast.run,
     "security:secrets": secrets.run,
+    "security:vulnerability:all": vulnerability_all.run,
 }

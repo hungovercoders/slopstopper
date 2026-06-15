@@ -91,7 +91,7 @@ tasks:
     cmds:
       - slopstopper run reliability:accessibility -- {{.CLI_ARGS}}
 
-  reliability:links:
+  reliability:broken-links:
     desc: Run broken-link checks against a live URL
     summary: |
       Subprocess-invokes `npx playwright test` against the
@@ -103,9 +103,9 @@ tasks:
         BROKEN_LINKS_PAGES    - comma-separated paths to scan (default: /)
 
       Usage:
-        task ss:reliability:links -- https://your-site.example.com
-        task ss:reliability:links -- https://your-site.example.com --ci
-        BROKEN_LINKS_TEST_URL=https://your-site.example.com task ss:reliability:links
+        task ss:reliability:broken-links -- https://your-site.example.com
+        task ss:reliability:broken-links -- https://your-site.example.com --ci
+        BROKEN_LINKS_TEST_URL=https://your-site.example.com task ss:reliability:broken-links
     cmds:
       - slopstopper run reliability:broken-links -- {{.CLI_ARGS}}
 
@@ -227,7 +227,7 @@ tasks:
       Usage:
         task ss:security:vulnerability:all
     cmds:
-      - slopstopper run security:dependencies
+      - slopstopper run security:vulnerability:all
 
   security:dast:
     desc: Run dynamic application security testing using OWASP ZAP

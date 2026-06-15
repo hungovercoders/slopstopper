@@ -310,7 +310,7 @@ task ss:reliability:smoke         -- http://localhost:8080
 task ss:reliability:accessibility -- http://localhost:8080
 task ss:reliability:cwv           -- http://localhost:8080
 task ss:reliability:seo           -- http://localhost:8080
-task ss:reliability:links         -- http://localhost:8080
+task ss:reliability:broken-links         -- http://localhost:8080
 task ss:security:dast             -- http://localhost:8080    # needs Docker for OWASP ZAP
 ```
 

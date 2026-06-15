@@ -147,9 +147,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: pip install slopstopper-cli && brew install aquasecurity/trivy/trivy
-      - run: task ss:security:dependencies
+      - run: task ss:security:vulnerability:all
       - if: github.event_name == 'pull_request'
-        run: slopstopper emit security:dependencies --target pr-comment</code></pre></div>
+        run: slopstopper emit security:vulnerability:all --target pr-comment</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-vulnerability-all-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
                         <br>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-vulnerability-new-check.yml" rel="noopener noreferrer">View dependency-review workflow →</a>
@@ -304,7 +304,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: pip install slopstopper-cli &amp;&amp; npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
-      - run: task ss:reliability:links -- --ci
+      - run: task ss:reliability:broken-links -- --ci
       - if: github.event_name == 'pull_request'
         run: slopstopper emit reliability:broken-links --target pr-comment</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-broken-links-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>

@@ -364,7 +364,7 @@ def test_doctor_passes_when_all_tools_present(isolated_cwd, capsys, monkeypatch)
 
 
 def test_doctor_fails_when_required_tool_missing(isolated_cwd, capsys, monkeypatch):
-    """Missing trivy with security:dependencies enabled → exit 1."""
+    """Missing trivy with security:vulnerability:all enabled → exit 1."""
     monkeypatch.setattr(cli.shutil, "which", lambda tool: None if tool == "trivy" else "/x")
     monkeypatch.setattr(cli, "_tool_version", lambda _: "")
     monkeypatch.setattr(cli, "_disabled_workflows", lambda: set())
