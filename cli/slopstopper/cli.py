@@ -527,7 +527,11 @@ def _dispatch_emit(check_name: str, target: str) -> int:
     if check_name not in REGISTRY:
         print(f"❌ unknown check: {check_name}", file=sys.stderr)
         return 2
-    module_name = "slopstopper.checks." + check_name.split(":")[1].replace("-", "_")
+    # Drop the category, join remaining segments with underscores so multi-
+    # segment names like `security:vulnerability:all` resolve to the
+    # `vulnerability_all` module.
+    parts = check_name.split(":")[1:]
+    module_name = "slopstopper.checks." + "_".join(parts).replace("-", "_")
     try:
         module = importlib.import_module(module_name)
     except ImportError as e:
