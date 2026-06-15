@@ -55,7 +55,7 @@ Per-check tools (skip if you've disabled the check):
 | `lizard` | `hygiene:complexity` | `pip install --user lizard` (**not** brew — that's lz4) |
 | `semgrep` | `security:sast` | `pip install --user semgrep` |
 | `gitleaks` | `security:secrets` | `brew install gitleaks` |
-| `trivy` | `security:dependencies` | `brew install aquasecurity/trivy/trivy` |
+| `trivy` | `security:vulnerability:all` | `brew install aquasecurity/trivy/trivy` |
 | `docker` | `security:dast` | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |
 
 Optional: **bash + git** (if using `install.sh`), **Task v3.x** (for the `task ss:*` shim layer).
@@ -104,12 +104,13 @@ Deploy is intentionally not a layer: connect your repo in the Cloudflare dash (W
 
 ## Same commands, both loops
 
-CI runs `slopstopper run <category>:<check>`. You run the same thing locally — same code, same report. The `task ss:*` shims are thin wrappers around the CLI for adopters who already drive their dev loop with `task`.
+`task ss:<category>:<check>` is the canonical interface — humans, agents and CI all go through it, so the suite shares one invocation surface with the rest of your codebase. The shims call into `slopstopper-cli` under the hood; pass `--no-task` to `install.sh` if you'd rather skip Task and have your workflows call the CLI directly.
 
 ```bash
-slopstopper run hygiene:complexity            # CLI
-task ss:reliability:accessibility             # equivalent via the shim
-slopstopper run security:sast --quiet         # suppress decorative output (CI logs)
+task ss:hygiene:complexity                    # the canonical form
+task ss:reliability:accessibility -- http://localhost:8080
+task ss:security:sast                         # CI runs the same line
+slopstopper run hygiene:complexity            # underlying CLI if you skip Task
 ```
 
 ## Configure

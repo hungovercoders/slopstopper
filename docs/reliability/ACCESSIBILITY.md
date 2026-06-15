@@ -28,7 +28,7 @@ ACCESSIBILITY_TEST_URL=https://your-site.example.com task ss:reliability:accessi
 **Run in CI mode (retries + HTML report):**
 
 ```bash
-ACCESSIBILITY_TEST_URL=https://your-site.example.com CI=true task ss:reliability:accessibility
+task ss:reliability:accessibility -- https://your-site.example.com --ci
 ```
 
 ## Configuration
@@ -80,7 +80,7 @@ Run the workflow manually from the **Actions** tab with optional inputs:
 ### What the Workflow Does
 
 1. Starts the local Node.js server (PR/push builds) or uses the deployment URL
-2. Runs `slopstopper run reliability:accessibility -- --ci` which executes the accessibility spec via Playwright
+2. Runs `task ss:reliability:accessibility -- --ci` which executes the accessibility spec via Playwright
 3. Uploads the Playwright HTML report as a workflow artifact (30-day retention)
 4. Posts a PR comment with the audit result and a local reproduction command
 5. Creates (or updates) a GitHub issue when violations land on `main`
@@ -174,9 +174,9 @@ Update `ACCESSIBILITY_THRESHOLD` in the workflow `workflow_dispatch` default and
 ## Troubleshooting
 
 **Tests fail locally but pass in CI (or vice versa):**
-- Ensure `ACCESSIBILITY_TEST_URL` points to the correct URL
-- Verify the server is running: `npm start`
-- Install Playwright browsers if missing: `npx playwright install chromium`
+- Ensure `ACCESSIBILITY_TEST_URL` (or the positional URL) points to the correct target
+- Verify the URL is actually reachable (`curl -I "$URL"`) — start your dev server first if you're auditing a local build
+- The CI workflow installs the Playwright browsers via `npx playwright install --with-deps chromium`; locally, run the same command once before your first invocation
 
 **False positives:**
 - Suppress specific rules with `axeBuilder.disableRules(['rule-id'])` in the test file

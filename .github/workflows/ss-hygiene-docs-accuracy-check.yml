@@ -79,10 +79,16 @@ jobs:
             pip install slopstopper-cli
           fi
 
+      - name: Install Task runner
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run documentation accuracy check
         id: check
         continue-on-error: true
-        run: slopstopper run hygiene:docs-accuracy
+        run: task ss:hygiene:docs-accuracy
 
       - name: Emit PR comment
         if: github.event_name == 'pull_request' && steps.check.outcome == 'failure'

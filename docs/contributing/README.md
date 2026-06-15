@@ -39,9 +39,10 @@ Run `task --list` for the full set. The most-used ones:
 | `task ss:reliability:accessibility` | axe-core WCAG 2.1 AA audit |
 | `task ss:reliability:cwv` | Lighthouse CI / Core Web Vitals |
 
-For CI-style output (retries, HTML reports), the workflows pass
-`-- --ci` to `slopstopper run` directly. Locally, prefixing the task
-with `CI=true` produces the same shape (e.g. `CI=true task ss:reliability:accessibility`).
+For CI-style output (retries, HTML reports, fail-on-flake), pass
+`--ci` through the Task `--` separator the same way the workflows do —
+e.g. `task ss:reliability:accessibility -- --ci`. Same Task command runs
+in both loops; the flag toggles the run shape.
 
 ## Quick verification checklist
 

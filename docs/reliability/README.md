@@ -36,20 +36,20 @@ rate limits, or bot protections outside your control.
 
 ```bash
 # Pass URL directly
-task ss:reliability:links -- https://your-site.example.com
+task ss:reliability:broken-links -- https://your-site.example.com
 
 # Or set environment variables
 BROKEN_LINKS_TEST_URL=https://your-site.example.com \
 BROKEN_LINKS_PAGES="/,/features.html,/tools.html" \
-task ss:reliability:links
+task ss:reliability:broken-links
 ```
 
-### Running broken-link checks in CI/CD
+### Running broken-link checks in CI
 
 ```bash
 BROKEN_LINKS_TEST_URL=https://your-site.example.com \
 BROKEN_LINKS_PAGES="/,/features.html,/tools.html" \
-CI=true task ss:reliability:links
+task ss:reliability:broken-links -- --ci
 ```
 
 For live `slopstopper.dev`, the workflow seeds `/,/features.html,/tools.html` so links from the three main pages are validated on every scheduled/deploy/PR run.
@@ -64,99 +64,31 @@ Smoke tests are lightweight, critical-path tests that verify a deployed site is 
 - Response times
 - Critical content rendering
 
-### Running Smoke Tests Locally
-
-**Using Task (Recommended):**
+### Running smoke tests locally
 
 ```bash
-# Pass URL as argument
+# Pass URL as a positional argument (works for any reliability check)
 task ss:reliability:smoke -- https://your-site.example.com
 
-# Or set environment variable
+# Add --ci for retries + HTML report + single worker
+task ss:reliability:smoke -- https://your-site.example.com --ci
+
+# Or set the env var (handy when chaining `BROKEN_LINKS_PAGES=… SMOKE_TEST_URL=…`)
 SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke
 ```
 
-**Using npm directly:**
+`task ss:reliability:smoke` shells through to `slopstopper run reliability:smoke`, which launches the bundled Playwright spec via the config baked into the `slopstopper-cli` wheel — see [`cli/slopstopper/data/playwright.config.js`](../../cli/slopstopper/data/playwright.config.js) and [`cli/slopstopper/data/tests/smoke.spec.ts`](../../cli/slopstopper/data/tests/smoke.spec.ts). Adopters don't vendor those files; the CLI owns them. To customise, run `slopstopper templates eject playwright.config.js` to drop an editable copy into `.ss/`; the CLI picks `.ss/<filename>` up automatically.
 
-```bash
-SMOKE_TEST_URL=https://your-site.example.com npm run test:smoke
-```
+### Running in CI
 
-**Using the CLI directly:**
-
-```bash
-SMOKE_TEST_URL=https://your-site.example.com slopstopper run reliability:smoke
-```
-
-The CLI resolves the Playwright config and spec from the slopstopper-cli wheel (or your `.ss/` overrides if you've ejected them).
-
-### Running in CI/CD
-
-For GitHub Actions or other CI environments, use the CI-specific task:
-
-```bash
-SMOKE_TEST_URL=https://your-site.example.com CI=true task ss:reliability:smoke
-```
-
-This enables:
-- Automatic retries (2 retries on failure)
-- Single worker for consistency
-- HTML and list reporters
-- Proper CI failure modes
-
-### GitHub Actions Example
-
-Create `.github/workflows/ss-reliability-smoke-tests.yml`:
+The installer copies a ready-to-run workflow at [`.github/workflows/ss-reliability-smoke-tests.yml`](../../.github/workflows/ss-reliability-smoke-tests.yml) — that's the canonical shape. It runs on PRs, pushes to `main`, an hourly schedule, Cloudflare deployment events, and `workflow_dispatch`; on failure it opens (or updates) a tracking issue, and on recovery it closes it. The job calls:
 
 ```yaml
-name: Smoke Tests
-
-on:
-  # Run on every deployment
-  deployment_status:
-  
-  # Run on schedule (every hour)
-  schedule:
-    - cron: '0 * * * *'
-  
-  # Allow manual trigger
-  workflow_dispatch:
-    inputs:
-      url:
-        description: 'URL to test'
-        required: true
-        default: 'https://your-site.example.com'
-
-jobs:
-  smoke-test:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          
-      - name: Install dependencies
-        run: npm ci
-        
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-        
-      - name: Run smoke tests
-        env:
-          SMOKE_TEST_URL: ${{ github.event.inputs.url || 'https://your-site.example.com' }}
-        run: slopstopper run reliability:smoke -- --ci
-        
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: smoke-test-results
-          path: playwright-report/
-          retention-days: 30
+- name: Run smoke tests
+  run: task ss:reliability:smoke -- ${{ steps.url.outputs.url }} --ci
 ```
+
+— same Task command you ran locally, with the positional URL resolved from the trigger context.
 
 ### What the Smoke Tests Check
 
@@ -167,9 +99,15 @@ jobs:
 5. **Performance** - Validates pages load within acceptable timeframes (< 5s)
 6. **Error Detection** - Checks for JavaScript console errors
 
-### Test Configuration
+### Test configuration
 
-The portable spec is configured via [`cli/slopstopper/data/playwright.config.js`](../../cli/slopstopper/data/playwright.config.js) — bundled in the slopstopper-cli wheel. `testDir: './tests'` resolves to the bundled spec directory so SlopStopper's specs never collide with your own `tests/` directory. If you need to customize, copy the file into your repo's `.ss/` directory (same basename) and the CLI's templates resolver picks it up.
+The portable spec is configured via [`cli/slopstopper/data/playwright.config.js`](../../cli/slopstopper/data/playwright.config.js) — bundled in the `slopstopper-cli` wheel. `testDir: './tests'` resolves to the bundled spec directory so SlopStopper's specs never collide with your own `tests/` directory. To customise, eject an editable copy into your repo's `.ss/` directory:
+
+```bash
+slopstopper templates eject playwright.config.js
+```
+
+The CLI's template resolver prefers `.ss/<filename>` over the bundled version, so edits to the ejected copy take effect immediately.
 
 ### Adding pages to the smoke check
 
@@ -200,23 +138,23 @@ For assertions beyond "page returns 200 and loads cleanly" (e.g. specific elemen
 
 ### Troubleshooting
 
-**Tests fail locally but pass in CI:**
-- Check SMOKE_TEST_URL is set correctly
-- Verify the target URL is accessible from your network
-- Ensure Playwright browsers are installed: `npx playwright install`
+**Tests fail locally but pass in CI (or vice versa):**
+- Check `SMOKE_TEST_URL` (or the positional URL) points where you expect
+- Verify the target URL is reachable from your network
+- The CI workflow installs the Playwright browsers via `npx playwright install --with-deps chromium`; locally, run the same command once before your first invocation (or let the spec install on demand)
 
 **Tests timeout:**
-- Increase timeout in test: `test.setTimeout(30000)`
-- Check site is responding (try curl/wget)
+- Check the site is responding (try `curl`/`wget`)
 - Verify no network issues or rate limiting
+- Bump Playwright's timeout by ejecting the bundled config (`slopstopper templates eject playwright.config.js`) and editing the copy that lands in `.ss/`
 
 **Flaky tests:**
-- Add explicit waits: `await page.waitForLoadState('networkidle')`
-- Increase retries in CI configuration
+- Add explicit waits (`await page.waitForLoadState('networkidle')`) in any custom specs you add
+- Increase the CI retry count by editing the ejected config in `.ss/` (see "Test configuration" above)
 - Check for timing-dependent assertions
 
-### Related Documentation
+### Related documentation
 
-- [Playwright Testing Guide](https://playwright.dev/docs/intro)
-- [GitHub Actions Documentation](https://docs.github.com/actions)
-- [Contributing Guidelines](../contributing/README.md)
+- [Playwright testing guide](https://playwright.dev/docs/intro)
+- [GitHub Actions documentation](https://docs.github.com/actions)
+- [Contributing guidelines](../contributing/README.md)

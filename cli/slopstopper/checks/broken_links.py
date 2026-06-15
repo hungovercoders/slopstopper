@@ -1,8 +1,8 @@
 """Broken-link checks (Playwright wrapper).
 
-Ports the bash reliability:links flow:
+Ports the bash reliability:broken-links flow:
 
-  task ss:reliability:links -- https://your-site.example.com
+  task ss:reliability:broken-links -- https://your-site.example.com
 
   which is, under the covers:
 
@@ -52,6 +52,12 @@ SPEC_NAME = "broken-links"
 def _parse_args(args: list[str] | None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="slopstopper run reliability:broken-links", add_help=False
+    )
+    p.add_argument(
+        "url_positional",
+        nargs="?",
+        default=None,
+        help="Site URL to scan (alternative to --url; e.g. http://localhost:8080)",
     )
     p.add_argument("--url", default=None, help="Site URL to scan")
     p.add_argument("--ci", action="store_true", help="CI mode: html reporter, CI=true")
@@ -121,7 +127,7 @@ def run(args: list[str] | None = None) -> int:
         return 1
 
     parsed = _parse_args(args)
-    url = _resolve_url(parsed.url)
+    url = _resolve_url(parsed.url_positional or parsed.url)
     if not url:
         output.error("broken-links target URL is required")
         output._emit("Usage:")

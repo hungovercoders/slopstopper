@@ -70,6 +70,12 @@ jobs:
             pip install slopstopper-cli
           fi
 
+      - name: Install Task runner
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       # ── Local server (PR / push to main) ────────────────────────────────────
       # CUSTOMISE FOR YOUR APP: these two steps build and serve this
       # repo's static site. Replace with your app's build/serve
@@ -140,9 +146,9 @@ jobs:
         run: |
           echo "🔍 Auditing: $AUDIT_URL  (prod=$IS_PROD)"
           if [ "$IS_PROD" = "true" ]; then
-            slopstopper run reliability:cwv -- --url "$AUDIT_URL" --prod
+            task ss:reliability:cwv -- "$AUDIT_URL" --prod
           else
-            slopstopper run reliability:cwv -- --url "$AUDIT_URL"
+            task ss:reliability:cwv -- "$AUDIT_URL"
           fi
 
       - name: Stop local server

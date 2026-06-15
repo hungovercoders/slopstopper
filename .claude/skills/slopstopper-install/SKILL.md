@@ -59,10 +59,19 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
 
 The installer is idempotent. Re-running it pulls newer checks but respects deletions (tracked via `.ss/.workflows-installed`), and refreshes `slopstopper-cli` via `pipx upgrade` (or re-runs `pip install --user --upgrade` when pipx isn't available). All slopstopper files live under the `ss` namespace — your repo's existing files are not touched. If a pre-CLI install left a `.ss/scripts/` directory behind, the installer scrubs it on first run.
 
+By default the installer ships **Task-driven workflows** — every check runs via `task ss:<category>:<check>` so the suite shares one invocation surface with `task build`, `task deploy`, etc. The workflows install Task themselves via `arduino/setup-task@v2`, so adopters don't need it in their CI runners by hand. If the adopter explicitly doesn't want Task in their CI, install with `--no-task`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash -s -- --no-task
+```
+
+`--no-task` post-processes each shipped workflow at install time to strip the Task install step and rewrite `task ss:<X>` lines to `slopstopper run <X>` — same execution path, just without the Task layer. Default mode is the right choice for most adopters; `--no-task` is the escape hatch.
+
 If the user prefers to review the script first:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh -o install.sh
-bash install.sh [TARGET_DIR]
+bash install.sh [TARGET_DIR]                   # default Task mode
+bash install.sh --no-task [TARGET_DIR]         # CLI-direct mode
 ```
 
 ## Step 3 — What just landed
@@ -258,9 +267,9 @@ The "powered by slopstopper" badge uses a static shields.io URL (`https://img.sh
 
 ## Step 7 — Drive every check to green locally, **before** pushing
 
-This is the spine of a good install. Every slopstopper check has a local equivalent — either `task ss:<category>:<action>` (thin shim) or `slopstopper run <category>:<action>` directly. Running them locally in a tight loop — fix, re-run, fix, re-run — is an order of magnitude faster than pushing and waiting on CI for each iteration. The goal of this step is that the first CI run on the target's PR is a **confirmation pass**, not a discovery pass.
+This is the spine of a good install. `task ss:<category>:<action>` is the canonical interface — humans, agents and CI all go through it. The shipped workflows install Task themselves and invoke checks the same way. Running locally in a tight loop — fix, re-run, fix, re-run — is an order of magnitude faster than pushing and waiting on CI for each iteration. The goal of this step is that the first CI run on the target's PR is a **confirmation pass**, not a discovery pass.
 
-**Both surfaces work; pick one consistently.** The `task ss:*` shims read `.slopstopper.yml`, set the env vars the CLI expects, and invoke `slopstopper run …`. If you don't already use `task` in the target repo, calling `slopstopper run hygiene:docs-size` directly is equally valid (and skips the Taskfile load).
+If the target was installed with `--no-task` (rare; opt-out for adopters who don't want Task in their CI), replace every `task ss:<X>` below with `slopstopper run <X>` — same code, same exit codes, same reports.
 
 **Two passes, in order:**
 
@@ -274,40 +283,38 @@ task ss:hygiene:test         # docs-size + docs-structure + docs-accuracy + entr
 task ss:security:scan        # SAST + secrets + dependency CVEs + DAST (DAST needs URL — skip or run after Pass B)
 ```
 
-Or call each check via the CLI directly:
+Or invoke each shim individually:
 
 ```bash
-slopstopper run security:secrets           # Gitleaks — fast, usually surfaces something
-slopstopper run security:sast              # Semgrep
-slopstopper run security:dependencies      # Trivy (CVE scan of dependencies)
-slopstopper run hygiene:complexity         # lizard
-slopstopper run hygiene:docs-accuracy      # repo-relative link resolver
-slopstopper run hygiene:docs-structure     # Map Pattern validator
-slopstopper run hygiene:docs-size          # docs/ size budget
-slopstopper run hygiene:entry-files        # README/AGENTS/CLAUDE word budget
-slopstopper run hygiene:csp-exceptions     # if headers.source is configured
+task ss:security:secrets           # Gitleaks — fast, usually surfaces something
+task ss:security:sast              # Semgrep
+task ss:security:vulnerability:all # Trivy (CVE scan of dependencies)
+task ss:hygiene:complexity         # lizard
+task ss:hygiene:docs-accuracy      # repo-relative link resolver
+task ss:hygiene:docs-structure     # Map Pattern validator
+task ss:hygiene:docs-size          # docs/ size budget
+task ss:hygiene:entry-files        # README/AGENTS/CLAUDE word budget
+task ss:hygiene:csp-exceptions     # if headers.source is configured
 ```
 
 For each failure: fix the root cause locally, re-run **just that one check** to confirm, and only move on once green. Anticipated issues during Pass A are covered in `slopstopper-triage`.
 
 ### Pass B — Dynamic checks (need a URL + a built site)
 
-The reliability and DAST workflows assert behaviour on a running site. The fastest local loop is to build once, serve via the installed `.ss/server.js` shim on `localhost:8080`, then run each dynamic check against `http://localhost:8080`.
+The reliability and DAST shims assert behaviour on a running site. The fastest local loop is to build once, serve via the installed `.ss/server.js` shim on `localhost:8080`, then run each dynamic shim against `http://localhost:8080` as a bare-positional URL arg.
 
 ```bash
-npm run build                                # target's own build
-node .ss/server.js &                         # static server on :8080
-SMOKE_TEST_URL=http://localhost:8080 slopstopper run reliability:smoke
-ACCESSIBILITY_TEST_URL=http://localhost:8080 slopstopper run reliability:accessibility
-CWV_URL=http://localhost:8080 slopstopper run reliability:cwv
-SEO_TEST_URL=http://localhost:8080 slopstopper run reliability:seo
-BROKEN_LINKS_TEST_URL=http://localhost:8080 slopstopper run reliability:broken-links
-DAST_TEST_URL=http://localhost:8080 slopstopper run security:dast    # needs Docker for OWASP ZAP
+npm run build                                            # target's own build
+node .ss/server.js &                                     # static server on :8080
+task ss:reliability:smoke         -- http://localhost:8080
+task ss:reliability:accessibility -- http://localhost:8080
+task ss:reliability:cwv           -- http://localhost:8080
+task ss:reliability:seo           -- http://localhost:8080
+task ss:reliability:broken-links         -- http://localhost:8080
+task ss:security:dast             -- http://localhost:8080    # needs Docker for OWASP ZAP
 ```
 
-The Taskfile equivalents work the same way: `task ss:reliability:smoke -- http://localhost:8080`, `task ss:security:dast -- http://localhost:8080`, etc.
-
-`slopstopper run security:dast` is the heaviest local check (pulls and runs the OWASP ZAP container) — leave it for last in the loop. Skip it locally if Docker isn't installed and run it on CI only.
+`task ss:security:dast` is the heaviest local check (pulls and runs the OWASP ZAP container) — leave it for last in the loop. Skip it locally if Docker isn't installed and run it on CI only.
 
 Iterate the same way as Pass A: fix root cause locally, re-run the single task, move on once green.
 

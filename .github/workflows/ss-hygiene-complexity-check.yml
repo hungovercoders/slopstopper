@@ -46,9 +46,15 @@ jobs:
             pip install slopstopper-cli
           fi
 
+      - name: Install Task runner
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run complexity analysis
         id: complexity
-        run: slopstopper run hygiene:complexity
+        run: task ss:hygiene:complexity
 
       - name: Detect high-complexity items
         id: gate

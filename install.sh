@@ -49,6 +49,52 @@
 set -euo pipefail
 
 REPO_URL="https://github.com/hungovercoders/slopstopper.git"
+
+# ── argument parsing ─────────────────────────────────────────────────────────
+#
+# Default mode ships Task-flavour workflows (every check is `task ss:<name>` —
+# the canonical interface for humans, agents and CI alike). Adopters who'd
+# rather skip Task in CI pass `--no-task` (or set SLOPSTOPPER_NO_TASK=1) and
+# the workflows are post-processed at install time to call slopstopper-cli
+# directly. See docs/architecture/ for the design rationale.
+
+USE_TASK=true
+if [ -n "${SLOPSTOPPER_NO_TASK:-}" ]; then
+  USE_TASK=false
+fi
+
+POSITIONAL=()
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --no-task)
+      USE_TASK=false
+      shift
+      ;;
+    --help|-h)
+      cat <<'USAGE'
+install.sh — install the SlopStopper quality suite into a target repo.
+
+Usage:
+  bash install.sh [TARGET_DIR]              # Task-driven workflows (default)
+  bash install.sh --no-task [TARGET_DIR]    # CLI-driven workflows (no Task install)
+
+Env var equivalents:
+  SLOPSTOPPER_NO_TASK=1 bash install.sh
+
+Default mode installs workflows that invoke `task ss:<check>` so the suite
+shares a single invocation surface with the rest of your codebase. `--no-task`
+installs workflows that invoke `slopstopper run <check>` directly.
+USAGE
+      exit 0
+      ;;
+    *)
+      POSITIONAL+=("$1")
+      shift
+      ;;
+  esac
+done
+set -- "${POSITIONAL[@]:+${POSITIONAL[@]}}"
+
 TARGET_DIR="${1:-$(pwd)}"
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -74,8 +120,10 @@ preflight() {
   command -v git     >/dev/null 2>&1 || missing_hard+=("git")
   command -v python3 >/dev/null 2>&1 || missing_hard+=("python3 (slopstopper-cli is a Python package): https://www.python.org/downloads/")
   command -v node    >/dev/null 2>&1 || missing_soft+=("node (Playwright, Lighthouse CI, markdownlint, TypeScript): https://nodejs.org/")
-  command -v task    >/dev/null 2>&1 || missing_soft+=("task (canonical interface — every check is 'task ss:...'): https://taskfile.dev/installation/")
-  command -v docker  >/dev/null 2>&1 || info "Docker not found — only needed for DAST (task ss:security:dast). Skipping check."
+  if [ "$USE_TASK" = "true" ]; then
+    command -v task  >/dev/null 2>&1 || missing_soft+=("task (canonical interface — every check is 'task ss:...'): https://taskfile.dev/installation/")
+  fi
+  command -v docker  >/dev/null 2>&1 || info "Docker not found — only needed for DAST. Skipping check."
 
   if [ "${#missing_hard[@]}" -gt 0 ]; then
     for tool in "${missing_hard[@]}"; do
@@ -399,6 +447,52 @@ printf '%s' "$NEW_MARKER_CONTENT" > "$MARKER_FILE.tmp" && mv "$MARKER_FILE.tmp" 
 
 success "$INSTALLED_WORKFLOWS workflow(s) installed, $REFRESHED_WORKFLOWS refreshed, $DELETED_RESPECTED previously-deleted skipped"
 
+# Post-process workflows for --no-task mode: strip the Task install step
+# and rewrite `task ss:<X> -- args` into `slopstopper run <X> args`. The
+# CLI accepts the same bare-positional URL adopters' shims pass through,
+# so the resulting workflows are functionally identical — just without
+# the Task install step or any `task ss:*` invocation.
+#
+# Idempotent: re-running install.sh without --no-task re-copies the
+# Task-flavour workflow from source on top, so adopters can switch modes
+# by re-running with/without the flag.
+if [ "$USE_TASK" = "false" ]; then
+  python3 - "$WORKFLOWS_DST" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+workflows_dst = Path(sys.argv[1])
+
+# Match the Task install step block we inserted in every workflow.
+task_step = re.compile(
+    r"\n      - name: Install Task runner\n"
+    r"        uses: arduino/setup-task@v2\n"
+    r"        with:\n"
+    r"          version: 3\.x\n"
+    r"          repo-token: \$\{\{ secrets\.GITHUB_TOKEN \}\}\n"
+)
+
+# Order matters: handle the `-- ` separator form first, then bare invocations.
+# Shim names match CLI check names one-to-one — no alias mapping needed.
+invoke_with_args = re.compile(r"task ss:([a-z][a-z0-9_:-]+) -- ")
+invoke_bare      = re.compile(r"task ss:([a-z][a-z0-9_:-]+)")
+
+transformed = 0
+for path in sorted(workflows_dst.glob("ss-*.yml")):
+    text = path.read_text()
+    original = text
+    text = task_step.sub("\n", text)
+    text = invoke_with_args.sub(r"slopstopper run \1 ", text)
+    text = invoke_bare.sub(r"slopstopper run \1", text)
+    if text != original:
+        path.write_text(text)
+        transformed += 1
+
+print(f"  ✅ Post-processed {transformed} workflow(s) for --no-task mode (Task install stripped, invocations rewritten to slopstopper-cli)")
+PY
+fi
+
 # 5. Merge devDependencies into package.json if one exists.
 PKG="$TARGET_DIR/package.json"
 SRC_PKG="$SCRIPT_DIR/package.json"
@@ -613,11 +707,39 @@ echo "  back (tracked via .ss/.workflows-installed)."
 echo ""
 sep
 echo ""
-echo "  Next steps:"
-echo "    1. Install the Task runner (if you don't have it):"
-echo "         curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin"
-echo "    2. npm install"
-echo "    3. task --list"
-echo "    4. Open a PR — every check runs automatically."
+if [ "$USE_TASK" = "true" ]; then
+  echo "  Canonical invocation: task ss:<check>"
+  echo ""
+  echo "    Workflows are Task-driven by default — task ss:<check> is the"
+  echo "    canonical interface for humans, agents and CI alike, so the"
+  echo "    suite sits naturally alongside any other task build / task"
+  echo "    deploy tasks in your codebase. The workflows install Task"
+  echo "    themselves; locally, install it via:"
+  echo ""
+  echo "       https://taskfile.dev/installation/"
+  echo ""
+  echo "    Don't want Task in your CI? Re-run install.sh with --no-task"
+  echo "    to get workflows that call slopstopper-cli directly:"
+  echo ""
+  echo "       bash install.sh --no-task"
+  echo ""
+  echo "  Next steps:"
+  echo "    1. Install the Task runner (if you don't have it):"
+  echo "         curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin"
+  echo "    2. npm install"
+  echo "    3. task --list"
+  echo "    4. Open a PR — every check runs automatically."
+else
+  echo "  Installed in --no-task mode."
+  echo ""
+  echo "    Workflows call slopstopper-cli directly (no Task install step,"
+  echo "    no task ss:* invocations). To switch to the canonical Task-driven"
+  echo "    flow later, re-run install.sh without --no-task."
+  echo ""
+  echo "  Next steps:"
+  echo "    1. npm install"
+  echo "    2. slopstopper checks list      # see every check shipped"
+  echo "    3. Open a PR — every check runs automatically."
+fi
 echo ""
 sep

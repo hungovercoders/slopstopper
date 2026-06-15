@@ -321,9 +321,9 @@ The dependency scanning workflow:
 | File | Purpose |
 |------|---------|
 | `.github/workflows/ss-security-vulnerability-all-check.yml` | GitHub Actions workflow |
-| `Taskfile.ss.yml` (`vulnerability:all` task) | Local task runner shim → `slopstopper run security:dependencies` |
-| `cli/slopstopper/checks/dependencies.py` | Check implementation (subprocess-invokes Trivy, renders MD report) |
-| `.gitignore` | Excludes `.ss/reports/dependencies/` |
+| `Taskfile.ss.yml` (`vulnerability:all` task) | Local task runner shim → `slopstopper run security:vulnerability:all` |
+| `cli/slopstopper/checks/vulnerability_all.py` | Check implementation (subprocess-invokes Trivy, renders MD report) |
+| `.gitignore` | Excludes `.ss/reports/vulnerability-all/` |
 
 ## Key Configuration Points
 
