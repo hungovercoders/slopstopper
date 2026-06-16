@@ -9,7 +9,7 @@ You're being asked to install slopstopper into an existing repo. Slopstopper is 
 
 The install ships ~21 GitHub Actions workflows in one shot, pip-installs `slopstopper-cli` (via pipx), merges devDeps into `package.json`, and creates a `Taskfile.yml` if the target doesn't have one. That's a lot of moving parts. Don't run it blind — work through the pre-flight first, then drive every check to green locally before opening a PR.
 
-**The CLI is the single source of truth for every check.** Every workflow boils down to two CLI commands: `slopstopper run <category>:<check>` (executes the check, writes reports under `.ss/reports/`) and `slopstopper emit <category>:<check> --target {pr-comment,issue}` (posts the report to GitHub). Reliability checks also use `slopstopper discover <check> --event=<event>` (resolves which pages to audit) and the installer itself uses `slopstopper config get <key>` to read `.slopstopper.yml`. No bash scripts under `.ss/scripts/` any more — pure Python, one package, one upgrade path.
+**The CLI is the single source of truth for every check.** Every workflow boils down to two CLI commands: `slopstopper run <category>:<check>` (executes the check, writes reports under `.ss/reports/`) and `slopstopper emit <category>:<check> --target {pr-comment,issue} [--on-pass=close]` (posts the report to GitHub on failure, or closes any prior issue when the check now passes on `main`). Reliability checks also use `slopstopper discover <check> --event=<event>` (resolves which pages to audit) and the installer itself uses `slopstopper config get <key>` to read `.slopstopper.yml`. No bash scripts under `.ss/scripts/` any more — pure Python, one package, one upgrade path.
 
 ## Step 1 — Pre-flight: read the target repo before installing
 

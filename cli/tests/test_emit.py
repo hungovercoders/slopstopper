@@ -246,6 +246,50 @@ def test_emit_issue_fails_when_gh_missing(monkeypatch, isolated_cwd, capsys):
     assert "gh CLI is not available" in capsys.readouterr().err
 
 
+# ── issue close ──────────────────────────────────────────────────
+
+
+def test_close_issue_comments_and_closes_when_match(monkeypatch, capsys):
+    monkeypatch.setattr(emit, "_gh_available", lambda: True)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: 77)
+
+    captured: dict = {}
+
+    def fake_gh(*args, capture=False):
+        captured.setdefault("calls", []).append(args)
+        return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(emit, "_gh", fake_gh)
+    rc = emit._close_issue(["test-label"], "✅ now passing")
+    assert rc == 0
+    comment_call = captured["calls"][0]
+    assert "comment" in comment_call and "77" in comment_call
+    assert "✅ now passing" in comment_call
+    close_call = captured["calls"][1]
+    assert "close" in close_call and "77" in close_call
+    assert "Closing issue #77" in capsys.readouterr().out
+
+
+def test_close_issue_noops_when_no_match(monkeypatch, capsys):
+    monkeypatch.setattr(emit, "_gh_available", lambda: True)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: None)
+
+    def fake_gh(*args, capture=False):
+        raise AssertionError(f"_gh should not be called when no open issue, got {args}")
+
+    monkeypatch.setattr(emit, "_gh", fake_gh)
+    rc = emit._close_issue(["test-label"], "✅ now passing")
+    assert rc == 0
+    assert "No open issue to close" in capsys.readouterr().out
+
+
+def test_close_issue_fails_when_gh_missing(monkeypatch, capsys):
+    monkeypatch.setattr(emit, "_gh_available", lambda: False)
+    rc = emit._close_issue(["test-label"], "✅ now passing")
+    assert rc == 1
+    assert "gh CLI is not available" in capsys.readouterr().err
+
+
 # ── public dispatcher ────────────────────────────────────────────
 
 
@@ -280,3 +324,46 @@ def test_emit_rejects_unknown_target(capsys):
     rc = emit.emit("slack", SAMPLE_META)
     assert rc == 2
     assert "Unknown emit target" in capsys.readouterr().err
+
+
+def test_emit_routes_on_pass_close_to_close_issue(monkeypatch):
+    called: dict = {}
+
+    def fake_close(labels, close_comment):
+        called["close"] = (labels, close_comment)
+        return 0
+
+    monkeypatch.setattr(emit, "_close_issue", fake_close)
+    rc = emit.emit("issue", SAMPLE_META, on_pass="close")
+    assert rc == 0
+    assert called["close"][0] == ["test-label", "maintenance"]
+    # SAMPLE_META has no issue_close_comment → defaults to the module default.
+    assert called["close"][1] == emit._DEFAULT_CLOSE_COMMENT
+
+
+def test_emit_close_uses_meta_close_comment_when_present(monkeypatch):
+    meta_with_close = {**SAMPLE_META, "issue_close_comment": "✅ custom-close"}
+    called: dict = {}
+
+    def fake_close(labels, close_comment):
+        called["close"] = (labels, close_comment)
+        return 0
+
+    monkeypatch.setattr(emit, "_close_issue", fake_close)
+    rc = emit.emit("issue", meta_with_close, on_pass="close")
+    assert rc == 0
+    assert called["close"][1] == "✅ custom-close"
+
+
+def test_emit_without_on_pass_still_opens_issue(monkeypatch):
+    """on_pass=None must not divert from the normal open-or-update path."""
+    called: dict = {}
+
+    def fake_issue(report_path, title, labels, followup):
+        called["issue"] = True
+        return 0
+
+    monkeypatch.setattr(emit, "emit_issue", fake_issue)
+    rc = emit.emit("issue", SAMPLE_META)
+    assert rc == 0
+    assert called.get("issue") is True

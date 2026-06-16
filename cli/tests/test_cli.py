@@ -53,19 +53,40 @@ def test_emit_no_meta_returns_2(monkeypatch, capsys):
 
 def test_emit_routes_to_emit_module(monkeypatch):
     """When the check has META, the dispatcher hands off to emit.emit
-    with the target and the META dict."""
+    with the target, META dict, and on_pass kwarg."""
     called: dict = {}
 
-    def fake_emit(target, meta):
+    def fake_emit(target, meta, *, on_pass=None):
         called["target"] = target
         called["meta"] = meta
+        called["on_pass"] = on_pass
         return 0
 
     monkeypatch.setattr(cli.emit_mod, "emit", fake_emit)
     rc = cli.main(["emit", "hygiene:docs-size", "--target", "issue"])
     assert rc == 0
     assert called["target"] == "issue"
+    assert called["on_pass"] is None
     assert "comment_discriminator" in called["meta"]
+
+
+def test_emit_threads_on_pass_close_through(monkeypatch):
+    called: dict = {}
+
+    def fake_emit(target, meta, *, on_pass=None):
+        called["on_pass"] = on_pass
+        return 0
+
+    monkeypatch.setattr(cli.emit_mod, "emit", fake_emit)
+    rc = cli.main(["emit", "hygiene:docs-size", "--target", "issue", "--on-pass=close"])
+    assert rc == 0
+    assert called["on_pass"] == "close"
+
+
+def test_emit_rejects_on_pass_with_pr_comment_target(capsys):
+    rc = cli.main(["emit", "hygiene:docs-size", "--target", "pr-comment", "--on-pass=close"])
+    assert rc == 2
+    assert "--on-pass is only valid with --target issue" in capsys.readouterr().err
 
 
 def test_emit_requires_target_flag(capsys):

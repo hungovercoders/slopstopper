@@ -25,11 +25,12 @@ Each check that wants to emit declares a META dict beside its `run()`:
         "issue_title": "📚 ... Exceeds Thresholds",
         "issue_labels": ["...", "maintenance"],
         "issue_followup": "🔔 Thresholds exceeded again in commit",
+        "issue_close_comment": "✅ ... now within thresholds. Closing automatically.",  # optional; used by `emit --on-pass=close`
     }
 
 PR-comment update path: `gh api PATCH .../issues/comments/{id}` —
 `gh` doesn't have a direct edit-comment command.
-Issue path: `gh issue list | gh issue {create,edit,comment}`.
+Issue path: `gh issue list | gh issue {create,edit,comment,close}`.
 """
 
 from __future__ import annotations
@@ -236,18 +237,54 @@ def emit_issue(
     return _create_issue(title, body_path, labels)
 
 
+# ── issue close ──────────────────────────────────────────────────
+
+
+_DEFAULT_CLOSE_COMMENT = "✅ Check is now passing on `main`. Closing automatically."
+
+
+def _close_issue(labels: list[str], close_comment: str) -> int:
+    """Comment + close any open issue matching `labels`. No-op if none exists.
+
+    Used by `emit --on-pass=close` as the post-success twin of
+    `emit_issue`'s post-failure open path. Same label-intersection dedup
+    via `_find_existing_issue`, so a check only ever closes the issue it
+    would have re-opened.
+    """
+    if not _gh_available():
+        print("❌ gh CLI is not available — needed for --on-pass=close", file=sys.stderr)
+        return 1
+    existing = _find_existing_issue(labels)
+    if existing is None:
+        print("· No open issue to close")
+        return 0
+    print(f"× Closing issue #{existing}")
+    rc = _comment_issue(existing, close_comment)
+    if rc != 0:
+        return rc
+    return _gh("issue", "close", str(existing)).returncode
+
+
 # ── public dispatcher ────────────────────────────────────────────
 
 
-def emit(target: str, meta: dict) -> int:
+def emit(target: str, meta: dict, *, on_pass: str | None = None) -> int:
     """Route --target {pr-comment, issue} to the corresponding emitter.
 
     meta is the check's META dict (see module docstring).
+    on_pass='close' (only valid with target='issue') flips the issue
+    branch from open/update to comment-and-close — the post-success
+    twin of the post-failure open path.
     """
     report_path = Path(meta["report_path"])
     if target == "pr-comment":
         return emit_pr_comment(report_path, meta["comment_discriminator"])
     if target == "issue":
+        if on_pass == "close":
+            return _close_issue(
+                meta["issue_labels"],
+                meta.get("issue_close_comment", _DEFAULT_CLOSE_COMMENT),
+            )
         return emit_issue(
             report_path,
             meta["issue_title"],
