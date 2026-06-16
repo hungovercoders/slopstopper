@@ -316,6 +316,33 @@ The dependency scanning workflow:
 - ✅ Creates GitHub issues when CRITICAL/HIGH vulnerabilities land on `main`
 - ✅ Fails PRs with CRITICAL or HIGH vulnerabilities
 
+## Local/CI Parity
+
+Trivy is one of the few checks where local and CI can legitimately disagree on the same code — usually as "CI fails on a CVE the local run didn't flag." Treat CI as the canonical verdict when they diverge.
+
+### Why they can disagree
+
+- **24h DB cache.** Trivy caches its vulnerability database (macOS: `~/Library/Caches/trivy/db/`, Linux: `~/.cache/trivy/db/`) and reuses it for ~24 hours before redownloading. CI runs start cacheless and always pull the freshest DB, so your local trivy can be up to a day behind on newly-published CVEs.
+- **Binary version.** CI installs trivy via `apt-get install -y trivy` (latest from the aquasecurity Debian repo). Local installs vary (`brew install trivy`, downloaded tarball, etc.). Different binary versions can ship different parsers, default checks, and output schemas — producing dramatic deltas independent of DB state.
+
+### Diagnose
+
+```bash
+# Binary version on both sides — compare local against the CI workflow's "Install Trivy" step log
+trivy --version
+
+# Local DB age (macOS path; Linux: ~/.cache/trivy/db/metadata.json)
+cat ~/Library/Caches/trivy/db/metadata.json | jq .UpdatedAt
+```
+
+### Resolve
+
+- **Stale local DB** — clear the cache and rescan so local matches CI's cold-start behaviour:
+  ```bash
+  trivy clean --vuln-db && task ss:security:vulnerability:all
+  ```
+- **Binary version drift** — bump local trivy (`brew upgrade trivy` or re-download the release tarball) until `trivy --version` matches the workflow's installed version.
+
 ## Files Involved
 
 | File | Purpose |
