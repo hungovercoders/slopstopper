@@ -44,19 +44,34 @@ jobs:
             const label = 'workflow-failure';
             const title = `❌ Workflow Failure: ${workflowName}`;
 
-            // Skip if any open issue already references this run URL.
-            // Workflows that raise their own domain-specific issues (e.g. SAST,
-            // DAST, secrets, complexity) include the run URL in their issue body,
-            // so this prevents a duplicate generic issue being raised alongside them.
-            // Use direct listing instead of search API to avoid indexing delays.
-            // Note: per_page=100 is sufficient for this template repo; add pagination if issue volume grows.
+            // Skip if any per-check workflow has already raised a domain-specific
+            // issue for this failure. `slopstopper emit --target issue` embeds
+            // a stable `<!-- slopstopper:check=<category>:<name> -->` marker
+            // in every issue body it writes, so a single substring check on
+            // the marker prefix catches all of them in one go.
+            //
+            // The legacy run-URL substring check is kept as a defensive
+            // fallback for issues created before the marker shipped (see the
+            // issue-emission unification PRs). The fallback can be removed
+            // once all pre-marker issues have either auto-migrated (via a
+            // re-failure that regenerates the body) or been closed manually.
+            //
+            // Use direct listing instead of the search API to avoid indexing
+            // delays. per_page=100 is sufficient for a template repo; add
+            // pagination if open-issue volume grows.
             const { data: openIssues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
               per_page: 100
             });
-            if (openIssues.some(issue => issue.body && issue.body.includes(runUrl))) {
+            const hasSlopstopperMarker = (body) =>
+              body && body.includes('<!-- slopstopper:check=');
+            const hasRunUrlFallback = (body) =>
+              body && body.includes(runUrl);
+            if (openIssues.some(issue =>
+              hasSlopstopperMarker(issue.body) || hasRunUrlFallback(issue.body)
+            )) {
               return;
             }
 
