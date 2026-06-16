@@ -246,6 +246,117 @@ def test_emit_issue_fails_when_gh_missing(monkeypatch, isolated_cwd, capsys):
     assert "gh CLI is not available" in capsys.readouterr().err
 
 
+def test_emit_issue_prepends_slopstopper_label(monkeypatch, isolated_cwd):
+    Path("report.md").write_text("body")
+    monkeypatch.setattr(emit, "_gh_available", lambda: True)
+    captured: dict = {}
+
+    def fake_find(labels):
+        captured["find_labels"] = list(labels)
+        return None
+
+    def fake_create(title, body_path, labels):
+        captured["create_labels"] = list(labels)
+        return 0
+
+    monkeypatch.setattr(emit, "_find_existing_issue", fake_find)
+    monkeypatch.setattr(emit, "_create_issue", fake_create)
+    rc = emit.emit_issue(Path("report.md"), "T", ["sast", "security"], "F")
+    assert rc == 0
+    assert captured["find_labels"] == ["slopstopper", "sast", "security"]
+    assert captured["create_labels"] == ["slopstopper", "sast", "security"]
+
+
+def test_emit_issue_does_not_duplicate_slopstopper_label(monkeypatch, isolated_cwd):
+    Path("report.md").write_text("body")
+    monkeypatch.setattr(emit, "_gh_available", lambda: True)
+    captured: dict = {}
+
+    def fake_create(title, body_path, labels):
+        captured["create_labels"] = list(labels)
+        return 0
+
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: None)
+    monkeypatch.setattr(emit, "_create_issue", fake_create)
+    rc = emit.emit_issue(Path("report.md"), "T", ["slopstopper", "sast"], "F")
+    assert rc == 0
+    assert captured["create_labels"].count("slopstopper") == 1
+
+
+def test_emit_issue_writes_marker_when_check_name_provided(monkeypatch, isolated_cwd):
+    Path("report.md").write_text("body")
+    monkeypatch.setattr(emit, "_gh_available", lambda: True)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: None)
+    monkeypatch.setenv("GITHUB_SHA", "abc123")
+
+    captured: dict = {}
+
+    def fake_create(title, body_path, labels):
+        captured["body"] = Path(body_path).read_text()
+        return 0
+
+    monkeypatch.setattr(emit, "_create_issue", fake_create)
+    rc = emit.emit_issue(
+        Path("report.md"),
+        "T",
+        ["test-label"],
+        "F",
+        check_name="hygiene:docs-size",
+    )
+    assert rc == 0
+    assert "<!-- slopstopper:check=hygiene:docs-size -->" in captured["body"]
+    assert "*Commit: abc123*" in captured["body"]
+
+
+def test_emit_issue_omits_marker_when_check_name_none(monkeypatch, isolated_cwd):
+    Path("report.md").write_text("body")
+    monkeypatch.setattr(emit, "_gh_available", lambda: True)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: None)
+    monkeypatch.setenv("GITHUB_SHA", "abc123")
+
+    captured: dict = {}
+
+    def fake_create(title, body_path, labels):
+        captured["body"] = Path(body_path).read_text()
+        return 0
+
+    monkeypatch.setattr(emit, "_create_issue", fake_create)
+    rc = emit.emit_issue(Path("report.md"), "T", ["test-label"], "F")
+    assert rc == 0
+    assert "slopstopper:check" not in captured["body"]
+
+
+def test_emit_issue_marker_idempotent_on_update(monkeypatch, isolated_cwd):
+    """Re-emitting on a re-failure regenerates the footer fresh from the report —
+    the marker appears exactly once, never duplicated."""
+    Path("report.md").write_text("body content")
+    monkeypatch.setattr(emit, "_gh_available", lambda: True)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: 42)
+    monkeypatch.setenv("GITHUB_SHA", "abc123")
+
+    captured: dict = {}
+
+    def fake_update(number, body_path):
+        captured.setdefault("bodies", []).append(Path(body_path).read_text())
+        return 0
+
+    monkeypatch.setattr(emit, "_update_issue_body", fake_update)
+    monkeypatch.setattr(emit, "_comment_issue", lambda n, b: 0)
+
+    # Emit twice — the second call must not produce a body with two markers.
+    for _ in range(2):
+        emit.emit_issue(
+            Path("report.md"),
+            "T",
+            ["test-label"],
+            "F",
+            check_name="hygiene:docs-size",
+        )
+
+    for body in captured["bodies"]:
+        assert body.count("<!-- slopstopper:check=hygiene:docs-size -->") == 1
+
+
 # ── issue close ──────────────────────────────────────────────────
 
 
@@ -290,6 +401,22 @@ def test_close_issue_fails_when_gh_missing(monkeypatch, capsys):
     assert "gh CLI is not available" in capsys.readouterr().err
 
 
+def test_close_issue_searches_with_augmented_labels(monkeypatch):
+    """The close path must search with the same slopstopper-augmented labels
+    that emit_issue used to create the issue — otherwise a post-PR-2 issue
+    would never be closed."""
+    monkeypatch.setattr(emit, "_gh_available", lambda: True)
+    captured: dict = {}
+
+    def fake_find(labels):
+        captured["find_labels"] = list(labels)
+        return None
+
+    monkeypatch.setattr(emit, "_find_existing_issue", fake_find)
+    emit._close_issue(["sast", "security"], "✅ now passing")
+    assert captured["find_labels"] == ["slopstopper", "sast", "security"]
+
+
 # ── public dispatcher ────────────────────────────────────────────
 
 
@@ -309,8 +436,8 @@ def test_emit_routes_pr_comment(monkeypatch):
 def test_emit_routes_issue(monkeypatch):
     called: dict = {}
 
-    def fake_issue(report_path, title, labels, followup):
-        called["issue"] = (report_path, title, labels, followup)
+    def fake_issue(report_path, title, labels, followup, *, check_name=None):
+        called["issue"] = (report_path, title, labels, followup, check_name)
         return 0
 
     monkeypatch.setattr(emit, "emit_issue", fake_issue)
@@ -359,11 +486,25 @@ def test_emit_without_on_pass_still_opens_issue(monkeypatch):
     """on_pass=None must not divert from the normal open-or-update path."""
     called: dict = {}
 
-    def fake_issue(report_path, title, labels, followup):
+    def fake_issue(report_path, title, labels, followup, *, check_name=None):
         called["issue"] = True
+        called["check_name"] = check_name
         return 0
 
     monkeypatch.setattr(emit, "emit_issue", fake_issue)
     rc = emit.emit("issue", SAMPLE_META)
     assert rc == 0
     assert called.get("issue") is True
+
+
+def test_emit_threads_check_name_to_emit_issue(monkeypatch):
+    called: dict = {}
+
+    def fake_issue(report_path, title, labels, followup, *, check_name=None):
+        called["check_name"] = check_name
+        return 0
+
+    monkeypatch.setattr(emit, "emit_issue", fake_issue)
+    rc = emit.emit("issue", SAMPLE_META, check_name="hygiene:docs-size")
+    assert rc == 0
+    assert called["check_name"] == "hygiene:docs-size"
