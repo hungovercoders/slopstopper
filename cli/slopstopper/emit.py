@@ -28,9 +28,20 @@ Each check that wants to emit declares a META dict beside its `run()`:
         "issue_close_comment": "✅ ... now within thresholds. Closing automatically.",  # optional; used by `emit --on-pass=close`
     }
 
+The brand label `slopstopper` is auto-prepended to `issue_labels` so every
+emitted issue can be discovered with `gh issue list --label slopstopper`.
+Bodies also gain a hidden HTML-comment marker `<!-- slopstopper:check=<name> -->`
+in the footer for machine-readable dedup (used by
+`ss-workflow-failure-issue.yml`'s deduplication).
+
 PR-comment update path: `gh api PATCH .../issues/comments/{id}` —
 `gh` doesn't have a direct edit-comment command.
 Issue path: `gh issue list | gh issue {create,edit,comment,close}`.
+
+Note: issue bodies are bot-managed. `_update_issue_body` overwrites the
+whole body on every re-emit, so the marker stays stable but hand-edited
+maintainer notes in the body get wiped. Track notes as issue comments
+instead.
 """
 
 from __future__ import annotations
@@ -154,6 +165,20 @@ def emit_pr_comment(report_path: Path, discriminator: str) -> int:
 # ── Issue emission ───────────────────────────────────────────────
 
 
+_BRAND_LABEL = "slopstopper"
+
+
+def _augment_labels(labels: list[str]) -> list[str]:
+    """Prepend the slopstopper brand label if not already present.
+
+    Idempotent — safe to call repeatedly. Single insertion point so every
+    open/close path uses the same label set for dedup.
+    """
+    if _BRAND_LABEL in labels:
+        return labels
+    return [_BRAND_LABEL, *labels]
+
+
 def _find_existing_issue(labels: list[str]) -> int | None:
     """Return the first open issue number that has every label."""
     label_args: list[str] = []
@@ -204,12 +229,14 @@ def emit_issue(
     title: str,
     labels: list[str],
     followup: str,
+    *,
+    check_name: str | None = None,
 ) -> int:
     """Create a new issue with the report, or update the existing one and post a follow-up comment.
 
-    The body is the report content with a `Commit: <sha>` footer; the
-    follow-up comment is `<followup> <sha>` so re-occurrences show up
-    in the issue timeline rather than as a fresh issue.
+    The body is the report content with a `Commit: <sha>` footer and, when
+    `check_name` is provided, a hidden `<!-- slopstopper:check=... -->`
+    marker. Labels are augmented with the `slopstopper` brand label.
     """
     if not _gh_available():
         print("❌ gh CLI is not available — needed for --target issue", file=sys.stderr)
@@ -218,9 +245,16 @@ def emit_issue(
         print(f"❌ Report not found at {report_path}", file=sys.stderr)
         return 1
 
+    labels = _augment_labels(labels)
     sha = _commit_sha()
     body = report_path.read_text()
-    footer = f"\n\n---\n*Commit: {sha}*\n" if sha else "\n"
+
+    footer_lines: list[str] = []
+    if sha:
+        footer_lines.append(f"*Commit: {sha}*")
+    if check_name:
+        footer_lines.append(f"<!-- slopstopper:check={check_name} -->")
+    footer = ("\n\n---\n" + "\n".join(footer_lines) + "\n") if footer_lines else "\n"
     body_with_footer = body + footer
 
     body_path = report_path.with_suffix(".issue-body.md")
@@ -248,12 +282,13 @@ def _close_issue(labels: list[str], close_comment: str) -> int:
 
     Used by `emit --on-pass=close` as the post-success twin of
     `emit_issue`'s post-failure open path. Same label-intersection dedup
-    via `_find_existing_issue`, so a check only ever closes the issue it
-    would have re-opened.
+    (including the `slopstopper` brand label) via `_find_existing_issue`,
+    so a check only ever closes the issue it would have re-opened.
     """
     if not _gh_available():
         print("❌ gh CLI is not available — needed for --on-pass=close", file=sys.stderr)
         return 1
+    labels = _augment_labels(labels)
     existing = _find_existing_issue(labels)
     if existing is None:
         print("· No open issue to close")
@@ -268,10 +303,17 @@ def _close_issue(labels: list[str], close_comment: str) -> int:
 # ── public dispatcher ────────────────────────────────────────────
 
 
-def emit(target: str, meta: dict, *, on_pass: str | None = None) -> int:
+def emit(
+    target: str,
+    meta: dict,
+    *,
+    check_name: str | None = None,
+    on_pass: str | None = None,
+) -> int:
     """Route --target {pr-comment, issue} to the corresponding emitter.
 
-    meta is the check's META dict (see module docstring).
+    meta is the check's META dict (see module docstring). check_name is
+    the `category:name` identifier used in the issue body's brand marker.
     on_pass='close' (only valid with target='issue') flips the issue
     branch from open/update to comment-and-close — the post-success
     twin of the post-failure open path.
@@ -290,6 +332,7 @@ def emit(target: str, meta: dict, *, on_pass: str | None = None) -> int:
             meta["issue_title"],
             meta["issue_labels"],
             meta["issue_followup"],
+            check_name=check_name,
         )
     print(f"❌ Unknown emit target: {target!r}", file=sys.stderr)
     return 2

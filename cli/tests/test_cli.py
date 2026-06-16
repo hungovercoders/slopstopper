@@ -53,12 +53,13 @@ def test_emit_no_meta_returns_2(monkeypatch, capsys):
 
 def test_emit_routes_to_emit_module(monkeypatch):
     """When the check has META, the dispatcher hands off to emit.emit
-    with the target, META dict, and on_pass kwarg."""
+    with the target, META dict, check_name, and on_pass kwargs."""
     called: dict = {}
 
-    def fake_emit(target, meta, *, on_pass=None):
+    def fake_emit(target, meta, *, check_name=None, on_pass=None):
         called["target"] = target
         called["meta"] = meta
+        called["check_name"] = check_name
         called["on_pass"] = on_pass
         return 0
 
@@ -66,6 +67,7 @@ def test_emit_routes_to_emit_module(monkeypatch):
     rc = cli.main(["emit", "hygiene:docs-size", "--target", "issue"])
     assert rc == 0
     assert called["target"] == "issue"
+    assert called["check_name"] == "hygiene:docs-size"
     assert called["on_pass"] is None
     assert "comment_discriminator" in called["meta"]
 
@@ -73,7 +75,7 @@ def test_emit_routes_to_emit_module(monkeypatch):
 def test_emit_threads_on_pass_close_through(monkeypatch):
     called: dict = {}
 
-    def fake_emit(target, meta, *, on_pass=None):
+    def fake_emit(target, meta, *, check_name=None, on_pass=None):
         called["on_pass"] = on_pass
         return 0
 

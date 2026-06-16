@@ -560,7 +560,7 @@ def _dispatch_emit(check_name: str, target: str, *, on_pass: str | None = None) 
             file=sys.stderr,
         )
         return 2
-    return emit_mod.emit(target, meta, on_pass=on_pass)
+    return emit_mod.emit(target, meta, check_name=check_name, on_pass=on_pass)
 
 
 # ── checks list ──────────────────────────────────────────────────
