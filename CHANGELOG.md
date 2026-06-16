@@ -4,6 +4,30 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.7.0](https://github.com/hungovercoders/slopstopper/compare/v0.6.0...v0.7.0) (2026-06-16)
+
+
+### Features
+
+* **checks:** META + markdown reports for smoke/accessibility/broken-links ([621ff93](https://github.com/hungovercoders/slopstopper/commit/621ff937d801b8040007b69641982b6750af76de))
+* **checks:** META + markdown reports for smoke/accessibility/broken-links ([1da48df](https://github.com/hungovercoders/slopstopper/commit/1da48dfbe49d9e378f90ca45bf7dcb86dea40d72))
+* **cli:** add `slopstopper badges` to generate README status block ([44f5521](https://github.com/hungovercoders/slopstopper/commit/44f55211feba04723c7baaf1d54203867c03e4ae))
+* **cli:** add slopstopper badges to generate README status block ([3085dea](https://github.com/hungovercoders/slopstopper/commit/3085deaabf709a98c35b9116766996d666ba0567))
+* **emit:** add --on-pass=close to slopstopper emit ([ada4ce1](https://github.com/hungovercoders/slopstopper/commit/ada4ce19690bbbf094cd27e121121fcdaad7135c))
+* **emit:** add --on-pass=close to slopstopper emit ([7b0564d](https://github.com/hungovercoders/slopstopper/commit/7b0564ddc9289474667f856759a688a0f7a53211))
+* **emit:** brand emitted issues with slopstopper label + body marker ([787d2ef](https://github.com/hungovercoders/slopstopper/commit/787d2efcb0b20c7fef75bca3665232f1e6492f4b))
+* **emit:** brand emitted issues with slopstopper label + body marker ([12272da](https://github.com/hungovercoders/slopstopper/commit/12272dacbab5650090e31e0fc6fda709d39b431c))
+* **install:** bundle Claude Code skill trio into install.sh ([bcae4aa](https://github.com/hungovercoders/slopstopper/commit/bcae4aa988f7ed1a2ff0e0ee7c648131183113a5))
+* **install:** bundle Claude Code skill trio into install.sh ([9c5e81b](https://github.com/hungovercoders/slopstopper/commit/9c5e81bbf47c489ad943792d6897068a5272f915))
+* **workflows:** unify issue lifecycle through `slopstopper emit` ([a95ca38](https://github.com/hungovercoders/slopstopper/commit/a95ca38526885c6a6d74b946647ddccb9070d5aa))
+* **workflows:** unify issue lifecycle through slopstopper emit ([1d70ece](https://github.com/hungovercoders/slopstopper/commit/1d70eced847c829bb418109aab45b9ac5075bcdb))
+
+
+### Bug Fixes
+
+* **workflows:** dedupe failure-issue against slopstopper body marker ([648de14](https://github.com/hungovercoders/slopstopper/commit/648de14b984444ebf7734b24382500ea4175282f))
+* **workflows:** dedupe failure-issue against slopstopper body marker ([d5e985e](https://github.com/hungovercoders/slopstopper/commit/d5e985e7f0a71ba7279bbdbb2bd77afff59bf926))
+
 ## [0.6.0](https://github.com/hungovercoders/slopstopper/compare/v0.5.1...v0.6.0) (2026-06-15)
 
 
