@@ -273,36 +273,22 @@ If none of this fits the target — short-lived prototype, single-file tool, gen
 
 After the workflows are live, surface them in the target's README. One GitHub Actions badge per `ss-*.yml` workflow plus a "powered by slopstopper" advert badge — gives anyone landing on the repo an instant sense of what's being checked and that the gates are real.
 
-Generate the block by listing `ls .github/workflows/ss-*.yml` and grouping by loop prefix (`ss-security-*`, `ss-hygiene-*`, `ss-reliability-*`, operational = `ss-workflow-failure-issue.yml` + `ss-hygiene-doc-updater*`). Use this template — substitute `<OWNER>/<REPO>` with the values from `gh repo view --json nameWithOwner -q .nameWithOwner`:
+Generate the block via the CLI:
 
-```markdown
-## Pipeline status
-
-[![slopstopper](https://img.shields.io/badge/quality-slopstopper-2c7be5?style=flat-square)](https://slopstopper.dev/)
-
-### 🔒 Security
-[![SAST](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-security-sast-check.yml/badge.svg?branch=main)](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-security-sast-check.yml)
-[![Secrets](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-security-secrets-check.yml/badge.svg?branch=main)](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-security-secrets-check.yml)
-[![Dependency CVEs](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-security-vulnerability-all-check.yml/badge.svg?branch=main)](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-security-vulnerability-all-check.yml)
-
-### 🧹 Hygiene
-[![Complexity](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-hygiene-complexity-check.yml/badge.svg?branch=main)](https://github.com/<OWNER>/<REPO>/actions/workflows/ss-hygiene-complexity-check.yml)
-... (one badge per installed ss-hygiene-* workflow)
-
-### ✅ Reliability
-... (one badge per installed ss-reliability-* workflow)
-
-### 🤖 Operational
-... (one badge per installed operational workflow)
+```bash
+slopstopper badges                     # preview to stdout
+slopstopper badges > badges.md         # write to a file for review
+slopstopper badges --no-advert         # skip the powered-by badge
 ```
 
-**Three things to get right:**
+The command:
 
-1. **Only badge what's actually installed.** Don't paste badges for workflows the user has deleted (the `.ss/.workflows-installed` tracker is the source of truth — but `ls .github/workflows/ss-*.yml` is the simpler check).
-2. **Insert position matters.** Most READMEs have a "what this is" intro at the top; the Pipeline status block reads best immediately after that, before the install/usage section — so visitors see what's guarded before they read what it is.
-3. **The `?branch=main` parameter is important.** Without it, the badge shows the most recent run on any branch — which during PR work makes the badge flicker red even when `main` is fine.
+- Scans `.github/workflows/ss-*.yml` so it only badges workflows actually installed (deletions tracked via `.ss/.workflows-installed` are respected).
+- Detects `OWNER/REPO` from `$GITHUB_REPOSITORY` (in CI) or `git remote get-url origin` (locally). Pass `--owner X --repo Y` to override (useful for a freshly-init'd repo with no remote yet).
+- Groups badges by loop (Security / Hygiene / Reliability / Operational) with curated short labels (`SAST`, `Dependency CVEs`, `Core Web Vitals`, etc.) and always adds `?branch=main` so PR-run failures don't make the badge flicker red on `main`.
+- Includes the static shields.io "powered by slopstopper" advert at the top unless `--no-advert` is passed (no live status, just an advert — keeps it portable).
 
-The "powered by slopstopper" badge uses a static shields.io URL (`https://img.shields.io/badge/quality-slopstopper-2c7be5`). No live status, just an advert — keeps it portable and avoids relying on infra slopstopper doesn't own.
+**Then paste the block into the README**, at the right insertion point. Most READMEs have a "what this is" intro at the top; the Pipeline status block reads best immediately after that, before the install/usage section — so visitors see what's guarded before they read what it is.
 
 ## Step 7 — Drive every check to green locally, **before** pushing
 

@@ -775,7 +775,8 @@ if [ "$USE_TASK" = "true" ]; then
   echo "         curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin"
   echo "    2. npm install"
   echo "    3. task --list"
-  echo "    4. Open a PR — every check runs automatically."
+  echo "    4. slopstopper badges          # generate README status badges (paste into README.md)"
+  echo "    5. Open a PR — every check runs automatically."
 else
   echo "  Installed in --no-task mode."
   echo ""
@@ -786,7 +787,8 @@ else
   echo "  Next steps:"
   echo "    1. npm install"
   echo "    2. slopstopper checks list      # see every check shipped"
-  echo "    3. Open a PR — every check runs automatically."
+  echo "    3. slopstopper badges           # generate README status badges (paste into README.md)"
+  echo "    4. Open a PR — every check runs automatically."
 fi
 echo ""
 sep
