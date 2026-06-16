@@ -43,10 +43,25 @@ import argparse
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 from slopstopper import discovery, output, templates
 
 SPEC_NAME = "broken-links"
+REPORT_DIR = Path(".ss/reports/reliability")
+REPORT_MD = REPORT_DIR / "broken-links-report.md"
+
+# Consumed by `slopstopper emit reliability:broken-links --target {pr-comment,issue}`.
+# New issue surface — previously this check never opened main-branch issues
+# (the workflow built a PR comment manually but never escalated to an issue).
+META = {
+    "report_path": str(REPORT_MD),
+    "comment_discriminator": "## 🔗 Broken Links Report",
+    "issue_title": "🔗 Broken Links on Main Branch",
+    "issue_labels": ["broken-links", "reliability"],
+    "issue_followup": "🔔 Broken links detected again in commit",
+    "issue_close_comment": "✅ Broken-link check is now passing on `main`. Closing automatically.",
+}
 
 
 def _parse_args(args: list[str] | None) -> argparse.Namespace:
@@ -121,6 +136,37 @@ def _build_cmd(ci_mode: bool) -> list[str]:
     ]
 
 
+def _gha_run_url() -> str | None:
+    server = os.environ.get("GITHUB_SERVER_URL")
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    run_id = os.environ.get("GITHUB_RUN_ID")
+    if not (server and repo and run_id):
+        return None
+    return f"{server}/{repo}/actions/runs/{run_id}"
+
+
+def _write_report(exit_code: int, url: str) -> None:
+    """Write a minimal markdown summary consumable by `slopstopper emit`."""
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    status = "✅ PASSED" if exit_code == 0 else "❌ FAILED"
+    lines = [
+        "## 🔗 Broken Links Report",
+        "",
+        f"**Status:** {status}",
+        f"**Target:** `{url}`",
+    ]
+    if exit_code != 0:
+        lines += [
+            "",
+            "Broken links detected. The [Playwright HTML report](playwright-report/index.html) "
+            "(uploaded as an artifact in CI) lists each failing link and its source page.",
+        ]
+        run_url = _gha_run_url()
+        if run_url:
+            lines += ["", f"[View the workflow run]({run_url})"]
+    REPORT_MD.write_text("\n".join(lines) + "\n")
+
+
 def run(args: list[str] | None = None) -> int:
     if not _npx_available():
         output.error("npx is not available — install Node.js to run Playwright tests")
@@ -145,4 +191,5 @@ def run(args: list[str] | None = None) -> int:
     env = _build_env(url, parsed.ci)
     cmd = _build_cmd(parsed.ci)
     result = subprocess.run(cmd, env=env, check=False)
+    _write_report(result.returncode, url)
     return result.returncode

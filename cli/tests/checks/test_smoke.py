@@ -164,3 +164,41 @@ def test_run_propagates_playwright_failure(monkeypatch, isolated_cwd):
 
     rc = smoke.run(["--url", "https://example.com"])
     assert rc == 1
+
+
+# ── report writing ────────────────────────────────────────────────
+
+
+def test_run_writes_report_on_pass(monkeypatch, isolated_cwd):
+    monkeypatch.setattr(smoke, "_npx_available", lambda: True)
+    monkeypatch.setattr(
+        smoke.subprocess, "run",
+        lambda cmd, env, check: subprocess.CompletedProcess(cmd, 0),
+    )
+    rc = smoke.run(["--url", "https://example.com"])
+    assert rc == 0
+    assert smoke.REPORT_MD.exists()
+    body = smoke.REPORT_MD.read_text()
+    assert "PASSED" in body
+    assert "https://example.com" in body
+
+
+def test_run_writes_report_on_failure_with_playwright_link(monkeypatch, isolated_cwd):
+    monkeypatch.setattr(smoke, "_npx_available", lambda: True)
+    monkeypatch.setattr(
+        smoke.subprocess, "run",
+        lambda cmd, env, check: subprocess.CompletedProcess(cmd, 1),
+    )
+    rc = smoke.run(["--url", "https://example.com"])
+    assert rc == 1
+    body = smoke.REPORT_MD.read_text()
+    assert "FAILED" in body
+    assert "playwright-report" in body
+
+
+def test_meta_matches_legacy_workflow_strings():
+    """Title + label must match the legacy `gh issue create` strings so
+    existing open issues continue to dedup after the workflow migrates."""
+    assert smoke.META["issue_title"] == "❌ Smoke Tests Failing"
+    assert "smoke-test-failure" in smoke.META["issue_labels"]
+    assert "reliability" in smoke.META["issue_labels"]

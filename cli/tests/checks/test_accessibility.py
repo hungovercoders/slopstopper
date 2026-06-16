@@ -185,3 +185,42 @@ def test_run_propagates_playwright_failure(monkeypatch, isolated_cwd):
 
     rc = accessibility.run(["--url", "https://example.com"])
     assert rc == 1
+
+
+# ── report writing ────────────────────────────────────────────────
+
+
+def test_run_writes_report_on_pass(monkeypatch, isolated_cwd):
+    monkeypatch.setattr(accessibility, "_npx_available", lambda: True)
+    monkeypatch.setattr(accessibility, "_discover_pages", lambda: None)
+    monkeypatch.setattr(
+        accessibility.subprocess, "run",
+        lambda cmd, env, check: subprocess.CompletedProcess(cmd, 0),
+    )
+    rc = accessibility.run(["--url", "https://example.com"])
+    assert rc == 0
+    body = accessibility.REPORT_MD.read_text()
+    assert "PASSED" in body
+    assert "https://example.com" in body
+
+
+def test_run_writes_report_on_failure(monkeypatch, isolated_cwd):
+    monkeypatch.setattr(accessibility, "_npx_available", lambda: True)
+    monkeypatch.setattr(accessibility, "_discover_pages", lambda: None)
+    monkeypatch.setattr(
+        accessibility.subprocess, "run",
+        lambda cmd, env, check: subprocess.CompletedProcess(cmd, 1),
+    )
+    rc = accessibility.run(["--url", "https://example.com"])
+    assert rc == 1
+    body = accessibility.REPORT_MD.read_text()
+    assert "FAILED" in body
+    assert "playwright-report" in body
+
+
+def test_meta_matches_legacy_workflow_strings():
+    """Title + label must match the legacy `gh issue create` strings so
+    existing open issues continue to dedup after the workflow migrates."""
+    assert accessibility.META["issue_title"] == "♿ Accessibility Violations Detected on Main Branch"
+    assert "accessibility" in accessibility.META["issue_labels"]
+    assert "reliability" in accessibility.META["issue_labels"]

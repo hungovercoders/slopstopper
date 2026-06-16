@@ -508,3 +508,39 @@ def test_emit_threads_check_name_to_emit_issue(monkeypatch):
     rc = emit.emit("issue", SAMPLE_META, check_name="hygiene:docs-size")
     assert rc == 0
     assert called["check_name"] == "hygiene:docs-size"
+
+
+# ── META completeness ────────────────────────────────────────────
+
+
+def test_every_check_has_meta():
+    """Every check in REGISTRY must define a META dict, or be explicitly exempt.
+
+    Prevents silent regressions where a new check lands without emit support
+    and is only discovered when an adopter runs `slopstopper emit <check>`.
+    """
+    import importlib
+
+    from slopstopper.checks import REGISTRY
+
+    # Checks with no emit support by design. Empty as of PR 3 (every shipped
+    # check has at least PR-comment-only META). Add a check name here only
+    # if there's a documented architectural reason it cannot emit.
+    EMIT_EXEMPT: set[str] = set()
+
+    missing: list[str] = []
+    for check_name in REGISTRY:
+        if check_name in EMIT_EXEMPT:
+            continue
+        parts = check_name.split(":")[1:]
+        module_name = "slopstopper.checks." + "_".join(parts).replace("-", "_")
+        module = importlib.import_module(module_name)
+        if getattr(module, "META", None) is None:
+            missing.append(check_name)
+
+    assert missing == [], (
+        f"Checks without META: {missing}. Add a META dict to each check "
+        "module (see the slopstopper.emit module docstring for the schema), "
+        "or add the check name to EMIT_EXEMPT in this test with a documented "
+        "reason."
+    )

@@ -202,7 +202,7 @@ Update this skill when:
 
 - A new workflow is added under `slopstopper/.github/workflows/ss-*.yml` → add a row to Step 2's workflow→CLI table and a row to Step 5's gotcha table (with a forward-looking diagnostic step and fix location, not citing the install that surfaced it).
 - A workflow is renamed or removed → update both tables.
-- A check is added or renamed in `cli/slopstopper/checks/__init__.py`'s `REGISTRY` → update Step 2's table (CLI column AND Taskfile-shim column, since the shim mirrors the CLI name).
+- A check is added or renamed in `cli/slopstopper/checks/__init__.py`'s `REGISTRY` → update Step 2's table (CLI column AND Taskfile-shim column, since the shim mirrors the CLI name). The new check must also define a `META` dict in its module — the `test_every_check_has_meta` pytest enforces this. PR-comment-only checks need at least `report_path` + `comment_discriminator`; checks that open main-branch issues also need `issue_title` / `issue_labels` / `issue_followup` / `issue_close_comment` (see `cli/slopstopper/emit.py` docstring for the schema).
 - A `task ss:*` shim is renamed in `slopstopper/Taskfile.ss.yml` → update Step 2's Taskfile-shim column.
 - A new `slopstopper` subcommand ships (e.g. `init`, `inspect`) → mention in the intro and the relevant Step.
 - A new suppression mechanism becomes available for an existing check (e.g. a new `.zap/rules.tsv`-shaped file for a different tool) → add a row to Step 4's suppression table.
