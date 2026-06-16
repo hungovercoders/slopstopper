@@ -179,6 +179,7 @@ def _add_emit(sub) -> None:
             "Examples:\n"
             "  slopstopper emit hygiene:docs-size --target pr-comment\n"
             "  slopstopper emit security:dast --target issue\n"
+            "  slopstopper emit security:dast --target issue --on-pass=close\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -191,6 +192,15 @@ def _add_emit(sub) -> None:
         required=True,
         choices=["pr-comment", "issue"],
         help="Where to send the report: pr-comment | issue",
+    )
+    p.add_argument(
+        "--on-pass",
+        choices=["close"],
+        default=None,
+        help=(
+            "Post-pass behaviour (only with --target issue): "
+            "'close' comments + closes any open issue matching the check's labels"
+        ),
     )
 
 
@@ -385,7 +395,7 @@ def _add_doctor(sub) -> None:
 # gains subcommands.
 _DISPATCHERS = {
     "run":       lambda a: _dispatch_run(a.check, a.check_args),
-    "emit":      lambda a: _dispatch_emit(a.check, a.target),
+    "emit":      lambda a: _dispatch_emit(a.check, a.target, on_pass=a.on_pass),
     "discover":  lambda a: _dispatch_discover(a.check, a.event),
     "config":    lambda a: _dispatch_config_get(a.key, a.default),
     "templates": lambda a: _dispatch_templates(a.templates_action, getattr(a, "name", None)),
@@ -522,10 +532,16 @@ def _dispatch_templates(action: str, name: str | None) -> int:
     return 2
 
 
-def _dispatch_emit(check_name: str, target: str) -> int:
+def _dispatch_emit(check_name: str, target: str, *, on_pass: str | None = None) -> int:
     """Look up the check's META dict (from its module) and emit."""
     if check_name not in REGISTRY:
         print(f"❌ unknown check: {check_name}", file=sys.stderr)
+        return 2
+    if on_pass is not None and target != "issue":
+        print(
+            f"❌ --on-pass is only valid with --target issue (got --target {target})",
+            file=sys.stderr,
+        )
         return 2
     # Drop the category, join remaining segments with underscores so multi-
     # segment names like `security:vulnerability:all` resolve to the
@@ -544,7 +560,7 @@ def _dispatch_emit(check_name: str, target: str) -> int:
             file=sys.stderr,
         )
         return 2
-    return emit_mod.emit(target, meta)
+    return emit_mod.emit(target, meta, on_pass=on_pass)
 
 
 # ── checks list ──────────────────────────────────────────────────
