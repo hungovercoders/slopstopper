@@ -482,3 +482,34 @@ def test_quiet_default_is_off(isolated_cwd, capsys, monkeypatch):
     monkeypatch.setitem(cli.REGISTRY, "hygiene:test-fake-default", fake_run)
     cli.main(["run", "hygiene:test-fake-default"])
     assert seen["quiet"] is False
+
+
+# ── badges subcommand ────────────────────────────────────────────
+
+
+def test_badges_threads_flags_through(monkeypatch, capsys):
+    """Smoke test: badges routes args.owner / args.repo / args.no_advert to
+    badges.generate and prints the result."""
+    called: dict = {}
+
+    def fake_generate(owner=None, repo=None, no_advert=False):
+        called["owner"] = owner
+        called["repo"] = repo
+        called["no_advert"] = no_advert
+        return "## Pipeline status\n\n(stub)\n"
+
+    monkeypatch.setattr(cli.badges_mod, "generate", fake_generate)
+    rc = cli.main(["badges", "--owner", "acme", "--repo", "widget", "--no-advert"])
+    assert rc == 0
+    assert called == {"owner": "acme", "repo": "widget", "no_advert": True}
+    assert "## Pipeline status" in capsys.readouterr().out
+
+
+def test_badges_surfaces_generate_value_error(monkeypatch, capsys):
+    def fake_generate(owner=None, repo=None, no_advert=False):
+        raise ValueError("Could not detect owner/repo")
+
+    monkeypatch.setattr(cli.badges_mod, "generate", fake_generate)
+    rc = cli.main(["badges"])
+    assert rc == 2
+    assert "Could not detect owner/repo" in capsys.readouterr().err

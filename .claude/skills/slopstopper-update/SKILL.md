@@ -127,6 +127,8 @@ If anything looks unfamiliar, check `Taskfile.ss.yml` for the `desc:` and `summa
 
 Flag any new checks the user might want to wire into local pre-commit hooks or the standard dev loop.
 
+If new workflows did land in Step 3 and the adopter wants their README badges updated to match, re-run `slopstopper badges` and replace the existing Pipeline status block in `README.md`.
+
 ## Step 7 — Re-run the static aggregates locally before pushing
 
 Same loop as `slopstopper-install` Step 7, condensed because the build / Playwright deps are already in place:

@@ -48,6 +48,7 @@ import sys
 
 from slopstopper import (
     __version__,
+    badges as badges_mod,
     config,
     discovery,
     emit as emit_mod,
@@ -128,6 +129,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_discover(sub)
     _add_config(sub)
     _add_templates(sub)
+    _add_badges(sub)
     _add_serve(sub)
     _add_checks(sub)
     _add_doctor(sub)
@@ -310,6 +312,42 @@ def _add_templates(sub) -> None:
     ej.add_argument("name", help="Template name (see `slopstopper templates list`)")
 
 
+def _add_badges(sub) -> None:
+    p = sub.add_parser(
+        "badges",
+        help="Print a markdown status-badges block for the installed workflows",
+        description=(
+            "Generate a markdown badges block for the ss-*.yml workflows in\n"
+            ".github/workflows/, grouped by loop (Security / Hygiene /\n"
+            "Reliability / Operational). Paste the output into your README.\n"
+            "OWNER/REPO is detected from $GITHUB_REPOSITORY or `git remote`.\n"
+        ),
+        epilog=(
+            "Examples:\n"
+            "  slopstopper badges                       # preview to stdout\n"
+            "  slopstopper badges > badges.md           # write to a file\n"
+            "  slopstopper badges --no-advert           # skip the slopstopper badge\n"
+            "  slopstopper badges --owner foo --repo bar\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument(
+        "--owner",
+        default=None,
+        help="GitHub owner (auto-detected from git remote if omitted)",
+    )
+    p.add_argument(
+        "--repo",
+        default=None,
+        help="GitHub repo (auto-detected from git remote if omitted)",
+    )
+    p.add_argument(
+        "--no-advert",
+        action="store_true",
+        help="Skip the 'powered by slopstopper' shields.io badge",
+    )
+
+
 def _add_serve(sub) -> None:
     sub.add_parser(
         "serve",
@@ -399,6 +437,7 @@ _DISPATCHERS = {
     "discover":  lambda a: _dispatch_discover(a.check, a.event),
     "config":    lambda a: _dispatch_config_get(a.key, a.default),
     "templates": lambda a: _dispatch_templates(a.templates_action, getattr(a, "name", None)),
+    "badges":    lambda a: _dispatch_badges(a.owner, a.repo, a.no_advert),
     "serve":     lambda a: _dispatch_serve(),
     "checks":    lambda a: _dispatch_checks_list(a.category, a.json),
     "doctor":    lambda a: _dispatch_doctor(),
@@ -476,6 +515,17 @@ def _dispatch_discover(check_name: str, event: str) -> int:
     if not paths:
         return 2
     print(",".join(paths))
+    return 0
+
+
+def _dispatch_badges(owner: str | None, repo: str | None, no_advert: bool) -> int:
+    """Print the README badges block for the installed ss-*.yml workflows."""
+    try:
+        block = badges_mod.generate(owner=owner, repo=repo, no_advert=no_advert)
+    except ValueError as e:
+        print(f"❌ {e}", file=sys.stderr)
+        return 2
+    print(block, end="")
     return 0
 
 
