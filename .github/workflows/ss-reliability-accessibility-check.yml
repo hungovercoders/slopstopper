@@ -187,92 +187,16 @@ jobs:
         if: github.event_name == 'pull_request' && always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JOB_STATUS: ${{ job.status }}
-          INPUT_IMPACT: ${{ github.event.inputs.impact || 'serious' }}
-          INPUT_THRESHOLD: ${{ github.event.inputs.threshold || '0' }}
-        run: |
-          status_marker=$([ "$JOB_STATUS" = "success" ] && echo "✅ PASSED" || echo "❌ FAILED")
-          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          failure_note=""
-          if [ "$JOB_STATUS" != "success" ]; then
-            failure_note=$'\n> ⚠️ Violations were detected. See workflow logs for details.\n'
-          fi
-          body=$(cat <<EOF
-          ## ♿ Accessibility Audit ${status_marker}
+        run: slopstopper emit reliability:accessibility --target pr-comment
 
-          **Standard:** WCAG 2.1 AA  **Min impact:** \`${INPUT_IMPACT}\`  **Max violations allowed:** ${INPUT_THRESHOLD}
-          ${failure_note}
-          ### 🔍 How to Check Locally
-
-          \`\`\`bash
-          task ss:reliability:accessibility -- https://your-site.example.com
-          \`\`\`
-
-          [Full report in workflow artifacts](${run_url})
-          EOF
-          )
-          marker='♿ Accessibility Audit'
-          pr_number=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
-          existing=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments" \
-            --jq ".[] | select(.user.type==\"Bot\" and (.body | contains(\"$marker\"))) | .id" | head -n1)
-          if [ -n "$existing" ]; then
-            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${existing}" -f body="$body"
-          else
-            gh pr comment "$pr_number" --body "$body"
-          fi
-
-      - name: Open / update issue on accessibility failure (main)
+      - name: Emit issue on accessibility failure (main)
         if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          title='♿ Accessibility Violations Detected on Main Branch'
-          label='accessibility'
-          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          sha_short="${GITHUB_SHA:0:7}"
-          body=$(cat <<EOF
-          ## Accessibility Audit Failure
+        run: slopstopper emit reliability:accessibility --target issue
 
-          **Commit:** [\`${sha_short}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})
-          **Run:** [#${GITHUB_RUN_ID}](${run_url})
-
-          Accessibility violations above the configured impact threshold were found on the main branch.
-
-          ## How to Reproduce Locally
-
-          \`\`\`bash
-          # Start the local server
-          npm run build && slopstopper serve &
-
-          # Run accessibility audit
-          task ss:reliability:accessibility -- http://localhost:8080
-          \`\`\`
-
-          [View the failed workflow run](${run_url})
-
-          ---
-          *This issue was automatically created by the Accessibility Check workflow.*
-          EOF
-          )
-          existing=$(gh issue list --state open --label "$label" --search "in:title $title" --json number,title --jq ".[] | select(.title==\"$title\") | .number" | head -n1)
-          if [ -n "$existing" ]; then
-            gh issue comment "$existing" --body "## New Failure
-
-          **Time:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          **Run:** [#${GITHUB_RUN_ID}](${run_url})"
-          else
-            gh issue create --title "$title" --body "$body" --label "$label" --label reliability
-          fi
-
-      - name: Close accessibility issue on success (main)
+      - name: Close accessibility issue on recovery (main)
         if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          title='♿ Accessibility Violations Detected on Main Branch'
-          label='accessibility'
-          numbers=$(gh issue list --state open --label "$label" --search "in:title $title" --json number,title --jq ".[] | select(.title==\"$title\") | .number")
-          for n in $numbers; do
-            gh issue comment "$n" --body "✅ Accessibility audit is now passing. Closing this issue automatically."
-            gh issue close "$n"
-          done
+        run: slopstopper emit reliability:accessibility --target issue --on-pass=close

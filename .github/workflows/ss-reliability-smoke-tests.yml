@@ -158,55 +158,14 @@ jobs:
 
           [View detailed results](${run_url})"
 
-      - name: Open / update issue on smoke failure
-        if: failure()
+      - name: Emit issue on smoke failure
+        if: failure() && github.event_name != 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          URL: ${{ steps.url.outputs.url }}
-        run: |
-          title='❌ Smoke Tests Failing'
-          label='smoke-test-failure'
-          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          body=$(cat <<EOF
-          ## Smoke Test Failure Detected
+        run: slopstopper emit reliability:smoke --target issue
 
-          **URL Tested:** ${URL}
-          **Run:** [#${GITHUB_RUN_ID}](${run_url})
-
-          The smoke tests are failing on the deployed site.
-
-          ## How to Investigate
-
-          \`\`\`bash
-          task ss:reliability:smoke -- "${URL}"
-          \`\`\`
-
-          [View the failed workflow run](${run_url})
-
-          ---
-          *This issue was automatically created by the Reliability Smoke Tests workflow.*
-          EOF
-          )
-          existing=$(gh issue list --state open --label "$label" --search "in:title $title" --json number,title --jq ".[] | select(.title==\"$title\") | .number" | head -n1)
-          if [ -n "$existing" ]; then
-            gh issue comment "$existing" --body "## New Failure
-
-          **Time:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          **URL Tested:** ${URL}
-          **Run:** [#${GITHUB_RUN_ID}](${run_url})"
-          else
-            gh issue create --title "$title" --body "$body" --label "$label" --label reliability
-          fi
-
-      - name: Close smoke failure issue on success
-        if: success()
+      - name: Close smoke failure issue on recovery
+        if: success() && github.event_name != 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          title='❌ Smoke Tests Failing'
-          label='smoke-test-failure'
-          numbers=$(gh issue list --state open --label "$label" --search "in:title $title" --json number,title --jq ".[] | select(.title==\"$title\") | .number")
-          for n in $numbers; do
-            gh issue comment "$n" --body "✅ Smoke tests are now passing. Closing this issue automatically."
-            gh issue close "$n"
-          done
+        run: slopstopper emit reliability:smoke --target issue --on-pass=close

@@ -34,6 +34,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 jobs:
   broken-links:
@@ -174,34 +175,16 @@ jobs:
         if: github.event_name == 'pull_request' && always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JOB_STATUS: ${{ job.status }}
-          CHECK_URL: ${{ steps.url.outputs.url }}
-        run: |
-          status_marker=$([ "$JOB_STATUS" = "success" ] && echo "✅ PASSED" || echo "❌ FAILED")
-          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          body=$(cat <<EOF
-          ## 🔗 Broken Links Check ${status_marker}
+        run: slopstopper emit reliability:broken-links --target pr-comment
 
-          **Checked URL:** ${CHECK_URL}
+      - name: Emit issue on broken-links failure (main)
+        if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: slopstopper emit reliability:broken-links --target issue
 
-          ### 🔍 How to Check Locally
-
-          \`\`\`bash
-          task ss:reliability:broken-links -- https://your-site.example.com
-          \`\`\`
-
-          [Full report in workflow artifacts](${run_url})
-          EOF
-          )
-          # Match the existing bot comment by the H2 marker and update
-          # in place, else create. Keeps one rolling comment per PR
-          # rather than appending on every push.
-          marker='🔗 Broken Links Check'
-          pr_number=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
-          existing=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments" \
-            --jq ".[] | select(.user.type==\"Bot\" and (.body | contains(\"$marker\"))) | .id" | head -n1)
-          if [ -n "$existing" ]; then
-            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${existing}" -f body="$body"
-          else
-            gh pr comment "$pr_number" --body "$body"
-          fi
+      - name: Close broken-links issue on recovery (main)
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: slopstopper emit reliability:broken-links --target issue --on-pass=close

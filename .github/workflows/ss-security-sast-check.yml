@@ -100,6 +100,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit security:sast --target issue
 
+      - name: Close issue on main when clean
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.gate.outputs.errors_found != '1'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: slopstopper emit security:sast --target issue --on-pass=close
+
       - name: Fail job if error-severity findings
         if: steps.gate.outputs.errors_found == '1'
         run: |

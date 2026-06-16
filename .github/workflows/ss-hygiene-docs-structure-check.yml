@@ -74,6 +74,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit hygiene:docs-structure --target issue
 
+      - name: Close issue on main when clean
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check.outcome == 'success'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: slopstopper emit hygiene:docs-structure --target issue --on-pass=close
+
       - name: Upload structure report
         if: always()
         uses: actions/upload-artifact@v4

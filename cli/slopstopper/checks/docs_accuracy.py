@@ -33,14 +33,16 @@ REPORT_MD = REPORT_DIR / "docs-accuracy-report.md"
 # Discriminator matches the H1 of the report ("# 🔎 Documentation Accuracy Report")
 # so the same bot comment is reused after the workflow flip. Issue title,
 # labels, and follow-up string are byte-identical to the legacy block. The
-# pre-flip workflow's "close issue when clean" behaviour stays in YAML (see
-# the workflow's final step) — emit.py only handles create/update, not close.
+# close behaviour is also driven by emit (`--on-pass=close`) since PR 1 of
+# the issue-emission unification — close_comment matches the legacy YAML
+# message so adopters see the same friendly recovery line.
 META = {
     "report_path": str(REPORT_MD),
     "comment_discriminator": "🔎 Documentation Accuracy",
     "issue_title": "🔎 Documentation Accuracy Issues",
     "issue_labels": ["documentation-accuracy", "documentation"],
     "issue_followup": "🔔 Documentation accuracy issues detected again",
+    "issue_close_comment": "✅ Documentation accuracy checks now pass. Closing automatically.",
 }
 
 DOCS_DIR = Path("docs")

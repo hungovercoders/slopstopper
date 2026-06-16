@@ -103,6 +103,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit security:dast --target issue
 
+      - name: Close issue on main when clean
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.dast.outcome == 'success'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: slopstopper emit security:dast --target issue --on-pass=close
+
       - name: Fail job if gate found blocking alerts
         if: steps.dast.outcome == 'failure'
         run: |

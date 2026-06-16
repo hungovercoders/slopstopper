@@ -110,15 +110,7 @@ jobs:
           && steps.check.outcome == 'success'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Auto-close any open tracking issue when docs are clean.
-          # emit.py models only create/update, so the close path lives
-          # here as a small inline gh loop.
-          numbers=$(gh issue list --state open --label documentation-accuracy --json number --jq '.[].number')
-          for n in $numbers; do
-            gh issue comment "$n" --body "✅ Documentation accuracy checks now pass. Closing automatically."
-            gh issue close "$n"
-          done
+        run: slopstopper emit hygiene:docs-accuracy --target issue --on-pass=close
 
       - name: Upload accuracy report
         if: always()

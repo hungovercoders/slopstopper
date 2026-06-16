@@ -94,6 +94,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit hygiene:complexity --target issue
 
+      - name: Close issue on main when clean
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.gate.outputs.high_complexity_found != '1'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: slopstopper emit hygiene:complexity --target issue --on-pass=close
+
       - name: Fail job if high complexity found
         if: steps.gate.outputs.high_complexity_found == '1'
         run: |
