@@ -70,6 +70,34 @@ The installer is idempotent. Re-running it pulls newer checks but respects delet
 
 **`install.sh` also installs the SlopStopper Claude Code skill trio** at `~/.claude/skills/slopstopper-{install,update,triage}/` when `~/.claude` exists on the machine (user-profile level, not repo-level). Skipped silently if Claude Code isn't set up. Pass `--no-skills` or set `SLOPSTOPPER_NO_SKILLS=1` to disable. Adopters who set up Claude Code later can run `install-skill.sh` separately to backfill.
 
+### What `install.sh` writes (and leaves alone)
+
+Three categories of write, in order of "how much trust to extend on re-run":
+
+**Always overwritten — slopstopper-owned, safe to clobber:**
+
+- `Taskfile.ss.yml`, `.ss/server.js`, `.ss/.workflows-installed`
+- Workflows under `.github/workflows/ss-*.yml` that are in `GENERIC_WORKFLOWS` and not listed in `.slopstopper.yml` `workflows.disabled`
+- `slopstopper-cli` itself (via `pipx upgrade`, user-profile level)
+- `~/.claude/skills/slopstopper-*/SKILL.md` (only if `~/.claude/` exists; opt out with `--no-skills`)
+
+**Seeded only if missing — adopter-owned, NEVER overwritten on re-run:**
+
+- `.slopstopper.yml` (config; once it exists `install.sh` never touches it)
+- `.github/labeler.yml`, `.zap/rules.tsv`, `.markdownlint.json`
+- Root `Taskfile.yml` — only if absent; otherwise install.sh prints the `includes:` block to paste in
+- `package.json` — only if absent (otherwise see below)
+
+**Conservatively additive on shared files — adopter content preserved:**
+
+- `package.json` devDeps merge: adds missing keys; existing keys are kept on version conflict (warning printed, not error).
+- `.gitignore`: appends a `# slopstopper begin` / `# slopstopper end` marker-bracketed block exactly once. Re-runs detect the marker and skip; adopter's existing lines are never edited.
+- `public/_headers` (only if `public/` exists): appends a commented-out security-headers baseline inside `# slopstopper security headers begin/end` markers. Same idempotent skip on re-run.
+
+**Everything else is left alone** — source code, build outputs, custom workflows under `.github/workflows/` outside the `ss-*` namespace, generic configs (`.eslintrc`, `tsconfig.json`, etc.), and anything under `app/`, `src/`, `worker/`, etc.
+
+**One risk worth flagging:** inline customisations to `ss-*.yml` workflow body content (bespoke `gh issue create` blocks, extra steps, custom env vars beyond what `.slopstopper.yml` covers) get wiped on the next `install.sh` re-run because workflow files are wholesale-replaced. Push bespoke wording into the check's META in `slopstopper-cli` upstream rather than hand-editing the YAML locally. See `slopstopper-update` Step 4 for how to diff and re-apply on refresh.
+
 By default the installer ships **Task-driven workflows** — every check runs via `task ss:<category>:<check>` so the suite shares one invocation surface with `task build`, `task deploy`, etc. The workflows install Task themselves via `arduino/setup-task@v2`, so adopters don't need it in their CI runners by hand. If the adopter explicitly doesn't want Task in their CI, install with `--no-task`:
 
 ```bash
