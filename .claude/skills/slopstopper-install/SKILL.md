@@ -68,6 +68,8 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
 
 The installer is idempotent. Re-running it pulls newer checks but respects deletions (tracked via `.ss/.workflows-installed`), and refreshes `slopstopper-cli` via `pipx upgrade` (or re-runs `pip install --user --upgrade` when pipx isn't available). All slopstopper files live under the `ss` namespace — your repo's existing files are not touched. If a pre-CLI install left a `.ss/scripts/` directory behind, the installer scrubs it on first run.
 
+**`install.sh` also installs the SlopStopper Claude Code skill trio** at `~/.claude/skills/slopstopper-{install,update,triage}/` when `~/.claude` exists on the machine (user-profile level, not repo-level). Skipped silently if Claude Code isn't set up. Pass `--no-skills` or set `SLOPSTOPPER_NO_SKILLS=1` to disable. Adopters who set up Claude Code later can run `install-skill.sh` separately to backfill.
+
 By default the installer ships **Task-driven workflows** — every check runs via `task ss:<category>:<check>` so the suite shares one invocation surface with `task build`, `task deploy`, etc. The workflows install Task themselves via `arduino/setup-task@v2`, so adopters don't need it in their CI runners by hand. If the adopter explicitly doesn't want Task in their CI, install with `--no-task`:
 
 ```bash
