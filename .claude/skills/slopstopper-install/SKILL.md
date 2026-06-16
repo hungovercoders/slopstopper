@@ -51,6 +51,15 @@ Report what you found to the user before running the installer. The Node-version
 
 ## Step 2 — Run the installer
 
+Before running anything, ensure you're on a clean branch:
+
+```bash
+git status                              # must show clean
+git checkout -b chore/slopstopper-install
+```
+
+`install.sh` adds ~21 workflow files, a `Taskfile.ss.yml`, and `.ss/server.js` to the repo in one shot. On `main` that's an awkward 25+-file commit; on a dedicated branch the diff is reviewable and the rollback is `git checkout main && git branch -D chore/slopstopper-install`. If `git status` is dirty, stop and reconcile first — the installer doesn't ask before writing into `ss-*.yml` or `Taskfile.ss.yml`.
+
 From the target repo root, run the canonical one-liner:
 
 ```bash
