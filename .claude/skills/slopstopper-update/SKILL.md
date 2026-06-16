@@ -11,6 +11,19 @@ You're being asked to refresh an existing slopstopper installation in a repo tha
 
 If the target doesn't have slopstopper installed yet, this is the wrong skill — use `slopstopper-install` instead. If you're triaging a check that's failing right now, use `slopstopper-triage`.
 
+## Step 0 — Branch first
+
+Before re-running anything, make sure you're on a clean refresh branch:
+
+```bash
+git status                              # must show clean
+git checkout -b chore/slopstopper-refresh
+```
+
+`install.sh` is idempotent but **not transactional** — every workflow YAML in `GENERIC_WORKFLOWS`, `Taskfile.ss.yml`, and `.ss/server.js` is rewritten wholesale on every run. On a dedicated branch the safest rollback is `git checkout main && git branch -D chore/slopstopper-refresh`. On `main` the diff is awkward to unpick.
+
+If `git status` shows uncommitted changes: stop. Commit or stash them first — the installer's wipe-and-replace behaviour will clobber anything sitting in the tracked files it rewrites.
+
 ## Step 1 — Refresh this skill first
 
 The update playbook itself evolves. Before doing anything else, re-run the skill installer so you're working from the latest version:
@@ -146,7 +159,35 @@ Don't push until the local loop is green. The point of running the aggregates fi
 
 ## Step 8 — Push and watch the confirmation pass
 
-Push to a PR branch. CI should mirror local. If a CI-only check goes red (Dependency Review, auto-label) or a previously-green check fails on CI but was green locally (Node version pin in the runner, missing repo variable, etc.), hand off to `slopstopper-triage`.
+Push the refresh branch from Step 0. CI should mirror local. If a CI-only check goes red (Dependency Review, auto-label) or a previously-green check fails on CI but was green locally (Node version pin in the runner, missing repo variable, etc.), hand off to `slopstopper-triage`.
+
+## Step 9 — One-shot cleanup: pre-marker open issues
+
+If this is the first refresh after the issue-emission unification (PRs #261–#266 in the upstream slopstopper repo), some open GitHub issues will have been opened by the legacy `gh issue create` blocks **before** the `slopstopper` brand label + body marker landed. The new label-based dedup won't recognise them — on the next re-failure for the same check a fresh post-marker issue opens alongside the old one.
+
+Discovery (run after the refresh PR has merged to `main`):
+
+```bash
+gh issue list --state open --json number,title,labels \
+  --jq '.[] | select(any(.labels[]; .name == "slopstopper") | not)
+              | select(any(.labels[]; .name | IN(
+                  "sast","secrets","accessibility","cwv-failure",
+                  "smoke-test-failure","documentation-accuracy",
+                  "documentation-structure","documentation-size",
+                  "broken-links","code-complexity","dast","dependencies"
+                )))
+              | "#\(.number) \(.title)"'
+```
+
+For each issue listed, pick one:
+
+- **Underlying problem already fixed:** `gh issue close <n> --comment "Closing for slopstopper marker migration."`
+- **Underlying problem still real:** `gh issue edit <n> --add-label slopstopper` — the next failure on `main` regenerates the body via `_update_issue_body` and the marker lands.
+- **Accept the duplicate cost:** do nothing. The pre-marker issue stays orphaned next to whatever post-marker issue the next failure raises.
+
+Per-issue diagnostics: see `slopstopper-triage`'s "issue lacks `slopstopper` label / marker" gotcha row.
+
+**This is a one-shot.** On subsequent refreshes (after every pre-marker issue has been resolved), skip this step.
 
 ## When to hand off
 
