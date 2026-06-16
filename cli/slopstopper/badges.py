@@ -119,16 +119,8 @@ def _badge_line(owner: str, repo: str, display: str, workflow: str) -> str:
     )
 
 
-def generate(
-    owner: str | None = None,
-    repo: str | None = None,
-    no_advert: bool = False,
-) -> str:
-    """Generate the markdown badges block for the installed workflows.
-
-    Raises ValueError when owner/repo can't be detected or no workflows
-    are installed — both are user-facing errors the CLI surfaces to stderr.
-    """
+def _resolve_owner_repo(owner: str | None, repo: str | None) -> tuple[str, str]:
+    """Coalesce explicit args with auto-detection; raise if neither yields a pair."""
     if not owner or not repo:
         detected_owner, detected_repo = _detect_owner_repo()
         owner = owner or detected_owner
@@ -139,19 +131,25 @@ def generate(
             "from a repository with a github.com remote, or set "
             "$GITHUB_REPOSITORY."
         )
+    return owner, repo
 
-    workflows = _list_installed_workflows()
-    if not workflows:
-        raise ValueError(
-            "No slopstopper workflows installed in .github/workflows/. "
-            "Run install.sh first."
-        )
 
+def _group_installed(workflows: list[str]) -> dict[str, list[tuple[str, str]]]:
+    """Bucket workflows into the loop groups, preserving filename order."""
     grouped: dict[str, list[tuple[str, str]]] = {g: [] for g in GROUP_ORDER}
     for wf in workflows:
         group, display = _group_workflow(wf)
         grouped.setdefault(group, []).append((display, wf))
+    return grouped
 
+
+def _render_block(
+    owner: str,
+    repo: str,
+    grouped: dict[str, list[tuple[str, str]]],
+    no_advert: bool,
+) -> str:
+    """Render the grouped workflows into the markdown badges block."""
     lines: list[str] = ["## Pipeline status", ""]
     if not no_advert:
         lines += [ADVERT_BADGE, ""]
@@ -164,3 +162,24 @@ def generate(
             lines.append(_badge_line(owner, repo, display, wf))
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def generate(
+    owner: str | None = None,
+    repo: str | None = None,
+    no_advert: bool = False,
+) -> str:
+    """Generate the markdown badges block for the installed workflows.
+
+    Raises ValueError when owner/repo can't be detected or no workflows
+    are installed — both are user-facing errors the CLI surfaces to stderr.
+    """
+    owner, repo = _resolve_owner_repo(owner, repo)
+    workflows = _list_installed_workflows()
+    if not workflows:
+        raise ValueError(
+            "No slopstopper workflows installed in .github/workflows/. "
+            "Run install.sh first."
+        )
+    grouped = _group_installed(workflows)
+    return _render_block(owner, repo, grouped, no_advert)
