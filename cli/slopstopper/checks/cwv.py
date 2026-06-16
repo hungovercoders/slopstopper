@@ -66,6 +66,7 @@ META = {
     "issue_title": "❌ Core Web Vitals Below Threshold",
     "issue_labels": ["cwv-failure", "reliability"],
     "issue_followup": "🔔 Core Web Vitals failure recurred in commit",
+    "issue_close_comment": "✅ Core Web Vitals are now passing all thresholds. Closing automatically.",
 }
 
 

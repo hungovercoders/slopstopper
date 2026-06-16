@@ -181,7 +181,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit reliability:cwv --target issue
 
-      - name: Close CWV failure issue on success
+      - name: Close CWV failure issue on recovery
         if: |
           steps.cwv.outcome == 'success' && (
             (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
@@ -190,14 +190,7 @@ jobs:
           )
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          title='❌ Core Web Vitals Below Threshold'
-          label='cwv-failure'
-          numbers=$(gh issue list --state open --label "$label" --search "in:title $title" --json number,title --jq ".[] | select(.title==\"$title\") | .number")
-          for n in $numbers; do
-            gh issue comment "$n" --body "✅ Core Web Vitals are now passing all thresholds. Closing this issue automatically."
-            gh issue close "$n"
-          done
+        run: slopstopper emit reliability:cwv --target issue --on-pass=close
 
       - name: Fail the job if CWV thresholds were not met
         if: steps.cwv.outcome == 'failure'
