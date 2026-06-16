@@ -63,11 +63,20 @@ if [ -n "${SLOPSTOPPER_NO_TASK:-}" ]; then
   USE_TASK=false
 fi
 
+INSTALL_SKILLS=true
+if [ -n "${SLOPSTOPPER_NO_SKILLS:-}" ]; then
+  INSTALL_SKILLS=false
+fi
+
 POSITIONAL=()
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --no-task)
       USE_TASK=false
+      shift
+      ;;
+    --no-skills)
+      INSTALL_SKILLS=false
       shift
       ;;
     --help|-h)
@@ -77,13 +86,19 @@ install.sh — install the SlopStopper quality suite into a target repo.
 Usage:
   bash install.sh [TARGET_DIR]              # Task-driven workflows (default)
   bash install.sh --no-task [TARGET_DIR]    # CLI-driven workflows (no Task install)
+  bash install.sh --no-skills [TARGET_DIR]  # Skip installing Claude Code skills
 
 Env var equivalents:
   SLOPSTOPPER_NO_TASK=1 bash install.sh
+  SLOPSTOPPER_NO_SKILLS=1 bash install.sh
 
 Default mode installs workflows that invoke `task ss:<check>` so the suite
 shares a single invocation surface with the rest of your codebase. `--no-task`
 installs workflows that invoke `slopstopper run <check>` directly.
+
+If ~/.claude/ exists (Claude Code is set up on this machine), the installer
+also refreshes the SlopStopper skill trio at ~/.claude/skills/slopstopper-*
+by curl-piping install-skill.sh. Pass --no-skills to skip this step.
 USAGE
       exit 0
       ;;
@@ -662,6 +677,38 @@ if [ -f "$TARGET_DIR/.slopstopper.yml" ] && command -v slopstopper &>/dev/null; 
     fi
   fi
 fi
+
+# ── install Claude Code skill trio (best-effort, user-profile level) ─────────
+
+# install-skill.sh writes to ~/.claude/skills/slopstopper-*/ — i.e. the
+# user profile, not the target repo. Done as part of install.sh so adopters
+# get the trio without a separate command. Skipped silently if Claude Code
+# isn't set up on this machine (no ~/.claude directory) or if --no-skills
+# / SLOPSTOPPER_NO_SKILLS was passed.
+
+install_claude_skills() {
+  if [ "$INSTALL_SKILLS" = "false" ]; then
+    info "Skipping Claude Code skill install (--no-skills / SLOPSTOPPER_NO_SKILLS)."
+    return 0
+  fi
+  if [ ! -d "${HOME}/.claude" ]; then
+    info "No ~/.claude directory found — skipping Claude Code skill install."
+    info "If you set up Claude Code later, run:"
+    info "  curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash"
+    return 0
+  fi
+  echo ""
+  sep
+  echo "  🧠  Installing the SlopStopper Claude Code skill trio…"
+  sep
+  if ! curl -fsSL "https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh" | bash; then
+    warn "Skill install failed (non-fatal). You can re-run it later:"
+    info "  curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash"
+    return 0
+  fi
+}
+
+install_claude_skills
 
 # ── post-install guidance ─────────────────────────────────────────────────────
 

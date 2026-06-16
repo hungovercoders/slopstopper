@@ -73,7 +73,9 @@ Claude Code stops invoking the skills immediately on next prompt. No other state
 
 The skills are *for* installing/updating/triaging SlopStopper in target repos. Committing them into target repos is circular (by the time the skills are there, the install they describe is already done). User-global is the right shape — install once, every project benefits.
 
-Bundling the skills into `install.sh` was considered and rejected for the same reason: `install.sh` runs *inside* a target repo, but the skills need to be available *before* you're inside a target repo (you need them to know how to install). Two scripts, two scopes — `install.sh` for the suite-in-the-repo, `install-skill.sh` for the skills-on-the-machine.
+Two scripts, two scopes — `install.sh` for the suite-in-the-repo, `install-skill.sh` for the skills-on-the-machine. The scripts stay separate (they target different filesystems) but they're no longer disconnected: as of the bundling change, **`install.sh` calls `install-skill.sh` as a post-install convenience** when `~/.claude` exists on the machine. So an adopter re-running `install.sh` to refresh their suite also gets their skill trio refreshed in the same command. Pass `--no-skills` (or set `SLOPSTOPPER_NO_SKILLS=1`) to disable.
+
+This doesn't solve the chicken-and-egg of FIRST-time install (the human still has to know about `install.sh` from the README) — but every subsequent re-run keeps skills current without a second command. Adopters who set up Claude Code AFTER their first slopstopper install just need to re-run `install.sh` once to backfill the trio, or run `install-skill.sh` directly.
 
 ## When this runbook needs updating
 

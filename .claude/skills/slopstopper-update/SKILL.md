@@ -24,15 +24,17 @@ git checkout -b chore/slopstopper-refresh
 
 If `git status` shows uncommitted changes: stop. Commit or stash them first — the installer's wipe-and-replace behaviour will clobber anything sitting in the tracked files it rewrites.
 
-## Step 1 — Refresh this skill first
+## Step 1 — Note: skill trio auto-refreshes as part of Step 2
 
-The update playbook itself evolves. Before doing anything else, re-run the skill installer so you're working from the latest version:
+Re-running `install.sh` in Step 2 also refreshes the SlopStopper skill trio at `~/.claude/skills/slopstopper-*` (unless you pass `--no-skills`). So an old SKILL.md on disk gets replaced with the latest before the next agent session picks it up.
+
+**This invocation is already running off the in-memory SKILL.md** — the refresh helps the next session, not this one. If you suspect this skill is significantly out of date and want the latest BEFORE continuing, abort here and re-invoke after manually running:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash
 ```
 
-The script is idempotent: it compares each fetched `SKILL.md` against what's on disk and only overwrites if the content differs. Safe to run any time. It refreshes the whole trio (`slopstopper-install`, `slopstopper-update`, `slopstopper-triage`), not just this one.
+Otherwise carry on to Step 2 — the refresh happens automatically there.
 
 ## Step 2 — Re-run the installer in-place
 

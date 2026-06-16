@@ -158,11 +158,13 @@ Contributions are welcome. The full contributor guide lives in [`docs/contributi
 
 If an AI agent (Claude, Copilot, Cursor, etc.) is working on this repo, the canonical conventions live in [`AGENTS.md`](./AGENTS.md). [`CLAUDE.md`](./CLAUDE.md) imports `AGENTS.md` so Claude Code picks up the same instructions automatically.
 
-**Using Claude Code?** Install the [`slopstopper-install`](./.claude/skills/slopstopper-install/SKILL.md) / [`slopstopper-update`](./.claude/skills/slopstopper-update/SKILL.md) / [`slopstopper-triage`](./.claude/skills/slopstopper-triage/SKILL.md) skill trio once per machine — Claude Code auto-picks the right one per prompt. Runbook: [`docs/runbooks/INSTALL_SKILLS.md`](./docs/runbooks/INSTALL_SKILLS.md).
+**Using Claude Code?** The skill trio ([`install`](./.claude/skills/slopstopper-install/SKILL.md) / [`update`](./.claude/skills/slopstopper-update/SKILL.md) / [`triage`](./.claude/skills/slopstopper-triage/SKILL.md)) auto-installs with `install.sh` when `~/.claude/` exists; re-runs refresh. `--no-skills` opts out, or run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash
 ```
+
+Runbook: [`docs/runbooks/INSTALL_SKILLS.md`](./docs/runbooks/INSTALL_SKILLS.md).
 
 ---
 
