@@ -44,10 +44,25 @@ import argparse
 import os
 import shutil
 import subprocess
+from pathlib import Path
 
 from slopstopper import discovery, output, templates
 
 SPEC_NAME = "accessibility"
+REPORT_DIR = Path(".ss/reports/reliability")
+REPORT_MD = REPORT_DIR / "accessibility-report.md"
+
+# Consumed by `slopstopper emit reliability:accessibility --target {pr-comment,issue}`.
+# Issue title + label match the strings the legacy workflow used in raw
+# `gh issue create` so existing open issues continue to dedup post-migration.
+META = {
+    "report_path": str(REPORT_MD),
+    "comment_discriminator": "## ♿ Accessibility Audit Results",
+    "issue_title": "♿ Accessibility Violations Detected on Main Branch",
+    "issue_labels": ["accessibility", "reliability"],
+    "issue_followup": "🔔 Accessibility violations recurred in commit",
+    "issue_close_comment": "✅ Accessibility audit is now passing on `main`. Closing automatically.",
+}
 
 
 def _parse_args(args: list[str] | None) -> argparse.Namespace:
@@ -125,6 +140,38 @@ def _build_cmd(ci_mode: bool) -> list[str]:
     ]
 
 
+def _gha_run_url() -> str | None:
+    server = os.environ.get("GITHUB_SERVER_URL")
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    run_id = os.environ.get("GITHUB_RUN_ID")
+    if not (server and repo and run_id):
+        return None
+    return f"{server}/{repo}/actions/runs/{run_id}"
+
+
+def _write_report(exit_code: int, url: str) -> None:
+    """Write a minimal markdown summary consumable by `slopstopper emit`."""
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    status = "✅ PASSED" if exit_code == 0 else "❌ FAILED"
+    lines = [
+        "## ♿ Accessibility Audit Results",
+        "",
+        f"**Status:** {status}",
+        f"**Target:** `{url}`",
+    ]
+    if exit_code != 0:
+        lines += [
+            "",
+            "Accessibility violations detected. Investigate the failing assertions in the "
+            "[Playwright HTML report](playwright-report/index.html) "
+            "(uploaded as an artifact in CI).",
+        ]
+        run_url = _gha_run_url()
+        if run_url:
+            lines += ["", f"[View the workflow run]({run_url})"]
+    REPORT_MD.write_text("\n".join(lines) + "\n")
+
+
 def run(args: list[str] | None = None) -> int:
     if not _npx_available():
         output.error("npx is not available — install Node.js to run Playwright tests")
@@ -150,4 +197,5 @@ def run(args: list[str] | None = None) -> int:
     env = _build_env(url, parsed.ci)
     cmd = _build_cmd(parsed.ci)
     result = subprocess.run(cmd, env=env, check=False)
+    _write_report(result.returncode, url)
     return result.returncode

@@ -45,7 +45,14 @@ def test_emit_unknown_check_returns_2(capsys):
 
 
 def test_emit_no_meta_returns_2(monkeypatch, capsys):
-    # Pick a check that has no META yet — accessibility currently doesn't.
+    """When a check module is loaded but lacks META, dispatcher returns 2.
+
+    Every shipped check has META as of PR 3, so this test patches one
+    away to exercise the dispatcher's missing-META branch.
+    """
+    from slopstopper.checks import accessibility
+
+    monkeypatch.setattr(accessibility, "META", None)
     rc = cli.main(["emit", "reliability:accessibility", "--target", "pr-comment"])
     assert rc == 2
     assert "has no META" in capsys.readouterr().err

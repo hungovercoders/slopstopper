@@ -178,3 +178,39 @@ def test_run_propagates_playwright_failure(monkeypatch, isolated_cwd):
 
     rc = broken_links.run(["--url", "https://example.com"])
     assert rc == 1
+
+
+# ── report writing ────────────────────────────────────────────────
+
+
+def test_run_writes_report_on_pass(monkeypatch, isolated_cwd):
+    monkeypatch.setattr(broken_links, "_npx_available", lambda: True)
+    monkeypatch.setattr(broken_links, "_discover_pages", lambda: None)
+    monkeypatch.setattr(
+        broken_links.subprocess, "run",
+        lambda cmd, env, check: subprocess.CompletedProcess(cmd, 0),
+    )
+    rc = broken_links.run(["--url", "https://example.com"])
+    assert rc == 0
+    body = broken_links.REPORT_MD.read_text()
+    assert "PASSED" in body
+    assert "https://example.com" in body
+
+
+def test_run_writes_report_on_failure(monkeypatch, isolated_cwd):
+    monkeypatch.setattr(broken_links, "_npx_available", lambda: True)
+    monkeypatch.setattr(broken_links, "_discover_pages", lambda: None)
+    monkeypatch.setattr(
+        broken_links.subprocess, "run",
+        lambda cmd, env, check: subprocess.CompletedProcess(cmd, 1),
+    )
+    rc = broken_links.run(["--url", "https://example.com"])
+    assert rc == 1
+    body = broken_links.REPORT_MD.read_text()
+    assert "FAILED" in body
+    assert "playwright-report" in body
+
+
+def test_meta_includes_reliability_and_broken_links_labels():
+    assert "broken-links" in broken_links.META["issue_labels"]
+    assert "reliability" in broken_links.META["issue_labels"]
