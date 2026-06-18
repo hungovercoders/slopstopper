@@ -100,7 +100,13 @@ jobs:
             echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
             echo "use_local=false" >> "$GITHUB_OUTPUT"
           elif [ "$EVENT_NAME" == "schedule" ]; then
-            echo "url=https://slopstopper.dev" >> "$GITHUB_OUTPUT"
+            CONFIG_URL="$(slopstopper config get urls.production)"
+            if [ -z "$CONFIG_URL" ]; then
+              echo "::error::Scheduled run requires urls.production in .slopstopper.yml" >&2
+              exit 1
+            fi
+            SAFE_URL="$(validate_url "$CONFIG_URL")"
+            echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
             echo "use_local=false" >> "$GITHUB_OUTPUT"
           else
             echo "url=http://localhost:8080" >> "$GITHUB_OUTPUT"

@@ -15,9 +15,9 @@ on:
   workflow_dispatch:
     inputs:
       url:
-        description: 'URL to audit'
-        required: true
-        default: 'https://slopstopper.dev/'
+        description: 'URL to audit (leave blank to use urls.production from .slopstopper.yml)'
+        required: false
+        default: ''
         type: string
   pull_request:
     branches:
@@ -124,7 +124,15 @@ jobs:
             echo "url=http://localhost:8080" >> "$GITHUB_OUTPUT"
             echo "prod=false" >> "$GITHUB_OUTPUT"
           elif [ "$EVENT_NAME" == "workflow_dispatch" ]; then
-            SAFE_URL="$(validate_url "$INPUT_URL")"
+            DISPATCH_URL="$INPUT_URL"
+            if [ -z "$DISPATCH_URL" ]; then
+              DISPATCH_URL="$(slopstopper config get urls.production)"
+              if [ -z "$DISPATCH_URL" ]; then
+                echo "::error::No url input given and urls.production is unset in .slopstopper.yml" >&2
+                exit 1
+              fi
+            fi
+            SAFE_URL="$(validate_url "$DISPATCH_URL")"
             echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
             echo "prod=false" >> "$GITHUB_OUTPUT"
           elif [ "$EVENT_NAME" == "deployment_status" ]; then
@@ -132,7 +140,13 @@ jobs:
             echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
             echo "prod=true" >> "$GITHUB_OUTPUT"
           else
-            echo "url=https://slopstopper.dev" >> "$GITHUB_OUTPUT"
+            CONFIG_URL="$(slopstopper config get urls.production)"
+            if [ -z "$CONFIG_URL" ]; then
+              echo "::error::Scheduled run requires urls.production in .slopstopper.yml" >&2
+              exit 1
+            fi
+            SAFE_URL="$(validate_url "$CONFIG_URL")"
+            echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
             echo "prod=true" >> "$GITHUB_OUTPUT"
           fi
 
