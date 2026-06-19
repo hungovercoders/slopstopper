@@ -9,4 +9,10 @@
 playwright-report/
 test-results/
 .lighthouseci/
+# slopstopper Claude Code skills — installed at project level so every
+# contributor benefits. If you've added .claude/* to .gitignore above,
+# these negations keep the skills tracked.
+!.claude/
+!.claude/skills/
+!.claude/skills/**
 # slopstopper end

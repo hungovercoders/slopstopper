@@ -1,45 +1,64 @@
 #!/usr/bin/env bash
-# install-skill.sh — install the SlopStopper Claude Code skills.
+# install-skill.sh — install/refresh the SlopStopper Claude Code skills
+# into the target repo.
 #
-# The companion to install.sh: install.sh drops the quality suite into a
-# *repo*, this script drops the SlopStopper skill trio into your Claude
-# Code *user profile* so they're available in every project on this
-# machine. Run it once per machine; re-run any time to refresh.
+# The companion to install.sh: install.sh installs the whole quality suite
+# into a repo; this script just covers the skill subset, so you can refresh
+# just the playbooks without touching workflows, the Taskfile or the CLI.
 #
-# Usage:
+# Skills are installed at *project level* — into the adopter repo's
+# ./.claude/skills/ directory — so every contributor that clones the repo
+# gets them automatically (Claude Code auto-discovers project-level skills
+# the same way it does user-level ones). Commit the resulting files
+# alongside the workflows.
+#
+# Usage (from inside the target repo):
 #   curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash
 #
 # Or, two-step (review first):
 #   curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh -o install-skill.sh
 #   bash install-skill.sh
 #
+# Or, explicit target directory:
+#   bash install-skill.sh /path/to/repo
+#
 # What lands:
-#   ~/.claude/skills/slopstopper-install/SKILL.md   # first-time install
-#   ~/.claude/skills/slopstopper-update/SKILL.md    # refresh an existing install
-#   ~/.claude/skills/slopstopper-triage/SKILL.md    # diagnose a failing check
+#   <target>/.claude/skills/slopstopper-install/SKILL.md   # install + refresh
+#   <target>/.claude/skills/slopstopper-triage/SKILL.md    # diagnose a failing check
 #
 # Migration:
-#   If a previous version of this script installed the skill at
-#   ~/.claude/skills/install-slopstopper/, this script removes that
-#   obsolete directory after installing the trio. The single-skill name
-#   is replaced by `slopstopper-install` in the trio layout.
+#   - If a previous version installed a single `install-slopstopper` skill,
+#     that obsolete directory is removed from the target repo.
+#   - The `slopstopper-update` skill has been folded into `slopstopper-install`
+#     (which now covers both first-install and refresh). Any stale
+#     `slopstopper-update/` directory in the target is removed.
+#   - This script no longer writes to ~/.claude/skills/. If a previous
+#     version installed copies there, they'll shadow the project-level ones
+#     when Claude Code merges skill paths — remove them manually with:
+#       rm -rf ~/.claude/skills/slopstopper-install \
+#              ~/.claude/skills/slopstopper-update \
+#              ~/.claude/skills/slopstopper-triage
 #
 # What this affects:
-#   Nothing outside ~/.claude/skills/slopstopper-*/. Re-running the
-#   script overwrites each SKILL.md in place only if the upstream
-#   content differs — safe to refresh on a schedule.
+#   Nothing outside <target>/.claude/skills/slopstopper-*/. Re-running
+#   overwrites each SKILL.md in place only if the upstream content
+#   differs — safe to refresh on a schedule.
 
 set -euo pipefail
 
 REPO_RAW="https://raw.githubusercontent.com/hungovercoders/slopstopper/main"
 SKILLS=(
   "slopstopper-install"
-  "slopstopper-update"
   "slopstopper-triage"
 )
 OBSOLETE_SKILLS=(
   "install-slopstopper"
+  "slopstopper-update"
 )
+
+# ── argument parsing ─────────────────────────────────────────────────────────
+
+TARGET_DIR="${1:-$(pwd)}"
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -54,17 +73,14 @@ sep() { echo "──────────────────────
 
 command -v curl >/dev/null 2>&1 || error "curl is required to fetch the skills. Install it and re-run."
 
-if [ ! -d "${HOME}/.claude" ]; then
-  warn "${HOME}/.claude does not exist yet."
-  info "That's fine — this script will create the skills directory. If you"
-  info "haven't installed Claude Code, Claude Code will pick the skills up"
-  info "automatically once you do (https://claude.com/claude-code)."
+if [ ! -d "${TARGET_DIR}" ]; then
+  error "Target directory does not exist: ${TARGET_DIR}"
 fi
 
 sep
-echo "  🧠  SlopStopper — installing the Claude Code skill trio"
+echo "  🧠  SlopStopper — installing the Claude Code skills (project level)"
 echo "  Source : ${REPO_RAW}/.claude/skills/<skill>/SKILL.md"
-echo "  Target : ${HOME}/.claude/skills/<skill>/SKILL.md"
+echo "  Target : ${TARGET_DIR}/.claude/skills/<skill>/SKILL.md"
 sep
 
 # ── install each skill ──────────────────────────────────────────────────────
@@ -75,7 +91,7 @@ sep
 install_skill() {
   local skill="$1"
   local src="${REPO_RAW}/.claude/skills/${skill}/SKILL.md"
-  local dest_dir="${HOME}/.claude/skills/${skill}"
+  local dest_dir="${TARGET_DIR}/.claude/skills/${skill}"
   local dest_file="${dest_dir}/SKILL.md"
   local tmp_file
   tmp_file="$(mktemp)"
@@ -111,35 +127,57 @@ done
 
 # ── clean up obsolete skill directories ──────────────────────────────────────
 
-# Adopters who ran an earlier version of this script have an obsolete skill
-# at the old path. Remove it so their `~/.claude/skills/` only contains the
-# current trio. Safe because the trio supersedes the old one; we never
-# delete anything we didn't put there ourselves.
+# Adopters who ran an earlier version of this script have obsolete skills
+# at superseded paths. Remove them so their <target>/.claude/skills/ only
+# contains the current set. Safe because we never delete anything we didn't
+# put there ourselves:
+#   - `install-slopstopper` was the single-skill name; replaced by the
+#     `slopstopper-install` trio member.
+#   - `slopstopper-update` was a separate refresh skill; its content has
+#     been folded into `slopstopper-install` (covers both verbs).
 for obsolete in "${OBSOLETE_SKILLS[@]}"; do
-  obsolete_dir="${HOME}/.claude/skills/${obsolete}"
+  obsolete_dir="${TARGET_DIR}/.claude/skills/${obsolete}"
   if [ -d "${obsolete_dir}" ]; then
     rm -rf "${obsolete_dir}"
-    info "Removed obsolete skill: ${obsolete} (replaced by slopstopper-install)"
+    info "Removed obsolete skill: ${obsolete}"
   fi
 done
+
+# Heads-up: if the adopter ran an old version of install-skill.sh on this
+# machine, they likely have stale copies of the same skills at user level
+# (~/.claude/skills/slopstopper-*). Those will shadow the project-level
+# copies when Claude Code merges skill paths. We don't delete user-level
+# state on someone's behalf — but we point at it so they can clean up
+# explicitly.
+if [ -d "${HOME}/.claude/skills/slopstopper-install" ] \
+  || [ -d "${HOME}/.claude/skills/slopstopper-update" ] \
+  || [ -d "${HOME}/.claude/skills/slopstopper-triage" ]; then
+  warn "Stale user-level skills detected at ~/.claude/skills/slopstopper-*."
+  info "They'll shadow the project-level copies you just installed. Clean up with:"
+  info "  rm -rf ~/.claude/skills/slopstopper-install \\"
+  info "         ~/.claude/skills/slopstopper-update \\"
+  info "         ~/.claude/skills/slopstopper-triage"
+fi
 
 # ── post-install guidance ────────────────────────────────────────────────────
 
 sep
 echo ""
-echo "  🎉 Skill trio installed!"
+echo "  🎉 Skills installed at project level!"
 echo ""
-echo "  Claude Code will auto-discover each one in every project on this"
-echo "  machine. The skill that triggers depends on what the prompt asks:"
+echo "  Claude Code auto-discovers the skills under .claude/skills/ for any"
+echo "  contributor working in this repo. Commit them alongside the workflows."
 echo ""
-echo "    • \"install slopstopper\"           → slopstopper-install"
-echo "    • \"refresh / upgrade slopstopper\" → slopstopper-update"
-echo "    • \"fix this failing slopstopper check\" → slopstopper-triage"
+echo "  Which skill triggers depends on what the prompt asks:"
 echo ""
-echo "  To install SlopStopper into a repo for the first time:"
+echo "    • \"install / refresh / upgrade slopstopper\" → slopstopper-install"
+echo "    • \"fix this failing slopstopper check\"      → slopstopper-triage"
+echo ""
+echo "  To install the full SlopStopper suite into a fresh repo:"
 echo "    cd <your-repo>"
 echo "    curl -fsSL ${REPO_RAW}/install.sh | bash"
 echo ""
-echo "  Re-running this script later refreshes the trio to latest."
+echo "  Re-running this script from inside the repo refreshes the skills to"
+echo "  the latest upstream version."
 echo ""
 sep

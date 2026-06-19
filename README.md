@@ -158,7 +158,7 @@ Contributions are welcome. The full contributor guide lives in [`docs/contributi
 
 If an AI agent (Claude, Copilot, Cursor, etc.) is working on this repo, the canonical conventions live in [`AGENTS.md`](./AGENTS.md). [`CLAUDE.md`](./CLAUDE.md) imports `AGENTS.md` so Claude Code picks up the same instructions automatically.
 
-**Using Claude Code?** The skill trio ([`install`](./.claude/skills/slopstopper-install/SKILL.md) / [`update`](./.claude/skills/slopstopper-update/SKILL.md) / [`triage`](./.claude/skills/slopstopper-triage/SKILL.md)) auto-installs with `install.sh` when `~/.claude/` exists; re-runs refresh. `--no-skills` opts out, or run:
+**Using Claude Code?** `install.sh` lands [`slopstopper-install`](./.claude/skills/slopstopper-install/SKILL.md) (install + refresh) and [`slopstopper-triage`](./.claude/skills/slopstopper-triage/SKILL.md) at `<repo>/.claude/skills/`, so every contributor gets them on clone. `--no-skills` opts out. Refresh:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash

@@ -1,11 +1,11 @@
 ---
 name: slopstopper-triage
-description: Diagnose and fix a failing slopstopper check. Use when a user reports a specific slopstopper workflow or task is failing — SAST, secrets, complexity, docs-accuracy, docs-size, docs-structure, entry-files, CSP exceptions, auto-label, smoke, accessibility, Core Web Vitals, SEO, broken links, DAST, dependency review, or the workflow-failure tracker. Maps each check to the local task that reproduces it, the report files it generates, the typical root-cause categories (real finding / false positive / threshold too tight), and a per-symptom gotcha table with diagnostic steps and the file the fix lives in. For a first-time install use slopstopper-install; for refreshing an existing install use slopstopper-update.
+description: Diagnose and fix a failing slopstopper check. Use when a user reports a specific slopstopper workflow or task is failing — SAST, secrets, complexity, docs-accuracy, docs-size, docs-structure, entry-files, CSP exceptions, auto-label, smoke, accessibility, Core Web Vitals, SEO, broken links, DAST, dependency review, or the workflow-failure tracker. Maps each check to the local task that reproduces it, the report files it generates, the typical root-cause categories (real finding / false positive / threshold too tight), and a per-symptom gotcha table with diagnostic steps and the file the fix lives in. For first-time install OR refreshing an existing install use slopstopper-install.
 ---
 
 # Triage a failing slopstopper check
 
-You're being asked to fix a slopstopper check that's failing. This skill is reactive — it assumes the install is in place and at least one check is red. If the user is mid-install, the install playbook (`slopstopper-install` Step 7) already handed off here; if they're refreshing an existing install, `slopstopper-update` handed off here. Either way, the procedure is the same.
+You're being asked to fix a slopstopper check that's failing. This skill is reactive — it assumes the install is in place and at least one check is red. If the user is mid-install or refreshing an existing install, the install playbook (`slopstopper-install` Step 7) already handed off here. Either way, the procedure is the same.
 
 Every check now runs through `slopstopper-cli`. The workflow body for each `ss-*.yml` is ~8 lines: install the CLI, `slopstopper run <category>:<check>`, `slopstopper emit <category>:<check> --target {pr-comment,issue}`. So the local reproducer is always `slopstopper run …` (or its `task ss:*` shim).
 
@@ -194,7 +194,7 @@ Don't delete a check just because it's failing. The bar is *"this check has noth
 ## When to hand off
 
 - **First-time install** on a new repo → `slopstopper-install` (you're here because that skill handed off mid-install — go back when this check is green).
-- **Refreshing an existing install** → `slopstopper-update`. If the failing check is new since the last refresh, this skill is still the right place; `slopstopper-update` is for the mechanical "re-run installer + re-apply customizations" loop.
+- **Refreshing an existing install** → `slopstopper-install` (covers both first install and refresh — its mode-detection branch routes you to the refresh-only section). If the failing check is new since the last refresh, this skill is still the right place; `slopstopper-install`'s refresh section is for the mechanical "re-run installer + re-apply customizations" loop.
 
 ## Maintaining this skill when slopstopper changes
 
@@ -208,4 +208,4 @@ Update this skill when:
 - A new suppression mechanism becomes available for an existing check (e.g. a new `.zap/rules.tsv`-shaped file for a different tool) → add a row to Step 4's suppression table.
 - A new config-driven knob is added to a check (`config.get("<x>")` in the check module) → add to Step 4's "Config-driven knobs" table, with the default mirroring `.slopstopper.yml.example`.
 
-The AGENTS.md "When making changes" table in the slopstopper repo flags this skill alongside `slopstopper-install` and `slopstopper-update` whenever a change of the above kind ships.
+The AGENTS.md "When making changes" table in the slopstopper repo flags this skill alongside `slopstopper-install` whenever a change of the above kind ships.
