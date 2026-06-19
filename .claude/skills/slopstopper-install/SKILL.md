@@ -373,6 +373,40 @@ If anything looks unfamiliar, check `Taskfile.ss.yml` for the `desc:` and `summa
 
 If new workflows did land and you want the README badges refreshed to match, re-run `slopstopper badges` and replace the existing Pipeline status block in `README.md`.
 
+### Clean up redundant artefacts
+
+Adopter repos should hold exactly the **expected set** of slopstopper artefacts plus their own customisations — nothing more. Anything outside that set is noise: a former skill that's been folded into another, an old `ss-*-check.yml` that's been renamed upstream, a `.ss/` file that moved into the CLI wheel. Keep the working tree tidy on every refresh.
+
+**What `install.sh` and `install-skill.sh` already clean up automatically:**
+
+- `<repo>/.claude/skills/<name>/` directories listed in `OBSOLETE_SKILLS` — currently `install-slopstopper` (single-skill legacy) and `slopstopper-update` (folded into `slopstopper-install`). Both installer scripts hold the same list.
+- `.ss/scripts/` — pre-CLI artefact, scrubbed wholesale on every install.
+- Byte-equal copies of `.ss/playwright.config.js`, `.ss/lighthouserc.json`, `.ss/lighthouserc.prod.json`, `.ss/tests/` — these moved into the slopstopper-cli wheel; byte-identical adopter copies are removed (the wheel's version wins via the templates resolver). Customised copies survive.
+- Workflows the adopter explicitly disabled via `.slopstopper.yml` `workflows.disabled` — removed on every install.
+
+**What you should sanity-check manually on refresh** (the installer can't auto-detect these without an explicit removal list):
+
+```bash
+# 1. Skills: anything in .claude/skills/slopstopper-* that isn't in the current expected set is stale
+ls -d .claude/skills/slopstopper-*/ 2>/dev/null
+# Expected currently: slopstopper-install, slopstopper-triage. Anything else → flag for the user.
+
+# 2. Workflows: anything matching ss-*-check.yml that doesn't exist upstream is stale
+diff \
+  <(curl -s https://api.github.com/repos/hungovercoders/slopstopper/contents/.github/workflows | jq -r '.[].name' | grep '^ss-' | sort) \
+  <(ls .github/workflows/ | grep '^ss-' | sort)
+# Lines prefixed with `>` are local-only ss-* files — could be stale or a workflow the adopter
+# deliberately customised away from upstream. Ask the user before deleting.
+```
+
+The line to draw before deleting:
+
+- **Slopstopper-shipped, no longer in the expected set** → delete. Examples: `slopstopper-update/SKILL.md`, an `ss-old-check.yml` that was renamed in a recent slopstopper release.
+- **Adopter-customised, intentionally divergent** → keep. Examples: an `ss-*.yml` the adopter forked under the same name with bespoke logic, a hand-edited `Taskfile.ss.yml` shim. `.ss/.workflows-installed` tracks adopter deletions but not adopter modifications — when in doubt, ask the user.
+- **Adopter-added content under `.claude/skills/` with a non-`slopstopper-` prefix** → not slopstopper's, never touch.
+
+When a clean-up surfaces something the installer should've handled automatically, the fix is to add it to `OBSOLETE_SKILLS` (or the equivalent list for the artefact type) in both `install.sh` and `install-skill.sh` upstream — see the AGENTS.md change-impact table's "Removing a slopstopper-shipped artefact" row. The next adopter then gets the cleanup for free.
+
 ## Step 7 — Drive every check to green locally, **before** pushing
 
 This is the spine of a good install. `task ss:<category>:<action>` is the canonical interface — humans, agents and CI all go through it. The shipped workflows install Task themselves and invoke checks the same way. Running locally in a tight loop — fix, re-run, fix, re-run — is an order of magnitude faster than pushing and waiting on CI for each iteration. The goal of this step is that the first CI run on the target's PR is a **confirmation pass**, not a discovery pass.
