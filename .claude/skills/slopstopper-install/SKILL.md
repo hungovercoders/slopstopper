@@ -1,11 +1,25 @@
 ---
 name: slopstopper-install
-description: Install slopstopper into a repo for the first time. Use when a user asks to add slopstopper, the slopstopper quality suite, or any of its five loops (security, hygiene, reliability, runbooks, deployment) to a project that doesn't have it yet. Walks pre-flight, install, post-install URL config, Map Pattern setup, README badges, and a local-first verification loop that closes every check before pushing. For per-check failure diagnosis use the slopstopper-triage skill; for keeping an existing install fresh use slopstopper-update.
+description: Install slopstopper into a repo for the first time OR refresh an existing slopstopper install. Use when a user asks to add slopstopper, install the slopstopper quality suite, refresh slopstopper, upgrade slopstopper, pull in new slopstopper checks, or see what's new in slopstopper. Covers pre-flight, install command, idempotent re-run on existing installs, post-install URL config, Map Pattern setup, README badges, customizations that get wiped on refresh, new-knob discovery, and a local-first verification loop that closes every check before pushing. For per-check failure diagnosis use the slopstopper-triage skill.
 ---
 
-# Install slopstopper
+# Install or refresh slopstopper
 
-You're being asked to install slopstopper into an existing repo. Slopstopper is a portable suite of GitHub Actions plus a `slopstopper-cli` Python package that owns every check's logic. The install drops a consistent quality pipeline into any repository. This skill walks you through doing that responsibly — and, critically, getting every check green **locally** before pushing, so the first CI run is a confirmation pass rather than a discovery pass.
+You're being asked to install slopstopper into a repo, or refresh an existing slopstopper install. Both flows live here: the steps are mostly the same (install.sh is idempotent), with a couple of refresh-only sections for diffing upstream and re-applying customizations that get wiped on re-run.
+
+## Mode detection — first install or refresh?
+
+Check the target repo before doing anything else:
+
+```bash
+ls .slopstopper.yml .ss/.workflows-installed 2>/dev/null
+```
+
+- **Both files exist** → this is a **refresh**. The mechanical part is "re-run install.sh"; the value-add is diffing upstream for new workflows, re-applying customizations the installer wipes, and surfacing new tunable knobs in `.slopstopper.yml.example`. Skim Steps 1, 4-6 (already done last time) and focus on Step 2 (idempotent re-run), the new **Refresh-only** section between Steps 6 and 7, and Step 7 (local verify) before pushing.
+- **Neither exists** → this is a **first install**. Walk every step in order: pre-flight → install → post-install config → Map Pattern → badges → local verify → push.
+- **Only one exists** (rare) → partial state. Stop and ask the user what happened — usually means a previous install was interrupted or partially reverted.
+
+Slopstopper is a portable suite of GitHub Actions plus a `slopstopper-cli` Python package that owns every check's logic. The install drops a consistent quality pipeline into any repository. This skill walks you through doing that responsibly — and, critically, getting every check green **locally** before pushing, so the first CI run is a confirmation pass rather than a discovery pass.
 
 The install ships ~21 GitHub Actions workflows in one shot, pip-installs `slopstopper-cli` (via pipx), merges devDeps into `package.json`, and creates a `Taskfile.yml` if the target doesn't have one. That's a lot of moving parts. Don't run it blind — work through the pre-flight first, then drive every check to green locally before opening a PR.
 
@@ -55,10 +69,10 @@ Before running anything, ensure you're on a clean branch:
 
 ```bash
 git status                              # must show clean
-git checkout -b chore/slopstopper-install
+git checkout -b chore/slopstopper-install   # or chore/slopstopper-refresh for a refresh
 ```
 
-`install.sh` adds ~21 workflow files, a `Taskfile.ss.yml`, and `.ss/server.js` to the repo in one shot. On `main` that's an awkward 25+-file commit; on a dedicated branch the diff is reviewable and the rollback is `git checkout main && git branch -D chore/slopstopper-install`. If `git status` is dirty, stop and reconcile first — the installer doesn't ask before writing into `ss-*.yml` or `Taskfile.ss.yml`.
+`install.sh` adds ~21 workflow files, a `Taskfile.ss.yml`, and `.ss/server.js` to the repo in one shot. On `main` that's an awkward 25+-file commit; on a dedicated branch the diff is reviewable and the rollback is `git checkout main && git branch -D <branch>`. If `git status` is dirty, stop and reconcile first — the installer doesn't ask before writing into `ss-*.yml` or `Taskfile.ss.yml`. On a refresh, the wipe-and-replace behaviour will clobber anything sitting in the tracked files it rewrites — commit or stash first.
 
 From the target repo root, run the canonical one-liner:
 
@@ -68,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
 
 The installer is idempotent. Re-running it pulls newer checks but respects deletions (tracked via `.ss/.workflows-installed`), and refreshes `slopstopper-cli` via `pipx upgrade` (or re-runs `pip install --user --upgrade` when pipx isn't available). All slopstopper files live under the `ss` namespace — your repo's existing files are not touched. If a pre-CLI install left a `.ss/scripts/` directory behind, the installer scrubs it on first run.
 
-**`install.sh` also installs the SlopStopper Claude Code skill trio** at `~/.claude/skills/slopstopper-{install,update,triage}/` when `~/.claude` exists on the machine (user-profile level, not repo-level). Skipped silently if Claude Code isn't set up. Pass `--no-skills` or set `SLOPSTOPPER_NO_SKILLS=1` to disable. Adopters who set up Claude Code later can run `install-skill.sh` separately to backfill.
+**`install.sh` also installs the SlopStopper Claude Code skills at project level** — `<target>/.claude/skills/slopstopper-{install,triage}/SKILL.md` — so every contributor that clones the repo picks them up automatically (Claude Code auto-discovers project-level skills). Commit the resulting files alongside the workflows. Pass `--no-skills` or set `SLOPSTOPPER_NO_SKILLS=1` to disable. To refresh just the skills later without re-running the whole installer, use `install-skill.sh` from inside the repo. If you've previously run an older version of `install-skill.sh` that wrote to `~/.claude/skills/slopstopper-*`, the installer warns you so you can clean up the user-level copies before they shadow the project-level ones.
 
 ### What `install.sh` writes (and leaves alone)
 
@@ -79,7 +93,7 @@ Three categories of write, in order of "how much trust to extend on re-run":
 - `Taskfile.ss.yml`, `.ss/server.js`, `.ss/.workflows-installed`
 - Workflows under `.github/workflows/ss-*.yml` that are in `GENERIC_WORKFLOWS` and not listed in `.slopstopper.yml` `workflows.disabled`
 - `slopstopper-cli` itself (via `pipx upgrade`, user-profile level)
-- `~/.claude/skills/slopstopper-*/SKILL.md` (only if `~/.claude/` exists; opt out with `--no-skills`)
+- `<repo>/.claude/skills/slopstopper-install/SKILL.md` and `<repo>/.claude/skills/slopstopper-triage/SKILL.md` (project level — opt out with `--no-skills`)
 
 **Seeded only if missing — adopter-owned, NEVER overwritten on re-run:**
 
@@ -96,7 +110,7 @@ Three categories of write, in order of "how much trust to extend on re-run":
 
 **Everything else is left alone** — source code, build outputs, custom workflows under `.github/workflows/` outside the `ss-*` namespace, generic configs (`.eslintrc`, `tsconfig.json`, etc.), and anything under `app/`, `src/`, `worker/`, etc.
 
-**One risk worth flagging:** inline customisations to `ss-*.yml` workflow body content (bespoke `gh issue create` blocks, extra steps, custom env vars beyond what `.slopstopper.yml` covers) get wiped on the next `install.sh` re-run because workflow files are wholesale-replaced. Push bespoke wording into the check's META in `slopstopper-cli` upstream rather than hand-editing the YAML locally. See `slopstopper-update` Step 4 for how to diff and re-apply on refresh.
+**One risk worth flagging:** inline customisations to `ss-*.yml` workflow body content (bespoke `gh issue create` blocks, extra steps, custom env vars beyond what `.slopstopper.yml` covers) get wiped on the next `install.sh` re-run because workflow files are wholesale-replaced. Push bespoke wording into the check's META in `slopstopper-cli` upstream rather than hand-editing the YAML locally. See the **Refresh-only** section below for how to diff and re-apply on refresh.
 
 By default the installer ships **Task-driven workflows** — every check runs via `task ss:<category>:<check>` so the suite shares one invocation surface with `task build`, `task deploy`, etc. The workflows install Task themselves via `arduino/setup-task@v2`, so adopters don't need it in their CI runners by hand. If the adopter explicitly doesn't want Task in their CI, install with `--no-task`:
 
@@ -124,6 +138,7 @@ Sanity-check the install dropped what you expect:
 - `.ss/.workflows-installed` — manifest of installed workflows (tracks deletions on reinstall; commit this).
 - `.github/workflows/ss-*.yml` — the curated installer set (~21 files). Each workflow body is now ~8 lines: install CLI, `slopstopper run …`, `slopstopper emit … --target pr-comment|issue`.
 - `package.json` — devDeps merged.
+- `.claude/skills/slopstopper-install/SKILL.md` + `.claude/skills/slopstopper-triage/SKILL.md` — the project-level Claude Code playbooks. Auto-discovered by Claude Code for any contributor working in this repo. Commit them.
 
 **What's NOT there any more** (if you're updating from a pre-CLI install): `.ss/scripts/` (every Python/bash script lives in `slopstopper-cli`); and `.ss/playwright.config.js`, `.ss/lighthouserc.json`, `.ss/lighthouserc.prod.json`, `.ss/tests/` (now bundled in the wheel — installer scrubs unmodified byte-equal copies on re-run, but leaves customized files alone since they'll override via the CLI's templates resolver).
 
@@ -290,6 +305,108 @@ The command:
 
 **Then paste the block into the README**, at the right insertion point. Most READMEs have a "what this is" intro at the top; the Pipeline status block reads best immediately after that, before the install/usage section — so visitors see what's guarded before they read what it is.
 
+## Refresh-only — diff upstream, re-apply customizations, spot new knobs
+
+**Skip this section on a first install.** It's relevant only when `.slopstopper.yml` and `.ss/.workflows-installed` both existed in Step 1 (mode-detection) — i.e. the installer just ran in-place over an existing slopstopper install.
+
+`install.sh` is idempotent but **not transactional** — every workflow YAML in `GENERIC_WORKFLOWS`, `Taskfile.ss.yml`, and `.ss/server.js` is rewritten wholesale on every run, and the CLI is upgraded. A few classes of customization get wiped and need re-applying; a few classes of upstream change need manual catch-up because the installer doesn't drag everything across. Walk this section before the local-verify loop in Step 7.
+
+### Diff installed workflows against upstream
+
+`install.sh` uses a hardcoded `GENERIC_WORKFLOWS` array, not a wildcard over slopstopper's `.github/workflows/ss-*.yml`. The two can drift — slopstopper may ship a workflow that the installer hasn't been updated to include. Catch the gap:
+
+```bash
+comm -23 \
+  <(curl -s https://api.github.com/repos/hungovercoders/slopstopper/contents/.github/workflows | jq -r '.[].name' | grep '^ss-' | sort) \
+  <(ls .github/workflows/ | grep '^ss-' | sort)
+```
+
+Any line in the output is an `ss-*.yml` workflow that exists upstream but isn't in your target. If any look relevant, copy them across directly (and customize like the rest — Node version pin, URLs, page paths). Flag the gap upstream as an `install.sh` fix.
+
+### Re-apply customizations the installer wiped
+
+The installer refreshes `Taskfile.ss.yml`, the `.ss/` overlay, and the `ss-*.yml` workflows wholesale. Anything hand-edited in those files is gone — but `.slopstopper.yml` is **never** overwritten by the installer, so the bulk of customization (node version, headers source/format, URLs, pages, og-image path, disabled workflows, hygiene thresholds) survives every re-run.
+
+What still needs re-checking after a refresh:
+
+- **Anything hand-edited inside `ss-*.yml` workflow files** beyond what `.slopstopper.yml` covers. Common case: extra workflow-level `permissions:` for a custom integration, a non-standard schedule, or workflow-level env vars beyond the documented URL/PAGES set. Diff against upstream to find them. Push bespoke wording into the check's META in `slopstopper-cli` upstream rather than hand-editing the YAML locally — workflow edits don't survive `install.sh` re-runs.
+- **Anything hand-edited inside `.ss/tests/*.spec.ts`, `.ss/playwright.config.js`, or `.ss/lighthouserc.json`.** These used to be seeded by `install.sh` but now live inside the `slopstopper-cli` wheel. The installer's byte-equality scrub removes unmodified copies (so the wheel's version wins via the templates resolver); customized copies survive in `.ss/` and continue to override.
+- **GitHub repo variables.** If `.slopstopper.yml` `node_version` changed, re-sync the `SLOPSTOPPER_NODE_VERSION` repo variable. If URLs are mirrored as repo variables, push those too:
+
+  ```bash
+  NODE_VER=$(slopstopper config get node_version 20)
+  gh variable set SLOPSTOPPER_NODE_VERSION --body "$NODE_VER"
+  ```
+
+- **`.github/labeler.yml`** if upstream's labeler template added categories you want (the installer never overwrites your existing file, so new categories don't land automatically).
+
+### Spot newly-shipped knobs in `.slopstopper.yml.example`
+
+The `.slopstopper.yml.example` file in the slopstopper repo is the schema reference. Diff it against your repo's `.slopstopper.yml`:
+
+```bash
+diff <(curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/.slopstopper.yml.example) .slopstopper.yml
+```
+
+Any keys present upstream but missing locally are new knobs you can opt into. Most ship with sensible defaults so no action is required — but the diff is the easiest way to know what changed.
+
+Surfaces worth checking explicitly:
+
+- **`hygiene.docs_size.*` / `hygiene.entry_files.max_words`** — per-check thresholds. Defaults are intentionally tight (150 KB / 25 files / 1500 words). If a `docs-size` or `entry-files` alert started firing post-refresh, the threshold knob is usually what's wanted — not deleting docs.
+- **`reliability.coverage.{pr,main,cron}`** — page-discovery modes. Adopters with a sitemap should opt in to `sitemap` on main and `changed` on PRs; otherwise reliability checks only audit `/` by default.
+- **`reliability.coverage.cross_cutting_paths`** — escalation triggers for `changed` mode. If a PR-only audit skipped pages that should have been included, this is the lever.
+
+If a previously-failing check started passing after a refresh without any code change, eyeball whether a default got loosened upstream — those are flagged in the slopstopper changelog.
+
+### Spot new checks and task targets
+
+Two surfaces to scan after a refresh:
+
+1. **The CLI's check registry.** `slopstopper --help` lists subcommands; the canonical list of check names is in `cli/slopstopper/checks/__init__.py`'s `REGISTRY` dict upstream. If a new check landed (e.g. `reliability:<new-check>`), it's runnable as `slopstopper run reliability:<new-check>` even before any workflow ships it.
+2. **The Taskfile shims.** Re-running the installer refreshes `Taskfile.ss.yml`, which mirrors every CLI check as a `task ss:*` shim. Eyeball:
+
+   ```bash
+   task --list | grep '^\* ss:'
+   ```
+
+If anything looks unfamiliar, check `Taskfile.ss.yml` for the `desc:` and `summary:` (each shim documents the env vars it forwards). New checks are usually surfaced as part of a new workflow — if a new workflow landed in the diff above, you'll see the matching task here regardless, since `Taskfile.ss.yml` is refreshed wholesale.
+
+If new workflows did land and you want the README badges refreshed to match, re-run `slopstopper badges` and replace the existing Pipeline status block in `README.md`.
+
+### Clean up redundant artefacts
+
+Adopter repos should hold exactly the **expected set** of slopstopper artefacts plus their own customisations — nothing more. Anything outside that set is noise: a former skill that's been folded into another, an old `ss-*-check.yml` that's been renamed upstream, a `.ss/` file that moved into the CLI wheel. Keep the working tree tidy on every refresh.
+
+**What `install.sh` and `install-skill.sh` already clean up automatically:**
+
+- `<repo>/.claude/skills/<name>/` directories listed in `OBSOLETE_SKILLS` — currently `install-slopstopper` (single-skill legacy) and `slopstopper-update` (folded into `slopstopper-install`). Both installer scripts hold the same list.
+- `.ss/scripts/` — pre-CLI artefact, scrubbed wholesale on every install.
+- Byte-equal copies of `.ss/playwright.config.js`, `.ss/lighthouserc.json`, `.ss/lighthouserc.prod.json`, `.ss/tests/` — these moved into the slopstopper-cli wheel; byte-identical adopter copies are removed (the wheel's version wins via the templates resolver). Customised copies survive.
+- Workflows the adopter explicitly disabled via `.slopstopper.yml` `workflows.disabled` — removed on every install.
+
+**What you should sanity-check manually on refresh** (the installer can't auto-detect these without an explicit removal list):
+
+```bash
+# 1. Skills: anything in .claude/skills/slopstopper-* that isn't in the current expected set is stale
+ls -d .claude/skills/slopstopper-*/ 2>/dev/null
+# Expected currently: slopstopper-install, slopstopper-triage. Anything else → flag for the user.
+
+# 2. Workflows: anything matching ss-*-check.yml that doesn't exist upstream is stale
+diff \
+  <(curl -s https://api.github.com/repos/hungovercoders/slopstopper/contents/.github/workflows | jq -r '.[].name' | grep '^ss-' | sort) \
+  <(ls .github/workflows/ | grep '^ss-' | sort)
+# Lines prefixed with `>` are local-only ss-* files — could be stale or a workflow the adopter
+# deliberately customised away from upstream. Ask the user before deleting.
+```
+
+The line to draw before deleting:
+
+- **Slopstopper-shipped, no longer in the expected set** → delete. Examples: `slopstopper-update/SKILL.md`, an `ss-old-check.yml` that was renamed in a recent slopstopper release.
+- **Adopter-customised, intentionally divergent** → keep. Examples: an `ss-*.yml` the adopter forked under the same name with bespoke logic, a hand-edited `Taskfile.ss.yml` shim. `.ss/.workflows-installed` tracks adopter deletions but not adopter modifications — when in doubt, ask the user.
+- **Adopter-added content under `.claude/skills/` with a non-`slopstopper-` prefix** → not slopstopper's, never touch.
+
+When a clean-up surfaces something the installer should've handled automatically, the fix is to add it to `OBSOLETE_SKILLS` (or the equivalent list for the artefact type) in both `install.sh` and `install-skill.sh` upstream — see the AGENTS.md change-impact table's "Removing a slopstopper-shipped artefact" row. The next adopter then gets the cleanup for free.
+
 ## Step 7 — Drive every check to green locally, **before** pushing
 
 This is the spine of a good install. `task ss:<category>:<action>` is the canonical interface — humans, agents and CI all go through it. The shipped workflows install Task themselves and invoke checks the same way. Running locally in a tight loop — fix, re-run, fix, re-run — is an order of magnitude faster than pushing and waiting on CI for each iteration. The goal of this step is that the first CI run on the target's PR is a **confirmation pass**, not a discovery pass.
@@ -371,13 +488,12 @@ In any of those cases: recommend a partial adoption (cherry-pick specific workfl
 
 ## Step 10 — When to hand off + maintaining this skill
 
-This skill is one of three in the slopstopper trio:
+This skill is one of two in the slopstopper skill set:
 
-- **`slopstopper-install`** (this one) — first-time install into a new repo.
-- **`slopstopper-update`** — keep an existing install fresh: re-run installer, pull in new workflows, re-apply customizations that get wiped on reinstall, bump Node version pins.
+- **`slopstopper-install`** (this one) — first-time install OR refresh of an existing install. The mode-detection branch at the top of the skill routes you to the right subset of steps.
 - **`slopstopper-triage`** — diagnose a failing slopstopper check, end-to-end: workflow → local task → report → finding category → fix location.
 
-Hand off to `slopstopper-triage` mid-install whenever a check fails during Step 7's local loop. Hand off to `slopstopper-update` once the user wants to refresh an install that's already in place.
+Hand off to `slopstopper-triage` mid-install whenever a check fails during Step 7's local loop, or during a refresh when a previously-green check goes red.
 
 ### Maintaining this skill when slopstopper changes
 
@@ -387,14 +503,16 @@ Triggers that require revisiting this skill:
 
 - A workflow is added, removed, or renamed under `slopstopper/.github/workflows/ss-*.yml` → update the workflow count in the intro, Step 1.2, and Step 3; add/remove the matching local-CLI row in Step 7's Pass A or Pass B; add/remove the badge example in Step 6. (The per-check failure entry lives in `slopstopper-triage` — update there too.)
 - The `GENERIC_WORKFLOWS` array in `slopstopper/install.sh` changes → confirm the "What just landed" inventory in Step 3 still matches.
-- A check is added or renamed in `cli/slopstopper/checks/__init__.py`'s `REGISTRY` → update Step 7's `slopstopper run` list (and the equivalent in `slopstopper-update` Step 7 + `slopstopper-triage`'s reproduce table).
-- A `task ss:*` shim is renamed in `slopstopper/Taskfile.ss.yml` → update the matching command in Step 7's Pass A or Pass B (and the equivalents in `slopstopper-update` + `slopstopper-triage`).
-- A new env var is introduced for a dynamic check → add to the URL-defaults list in Step 4 and to the Pass B example in Step 7 (and the equivalents in `slopstopper-update`).
+- A check is added or renamed in `cli/slopstopper/checks/__init__.py`'s `REGISTRY` → update Step 7's `slopstopper run` list (and `slopstopper-triage`'s reproduce table).
+- A `task ss:*` shim is renamed in `slopstopper/Taskfile.ss.yml` → update the matching command in Step 7's Pass A or Pass B (and `slopstopper-triage`).
+- A new env var is introduced for a dynamic check → add to the URL-defaults list in Step 4 and to the Pass B example in Step 7.
 - A new `slopstopper` subcommand is added (e.g. `init`, `inspect`) → mention in the intro and surface in the relevant Step.
+- The installer's behaviour changes (new tracked-files mechanism, different deletion semantics, additional refresh targets, CLI install path change) → update the "Refresh-only" section's "what the installer wipes / leaves alone" lists.
+- A new hardcoded-on-reinstall surface emerges (another file the installer overwrites that users commonly hand-edit) → add to the "Re-apply customizations" subsection of the "Refresh-only" section.
 
 The companion to this is `AGENTS.md` in the slopstopper repo: its "When making changes" table flags the skill as a follow-on target whenever a change of the above kind ships. If you're updating slopstopper itself and that table isn't pointing readers back here, fix that first.
 
-The trio is distributed to adopter machines via `install-skill.sh` in the slopstopper repo (which iterates a `SKILLS=( slopstopper-install slopstopper-update slopstopper-triage )` array, atomically writes each `~/.claude/skills/<skill>/SKILL.md`, and validates each download starts with frontmatter). If you rename a skill, add a fourth, change the frontmatter contract, or otherwise change the shape of what gets fetched, update `install-skill.sh`'s `SKILLS` array AND `docs/runbooks/INSTALL_SKILLS.md` in the same change — otherwise the install-skill one-liner silently drifts away from what the trio expects to land at.
+The skills are installed at project level by `install.sh` (and by `install-skill.sh` when run standalone — refresh mode). Both scripts iterate a `SKILLS` array (`slopstopper-install`, `slopstopper-triage`), atomically write each `<repo>/.claude/skills/<skill>/SKILL.md`, and validate each download starts with frontmatter. If you rename a skill, add a third, change the frontmatter contract, or otherwise change the shape of what gets fetched, update both scripts' arrays AND `docs/runbooks/INSTALL_SKILLS.md` in the same change — otherwise the installers silently drift away from what the skill set expects to land at.
 
 ## Notes for the agent
 

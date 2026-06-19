@@ -96,9 +96,11 @@ Default mode installs workflows that invoke `task ss:<check>` so the suite
 shares a single invocation surface with the rest of your codebase. `--no-task`
 installs workflows that invoke `slopstopper run <check>` directly.
 
-If ~/.claude/ exists (Claude Code is set up on this machine), the installer
-also refreshes the SlopStopper skill trio at ~/.claude/skills/slopstopper-*
-by curl-piping install-skill.sh. Pass --no-skills to skip this step.
+The installer also writes the SlopStopper Claude Code skills into
+<target>/.claude/skills/slopstopper-*/SKILL.md so every contributor on the
+repo benefits from them on git clone (Claude Code auto-discovers project-
+level skills). Pass --no-skills to skip this step. To refresh skills later
+without re-running the whole installer, use install-skill.sh.
 USAGE
       exit 0
       ;;
@@ -678,33 +680,101 @@ if [ -f "$TARGET_DIR/.slopstopper.yml" ] && command -v slopstopper &>/dev/null; 
   fi
 fi
 
-# ── install Claude Code skill trio (best-effort, user-profile level) ─────────
+# ── install Claude Code skills (project level) ──────────────────────────────
 
-# install-skill.sh writes to ~/.claude/skills/slopstopper-*/ — i.e. the
-# user profile, not the target repo. Done as part of install.sh so adopters
-# get the trio without a separate command. Skipped silently if Claude Code
-# isn't set up on this machine (no ~/.claude directory) or if --no-skills
-# / SLOPSTOPPER_NO_SKILLS was passed.
+# Skills land in <target>/.claude/skills/slopstopper-*/SKILL.md so every
+# contributor that clones the repo gets them automatically (Claude Code
+# auto-discovers project-level skills the same way as user-level). Disable
+# with --no-skills / SLOPSTOPPER_NO_SKILLS.
+#
+# Same atomic-fetch + frontmatter-validation logic as install-skill.sh:
+# fetch each SKILL.md to a temp file, validate it starts with `---`,
+# only then overwrite the destination. Re-runs that hit no upstream
+# change are no-ops. install-skill.sh remains a standalone way to refresh
+# just the skills without re-running the full installer.
+
+SKILL_NAMES=(
+  "slopstopper-install"
+  "slopstopper-triage"
+)
+OBSOLETE_SKILLS=(
+  "install-slopstopper"
+  "slopstopper-update"
+)
+
+install_skill_file() {
+  local skill="$1"
+  local src="https://raw.githubusercontent.com/hungovercoders/slopstopper/main/.claude/skills/${skill}/SKILL.md"
+  local dest_dir="${TARGET_DIR}/.claude/skills/${skill}"
+  local dest_file="${dest_dir}/SKILL.md"
+  local tmp_file
+  tmp_file="$(mktemp)"
+  # shellcheck disable=SC2064
+  trap "rm -f \"${tmp_file}\"" RETURN
+
+  mkdir -p "${dest_dir}"
+
+  if ! curl -fsSL "${src}" -o "${tmp_file}"; then
+    warn "Failed to download ${skill}/SKILL.md (non-fatal)."
+    return 1
+  fi
+
+  if ! head -n 1 "${tmp_file}" | grep -q "^---$"; then
+    warn "Downloaded ${skill}/SKILL.md does not look like a skill (no frontmatter). Skipping."
+    return 1
+  fi
+
+  if [ -f "${dest_file}" ]; then
+    if cmp -s "${tmp_file}" "${dest_file}"; then
+      info "${skill}: already up to date"
+    else
+      mv "${tmp_file}" "${dest_file}"
+      success "${skill}: refreshed"
+    fi
+  else
+    mv "${tmp_file}" "${dest_file}"
+    success "${skill}: installed"
+  fi
+}
 
 install_claude_skills() {
   if [ "$INSTALL_SKILLS" = "false" ]; then
     info "Skipping Claude Code skill install (--no-skills / SLOPSTOPPER_NO_SKILLS)."
     return 0
   fi
-  if [ ! -d "${HOME}/.claude" ]; then
-    info "No ~/.claude directory found — skipping Claude Code skill install."
-    info "If you set up Claude Code later, run:"
-    info "  curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash"
-    return 0
-  fi
+
   echo ""
   sep
-  echo "  🧠  Installing the SlopStopper Claude Code skill trio…"
+  echo "  🧠  Installing the SlopStopper Claude Code skills (project level)…"
   sep
-  if ! curl -fsSL "https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh" | bash; then
-    warn "Skill install failed (non-fatal). You can re-run it later:"
-    info "  curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash"
-    return 0
+
+  for skill in "${SKILL_NAMES[@]}"; do
+    install_skill_file "${skill}" || true
+  done
+
+  # Clean up obsolete skill directories left by older installer versions.
+  # Only act on directories we know we shipped previously — never delete
+  # something the adopter put there.
+  for obsolete in "${OBSOLETE_SKILLS[@]}"; do
+    obsolete_dir="${TARGET_DIR}/.claude/skills/${obsolete}"
+    if [ -d "${obsolete_dir}" ]; then
+      rm -rf "${obsolete_dir}"
+      info "Removed obsolete skill: ${obsolete}"
+    fi
+  done
+
+  # Heads-up if the user has stale user-level copies from the old install
+  # path — they'll shadow the project-level ones when Claude Code merges
+  # skill paths. Don't delete user state silently; surface and let them
+  # decide.
+  if [ -d "${HOME}/.claude/skills/slopstopper-install" ] \
+    || [ -d "${HOME}/.claude/skills/slopstopper-update" ] \
+    || [ -d "${HOME}/.claude/skills/slopstopper-triage" ]; then
+    warn "Stale user-level skills at ~/.claude/skills/slopstopper-* will shadow the project-level copies."
+    info "Clean up with:"
+    info "  rm -rf ~/.claude/skills/slopstopper-install \\"
+    info "         ~/.claude/skills/slopstopper-update \\"
+    info "         ~/.claude/skills/slopstopper-triage"
   fi
 }
 
