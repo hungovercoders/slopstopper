@@ -4,6 +4,15 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.8.0](https://github.com/hungovercoders/slopstopper/compare/v0.7.1...v0.8.0) (2026-06-20)
+
+
+### Features
+
+* **hygiene:** enforce and remediate the Map Pattern in entry-files check ([#276](https://github.com/hungovercoders/slopstopper/issues/276)) ([cc6de07](https://github.com/hungovercoders/slopstopper/commit/cc6de07b13a8f89e65fbe03110f8142c10136c23))
+* **skills:** install at project level and merge update into install ([3bd27f9](https://github.com/hungovercoders/slopstopper/commit/3bd27f9a40c3b8f7906631fc8b433b5c2187d956))
+* **skills:** install at project level and merge update into install ([5c58f81](https://github.com/hungovercoders/slopstopper/commit/5c58f81f1262ead4faf0e95104537a9a2a9ce7a4))
+
 ## [0.7.1](https://github.com/hungovercoders/slopstopper/compare/v0.7.0...v0.7.1) (2026-06-19)
 
 
