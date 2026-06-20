@@ -13,7 +13,7 @@ slopstopper doctor                  # verify the external tools you'll need
 slopstopper run hygiene:docs-size   # run a check (writes .ss/reports/...)
 ```
 
-> Published to PyPI on every release tag. `pipx upgrade slopstopper-cli` pulls the latest. Each release is also attached to [GitHub Releases](https://github.com/hungovercoders/slopstopper/releases/latest) with a Sigstore build-provenance attestation — verify with `gh attestation verify <wheel> --owner hungovercoders`.
+> Published to PyPI on every release tag. Each release is also attached to [GitHub Releases](https://github.com/hungovercoders/slopstopper/releases/latest) with a Sigstore build-provenance attestation — verify with `gh attestation verify <wheel> --owner hungovercoders`.
 
 The full suite into a repo (CLI + GitHub Actions workflows + Taskfile shim + config seed):
 
@@ -21,7 +21,7 @@ The full suite into a repo (CLI + GitHub Actions workflows + Taskfile shim + con
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 ```
 
-`install.sh` is idempotent — re-run any time to refresh workflows and `slopstopper-cli`.
+`install.sh` is idempotent — re-run any time to refresh workflows. It **pins** `slopstopper-cli` per-repo via `cli_version` in `.slopstopper.yml`, so a re-run reinstalls that exact version and no breaking release lands until you move the pin. See [Update](#update).
 
 ## Contents
 
@@ -42,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
 
 ## Prerequisites
 
-slopstopper-cli itself only needs Python. Each check subprocess-invokes its underlying tool (`semgrep`, `gitleaks`, `trivy`, `lizard`, `docker`, `node`) — deliberate licensing-boundary design. You install only the tools for checks you actually use; `slopstopper doctor` tells you what's installed and what's missing.
+slopstopper-cli needs only Python; each check subprocess-invokes its own tool (`semgrep`, `gitleaks`, `trivy`, `lizard`, `docker`, `node`), so you install only what the checks you use need. `slopstopper doctor` reports what's missing.
 
 - **Python 3.11+** — `pipx` recommended (`brew install pipx`)
 
@@ -66,11 +66,11 @@ Everything SlopStopper owns lives under the `ss` namespace so it can't clash wit
 
 | Item | Description |
 | ---- | ----------- |
-| `slopstopper-cli` (Python) | The product — every check runs through this. `pipx upgrade slopstopper-cli` refreshes it. |
+| `slopstopper-cli` (Python) | The product — every check runs through this. Pinned per-repo via `cli_version` in `.slopstopper.yml`; move the pin with `install.sh --upgrade-cli`. |
 | `.github/workflows/ss-*.yml` | Security, hygiene, reliability and operational workflows — all `ss-` prefixed |
 | `Taskfile.ss.yml` | Thin `task ss:*` shims that call the CLI — convenient for the local dev loop |
 | `Taskfile.yml` | Created if missing (else: prints the include block to paste in) |
-| `.slopstopper.yml` | Config seed — URLs, headers, thresholds, page lists (never overwritten on re-run) |
+| `.slopstopper.yml` | Config seed — `cli_version` pin, URLs, headers, thresholds, page lists (never overwritten on re-run; the pin moves only via `--upgrade-cli`) |
 | `.ss/reports/` | Where the CLI writes reports — `.gitignore`d |
 | `package.json` | Created (or `devDependencies` merged into an existing file) |
 
@@ -90,7 +90,7 @@ Five loops of feedback, all running on every PR and push to `main`:
 
 ## What each check needs
 
-The workflows split into three portability layers. Layer 1 runs the moment you install. Layers 2–3 need a small amount of configuration:
+Three portability layers. Layer 1 runs on install; layers 2–3 need a little config:
 
 | Layer | Checks | What you provide |
 | ----- | ------ | ---------------- |
@@ -100,11 +100,11 @@ The workflows split into three portability layers. Layer 1 runs the moment you i
 
 Don't use the doc-updater? Delete its workflows from `.github/workflows/` — re-running the installer respects deletions (tracked in `.ss/.workflows-installed`).
 
-Deploy is intentionally not a layer: connect your repo in the Cloudflare dash (Workers & Pages → Create → Connect to Git) and you get production deploys, PR previews and preview cleanup for free. See [Deployment](./docs/deployment/README.md) for the cutover steps.
+Deploy is intentionally not a layer: connect your repo in the Cloudflare dash and you get production deploys, PR previews and preview cleanup for free. See [Deployment](./docs/deployment/README.md) for the cutover steps.
 
 ## Same commands, both loops
 
-`task ss:<category>:<check>` is the canonical interface — humans, agents and CI all go through it, so the suite shares one invocation surface with the rest of your codebase. The shims call into `slopstopper-cli` under the hood; pass `--no-task` to `install.sh` if you'd rather skip Task and have your workflows call the CLI directly.
+`task ss:<category>:<check>` is the canonical interface — humans, agents and CI all go through it, so the suite shares one invocation surface with the rest of your codebase. The shims call `slopstopper-cli` under the hood; pass `--no-task` to `install.sh` to skip Task and have workflows call the CLI directly.
 
 ```bash
 task ss:hygiene:complexity                    # the canonical form
@@ -115,34 +115,37 @@ slopstopper run hygiene:complexity            # underlying CLI if you skip Task
 
 ## Configure
 
-Most checks work out of the box. Things to wire up if you want the full suite:
+Most checks work out of the box. To wire up the full suite:
 
-**[`.slopstopper.yml`](./.slopstopper.yml.example)** at the repo root is the canonical config carrier. `install.sh` seeds a starter file with `headers.source: null` and empty URLs so the first PR is green; you opt knobs in by editing the file. Survives reinstalls.
+**[`.slopstopper.yml`](./.slopstopper.yml.example)** at the repo root is the canonical config carrier. `install.sh` seeds a starter file (`headers.source: null`, empty URLs) so the first PR is green; opt knobs in by editing it. Survives reinstalls.
 
 **Repo secrets** (under Settings → Secrets and variables → Actions):
 
-- `COPILOT_GITHUB_TOKEN` — for the agentic doc-updater (`ss-hygiene-doc-updater`), a [gh-aw](https://github.github.com/gh-aw/) workflow. Setup guide: [`docs/hygiene/DOC_UPDATER.md`](./docs/hygiene/DOC_UPDATER.md).
+- `COPILOT_GITHUB_TOKEN` — for the agentic doc-updater, a [gh-aw](https://github.github.com/gh-aw/) workflow. Setup: [`docs/hygiene/DOC_UPDATER.md`](./docs/hygiene/DOC_UPDATER.md).
 
-No secrets are needed for deploy — Cloudflare Workers Builds is connected via the Cloudflare GitHub App.
+Deploy needs no secrets — Cloudflare Workers Builds connects via the GitHub App.
 
 **Tuning files** (`.slopstopper.yml` covers most config; these handle the rest):
 
-- Complexity gate — CCN > 10 threshold lives in `.github/workflows/ss-hygiene-complexity-check.yml` (awk filter on the lizard CSV)
+- Complexity gate — CCN > 10 threshold in `.github/workflows/ss-hygiene-complexity-check.yml`
 - Lighthouse budgets — bundled in `cli/slopstopper/data/lighthouserc{,.prod}.json`; override via `.ss/`
-- Doc size thresholds — `hygiene.docs_size.*` keys in [`.slopstopper.yml.example`](./.slopstopper.yml.example) (`max_total_size_kb`, `max_file_size_kb`, `max_files`)
+- Doc size thresholds — `hygiene.docs_size.*` keys in [`.slopstopper.yml.example`](./.slopstopper.yml.example)
 
 ## Update
 
-CLI only:
+Standalone CLI (unpinned): `pipx upgrade slopstopper-cli`.
 
-```bash
-pipx upgrade slopstopper-cli
-```
-
-Full suite (refreshes CLI + workflows + Taskfile shim — `.slopstopper.yml` and your customisations survive):
+Full suite — refreshes workflows + shims and reinstalls the **pinned** `slopstopper-cli` (config and customisations survive; the pin holds):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
+```
+
+Move the pin when ready (rewrites `cli_version` — commit so CI matches; nothing reaches you until you do). See [docs/runbooks/UPGRADE_CLI.md](docs/runbooks/UPGRADE_CLI.md):
+
+```bash
+bash install.sh --upgrade-cli        # latest
+bash install.sh --cli-version X.Y.Z  # exact
 ```
 
 ## Contribute
@@ -210,7 +213,7 @@ Deployed via [Cloudflare Workers Builds](https://developers.cloudflare.com/worke
 
 ## Acknowledgements
 
-slopstopper-cli ships with no third-party Python dependencies — every check invokes its tool via `subprocess` only. Full credit, licences and upstream links for every tool we drive (Semgrep, Gitleaks, Trivy, Lizard, OWASP ZAP, Playwright, axe-core, Lighthouse CI, markdownlint-cli, Docker, GitHub CLI, Node.js) live in [`ATTRIBUTIONS.md`](./ATTRIBUTIONS.md).
+slopstopper-cli ships with no third-party Python dependencies — every check invokes its tool via `subprocess` only. Full credit, licences and upstream links for every tool we drive live in [`ATTRIBUTIONS.md`](./ATTRIBUTIONS.md).
 
 ## License
 

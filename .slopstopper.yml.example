@@ -23,6 +23,24 @@
 #   - Anything platform-specific that's already a Cloudflare/Vercel/Netlify
 #     native config (e.g. wrangler.jsonc, vercel.json, netlify.toml)
 
+# ── slopstopper-cli version pin ──────────────────────────────────────
+# The slopstopper-cli version this repo installs and runs every check
+# through. install.sh and the ss-*.yml workflows both install
+# `slopstopper-cli==<cli_version>`, so a breaking upstream release never
+# reaches you until you choose to move the pin.
+#
+# Lifecycle:
+#   - First install pins this to the latest published version and records
+#     it here. Commit the result so CI installs the same version.
+#   - A plain `install.sh` re-run LEAVES this untouched — refreshes never
+#     bump the CLI.
+#   - Move it deliberately:
+#       install.sh --upgrade-cli          # bump to the latest on PyPI
+#       install.sh --cli-version X.Y.Z    # pin to an exact version
+#   - Blank/absent = installer pins to latest on the next install; CI
+#     falls back to the latest published version until then.
+cli_version:
+
 # ── Node version pin ─────────────────────────────────────────────────
 # Workflows use ${{ vars.SLOPSTOPPER_NODE_VERSION || '20' }} in their
 # setup-node steps. If your project needs Node 22+ (Astro 6, recent

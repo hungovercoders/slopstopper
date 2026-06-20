@@ -92,7 +92,7 @@ sandbox. The piped form remains the canonical convenience command for humans:
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 ```
 
-The installer is idempotent. Re-running it pulls newer checks but respects deletions (tracked via `.ss/.workflows-installed`), and refreshes `slopstopper-cli` via `pipx upgrade` (or re-runs `pip install --user --upgrade` when pipx isn't available). All slopstopper files live under the `ss` namespace — your repo's existing files are not touched. If a pre-CLI install left a `.ss/scripts/` directory behind, the installer scrubs it on first run.
+The installer is idempotent. Re-running it pulls newer checks but respects deletions (tracked via `.ss/.workflows-installed`). It does **not** bump `slopstopper-cli`: the CLI is pinned per-repo via `cli_version` in `.slopstopper.yml`, and a plain re-run reinstalls exactly that pinned version (`pipx install --force slopstopper-cli==<cli_version>`, or `pip install --user --force-reinstall` when pipx is absent). A breaking upstream release therefore can't reach the repo until someone moves the pin with `install.sh --upgrade-cli` (latest) or `install.sh --cli-version X.Y.Z` (exact). All slopstopper files live under the `ss` namespace — your repo's existing files are not touched. If a pre-CLI install left a `.ss/scripts/` directory behind, the installer scrubs it on first run.
 
 **`install.sh` also installs the SlopStopper Claude Code skills at project level** — `<target>/.claude/skills/slopstopper-{install,triage}/SKILL.md` — so every contributor that clones the repo picks them up automatically (Claude Code auto-discovers project-level skills). Commit the resulting files alongside the workflows. Pass `--no-skills` or set `SLOPSTOPPER_NO_SKILLS=1` to disable. To refresh just the skills later without re-running the whole installer, use `install-skill.sh` from inside the repo. If you've previously run an older version of `install-skill.sh` that wrote to `~/.claude/skills/slopstopper-*`, the installer warns you so you can clean up the user-level copies before they shadow the project-level ones.
 
@@ -104,12 +104,12 @@ Three categories of write, in order of "how much trust to extend on re-run":
 
 - `Taskfile.ss.yml`, `.ss/server.js`, `.ss/.workflows-installed`
 - Workflows under `.github/workflows/ss-*.yml` that are in `GENERIC_WORKFLOWS` and not listed in `.slopstopper.yml` `workflows.disabled`
-- `slopstopper-cli` itself (via `pipx upgrade`, user-profile level)
+- `slopstopper-cli` itself — reinstalled at the **pinned** `cli_version` from `.slopstopper.yml` (`pipx install --force`, user-profile level). A plain re-run never bumps it; `--upgrade-cli` / `--cli-version` do
 - `<repo>/.claude/skills/slopstopper-install/SKILL.md` and `<repo>/.claude/skills/slopstopper-triage/SKILL.md` (project level — opt out with `--no-skills`)
 
 **Seeded only if missing — adopter-owned, NEVER overwritten on re-run:**
 
-- `.slopstopper.yml` (config; once it exists `install.sh` never touches it)
+- `.slopstopper.yml` (config; once it exists `install.sh` never touches it — **except** the `cli_version` pin line, which the installer writes on first install and rewrites only when you pass `--upgrade-cli` / `--cli-version`)
 - `.github/labeler.yml`, `.zap/rules.tsv`, `.markdownlint.json`
 - Root `Taskfile.yml` — only if absent; otherwise install.sh prints the `includes:` block to paste in
 - `package.json` — only if absent (otherwise see below)
@@ -144,7 +144,8 @@ bash install.sh --no-task [TARGET_DIR]         # CLI-direct mode
 
 Sanity-check the install dropped what you expect:
 
-- `slopstopper-cli` — installed system-wide via `pipx` (preferred) or `pip install --user`. Confirm with `slopstopper --version`. Every check runs through this.
+- `slopstopper-cli` — installed system-wide via `pipx` (preferred) or `pip install --user`, **pinned to `cli_version` in `.slopstopper.yml`**. Confirm with `slopstopper --version` (must equal the pin). Every check runs through this. First install records the latest published version as the pin; it never moves on a plain re-run.
+- `.slopstopper.yml` `cli_version:` — the per-repo CLI pin. Both `install.sh` and the `ss-*.yml` workflows install `slopstopper-cli==<cli_version>`, so local and CI run the same version. Commit it. Move it deliberately with `install.sh --upgrade-cli` or `install.sh --cli-version X.Y.Z`.
 - `Taskfile.ss.yml` — thin `task ss:*` shims that each call `slopstopper run <category>:<check>` under the covers. Useful for adopters who already drive their dev loop with `task`.
 - `Taskfile.yml` — created if missing (otherwise: needs manual `includes:` block per Step 1.1).
 - `.ss/server.js` — tiny static-server shim for serving the built site on `:8080` during the local loop. The **only** file the installer seeds into `.ss/` for a fresh adopter — every other CLI-managed file (Playwright specs, Playwright config, lighthouserc dev + prod) lives inside the slopstopper-cli wheel and only lands in `.ss/` if you opt in by writing a same-named override there.
@@ -342,7 +343,7 @@ The command:
 
 **Skip this section on a first install.** It's relevant only when `.slopstopper.yml` and `.ss/.workflows-installed` both existed in Step 1 (mode-detection) — i.e. the installer just ran in-place over an existing slopstopper install.
 
-`install.sh` is idempotent but **not transactional** — every workflow YAML in `GENERIC_WORKFLOWS`, `Taskfile.ss.yml`, and `.ss/server.js` is rewritten wholesale on every run, and the CLI is upgraded. A few classes of customization get wiped and need re-applying; a few classes of upstream change need manual catch-up because the installer doesn't drag everything across. Walk this section before the local-verify loop in Step 7.
+`install.sh` is idempotent but **not transactional** — every workflow YAML in `GENERIC_WORKFLOWS`, `Taskfile.ss.yml`, and `.ss/server.js` is rewritten wholesale on every run, and the CLI is reinstalled at the **pinned** `cli_version` (a refresh never bumps it — see "Move the CLI pin" below). A few classes of customization get wiped and need re-applying; a few classes of upstream change need manual catch-up because the installer doesn't drag everything across. Walk this section before the local-verify loop in Step 7.
 
 ### Diff installed workflows against upstream
 
@@ -372,6 +373,17 @@ What still needs re-checking after a refresh:
   ```
 
 - **`.github/labeler.yml`** if upstream's labeler template added categories you want (the installer never overwrites your existing file, so new categories don't land automatically).
+
+### Move the CLI pin (intentional upgrades)
+
+`slopstopper-cli` is pinned per-repo in `.slopstopper.yml` (`cli_version:`), and a plain refresh installs exactly that version — it never bumps the CLI. This is deliberate: a breaking upstream release can't surprise the repo. To move the pin:
+
+```bash
+bash install.sh --upgrade-cli        # bump to the latest published version
+bash install.sh --cli-version X.Y.Z  # pin to an exact version
+```
+
+Either flag rewrites the `cli_version` line in `.slopstopper.yml`, reinstalls that version locally, and the change ships to CI once you commit. The post-install banner surfaces "PyPI latest is X — run `install.sh --upgrade-cli`" when the pin is behind, so you always know an upgrade is available without it being forced. Before bumping, skim the slopstopper changelog for breaking changes, then run the Step 7 local-verify loop so the new version is green before you push the pin bump.
 
 ### Spot newly-shipped knobs in `.slopstopper.yml.example`
 

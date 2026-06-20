@@ -57,12 +57,19 @@ jobs:
 
       - name: Install slopstopper-cli
         run: |
-          # Editable install when run inside slopstopper.dev itself
-          # (cli/ source present); PyPI install for adopter repos.
+          # Editable install when run inside slopstopper.dev itself (cli/
+          # source present); pinned PyPI install for adopter repos. The
+          # cli_version in .slopstopper.yml is the per-repo pin, parsed with
+          # the same sed program install.sh uses so install and CI agree.
           if [ -f cli/pyproject.toml ]; then
             pip install -e ./cli
           else
-            pip install slopstopper-cli
+            v="$(sed -n 's/^cli_version:[[:space:]]*["'\'']\{0,1\}\([0-9][0-9.]*\).*/\1/p' .slopstopper.yml 2>/dev/null | head -1)"
+            if [ -n "$v" ]; then
+              pip install "slopstopper-cli==$v"
+            else
+              pip install slopstopper-cli
+            fi
           fi
 
       - name: Install Task runner
