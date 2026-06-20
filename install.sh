@@ -123,6 +123,26 @@ error()   { echo "  ❌ $*" >&2; exit 1; }
 
 sep() { echo "────────────────────────────────────────────────────────────"; }
 
+# Latest slopstopper-cli version published on PyPI. Empty string on any
+# failure (offline, no curl, malformed JSON) — callers treat empty as
+# "unknown" and fall back to best-effort behaviour rather than blocking.
+latest_pypi_version() {
+  curl -fsSL "https://pypi.org/pypi/slopstopper-cli/json" 2>/dev/null \
+    | python3 -c 'import sys,json; print(json.load(sys.stdin)["info"]["version"])' 2>/dev/null \
+    || true
+}
+
+# Installed CLI version as a bare semver (e.g. "0.8.0"), or empty if the
+# binary is absent. `slopstopper --version` prints "slopstopper <ver>".
+installed_cli_version() {
+  slopstopper --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
+}
+
+# version_lt A B → exit 0 if A is strictly older than B (semver ordering).
+version_lt() {
+  [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$1" ]
+}
+
 # ── prerequisite check ────────────────────────────────────────────────────────
 #
 # Surface missing tools up front rather than letting the install fail mid-flight
@@ -269,14 +289,13 @@ install_cli() {
     return 0
   fi
 
-  # Capture the pre-install version (empty if not installed). After
-  # installing/upgrading, compare against the post-install version and
-  # warn if pipx silently kept a stale build. Catches the "0.1.0 reported
-  # as just-installed" failure mode that swallowing stderr used to mask.
-  local pre_version=""
-  if command -v slopstopper &>/dev/null; then
-    pre_version="$(slopstopper --version 2>&1 || true)"
-  fi
+  # The real latest published on PyPI. Knowing this lets us detect the
+  # "pipx upgrade exited 0 but upgraded nothing" failure mode that a
+  # pre-vs-post string compare cannot — that compare can't tell "already
+  # current" from "silently stale". Empty if PyPI is unreachable, in which
+  # case we degrade to the old best-effort path.
+  local latest_version
+  latest_version="$(latest_pypi_version)"
 
   if command -v pipx &>/dev/null; then
     if pipx list 2>/dev/null | grep -q "slopstopper-cli"; then
@@ -302,17 +321,34 @@ install_cli() {
   fi
 
   local post_version
-  post_version="$(slopstopper --version 2>&1 || true)"
+  post_version="$(installed_cli_version)"
+
+  # If PyPI has a newer release than what we actually ended up with, the
+  # upgrade silently no-op'd (pipx exits 0 without doing anything). Don't
+  # trust its exit code — force a clean reinstall. Cheap, deterministic,
+  # and the only reliable way to land the published version.
+  if [ -n "$latest_version" ] && [ -n "$post_version" ] && version_lt "$post_version" "$latest_version"; then
+    warn "slopstopper-cli is $post_version but PyPI has $latest_version — forcing a clean reinstall."
+    if command -v pipx &>/dev/null; then
+      pipx install --force slopstopper-cli >/dev/null
+    else
+      python3 -m pip install --user --force-reinstall slopstopper-cli >/dev/null
+    fi
+    post_version="$(installed_cli_version)"
+  fi
+
   success "slopstopper-cli installed ($post_version)"
 
-  # If an upgrade was supposed to happen (pre_version was non-empty) and
-  # the version string didn't change, surface that loudly. pipx sometimes
-  # claims success when the version on PyPI is the same as the local
-  # build; that's fine. But a genuinely stale local install + a silently-
-  # failed upgrade looks identical from the success line — so we warn
-  # rather than error, and tell the adopter how to force a refresh.
-  if [ -n "$pre_version" ] && [ "$pre_version" = "$post_version" ]; then
-    warn "Version unchanged after upgrade attempt ($post_version). If you expected a newer release, run 'pipx install --force slopstopper-cli' to refresh."
+  # Stash the version facts for the completion banner so installed-vs-latest
+  # is surfaced loudly at the end, not buried in a mid-stream warn that
+  # scrolls past.
+  SLOPSTOPPER_CLI_VERSION="$post_version"
+  SLOPSTOPPER_CLI_LATEST="$latest_version"
+
+  # Still behind even after a forced reinstall → something is wrong with the
+  # network or a PyPI mirror; tell the adopter how to retry by hand.
+  if [ -n "$latest_version" ] && [ -n "$post_version" ] && version_lt "$post_version" "$latest_version"; then
+    warn "Still on $post_version after a forced reinstall (PyPI latest: $latest_version). Check your network/PyPI mirror, then run 'pipx install --force slopstopper-cli'."
   fi
 }
 
@@ -808,6 +844,21 @@ sep
 echo ""
 echo "  🎉 Installation complete!"
 echo ""
+# Surface installed-vs-latest right under the banner. "Behind" is loud so a
+# silently-stale CLI can't masquerade as a clean install.
+ss_installed="${SLOPSTOPPER_CLI_VERSION:-}"
+ss_latest="${SLOPSTOPPER_CLI_LATEST:-}"
+if [ -n "$ss_installed" ]; then
+  if [ -n "$ss_latest" ] && version_lt "$ss_installed" "$ss_latest"; then
+    warn "slopstopper-cli $ss_installed installed — but PyPI latest is $ss_latest. You are BEHIND."
+    warn "Run 'pipx install --force slopstopper-cli' to land $ss_latest."
+  elif [ -n "$ss_latest" ]; then
+    echo "  📦 slopstopper-cli $ss_installed (latest on PyPI)"
+  else
+    echo "  📦 slopstopper-cli $ss_installed"
+  fi
+  echo ""
+fi
 echo "  ── SlopStopper status for this repo ──────────────────────────────"
 echo ""
 echo "  ✅ Active now (no config needed — work on any code):"
