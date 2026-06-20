@@ -68,6 +68,12 @@ if [ -n "${SLOPSTOPPER_NO_SKILLS:-}" ]; then
   INSTALL_SKILLS=false
 fi
 
+# slopstopper-cli version control. The pinned version lives in the target's
+# .slopstopper.yml (cli_version:). A plain run honours that pin; these flags
+# move it deliberately. CLI_VERSION_FLAG wins over UPGRADE_CLI if both given.
+UPGRADE_CLI=false
+CLI_VERSION_FLAG=""
+
 POSITIONAL=()
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -79,14 +85,30 @@ while [ "$#" -gt 0 ]; do
       INSTALL_SKILLS=false
       shift
       ;;
+    --upgrade-cli)
+      UPGRADE_CLI=true
+      shift
+      ;;
+    --cli-version)
+      CLI_VERSION_FLAG="${2:-}"
+      [ -n "$CLI_VERSION_FLAG" ] || { echo "  ❌ --cli-version requires a version argument (e.g. --cli-version 1.2.3)" >&2; exit 1; }
+      shift 2
+      ;;
+    --cli-version=*)
+      CLI_VERSION_FLAG="${1#*=}"
+      [ -n "$CLI_VERSION_FLAG" ] || { echo "  ❌ --cli-version requires a version argument (e.g. --cli-version=1.2.3)" >&2; exit 1; }
+      shift
+      ;;
     --help|-h)
       cat <<'USAGE'
 install.sh — install the SlopStopper quality suite into a target repo.
 
 Usage:
-  bash install.sh [TARGET_DIR]              # Task-driven workflows (default)
-  bash install.sh --no-task [TARGET_DIR]    # CLI-driven workflows (no Task install)
-  bash install.sh --no-skills [TARGET_DIR]  # Skip installing Claude Code skills
+  bash install.sh [TARGET_DIR]                 # Task-driven workflows (default)
+  bash install.sh --no-task [TARGET_DIR]       # CLI-driven workflows (no Task install)
+  bash install.sh --no-skills [TARGET_DIR]     # Skip installing Claude Code skills
+  bash install.sh --upgrade-cli [TARGET_DIR]   # Bump the pinned CLI to the latest on PyPI
+  bash install.sh --cli-version X.Y.Z [TARGET] # Pin the CLI to an exact version
 
 Env var equivalents:
   SLOPSTOPPER_NO_TASK=1 bash install.sh
@@ -95,6 +117,11 @@ Env var equivalents:
 Default mode installs workflows that invoke `task ss:<check>` so the suite
 shares a single invocation surface with the rest of your codebase. `--no-task`
 installs workflows that invoke `slopstopper run <check>` directly.
+
+The slopstopper-cli version is pinned per-repo in .slopstopper.yml (cli_version:).
+A plain run installs that pinned version and never moves it, so a breaking
+upstream release can't reach you unannounced. First install pins to the latest
+published version; use --upgrade-cli or --cli-version to move the pin later.
 
 The installer also writes the SlopStopper Claude Code skills into
 <target>/.claude/skills/slopstopper-*/SKILL.md so every contributor on the
@@ -127,6 +154,13 @@ sep() { echo "──────────────────────
 # failure (offline, no curl, malformed JSON) — callers treat empty as
 # "unknown" and fall back to best-effort behaviour rather than blocking.
 latest_pypi_version() {
+  # Test seam (used by cli/tests/test_install.py alongside SKIP_CLI_INSTALL):
+  # pin the "latest" answer so first-install/--upgrade-cli paths are
+  # deterministic and offline. Not documented for adopters.
+  if [ -n "${SLOPSTOPPER_FORCE_LATEST:-}" ]; then
+    echo "$SLOPSTOPPER_FORCE_LATEST"
+    return 0
+  fi
   curl -fsSL "https://pypi.org/pypi/slopstopper-cli/json" 2>/dev/null \
     | python3 -c 'import sys,json; print(json.load(sys.stdin)["info"]["version"])' 2>/dev/null \
     || true
@@ -141,6 +175,29 @@ installed_cli_version() {
 # version_lt A B → exit 0 if A is strictly older than B (semver ordering).
 version_lt() {
   [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$1" ]
+}
+
+# Read the pinned cli_version from a .slopstopper.yml. Matches the single
+# top-level `cli_version:` scalar (optionally quoted) and extracts the
+# semver token. Empty if the file or key is absent. This is the canonical
+# parse — the ss-*.yml workflows use the identical sed program so install
+# and CI agree on what the pin is without needing the CLI (which isn't
+# installed yet) or a YAML library.
+read_cli_version() {
+  [ -f "$1" ] || return 0
+  sed -n 's/^cli_version:[[:space:]]*["'\'']\{0,1\}\([0-9][0-9.]*\).*/\1/p' "$1" | head -1
+}
+
+# Record the resolved version into .slopstopper.yml: replace the existing
+# cli_version line, else append one. `-i.bak` + rm keeps this portable
+# across BSD (macOS) and GNU sed.
+write_cli_version() {
+  local cfg="$1" ver="$2"
+  if grep -qE '^cli_version:' "$cfg" 2>/dev/null; then
+    sed -i.bak "s/^cli_version:.*/cli_version: '$ver'/" "$cfg" && rm -f "$cfg.bak"
+  else
+    printf "cli_version: '%s'\n" "$ver" >> "$cfg"
+  fi
 }
 
 # ── prerequisite check ────────────────────────────────────────────────────────
@@ -271,54 +328,82 @@ YAML
   success "Taskfile.yml installed"
 fi
 
-# 3. slopstopper-cli — install (or refresh) the Python CLI that every
-#    check runs through. Pulled from PyPI, so adopters always get the
-#    latest release without us having to bump a pinned wheel URL across
-#    docs and workflows on every cut. `pipx` is preferred (isolates the
-#    install in its own venv); falls back to `pip install --user`.
+# 3. slopstopper-cli — install the Python CLI that every check runs
+#    through, pinned to the version recorded in .slopstopper.yml
+#    (cli_version:). Pinning means a breaking upstream release never lands
+#    on an adopter until they move the pin (--upgrade-cli / --cli-version).
+#    `pipx` is preferred (isolates the install in its own venv); falls back
+#    to `pip install --user`.
 #
 # If an `.ss/` overlay (specs, playwright config, lighthouse config) is
 # already present in the target, the CLI's templates module prefers
 # those files over the package data — same shape as the workflows.
+#
+# The pin lives in the adopter's .slopstopper.yml, so seed that file now —
+# before install_cli — so the resolved version can be read from and written
+# back to it. The later template-seeding pass leaves an existing file alone.
+if [ ! -f "$TARGET_DIR/.slopstopper.yml" ] && [ -f "$SCRIPT_DIR/.slopstopper.yml.example" ]; then
+  cp "$SCRIPT_DIR/.slopstopper.yml.example" "$TARGET_DIR/.slopstopper.yml"
+  success ".slopstopper.yml: seeded $TARGET_DIR/.slopstopper.yml"
+fi
+
+# Decide which version to install and pin:
+#   --cli-version X.Y.Z  → that exact version
+#   --upgrade-cli        → the latest on PyPI
+#   pin already set      → honour it (a plain refresh never moves the pin)
+#   no pin yet           → latest on PyPI (first install records it)
+resolve_pinned_version() {
+  local existing
+  existing="$(read_cli_version "$TARGET_DIR/.slopstopper.yml")"
+  if [ -n "$CLI_VERSION_FLAG" ]; then
+    echo "$CLI_VERSION_FLAG"
+  elif [ "$UPGRADE_CLI" = "true" ] || [ -z "$existing" ]; then
+    latest_pypi_version
+  else
+    echo "$existing"
+  fi
+}
+
 install_cli() {
-  # Escape hatch used by cli/tests/test_install.py so the bash-side
-  # install tests don't have to hit PyPI on every run. Adopter-facing
-  # docs don't mention this — it's strictly an internal test affordance.
+  local cfg="$TARGET_DIR/.slopstopper.yml"
+  local pre_version pinned
+  pre_version="$(installed_cli_version)"
+  pinned="$(resolve_pinned_version)"
+
+  # Record the pin so first-install and the upgrade flags persist it, and so
+  # CI installs the same version. If we couldn't determine one (offline first
+  # install), leave the pin blank and fall back to an unpinned install rather
+  # than blocking the whole install.
+  if [ -n "$pinned" ] && [ -f "$cfg" ]; then
+    write_cli_version "$cfg" "$pinned"
+  fi
+
+  # Escape hatch for cli/tests/test_install.py: skip the actual package
+  # install (and the PATH check), but only AFTER the pin is resolved and
+  # written, so tests can assert on cli_version without hitting PyPI.
   if [ "${SKIP_CLI_INSTALL:-0}" = "1" ]; then
     info "Skipping slopstopper-cli install (SKIP_CLI_INSTALL=1)"
+    SLOPSTOPPER_CLI_VERSION="$pinned"
+    SLOPSTOPPER_CLI_PREVIOUS="$pre_version"
     return 0
   fi
 
-  # The real latest published on PyPI. Knowing this lets us detect the
-  # "pipx upgrade exited 0 but upgraded nothing" failure mode that a
-  # pre-vs-post string compare cannot — that compare can't tell "already
-  # current" from "silently stale". Empty if PyPI is unreachable, in which
-  # case we degrade to the old best-effort path.
-  local latest_version
-  latest_version="$(latest_pypi_version)"
-
-  # Pre-install version (empty if not yet installed). Lets us tell the
-  # adopter what an upgrade actually changed — old → new plus release notes.
-  local pre_version
-  pre_version="$(installed_cli_version)"
+  # Install exactly. --force makes pipx/pip deterministically replace
+  # whatever is currently installed with the requested version — it defeats
+  # the "exit 0 but did nothing" no-op and also handles a pin that moves
+  # backwards (a downgrade).
+  local spec="slopstopper-cli"
+  [ -n "$pinned" ] && spec="slopstopper-cli==$pinned"
 
   if command -v pipx &>/dev/null; then
-    if pipx list 2>/dev/null | grep -q "slopstopper-cli"; then
-      info "Refreshing slopstopper-cli via pipx…"
-      # Do NOT swallow stderr — pipx upgrade failures used to vanish
-      # silently and the success message lied about the version.
-      if ! pipx upgrade slopstopper-cli; then
-        warn "pipx upgrade failed — falling through to 'pipx install --force'."
-        pipx install --force slopstopper-cli >/dev/null
-      fi
-    else
-      info "Installing slopstopper-cli via pipx…"
-      pipx install slopstopper-cli >/dev/null
-    fi
+    info "Installing $spec via pipx…"
+    pipx install --force "$spec" >/dev/null \
+      || error "pipx install $spec failed. Check the version exists on PyPI and your network, then retry."
   else
     warn "pipx not found — falling back to 'pip install --user'."
     warn "Install pipx for the cleanest experience: https://pipx.pypa.io/"
-    python3 -m pip install --user --upgrade slopstopper-cli >/dev/null
+    python3 -m pip install --user --force-reinstall "$spec" >/dev/null \
+      || error "pip install $spec failed. Check the version exists on PyPI and your network, then retry."
   fi
 
   if ! command -v slopstopper &>/dev/null; then
@@ -328,34 +413,20 @@ install_cli() {
   local post_version
   post_version="$(installed_cli_version)"
 
-  # If PyPI has a newer release than what we actually ended up with, the
-  # upgrade silently no-op'd (pipx exits 0 without doing anything). Don't
-  # trust its exit code — force a clean reinstall. Cheap, deterministic,
-  # and the only reliable way to land the published version.
-  if [ -n "$latest_version" ] && [ -n "$post_version" ] && version_lt "$post_version" "$latest_version"; then
-    warn "slopstopper-cli is $post_version but PyPI has $latest_version — forcing a clean reinstall."
-    if command -v pipx &>/dev/null; then
-      pipx install --force slopstopper-cli >/dev/null
-    else
-      python3 -m pip install --user --force-reinstall slopstopper-cli >/dev/null
-    fi
-    post_version="$(installed_cli_version)"
+  # The installed version must match the pin we asked for. A mismatch means
+  # the pinned version doesn't exist on PyPI or a mirror served stale data —
+  # fail loudly rather than limp on the wrong version.
+  if [ -n "$pinned" ] && [ -n "$post_version" ] && [ "$post_version" != "$pinned" ]; then
+    error "Asked for slopstopper-cli==$pinned but $post_version is on PATH. Verify the version exists on PyPI, then run 'pipx install --force slopstopper-cli==$pinned'."
   fi
 
-  success "slopstopper-cli installed ($post_version)"
+  success "slopstopper-cli installed ($post_version, pinned in .slopstopper.yml)"
 
-  # Stash the version facts for the completion banner so installed-vs-latest
-  # is surfaced loudly at the end, not buried in a mid-stream warn that
-  # scrolls past.
+  # Stash facts for the completion banner. LATEST is informational now — a
+  # pin behind latest is a deliberate choice, not a fault.
   SLOPSTOPPER_CLI_VERSION="$post_version"
-  SLOPSTOPPER_CLI_LATEST="$latest_version"
+  SLOPSTOPPER_CLI_LATEST="$(latest_pypi_version)"
   SLOPSTOPPER_CLI_PREVIOUS="$pre_version"
-
-  # Still behind even after a forced reinstall → something is wrong with the
-  # network or a PyPI mirror; tell the adopter how to retry by hand.
-  if [ -n "$latest_version" ] && [ -n "$post_version" ] && version_lt "$post_version" "$latest_version"; then
-    warn "Still on $post_version after a forced reinstall (PyPI latest: $latest_version). Check your network/PyPI mirror, then run 'pipx install --force slopstopper-cli'."
-  fi
 }
 
 install_cli
@@ -619,11 +690,9 @@ seed_template() {
   success "$label: seeded $dst"
 }
 
-# .slopstopper.yml — config carrier. Seeded from the repo-root example
-# (which doubles as the schema reference — single source of truth).
-seed_template ".slopstopper.yml" \
-  "$SCRIPT_DIR/.slopstopper.yml.example" \
-  "$TARGET_DIR/.slopstopper.yml"
+# .slopstopper.yml — config carrier (schema reference + adopter seed) is
+# seeded earlier, just before install_cli, so the cli_version pin can be read
+# from and written back to it during the CLI install.
 
 # .github/labeler.yml — config for ss-hygiene-auto-label-pr.yml
 seed_template ".github/labeler.yml" \
@@ -850,19 +919,20 @@ sep
 echo ""
 echo "  🎉 Installation complete!"
 echo ""
-# Surface installed-vs-latest right under the banner. "Behind" is loud so a
-# silently-stale CLI can't masquerade as a clean install.
+# Surface the pinned version under the banner. Being behind latest is a
+# deliberate choice now (the pin), so it's an informational nudge — not an
+# alarm — with the one command that moves it.
 ss_installed="${SLOPSTOPPER_CLI_VERSION:-}"
 ss_latest="${SLOPSTOPPER_CLI_LATEST:-}"
 ss_previous="${SLOPSTOPPER_CLI_PREVIOUS:-}"
 if [ -n "$ss_installed" ]; then
   if [ -n "$ss_latest" ] && version_lt "$ss_installed" "$ss_latest"; then
-    warn "slopstopper-cli $ss_installed installed — but PyPI latest is $ss_latest. You are BEHIND."
-    warn "Run 'pipx install --force slopstopper-cli' to land $ss_latest."
+    echo "  📦 slopstopper-cli $ss_installed (pinned in .slopstopper.yml)"
+    info "PyPI latest is $ss_latest — run 'install.sh --upgrade-cli' when you're ready to move the pin."
   elif [ -n "$ss_latest" ]; then
-    echo "  📦 slopstopper-cli $ss_installed (latest on PyPI)"
+    echo "  📦 slopstopper-cli $ss_installed (pinned, latest on PyPI)"
   else
-    echo "  📦 slopstopper-cli $ss_installed"
+    echo "  📦 slopstopper-cli $ss_installed (pinned in .slopstopper.yml)"
   fi
   # On an actual upgrade, surface old → new and where to read what changed,
   # so an adopter (or agent) isn't left guessing the new feature set.

@@ -25,24 +25,123 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 INSTALL_SH = REPO_ROOT / "install.sh"
 
 
-def _run_install(target: Path, *, env_extra: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+def _run_install(
+    target: Path,
+    *,
+    args: list[str] | None = None,
+    env_extra: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
     """Run install.sh against the given target dir. Returns the completed process.
 
     Always sets SKIP_CLI_INSTALL=1 so tests don't pipx-install from PyPI
     on every invocation — these tests exercise the bash-side behaviour
-    (workflow tracking, headers seeding), not the CLI install itself.
+    (workflow tracking, headers seeding, cli_version pinning), not the CLI
+    install itself. Extra flags (e.g. ["--upgrade-cli"]) go before the
+    target via `args`.
     """
     env = os.environ.copy()
     env["SKIP_CLI_INSTALL"] = "1"
     if env_extra:
         env.update(env_extra)
     return subprocess.run(
-        ["bash", str(INSTALL_SH), str(target)],
+        ["bash", str(INSTALL_SH), *(args or []), str(target)],
         capture_output=True,
         text=True,
         env=env,
         cwd=REPO_ROOT,
     )
+
+
+def _read_pin(target: Path) -> str | None:
+    """Return the cli_version value recorded in the target's .slopstopper.yml,
+    or None if the key is absent / has no value. Mirrors the sed parse used by
+    install.sh and the workflows."""
+    cfg = target / ".slopstopper.yml"
+    if not cfg.exists():
+        return None
+    for line in cfg.read_text().splitlines():
+        if line.startswith("cli_version:"):
+            value = line.split(":", 1)[1].strip().strip("'\"")
+            return value or None
+    return None
+
+
+# ── cli_version pin ──────────────────────────────────────────────
+
+
+def test_cli_version_flag_writes_exact_pin(tmp_path):
+    """--cli-version X.Y.Z records that exact version in .slopstopper.yml."""
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, args=["--cli-version", "9.9.9"])
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert _read_pin(target) == "9.9.9"
+
+
+def test_first_install_records_latest_as_pin(tmp_path):
+    """A first install with no pin set records the latest published version."""
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, env_extra={"SLOPSTOPPER_FORCE_LATEST": "1.2.3"})
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert _read_pin(target) == "1.2.3"
+
+
+def test_plain_refresh_leaves_pin_untouched(tmp_path):
+    """A plain re-run must not move an existing pin (no surprise upgrades)."""
+    target = _make_minimal_target(tmp_path)
+    first = _run_install(target, args=["--cli-version", "0.5.0"])
+    assert first.returncode == 0, f"{first.stdout}\n{first.stderr}"
+    assert _read_pin(target) == "0.5.0"
+
+    # Re-run with a NEWER latest available — the pin must still hold.
+    second = _run_install(target, env_extra={"SLOPSTOPPER_FORCE_LATEST": "2.0.0"})
+    assert second.returncode == 0, f"{second.stdout}\n{second.stderr}"
+    assert _read_pin(target) == "0.5.0"
+    assert (target / ".slopstopper.yml").read_text().count("cli_version:") == 1
+
+
+def test_upgrade_cli_flag_bumps_pin_to_latest(tmp_path):
+    """--upgrade-cli rewrites the pin to the latest published version."""
+    target = _make_minimal_target(tmp_path)
+    first = _run_install(target, args=["--cli-version", "0.5.0"])
+    assert first.returncode == 0, f"{first.stdout}\n{first.stderr}"
+
+    second = _run_install(
+        target,
+        args=["--upgrade-cli"],
+        env_extra={"SLOPSTOPPER_FORCE_LATEST": "2.0.0"},
+    )
+    assert second.returncode == 0, f"{second.stdout}\n{second.stderr}"
+    assert _read_pin(target) == "2.0.0"
+    assert (target / ".slopstopper.yml").read_text().count("cli_version:") == 1
+
+
+def test_pin_write_preserves_other_config_keys(tmp_path):
+    """Recording the pin must not disturb other keys in an existing config."""
+    target = _make_minimal_target(tmp_path)
+    cfg = target / ".slopstopper.yml"
+    cfg.write_text("node_version: '22'\ncli_version:\nheaders:\n  source: public/_headers\n")
+
+    result = _run_install(target, args=["--cli-version", "3.3.3"])
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+    text = cfg.read_text()
+    assert _read_pin(target) == "3.3.3"
+    assert "node_version: '22'" in text
+    assert "source: public/_headers" in text
+
+
+def test_cli_version_requires_argument(tmp_path):
+    """--cli-version with no value is a hard error, not a silent no-op."""
+    target = _make_minimal_target(tmp_path)
+    result = subprocess.run(
+        ["bash", str(INSTALL_SH), "--cli-version"],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "SKIP_CLI_INSTALL": "1"},
+        cwd=REPO_ROOT,
+    )
+    assert result.returncode != 0
+    assert "--cli-version requires a version" in (result.stdout + result.stderr)
 
 
 def _make_minimal_target(tmp_path: Path) -> Path:
