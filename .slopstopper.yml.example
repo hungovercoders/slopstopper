@@ -102,6 +102,16 @@ hygiene:
     # Hard cap for entry files (README.md, CLAUDE.md, AGENTS.md, etc.).
     # ~1500 words ≈ ~2000 tokens — see docs/hygiene/ for the rationale.
     max_words: 1500
+    # Map Pattern pointer rule. When true (default), the check fails if
+    # README.md or AGENTS.md don't link to the docs map, if CLAUDE.md
+    # isn't a thin pointer to AGENTS.md (link or `@AGENTS.md` directive),
+    # or if the map file itself doesn't exist. The check's report emits a
+    # paste-ready snippet for each violation. Flip to false to disable
+    # the whole pointer rule (the word-budget rule still applies).
+    require_map_pointer: true
+    # Path to the docs map, relative to the repo root. Override if you
+    # keep your map somewhere other than docs/index.md.
+    map_path: docs/index.md
 
 # ── Reliability coverage modes ───────────────────────────────────────
 # Opt-in alternative to the hand-list above. When set, accessibility,

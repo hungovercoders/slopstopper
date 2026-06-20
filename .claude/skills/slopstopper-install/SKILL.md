@@ -47,13 +47,13 @@ Before running anything, learn enough about the target to predict where it'll bi
 
 5. **How does the target manage security headers?** The CSP-exceptions drift check reads from whatever you name in `.slopstopper.yml` `headers.source` (with `headers.format`). Shipped adapters: `json` (for `[{for, values}]` JSON files like slopstopper.dev's `worker/headers.json`), `cloudflare-text` (Cloudflare/Netlify native `_headers` text format), `auto` (infer from extension). Set `source: null` to skip the check entirely — adopters managing headers via framework middleware / `vercel.json` / etc. do this. The installer seeds `.slopstopper.yml` with `source: null` so first-PR is green even before you configure anything; you opt the check in by pointing it at your real headers file.
 
-6. **Does the target follow the Map Pattern for docs?** Three workflows — `ss-hygiene-docs-accuracy-check.yml`, `ss-hygiene-docs-structure-check.yml`, `ss-hygiene-docs-size-check.yml` — require a `docs/` directory with an `index.md` listing categories (each as a subdirectory with its own `README.md`). Two valid choices: set up the Map Pattern (see Step 5) or delete these three workflows. A half-built `docs/` directory will fail the structure check until the tree matches the index.
+6. **Does the target follow the Map Pattern for docs?** Three workflows — `ss-hygiene-docs-accuracy-check.yml`, `ss-hygiene-docs-structure-check.yml`, `ss-hygiene-docs-size-check.yml` — require a `docs/` directory with an `index.md` listing categories (each as a subdirectory with its own `README.md`). A fourth — `ss-hygiene-entry-files-check.yml` — also enforces the pointer side of the pattern: README.md and AGENTS.md must link to `docs/index.md`, CLAUDE.md must be a thin pointer to AGENTS.md, and `docs/index.md` itself must exist (unless `hygiene.entry_files.require_map_pointer: false` in `.slopstopper.yml`). Two valid choices: set up the Map Pattern (see Step 5) or disable both halves (`workflows.disabled` the three docs-* workflows AND set `require_map_pointer: false`). A half-built `docs/` directory will fail the structure check until the tree matches the index; a docs/ directory with no pointers from the entry files will fail the entry-files check.
 
 7. **Does the target serve a site-wide `/og-image.png` with `Cross-Origin-Resource-Policy: cross-origin`?** The slopstopper Playwright smoke test (`.ss/tests/smoke.spec.ts`, or the bundled `cli/slopstopper/data/tests/smoke.spec.ts` when no `.ss/` override is present) asserts that `/og-image.png` returns 200, has `Content-Type: image/png`, and the CORP header set to `cross-origin` (so social platforms can embed it). Targets that use per-post share images instead won't have it. Either add a 1200×630 `og-image.png` at the site root with CORP configured for that path (Astro/Cloudflare adapter respects `public/_headers`), or set `smoke.og_image_path: ''` in `.slopstopper.yml` to skip the assertion.
 
 8. **Existing `package.json` devDeps that might collide?** Slopstopper merges in `@axe-core/playwright`, `@lhci/cli`, `@playwright/test`, `markdownlint-cli`, `typescript`. Spot collisions ahead of time.
 
-9. **Does the target have its own README/AGENTS/CLAUDE entry files?** The `ss:hygiene:entry-files` check enforces a 1500-word budget on each. Most repos pass, but check if any are bloated.
+9. **Does the target have its own README/AGENTS/CLAUDE entry files?** The `ss:hygiene:entry-files` check enforces two things: a 1500-word budget on each, AND the Map Pattern pointer rule (README.md + AGENTS.md link to `docs/index.md`; CLAUDE.md is a thin pointer to AGENTS.md). If any of the three are missing, `install.sh` seeds a minimal pointer-shaped scaffold from `cli/slopstopper/data/templates/entry-files/` (never overwrites existing files). If they exist but don't link the map, the check's report at `.ss/reports/entry-files/entry-file-size-report.md` emits a paste-ready snippet for each violation — apply it during the Step 7 local loop. Most repos with existing entry files need 1-3 small additions; flag any that are bloated or that lack the pointer up-front.
 
 10. **Is GitHub Advanced Security (or public-repo Dependency Graph) enabled?** The `ss-security-vulnerability-new-check.yml` workflow uses `actions/dependency-review-action`, which requires either GHAS on a private repo or the Dependency Graph setting enabled on a public repo. Otherwise the check errors with `Dependency review is not supported on this repository`. Repo-admin setting — flag to the user.
 
@@ -101,6 +101,7 @@ Three categories of write, in order of "how much trust to extend on re-run":
 - `.github/labeler.yml`, `.zap/rules.tsv`, `.markdownlint.json`
 - Root `Taskfile.yml` — only if absent; otherwise install.sh prints the `includes:` block to paste in
 - `package.json` — only if absent (otherwise see below)
+- Map Pattern entry files (`README.md`, `AGENTS.md`, `CLAUDE.md`, `docs/index.md`) — seeded from `cli/slopstopper/data/templates/entry-files/` when absent; never overwritten. If they exist but don't link the map, the `ss:hygiene:entry-files` check fails with a paste-ready snippet in its report — apply it manually rather than re-seeding
 
 **Conservatively additive on shared files — adopter content preserved:**
 
@@ -241,7 +242,17 @@ docs/
   …
 ```
 
-The structure check parses the table in `docs/index.md` (pattern: `| [category/](category/) | … |`) and fails the build if any listed category lacks a directory or `README.md`, or if there's an undocumented directory inside `docs/`. The directory tree must conform to the index — not the reverse.
+The structure check parses the table in `docs/index.md` (pattern: `| [category/](category/) | … |`) and fails the build if any listed category lacks a directory or `README.md`, or if there's an undocumented directory inside `docs/`. The directory tree must conform to the index — not the reverse. The entry-files check enforces the reverse half: README.md and AGENTS.md must link to `docs/index.md`, and CLAUDE.md must be a thin pointer to AGENTS.md (`@AGENTS.md` directive or a link). A budget without the pointer is pointless; the map only works if the entry files defer to it.
+
+**Auto-seeded scaffolds.** On a fresh install, `install.sh` writes minimal pointer-shaped versions of all four files (`README.md`, `AGENTS.md`, `CLAUDE.md`, `docs/index.md`) from `cli/slopstopper/data/templates/entry-files/` when they don't already exist — so a greenfield clone is green on Step 7's local loop without manual work. If a file already exists, the installer leaves it alone; remediation runs through the check's report-driven path (next paragraph).
+
+**Remediating existing files.** When the target already has entry files but they don't link the map, `task ss:hygiene:entry-files` fails and writes `.ss/reports/entry-files/entry-file-size-report.md` with a paste-ready snippet for each violation:
+
+- For a missing map pointer on `README.md` / `AGENTS.md` — a `> 🗺️ **Documentation map.** ...` callout to paste near the top of the file.
+- For a CLAUDE.md that isn't a thin pointer — the full canonical CLAUDE.md body to replace the file contents with.
+- For a missing `docs/index.md` — a minimal map template with an empty categories table.
+
+Read the report, confirm the placement with the user if the file is non-trivial, then paste the snippet at the top of the offending file. Re-run `task ss:hygiene:entry-files` to confirm green.
 
 **Minimum `docs/index.md`:**
 
@@ -278,7 +289,15 @@ The canonical agent conventions for this repo live in [`AGENTS.md`](./AGENTS.md)
 @AGENTS.md
 ```
 
-The `ss:hygiene:entry-files` check enforces a 1500-word budget on each of the three entry files. Aim well under it — the budget is the ceiling, not the target.
+The `ss:hygiene:entry-files` check enforces both the 1500-word budget on each of the three entry files AND the pointer rule above. Aim well under the budget — it's the ceiling, not the target. Knobs in `.slopstopper.yml` if you need to override:
+
+```yaml
+hygiene:
+  entry_files:
+    max_words: 1500
+    require_map_pointer: true        # set to false to disable the pointer rule only
+    map_path: docs/index.md          # override if your map lives elsewhere
+```
 
 **Cross-references in docs:** the `docs-accuracy` check scans for `` `backtick-quoted` `` filenames and broken markdown links. Use full repo-relative paths (`scripts/foo.sh`, not bare `foo.sh`) so the checker can resolve them.
 
@@ -352,7 +371,7 @@ Any keys present upstream but missing locally are new knobs you can opt into. Mo
 
 Surfaces worth checking explicitly:
 
-- **`hygiene.docs_size.*` / `hygiene.entry_files.max_words`** — per-check thresholds. Defaults are intentionally tight (150 KB / 25 files / 1500 words). If a `docs-size` or `entry-files` alert started firing post-refresh, the threshold knob is usually what's wanted — not deleting docs.
+- **`hygiene.docs_size.*` / `hygiene.entry_files.*`** — per-check thresholds and rule toggles. Defaults are intentionally tight (150 KB / 25 files / 1500 words / map-pointer required). If a `docs-size`, `entry-files` budget, or `entry-files` pointer alert started firing post-refresh, the threshold knob (or `require_map_pointer: false` if the rule is wrong for this repo) is usually what's wanted — not deleting docs.
 - **`reliability.coverage.{pr,main,cron}`** — page-discovery modes. Adopters with a sitemap should opt in to `sitemap` on main and `changed` on PRs; otherwise reliability checks only audit `/` by default.
 - **`reliability.coverage.cross_cutting_paths`** — escalation triggers for `changed` mode. If a PR-only audit skipped pages that should have been included, this is the lever.
 
