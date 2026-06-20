@@ -637,6 +637,28 @@ seed_template ".markdownlint.json" \
   "$SCRIPT_DIR/templates/markdownlint.json.example" \
   "$TARGET_DIR/.markdownlint.json"
 
+# Map Pattern entry-file scaffolds — README.md, AGENTS.md, CLAUDE.md, docs/index.md.
+# Templates ship inside the slopstopper-cli wheel under data/templates/entry-files/
+# AND in the repo's cli/slopstopper/data/templates/entry-files/ so install.sh can
+# resolve them whether running from a clone or from a fresh curl-piped checkout.
+# Each file is seeded only when absent — adopters who already have entry files
+# keep them untouched. The ss:hygiene:entry-files check enforces the Map Pattern
+# pointer rule and emits a paste-ready snippet for any file that exists but
+# lacks the pointer; this seed handles only the missing-file case.
+ENTRY_FILES_TEMPLATES_DIR="$SCRIPT_DIR/cli/slopstopper/data/templates/entry-files"
+seed_template "README.md" \
+  "$ENTRY_FILES_TEMPLATES_DIR/README.md" \
+  "$TARGET_DIR/README.md"
+seed_template "AGENTS.md" \
+  "$ENTRY_FILES_TEMPLATES_DIR/AGENTS.md" \
+  "$TARGET_DIR/AGENTS.md"
+seed_template "CLAUDE.md" \
+  "$ENTRY_FILES_TEMPLATES_DIR/CLAUDE.md" \
+  "$TARGET_DIR/CLAUDE.md"
+seed_template "docs/index.md" \
+  "$ENTRY_FILES_TEMPLATES_DIR/docs/index.md" \
+  "$TARGET_DIR/docs/index.md"
+
 # .gitignore — append the slopstopper block if not already present.
 # Idempotent re-append: the block is bracketed with markers so re-runs
 # detect the existing block and skip rather than duplicate.
