@@ -297,6 +297,11 @@ install_cli() {
   local latest_version
   latest_version="$(latest_pypi_version)"
 
+  # Pre-install version (empty if not yet installed). Lets us tell the
+  # adopter what an upgrade actually changed — old → new plus release notes.
+  local pre_version
+  pre_version="$(installed_cli_version)"
+
   if command -v pipx &>/dev/null; then
     if pipx list 2>/dev/null | grep -q "slopstopper-cli"; then
       info "Refreshing slopstopper-cli via pipx…"
@@ -344,6 +349,7 @@ install_cli() {
   # scrolls past.
   SLOPSTOPPER_CLI_VERSION="$post_version"
   SLOPSTOPPER_CLI_LATEST="$latest_version"
+  SLOPSTOPPER_CLI_PREVIOUS="$pre_version"
 
   # Still behind even after a forced reinstall → something is wrong with the
   # network or a PyPI mirror; tell the adopter how to retry by hand.
@@ -848,6 +854,7 @@ echo ""
 # silently-stale CLI can't masquerade as a clean install.
 ss_installed="${SLOPSTOPPER_CLI_VERSION:-}"
 ss_latest="${SLOPSTOPPER_CLI_LATEST:-}"
+ss_previous="${SLOPSTOPPER_CLI_PREVIOUS:-}"
 if [ -n "$ss_installed" ]; then
   if [ -n "$ss_latest" ] && version_lt "$ss_installed" "$ss_latest"; then
     warn "slopstopper-cli $ss_installed installed — but PyPI latest is $ss_latest. You are BEHIND."
@@ -856,6 +863,12 @@ if [ -n "$ss_installed" ]; then
     echo "  📦 slopstopper-cli $ss_installed (latest on PyPI)"
   else
     echo "  📦 slopstopper-cli $ss_installed"
+  fi
+  # On an actual upgrade, surface old → new and where to read what changed,
+  # so an adopter (or agent) isn't left guessing the new feature set.
+  if [ -n "$ss_previous" ] && [ "$ss_previous" != "$ss_installed" ]; then
+    echo "  ⬆  Upgraded $ss_previous → $ss_installed"
+    echo "     What's new: ${REPO_URL%.git}/releases/tag/v${ss_installed}"
   fi
   echo ""
 fi
