@@ -4,6 +4,21 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.9.0](https://github.com/hungovercoders/slopstopper/compare/v0.8.0...v0.9.0) (2026-06-20)
+
+
+### Features
+
+* **install:** surface what's-new on CLI upgrade ([683f1a2](https://github.com/hungovercoders/slopstopper/commit/683f1a2e0362000e3934cd97a510b4cfbe77d38e))
+
+
+### Bug Fixes
+
+* **install:** detect and remediate silently-stale CLI on refresh ([4005153](https://github.com/hungovercoders/slopstopper/commit/400515374b5fd2bb8caf3dc7f97915bb23b3208a))
+* **install:** detect and remediate silently-stale CLI on refresh ([b01ca11](https://github.com/hungovercoders/slopstopper/commit/b01ca1187f8db6c8e8d94854c78908b2ce8c5282))
+* **skill:** stop drift check flagging ss-release.yml; lead with two-step install ([7abd5be](https://github.com/hungovercoders/slopstopper/commit/7abd5be4753816d6d623de6a24d6582b63f0fa91))
+* **skill:** stop drift check flagging ss-release.yml; lead with two-step install ([99a8b89](https://github.com/hungovercoders/slopstopper/commit/99a8b89d3c5d21aa2074558aac28b58df81dba10))
+
 ## [0.8.0](https://github.com/hungovercoders/slopstopper/compare/v0.7.1...v0.8.0) (2026-06-20)
 
 
