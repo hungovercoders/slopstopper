@@ -1,0 +1,9 @@
+# mise toolchain for slopstopper.dev.
+#
+# This repo IS slopstopper-cli, so it pins NO "pipx:slopstopper-cli" here —
+# the workflows install the CLI editable (`pip install -e ./cli`) and run HEAD.
+# Adopter repos get a "pipx:slopstopper-cli" pin written here by install.sh;
+# that pin is the single source of truth both local runs and CI (jdx/mise-action)
+# read, so the version follows the repo instead of a single global binary.
+[tools]
+"task" = "3"
