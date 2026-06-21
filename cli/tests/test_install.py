@@ -210,9 +210,9 @@ def test_node_version_file_suppresses_mise_node_seed(tmp_path):
     assert '"node"' not in (target / "mise.toml").read_text()
 
 
-def test_legacy_node_version_migrates_to_mise_and_strips(tmp_path):
-    """A dead node_version in .slopstopper.yml migrates into the mise.toml node
-    pin (so the adopter's intended version isn't lost) and the key is stripped."""
+def test_legacy_node_version_is_stripped(tmp_path):
+    """A dead node_version in .slopstopper.yml (and its comment block) is removed
+    on refresh — it was never read; node lives in mise.toml now."""
     target = _make_minimal_target(tmp_path)
     cfg = target / ".slopstopper.yml"
     cfg.write_text(
@@ -226,9 +226,11 @@ def test_legacy_node_version_migrates_to_mise_and_strips(tmp_path):
     assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
 
     text = cfg.read_text()
-    assert "node_version" not in text              # dead key stripped
-    assert "source: public/_headers" in text       # other keys preserved
-    assert '"node" = "22"' in (target / "mise.toml").read_text()  # value migrated
+    assert "node_version" not in text                # dead key stripped
+    assert "# ── Node version pin" not in text        # comment block stripped too
+    assert "source: public/_headers" in text          # other keys preserved
+    # Not migrated — the freshly-seeded mise pin is the default, not the old value.
+    assert '"node" = "20"' in (target / "mise.toml").read_text()
 
 
 def test_legacy_node_version_stripped_but_existing_mise_pin_wins(tmp_path):
