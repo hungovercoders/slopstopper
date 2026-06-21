@@ -210,6 +210,44 @@ def test_node_version_file_suppresses_mise_node_seed(tmp_path):
     assert '"node"' not in (target / "mise.toml").read_text()
 
 
+def test_legacy_node_version_migrates_to_mise_and_strips(tmp_path):
+    """A dead node_version in .slopstopper.yml migrates into the mise.toml node
+    pin (so the adopter's intended version isn't lost) and the key is stripped."""
+    target = _make_minimal_target(tmp_path)
+    cfg = target / ".slopstopper.yml"
+    cfg.write_text(
+        "# ── Node version pin ──\n"
+        "# blurb\n"
+        "node_version: '22'\n"
+        "headers:\n"
+        "  source: public/_headers\n"
+    )
+    result = _run_install(target, args=["--cli-version", "9.9.9"])
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+    text = cfg.read_text()
+    assert "node_version" not in text              # dead key stripped
+    assert "source: public/_headers" in text       # other keys preserved
+    assert '"node" = "22"' in (target / "mise.toml").read_text()  # value migrated
+
+
+def test_legacy_node_version_stripped_but_existing_mise_pin_wins(tmp_path):
+    """If the adopter already pins node in mise.toml, the dead node_version key
+    is still stripped but the existing mise pin is left untouched."""
+    target = _make_minimal_target(tmp_path)
+    (target / "mise.toml").write_text('[tools]\n"node" = "18"\n')
+    cfg = target / ".slopstopper.yml"
+    cfg.write_text("node_version: '22'\nheaders:\n  source: public/_headers\n")
+
+    result = _run_install(target, args=["--cli-version", "9.9.9"])
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+    assert "node_version" not in cfg.read_text()
+    mise_text = (target / "mise.toml").read_text()
+    assert '"node" = "18"' in mise_text
+    assert '"node" = "22"' not in mise_text
+
+
 def test_cli_version_requires_argument(tmp_path):
     """--cli-version with no value is a hard error, not a silent no-op."""
     target = _make_minimal_target(tmp_path)

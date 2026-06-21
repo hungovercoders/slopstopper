@@ -225,6 +225,31 @@ strip_legacy_cli_version() {
   ' "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
 }
 
+# Legacy parse: node_version: in .slopstopper.yml. It was never authoritative
+# (CI read the SLOPSTOPPER_NODE_VERSION repo variable, not this key), but if an
+# adopter set it we migrate the value into the mise node pin so their intended
+# version isn't silently lost when the dead key is stripped.
+read_legacy_node_version() {
+  [ -f "$1" ] || return 0
+  sed -n 's/^node_version:[[:space:]]*["'\'']\{0,1\}\([0-9][0-9.]*\).*/\1/p' "$1" | head -1
+}
+
+# Migration cleanup: remove the dead node_version key (and its preceding comment
+# block, if present) from .slopstopper.yml. Node lives in mise.toml ([tools]
+# node) now — its value, if any, is migrated by sync_mise_cli before this runs.
+strip_legacy_node_version() {
+  local cfg="$1"
+  [ -f "$cfg" ] || return 0
+  grep -qE '^node_version:' "$cfg" 2>/dev/null || return 0
+  awk '
+    /^# ── Node version pin/ { skip=1 }
+    skip && /^node_version:/  { skip=0; next }
+    skip                      { next }
+    /^node_version:/          { next }
+    { print }
+  ' "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
+}
+
 # Set a [tools] entry in a mise config, portable across BSD/GNU and offline
 # (no mise binary needed — used by the SKIP_CLI_INSTALL test seam). Real
 # installs go through `mise use` instead, which also installs the tool.
@@ -452,16 +477,23 @@ sync_mise_cli() {
   pre_version="$(installed_cli_version)"
   pinned="$(resolve_pinned_version)"
 
-  # Migrate off the old mechanism: drop the now-defunct cli_version key (its
-  # value, if any, was already folded into `pinned` by resolve_pinned_version).
+  # Capture a legacy node_version (pre-mise) before stripping it, so its value
+  # can seed the mise node pin instead of being lost.
+  local legacy_node
+  legacy_node="$(read_legacy_node_version "$cfg")"
+
+  # Migrate off the old mechanism: drop the now-defunct cli_version and
+  # node_version keys (the cli value was folded into `pinned` by
+  # resolve_pinned_version; the node value into `legacy_node` above).
   strip_legacy_cli_version "$cfg"
+  strip_legacy_node_version "$cfg"
 
   # Escape hatch for cli/tests/test_install.py: write the pin into mise.toml
   # offline (no mise binary, no PyPI) so tests can assert on it deterministically.
   if [ "${SKIP_CLI_INSTALL:-0}" = "1" ]; then
     [ -n "$pinned" ] && write_mise_tool "$mcfg" "pipx:slopstopper-cli" "$pinned"
     write_mise_tool "$mcfg" "task" "3"
-    target_has_node_pin "$mcfg" || write_mise_tool "$mcfg" "node" "$DEFAULT_NODE_VERSION"
+    target_has_node_pin "$mcfg" || write_mise_tool "$mcfg" "node" "${legacy_node:-$DEFAULT_NODE_VERSION}"
     info "Skipping mise install (SKIP_CLI_INSTALL=1)"
     SLOPSTOPPER_CLI_VERSION="$pinned"
     SLOPSTOPPER_CLI_PREVIOUS="$pre_version"
@@ -473,8 +505,9 @@ sync_mise_cli() {
   # too so mise provides the canonical interface (no separate setup-task). Seed
   # `node` only when the adopter hasn't already declared one (mise.toml /
   # .node-version / .nvmrc), so we never override their build's Node version.
+  # A migrated legacy node_version (if any) takes precedence over the default.
   local node_arg=""
-  target_has_node_pin "$mcfg" || node_arg="node@$DEFAULT_NODE_VERSION"
+  target_has_node_pin "$mcfg" || node_arg="node@${legacy_node:-$DEFAULT_NODE_VERSION}"
   if [ -n "$pinned" ]; then
     info "Pinning slopstopper-cli@$pinned (+ task) in $(basename "$mcfg") via mise…"
     mise use --path "$mcfg" "pipx:slopstopper-cli@$pinned" "task@3" $node_arg >/dev/null \
