@@ -88,23 +88,24 @@
         <section class="section" id="get-started">
             <span class="kicker">Get started</span>
             <h2>Install the CLI. Run checks anywhere.</h2>
-            <p class="lede">SlopStopper is a Python CLI plus the GitHub Actions workflows that drive it. Install the CLI alone for local use, or run the all-in-one installer to also seed the workflows + Taskfile shim into a repo.</p>
-            <h3 class="install-heading">Just the CLI</h3>
+            <p class="lede">SlopStopper is a Python CLI plus the GitHub Actions workflows that drive it. Try the CLI alone for a quick local run, or run the all-in-one installer to pin it and seed the workflows + Taskfile shim into a repo.</p>
+            <h3 class="install-heading">Just the CLI (quick try)</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install slopstopper-cli via pipx" data-copyable>
                 <pre><code>pipx install slopstopper-cli
 slopstopper checks list
 slopstopper doctor
 slopstopper run hygiene:docs-size            # underlying CLI; same code as task ss:hygiene:docs-size</code></pre>
             </div>
-            <p class="install-subnote">Published to PyPI on every release tag; <code>pipx upgrade slopstopper-cli</code> pulls the latest. The <a href="https://github.com/hungovercoders/slopstopper/releases/latest">latest GitHub Release</a> also carries a Sigstore build-provenance attestation — verify with <code>gh attestation verify &lt;wheel&gt; --owner hungovercoders</code>. The CLI itself only needs Python — per-check tools (<code>node</code>, <code>semgrep</code>, <code>gitleaks</code>, <code>trivy</code>, <code>lizard</code>, <code>docker</code>) install per the checks you actually use; run <code>slopstopper doctor</code> to see what's missing.</p>
-            <h3 class="install-heading">Full suite into a repo</h3>
+            <p class="install-subnote">Unpinned standalone install — published to PyPI on every release tag; <code>pipx upgrade slopstopper-cli</code> pulls the latest. The <a href="https://github.com/hungovercoders/slopstopper/releases/latest">latest GitHub Release</a> also carries a Sigstore build-provenance attestation — verify with <code>gh attestation verify &lt;wheel&gt; --owner hungovercoders</code>. This path needs only Python; per-check tools (<code>node</code>, <code>semgrep</code>, <code>gitleaks</code>, <code>trivy</code>, <code>lizard</code>, <code>docker</code>) install per the checks you actually use; run <code>slopstopper doctor</code> to see what's missing. For a repo you'll keep — where local and CI must run the <em>same</em> version — use the pinned suite install below.</p>
+            <h3 class="install-heading">Full suite into a repo (pinned)</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install full suite" data-copyable>
                 <pre><code>curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash</code></pre>
             </div>
+            <p class="install-subnote">Requires <a href="https://mise.jdx.dev" rel="noopener noreferrer">mise</a> — it pins and installs <code>slopstopper-cli</code> + <code>task</code> and activates them per-directory, so the version follows the repo (local and CI stay in lockstep).</p>
             <details class="details">
                 <summary>What does this do?</summary>
                 <div class="details__body">
-                    <p>The installer pip-installs <code>slopstopper-cli</code> (pipx-preferred), then seeds your repo with the <code>.github/workflows/ss-*.yml</code> CI checks, a thin <code>Taskfile.ss.yml</code> of <code>task ss:*</code> shims that call the CLI, and a <code>.slopstopper.yml</code> starter config. Idempotent — re-run any time to refresh.</p>
+                    <p>The installer pins <code>slopstopper-cli</code> + <code>task</code> in <code>mise.toml</code> and installs them via <strong>mise</strong> (required), then seeds your repo with the <code>.github/workflows/ss-*.yml</code> CI checks (which install the toolchain via <code>jdx/mise-action</code>), a thin <code>Taskfile.ss.yml</code> of <code>task ss:*</code> shims that call the CLI, and a <code>.slopstopper.yml</code> starter config. Idempotent — re-run any time to refresh; move the pin with <code>install.sh --upgrade-cli</code> / <code>--cli-version</code>.</p>
                     <p>Bundled Playwright specs, lighthouserc, and the local-CI static server (<code>slopstopper serve</code>) live inside the wheel. Run <code>slopstopper templates eject &lt;name&gt;</code> to customise any of them.</p>
                     <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/install.sh" rel="noopener noreferrer">View install.sh on GitHub →</a>
                 </div>
@@ -112,7 +113,7 @@ slopstopper run hygiene:docs-size            # underlying CLI; same code as task
             <div class="steps">
                 <div class="step">
                     <h3>Install</h3>
-                    <p>Run the <code>pipx install</code> one-liner above. Add workflows via <code>install.sh</code> when you're ready for CI.</p>
+                    <p>Try the <code>pipx install</code> one-liner above, or run <code>install.sh</code> (needs <code>mise</code>) to pin the CLI and add CI.</p>
                 </div>
                 <div class="step">
                     <h3>Customise</h3>
