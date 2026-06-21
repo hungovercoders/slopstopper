@@ -225,6 +225,23 @@ strip_legacy_cli_version() {
   ' "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
 }
 
+# Migration cleanup: remove the dead node_version key (and its preceding comment
+# block, if present) from .slopstopper.yml. The key was never read (CI used the
+# SLOPSTOPPER_NODE_VERSION repo variable); node lives in mise.toml ([tools] node)
+# now, so the key is simply removed — there's no value worth migrating.
+strip_legacy_node_version() {
+  local cfg="$1"
+  [ -f "$cfg" ] || return 0
+  grep -qE '^node_version:' "$cfg" 2>/dev/null || return 0
+  awk '
+    /^# ── Node version pin/ { skip=1 }
+    skip && /^node_version:/  { skip=0; next }
+    skip                      { next }
+    /^node_version:/          { next }
+    { print }
+  ' "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
+}
+
 # Set a [tools] entry in a mise config, portable across BSD/GNU and offline
 # (no mise binary needed — used by the SKIP_CLI_INSTALL test seam). Real
 # installs go through `mise use` instead, which also installs the tool.
@@ -453,8 +470,10 @@ sync_mise_cli() {
   pinned="$(resolve_pinned_version)"
 
   # Migrate off the old mechanism: drop the now-defunct cli_version key (its
-  # value, if any, was already folded into `pinned` by resolve_pinned_version).
+  # value, if any, was already folded into `pinned` by resolve_pinned_version)
+  # and the dead node_version key (never read — node lives in mise.toml now).
   strip_legacy_cli_version "$cfg"
+  strip_legacy_node_version "$cfg"
 
   # Escape hatch for cli/tests/test_install.py: write the pin into mise.toml
   # offline (no mise binary, no PyPI) so tests can assert on it deterministically.

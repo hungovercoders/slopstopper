@@ -21,23 +21,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install Semgrep
+        # SAST runs semgrep via subprocess. Installed via pip to match
+        # ss-security-sast-check.yml — semgrep isn't pinned via mise anywhere.
+        run: |
+          pip install --upgrade pip
+          pip install semgrep
+
       - name: Set up slopstopper toolchain
-        # Installs node (and task) from mise.toml ([tools]) onto PATH, so the
-        # Node version is single-sourced from the pin rather than hardcoded here.
+        # Installs node + task from mise.toml ([tools]) onto PATH, so both are
+        # single-sourced from the pin (no curl-installed Taskfile, no hardcoded
+        # Node version). The version follows the repo, same as CI and local.
         uses: jdx/mise-action@v2
+
+      - name: Install slopstopper-cli from source
+        # This repo runs the CLI from source (HEAD), so mise.toml carries no
+        # slopstopper-cli pin — install it editable here. This also brings
+        # `lizard` (a CLI runtime dependency) used by hygiene:complexity, so the
+        # `task ss:*` shims work in the Copilot environment.
+        run: pip install -e ./cli
 
       - name: Install npm dependencies
         run: npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
-
-      - name: Install Taskfile
-        run: |
-          sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
-
-      - name: Install Python tools (for complexity/security analysis)
-        run: pip install lizard bandit semgrep
 
       - name: Install gh-aw extension
         uses: github/gh-aw/actions/setup-cli@v0.50.7
