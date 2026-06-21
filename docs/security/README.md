@@ -274,6 +274,17 @@ Reports are saved to `.ss/reports/dast/`.
 
 This template includes automated dependency vulnerability scanning using **Trivy** to detect known CVEs in your project's dependencies. This guide explains how to customise and use this feature.
 
+> **Companion check — Dependency Review + licence gate.** A separate
+> GitHub-native workflow, `ss-security-vulnerability-new-check.yml`, runs
+> [`actions/dependency-review-action`](https://github.com/actions/dependency-review-action)
+> on PRs. Beyond flagging newly-introduced vulnerable versions, it also
+> **fails the PR when a new dependency carries a denied (copyleft) licence** —
+> shipped default `deny-licenses: GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.1-or-later, AGPL-3.0-or-later`,
+> keeping permissively-licensed projects free of copyleft obligations. It only
+> inspects dependency-manifest changes, so subprocess-only tools never trip it.
+> Edit the `deny-licenses` (SPDX) list in that workflow to match your own
+> licence policy, or remove it to disable the gate.
+
 ## Quick Start
 
 ### Run Analysis Locally
