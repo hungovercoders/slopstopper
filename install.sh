@@ -16,8 +16,8 @@
 #
 # Layout installed (all SlopStopper-owned files are under the `ss` namespace):
 #
-#   slopstopper-cli             # pip-installed (`pipx` preferred); every
-#                               #   check now runs via `slopstopper run ...`.
+#   slopstopper-cli             # installed via mise (pinned in mise.toml);
+#                               #   every check runs via `slopstopper run ...`.
 #   Taskfile.yml                # thin root; created on fresh installs, left
 #                               #   alone if you already have one (instructions
 #                               #   printed in that case)
@@ -69,8 +69,9 @@ if [ -n "${SLOPSTOPPER_NO_SKILLS:-}" ]; then
 fi
 
 # slopstopper-cli version control. The pinned version lives in the target's
-# .slopstopper.yml (cli_version:). A plain run honours that pin; these flags
-# move it deliberately. CLI_VERSION_FLAG wins over UPGRADE_CLI if both given.
+# mise.toml ([tools] "pipx:slopstopper-cli"). A plain run honours that pin;
+# these flags move it deliberately (both wrap `mise use`). CLI_VERSION_FLAG
+# wins over UPGRADE_CLI if both given.
 UPGRADE_CLI=false
 CLI_VERSION_FLAG=""
 
@@ -118,10 +119,14 @@ Default mode installs workflows that invoke `task ss:<check>` so the suite
 shares a single invocation surface with the rest of your codebase. `--no-task`
 installs workflows that invoke `slopstopper run <check>` directly.
 
-The slopstopper-cli version is pinned per-repo in .slopstopper.yml (cli_version:).
-A plain run installs that pinned version and never moves it, so a breaking
-upstream release can't reach you unannounced. First install pins to the latest
-published version; use --upgrade-cli or --cli-version to move the pin later.
+The slopstopper-cli version is pinned per-repo in mise.toml ([tools]
+"pipx:slopstopper-cli") and installed via mise, which activates it per-directory
+so the active version follows the repo. A plain run installs that pinned version
+and never moves it, so a breaking upstream release can't reach you unannounced.
+First install pins to the latest published version; --upgrade-cli / --cli-version
+move the pin later (both wrap `mise use`). mise is required — see
+https://mise.jdx.dev. A legacy .slopstopper.yml cli_version pin is migrated into
+mise.toml automatically on the next run.
 
 The installer also writes the SlopStopper Claude Code skills into
 <target>/.claude/skills/slopstopper-*/SKILL.md so every contributor on the
@@ -177,27 +182,76 @@ version_lt() {
   [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$1" ]
 }
 
-# Read the pinned cli_version from a .slopstopper.yml. Matches the single
-# top-level `cli_version:` scalar (optionally quoted) and extracts the
-# semver token. Empty if the file or key is absent. This is the canonical
-# parse — the ss-*.yml workflows use the identical sed program so install
-# and CI agree on what the pin is without needing the CLI (which isn't
-# installed yet) or a YAML library.
-read_cli_version() {
+# Path to the target's mise config — the canonical pin lives here now. Prefer
+# an existing file (so we never create a second config alongside an adopter's),
+# else default to mise.toml. mise reads any of these names.
+mise_config_path() {
+  local f
+  for f in mise.toml .mise.toml mise.local.toml .config/mise/config.toml; do
+    [ -f "$TARGET_DIR/$f" ] && { echo "$TARGET_DIR/$f"; return 0; }
+  done
+  echo "$TARGET_DIR/mise.toml"
+}
+
+# Read the pinned slopstopper-cli version from a mise config (the
+# `pipx:slopstopper-cli = "X.Y.Z"` entry under [tools]). Empty if absent. The
+# ss-*.yml workflows resolve the same pin via `jdx/mise-action` reading this
+# file, so install and CI agree without a TOML library.
+read_mise_cli_version() {
+  [ -f "$1" ] || return 0
+  sed -n 's/.*pipx:slopstopper-cli"\{0,1\}[[:space:]]*=[[:space:]]*"\([0-9][0-9.]*\)".*/\1/p' "$1" | head -1
+}
+
+# Legacy parse: the pre-mise pin lived in .slopstopper.yml (cli_version:). Read
+# it so a refresh can migrate the value into mise.toml, then strip the key.
+read_legacy_cli_version() {
   [ -f "$1" ] || return 0
   sed -n 's/^cli_version:[[:space:]]*["'\'']\{0,1\}\([0-9][0-9.]*\).*/\1/p' "$1" | head -1
 }
 
-# Record the resolved version into .slopstopper.yml: replace the existing
-# cli_version line, else append one. `-i.bak` + rm keeps this portable
-# across BSD (macOS) and GNU sed.
-write_cli_version() {
-  local cfg="$1" ver="$2"
-  if grep -qE '^cli_version:' "$cfg" 2>/dev/null; then
-    sed -i.bak "s/^cli_version:.*/cli_version: '$ver'/" "$cfg" && rm -f "$cfg.bak"
+# Migration cleanup: remove the now-defunct cli_version key (and its preceding
+# comment block, if present) from .slopstopper.yml. `-i.bak` + rm keeps this
+# portable across BSD (macOS) and GNU sed.
+strip_legacy_cli_version() {
+  local cfg="$1"
+  [ -f "$cfg" ] || return 0
+  grep -qE '^cli_version:' "$cfg" 2>/dev/null || return 0
+  awk '
+    /^# ── slopstopper-cli version pin/ { skip=1 }
+    skip && /^cli_version:/             { skip=0; next }
+    skip                                { next }
+    /^cli_version:/                     { next }
+    { print }
+  ' "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
+}
+
+# Set a [tools] entry in a mise config, portable across BSD/GNU and offline
+# (no mise binary needed — used by the SKIP_CLI_INSTALL test seam). Real
+# installs go through `mise use` instead, which also installs the tool.
+# Creates the file and [tools] section if absent; replaces the entry if present.
+write_mise_tool() {
+  local cfg="$1" key="$2" ver="$3"
+  local line="\"$key\" = \"$ver\""
+  local pat="^[[:space:]]*\"?${key}\"?[[:space:]]*="
+  if [ ! -f "$cfg" ]; then
+    mkdir -p "$(dirname "$cfg")"
+    printf '[tools]\n%s\n' "$line" > "$cfg"
+  elif grep -qE "$pat" "$cfg" 2>/dev/null; then
+    awk -v pat="$pat" -v repl="$line" '$0 ~ pat {print repl; next} {print}' \
+      "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
+  elif grep -qE '^\[tools\]' "$cfg" 2>/dev/null; then
+    awk -v repl="$line" '{print} /^\[tools\]/ && !d {print repl; d=1}' \
+      "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
   else
-    printf "cli_version: '%s'\n" "$ver" >> "$cfg"
+    printf '\n[tools]\n%s\n' "$line" >> "$cfg"
   fi
+}
+
+# slopstopper-cli version active in the target per mise (independent of whether
+# mise is activated in this shell). Empty if mise can't resolve it.
+mise_active_cli_version() {
+  ( cd "$TARGET_DIR" 2>/dev/null && mise exec -- slopstopper --version 2>/dev/null ) \
+    | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
 }
 
 # ── prerequisite check ────────────────────────────────────────────────────────
@@ -213,10 +267,14 @@ preflight() {
 
   command -v git     >/dev/null 2>&1 || missing_hard+=("git")
   command -v python3 >/dev/null 2>&1 || missing_hard+=("python3 (slopstopper-cli is a Python package): https://www.python.org/downloads/")
-  command -v node    >/dev/null 2>&1 || missing_soft+=("node (Playwright, Lighthouse CI, markdownlint, TypeScript): https://nodejs.org/")
-  if [ "$USE_TASK" = "true" ]; then
-    command -v task  >/dev/null 2>&1 || missing_soft+=("task (canonical interface — every check is 'task ss:...'): https://taskfile.dev/installation/")
+  # mise is the canonical toolchain manager now — it installs the pinned
+  # slopstopper-cli (and task) from mise.toml and activates them per-directory,
+  # so the version follows the repo instead of a single global binary. Skip the
+  # hard requirement under the SKIP_CLI_INSTALL test seam (no real install).
+  if [ "${SKIP_CLI_INSTALL:-0}" != "1" ]; then
+    command -v mise >/dev/null 2>&1 || missing_hard+=("mise (installs the pinned slopstopper-cli + task): https://mise.jdx.dev")
   fi
+  command -v node    >/dev/null 2>&1 || missing_soft+=("node (Playwright, Lighthouse CI, markdownlint, TypeScript): https://nodejs.org/")
   command -v docker  >/dev/null 2>&1 || info "Docker not found — only needed for DAST. Skipping check."
 
   if [ "${#missing_hard[@]}" -gt 0 ]; then
@@ -328,99 +386,100 @@ YAML
   success "Taskfile.yml installed"
 fi
 
-# 3. slopstopper-cli — install the Python CLI that every check runs
-#    through, pinned to the version recorded in .slopstopper.yml
-#    (cli_version:). Pinning means a breaking upstream release never lands
-#    on an adopter until they move the pin (--upgrade-cli / --cli-version).
-#    `pipx` is preferred (isolates the install in its own venv); falls back
-#    to `pip install --user`.
+# 3. slopstopper-cli — pinned and installed via mise. The canonical pin lives
+#    in the target's mise.toml ([tools] "pipx:slopstopper-cli"). mise installs
+#    it (and `task`) and activates them per-directory, so the active version
+#    follows the repo — no single global binary to drift between repos. A
+#    breaking upstream release never lands until you move the pin
+#    (--upgrade-cli / --cli-version, both wrappers over `mise use`).
 #
 # If an `.ss/` overlay (specs, playwright config, lighthouse config) is
 # already present in the target, the CLI's templates module prefers
 # those files over the package data — same shape as the workflows.
 #
-# The pin lives in the adopter's .slopstopper.yml, so seed that file now —
-# before install_cli — so the resolved version can be read from and written
-# back to it. The later template-seeding pass leaves an existing file alone.
+# .slopstopper.yml is still seeded (it carries every other config knob); it
+# just no longer holds the CLI pin. A legacy cli_version is migrated into
+# mise.toml and stripped below.
 if [ ! -f "$TARGET_DIR/.slopstopper.yml" ] && [ -f "$SCRIPT_DIR/.slopstopper.yml.example" ]; then
   cp "$SCRIPT_DIR/.slopstopper.yml.example" "$TARGET_DIR/.slopstopper.yml"
   success ".slopstopper.yml: seeded $TARGET_DIR/.slopstopper.yml"
 fi
 
-# Decide which version to install and pin:
+# Decide which version to pin:
 #   --cli-version X.Y.Z  → that exact version
 #   --upgrade-cli        → the latest on PyPI
-#   pin already set      → honour it (a plain refresh never moves the pin)
-#   no pin yet           → latest on PyPI (first install records it)
+#   mise pin already set → honour it (a plain refresh never moves the pin)
+#   legacy cli_version   → migrate it (first move off the old mechanism)
+#   nothing yet          → latest on PyPI (first install records it)
 resolve_pinned_version() {
-  local existing
-  existing="$(read_cli_version "$TARGET_DIR/.slopstopper.yml")"
+  local existing legacy
+  existing="$(read_mise_cli_version "$(mise_config_path)")"
+  legacy="$(read_legacy_cli_version "$TARGET_DIR/.slopstopper.yml")"
   if [ -n "$CLI_VERSION_FLAG" ]; then
     echo "$CLI_VERSION_FLAG"
-  elif [ "$UPGRADE_CLI" = "true" ] || [ -z "$existing" ]; then
+  elif [ "$UPGRADE_CLI" = "true" ]; then
     latest_pypi_version
-  else
+  elif [ -n "$existing" ]; then
     echo "$existing"
+  elif [ -n "$legacy" ]; then
+    echo "$legacy"
+  else
+    latest_pypi_version
   fi
 }
 
-install_cli() {
+sync_mise_cli() {
   local cfg="$TARGET_DIR/.slopstopper.yml"
-  local pre_version pinned
+  local mcfg pre_version pinned
+  mcfg="$(mise_config_path)"
   pre_version="$(installed_cli_version)"
   pinned="$(resolve_pinned_version)"
 
-  # Record the pin so first-install and the upgrade flags persist it, and so
-  # CI installs the same version. If we couldn't determine one (offline first
-  # install), leave the pin blank and fall back to an unpinned install rather
-  # than blocking the whole install.
-  if [ -n "$pinned" ] && [ -f "$cfg" ]; then
-    write_cli_version "$cfg" "$pinned"
-  fi
+  # Migrate off the old mechanism: drop the now-defunct cli_version key (its
+  # value, if any, was already folded into `pinned` by resolve_pinned_version).
+  strip_legacy_cli_version "$cfg"
 
-  # Escape hatch for cli/tests/test_install.py: skip the actual package
-  # install (and the PATH check), but only AFTER the pin is resolved and
-  # written, so tests can assert on cli_version without hitting PyPI.
+  # Escape hatch for cli/tests/test_install.py: write the pin into mise.toml
+  # offline (no mise binary, no PyPI) so tests can assert on it deterministically.
   if [ "${SKIP_CLI_INSTALL:-0}" = "1" ]; then
-    info "Skipping slopstopper-cli install (SKIP_CLI_INSTALL=1)"
+    [ -n "$pinned" ] && write_mise_tool "$mcfg" "pipx:slopstopper-cli" "$pinned"
+    write_mise_tool "$mcfg" "task" "3"
+    info "Skipping mise install (SKIP_CLI_INSTALL=1)"
     SLOPSTOPPER_CLI_VERSION="$pinned"
     SLOPSTOPPER_CLI_PREVIOUS="$pre_version"
     return 0
   fi
 
-  # Install exactly. --force makes pipx/pip deterministically replace
-  # whatever is currently installed with the requested version — it defeats
-  # the "exit 0 but did nothing" no-op and also handles a pin that moves
-  # backwards (a downgrade).
-  local spec="slopstopper-cli"
-  [ -n "$pinned" ] && spec="slopstopper-cli==$pinned"
-
-  if command -v pipx &>/dev/null; then
-    info "Installing $spec via pipx…"
-    pipx install --force "$spec" >/dev/null \
-      || error "pipx install $spec failed. Check the version exists on PyPI and your network, then retry."
+  # `mise use` edits mise.toml AND installs the tool in one idempotent step —
+  # it handles a moved pin (upgrade or downgrade) deterministically. Pin `task`
+  # too so mise provides the canonical interface (no separate setup-task).
+  if [ -n "$pinned" ]; then
+    info "Pinning slopstopper-cli@$pinned (+ task) in $(basename "$mcfg") via mise…"
+    mise use --path "$mcfg" "pipx:slopstopper-cli@$pinned" "task@3" >/dev/null \
+      || error "mise use failed. Check the version exists on PyPI and your network, then retry."
   else
-    warn "pipx not found — falling back to 'pip install --user'."
-    warn "Install pipx for the cleanest experience: https://pipx.pypa.io/"
-    python3 -m pip install --user --force-reinstall "$spec" >/dev/null \
-      || error "pip install $spec failed. Check the version exists on PyPI and your network, then retry."
+    warn "Could not determine a slopstopper-cli version (offline?). Pinning task only — set the CLI pin later with 'install.sh --upgrade-cli'."
+    mise use --path "$mcfg" "task@3" >/dev/null || true
   fi
 
-  if ! command -v slopstopper &>/dev/null; then
-    error "slopstopper-cli install succeeded but the 'slopstopper' binary is not on PATH. Check your shell's PATH (pipx puts binaries in \$HOME/.local/bin)."
+  # mise installs into its own dir; the binary is only on PATH if mise is
+  # activated in this shell, which it may not be. Validate via `mise exec`
+  # within the target so the check is activation-independent.
+  if ! ( cd "$TARGET_DIR" 2>/dev/null && mise which slopstopper >/dev/null 2>&1 ); then
+    error "mise installed slopstopper-cli but can't resolve the 'slopstopper' binary. Ensure mise is set up and activated: https://mise.jdx.dev/getting-started.html"
   fi
 
   local post_version
-  post_version="$(installed_cli_version)"
+  post_version="$(mise_active_cli_version)"
 
-  # The installed version must match the pin we asked for. A mismatch means
-  # the pinned version doesn't exist on PyPI or a mirror served stale data —
-  # fail loudly rather than limp on the wrong version.
+  # The active version must match the pin we asked for. A mismatch means the
+  # pinned version doesn't exist on PyPI or a mirror served stale data — fail
+  # loudly rather than limp on the wrong version.
   if [ -n "$pinned" ] && [ -n "$post_version" ] && [ "$post_version" != "$pinned" ]; then
-    error "Asked for slopstopper-cli==$pinned but $post_version is on PATH. Verify the version exists on PyPI, then run 'pipx install --force slopstopper-cli==$pinned'."
+    error "Asked for slopstopper-cli@$pinned but $post_version is active. Verify the version exists on PyPI, then run 'mise install' in $TARGET_DIR."
   fi
 
-  success "slopstopper-cli installed ($post_version, pinned in .slopstopper.yml)"
+  success "slopstopper-cli installed ($post_version, pinned in $(basename "$mcfg"))"
 
   # Stash facts for the completion banner. LATEST is informational now — a
   # pin behind latest is a deliberate choice, not a fault.
@@ -429,7 +488,7 @@ install_cli() {
   SLOPSTOPPER_CLI_PREVIOUS="$pre_version"
 }
 
-install_cli
+sync_mise_cli
 
 # 4. .ss/ overlay — nothing is seeded by default. Every CLI-managed
 #    file (Playwright specs, Playwright config, lighthouserc dev/prod,
@@ -577,11 +636,12 @@ printf '%s' "$NEW_MARKER_CONTENT" > "$MARKER_FILE.tmp" && mv "$MARKER_FILE.tmp" 
 
 success "$INSTALLED_WORKFLOWS workflow(s) installed, $REFRESHED_WORKFLOWS refreshed, $DELETED_RESPECTED previously-deleted skipped"
 
-# Post-process workflows for --no-task mode: strip the Task install step
-# and rewrite `task ss:<X> -- args` into `slopstopper run <X> args`. The
-# CLI accepts the same bare-positional URL adopters' shims pass through,
-# so the resulting workflows are functionally identical — just without
-# the Task install step or any `task ss:*` invocation.
+# Post-process workflows for --no-task mode: rewrite `task ss:<X> -- args` into
+# `slopstopper run <X> args`. The CLI accepts the same bare-positional URL
+# adopters' shims pass through, so the resulting workflows are functionally
+# identical — just without any `task ss:*` invocation. The toolchain step
+# (jdx/mise-action) is unchanged: it still installs the pinned slopstopper-cli
+# from mise.toml (mise also installs `task`, which simply goes unused here).
 #
 # Idempotent: re-running install.sh without --no-task re-copies the
 # Task-flavour workflow from source on top, so adopters can switch modes
@@ -594,15 +654,6 @@ from pathlib import Path
 
 workflows_dst = Path(sys.argv[1])
 
-# Match the Task install step block we inserted in every workflow.
-task_step = re.compile(
-    r"\n      - name: Install Task runner\n"
-    r"        uses: arduino/setup-task@v2\n"
-    r"        with:\n"
-    r"          version: 3\.x\n"
-    r"          repo-token: \$\{\{ secrets\.GITHUB_TOKEN \}\}\n"
-)
-
 # Order matters: handle the `-- ` separator form first, then bare invocations.
 # Shim names match CLI check names one-to-one — no alias mapping needed.
 invoke_with_args = re.compile(r"task ss:([a-z][a-z0-9_:-]+) -- ")
@@ -612,14 +663,13 @@ transformed = 0
 for path in sorted(workflows_dst.glob("ss-*.yml")):
     text = path.read_text()
     original = text
-    text = task_step.sub("\n", text)
     text = invoke_with_args.sub(r"slopstopper run \1 ", text)
     text = invoke_bare.sub(r"slopstopper run \1", text)
     if text != original:
         path.write_text(text)
         transformed += 1
 
-print(f"  ✅ Post-processed {transformed} workflow(s) for --no-task mode (Task install stripped, invocations rewritten to slopstopper-cli)")
+print(f"  ✅ Post-processed {transformed} workflow(s) for --no-task mode (invocations rewritten to slopstopper-cli)")
 PY
 fi
 
@@ -691,8 +741,8 @@ seed_template() {
 }
 
 # .slopstopper.yml — config carrier (schema reference + adopter seed) is
-# seeded earlier, just before install_cli, so the cli_version pin can be read
-# from and written back to it during the CLI install.
+# seeded earlier, just before sync_mise_cli, so any legacy cli_version pin can
+# be read for migration into mise.toml.
 
 # .github/labeler.yml — config for ss-hygiene-auto-label-pr.yml
 seed_template ".github/labeler.yml" \
@@ -927,12 +977,12 @@ ss_latest="${SLOPSTOPPER_CLI_LATEST:-}"
 ss_previous="${SLOPSTOPPER_CLI_PREVIOUS:-}"
 if [ -n "$ss_installed" ]; then
   if [ -n "$ss_latest" ] && version_lt "$ss_installed" "$ss_latest"; then
-    echo "  📦 slopstopper-cli $ss_installed (pinned in .slopstopper.yml)"
+    echo "  📦 slopstopper-cli $ss_installed (pinned in mise.toml)"
     info "PyPI latest is $ss_latest — run 'install.sh --upgrade-cli' when you're ready to move the pin."
   elif [ -n "$ss_latest" ]; then
     echo "  📦 slopstopper-cli $ss_installed (pinned, latest on PyPI)"
   else
-    echo "  📦 slopstopper-cli $ss_installed (pinned in .slopstopper.yml)"
+    echo "  📦 slopstopper-cli $ss_installed (pinned in mise.toml)"
   fi
   # On an actual upgrade, surface old → new and where to read what changed,
   # so an adopter (or agent) isn't left guessing the new feature set.

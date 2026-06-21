@@ -9,6 +9,10 @@ Each test resolves install.sh from the repo root (parent of cli/) and
 runs it as `bash install.sh <target>`, which short-circuits the
 GitHub clone path because SCRIPT_DIR != TARGET and templates/ +
 install.sh both live next to the script.
+
+SKIP_CLI_INSTALL=1 makes install.sh write the mise.toml pin offline
+(no `mise` binary, no PyPI) so these assert on the bash-side pin logic
+deterministically, without performing the real mise install.
 """
 
 from __future__ import annotations
@@ -33,9 +37,9 @@ def _run_install(
 ) -> subprocess.CompletedProcess[str]:
     """Run install.sh against the given target dir. Returns the completed process.
 
-    Always sets SKIP_CLI_INSTALL=1 so tests don't pipx-install from PyPI
+    Always sets SKIP_CLI_INSTALL=1 so tests don't install from PyPI via mise
     on every invocation — these tests exercise the bash-side behaviour
-    (workflow tracking, headers seeding, cli_version pinning), not the CLI
+    (workflow tracking, headers seeding, mise.toml pinning), not the CLI
     install itself. Extra flags (e.g. ["--upgrade-cli"]) go before the
     target via `args`.
     """
@@ -53,9 +57,21 @@ def _run_install(
 
 
 def _read_pin(target: Path) -> str | None:
-    """Return the cli_version value recorded in the target's .slopstopper.yml,
-    or None if the key is absent / has no value. Mirrors the sed parse used by
-    install.sh and the workflows."""
+    """Return the slopstopper-cli version pinned in the target's mise.toml
+    (the [tools] "pipx:slopstopper-cli" entry), or None if absent. Mirrors the
+    sed parse install.sh uses and the entry jdx/mise-action reads in CI."""
+    cfg = target / "mise.toml"
+    if not cfg.exists():
+        return None
+    for line in cfg.read_text().splitlines():
+        if "pipx:slopstopper-cli" in line and "=" in line:
+            value = line.split("=", 1)[1].strip().strip("'\"")
+            return value or None
+    return None
+
+
+def _read_legacy_pin(target: Path) -> str | None:
+    """Return the legacy cli_version from .slopstopper.yml, or None if absent."""
     cfg = target / ".slopstopper.yml"
     if not cfg.exists():
         return None
@@ -66,15 +82,23 @@ def _read_pin(target: Path) -> str | None:
     return None
 
 
-# ── cli_version pin ──────────────────────────────────────────────
+# ── mise.toml CLI pin ────────────────────────────────────────────
 
 
 def test_cli_version_flag_writes_exact_pin(tmp_path):
-    """--cli-version X.Y.Z records that exact version in .slopstopper.yml."""
+    """--cli-version X.Y.Z records that exact version in mise.toml."""
     target = _make_minimal_target(tmp_path)
     result = _run_install(target, args=["--cli-version", "9.9.9"])
     assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
     assert _read_pin(target) == "9.9.9"
+
+
+def test_task_is_pinned_alongside_cli(tmp_path):
+    """mise.toml also pins `task` so mise installs the canonical interface."""
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, args=["--cli-version", "9.9.9"])
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert '"task" = "3"' in (target / "mise.toml").read_text()
 
 
 def test_first_install_records_latest_as_pin(tmp_path):
@@ -96,7 +120,7 @@ def test_plain_refresh_leaves_pin_untouched(tmp_path):
     second = _run_install(target, env_extra={"SLOPSTOPPER_FORCE_LATEST": "2.0.0"})
     assert second.returncode == 0, f"{second.stdout}\n{second.stderr}"
     assert _read_pin(target) == "0.5.0"
-    assert (target / ".slopstopper.yml").read_text().count("cli_version:") == 1
+    assert (target / "mise.toml").read_text().count("pipx:slopstopper-cli") == 1
 
 
 def test_upgrade_cli_flag_bumps_pin_to_latest(tmp_path):
@@ -112,22 +136,46 @@ def test_upgrade_cli_flag_bumps_pin_to_latest(tmp_path):
     )
     assert second.returncode == 0, f"{second.stdout}\n{second.stderr}"
     assert _read_pin(target) == "2.0.0"
-    assert (target / ".slopstopper.yml").read_text().count("cli_version:") == 1
+    assert (target / "mise.toml").read_text().count("pipx:slopstopper-cli") == 1
 
 
-def test_pin_write_preserves_other_config_keys(tmp_path):
-    """Recording the pin must not disturb other keys in an existing config."""
+def test_legacy_cli_version_migrates_and_strips(tmp_path):
+    """A pre-mise cli_version in .slopstopper.yml migrates into mise.toml and
+    the dead key is stripped, leaving other config keys untouched."""
     target = _make_minimal_target(tmp_path)
     cfg = target / ".slopstopper.yml"
-    cfg.write_text("node_version: '22'\ncli_version:\nheaders:\n  source: public/_headers\n")
+    cfg.write_text(
+        "node_version: '22'\n"
+        "# ── slopstopper-cli version pin ──\n"
+        "# blurb\n"
+        "cli_version: '0.5.0'\n"
+        "headers:\n"
+        "  source: public/_headers\n"
+    )
+
+    # Plain refresh (no flags): the pin should migrate from .slopstopper.yml,
+    # NOT bump to the newer "latest".
+    result = _run_install(target, env_extra={"SLOPSTOPPER_FORCE_LATEST": "2.0.0"})
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+    assert _read_pin(target) == "0.5.0"          # migrated into mise.toml
+    assert _read_legacy_pin(target) is None       # cli_version key stripped
+    text = cfg.read_text()
+    assert "node_version: '22'" in text           # other keys preserved
+    assert "source: public/_headers" in text
+
+
+def test_existing_mise_tools_are_preserved(tmp_path):
+    """Writing the CLI pin must not disturb other tools in an existing mise.toml."""
+    target = _make_minimal_target(tmp_path)
+    (target / "mise.toml").write_text('[tools]\n"node" = "20"\n')
 
     result = _run_install(target, args=["--cli-version", "3.3.3"])
     assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
 
-    text = cfg.read_text()
+    text = (target / "mise.toml").read_text()
     assert _read_pin(target) == "3.3.3"
-    assert "node_version: '22'" in text
-    assert "source: public/_headers" in text
+    assert '"node" = "20"' in text
 
 
 def test_cli_version_requires_argument(tmp_path):

@@ -69,28 +69,19 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install slopstopper-cli
-        run: |
-          # Editable install when run inside slopstopper.dev itself (cli/
-          # source present); pinned PyPI install for adopter repos. The
-          # cli_version in .slopstopper.yml is the per-repo pin, parsed with
-          # the same sed program install.sh uses so install and CI agree.
-          if [ -f cli/pyproject.toml ]; then
-            pip install -e ./cli
-          else
-            v="$(sed -n 's/^cli_version:[[:space:]]*["'\'']\{0,1\}\([0-9][0-9.]*\).*/\1/p' .slopstopper.yml 2>/dev/null | head -1)"
-            if [ -n "$v" ]; then
-              pip install "slopstopper-cli==$v"
-            else
-              pip install slopstopper-cli
-            fi
-          fi
+      - name: Set up slopstopper toolchain
+        # Installs the pinned slopstopper-cli + task from mise.toml and puts
+        # them on PATH for later steps. The pin lives in mise.toml ([tools]
+        # "pipx:slopstopper-cli"); mise resolves it per-repo, so CI and local
+        # runs share one version.
+        uses: jdx/mise-action@v2
 
-      - name: Install Task runner
-        uses: arduino/setup-task@v2
-        with:
-          version: 3.x
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install slopstopper-cli from source (slopstopper.dev only)
+        # In this repo the CLI runs from source (HEAD), so mise.toml carries
+        # no slopstopper-cli pin — install it editable here. Adopter repos
+        # skip this (no cli/ source) and use the mise-pinned wheel.
+        if: ${{ hashFiles('cli/pyproject.toml') != '' }}
+        run: pip install -e ./cli
 
       - name: Run documentation accuracy check
         id: check

@@ -4,9 +4,10 @@
 # and docs/architecture/README.md for how the headers source feeds into
 # the CSP-drift check and the local server.
 
-# No cli_version pin here on purpose: this repo IS slopstopper-cli, so its
-# own workflows install it editable (`pip install -e ./cli`) and run HEAD.
-# Adopter repos pin cli_version — see .slopstopper.yml.example.
+# The CLI version is pinned in mise.toml (adopter repos pin
+# "pipx:slopstopper-cli" there). This repo IS slopstopper-cli, so mise.toml
+# pins only `task` — the workflows install the CLI editable
+# (`pip install -e ./cli`) and run HEAD. See .slopstopper.yml.example.
 node_version: '20'
 
 # slopstopper.dev manages headers via a Cloudflare Worker that imports
