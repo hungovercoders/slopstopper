@@ -18,30 +18,31 @@ Notation: C4 (Context + Container).
 ```
 slopstopper/
 ├── .github/workflows/        # All SlopStopper workflows are `ss-*.yml`
-│                             #   (each is ~8 lines: install CLI, `slopstopper run …`, `slopstopper emit …`)
+│                             #   (jdx/mise-action installs the pinned CLI + task, then `task ss:…` / `slopstopper run …`)
 ├── .ss/                      # SlopStopper-owned (adopter side)
 │   ├── reports/              # CLI writes here (.gitignored)
 │   └── .workflows-installed  # Manifest of installed workflows (commit this)
-├── cli/                      # slopstopper-cli — the Python package shipped via pipx
+├── cli/                      # slopstopper-cli — the Python package (PyPI); pinned via mise
 │   ├── slopstopper/cli.py    # argparse dispatcher + bare-invocation banner
 │   ├── slopstopper/output.py # Shared formatters + `--quiet` toggle
 │   ├── slopstopper/checks/   # One module per check (security/hygiene/reliability)
 │   ├── slopstopper/data/     # Bundled Playwright specs, lighthouserc dev/prod, server.js
 │   ├── slopstopper/templates.py / emit.py / discovery.py / config.py
 │   ├── tests/                # pytest suite (486 tests)
-│   └── pyproject.toml        # Beta — install: `pipx install slopstopper-cli` (PyPI)
+│   └── pyproject.toml        # Beta — standalone: `pipx install slopstopper-cli`; suite: pinned in mise.toml
 ├── app/                      # Static site — bound as the [assets] dir on the Worker
-│   ├── index.html            # Hero + Get Started (pipx install) + capability grid
+│   ├── index.html            # Hero + Get Started (CLI quick-try + mise suite install) + capability grid
 │   ├── features.html         # 5 category cards with workflow excerpts + mock reports
 │   ├── tools.html            # Tool cards (incl. slopstopper-cli itself)
 │   ├── feedback.html         # Giscus comments embed (per-path CSP exception)
 │   ├── shared.css / copy.js / manifest.webmanifest / robots.txt / sitemap.xml
 ├── docs/                     # Documentation hub — see docs/index.md
-├── install.sh                # Adopter installer (pip-installs the CLI + seeds workflows)
+├── install.sh                # Adopter installer (pins CLI via mise + seeds workflows)
 ├── wrangler.jsonc            # Cloudflare Worker + [assets] binding
 ├── worker/                   # Cloudflare Worker — applies headers to every response
 │   ├── index.ts              # fetch handler: env.ASSETS.fetch + per-path headers
 │   └── headers.json          # Canonical header map (CSP, COOP/COEP, X-Frame-Options …)
+├── mise.toml                 # Toolchain pin — `"pipx:slopstopper-cli"` + `task` (read locally + by jdx/mise-action)
 ├── Taskfile.yml              # Thin root with `includes: { ss: ./Taskfile.ss.yml }`
 ├── Taskfile.ss.yml           # `task ss:*` shims that call `slopstopper run …`
 ├── README.md                 # Consumer-facing entry point
@@ -111,6 +112,32 @@ SlopStopper exposes one canonical entry point for any check: `task ss:<category>
 Adopters who don't want Task in their CI pass `--no-task` to `install.sh` and get workflows that call the CLI directly — same execution path, same exit codes, same reports. The Task layer is the surface to promote; the CLI is the implementation each shim calls into.
 
 See [`Taskfile.ss.yml`](../../Taskfile.ss.yml) for the shipped shim catalogue.
+
+## Toolchain: mise + Task (why both)
+
+SlopStopper deliberately uses **two** tools with non-overlapping jobs — the
+idiomatic mise+Task split, not redundancy:
+
+| Tool | Job | Where it's defined |
+| ---- | --- | ------------------ |
+| **mise** | *Tool versions.* Pins and installs `slopstopper-cli` (and `task` itself), then activates them **per-directory** | `mise.toml` (`[tools]` `"pipx:slopstopper-cli"` + `task`) |
+| **Task** | *Commands.* The single invocation surface — `task ss:<check>` | `Taskfile.ss.yml` shims |
+
+Why mise owns versions: a normal global install puts **one** `slopstopper` binary
+on `PATH`, which can't match different repos pinned to different versions — so
+local runs silently drifted off the pin (CI didn't, because it reinstalls per
+run). mise keeps every version side-by-side and rewrites `PATH` per-directory, so
+the active `slopstopper` **follows the repo**. The pin in `mise.toml` is the single
+source of truth both local runs and CI (`jdx/mise-action`) read.
+
+Why Task stays the interface: `task ss:check` sits alongside an adopter's own
+`task build` / `task deploy`, so the suite shares their existing command surface
+rather than introducing a parallel one. mise auto-installs `task`, so it remains a
+one-install story — install mise, everything else flows from `mise.toml`.
+
+In short: **mise installs it (pinned), Task runs it.** Moving the CLI pin is
+`install.sh --upgrade-cli` / `--cli-version` (both wrap `mise use`); see
+[`docs/runbooks/UPGRADE_CLI.md`](../runbooks/UPGRADE_CLI.md).
 
 ## Request Flow (Minimal)
 

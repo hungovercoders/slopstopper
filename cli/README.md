@@ -1,12 +1,12 @@
 # slopstopper-cli
 
-The SlopStopper quality suite, packaged as a `pipx`-installable CLI.
+The SlopStopper quality suite, packaged as a Python CLI on PyPI.
 
-> **Status: Beta.** Every check in the [public catalogue](https://slopstopper.dev/features.html) runs through this package. The CI workflows under `.github/workflows/ss-*.yml` install `slopstopper-cli` and call `slopstopper run <category>:<check>` — same code path you use locally.
+> **Status: Beta.** Every check in the [public catalogue](https://slopstopper.dev/features.html) runs through this package. The CI workflows under `.github/workflows/ss-*.yml` install the pinned `slopstopper-cli` via `jdx/mise-action` and call `slopstopper run <category>:<check>` — same code path you use locally.
 
 ## Install
 
-End-user (most adopters):
+Quick standalone try (unpinned):
 
 ```bash
 pipx install slopstopper-cli
@@ -16,6 +16,14 @@ slopstopper doctor
 ```
 
 > Published to PyPI on every release tag. `pipx upgrade slopstopper-cli` pulls the latest. Each release is also attached to the [latest GitHub Release](https://github.com/hungovercoders/slopstopper/releases/latest) with a Sigstore build-provenance attestation — verify with `gh attestation verify <wheel> --owner hungovercoders`.
+
+Pinned suite (a repo you'll keep — local and CI run the same version):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
+```
+
+> Requires [mise](https://mise.jdx.dev). `install.sh` pins `slopstopper-cli` + `task` in `mise.toml` (the single source of truth both local runs and CI read) and seeds the `ss-*.yml` workflows. Move the pin with `install.sh --upgrade-cli` / `--cli-version`.
 
 Development (editable, from a clone of this repo):
 
