@@ -21,7 +21,7 @@ The full suite into a repo (CLI + GitHub Actions workflows + Taskfile shim + con
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 ```
 
-`install.sh` is idempotent — re-run any time to refresh workflows. It **pins** `slopstopper-cli` per-repo via `cli_version` in `.slopstopper.yml`, so a re-run reinstalls that exact version and no breaking release lands until you move the pin. See [Update](#update).
+`install.sh` is idempotent — re-run to refresh workflows. It **pins** `slopstopper-cli` in `mise.toml` and installs it via [mise](https://mise.jdx.dev), which activates it per-directory so the version follows the repo. No breaking release lands until you move it. See [Update](#update).
 
 ## Contents
 
@@ -42,9 +42,10 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
 
 ## Prerequisites
 
-slopstopper-cli needs only Python; each check subprocess-invokes its own tool (`semgrep`, `gitleaks`, `trivy`, `lizard`, `docker`, `node`), so you install only what the checks you use need. `slopstopper doctor` reports what's missing.
+mise pins + installs `slopstopper-cli`; each check subprocess-invokes its own tool (`semgrep`, `gitleaks`, `trivy`, `lizard`, `docker`, `node`). `slopstopper doctor` reports what's missing.
 
-- **Python 3.11+** — `pipx` recommended (`brew install pipx`)
+- **[mise](https://mise.jdx.dev)** — required; installs the pinned `slopstopper-cli` + `task`, activated per-directory (CI uses `jdx/mise-action`)
+- **Python 3.11+** — mise's pipx backend needs it on PATH
 
 Per-check tools (skip if you've disabled the check):
 
@@ -66,11 +67,12 @@ Everything SlopStopper owns lives under the `ss` namespace so it can't clash wit
 
 | Item | Description |
 | ---- | ----------- |
-| `slopstopper-cli` (Python) | The product — every check runs through this. Pinned per-repo via `cli_version` in `.slopstopper.yml`; move the pin with `install.sh --upgrade-cli`. |
+| `slopstopper-cli` (Python) | The product — every check runs through this. Pinned per-repo in `mise.toml` (`"pipx:slopstopper-cli"`) and installed via mise; move the pin with `install.sh --upgrade-cli`. |
 | `.github/workflows/ss-*.yml` | Security, hygiene, reliability and operational workflows — all `ss-` prefixed |
 | `Taskfile.ss.yml` | Thin `task ss:*` shims that call the CLI — convenient for the local dev loop |
 | `Taskfile.yml` | Created if missing (else: prints the include block to paste in) |
-| `.slopstopper.yml` | Config seed — `cli_version` pin, URLs, headers, thresholds, page lists (never overwritten on re-run; the pin moves only via `--upgrade-cli`) |
+| `mise.toml` | Toolchain pin — `"pipx:slopstopper-cli"` + `task`; read locally + in CI (`jdx/mise-action`). Moves via `--upgrade-cli`/`--cli-version` |
+| `.slopstopper.yml` | Config seed — URLs, headers, thresholds, page lists (never overwritten) |
 | `.ss/reports/` | Where the CLI writes reports — `.gitignore`d |
 | `package.json` | Created (or `devDependencies` merged into an existing file) |
 
@@ -133,15 +135,13 @@ Deploy needs no secrets — Cloudflare Workers Builds connects via the GitHub Ap
 
 ## Update
 
-Standalone CLI (unpinned): `pipx upgrade slopstopper-cli`.
-
-Full suite — refreshes workflows + shims and reinstalls the **pinned** `slopstopper-cli` (config and customisations survive; the pin holds):
+Refresh workflows + shims and reinstall the **pinned** `slopstopper-cli` (config + customisations survive):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 ```
 
-Move the pin when ready (rewrites `cli_version` — commit so CI matches; nothing reaches you until you do). See [docs/runbooks/UPGRADE_CLI.md](docs/runbooks/UPGRADE_CLI.md):
+Move the pin when ready (rewrites `mise.toml`; commit so CI matches). See [docs/runbooks/UPGRADE_CLI.md](docs/runbooks/UPGRADE_CLI.md):
 
 ```bash
 bash install.sh --upgrade-cli        # latest
