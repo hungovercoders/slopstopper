@@ -8,7 +8,8 @@
 # "pipx:slopstopper-cli" there). This repo IS slopstopper-cli, so mise.toml
 # pins only `task` — the workflows install the CLI editable
 # (`pip install -e ./cli`) and run HEAD. See .slopstopper.yml.example.
-node_version: '20'
+# The Node version is pinned in mise.toml ([tools] node) — a tool version, so
+# it lives in mise, not here.
 
 # slopstopper.dev manages headers via a Cloudflare Worker that imports
 # worker/headers.json (see worker/index.ts). The CSP-drift check reads

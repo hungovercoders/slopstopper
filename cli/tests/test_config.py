@@ -11,8 +11,8 @@ def test_missing_file_returns_default(isolated_cwd):
 
 
 def test_top_level_scalar(write_config):
-    write_config("node_version: '20'\n")
-    assert config.get("node_version") == "20"
+    write_config("answer: '42'\n")
+    assert config.get("answer") == "42"
 
 
 def test_nested_dot_path(write_config):
@@ -46,5 +46,5 @@ def test_null_value_returns_default(write_config):
 
 
 def test_comment_stripping(write_config):
-    write_config("node_version: '20'  # inline comment\n# whole-line comment\n")
-    assert config.get("node_version") == "20"
+    write_config("answer: '42'  # inline comment\n# whole-line comment\n")
+    assert config.get("answer") == "42"

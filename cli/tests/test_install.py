@@ -145,7 +145,8 @@ def test_legacy_cli_version_migrates_and_strips(tmp_path):
     target = _make_minimal_target(tmp_path)
     cfg = target / ".slopstopper.yml"
     cfg.write_text(
-        "node_version: '22'\n"
+        "smoke:\n"
+        "  og_image_path: /og-image.png\n"
         "# ── slopstopper-cli version pin ──\n"
         "# blurb\n"
         "cli_version: '0.5.0'\n"
@@ -161,7 +162,7 @@ def test_legacy_cli_version_migrates_and_strips(tmp_path):
     assert _read_pin(target) == "0.5.0"          # migrated into mise.toml
     assert _read_legacy_pin(target) is None       # cli_version key stripped
     text = cfg.read_text()
-    assert "node_version: '22'" in text           # other keys preserved
+    assert "og_image_path: /og-image.png" in text  # other keys preserved
     assert "source: public/_headers" in text
 
 
@@ -176,6 +177,37 @@ def test_existing_mise_tools_are_preserved(tmp_path):
     text = (target / "mise.toml").read_text()
     assert _read_pin(target) == "3.3.3"
     assert '"node" = "20"' in text
+
+
+def test_node_is_seeded_when_absent(tmp_path):
+    """A fresh install seeds a default node pin in mise.toml — node is a tool
+    version, so it lives in mise (read by CI via jdx/mise-action), not
+    .slopstopper.yml."""
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, args=["--cli-version", "9.9.9"])
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert '"node" = "20"' in (target / "mise.toml").read_text()
+
+
+def test_existing_node_pin_is_not_overridden(tmp_path):
+    """If the adopter already pins node in mise.toml, install leaves it alone."""
+    target = _make_minimal_target(tmp_path)
+    (target / "mise.toml").write_text('[tools]\n"node" = "18"\n')
+    result = _run_install(target, args=["--cli-version", "9.9.9"])
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    text = (target / "mise.toml").read_text()
+    assert '"node" = "18"' in text
+    assert '"node" = "20"' not in text
+
+
+def test_node_version_file_suppresses_mise_node_seed(tmp_path):
+    """An existing .node-version means the adopter manages node themselves —
+    install must not also seed a node pin into mise.toml."""
+    target = _make_minimal_target(tmp_path)
+    (target / ".node-version").write_text("18\n")
+    result = _run_install(target, args=["--cli-version", "9.9.9"])
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert '"node"' not in (target / "mise.toml").read_text()
 
 
 def test_cli_version_requires_argument(tmp_path):

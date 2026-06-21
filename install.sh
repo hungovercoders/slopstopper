@@ -247,6 +247,23 @@ write_mise_tool() {
   fi
 }
 
+# Default Node version slopstopper seeds into a fresh adopter mise config. Node is
+# a tool version, so it belongs in mise (not .slopstopper.yml); the ss-*.yml
+# workflows get it from this pin via jdx/mise-action — no setup-node step.
+DEFAULT_NODE_VERSION="20"
+
+# True if the target already declares a Node version somewhere mise (and the
+# workflows) honour — a `node` [tools] entry in the mise config, or a
+# .node-version / .nvmrc file. We seed our own node pin only when none of these
+# exist, so a re-run never clobbers an adopter's existing Node setup.
+target_has_node_pin() {
+  local mcfg="$1"
+  [ -f "$TARGET_DIR/.node-version" ] && return 0
+  [ -f "$TARGET_DIR/.nvmrc" ] && return 0
+  [ -f "$mcfg" ] && grep -qE '^[[:space:]]*"?node"?[[:space:]]*=' "$mcfg" 2>/dev/null && return 0
+  return 1
+}
+
 # slopstopper-cli version active in the target per mise (independent of whether
 # mise is activated in this shell). Empty if mise can't resolve it.
 mise_active_cli_version() {
@@ -444,6 +461,7 @@ sync_mise_cli() {
   if [ "${SKIP_CLI_INSTALL:-0}" = "1" ]; then
     [ -n "$pinned" ] && write_mise_tool "$mcfg" "pipx:slopstopper-cli" "$pinned"
     write_mise_tool "$mcfg" "task" "3"
+    target_has_node_pin "$mcfg" || write_mise_tool "$mcfg" "node" "$DEFAULT_NODE_VERSION"
     info "Skipping mise install (SKIP_CLI_INSTALL=1)"
     SLOPSTOPPER_CLI_VERSION="$pinned"
     SLOPSTOPPER_CLI_PREVIOUS="$pre_version"
@@ -452,14 +470,18 @@ sync_mise_cli() {
 
   # `mise use` edits mise.toml AND installs the tool in one idempotent step —
   # it handles a moved pin (upgrade or downgrade) deterministically. Pin `task`
-  # too so mise provides the canonical interface (no separate setup-task).
+  # too so mise provides the canonical interface (no separate setup-task). Seed
+  # `node` only when the adopter hasn't already declared one (mise.toml /
+  # .node-version / .nvmrc), so we never override their build's Node version.
+  local node_arg=""
+  target_has_node_pin "$mcfg" || node_arg="node@$DEFAULT_NODE_VERSION"
   if [ -n "$pinned" ]; then
     info "Pinning slopstopper-cli@$pinned (+ task) in $(basename "$mcfg") via mise…"
-    mise use --path "$mcfg" "pipx:slopstopper-cli@$pinned" "task@3" >/dev/null \
+    mise use --path "$mcfg" "pipx:slopstopper-cli@$pinned" "task@3" $node_arg >/dev/null \
       || error "mise use failed. Check the version exists on PyPI and your network, then retry."
   else
     warn "Could not determine a slopstopper-cli version (offline?). Pinning task only — set the CLI pin later with 'install.sh --upgrade-cli'."
-    mise use --path "$mcfg" "task@3" >/dev/null || true
+    mise use --path "$mcfg" "task@3" $node_arg >/dev/null || true
   fi
 
   # mise installs into its own dir; the binary is only on PATH if mise is
@@ -1007,9 +1029,9 @@ echo "     urls:"
 echo "       production: https://your-site.example.com"
 echo "       preview:    https://staging.your-site.example.com"
 echo ""
-echo "     # if you need Node 22+ for your build:"
-echo "     node_version: '22'"
-echo "     gh variable set SLOPSTOPPER_NODE_VERSION --body 22"
+echo "     # if you need a different Node version for your build (pinned in"
+echo "     # mise.toml, read by mise locally and CI):"
+echo "     mise use node@22"
 echo ""
 echo "  🔐 Inert until you add secrets in your repo settings:"
 echo "       Doc Auto-Updater (gh-aw agentic workflow)"

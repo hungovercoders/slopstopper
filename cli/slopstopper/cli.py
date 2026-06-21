@@ -253,7 +253,7 @@ def _add_config(sub) -> None:
         ),
         epilog=(
             "Examples:\n"
-            "  slopstopper config get node_version 20\n"
+            "  slopstopper config get smoke.og_image_path /og-image.png\n"
             "  slopstopper config get workflows.disabled\n"
             "  slopstopper config get urls.production\n"
         ),
