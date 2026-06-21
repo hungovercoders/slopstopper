@@ -4,6 +4,14 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.11.1](https://github.com/hungovercoders/slopstopper/compare/v0.11.0...v0.11.1) (2026-06-21)
+
+
+### Bug Fixes
+
+* **app:** bump actions/checkout@v4 → [@v6](https://github.com/v6) in workflow excerpts ([#290](https://github.com/hungovercoders/slopstopper/issues/290)) ([b21f049](https://github.com/hungovercoders/slopstopper/commit/b21f0492cb7c7ebb99c9449e4290a7427f3aaf26))
+* correct ATTRIBUTIONS record and enforce dependency licence gate ([#298](https://github.com/hungovercoders/slopstopper/issues/298)) ([760dff4](https://github.com/hungovercoders/slopstopper/commit/760dff4439ae4c157b694792a7c830bf60705e9c))
+
 ## [0.11.0](https://github.com/hungovercoders/slopstopper/compare/v0.10.0...v0.11.0) (2026-06-21)
 
 
