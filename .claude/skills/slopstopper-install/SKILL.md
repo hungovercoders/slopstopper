@@ -59,7 +59,7 @@ Before running anything, learn enough about the target to predict where it'll bi
 
 11. **Does the target already have a `.github/labeler.yml`?** Slopstopper ships the auto-label workflow (`ss-hygiene-auto-label-pr.yml`) but not the config — labels are repo-specific. Without one, the check errors with `The config file was not found`. Plan to ship a labeler config mapping the target's directory structure to labels.
 
-12. **Is the target a private repo?** Some workflows post issues, comments, and PR labels. They need `issues: write`, `pull-requests: write` permissions — usually fine, but flag if the org restricts this.
+12. **Is the target a private repo?** Two things to flag, not one. First, some workflows post issues, comments, and PR labels — they need `issues: write`, `pull-requests: write` permissions, usually fine but check if the org restricts this. Second, and more important: **GitHub Actions minutes are free on public repos but billed on private ones.** The full suite runs ~18 checks on every PR, and the scheduled reliability/smoke runs add recurring minutes on top of that — the heavier dynamic checks (Playwright, Lighthouse CI, ZAP-in-Docker) are the expensive ones. On a public repo this is a non-issue; on a private repo with a tight minutes budget, slopstopper may not be a good fit as-is. Call the cost out explicitly during pre-flight so the user decides with eyes open — and consider a partial adoption (Step 9) rather than the full suite.
 
 Report what you found to the user before running the installer. The Node-version question and the deploy-model question together drive the largest chunk of first-PR red checks — call them out specifically.
 
@@ -246,6 +246,8 @@ gh variable set SLOPSTOPPER_NODE_VERSION --body "$(grep '^node_version:' .slopst
 Hardcoding inside `ss-reliability-*.yml` workflow files still works but gets wiped on `install.sh` re-run — avoid unless you have a reason.
 
 ## Step 5 — Set up the Map Pattern (if keeping the docs-* checks)
+
+**Why the Map Pattern is worth it beyond passing the check:** the map is a token-efficiency play, not just a docs-structure rule. When `README.md`, `AGENTS.md` and `CLAUDE.md` are thin pointers into a `docs/index.md` index — rather than three fat files each restating the project — an agent (or a human) reads the index and opens only the category files relevant to the task. That cuts the tokens pulled into context on every agent invocation, which is real money at scale. Frame it to the user as a cost/latency win for AI-assisted work, not paperwork the check demands.
 
 The three docs-* workflows (`docs-accuracy`, `docs-structure`, `docs-size`) validate a `docs/` directory laid out per slopstopper's governance pattern. If you're keeping them, the target needs a `docs/` directory shaped like this:
 
@@ -526,7 +528,7 @@ If anything was green locally but red on CI: that's signal there's an environmen
 Don't push the user to install if:
 - The target already has a competing quality suite they're happy with (don't double up).
 - It's a one-file script or library where 21 workflows is overkill.
-- The target's CI minutes budget is tight — the dynamic checks (Playwright, Lighthouse CI, ZAP) burn minutes.
+- The target is a **private repo with a tight CI minutes budget**. Actions minutes are free on public repos but billed on private ones, and slopstopper is minutes-hungry: ~18 checks per PR plus scheduled reliability/smoke runs, with the dynamic checks (Playwright, Lighthouse CI, ZAP-in-Docker) the heaviest. Public repos run the whole suite free; private repos should weigh the recurring cost (see the Step 1.12 pre-flight callout).
 - The target's deploy isn't Cloudflare Workers Builds. Slopstopper's deploy story assumes that — the install still works, but the user loses one of its selling points.
 
 In any of those cases: recommend a partial adoption (cherry-pick specific workflows) rather than the full install.
