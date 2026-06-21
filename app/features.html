@@ -83,7 +83,7 @@ jobs:
     name: Static Application Security Testing with Semgrep
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jdx/mise-action@v2
       - run: pip install semgrep
       - run: task ss:security:sast
@@ -104,7 +104,7 @@ jobs:
   dast:
     name: Dynamic Application Security Testing with OWASP ZAP
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jdx/mise-action@v2
       - run: npm ci &amp;&amp; npm run build &amp;&amp; slopstopper serve &amp;
       - run: task ss:security:dast -- http://localhost:8080
@@ -125,7 +125,7 @@ jobs:
   secrets:
     name: Detect Secrets with Gitleaks
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { fetch-depth: 0 }
       - uses: jdx/mise-action@v2
       - run: curl -sL gitleaks/install.sh | bash
@@ -147,7 +147,7 @@ jobs:
   dependencies:
     name: Scan Dependencies with Trivy
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jdx/mise-action@v2
       - run: brew install aquasecurity/trivy/trivy
       - run: task ss:security:vulnerability:all
@@ -185,7 +185,7 @@ jobs:
   complexity-check:
     name: Check Code Complexity with Lizard
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jdx/mise-action@v2
       - run: pip install lizard
       - run: task ss:hygiene:complexity
@@ -226,7 +226,7 @@ on:
 jobs:
   check-csp-exceptions:
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jdx/mise-action@v2
       - run: task ss:hygiene:csp-exceptions
       - if: github.event_name == 'pull_request'
@@ -281,7 +281,7 @@ on:
 jobs:
   smoke-test:
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jdx/mise-action@v2
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
@@ -306,7 +306,7 @@ jobs:
   broken-links:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jdx/mise-action@v2
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
@@ -330,7 +330,7 @@ jobs:
   a11y:
     name: Accessibility Audit (axe-core / WCAG 2.1 AA)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jdx/mise-action@v2
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
@@ -354,7 +354,7 @@ jobs:
   cwv:
     name: Core Web Vitals (Lighthouse CI)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jdx/mise-action@v2
       - run: npm ci &amp;&amp; npm run build
       - run: slopstopper serve &amp;
@@ -378,7 +378,7 @@ jobs:
   seo:
     name: SEO Metatag Audit (OpenGraph + Twitter Card + canonical)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: jdx/mise-action@v2
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
