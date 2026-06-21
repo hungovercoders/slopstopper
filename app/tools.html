@@ -198,7 +198,7 @@ slopstopper serve                              # bundled static server</code></p
   sast:
     name: Static Application Security Testing with Semgrep
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: pip install semgrep &amp;&amp; semgrep ci</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-sast-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
@@ -234,7 +234,7 @@ slopstopper serve                              # bundled static server</code></p
   dependencies:
     name: Scan Dependencies with Trivy
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: trivy fs --severity HIGH,CRITICAL .</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-vulnerability-all-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
@@ -252,7 +252,7 @@ slopstopper serve                              # bundled static server</code></p
   secrets:
     name: Detect Secrets with Gitleaks
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { fetch-depth: 0 }
       - uses: gitleaks/gitleaks-action@v2</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-secrets-check.yml" rel="noopener noreferrer">View source →</a>
@@ -361,7 +361,7 @@ on:
                         <div class="codeblock codeblock--yaml"><pre><code>jobs:
   check-docs-structure:
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: npx markdownlint-cli 'docs/**/*.md'</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-structure-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
