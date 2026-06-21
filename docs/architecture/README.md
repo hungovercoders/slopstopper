@@ -42,7 +42,7 @@ slopstopper/
 ├── worker/                   # Cloudflare Worker — applies headers to every response
 │   ├── index.ts              # fetch handler: env.ASSETS.fetch + per-path headers
 │   └── headers.json          # Canonical header map (CSP, COOP/COEP, X-Frame-Options …)
-├── mise.toml                 # Toolchain pin — `"pipx:slopstopper-cli"` + `task` (read locally + by jdx/mise-action)
+├── mise.toml                 # Toolchain pins — `"pipx:slopstopper-cli"` + `task` + `node` (read locally + by jdx/mise-action)
 ├── Taskfile.yml              # Thin root with `includes: { ss: ./Taskfile.ss.yml }`
 ├── Taskfile.ss.yml           # `task ss:*` shims that call `slopstopper run …`
 ├── README.md                 # Consumer-facing entry point
@@ -120,7 +120,7 @@ idiomatic mise+Task split, not redundancy:
 
 | Tool | Job | Where it's defined |
 | ---- | --- | ------------------ |
-| **mise** | *Tool versions.* Pins and installs `slopstopper-cli` (and `task` itself), then activates them **per-directory** | `mise.toml` (`[tools]` `"pipx:slopstopper-cli"` + `task`) |
+| **mise** | *Tool versions.* Pins and installs `slopstopper-cli`, `task` itself, and `node`, then activates them **per-directory** | `mise.toml` (`[tools]` `"pipx:slopstopper-cli"` + `task` + `node`) |
 | **Task** | *Commands.* The single invocation surface — `task ss:<check>` | `Taskfile.ss.yml` shims |
 
 Why mise owns versions: a normal global install puts **one** `slopstopper` binary
@@ -129,6 +129,12 @@ local runs silently drifted off the pin (CI didn't, because it reinstalls per
 run). mise keeps every version side-by-side and rewrites `PATH` per-directory, so
 the active `slopstopper` **follows the repo**. The pin in `mise.toml` is the single
 source of truth both local runs and CI (`jdx/mise-action`) read.
+
+`node` rides the same mechanism: it's a tool version, so it lives in `mise.toml`
+(not `.slopstopper.yml`) and CI gets it from `jdx/mise-action` — there's no
+separate `setup-node` step or `SLOPSTOPPER_NODE_VERSION` repo variable.
+`install.sh` seeds `node = "20"` into an adopter's `mise.toml` only when they
+haven't already declared a Node version (`mise.toml` / `.node-version` / `.nvmrc`).
 
 Why Task stays the interface: `task ss:check` sits alongside an adopter's own
 `task build` / `task deploy`, so the suite shares their existing command surface

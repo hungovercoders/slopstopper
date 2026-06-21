@@ -5,5 +5,10 @@
 # Adopter repos get a "pipx:slopstopper-cli" pin written here by install.sh;
 # that pin is the single source of truth both local runs and CI (jdx/mise-action)
 # read, so the version follows the repo instead of a single global binary.
+#
+# `node` is pinned here too: it's a tool version, so it lives in mise (not
+# .slopstopper.yml). mise installs it per-directory locally, and CI gets it from
+# the same pin via jdx/mise-action — no separate setup-node step or repo variable.
 [tools]
 "task" = "3"
+"node" = "20"

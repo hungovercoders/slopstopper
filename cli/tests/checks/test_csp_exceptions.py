@@ -151,7 +151,7 @@ def test_build_md_report_contains_status_and_source():
 
 
 def test_resolve_source_skip_when_unset(write_config):
-    write_config("node_version: '20'\n")
+    write_config("smoke:\n  og_image_path: /og-image.png\n")
     path, fmt, reason = csp_exceptions._resolve_source()
     assert path is None
     assert reason is not None

@@ -41,7 +41,7 @@ Before running anything, learn enough about the target to predict where it'll bi
 
 2. **Does the target already have GitHub Actions workflows?** Slopstopper adds 21 new `ss-*.yml` workflows. They're all `ss-`-prefixed so they group in the Actions UI, but the user should know they're getting that many checks running on every PR.
 
-3. **What `engines.node` does the target need?** Slopstopper workflows read `${{ vars.SLOPSTOPPER_NODE_VERSION || '20' }}` for their `actions/setup-node` step. If the target needs Node 22+ (Astro 6, recent Next, SvelteKit kit), set `node_version:` in `.slopstopper.yml` AND run `gh variable set SLOPSTOPPER_NODE_VERSION --body 22` to push it into the repo variable that workflows read. One source of truth; survives `install.sh` re-runs.
+3. **What `engines.node` does the target need?** Node is pinned in `mise.toml` (`[tools] node`) — mise installs it locally and the workflows get the same version from that pin via `jdx/mise-action` (no `setup-node` step, no repo variable). `install.sh` seeds `node = "20"` on first install and leaves any existing node pin / `.node-version` / `.nvmrc` alone. If the target needs Node 22+ (Astro 6, recent Next, SvelteKit), run `mise use node@22`. One source of truth; survives `install.sh` re-runs.
 
 4. **What's the deploy model and serve story?** Reliability/DAST workflows can target either a deployed URL or a `server.js`-served local build on port 8080. If the target is anything other than a static site (Astro, Next, SvelteKit, a backend app) you'll need either a `server.js` shim or workflows pointed at a deployed environment. Pair this with the deploy model — Cloudflare Workers / Vercel / Netlify / GH Pages each call for a different answer.
 
@@ -104,7 +104,7 @@ Three categories of write, in order of "how much trust to extend on re-run":
 
 - `Taskfile.ss.yml`, `.ss/server.js`, `.ss/.workflows-installed`
 - Workflows under `.github/workflows/ss-*.yml` that are in `GENERIC_WORKFLOWS` and not listed in `.slopstopper.yml` `workflows.disabled`
-- `mise.toml` — the `"pipx:slopstopper-cli"` + `task` pins (written via `mise use`); `slopstopper-cli` itself is installed/activated by mise at the **pinned** version. A plain re-run never bumps it; `--upgrade-cli` / `--cli-version` do
+- `mise.toml` — the `"pipx:slopstopper-cli"` + `task` + `node` pins (written via `mise use`); `slopstopper-cli` itself is installed/activated by mise at the **pinned** version. A plain re-run never bumps the CLI; `node` is seeded (`= "20"`) only when the repo doesn't already declare one; `--upgrade-cli` / `--cli-version` move the CLI pin
 - `<repo>/.claude/skills/slopstopper-install/SKILL.md` and `<repo>/.claude/skills/slopstopper-triage/SKILL.md` (project level — opt out with `--no-skills`)
 
 **Seeded only if missing — adopter-owned, NEVER overwritten on re-run:**
@@ -145,7 +145,7 @@ bash install.sh --no-task [TARGET_DIR]         # CLI-direct mode
 Sanity-check the install dropped what you expect:
 
 - `slopstopper-cli` — installed and activated by **mise**, **pinned in `mise.toml`** (`[tools]` "pipx:slopstopper-cli"). Confirm with `slopstopper --version` (must equal the pin; ensure mise is activated in your shell). Every check runs through this. First install records the latest published version as the pin; it never moves on a plain re-run.
-- `mise.toml` — the per-repo toolchain pin (`"pipx:slopstopper-cli"` + `task`). Both `install.sh` (local) and the `ss-*.yml` workflows (`jdx/mise-action`) read it, so local and CI run the same version. Commit it. Move the CLI pin deliberately with `install.sh --upgrade-cli` or `install.sh --cli-version X.Y.Z` (both wrap `mise use`). A legacy `cli_version` in `.slopstopper.yml` is migrated here and removed on the next run.
+- `mise.toml` — the per-repo toolchain pins (`"pipx:slopstopper-cli"` + `task` + `node`). Both `install.sh` (local) and the `ss-*.yml` workflows (`jdx/mise-action`) read it, so local and CI run the same versions — node included, with no separate `setup-node` step. Commit it. Move the CLI pin deliberately with `install.sh --upgrade-cli` or `install.sh --cli-version X.Y.Z` (both wrap `mise use`). A legacy `cli_version` in `.slopstopper.yml` is migrated here and removed on the next run.
 - `Taskfile.ss.yml` — thin `task ss:*` shims that each call `slopstopper run <category>:<check>` under the covers. Useful for adopters who already drive their dev loop with `task`.
 - `Taskfile.yml` — created if missing (otherwise: needs manual `includes:` block per Step 1.1).
 - `.ss/server.js` — tiny static-server shim for serving the built site on `:8080` during the local loop. The **only** file the installer seeds into `.ss/` for a fresh adopter — every other CLI-managed file (Playwright specs, Playwright config, lighthouserc dev + prod) lives inside the slopstopper-cli wheel and only lands in `.ss/` if you opt in by writing a same-named override there.
@@ -193,8 +193,6 @@ The installer seeds a `.slopstopper.yml` config file at the repo root (if one do
 The seeded file is fully commented; the main knobs to fill in:
 
 ```yaml
-node_version: '22'              # match your package.json engines.node
-
 headers:
   source: public/_headers       # or worker/headers.json, or null to skip the check
   format: cloudflare-text       # or json, or auto
@@ -231,12 +229,12 @@ hygiene:
 
 Larger sites should also opt into `reliability.coverage.*` modes so accessibility/SEO/broken-links audit the whole sitemap on main and only changed pages on PRs — see [`.slopstopper.yml.example`](https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example) for the schema reference and resolution order.
 
-### Push the Node version to a GitHub repo variable
+### Set the Node version (if not 20)
 
-Workflows read `${{ vars.SLOPSTOPPER_NODE_VERSION || '20' }}` — set the variable from `.slopstopper.yml`:
+Node is pinned in `mise.toml` (`[tools] node`), which both mise locally and CI (via `jdx/mise-action`) read — no `setup-node` step or repo variable. `install.sh` seeds `node = "20"` only when the repo doesn't already declare one. To use a different version:
 
 ```bash
-gh variable set SLOPSTOPPER_NODE_VERSION --body "$(grep '^node_version:' .slopstopper.yml | cut -d\' -f2)"
+mise use node@22
 ```
 
 ### URLs: GitHub repo variables vs. hardcoded vs. inert
@@ -361,18 +359,13 @@ Any line in the output is an `ss-*.yml` workflow that exists upstream but isn't 
 
 ### Re-apply customizations the installer wiped
 
-The installer refreshes `Taskfile.ss.yml`, the `.ss/` overlay, and the `ss-*.yml` workflows wholesale. Anything hand-edited in those files is gone — but `.slopstopper.yml` is **never** overwritten by the installer, so the bulk of customization (node version, headers source/format, URLs, pages, og-image path, disabled workflows, hygiene thresholds) survives every re-run.
+The installer refreshes `Taskfile.ss.yml`, the `.ss/` overlay, and the `ss-*.yml` workflows wholesale. Anything hand-edited in those files is gone — but `.slopstopper.yml` is **never** overwritten by the installer, so the bulk of customization (headers source/format, URLs, pages, og-image path, disabled workflows, hygiene thresholds) survives every re-run. The Node version lives in `mise.toml` and is seeded only when absent, so a bump you made there survives too.
 
 What still needs re-checking after a refresh:
 
 - **Anything hand-edited inside `ss-*.yml` workflow files** beyond what `.slopstopper.yml` covers. Common case: extra workflow-level `permissions:` for a custom integration, a non-standard schedule, or workflow-level env vars beyond the documented URL/PAGES set. Diff against upstream to find them. Push bespoke wording into the check's META in `slopstopper-cli` upstream rather than hand-editing the YAML locally — workflow edits don't survive `install.sh` re-runs.
 - **Anything hand-edited inside `.ss/tests/*.spec.ts`, `.ss/playwright.config.js`, or `.ss/lighthouserc.json`.** These used to be seeded by `install.sh` but now live inside the `slopstopper-cli` wheel. The installer's byte-equality scrub removes unmodified copies (so the wheel's version wins via the templates resolver); customized copies survive in `.ss/` and continue to override.
-- **GitHub repo variables.** If `.slopstopper.yml` `node_version` changed, re-sync the `SLOPSTOPPER_NODE_VERSION` repo variable. If URLs are mirrored as repo variables, push those too:
-
-  ```bash
-  NODE_VER=$(slopstopper config get node_version 20)
-  gh variable set SLOPSTOPPER_NODE_VERSION --body "$NODE_VER"
-  ```
+- **The Node version pin.** Lives in `mise.toml` (`[tools] node`), not `.slopstopper.yml`. `install.sh` seeds `node = "20"` only when none is declared, so a bump you made (`mise use node@22`) survives a refresh and there's nothing to re-sync — mise locally and CI via `jdx/mise-action` read the same pin. If you mirror URLs as repo variables, re-push those after editing `.slopstopper.yml`.
 
 - **`.github/labeler.yml`** if upstream's labeler template added categories you want (the installer never overwrites your existing file, so new categories don't land automatically).
 

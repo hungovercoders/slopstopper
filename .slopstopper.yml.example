@@ -22,6 +22,9 @@
 #   - Secrets (use GitHub Actions secrets)
 #   - Anything platform-specific that's already a Cloudflare/Vercel/Netlify
 #     native config (e.g. wrangler.jsonc, vercel.json, netlify.toml)
+#   - Tool versions (the Node runtime, the slopstopper-cli, task) — those live
+#     in mise.toml ([tools]), the single source of truth both local runs and CI
+#     read. See the slopstopper-cli pin note below.
 
 # ── slopstopper-cli version pin ──────────────────────────────────────
 # The CLI version is NOT pinned here. It lives in mise.toml ([tools]
@@ -36,12 +39,13 @@
 # next install.
 
 # ── Node version pin ─────────────────────────────────────────────────
-# Workflows use ${{ vars.SLOPSTOPPER_NODE_VERSION || '20' }} in their
-# setup-node steps. If your project needs Node 22+ (Astro 6, recent
-# Next, SvelteKit), bump this AND set the GitHub repo variable:
-#   gh variable set SLOPSTOPPER_NODE_VERSION --body "$(yq '.node_version' .slopstopper.yml)"
-# Or set it directly via the GitHub repo settings UI.
-node_version: '20'
+# The Node version is NOT pinned here — it's a tool version, so it lives in
+# mise.toml ([tools] node), the single source of truth both local runs and CI
+# (via jdx/mise-action) read. install.sh seeds `node = "20"` there on first
+# install (and leaves any existing node pin / .nvmrc / .node-version alone). To
+# bump it (Astro 6, recent Next, SvelteKit need Node 22+):
+#   mise use node@22
+# No GitHub repo variable or separate setup-node step is involved.
 
 # ── Headers drift check adapter ──────────────────────────────────────
 # The hygiene:csp-exceptions check enforces that every per-path CSP
