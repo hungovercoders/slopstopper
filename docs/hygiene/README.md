@@ -53,6 +53,7 @@ task ss:hygiene:docs-accuracy
 ```
 
 ### Entry-File Budget
+
 Enforces the "thin pointer" principle declared in [`docs/index.md`](../index.md#the-map-pattern):
 agent entry files (`README.md`, `AGENTS.md`, `CLAUDE.md`) must stay under
 ~2k tokens each so they don't crowd the context window of every agent
@@ -60,6 +61,33 @@ conversation. Threshold is 1,500 words per file (≈ 2k tokens for English
 prose). Fails the build on violation — the fix is to move the over-budget
 file's bulk into the category README that owns the topic, leaving a
 one-line pointer.
+
+The check also enforces the **Map Pattern pointer rule** (enabled by default):
+
+- `README.md` and `AGENTS.md` must contain a link to the docs map (`docs/index.md`
+  by default; override via `hygiene.entry_files.map_path`).
+- `CLAUDE.md` must be a thin pointer to `AGENTS.md` — via a markdown link or
+  Claude Code's `@AGENTS.md` directive — rather than a standalone instructions file.
+- The docs map file itself must exist.
+
+When a pointer is missing the check emits a **paste-ready snippet** in its
+Markdown report (`.ss/reports/hygiene/entry-files/entry-files-report.md`) so
+you can copy-paste the exact fix without writing it from scratch.
+
+**Configuration (`.slopstopper.yml`):**
+
+```yaml
+hygiene:
+  entry_files:
+    max_words: 1500           # 1500-word (~2k token) cap per file; default
+    require_map_pointer: true # set to false to disable the pointer rule only
+    map_path: docs/index.md   # override if your map lives somewhere else
+```
+
+To scaffold missing entry files, re-run `install.sh` — it seeds `README.md`,
+`AGENTS.md`, `CLAUDE.md`, and `docs/index.md` from the built-in templates
+(`cli/slopstopper/data/templates/entry-files/`) without ever overwriting content
+you've already written.
 
 ```bash
 task ss:hygiene:entry-files
