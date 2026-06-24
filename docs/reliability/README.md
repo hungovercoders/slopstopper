@@ -25,6 +25,33 @@ All reliability checks read their target URL and audit scope from environment va
 | `SEO_REQUIRE_OG_IMAGE` | `1` | SEO metatag check — set `0` to skip og:image presence check |
 | `SEO_VERIFY_OG_IMAGE` | `1` | SEO metatag check — set `0` to skip HEAD-fetching og:image |
 
+## URL resolution by event type
+
+The shipped reliability workflows resolve the target URL based on the GitHub event that triggered the run — no manual wiring required for most cases.
+
+| Trigger | URL used |
+|---------|----------|
+| **Push to `main`** or **scheduled** | `urls.production` from `.slopstopper.yml` — the run fails with a clear error if this is unset |
+| **Pull request** | builds the site locally and uses `http://localhost:8080` |
+| **Cloudflare deployment event** | the deployment preview URL from the event payload |
+| **`workflow_dispatch`** | the `url` input if provided, else falls back to `urls.preview` → `urls.production` |
+
+**Action required for adopters:** set `urls.production` in `.slopstopper.yml` so
+that scheduled and main-branch runs know which URL to audit — without it, those
+runs will fail with `Scheduled run requires urls.production in .slopstopper.yml`:
+
+```yaml
+# .slopstopper.yml
+urls:
+  production: https://your-site.example.com
+  preview:       # optional; deployment events auto-populate this
+```
+
+The env vars in the table above (`SMOKE_TEST_URL`, etc.) are the *runtime values
+the CLI reads*. The workflows feed the resolved URL into those variables
+automatically. You only need to set them yourself when running locally or building
+a custom CI workflow.
+
 ## Broken Link Checks
 
 The broken-link check can run against any site you provide via `BROKEN_LINKS_TEST_URL`.
