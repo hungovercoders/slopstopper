@@ -798,6 +798,8 @@ GENERIC_WORKFLOWS=(
   "ss-reliability-llms-txt-check.yml"
   "ss-reliability-robots-txt-check.yml"
   "ss-reliability-sitemap-check.yml"
+  "ss-reliability-api-health-check.yml"
+  "ss-security-api-headers-check.yml"
   # Layer 3 — agentic doc-updater (needs ANTHROPIC_API_KEY)
   # NB: gh-aw workflows ship as a .md source + .lock.yml compiled artifact.
   "ss-hygiene-doc-updater.md"
@@ -1381,6 +1383,8 @@ add_dynamic_label "ss-reliability-broken-links-check.yml"   "Broken Links"
 add_dynamic_label "ss-reliability-llms-txt-check.yml"       "llms.txt"
 add_dynamic_label "ss-reliability-robots-txt-check.yml"     "robots.txt"
 add_dynamic_label "ss-reliability-sitemap-check.yml"        "Sitemap"
+add_dynamic_label "ss-reliability-api-health-check.yml"     "API Health"
+add_dynamic_label "ss-security-api-headers-check.yml"       "API Headers"
 
 if [ -n "$DYNAMIC_LABELS" ]; then
   echo "  ⏳ Active once you point them at your app (edit .slopstopper.yml):"

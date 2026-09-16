@@ -81,7 +81,7 @@ slopstopper serve                              # bundled static server</code></p
                 <h2>⚙️ GitHub Actions</h2>
                 <span class="tool-license">Platform</span>
                 <p>All checks run as GitHub Actions workflows triggered on every pull request and push to main. Each workflow body is ~8 lines: install the CLI, <code>slopstopper run …</code>, <code>slopstopper emit …</code>.</p>
-                <p><em>Which</em> workflows land is driven by the <code>profile:</code> key in <code>.slopstopper.yml</code> — <code>ui</code> installs all 21, <code>api</code> drops the eight browser-and-SEO checks, <code>library</code> also drops DAST and CSP exceptions. Set it with <code>install.sh --profile api</code>, inspect it with <code>slopstopper profile show</code>, and take back any single check with <code>workflows.enabled</code>.</p>
+                <p><em>Which</em> workflows land is driven by the <code>profile:</code> key in <code>.slopstopper.yml</code> — <code>ui</code> installs all 24, <code>api</code> drops the eight browser-and-SEO checks, <code>library</code> also drops DAST, CSP exceptions and the two API checks. Set it with <code>install.sh --profile api</code>, inspect it with <code>slopstopper profile show</code>, and take back any single check with <code>workflows.enabled</code>.</p>
                 <details class="details">
                     <summary>See it in action</summary>
                     <div class="details__body">
@@ -277,20 +277,18 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             </div>
 
             <div class="card">
-                <h2>🐛 Bandit &amp; Lizard</h2>
-                <span class="tool-license">Apache-2.0 · MIT</span>
-                <p>Bandit performs Python-focused security analysis and Lizard enforces cyclomatic complexity limits so code stays auditable and maintainable.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/COMPLEXITY_CONFIG.md" rel="noopener noreferrer">Learn more about Complexity config →</a>
+                <h2>🐛 Lizard</h2>
+                <span class="tool-license">MIT</span>
+                <p>Lizard enforces a cyclomatic-complexity ceiling so code stays auditable and maintainable. It ships as a dependency of <code>slopstopper-cli</code>, so there's nothing extra to install, and the gate runs identically locally, in the pre-push hook and in CI — one threshold, one exit code.</p>
+                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about Hygiene →</a>
                 <details class="details">
                     <summary>Workflow excerpt</summary>
                     <div class="details__body">
                         <div class="codeblock codeblock--yaml"><pre><code>jobs:
-  complexity-check:
-    name: Check Code Complexity with Lizard
+  complexity:
     steps:
-      - run: pip install lizard bandit
-      - run: lizard -C 10 -L 60 .
-      - run: bandit -r .ss/scripts/</code></pre></div>
+      - uses: jdx/mise-action@v2
+      - run: task ss:hygiene:complexity   # fails above hygiene.complexity.max_ccn (15)</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-complexity-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
                 </details>

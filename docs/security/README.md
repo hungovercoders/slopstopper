@@ -9,6 +9,15 @@ Overview of security scanning and controls for this project.
 - [Dependency Vulnerability Scanning](#dependency-vulnerability-scanning)
 - [Secrets Detection](#secrets-detection)
 - [CSP Exceptions](#csp-exceptions) — strict-default + per-path exceptions pattern
+- [API Headers & CORS](#api-headers--cors) — the JSON-API analogue of CSP exceptions
+
+---
+
+# API Headers & CORS
+
+On a JSON API, CORS — not CSP — decides who may read a response. `security:api-headers` audits that policy, plus HSTS and `nosniff`.
+
+See **[API_HEADERS.md](API_HEADERS.md)** for the findings, the hard-fail split, knobs and commands.
 
 ---
 

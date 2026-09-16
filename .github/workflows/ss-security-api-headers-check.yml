@@ -1,0 +1,130 @@
+name: SlopStopper · API Headers Check
+
+# Audits the response headers and CORS policy of each endpoint in
+# `api.headers.paths`: a wildcard origin sent with credentials, an
+# arbitrary Origin reflected back, a missing HSTS or nosniff header. The
+# API-shaped analogue of the CSP-exceptions check — on a JSON API, CORS
+# is the header that decides who can read the response.
+# Triggers: PR, push to main, daily schedule, Cloudflare deployment
+# events. Emits a rolling PR comment; workflow fails on a permissive
+# policy — no separate main-branch issue (exit code is the signal).
+# Docs: docs/security/README.md.
+#
+# Unlike the browser checks, this workflow never tries to build and serve
+# the repo locally: an API is not a static bundle `slopstopper serve` can
+# host, and guessing a start command would be worse than not guessing.
+# It audits a URL you point it at (urls.preview on PRs, urls.production
+# on main/schedule) and skips cleanly when neither is configured.
+#
+# Note it probes a *live* origin: the CORS assertions depend on the
+# headers your edge/proxy actually adds, which a local process often
+# doesn't reproduce.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  deployment_status:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Base URL of the API to audit'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  api-headers:
+    name: API response-header + CORS policy audit
+    if: |
+      github.event_name != 'deployment_status' ||
+      github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Set up slopstopper toolchain
+        # Installs node + task (and, in adopter repos, the pinned
+        # slopstopper-cli) from mise.toml and puts them on PATH for later
+        # steps. The pins live in mise.toml ([tools]); mise resolves them
+        # per-repo, so CI and local runs share one version.
+        uses: jdx/mise-action@v2
+
+      - name: Install slopstopper-cli from source (slopstopper.dev only)
+        # In this repo the CLI runs from source (HEAD), so mise.toml carries
+        # no slopstopper-cli pin — install it editable here. Adopter repos
+        # skip this (no cli/ source) and use the mise-pinned wheel.
+        if: ${{ hashFiles('cli/pyproject.toml') != '' }}
+        run: pip install -e ./cli
+
+      - name: Determine audit URL
+        id: url
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_URL: ${{ github.event.inputs.url }}
+          DEPLOYMENT_URL: ${{ github.event.deployment_status.target_url }}
+        run: |
+          validate_url() {
+            local url="$1"
+            if [[ ! "$url" =~ ^https?://[^[:space:][:cntrl:]]+$ ]]; then
+              echo "Error: Invalid URL format: $url" >&2
+              exit 1
+            fi
+            printf '%s' "$url"
+          }
+
+          # CUSTOMISE FOR YOUR APP: point urls.preview at the environment
+          # your PRs deploy to. With no preview environment the PR run
+          # skips rather than failing — the deployed-main and scheduled
+          # runs still cover the endpoint.
+          case "$EVENT_NAME" in
+            workflow_dispatch) CANDIDATE="$INPUT_URL" ;;
+            deployment_status) CANDIDATE="$DEPLOYMENT_URL" ;;
+            pull_request)      CANDIDATE="$(slopstopper config get urls.preview)" ;;
+            *)                 CANDIDATE="$(slopstopper config get urls.production)" ;;
+          esac
+
+          if [ -z "$CANDIDATE" ]; then
+            echo "::notice::No URL resolved for this event — set urls.preview / urls.production in .slopstopper.yml to enable the API header audit here."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            SAFE_URL="$(validate_url "$CANDIDATE")"
+            echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run API header + CORS audit
+        if: steps.url.outputs.skip == 'false'
+        id: audit
+        run: task ss:security:api-headers -- ${{ steps.url.outputs.url }}
+
+      - name: Upload API headers report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-headers-report-${{ github.run_id }}
+          path: .ss/reports/api-headers/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Emit PR comment
+        if: github.event_name == 'pull_request' && steps.url.outputs.skip == 'false' && always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: slopstopper emit security:api-headers --target pr-comment
