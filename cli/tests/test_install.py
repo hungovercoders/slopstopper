@@ -478,7 +478,7 @@ def _profile_key(target: Path) -> str | None:
     return None
 
 
-# The eight browser-and-SEO workflows the `api` profile drops. Hardcoded
+# The nine workflows the `api` profile drops. Hardcoded
 # rather than read from profiles.json, so a change to the mapping has to
 # be made deliberately in both places.
 API_DROPPED = {
@@ -490,6 +490,7 @@ API_DROPPED = {
     "ss-reliability-llms-txt-check.yml",
     "ss-reliability-robots-txt-check.yml",
     "ss-reliability-sitemap-check.yml",
+    "ss-security-dast-check.yml",
 }
 
 
@@ -501,9 +502,9 @@ def test_profile_flag_writes_the_key_and_drops_those_workflows(tmp_path):
     assert _profile_key(target) == "api"
     installed = _installed(target)
     assert not (installed & API_DROPPED), f"api profile installed browser checks: {installed & API_DROPPED}"
-    # The static layer and DAST are untouched.
+    # The static layer stays in place.
     assert "ss-security-sast-check.yml" in installed
-    assert "ss-security-dast-check.yml" in installed
+    assert "ss-security-dast-check.yml" not in installed
 
 
 def test_profile_env_var_is_equivalent_to_the_flag(tmp_path):

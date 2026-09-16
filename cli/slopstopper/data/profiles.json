@@ -21,7 +21,7 @@
     },
     "api": {
       "summary": "An HTTP API — JSON/gRPC endpoints with no browser-rendered surface.",
-      "detail": "Drops the eight browser-and-SEO checks: they assume HTML, a DOM and a public web surface, so on an API repo they fail rather than no-op. Keeps DAST (ZAP scans an API fine) and CSP exceptions (APIs still set response headers; the check stays inert until you set headers.source).",
+      "detail": "Drops everything that currently assumes a browser/site build: the eight browser-and-SEO checks (they assume HTML, a DOM and a public web surface) plus DAST (the shipped workflow currently builds and serves a site before scanning). Keeps CSP exceptions (APIs still set response headers; the check stays inert until you set headers.source).",
       "disables": [
         "ss-reliability-smoke-tests.yml",
         "ss-reliability-accessibility-check.yml",
@@ -30,7 +30,8 @@
         "ss-reliability-seo-check.yml",
         "ss-reliability-llms-txt-check.yml",
         "ss-reliability-robots-txt-check.yml",
-        "ss-reliability-sitemap-check.yml"
+        "ss-reliability-sitemap-check.yml",
+        "ss-security-dast-check.yml"
       ]
     },
     "library": {

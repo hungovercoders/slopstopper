@@ -58,11 +58,11 @@ def test_expand_unknown_profile_returns_none():
     assert profiles.expand("no-such-profile") is None
 
 
-def test_api_profile_drops_browser_checks_but_keeps_dast():
+def test_api_profile_drops_browser_checks_and_dast():
     disables = profiles.expand("api")
     assert "ss-reliability-core-web-vitals.yml" in disables
     assert "ss-reliability-seo-check.yml" in disables
-    assert "ss-security-dast-check.yml" not in disables
+    assert "ss-security-dast-check.yml" in disables
 
 
 def test_library_profile_is_a_superset_of_api():
@@ -157,7 +157,7 @@ def test_names_that_dont_follow_the_filename_convention(check, workflow):
 def test_check_is_disabled_follows_the_profile(write_config):
     write_config("profile: api\n")
     assert profiles.check_is_disabled("reliability:cwv")
-    assert not profiles.check_is_disabled("security:dast")
+    assert profiles.check_is_disabled("security:dast")
     assert not profiles.check_is_disabled("no-such:check")
 
 
@@ -284,4 +284,4 @@ def test_checks_list_json_carries_the_workflow_and_disabled_flag(write_config, c
     entries = {e["name"]: e for e in json.loads(capsys.readouterr().out)}
     assert entries["reliability:cwv"]["disabled"] is True
     assert entries["reliability:cwv"]["workflow"] == "ss-reliability-core-web-vitals.yml"
-    assert entries["security:dast"]["disabled"] is False
+    assert entries["security:dast"]["disabled"] is True

@@ -21,7 +21,7 @@ ls .slopstopper.yml .ss/.workflows-installed 2>/dev/null
 
 Slopstopper is a portable suite of GitHub Actions plus a `slopstopper-cli` Python package that owns every check's logic. The install drops a consistent quality pipeline into any repository. This skill walks you through doing that responsibly — and, critically, getting every check green **locally** before pushing, so the first CI run is a confirmation pass rather than a discovery pass.
 
-The install ships ~21 GitHub Actions workflows in one shot, pins + installs `slopstopper-cli` via **mise** (`mise.toml` `[tools]` "pipx:slopstopper-cli"), merges devDeps into `package.json`, and creates a `Taskfile.yml` if the target doesn't have one. That's a lot of moving parts. Don't run it blind — work through the pre-flight first, then drive every check to green locally before opening a PR.
+The install ships ~23 GitHub Actions workflows in one shot, pins + installs `slopstopper-cli` via **mise** (`mise.toml` `[tools]` "pipx:slopstopper-cli"), merges devDeps into `package.json`, and creates a `Taskfile.yml` if the target doesn't have one. That's a lot of moving parts. Don't run it blind — work through the pre-flight first, then drive every check to green locally before opening a PR.
 
 **The CLI is the single source of truth for every check.** Every workflow boils down to two CLI commands: `slopstopper run <category>:<check>` (executes the check, writes reports under `.ss/reports/`) and `slopstopper emit <category>:<check> --target {pr-comment,issue} [--on-pass=close]` (posts the report to GitHub on failure, or closes any prior issue when the check now passes on `main`). Reliability checks also use `slopstopper discover <check> --event=<event>` (resolves which pages to audit) and the installer itself uses `slopstopper config get <key>` to read `.slopstopper.yml`. No bash scripts under `.ss/scripts/` any more — pure Python, one package, one upgrade path.
 
@@ -51,7 +51,7 @@ Then, whatever the shape, learn enough about the target to predict where it'll b
    ```
    to the existing Taskfile.
 
-2. **Does the target already have GitHub Actions workflows?** Slopstopper adds up to 21 new `ss-*.yml` workflows (13 under `--profile library`, 15 under `--profile api`). They're all `ss-`-prefixed so they group in the Actions UI, but the user should know they're getting that many checks running on every PR.
+2. **Does the target already have GitHub Actions workflows?** Slopstopper adds up to 23 new `ss-*.yml` workflows (13 under `--profile library`, 14 under `--profile api`). They're all `ss-`-prefixed so they group in the Actions UI, but the user should know they're getting that many checks running on every PR.
 
 3. **What `engines.node` does the target need?** Node is pinned in `mise.toml` (`[tools] node`) — mise installs it locally and the workflows get the same version from that pin via `jdx/mise-action` (no `setup-node` step, no repo variable). `install.sh` seeds `node = "20"` on first install and leaves any existing node pin / `.node-version` / `.nvmrc` alone. If the target needs Node 22+ (Astro 6, recent Next, SvelteKit), run `mise use node@22`. One source of truth; survives `install.sh` re-runs.
 
@@ -84,7 +84,7 @@ git status                              # must show clean
 git checkout -b chore/slopstopper-install   # or chore/slopstopper-refresh for a refresh
 ```
 
-`install.sh` adds ~21 workflow files, a `Taskfile.ss.yml`, and `.ss/server.js` to the repo in one shot. On `main` that's an awkward 25+-file commit; on a dedicated branch the diff is reviewable and the rollback is `git checkout main && git branch -D <branch>`. If `git status` is dirty, stop and reconcile first — the installer doesn't ask before writing into `ss-*.yml` or `Taskfile.ss.yml`. On a refresh, the wipe-and-replace behaviour will clobber anything sitting in the tracked files it rewrites — commit or stash first.
+`install.sh` adds ~23 workflow files, a `Taskfile.ss.yml`, and `.ss/server.js` to the repo in one shot. On `main` that's an awkward 25+-file commit; on a dedicated branch the diff is reviewable and the rollback is `git checkout main && git branch -D <branch>`. If `git status` is dirty, stop and reconcile first — the installer doesn't ask before writing into `ss-*.yml` or `Taskfile.ss.yml`. On a refresh, the wipe-and-replace behaviour will clobber anything sitting in the tracked files it rewrites — commit or stash first.
 
 From the target repo root, download-review-run in two steps:
 
@@ -166,7 +166,7 @@ Sanity-check the install dropped what you expect:
 - `Taskfile.yml` — created if missing (otherwise: needs manual `includes:` block per Step 1.1).
 - `.ss/server.js` — tiny static-server shim for serving the built site on `:8080` during the local loop. The **only** file the installer seeds into `.ss/` for a fresh adopter — every other CLI-managed file (Playwright specs, Playwright config, lighthouserc dev + prod) lives inside the slopstopper-cli wheel and only lands in `.ss/` if you opt in by writing a same-named override there.
 - `.ss/.workflows-installed` — manifest of installed workflows (tracks deletions on reinstall; commit this).
-- `.github/workflows/ss-*.yml` — the curated installer set, minus whatever the profile drops (~21 files on `ui`, 15 on `api`, 13 on `library`). Each workflow body is now ~8 lines: install CLI, `slopstopper run …`, `slopstopper emit … --target pr-comment|issue`.
+- `.github/workflows/ss-*.yml` — the curated installer set, minus whatever the profile drops (~23 files on `ui`, 14 on `api`, 13 on `library`). Each workflow body is now ~8 lines: install CLI, `slopstopper run …`, `slopstopper emit … --target pr-comment|issue`.
 - `.slopstopper.yml` `profile:` — the key the installer wrote (or left alone). Confirm the installed set matches it with `slopstopper profile show`: it prints the active profile, where it came from, and every workflow this repo is deliberately not carrying. Worth running before the missing-workflow comparison below — a workflow the profile dropped is *supposed* to be absent, and will otherwise read as a gap.
 - `package.json` — devDeps merged.
 - `.claude/skills/slopstopper-install/SKILL.md` + `.claude/skills/slopstopper-triage/SKILL.md` — the project-level Claude Code playbooks. Auto-discovered by Claude Code for any contributor working in this repo. Commit them.
@@ -563,7 +563,7 @@ If anything was green locally but red on CI: that's signal there's an environmen
 
 Don't push the user to install if:
 - The target already has a competing quality suite they're happy with (don't double up).
-- It's a one-file script or library where 21 workflows is overkill.
+- It's a one-file script or library where the full workflow set is overkill.
 - The target is a **private repo with a tight CI minutes budget**. Actions minutes are free on public repos but billed on private ones, and slopstopper is minutes-hungry: ~18 checks per PR plus scheduled reliability/smoke runs, with the dynamic checks (Playwright, Lighthouse CI, ZAP-in-Docker) the heaviest. Public repos run the whole suite free; private repos should weigh the recurring cost (see the Step 1.12 pre-flight callout).
 - The target's deploy isn't Cloudflare Workers Builds. Slopstopper's deploy story assumes that — the install still works, but the user loses one of its selling points.
 
