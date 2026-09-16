@@ -102,6 +102,12 @@ slopstopper run hygiene:docs-size            # underlying CLI; same code as task
                 <pre><code>curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash</code></pre>
             </div>
             <p class="install-subnote">Requires <a href="https://mise.jdx.dev" rel="noopener noreferrer">mise</a> — it pins and installs <code>slopstopper-cli</code> + <code>task</code> and activates them per-directory, so the version follows the repo (local and CI stay in lockstep).</p>
+            <h3 class="install-heading">Not a website? Pick a profile</h3>
+            <div class="codeblock codeblock--sh" role="region" aria-label="Install with a project-shape profile" data-copyable>
+                <pre><code>bash install.sh --profile api        # JSON/gRPC endpoints, no browser surface
+bash install.sh --profile library    # library, CLI or package — nothing deployed</code></pre>
+            </div>
+            <p class="install-subnote">The eight browser-and-SEO checks (smoke, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume HTML and a served site — on an API they don't quietly pass, they go red. A <strong>profile</strong> installs only the checks that apply to your repo's shape, and writes <code>profile:</code> into <code>.slopstopper.yml</code> so the choice survives re-runs. <code>api</code> keeps DAST and the whole static-analysis layer; <code>library</code> keeps the static layer. Switching is reversible either way, and <code>workflows.enabled</code> takes back any single check. Run <code>slopstopper profile detect</code> for a suggestion, or <code>slopstopper profile list</code> for the full mapping.</p>
             <details class="details">
                 <summary>What does this do?</summary>
                 <div class="details__body">
@@ -118,7 +124,7 @@ slopstopper run hygiene:docs-size            # underlying CLI; same code as task
                 </div>
                 <div class="step">
                     <h3>Customise</h3>
-                    <p>Tune complexity thresholds, page lists, headers source — everything via <code>.slopstopper.yml</code>.</p>
+                    <p>Project-shape profile, complexity thresholds, page lists, headers source — everything via <code>.slopstopper.yml</code>.</p>
                 </div>
                 <div class="step">
                     <h3>Open a PR</h3>

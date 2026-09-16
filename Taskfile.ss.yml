@@ -73,6 +73,38 @@ tasks:
     cmds:
       - slopstopper run reliability:seo -- {{.CLI_ARGS}}
 
+  reliability:api-health:
+    desc: Probe the API health/readiness endpoint and assert its contract
+    summary: |
+      The API-shaped analogue of the smoke check. Fetches the endpoint named
+      by `api.health.path` and asserts: reachable, the documented status code,
+      a JSON content-type, a body that parses, and every field declared in
+      `api.health.require_fields` / `expect_fields`.
+
+      The field assertions are the point. `{"status": "degraded"}` returned
+      with HTTP 200 passes any reachability probe and fails here, which is
+      the whole reason a health endpoint returns a body at all.
+
+      Skips gracefully (exit 0) when `api.health.path` is unset — an
+      unconfigured check is not a failing check.
+
+      Configuration (environment variables; every knob below is also read
+      from .slopstopper.yml's `api.health`):
+        API_HEALTH_TEST_URL  - base URL of the API (required)
+        API_HEALTH_PATH      - path to the health endpoint (e.g. /health)
+
+      Flags:
+        --expect-status N    - status code the endpoint must return
+        --allow-non-json     - skip the JSON content-type + parse assertions
+        --require-field X    - dot-path that must be present (repeatable)
+        --max-response-ms N  - fail if slower than this
+
+      Usage:
+        task ss:reliability:api-health -- https://api.example.com
+        API_HEALTH_TEST_URL=https://api.example.com task ss:reliability:api-health
+    cmds:
+      - slopstopper run reliability:api-health -- {{.CLI_ARGS}}
+
   reliability:llms-txt:
     desc: Validate the llms.txt AI-discoverability map on a live URL
     summary: |
@@ -338,10 +370,49 @@ tasks:
     cmds:
       - slopstopper run security:secrets
 
+  security:api-headers:
+    desc: Audit API response headers + CORS policy on a live URL
+    summary: |
+      The API-shaped analogue of the CSP-exceptions check. On an HTML
+      surface CSP is the header that matters; on a JSON API it's CORS —
+      a permissive policy on a credentialed endpoint is a cross-origin
+      data leak, not a style violation.
+
+      Probes each path in `api.headers.paths` and hard-fails on: a
+      wildcard `Access-Control-Allow-Origin` sent with
+      `Access-Control-Allow-Credentials: true` (browsers reject the pair,
+      so the intended policy was never enforced), an arbitrary Origin
+      reflected back with credentials, a configured origin that is no
+      longer allowed, and a missing HSTS / nosniff header. Stack-version
+      leaks (`X-Powered-By`, a versioned `Server`) and a missing
+      `Vary: Origin` are advisory.
+
+      Skips gracefully (exit 0) when `api.headers.paths` is empty — an
+      unconfigured check is not a failing check.
+
+      Configuration (environment variables; every knob below is also read
+      from .slopstopper.yml's `api.headers`):
+        API_HEADERS_TEST_URL  - base URL of the API (required)
+        API_HEADERS_PATHS     - comma-separated paths to probe
+
+      Flags:
+        --path P                - endpoint to probe (repeatable)
+        --allowed-origin O      - origin that must be allowed (repeatable)
+        --allow-wildcard-cors   - permit `Access-Control-Allow-Origin: *`
+        --no-require-hsts       - don't demand HSTS
+        --no-require-nosniff    - don't demand nosniff
+
+      Usage:
+        task ss:security:api-headers -- https://api.example.com
+        API_HEADERS_TEST_URL=https://api.example.com task ss:security:api-headers
+    cmds:
+      - slopstopper run security:api-headers -- {{.CLI_ARGS}}
+
   security:scan:
-    desc: Run full security scan suite (SAST + vulnerabilities + DAST + secrets)
+    desc: Run full security scan suite (SAST + vulnerabilities + DAST + API headers + secrets)
     cmds:
       - task: security:sast
       - task: security:vulnerability:all
       - task: security:dast
+      - task: security:api-headers
       - task: security:secrets

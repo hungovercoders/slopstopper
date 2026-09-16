@@ -6,6 +6,8 @@ from typing import Callable, Optional
 
 from slopstopper.checks import (
     accessibility,
+    api_headers,
+    api_health,
     broken_links,
     complexity,
     csp_exceptions,
@@ -33,6 +35,7 @@ REGISTRY: dict[str, Callable[[Optional[list[str]]], int]] = {
     "hygiene:docs-structure": docs_structure.run,
     "hygiene:entry-files": entry_files.run,
     "reliability:accessibility": accessibility.run,
+    "reliability:api-health": api_health.run,
     "reliability:broken-links": broken_links.run,
     "reliability:cwv": cwv.run,
     "reliability:llms-txt": llms_txt.run,
@@ -40,6 +43,7 @@ REGISTRY: dict[str, Callable[[Optional[list[str]]], int]] = {
     "reliability:seo": seo.run,
     "reliability:sitemap": sitemap.run,
     "reliability:smoke": smoke.run,
+    "security:api-headers": api_headers.run,
     "security:dast": dast.run,
     "security:sast": sast.run,
     "security:secrets": secrets.run,

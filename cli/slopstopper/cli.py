@@ -32,6 +32,12 @@ Subcommands:
   doctor                            Verify install state: which external
                                     tools are present (node, gh, lizard,
                                     semgrep, gitleaks, trivy, docker).
+  profile list | show | expand <n> | detect
+                                    Inspect project-shape profiles — the
+                                    `profile:` preset that switches off the
+                                    checks a UI / API / library repo has no
+                                    use for. `show` reports the active one,
+                                    `detect` suggests one from repo contents.
 
 Future: init, inspect.
 """
@@ -53,6 +59,7 @@ from slopstopper import (
     discovery,
     emit as emit_mod,
     output,
+    profiles,
     templates,
 )
 from slopstopper.checks import REGISTRY
@@ -78,6 +85,7 @@ Commands:
   serve      Run the bundled static server
   checks     List available checks
   doctor     Verify install + required tools
+  profile    Inspect the repo's project-shape profile (ui / api / library)
 
 Quick start:
   slopstopper checks list             # see what's available
@@ -133,6 +141,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_serve(sub)
     _add_checks(sub)
     _add_doctor(sub)
+    _add_profile(sub)
 
     return parser
 
@@ -424,6 +433,63 @@ def _add_doctor(sub) -> None:
     )
 
 
+def _add_profile(sub) -> None:
+    p = sub.add_parser(
+        "profile",
+        help="Inspect the repo's project-shape profile (ui / api / library)",
+        description=(
+            "A profile is a named preset for `workflows.disabled`: it switches\n"
+            "off the checks a repo of that shape has no use for. `profile: api`\n"
+            "drops the eight browser-and-SEO reliability checks, which assume\n"
+            "HTML and a public web surface and go red rather than no-op on an\n"
+            "API. Set it in .slopstopper.yml; `workflows.enabled` takes an\n"
+            "individual check back out of the profile's set.\n"
+        ),
+    )
+    sub2 = p.add_subparsers(dest="profile_action", required=True)
+    sub2.add_parser(
+        "list",
+        help="List every profile and the workflows it disables",
+        description="Print each profile, what it's for, and which workflows it switches off.\n",
+        epilog="Example:\n  slopstopper profile list\n",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    sub2.add_parser(
+        "show",
+        help="Show the active profile and this repo's effective disabled set",
+        description=(
+            "Report the profile from .slopstopper.yml (or the default when unset)\n"
+            "and the workflows this repo ends up not carrying once\n"
+            "workflows.disabled / workflows.enabled are applied.\n"
+        ),
+        epilog="Example:\n  slopstopper profile show\n",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    ex = sub2.add_parser(
+        "expand",
+        help="Print the workflow filenames a named profile disables (one per line)",
+        description=(
+            "Print the raw workflow list for a profile, one filename per line —\n"
+            "the form install.sh consumes. Exits 2 on an unknown profile name.\n"
+        ),
+        epilog="Example:\n  slopstopper profile expand api\n",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    ex.add_argument("name", help=f"Profile name ({' | '.join(profiles.names())})")
+    sub2.add_parser(
+        "detect",
+        help="Suggest a profile from the repo's contents (advisory — changes nothing)",
+        description=(
+            "Sniff the working directory for web / API / library markers and print\n"
+            "the profile that fits, with the evidence. Advisory only: it never\n"
+            "edits .slopstopper.yml, because a wrong silent pick (checks quietly\n"
+            "off) is worse than the default superset (checks visibly red).\n"
+        ),
+        epilog="Example:\n  slopstopper profile detect\n",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+
 # ── main entry point ─────────────────────────────────────────────
 
 
@@ -441,6 +507,7 @@ _DISPATCHERS = {
     "serve":     lambda a: _dispatch_serve(),
     "checks":    lambda a: _dispatch_checks_list(a.category, a.json),
     "doctor":    lambda a: _dispatch_doctor(),
+    "profile":   lambda a: _dispatch_profile(a.profile_action, getattr(a, "name", None)),
 }
 
 
@@ -640,7 +707,19 @@ def _dispatch_checks_list(category: str | None, as_json: bool) -> int:
     if category is not None:
         keys = [k for k in keys if k.split(":")[0] == category]
 
-    entries = [{"name": k, "summary": _check_summary(k)} for k in keys]
+    # A check whose workflow this repo's profile switches off is still
+    # listed — it's in the registry and `slopstopper run` will happily
+    # run it locally — but marked, so the list reflects what CI does.
+    disabled = _disabled_workflows()
+    entries = [
+        {
+            "name": k,
+            "summary": _check_summary(k),
+            "workflow": profiles.workflow_for(k),
+            "disabled": profiles.check_is_disabled(k, disabled),
+        }
+        for k in keys
+    ]
 
     if as_json:
         print(_json.dumps(entries, indent=2))
@@ -653,7 +732,15 @@ def _dispatch_checks_list(category: str | None, as_json: bool) -> int:
 
     width = max(len(e["name"]) for e in entries)
     for e in entries:
-        print(f"  {e['name']:<{width}}  {e['summary']}")
+        marker = " ⏸" if e["disabled"] else "  "
+        print(f" {marker} {e['name']:<{width}}  {e['summary']}")
+
+    if any(e["disabled"] for e in entries):
+        print("")
+        print(
+            f"  ⏸ = no workflow in this repo (profile: {profiles.active_name()} "
+            "/ workflows.disabled) — still runnable locally via `slopstopper run`."
+        )
     return 0
 
 
@@ -694,23 +781,17 @@ def _tool_version(tool: str) -> str:
 
 
 def _disabled_workflows() -> set[str]:
-    """Set of disabled workflow filenames from .slopstopper.yml."""
-    raw = config.get("workflows.disabled", [])
-    if not isinstance(raw, list):
-        return set()
-    return {str(w) for w in raw}
+    """Workflow filenames this repo doesn't carry.
+
+    The `profile:` preset unioned with `workflows.disabled` and minus
+    `workflows.enabled` — see slopstopper.profiles.
+    """
+    return profiles.effective_disabled()
 
 
 def _check_is_disabled(check_name: str, disabled: set[str]) -> bool:
-    """True if the workflow that fronts `check_name` is in workflows.disabled.
-
-    Conservative match: `hygiene:complexity` → ss-hygiene-complexity-check.yml.
-    """
-    if ":" not in check_name:
-        return False
-    category, action = check_name.split(":", 1)
-    workflow = f"ss-{category}-{action}-check.yml"
-    return workflow in disabled
+    """True if the workflow that fronts `check_name` is in the disabled set."""
+    return profiles.check_is_disabled(check_name, disabled)
 
 
 def _dispatch_doctor() -> int:
@@ -732,8 +813,9 @@ def _dispatch_doctor() -> int:
         # Missing.
         if needed_by and _check_is_disabled(needed_by, disabled):
             output.info(
-                f"{tool:<10} not installed (only needed by {needed_by}, "
-                f"which is disabled in .slopstopper.yml — skipping)"
+                f"{tool:<10} not installed (only needed by {needed_by}, which this "
+                f"repo doesn't carry — profile: {profiles.active_name()} / "
+                f"workflows.disabled — skipping)"
             )
             continue
 
@@ -749,3 +831,115 @@ def _dispatch_doctor() -> int:
         return 0
     output.error(f"{missing_required} required tool(s) missing — see hints above.")
     return 1
+
+
+# ── profile ──────────────────────────────────────────────────────
+
+
+def _print_profile_list() -> int:
+    """Every profile, what it's for, and the workflows it switches off."""
+    default = profiles.default_name()
+    for name in profiles.names():
+        entry = profiles.describe(name) or {}
+        suffix = "  (default)" if name == default else ""
+        output._emit(f"  {name}{suffix}")
+        output._emit(f"      {entry.get('summary', '')}")
+        detail = entry.get("detail")
+        if detail:
+            output._emit(f"      {detail}")
+        disables = entry.get("disables", [])
+        if not disables:
+            output._emit("      disables: nothing — every check applies")
+        else:
+            output._emit(f"      disables {len(disables)} workflow(s):")
+            for workflow in disables:
+                output._emit(f"        · {workflow}")
+        output._emit("")
+    output._emit("  Set one in .slopstopper.yml:  profile: api")
+    output._emit("  Take an individual check back: workflows.enabled: [ss-reliability-seo-check.yml]")
+    return 0
+
+
+def _print_profile_show() -> int:
+    """The active profile plus this repo's effective disabled set."""
+    warning = profiles.validate()
+    if warning:
+        output.warn(warning)
+
+    name = profiles.active_name()
+    entry = profiles.describe(name) or {}
+    configured = str(config.get("profile") or "").strip()
+    if not configured:
+        origin = "default — `profile:` is unset"
+    elif profiles.describe(configured):
+        origin = "from .slopstopper.yml"
+    else:
+        origin = f"default — {configured!r} in .slopstopper.yml is not a known profile"
+
+    output._emit(f"  Profile: {name}  ({origin})")
+    output._emit(f"      {entry.get('summary', '')}")
+    output._emit("")
+
+    disabled = sorted(profiles.effective_disabled())
+    if not disabled:
+        output._emit("  Disabled workflows: none — this repo carries the full suite.")
+        return 0
+
+    from_profile = set(profiles.expand(name) or [])
+    output._emit(f"  Disabled workflows ({len(disabled)}):")
+    for workflow in disabled:
+        source = "profile" if workflow in from_profile else "workflows.disabled"
+        output._emit(f"    · {workflow:<42} ({source})")
+
+    taken_back = sorted(from_profile - set(disabled))
+    if taken_back:
+        output._emit("")
+        output._emit("  Re-enabled by workflows.enabled despite the profile:")
+        for workflow in taken_back:
+            output._emit(f"    · {workflow}")
+    return 0
+
+
+def _print_profile_expand(name: str | None) -> int:
+    """Raw workflow list for a named profile — the form install.sh consumes."""
+    workflows = profiles.expand(name or "")
+    if workflows is None:
+        output.error(
+            f"unknown profile {name!r} — expected one of: {', '.join(profiles.names())}"
+        )
+        return 2
+    for workflow in workflows:
+        print(workflow)
+    return 0
+
+
+def _print_profile_detect() -> int:
+    """Suggest a profile from repo contents. Advisory: changes nothing."""
+    suggested, reason = profiles.detect()
+    active = profiles.active_name()
+    output._emit(f"  Suggested profile: {suggested}  ({reason})")
+    if suggested == active:
+        output._emit(f"  Active profile:    {active} — already a match, nothing to do.")
+        return 0
+    output._emit(f"  Active profile:    {active}")
+    output._emit("")
+    output._emit("  To adopt the suggestion, in .slopstopper.yml:")
+    output._emit(f"      profile: {suggested}")
+    output._emit("  then re-run install.sh so the workflow set follows.")
+    return 0
+
+
+_PROFILE_ACTIONS = {
+    "list": lambda name: _print_profile_list(),
+    "show": lambda name: _print_profile_show(),
+    "expand": _print_profile_expand,
+    "detect": lambda name: _print_profile_detect(),
+}
+
+
+def _dispatch_profile(action: str, name: str | None) -> int:
+    handler = _PROFILE_ACTIONS.get(action)
+    if handler is None:
+        output.error(f"unknown profile action: {action}")
+        return 2
+    return handler(name)

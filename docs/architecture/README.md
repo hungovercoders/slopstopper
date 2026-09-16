@@ -145,6 +145,74 @@ In short: **mise installs it (pinned), Task runs it.** Moving the CLI pin is
 `install.sh --upgrade-cli` / `--cli-version` (both wrap `mise use`); see
 [`docs/runbooks/UPGRADE_CLI.md`](../runbooks/UPGRADE_CLI.md).
 
+## Project-shape profiles
+
+Not every check applies to every repo. The eight browser-and-SEO reliability
+checks (smoke, accessibility, Core Web Vitals, SEO, broken links, llms.txt,
+robots.txt, sitemap) assume HTML, a DOM and a public web surface. On an HTTP API
+they don't quietly no-op — they build, serve and audit nothing, and go red. On a
+library there is nothing to serve at all.
+
+A **profile** is a named preset for `workflows.disabled`: it says which
+workflows a repo of that shape shouldn't carry.
+
+| Profile | Shape | Drops |
+| ------- | ----- | ----- |
+| `ui` (default) | Serves HTML to a browser | Nothing — every check applies |
+| `api` | JSON/gRPC endpoints, no browser surface | The eight browser-and-SEO checks. Keeps DAST (ZAP scans an API fine) and CSP exceptions (APIs still set response headers) |
+| `library` | Library, CLI or package; nothing deployed | The eight above, plus DAST and CSP exceptions — everything that needs a URL |
+
+```bash
+bash install.sh --profile api      # writes `profile: api` into .slopstopper.yml
+slopstopper profile show           # what this repo resolves to, and why
+slopstopper profile detect         # suggest one from the repo's contents
+slopstopper profile list           # the full mapping
+```
+
+### Design decisions
+
+**The config is the home, not the flag.** `--profile` writes `profile:` into
+`.slopstopper.yml` and the installed workflow set is derived from that key on
+every run. The choice has to survive a re-run and be visible in review — the
+same reasoning as `workflows.disabled` itself, which exists so opting out isn't
+"delete the file and trust the marker".
+
+**A preset over the existing mechanism, not new machinery.** A profile expands
+into the same disabled set that `workflows.disabled` already fed, resolved in
+one place ([`profiles.effective_disabled()`](../../cli/slopstopper/profiles.py)):
+
+```
+effective = (profile.disables − workflows.enabled) ∪ workflows.disabled
+```
+
+So `slopstopper doctor` skipping a missing tool, `install.sh` deleting a
+workflow, and `slopstopper badges` (which globs what's on disk) all follow from
+the profile without knowing it exists. `workflows.enabled` is the escape hatch:
+an API that does serve a docs site can list `ss-reliability-broken-links-check.yml`
+and keep that one check. A profile only ever subtracts.
+
+**One mapping, two readers.** The profile → workflow table lives in
+[`cli/slopstopper/data/profiles.json`](../../cli/slopstopper/data/profiles.json).
+The CLI reads it through `slopstopper.profiles`; `install.sh` imports that same
+module from the source tree with `python3` (a hard prereq) rather than requiring
+the installed wheel, so the installer can resolve the workflow set before the
+mise/CLI step has run and there's no bash-side copy of the mapping to drift.
+
+**Detection suggests, never applies.** `slopstopper profile detect` sniffs for
+framework configs, HTML, OpenAPI specs and server-framework dependencies, and
+`install.sh` prints the suggestion when it differs from the active profile. It
+never writes the key: a curl-piped install is non-interactive, and a wrong
+silent pick (checks quietly off) is worse than the default superset (checks
+visibly red). When signals conflict, UI wins for the same reason.
+
+**Profiles make `api` quiet, not covered.** Subtraction removes checks that
+don't apply; it doesn't add the ones that should. The API-shaped analogues don't
+exist yet — OpenAPI spec↔routes drift (the analogue of docs-accuracy),
+health-endpoint smoke with response-schema assertions (smoke), CORS and JSON
+response-header audit (CSP exceptions), a latency/payload budget (Core Web
+Vitals), and ZAP's API-scan mode driven by the spec (DAST). Those are the next
+increment, not a gap in the profile mechanism.
+
 ## Request Flow (Minimal)
 
 1. Browser requests a page.

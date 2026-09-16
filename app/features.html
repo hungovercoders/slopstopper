@@ -67,6 +67,7 @@
                     <li><strong>DAST</strong> — OWASP ZAP probes a running site for common web vulnerabilities</li>
                     <li><strong>Secrets</strong> — Gitleaks scans every commit for accidentally committed credentials</li>
                     <li><strong>Dependencies</strong> — Trivy checks all dependencies for known CVEs</li>
+                    <li><strong>API Headers &amp; CORS</strong> — audits a JSON API's response headers and CORS policy: a wildcard origin sent with credentials, an arbitrary <code>Origin</code> reflected back, an allowlist that stopped matching, plus HSTS and <code>nosniff</code></li>
                 </ul>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/README.md" rel="noopener noreferrer">Learn more about Security →</a>
 
@@ -283,7 +284,9 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
                     <li><strong>llms.txt</strong> — Validates the <code>/llms.txt</code> AI-discoverability map (llmstxt.org): H1 title, summary and links to key content</li>
                     <li><strong>robots.txt</strong> — Guards against an accidental blanket <code>Disallow: /</code> that de-indexes the whole site, and requires a <code>Sitemap:</code> pointer</li>
                     <li><strong>sitemap.xml</strong> — Crawls the site from <code>/</code> and cross-checks the sitemap: a reachable page missing from it or a <code>&lt;loc&gt;</code> that 404s fails; recommends generating the file from your routes</li>
+                    <li><strong>API Health</strong> — Probes a JSON API's health/readiness endpoint and asserts its contract: status code, JSON content-type, and the body fields you declare. <code>{"status": "degraded"}</code> behind an HTTP 200 passes a reachability probe and fails here</li>
                 </ul>
+                <p class="card-intro">Every check in this loop except API Health assumes HTML and a served site, so an API repo installs with <code>--profile api</code> and gets the API check without the browser ones; a library repo (<code>--profile library</code>) gets neither — see <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/README.md#project-shape-profiles" rel="noopener noreferrer">project-shape profiles</a>. The security and hygiene loops apply to any code, whatever the profile.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
 
                 <details class="details">

@@ -462,3 +462,176 @@ def test_custom_hookspath_is_not_overridden(tmp_path):
     assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
 
     assert _hooks_path(target) == ".my-hooks", "custom hooksPath must be preserved"
+
+
+# ── project-shape profiles ───────────────────────────────────────
+
+
+def _installed(target: Path) -> set[str]:
+    return {p.name for p in (target / ".github/workflows").glob("ss-*.yml")}
+
+
+def _profile_key(target: Path) -> str | None:
+    for line in (target / ".slopstopper.yml").read_text().splitlines():
+        if line.startswith("profile:"):
+            return line.split(":", 1)[1].strip()
+    return None
+
+
+# The eight browser-and-SEO workflows the `api` profile drops. Hardcoded
+# rather than read from profiles.json, so a change to the mapping has to
+# be made deliberately in both places.
+API_DROPPED = {
+    "ss-reliability-smoke-tests.yml",
+    "ss-reliability-accessibility-check.yml",
+    "ss-reliability-broken-links-check.yml",
+    "ss-reliability-core-web-vitals.yml",
+    "ss-reliability-seo-check.yml",
+    "ss-reliability-llms-txt-check.yml",
+    "ss-reliability-robots-txt-check.yml",
+    "ss-reliability-sitemap-check.yml",
+}
+
+
+def test_profile_flag_writes_the_key_and_drops_those_workflows(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, args=["--profile", "api"])
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+    assert _profile_key(target) == "api"
+    installed = _installed(target)
+    assert not (installed & API_DROPPED), f"api profile installed browser checks: {installed & API_DROPPED}"
+    # The static layer and DAST are untouched.
+    assert "ss-security-sast-check.yml" in installed
+    assert "ss-security-dast-check.yml" in installed
+
+
+def test_profile_env_var_is_equivalent_to_the_flag(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, env_extra={"SLOPSTOPPER_PROFILE": "api"})
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert _profile_key(target) == "api"
+    assert not (_installed(target) & API_DROPPED)
+
+
+# The two API checks. `library` drops them (nothing served at all); `ui`
+# and `api` both keep them, where they stay inert until api.* is configured.
+API_WORKFLOWS = {
+    "ss-reliability-api-health-check.yml",
+    "ss-security-api-headers-check.yml",
+}
+
+
+def test_api_checks_ship_under_the_default_profile(tmp_path):
+    """A ui repo keeps them: they're inert until configured, and a repo with
+    API routes shouldn't have to find workflows.enabled to get coverage."""
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target).returncode == 0
+    assert API_WORKFLOWS <= _installed(target)
+
+
+def test_api_checks_ship_under_the_api_profile(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--profile", "api"]).returncode == 0
+    installed = _installed(target)
+    assert API_WORKFLOWS <= installed
+    assert not (installed & API_DROPPED)
+
+
+def test_library_profile_drops_the_api_checks(tmp_path):
+    """A library serves nothing, so there is no endpoint to probe."""
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--profile", "library"]).returncode == 0
+    assert not (_installed(target) & API_WORKFLOWS)
+
+
+def test_profile_dropped_workflows_stay_out_of_the_marker(tmp_path):
+    """Otherwise the deletion-respect rule would suppress them forever.
+
+    The marker means "we installed this". A profile-skipped workflow was
+    never installed, so recording it would make a later profile change
+    look like a user deletion and never bring the workflow back.
+    """
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--profile", "api"]).returncode == 0
+    marker = (target / ".ss/.workflows-installed").read_text().split()
+    assert not (set(marker) & API_DROPPED)
+
+
+def test_switching_profile_removes_and_restores_workflows(tmp_path):
+    """ui → api removes the eight; api → ui brings them back."""
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target).returncode == 0
+    full = _installed(target)
+    assert API_DROPPED <= full, "sanity: a default install carries the browser checks"
+
+    assert _run_install(target, args=["--profile", "api"]).returncode == 0
+    assert not (_installed(target) & API_DROPPED)
+
+    assert _run_install(target, args=["--profile", "ui"]).returncode == 0
+    assert _installed(target) == full
+
+
+def test_plain_rerun_honours_the_stored_profile(tmp_path):
+    """The config is the source of truth, not the flag — a bare re-run
+    must not resurrect the workflows the stored profile drops."""
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--profile", "api"]).returncode == 0
+
+    result = _run_install(target)
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert _profile_key(target) == "api", "a bare re-run must not rewrite the key"
+    assert not (_installed(target) & API_DROPPED)
+
+
+def test_workflows_enabled_keeps_one_check_the_profile_drops(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--profile", "api"]).returncode == 0
+
+    config = target / ".slopstopper.yml"
+    config.write_text(
+        config.read_text().replace(
+            "  enabled: []", "  enabled: [ss-reliability-seo-check.yml]"
+        )
+    )
+    result = _run_install(target)
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+    installed = _installed(target)
+    assert "ss-reliability-seo-check.yml" in installed
+    assert "ss-reliability-core-web-vitals.yml" not in installed
+
+
+def test_profile_key_is_appended_to_a_config_that_predates_it(tmp_path):
+    """An adopter upgrading from a pre-profile release has no such key."""
+    target = _make_minimal_target(tmp_path)
+    (target / ".slopstopper.yml").write_text("urls:\n  production: https://example.com\n")
+
+    result = _run_install(target, args=["--profile", "library"])
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+
+    body = (target / ".slopstopper.yml").read_text()
+    assert _profile_key(target) == "library"
+    assert "https://example.com" in body, "existing config must be preserved"
+
+
+def test_unknown_profile_name_fails_before_touching_the_target(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, args=["--profile", "rest"])
+    assert result.returncode != 0
+    assert "Unknown --profile" in result.stdout + result.stderr
+    assert not (target / ".github/workflows").exists(), "should fail before installing"
+
+
+def test_no_profile_flag_leaves_an_existing_install_unchanged(tmp_path):
+    """The key arriving in the schema must not change an install's shape.
+
+    An unset `profile:` resolves to `ui`, which drops nothing.
+    """
+    target = _make_minimal_target(tmp_path)
+    (target / ".slopstopper.yml").write_text("urls:\n  production:\n")
+
+    result = _run_install(target)
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert _profile_key(target) is None, "no flag → no key written"
+    assert API_DROPPED <= _installed(target)
