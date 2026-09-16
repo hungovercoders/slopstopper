@@ -16,12 +16,12 @@
   "profiles": {
     "ui": {
       "summary": "A web UI — a site or app that serves HTML to a browser.",
-      "detail": "Every check applies. This is the default when `profile:` is unset, so an existing install keeps behaving exactly as before.",
+      "detail": "Every check applies. This is the default when `profile:` is unset, so an existing install keeps behaving exactly as before. The API checks are included and stay inert until you configure `api.health.path` / `api.headers.paths` — a UI repo with API routes should get them without having to discover workflows.enabled.",
       "disables": []
     },
     "api": {
       "summary": "An HTTP API — JSON/gRPC endpoints with no browser-rendered surface.",
-      "detail": "Drops everything that currently assumes a browser/site build: the eight browser-and-SEO checks (they assume HTML, a DOM and a public web surface) plus DAST (the shipped workflow currently builds and serves a site before scanning). Keeps CSP exceptions (APIs still set response headers; the check stays inert until you set headers.source).",
+      "detail": "Drops everything that currently assumes a browser/site build: the eight browser-and-SEO checks (they assume HTML, a DOM and a public web surface) plus DAST (the shipped workflow currently builds and serves a site before scanning). Keeps the two API checks (api-health, api-headers) and CSP exceptions (APIs still set response headers; the check stays inert until you set headers.source).",
       "disables": [
         "ss-reliability-smoke-tests.yml",
         "ss-reliability-accessibility-check.yml",
@@ -36,7 +36,7 @@
     },
     "library": {
       "summary": "A library, CLI or package — no deployed surface of any kind.",
-      "detail": "Drops everything that needs a URL: the eight browser-and-SEO checks plus DAST and CSP exceptions. What remains is the static-analysis layer, which is the whole of what applies to code that nothing serves.",
+      "detail": "Drops everything that needs a URL: the eight browser-and-SEO checks, DAST and CSP exceptions, and the two API checks. What remains is the static-analysis layer, which is the whole of what applies to code that nothing serves.",
       "disables": [
         "ss-reliability-smoke-tests.yml",
         "ss-reliability-accessibility-check.yml",
@@ -47,7 +47,9 @@
         "ss-reliability-robots-txt-check.yml",
         "ss-reliability-sitemap-check.yml",
         "ss-security-dast-check.yml",
-        "ss-hygiene-csp-exceptions-check.yml"
+        "ss-hygiene-csp-exceptions-check.yml",
+        "ss-reliability-api-health-check.yml",
+        "ss-security-api-headers-check.yml"
       ]
     }
   }

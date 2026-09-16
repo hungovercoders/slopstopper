@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains documentation for SlopStopper's reliability checks: portable smoke tests, broken-link audits, accessibility audits (see [ACCESSIBILITY.md](ACCESSIBILITY.md)), Core Web Vitals via Lighthouse CI, SEO/social-share metatags (see [SEO.md](SEO.md)), the llms.txt AI-discoverability map (see [LLMS_TXT.md](LLMS_TXT.md)), the robots.txt discoverability + de-index guard (see [ROBOTS_TXT.md](ROBOTS_TXT.md)) and the sitemap.xml completeness + drift check (see [SITEMAP.md](SITEMAP.md)). These checks are wired against any reachable URL.
+This directory contains documentation for SlopStopper's reliability checks: portable smoke tests, broken-link audits, accessibility audits (see [ACCESSIBILITY.md](ACCESSIBILITY.md)), Core Web Vitals via Lighthouse CI, SEO/social-share metatags (see [SEO.md](SEO.md)), the llms.txt AI-discoverability map (see [LLMS_TXT.md](LLMS_TXT.md)), the robots.txt discoverability + de-index guard (see [ROBOTS_TXT.md](ROBOTS_TXT.md)) the sitemap.xml completeness + drift check (see [SITEMAP.md](SITEMAP.md)) and the API health/readiness endpoint audit (below). These checks are wired against any reachable URL.
 
 ## Configuration (env vars)
 
@@ -30,6 +30,66 @@ All reliability checks read their target URL and audit scope from environment va
 | `ROBOTS_TXT_PATH` | `/robots.txt` | robots.txt check — path to the file |
 | `SITEMAP_TEST_URL` | (none) | sitemap check — base URL to crawl + audit |
 | `SITEMAP_PATH` | `/sitemap.xml` | sitemap check — path to the sitemap |
+| `API_HEALTH_TEST_URL` | (none) | API health check — base URL of the API |
+| `API_HEALTH_PATH` | (none — unset skips the check) | API health check — path to the health endpoint |
+
+## API Health Check
+
+The API-shaped analogue of the smoke test. Smoke drives a browser over HTML pages; this probes the one endpoint an API is expected to expose for exactly this purpose, and asserts the contract around it.
+
+**Why not just point smoke at `/health`:** smoke asserts DOM-shaped things — a `<title>`, a linked stylesheet, a shareable og-image — that a JSON endpoint will never satisfy. And a health endpoint has assertions of its own. `{"status": "degraded"}` returned with HTTP 200 is a **pass** to any reachability probe and a **failure** here, which is the whole reason a health endpoint returns a body at all.
+
+### What it checks
+
+| Assertion | Hard fail? | Knob |
+|---|---|---|
+| Endpoint reachable | yes | — |
+| Status code matches | yes | `api.health.expect_status` (default 200) |
+| JSON content-type (`application/json`, `+json` suffixes) | yes | `api.health.require_json` |
+| Body parses as JSON and is non-empty | yes | `api.health.require_json` |
+| Declared fields present (dot-paths, e.g. `deps.db`) | yes | `api.health.require_fields` |
+| Declared fields match an expected value | yes | `api.health.expect_fields` |
+| Response time | only with a budget set | `api.health.max_response_ms` |
+
+### Configuration
+
+```yaml
+# .slopstopper.yml
+api:
+  base_path: ''          # prefix the API is served under, e.g. /api/v1
+  health:
+    path: /health        # unset → the check skips gracefully (exit 0)
+    expect_status: 200
+    require_json: true
+    require_fields: [status, deps.db]
+    expect_fields:
+      status: ok
+    max_response_ms:     # unset → timing reported, never enforced
+```
+
+With `api.health.path` unset the check exits 0 with a note — the same contract as [`hygiene:csp-exceptions`](../security/README.md#csp-exceptions) with `headers.source: null`. An unconfigured check is not a failing check, so a fresh install's first PR is green.
+
+### Running locally
+
+```bash
+# Pass the base URL positionally (works for any reliability check)
+task ss:reliability:api-health -- https://api.example.com
+
+# Override config from the command line
+task ss:reliability:api-health -- https://api.example.com \
+  --path /readyz --expect-status 204 --require-field status --max-response-ms 500
+
+# Or set the env var
+API_HEALTH_TEST_URL=https://api.example.com task ss:reliability:api-health
+```
+
+Report: `.ss/reports/api-health/api-health-report.{md,json}`.
+
+### Running in CI
+
+`ss-reliability-api-health-check.yml` audits `urls.preview` on pull requests and `urls.production` on pushes to main, schedules and Cloudflare deployment events. Unlike the browser checks it **never builds and serves the repo locally** — an API isn't a static bundle `slopstopper serve` can host, and guessing a start command would be worse than not guessing. With neither URL configured the PR run emits a notice and skips; the deployed-main and scheduled runs still cover the endpoint.
+
+The check ships under every [project-shape profile](../architecture/README.md#project-shape-profiles) except `library`, and stays inert until configured — so a UI repo with API routes gets it without having to opt in.
 
 ## Broken Link Checks
 

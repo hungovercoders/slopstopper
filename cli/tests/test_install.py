@@ -515,6 +515,36 @@ def test_profile_env_var_is_equivalent_to_the_flag(tmp_path):
     assert not (_installed(target) & API_DROPPED)
 
 
+# The two API checks. `library` drops them (nothing served at all); `ui`
+# and `api` both keep them, where they stay inert until api.* is configured.
+API_WORKFLOWS = {
+    "ss-reliability-api-health-check.yml",
+    "ss-security-api-headers-check.yml",
+}
+
+
+def test_api_checks_ship_under_the_default_profile(tmp_path):
+    """A ui repo keeps them: they're inert until configured, and a repo with
+    API routes shouldn't have to find workflows.enabled to get coverage."""
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target).returncode == 0
+    assert API_WORKFLOWS <= _installed(target)
+
+
+def test_api_checks_ship_under_the_api_profile(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--profile", "api"]).returncode == 0
+    installed = _installed(target)
+    assert API_WORKFLOWS <= installed
+    assert not (installed & API_DROPPED)
+
+
+def test_library_profile_drops_the_api_checks(tmp_path):
+    """A library serves nothing, so there is no endpoint to probe."""
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--profile", "library"]).returncode == 0
+    assert not (_installed(target) & API_WORKFLOWS)
+
 def test_profile_dropped_workflows_stay_out_of_the_marker(tmp_path):
     """Otherwise the deletion-respect rule would suppress them forever.
 

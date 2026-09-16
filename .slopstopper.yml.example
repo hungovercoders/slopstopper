@@ -38,13 +38,19 @@
 #            the eight browser-and-SEO reliability checks (smoke,
 #            accessibility, Core Web Vitals, SEO, broken links, llms.txt,
 #            robots.txt, sitemap) — they assume HTML and a public web
-#            surface, so on an API they fail rather than no-op. Keeps DAST
-#            (ZAP scans an API fine) and CSP exceptions (APIs still set
-#            response headers; that check stays inert until you set
-#            headers.source above).
+#            surface, so on an API they fail rather than no-op. Keeps the
+#            two API checks (api-health, api-headers — see the `api:`
+#            block below), DAST (ZAP scans an API fine) and CSP exceptions
+#            (APIs still set response headers; that check stays inert
+#            until you set headers.source above).
 #   library  A library, CLI or package with no deployed surface at all.
-#            Drops everything that needs a URL: the eight above plus DAST
-#            and CSP exceptions, leaving the static-analysis layer.
+#            Drops everything that needs a URL: the eight above, DAST, CSP
+#            exceptions and both API checks, leaving the static-analysis
+#            layer.
+#
+# The `ui` default keeps the API checks, which stay inert until you
+# configure them — a UI repo with API routes (Next.js handlers, Astro
+# endpoints) should get them without having to find workflows.enabled.
 #
 # A profile only ever subtracts. `workflows.disabled` adds to its set and
 # `workflows.enabled` takes an individual check back out of it, so the
@@ -131,6 +137,73 @@ smoke:
   # entirely (use this if you ship per-post share images instead of one
   # site-wide image).
   og_image_path: /og-image.png
+
+# ── API checks (api-health, api-headers) ─────────────────────────────
+# The API-shaped half of the suite. Both checks skip gracefully (exit 0)
+# when their entry key below is unset, the same contract as
+# `headers.source: null` above — an unconfigured check is not a failing
+# check, so your first PR is green before you've configured anything.
+#
+# Both audit a live origin, resolved the same way as the other dynamic
+# checks: urls.preview on PRs, urls.production on main and schedules.
+# Unlike the browser checks they never try to build and serve the repo
+# locally — an API isn't a static bundle, and guessing a start command
+# would be worse than not guessing.
+api:
+  # Path prefix the API is served under, joined onto the resolved URL
+  # before the paths below. e.g. base_path: /api/v1 turns `/health` into
+  # https://your-host/api/v1/health. Leave empty if the API is at the root.
+  base_path: ''
+
+  # ── reliability:api-health ─────────────────────────────────────────
+  # Probes your health/readiness endpoint and asserts its contract. The
+  # field assertions are the point: `{"status": "degraded"}` returned with
+  # HTTP 200 passes any reachability probe and fails here, which is the
+  # whole reason a health endpoint returns a body at all.
+  health:
+    # The endpoint. Unset (default) → the check skips.
+    path:
+    # Status code the endpoint must return when healthy.
+    expect_status: 200
+    # Assert a JSON content-type and that the body parses. Set false for
+    # an endpoint that deliberately returns plain text.
+    require_json: true
+    # Dot-paths that must be present in the body, e.g. [status, deps.db].
+    # List indices aren't supported — a body that deep isn't this check's job.
+    require_fields: []
+    # Dot-path → exact expected value. Compared as strings.
+    expect_fields:
+      # status: ok
+    # Soft budget for the probe itself. Unset → the timing is reported as
+    # a note and never enforced. This is not a latency check; it's a
+    # guard against a health endpoint that's doing far too much work.
+    max_response_ms:
+
+  # ── security:api-headers ───────────────────────────────────────────
+  # Audits response headers and CORS policy. On an HTML surface CSP is the
+  # header that matters (see hygiene:csp-exceptions); on a JSON API it's
+  # CORS — a permissive policy on a credentialed endpoint is a
+  # cross-origin data leak, not a style violation.
+  headers:
+    # Endpoints to probe. Empty (default) → the check skips. List the ones
+    # whose policy you care about, not every route.
+    paths: []
+    # Demand `Strict-Transport-Security`. Not asserted on http targets,
+    # where the header has no effect.
+    require_hsts: true
+    # Demand `X-Content-Type-Options: nosniff` — a JSON response a browser
+    # sniffs as HTML is an XSS vector.
+    require_nosniff: true
+    # Permit `Access-Control-Allow-Origin: *`. Correct for a genuinely
+    # public read-only API; a leak on anything credentialed. A wildcard
+    # sent *with* `Access-Control-Allow-Credentials: true` always fails
+    # regardless of this knob — browsers reject that pair, so the policy
+    # you intended was never being enforced.
+    allow_wildcard_cors: false
+    # Origins that must still be allowed when sent as an `Origin` header.
+    # Catches an allowlist that silently stopped matching (a renamed
+    # frontend domain, a regex that no longer fires).
+    allowed_origins: []
 
 # ── llms.txt AI-discoverability check ────────────────────────────────
 # `reliability:llms-txt` audits /llms.txt (the llmstxt.org convention — a

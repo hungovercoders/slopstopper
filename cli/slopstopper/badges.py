@@ -40,6 +40,7 @@ WORKFLOW_DISPLAY: dict[str, tuple[str, str]] = {
     "ss-security-vulnerability-all-check.yml": ("security", "Dependency CVEs"),
     "ss-security-vulnerability-new-check.yml": ("security", "Dependency Review"),
     "ss-security-dast-check.yml": ("security", "DAST"),
+    "ss-security-api-headers-check.yml": ("security", "API Headers"),
     "ss-hygiene-complexity-check.yml": ("hygiene", "Complexity"),
     "ss-hygiene-csp-exceptions-check.yml": ("hygiene", "CSP Exceptions"),
     "ss-hygiene-docs-accuracy-check.yml": ("hygiene", "Docs Accuracy"),
@@ -53,6 +54,10 @@ WORKFLOW_DISPLAY: dict[str, tuple[str, str]] = {
     "ss-reliability-broken-links-check.yml": ("reliability", "Broken Links"),
     "ss-reliability-core-web-vitals.yml": ("reliability", "Core Web Vitals"),
     "ss-reliability-seo-check.yml": ("reliability", "SEO"),
+    "ss-reliability-api-health-check.yml": ("reliability", "API Health"),
+    "ss-reliability-llms-txt-check.yml": ("reliability", "llms.txt"),
+    "ss-reliability-robots-txt-check.yml": ("reliability", "robots.txt"),
+    "ss-reliability-sitemap-check.yml": ("reliability", "Sitemap"),
     "ss-release.yml": ("operational", "Release"),
     "ss-workflow-failure-issue.yml": ("operational", "Workflow Failures"),
 }
