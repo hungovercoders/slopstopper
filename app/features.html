@@ -284,6 +284,7 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
                     <li><strong>robots.txt</strong> — Guards against an accidental blanket <code>Disallow: /</code> that de-indexes the whole site, and requires a <code>Sitemap:</code> pointer</li>
                     <li><strong>sitemap.xml</strong> — Crawls the site from <code>/</code> and cross-checks the sitemap: a reachable page missing from it or a <code>&lt;loc&gt;</code> that 404s fails; recommends generating the file from your routes</li>
                 </ul>
+                <p class="card-intro">Every check in this loop assumes HTML and a served site, so an API or a library repo installs with <code>--profile api</code> / <code>--profile library</code> and gets none of them — see <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/README.md#project-shape-profiles" rel="noopener noreferrer">project-shape profiles</a>. The security and hygiene loops apply to any code, whatever the profile.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
 
                 <details class="details">

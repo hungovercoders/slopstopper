@@ -23,6 +23,8 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
 
 `install.sh` is idempotent — re-run to refresh workflows. It **pins** `slopstopper-cli` in `mise.toml` and installs it via [mise](https://mise.jdx.dev), so a breaking release only lands when you move the pin. See [Update](#update).
 
+Not a website? `--profile api` (or `library`) installs only the applicable checks — see [Profiles](./docs/architecture/README.md#project-shape-profiles).
+
 ## Contents
 
 - [Prerequisites](#prerequisites)
@@ -42,18 +44,17 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
 
 ## Prerequisites
 
-mise pins + installs `slopstopper-cli`; each check subprocess-invokes its own tool (`semgrep`, `gitleaks`, `trivy`, `lizard`, `docker`, `node`). `slopstopper doctor` reports what's missing.
+mise pins + installs `slopstopper-cli`; each check subprocess-invokes its own tool (`semgrep`, `gitleaks`, `trivy`, `docker`, `node`). `slopstopper doctor` reports what's missing.
 
 - **[mise](https://mise.jdx.dev)** — required; installs the pinned `slopstopper-cli` + `task`, activated per-directory (CI uses `jdx/mise-action`)
 - **Python 3.11+** — mise's pipx backend needs it on PATH
 
-Per-check tools (skip if you've disabled the check):
+Per-check tools (skip any check your profile drops):
 
 | Tool | Needed by | Install hint |
 | ---- | --------- | ------------ |
 | `node` 20+ | Reliability checks (Playwright + Lighthouse), `slopstopper serve` | [nodejs.org](https://nodejs.org/) |
 | `gh` | `slopstopper emit` (PR comments + issues from CI) | [cli.github.com](https://cli.github.com/) |
-| `lizard` | `hygiene:complexity` | `pip install --user lizard` (**not** brew — that's lz4) |
 | `semgrep` | `security:sast` | `pip install --user semgrep` |
 | `gitleaks` | `security:secrets` | `brew install gitleaks` |
 | `trivy` | `security:vulnerability:all` | `brew install aquasecurity/trivy/trivy` |
@@ -67,13 +68,13 @@ Everything SlopStopper owns lives under the `ss` namespace so it can't clash wit
 
 | Item | Description |
 | ---- | ----------- |
-| `slopstopper-cli` (Python) | The product — every check runs through this. Pinned per-repo in `mise.toml` (`"pipx:slopstopper-cli"`) and installed via mise; move the pin with `install.sh --upgrade-cli`. |
-| `.github/workflows/ss-*.yml` | Security, hygiene, reliability and operational workflows — all `ss-` prefixed |
+| `slopstopper-cli` (Python) | The product — every check runs through this. Pinned per-repo in `mise.toml` (`"pipx:slopstopper-cli"`) and installed via mise. |
+| `.github/workflows/ss-*.yml` | Security, hygiene, reliability and operational workflows |
 | `Taskfile.ss.yml` | Thin `task ss:*` shims that call the CLI — convenient for the local dev loop |
 | `Taskfile.yml` | Created if missing (else: prints the include block to paste in) |
 | `.githooks/pre-push` | Runs `task ss:hygiene:test` pre-push (via `core.hooksPath`). Opt out with `--no-hooks`; skipped if you already run husky/lefthook/pre-commit |
 | `mise.toml` | Toolchain pin — `"pipx:slopstopper-cli"` + `task`; read locally + in CI (`jdx/mise-action`). Moves via `--upgrade-cli`/`--cli-version` |
-| `.slopstopper.yml` | Config seed — URLs, headers, thresholds, page lists (never overwritten) |
+| `.slopstopper.yml` | Config seed — profile, URLs, headers, thresholds, page lists (never overwritten) |
 | `.ss/reports/` | Where the CLI writes reports — `.gitignore`d |
 | `package.json` | Created (or `devDependencies` merged into an existing file) |
 
@@ -101,7 +102,9 @@ Three portability layers. Layer 1 runs on install; layers 2–3 need a little co
 | **2. Web-app dynamic** (need a URL) | Smoke, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, llms.txt, robots.txt, sitemap.xml, DAST, Playwright | `SMOKE_TEST_URL` · `BROKEN_LINKS_TEST_URL` · `ACCESSIBILITY_TEST_URL` · `LIGHTHOUSE_URL` · `SEO_TEST_URL` · optionally `*_PAGES` env vars |
 | **3. Agentic doc-updater** | Weekly doc-sync PRs | `COPILOT_GITHUB_TOKEN` repo secret |
 
-Don't use the doc-updater? Delete its workflows from `.github/workflows/` — re-running the installer respects deletions (tracked in `.ss/.workflows-installed`).
+Layer 2 needs a browser surface — an API or library repo sets `profile:` and the installer drops those workflows.
+
+Don't use a check? Delete its workflow or list it under `workflows.disabled` — re-runs respect both.
 
 Deploy is intentionally not a layer: connect your repo in the Cloudflare dash for production deploys, PR previews and preview cleanup. See [Deployment](./docs/deployment/README.md).
 
@@ -128,11 +131,7 @@ Most checks work out of the box. To wire up the full suite:
 
 Deploy needs no secrets — Cloudflare Workers Builds connects via the GitHub App.
 
-**Tuning files** (`.slopstopper.yml` covers most config; these handle the rest):
-
-- Complexity gate — CCN > 10 threshold in `.github/workflows/ss-hygiene-complexity-check.yml`
-- Lighthouse budgets — bundled in `cli/slopstopper/data/lighthouserc{,.prod}.json`; override via `.ss/`
-- Doc size thresholds — `hygiene.docs_size.*` keys in [`.slopstopper.yml.example`](./.slopstopper.yml.example)
+**Thresholds** — complexity ceiling, doc size, entry-file budgets and the rest are keys in [`.slopstopper.yml.example`](./.slopstopper.yml.example). Lighthouse budgets ship inside the wheel; override via `.ss/`.
 
 ## Update
 

@@ -11,6 +11,11 @@
 # The Node version is pinned in mise.toml ([tools] node) — a tool version, so
 # it lives in mise, not here.
 
+# slopstopper.dev is a web UI, so every check applies. `ui` is also the
+# default when the key is unset — it's spelled out here because this repo
+# is the reference install. See .slopstopper.yml.example for api/library.
+profile: ui
+
 # slopstopper.dev manages headers via a Cloudflare Worker that imports
 # worker/headers.json (see worker/index.ts). The CSP-drift check reads
 # the same file via the JSON adapter.

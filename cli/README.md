@@ -43,6 +43,7 @@ slopstopper templates {list, path <n>, eject <n>}   # inspect / customise bundle
 slopstopper serve                              # bundled static server (auto-detects worker/headers.json)
 slopstopper checks list [--category <c>] [--json]
 slopstopper doctor                             # verify external tools are installed
+slopstopper profile {list, show, expand <n>, detect}   # project-shape profile (ui / api / library)
 slopstopper --quiet …                          # suppress decorative output (CI logs)
 ```
 
@@ -73,20 +74,22 @@ This workflow is slopstopper-internal — it is **not** part of the distributed 
 - `slopstopper/templates.py` — bundled-template resolver + `templates {list, path, eject}` API
 - `slopstopper/emit.py` — `gh` CLI wrapper for PR comment + main-branch issue emission
 - `slopstopper/discovery.py` — pages-to-audit resolver for reliability checks
+- `slopstopper/profiles.py` — project-shape profiles: resolves which workflows a repo carries (`profile:` ∪ `workflows.disabled` − `workflows.enabled`), plus the check → workflow map. `install.sh` imports this module directly, so it is the only implementation
 - `slopstopper/checks/` — one module per check; registry in `__init__.py`
-- `slopstopper/data/` — bundled Playwright specs, lighthouserc dev/prod, server.js
+- `slopstopper/data/` — bundled Playwright specs, lighthouserc dev/prod, server.js, `profiles.json`
 
 ## Adding a check
 
 1. Add `slopstopper/checks/<name>.py` exposing `run(args) -> int`. Start the module docstring with a one-line summary (`slopstopper checks list` reads it).
-2. Register it in `slopstopper/checks/__init__.py`'s `REGISTRY` dict.
+2. Register it in `slopstopper/checks/__init__.py`'s `REGISTRY` dict, and map it to its workflow in `slopstopper/profiles.py`'s `CHECK_WORKFLOWS`.
+   If the check doesn't apply to every project shape, add its workflow to the relevant `disables` lists in `slopstopper/data/profiles.json`.
 3. Write the report to `.ss/reports/<category>/<name>-report.md` in the CWD.
 4. Use `from slopstopper import output` for any user-facing print calls so `--quiet` and the consistent visual language come for free.
 5. If the check should be postable to a PR or issue, declare a `META` dict in the module — `emit.py` reads it.
 
 ## Skills for agents
 
-The trio under [`.claude/skills/slopstopper-{install,update,triage}/SKILL.md`](../.claude/skills/) is the long-form playbook for Claude Code agents working with this CLI. Update them when you add or rename a check, env var, or `task ss:*` target.
+The duo under [`.claude/skills/slopstopper-{install,triage}/SKILL.md`](../.claude/skills/) is the long-form playbook for Claude Code agents working with this CLI. Update them when you add or rename a check, env var, `task ss:*` target, or profile.
 
 ## Acknowledgements
 

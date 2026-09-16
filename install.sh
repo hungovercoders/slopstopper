@@ -76,6 +76,15 @@ if [ -n "${SLOPSTOPPER_NO_HOOKS:-}" ]; then
   INSTALL_HOOKS=false
 fi
 
+# Project-shape profile. A profile is a preset for `workflows.disabled` —
+# it switches off the checks a repo of that shape has no use for (an API
+# has no Core Web Vitals; a library has no URL at all). The flag writes
+# `profile:` into .slopstopper.yml so the choice survives re-runs and shows
+# up in a diff, then the workflow set follows from the config — the same
+# reasoning as workflows.disabled below. Empty = leave the config alone
+# (an unset `profile:` means `ui`, i.e. today's full suite).
+PROFILE_FLAG="${SLOPSTOPPER_PROFILE:-}"
+
 # slopstopper-cli version control. The pinned version lives in the target's
 # mise.toml ([tools] "pipx:slopstopper-cli"). A plain run honours that pin;
 # these flags move it deliberately (both wrap `mise use`). CLI_VERSION_FLAG
@@ -96,6 +105,16 @@ while [ "$#" -gt 0 ]; do
       ;;
     --no-hooks)
       INSTALL_HOOKS=false
+      shift
+      ;;
+    --profile)
+      PROFILE_FLAG="${2:-}"
+      [ -n "$PROFILE_FLAG" ] || { echo "  ❌ --profile requires a name (e.g. --profile api)" >&2; exit 1; }
+      shift 2
+      ;;
+    --profile=*)
+      PROFILE_FLAG="${1#*=}"
+      [ -n "$PROFILE_FLAG" ] || { echo "  ❌ --profile requires a name (e.g. --profile=api)" >&2; exit 1; }
       shift
       ;;
     --upgrade-cli)
@@ -121,6 +140,7 @@ Usage:
   bash install.sh --no-task [TARGET_DIR]       # CLI-driven workflows (no Task install)
   bash install.sh --no-skills [TARGET_DIR]     # Skip installing Claude Code skills
   bash install.sh --no-hooks [TARGET_DIR]      # Skip installing the pre-push hygiene hook
+  bash install.sh --profile api [TARGET_DIR]   # Install the check set for a repo of that shape
   bash install.sh --upgrade-cli [TARGET_DIR]   # Bump the pinned CLI to the latest on PyPI
   bash install.sh --cli-version X.Y.Z [TARGET] # Pin the CLI to an exact version
 
@@ -128,6 +148,23 @@ Env var equivalents:
   SLOPSTOPPER_NO_TASK=1 bash install.sh
   SLOPSTOPPER_NO_SKILLS=1 bash install.sh
   SLOPSTOPPER_NO_HOOKS=1 bash install.sh
+  SLOPSTOPPER_PROFILE=api bash install.sh
+
+Profiles (--profile) tailor the suite to the repo's shape:
+
+  ui       a site or app that serves HTML — every check applies (default)
+  api      JSON/gRPC endpoints, no browser surface — drops the eight
+           browser-and-SEO reliability checks, which assume HTML and a
+           public web surface and would go red rather than no-op
+  library  a library, CLI or package with no deployed surface — also drops
+           DAST and CSP exceptions
+
+The flag writes `profile:` into .slopstopper.yml, so the choice survives
+re-runs and is visible in review; the workflow set is derived from that key
+on every run. Omitting the flag leaves an existing `profile:` untouched and
+prints a suggestion when the key is unset. To keep one check the profile
+drops, list it under `workflows.enabled` in .slopstopper.yml. See
+`slopstopper profile list` for the full mapping.
 
 Default mode installs workflows that invoke `task ss:<check>` so the suite
 shares a single invocation surface with the rest of your codebase. `--no-task`
@@ -403,6 +440,120 @@ echo "  Source : $SCRIPT_DIR"
 echo "  Target : $TARGET_DIR"
 sep
 
+# ── project-shape profile helpers ────────────────────────────────────────────
+#
+# A profile is a preset for `workflows.disabled`: it names the workflows a
+# repo of that shape has no use for (an API has no Core Web Vitals; a
+# library has no URL at all). The mapping lives in
+# cli/slopstopper/data/profiles.json and is read here through the CLI's own
+# slopstopper.profiles module, imported straight from the source tree
+# ($SCRIPT_DIR/cli) rather than from an installed wheel.
+#
+# That matters: the installer must be able to resolve the workflow set
+# before (and independently of) the mise/CLI install step succeeding, and
+# there must be exactly one implementation of "which workflows does this
+# repo carry" shared by the installer and the CLI. python3 is a hard
+# prereq (see preflight) and $SCRIPT_DIR is always a slopstopper checkout
+# by this point, so both hold.
+
+ss_profiles_py() {
+  # Run a python snippet with slopstopper importable and CWD = the target
+  # repo, because slopstopper.config reads .slopstopper.yml from CWD.
+  # Extra args are passed through as sys.argv[1:].
+  local snippet="$1"
+  shift
+  ( cd "$TARGET_DIR" && PYTHONPATH="$SCRIPT_DIR/cli" python3 -c "$snippet" "$@" )
+}
+
+profile_names() {
+  ss_profiles_py 'from slopstopper import profiles; print(" ".join(profiles.names()))'
+}
+
+profile_is_valid() {
+  ss_profiles_py '
+import sys
+from slopstopper import profiles
+sys.exit(0 if profiles.describe(sys.argv[1]) else 1)
+' "$1" >/dev/null 2>&1
+}
+
+profile_active() {
+  ss_profiles_py 'from slopstopper import profiles; print(profiles.active_name())'
+}
+
+profile_summary() {
+  ss_profiles_py '
+from slopstopper import profiles
+entry = profiles.describe(profiles.active_name()) or {}
+print(entry.get("summary", ""))
+'
+}
+
+# Newline-separated workflow filenames this repo should not carry:
+# the profile's set minus workflows.enabled, plus workflows.disabled.
+profile_effective_disabled() {
+  ss_profiles_py '
+from slopstopper import profiles
+for name in sorted(profiles.effective_disabled()):
+    print(name)
+'
+}
+
+# Advisory shape detection: prints "<profile>\t<reason>". Never applied
+# automatically — a curl-piped install is non-interactive, and silently
+# switching checks off is worse than the default superset going red.
+profile_detect() {
+  ss_profiles_py '
+from slopstopper import profiles
+name, reason = profiles.detect()
+print(name + "\t" + reason)
+'
+}
+
+# Write `profile: <name>` into the target .slopstopper.yml — replacing an
+# existing top-level key in place, or appending a documented block if the
+# file predates the key. Comment-preserving line edit, same spirit as the
+# legacy cli_version migration above.
+write_profile_key() {
+  local name="$1"
+  ss_profiles_py '
+import sys
+from pathlib import Path
+
+name = sys.argv[1]
+path = Path(".slopstopper.yml")
+if not path.is_file():
+    sys.exit(0)
+
+lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+for i, line in enumerate(lines):
+    if line.startswith("profile:"):
+        if line.strip() == f"profile: {name}":
+            print("unchanged")
+            sys.exit(0)
+        lines[i] = f"profile: {name}\n"
+        path.write_text("".join(lines), encoding="utf-8")
+        print("replaced")
+        sys.exit(0)
+
+block = (
+    "\n# \u2500\u2500 Project-shape profile \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n"
+    "# Which checks apply to a repo of this shape. See\n"
+    "# `slopstopper profile list` for the full mapping.\n"
+    f"profile: {name}\n"
+)
+with path.open("a", encoding="utf-8") as fh:
+    fh.write(block)
+print("appended")
+' "$name"
+}
+
+if [ -n "$PROFILE_FLAG" ]; then
+  if ! profile_is_valid "$PROFILE_FLAG"; then
+    error "Unknown --profile '$PROFILE_FLAG'. Expected one of: $(profile_names)"
+  fi
+fi
+
 # ── install files ─────────────────────────────────────────────────────────────
 
 # 1. Taskfile.ss.yml — always refreshed (SlopStopper-owned, safe to overwrite).
@@ -458,6 +609,20 @@ fi
 if [ ! -f "$TARGET_DIR/.slopstopper.yml" ] && [ -f "$SCRIPT_DIR/.slopstopper.yml.example" ]; then
   cp "$SCRIPT_DIR/.slopstopper.yml.example" "$TARGET_DIR/.slopstopper.yml"
   success ".slopstopper.yml: seeded $TARGET_DIR/.slopstopper.yml"
+fi
+
+# Apply --profile / SLOPSTOPPER_PROFILE by writing the key into the
+# (possibly just-seeded) config. The config is the home for this choice,
+# not the flag: it has to survive a re-run and be visible in review, and
+# the workflow set below is derived from the key rather than the flag.
+# Without the flag an existing `profile:` is left exactly as it is.
+if [ -n "$PROFILE_FLAG" ]; then
+  case "$(write_profile_key "$PROFILE_FLAG")" in
+    unchanged) info ".slopstopper.yml: profile already '$PROFILE_FLAG'" ;;
+    replaced)  success ".slopstopper.yml: profile set to '$PROFILE_FLAG'" ;;
+    appended)  success ".slopstopper.yml: profile '$PROFILE_FLAG' added" ;;
+    *)         warn ".slopstopper.yml: no config file in target — profile '$PROFILE_FLAG' not written" ;;
+  esac
 fi
 
 # Decide which version to pin:
@@ -641,6 +806,23 @@ GENERIC_WORKFLOWS=(
 
 MARKER_FILE="$TARGET_DIR/.ss/.workflows-installed"
 
+# Workflows this repo shouldn't carry: the `profile:` preset minus
+# workflows.enabled, plus workflows.disabled. Resolved once here and
+# honoured both in the install loop below (skip, and remove a copy an
+# earlier profile left behind) and in the sweep further down (which also
+# catches names outside GENERIC_WORKFLOWS).
+PROFILE_ACTIVE="$(profile_active)"
+DISABLED_WORKFLOWS="$(profile_effective_disabled)"
+
+# Degrade safely: if the profiles module couldn't be imported at all, resolve
+# to the default (which disables nothing) rather than to an empty name. An
+# unreadable mapping must never look like "this repo carries fewer checks".
+[ -n "$PROFILE_ACTIVE" ] || PROFILE_ACTIVE="ui"
+
+workflow_is_disabled() {
+  [ -n "$DISABLED_WORKFLOWS" ] && printf '%s\n' "$DISABLED_WORKFLOWS" | grep -Fxq "$1"
+}
+
 # Load the set of workflows we installed last time (if any). If a workflow
 # is in this list AND missing from the consumer's repo now, they deleted it
 # and we won't re-add it. Compatible with bash 3.2 (no associative arrays).
@@ -673,12 +855,28 @@ fi
 INSTALLED_WORKFLOWS=0
 REFRESHED_WORKFLOWS=0
 DELETED_RESPECTED=0
+PROFILE_SKIPPED=0
+PROFILE_REMOVED=0
 NEW_MARKER_CONTENT=""
 
 for wf in "${GENERIC_WORKFLOWS[@]}"; do
   SRC="$WORKFLOWS_SRC/$wf"
   DST="$WORKFLOWS_DST/$wf"
   [ -f "$SRC" ] || continue
+
+  # Profile / config says this repo doesn't carry this workflow. Remove a
+  # copy an earlier install left behind (so switching ui → api cleans up),
+  # and deliberately keep it out of the marker: the marker means "we
+  # installed this", so omitting it lets a later profile change bring the
+  # workflow back instead of the deletion-respect rule below suppressing it.
+  if workflow_is_disabled "$wf"; then
+    if [ -f "$DST" ]; then
+      rm -f "$DST"
+      (( PROFILE_REMOVED++ )) || true
+    fi
+    (( PROFILE_SKIPPED++ )) || true
+    continue
+  fi
 
   # Respect deletions: if we installed it before AND it's gone now, leave it gone.
   if was_previously_installed "$wf" && [ ! -f "$DST" ]; then
@@ -700,6 +898,11 @@ done
 printf '%s' "$NEW_MARKER_CONTENT" > "$MARKER_FILE.tmp" && mv "$MARKER_FILE.tmp" "$MARKER_FILE"
 
 success "$INSTALLED_WORKFLOWS workflow(s) installed, $REFRESHED_WORKFLOWS refreshed, $DELETED_RESPECTED previously-deleted skipped"
+
+if [ "$PROFILE_SKIPPED" -gt 0 ]; then
+  info "profile '$PROFILE_ACTIVE': $PROFILE_SKIPPED workflow(s) not installed for this repo shape ($PROFILE_REMOVED removed from a previous install)"
+  info "  see 'slopstopper profile show'; list one under workflows.enabled in .slopstopper.yml to keep it"
+fi
 
 # Post-process workflows for --no-task mode: rewrite `task ss:<X> -- args` into
 # `slopstopper run <X> args`. The CLI accepts the same bare-positional URL
@@ -900,31 +1103,26 @@ if [ -f "$GI_BLOCK_SRC" ]; then
   fi
 fi
 
-# 7. Apply .slopstopper.yml workflows.disabled — remove any matching
-# workflows the adopter has opted out of, and remember the deletion via
-# .ss/.workflows-installed so a re-run won't re-add them. This lets the
-# config file drive deletions instead of "delete file and trust the
-# marker" — both work, but config-driven is easier to audit and survive
-# clone-and-rebuild.
-if [ -f "$TARGET_DIR/.slopstopper.yml" ] && command -v slopstopper &>/dev/null; then
-  DISABLED="$(cd "$TARGET_DIR" && slopstopper config get workflows.disabled 2>/dev/null || true)"
-  if [ -n "$DISABLED" ]; then
-    DISABLED_COUNT=0
-    IFS=',' read -ra DISABLED_LIST <<< "$DISABLED"
-    for wf_name in "${DISABLED_LIST[@]}"; do
-      wf_name="$(echo "$wf_name" | tr -d ' ')"
-      [ -z "$wf_name" ] && continue
-      # Tolerate both with-extension and without-extension forms
-      [[ "$wf_name" != *.yml ]] && wf_name="${wf_name}.yml"
-      wf_path="$TARGET_DIR/.github/workflows/$wf_name"
-      if [ -f "$wf_path" ]; then
-        rm -f "$wf_path"
-        (( DISABLED_COUNT++ )) || true
-      fi
-    done
-    if [ "$DISABLED_COUNT" -gt 0 ]; then
-      info "Removed $DISABLED_COUNT workflow(s) listed in .slopstopper.yml workflows.disabled"
+# 7. Sweep the rest of the disabled set. The workflow loop above already
+# skipped (and cleaned up) every disabled workflow in GENERIC_WORKFLOWS;
+# this catches names that aren't in that list — a workflow from an older
+# slopstopper release, or one the adopter added and then listed. Driven by
+# the same resolved set ($DISABLED_WORKFLOWS = (profile − workflows.enabled)
+# ∪ workflows.disabled), so config drives deletions rather than "delete the
+# file and trust the marker" — both work, but config-driven is easier to
+# audit and survives clone-and-rebuild.
+if [ -n "$DISABLED_WORKFLOWS" ]; then
+  DISABLED_COUNT=0
+  while IFS= read -r wf_name; do
+    [ -z "$wf_name" ] && continue
+    wf_path="$TARGET_DIR/.github/workflows/$wf_name"
+    if [ -f "$wf_path" ]; then
+      rm -f "$wf_path"
+      (( DISABLED_COUNT++ )) || true
     fi
+  done <<< "$DISABLED_WORKFLOWS"
+  if [ "$DISABLED_COUNT" -gt 0 ]; then
+    info "Removed $DISABLED_COUNT further workflow(s) from the disabled set"
   fi
 fi
 
@@ -1126,6 +1324,31 @@ if [ -n "$ss_installed" ]; then
 fi
 echo "  ── SlopStopper status for this repo ──────────────────────────────"
 echo ""
+echo "  🧭 Profile: $PROFILE_ACTIVE — $(profile_summary)"
+if [ "$PROFILE_SKIPPED" -gt 0 ]; then
+  echo "       $PROFILE_SKIPPED check(s) left out as not applying to this shape."
+  echo "       'slopstopper profile show' lists them; workflows.enabled keeps one."
+fi
+echo ""
+# Shape suggestion — advisory only, and skipped when the run set the profile
+# explicitly. Never applied automatically: a curl-piped install is
+# non-interactive, and silently switching checks off is worse than the
+# default superset going visibly red.
+if [ -z "$PROFILE_FLAG" ]; then
+  DETECTED_LINE="$(profile_detect 2>/dev/null || true)"
+  DETECTED_NAME="${DETECTED_LINE%%$'\t'*}"
+  DETECTED_REASON="${DETECTED_LINE#*$'\t'}"
+  if [ -n "$DETECTED_NAME" ] && [ "$DETECTED_NAME" != "$PROFILE_ACTIVE" ]; then
+    echo "  💡 This looks more like a '$DETECTED_NAME' repo ($DETECTED_REASON),"
+    echo "     which would drop the checks that don't apply to that shape."
+    echo "     To switch, set this in .slopstopper.yml and re-run install.sh:"
+    echo ""
+    echo "       profile: $DETECTED_NAME"
+    echo ""
+    echo "     Nothing was changed for you — see 'slopstopper profile list'."
+    echo ""
+  fi
+fi
 echo "  ✅ Active now (no config needed — work on any code):"
 echo "       SAST · Secrets · Dependency CVEs · Dependency Review"
 echo "       Complexity · Doc Structure · Doc Accuracy · Doc Size"
@@ -1137,18 +1360,47 @@ if [ "$INSTALL_HOOKS" = "true" ]; then
   echo "       Bypass a single push with 'git push --no-verify'."
   echo ""
 fi
-echo "  ⏳ Active once you point them at your app (edit .slopstopper.yml):"
-echo "       Smoke · Accessibility · Core Web Vitals · DAST · SEO · Broken Links"
-echo ""
-echo "     # in .slopstopper.yml:"
-echo "     urls:"
-echo "       production: https://your-site.example.com"
-echo "       preview:    https://staging.your-site.example.com"
-echo ""
-echo "     # if you need a different Node version for your build (pinned in"
-echo "     # mise.toml, read by mise locally and CI):"
-echo "     mise use node@22"
-echo ""
+# Which URL-driven checks this repo actually carries depends on the
+# profile, so build the list from what landed on disk rather than naming
+# all six unconditionally.
+DYNAMIC_LABELS=""
+add_dynamic_label() {
+  [ -f "$TARGET_DIR/.github/workflows/$1" ] || return 0
+  if [ -z "$DYNAMIC_LABELS" ]; then
+    DYNAMIC_LABELS="$2"
+  else
+    DYNAMIC_LABELS="$DYNAMIC_LABELS · $2"
+  fi
+}
+add_dynamic_label "ss-reliability-smoke-tests.yml"          "Smoke"
+add_dynamic_label "ss-reliability-accessibility-check.yml"  "Accessibility"
+add_dynamic_label "ss-reliability-core-web-vitals.yml"      "Core Web Vitals"
+add_dynamic_label "ss-security-dast-check.yml"              "DAST"
+add_dynamic_label "ss-reliability-seo-check.yml"            "SEO"
+add_dynamic_label "ss-reliability-broken-links-check.yml"   "Broken Links"
+add_dynamic_label "ss-reliability-llms-txt-check.yml"       "llms.txt"
+add_dynamic_label "ss-reliability-robots-txt-check.yml"     "robots.txt"
+add_dynamic_label "ss-reliability-sitemap-check.yml"        "Sitemap"
+
+if [ -n "$DYNAMIC_LABELS" ]; then
+  echo "  ⏳ Active once you point them at your app (edit .slopstopper.yml):"
+  echo "       $DYNAMIC_LABELS"
+  echo ""
+  echo "     # in .slopstopper.yml:"
+  echo "     urls:"
+  echo "       production: https://your-site.example.com"
+  echo "       preview:    https://staging.your-site.example.com"
+  echo ""
+  echo "     # if you need a different Node version for your build (pinned in"
+  echo "     # mise.toml, read by mise locally and CI):"
+  echo "     mise use node@22"
+  echo ""
+else
+  echo "  ⏸ URL-driven checks: none installed — profile '$PROFILE_ACTIVE' has no"
+  echo "       served surface to audit, so nothing here needs a URL."
+  echo "       Take one back with workflows.enabled in .slopstopper.yml."
+  echo ""
+fi
 echo "  🔐 Inert until you add secrets in your repo settings:"
 echo "       Doc Auto-Updater (gh-aw agentic workflow)"
 echo "         → COPILOT_GITHUB_TOKEN"

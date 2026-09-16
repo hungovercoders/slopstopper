@@ -407,7 +407,7 @@ def test_doctor_fails_when_required_tool_missing(isolated_cwd, capsys, monkeypat
 
 
 def test_doctor_skips_disabled_check_tools(isolated_cwd, capsys, monkeypatch):
-    """Missing semgrep is fine if security:sast is in workflows.disabled."""
+    """Missing semgrep is fine if this repo doesn't carry security:sast."""
     monkeypatch.setattr(
         cli.shutil, "which", lambda tool: None if tool == "semgrep" else "/x"
     )
@@ -418,7 +418,32 @@ def test_doctor_skips_disabled_check_tools(isolated_cwd, capsys, monkeypatch):
     rc = cli.main(["doctor"])
     assert rc == 0
     out = capsys.readouterr().out
-    assert "disabled in .slopstopper.yml" in out
+    assert "semgrep" in out
+    assert "doesn't carry" in out
+    assert "workflows.disabled" in out
+
+
+def test_doctor_skips_tools_for_a_check_the_profile_drops(
+    write_config, capsys, monkeypatch
+):
+    """`profile: library` drops DAST, so a missing docker isn't a failure.
+
+    Exercises the real resolution path rather than a patched
+    `_disabled_workflows`, including the explicit check → workflow map:
+    security:vulnerability:all's filename doesn't follow the naming
+    convention, so a derived mapping silently never matched it.
+    """
+    write_config("profile: library\nworkflows:\n  disabled: [ss-security-vulnerability-all-check.yml]\n")
+    monkeypatch.setattr(
+        cli.shutil,
+        "which",
+        lambda tool: None if tool in ("docker", "trivy") else "/x",
+    )
+    monkeypatch.setattr(cli, "_tool_version", lambda _: "")
+    rc = cli.main(["doctor"])
+    assert rc == 0, capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "profile: library" in out
 
 
 def test_doctor_fails_when_node_or_gh_missing(isolated_cwd, capsys, monkeypatch):

@@ -26,6 +26,39 @@
 #     in mise.toml ([tools]), the single source of truth both local runs and CI
 #     read. See the slopstopper-cli pin note below.
 
+# ── Project-shape profile ────────────────────────────────────────────
+# Not every check applies to every repo. A profile is a named preset for
+# `workflows.disabled` (below): it switches off the checks a repo of that
+# shape has no use for. Shipped profiles:
+#
+#   ui       A site or app that serves HTML to a browser. Every check
+#            applies. This is the default when `profile:` is unset, so an
+#            existing install is unaffected by this key arriving.
+#   api      JSON/gRPC endpoints with no browser-rendered surface. Drops
+#            the eight browser-and-SEO reliability checks (smoke,
+#            accessibility, Core Web Vitals, SEO, broken links, llms.txt,
+#            robots.txt, sitemap) — they assume HTML and a public web
+#            surface, so on an API they fail rather than no-op. Keeps DAST
+#            (ZAP scans an API fine) and CSP exceptions (APIs still set
+#            response headers; that check stays inert until you set
+#            headers.source above).
+#   library  A library, CLI or package with no deployed surface at all.
+#            Drops everything that needs a URL: the eight above plus DAST
+#            and CSP exceptions, leaving the static-analysis layer.
+#
+# A profile only ever subtracts. `workflows.disabled` adds to its set and
+# `workflows.enabled` takes an individual check back out of it, so the
+# preset is a starting point, not a cage:
+#
+#   effective = (profile − workflows.enabled) ∪ workflows.disabled
+#
+# install.sh derives the installed workflow set from this key on every
+# run, so switching profile and re-running adds or removes the workflows
+# to match. `install.sh --profile api` writes the key for you;
+# `slopstopper profile show` reports what a repo currently resolves to,
+# and `slopstopper profile detect` suggests one from the repo's contents.
+profile: ui
+
 # ── slopstopper-cli version pin ──────────────────────────────────────
 # The CLI version is NOT pinned here. It lives in mise.toml ([tools]
 # "pipx:slopstopper-cli"), the single source of truth that both local runs
@@ -218,9 +251,20 @@ hygiene:
 #       - 'tailwind.config.*'
 #       - 'package.json'
 
-# ── Workflows to skip on this repo ───────────────────────────────────
-# install.sh removes any workflow named here from .github/workflows/
-# (and remembers the deletion via .ss/.workflows-installed so re-runs
-# don't bring them back). Same semantics as manually deleting the file.
+# ── Workflows to skip / keep on this repo ────────────────────────────
+# install.sh removes any workflow named `disabled` here from
+# .github/workflows/ (and remembers the deletion via
+# .ss/.workflows-installed so re-runs don't bring them back). Same
+# semantics as manually deleting the file.
+#
+# `enabled` is the escape hatch for the `profile:` preset above: a
+# workflow listed there is installed even if the profile drops it. Use it
+# when your repo is mostly one shape but wants one check back — an API
+# that also serves a docs site and wants broken-links, say. It has no
+# effect on a workflow you also list under `disabled` (an explicit
+# disable wins) and none on `ui`, which drops nothing.
+#
+# Names may be given with or without the `.yml` extension.
 workflows:
   disabled: []
+  enabled: []
