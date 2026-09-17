@@ -174,7 +174,7 @@ jobs:
         if: github.event_name == 'pull_request' && always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: slopstopper emit reliability:cwv --target pr-comment
+        run: slopstopper emit reliability:cwv --target pr-comment --status ${{ steps.cwv.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete
 
       - name: Open / update issue on CWV failure (main / schedule / deploy)
         if: |

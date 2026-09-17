@@ -90,7 +90,7 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: slopstopper emit security:sast --target pr-comment
+        run: slopstopper emit security:sast --target pr-comment --status ${{ steps.gate.outputs.errors_found == '1' && 'fail' || 'pass' }} --on-pass=delete
 
       - name: Emit issue on main (if error-severity findings)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.gate.outputs.errors_found == '1'

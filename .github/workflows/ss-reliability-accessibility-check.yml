@@ -185,7 +185,7 @@ jobs:
         if: github.event_name == 'pull_request' && always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: slopstopper emit reliability:accessibility --target pr-comment
+        run: slopstopper emit reliability:accessibility --target pr-comment --status ${{ steps.audit.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete
 
       - name: Emit issue on accessibility failure (main)
         if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'

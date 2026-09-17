@@ -53,6 +53,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from slopstopper import comment as comment_mod
+
 
 def _gh_available() -> bool:
     return shutil.which("gh") is not None
@@ -81,6 +83,47 @@ def _pr_number_from_event() -> int | None:
     return None
 
 
+def _event_payload() -> dict:
+    """The workflow event payload, or {} when unreadable."""
+    path = os.environ.get("GITHUB_EVENT_PATH")
+    if not path:
+        return {}
+    try:
+        payload = json.loads(Path(path).read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _head_sha() -> str | None:
+    """The PR head commit, not the synthetic merge commit.
+
+    On a `pull_request` event $GITHUB_SHA is the merge commit, which is
+    not a SHA a reviewer can find in the branch — so prefer the payload's
+    head sha and fall back to the env var for push/workflow_run.
+    """
+    event = _event_payload()
+    pr = event.get("pull_request")
+    if isinstance(pr, dict):
+        head = pr.get("head")
+        if isinstance(head, dict) and head.get("sha"):
+            return str(head["sha"])
+    run = event.get("workflow_run")
+    if isinstance(run, dict) and run.get("head_sha"):
+        return str(run["head_sha"])
+    return os.environ.get("GITHUB_SHA")
+
+
+def _run_url() -> str | None:
+    """Link to the run that produced this comment, when in Actions."""
+    server = os.environ.get("GITHUB_SERVER_URL")
+    repo = _repo_slug()
+    run_id = os.environ.get("GITHUB_RUN_ID")
+    if not (server and repo and run_id):
+        return None
+    return f"{server}/{repo}/actions/runs/{run_id}"
+
+
 def _gh(*args: str, capture: bool = False) -> subprocess.CompletedProcess[str]:
     """Run `gh` with stdout/stderr passthrough (or captured)."""
     cmd = ["gh", *args]
@@ -103,19 +146,27 @@ def _list_pr_comments(repo: str, pr: int) -> list[dict]:
     return data if isinstance(data, list) else []
 
 
-def _find_existing_pr_comment(comments: list[dict], discriminator: str) -> int | None:
-    """Return the comment id whose body contains the discriminator and was posted by a bot."""
-    for comment in comments:
-        if not isinstance(comment, dict):
-            continue
-        user = comment.get("user") or {}
-        if user.get("type") != "Bot":
-            continue
-        body = comment.get("body") or ""
-        if discriminator in body:
-            cid = comment.get("id")
-            if isinstance(cid, int):
-                return cid
+def _find_existing_pr_comment(
+    comments: list[dict], discriminator: str, marker: str | None = None
+) -> int | None:
+    """Id of the bot comment for this check, or None.
+
+    Matches the hidden marker first — exact, and stable even if the
+    report's headings change — then falls back to the discriminator
+    substring so comments posted before markers existed are still found
+    and updated rather than duplicated.
+    """
+    for needle in ([marker] if marker else []) + [discriminator]:
+        for entry in comments:
+            if not isinstance(entry, dict):
+                continue
+            user = entry.get("user") or {}
+            if user.get("type") != "Bot":
+                continue
+            if needle and needle in (entry.get("body") or ""):
+                cid = entry.get("id")
+                if isinstance(cid, int):
+                    return cid
     return None
 
 
@@ -135,31 +186,180 @@ def _create_pr_comment(pr: int, body_path: Path) -> int:
     return result.returncode
 
 
-def emit_pr_comment(report_path: Path, discriminator: str) -> int:
-    """Post the report as a PR comment, updating any prior bot comment with the same discriminator."""
-    if not _gh_available():
-        print("❌ gh CLI is not available — needed for --target pr-comment", file=sys.stderr)
-        return 1
-    if not report_path.exists():
-        print(f"❌ Report not found at {report_path}", file=sys.stderr)
-        return 1
+def _delete_pr_comment(repo: str, comment_id: int) -> int:
+    result = _gh(
+        "api", "-X", "DELETE", f"repos/{repo}/issues/comments/{comment_id}", capture=True
+    )
+    return result.returncode
 
+
+def _pr_context() -> tuple[str, int] | None:
+    """(repo, pr_number), or None with a reason printed."""
     repo = _repo_slug()
     pr = _pr_number_from_event()
     if not repo:
         print("❌ $GITHUB_REPOSITORY is not set", file=sys.stderr)
-        return 1
+        return None
     if pr is None:
         print("❌ No PR detected from the event payload — skipping PR comment", file=sys.stderr)
+        return None
+    return repo, pr
+
+
+def _resolve_pass_action(repo: str, pr: int, discriminator: str, marker: str) -> int:
+    """--on-pass=delete: drop the stale comment, leave nothing behind."""
+    existing = _find_existing_pr_comment(_list_pr_comments(repo, pr), discriminator, marker)
+    if existing is None:
+        print("✅ Check passed and no prior comment to clean up — nothing to post")
+        return 0
+    print(f"🧹 Check passed — deleting stale PR comment {existing}")
+    return _delete_pr_comment(repo, existing)
+
+
+def emit_pr_comment(
+    report_path: Path,
+    discriminator: str,
+    *,
+    check_name: str | None = None,
+    status: str = "fail",
+    on_pass: str | None = None,
+) -> int:
+    """Upsert the compact PR comment for one check.
+
+    The body is rendered by `comment.build_body` — a verdict line, the
+    failing items, and the full report folded away — rather than being
+    the whole report verbatim. `status` comes from the workflow (the
+    check's own step outcome); with `on_pass='delete'` a passing check
+    removes its comment instead of posting one, so a green PR ends up
+    carrying only the aggregate summary.
+    """
+    if not _gh_available():
+        print("❌ gh CLI is not available — needed for --target pr-comment", file=sys.stderr)
         return 1
 
-    comments = _list_pr_comments(repo, pr)
-    existing = _find_existing_pr_comment(comments, discriminator)
+    context = _pr_context()
+    if context is None:
+        return 1
+    repo, pr = context
+    marker = comment_mod.CHECK_MARKER.format(name=check_name or "")
+
+    if status == "pass" and on_pass == "delete":
+        return _resolve_pass_action(repo, pr, discriminator, marker)
+
+    if not report_path.exists():
+        print(f"❌ Report not found at {report_path}", file=sys.stderr)
+        return 1
+
+    body = comment_mod.build_body(
+        check_name or "",
+        report_path.read_text(),
+        status=status,
+        head_sha=_head_sha(),
+        run_url=_run_url(),
+    )
+    body_path = report_path.with_suffix(".comment.md")
+    body_path.write_text(body)
+
+    existing = _find_existing_pr_comment(_list_pr_comments(repo, pr), discriminator, marker)
     if existing is not None:
         print(f"↻ Updating existing PR comment {existing}")
-        return _update_pr_comment(repo, existing, report_path)
+        return _update_pr_comment(repo, existing, body_path)
     print(f"+ Creating new PR comment on #{pr}")
-    return _create_pr_comment(pr, report_path)
+    return _create_pr_comment(pr, body_path)
+
+
+# ── aggregate PR summary ─────────────────────────────────────────
+
+
+def _summary_pr_context() -> tuple[str, int, str | None] | None:
+    """(repo, pr, head_sha) for the summary, across event types.
+
+    A `workflow_run` payload carries the PR list and head sha of the run
+    that just finished; a `pull_request` payload carries them directly.
+    """
+    repo = _repo_slug()
+    if not repo:
+        print("❌ $GITHUB_REPOSITORY is not set", file=sys.stderr)
+        return None
+
+    pr = _pr_number_from_event()
+    event = _event_payload()
+    run = event.get("workflow_run")
+    if pr is None and isinstance(run, dict):
+        prs = run.get("pull_requests")
+        if isinstance(prs, list) and prs and isinstance(prs[0], dict):
+            number = prs[0].get("number")
+            if isinstance(number, int):
+                pr = number
+    if pr is None:
+        print(
+            "ℹ️  No pull request associated with this event — nothing to summarise",
+            file=sys.stderr,
+        )
+        return None
+    return repo, pr, _head_sha()
+
+
+def _list_workflow_runs(repo: str, head_sha: str) -> list[dict]:
+    """Every workflow run recorded against a commit."""
+    result = _gh(
+        "api",
+        "--paginate",
+        f"repos/{repo}/actions/runs?head_sha={head_sha}&per_page=100",
+        "--jq",
+        ".workflow_runs[]",
+        capture=True,
+    )
+    if result.returncode != 0:
+        print(f"❌ Could not list workflow runs for {head_sha}", file=sys.stderr)
+        return []
+    runs = []
+    for line in result.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(entry, dict):
+            runs.append(entry)
+    return runs
+
+
+def emit_pr_summary() -> int:
+    """Upsert the single aggregate status comment for the PR.
+
+    Reads the workflow runs GitHub already recorded for the head commit,
+    so it needs no coordination with the individual check workflows and
+    cannot race them into a half-written comment.
+    """
+    if not _gh_available():
+        print("❌ gh CLI is not available — needed for the PR summary", file=sys.stderr)
+        return 1
+
+    context = _summary_pr_context()
+    if context is None:
+        return 0  # not a PR: nothing to do, and not an error
+    repo, pr, head_sha = context
+    if not head_sha:
+        print("❌ Could not resolve the head commit for this PR", file=sys.stderr)
+        return 1
+
+    runs = _list_workflow_runs(repo, head_sha)
+    body = comment_mod.build_summary(runs, head_sha=head_sha)
+    body_path = Path(".ss/reports/pr-summary.md")
+    body_path.parent.mkdir(parents=True, exist_ok=True)
+    body_path.write_text(body)
+
+    existing = _find_existing_pr_comment(
+        _list_pr_comments(repo, pr), comment_mod.SUMMARY_MARKER
+    )
+    if existing is not None:
+        print(f"↻ Updating PR summary comment {existing}")
+        return _update_pr_comment(repo, existing, body_path)
+    print(f"+ Creating PR summary comment on #{pr}")
+    return _create_pr_comment(pr, body_path)
 
 
 # ── Issue emission ───────────────────────────────────────────────
@@ -309,6 +509,7 @@ def emit(
     *,
     check_name: str | None = None,
     on_pass: str | None = None,
+    status: str = "fail",
 ) -> int:
     """Route --target {pr-comment, issue} to the corresponding emitter.
 
@@ -320,7 +521,13 @@ def emit(
     """
     report_path = Path(meta["report_path"])
     if target == "pr-comment":
-        return emit_pr_comment(report_path, meta["comment_discriminator"])
+        return emit_pr_comment(
+            report_path,
+            meta["comment_discriminator"],
+            check_name=check_name,
+            status=status,
+            on_pass=on_pass,
+        )
     if target == "issue":
         if on_pass == "close":
             return _close_issue(

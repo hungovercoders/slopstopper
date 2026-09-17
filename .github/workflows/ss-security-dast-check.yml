@@ -88,7 +88,7 @@ jobs:
         if: github.event_name == 'pull_request' && always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: slopstopper emit security:dast --target pr-comment
+        run: slopstopper emit security:dast --target pr-comment --status ${{ steps.dast.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete
 
       - name: Emit issue on main (if blocking alerts)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.dast.outcome == 'failure'
