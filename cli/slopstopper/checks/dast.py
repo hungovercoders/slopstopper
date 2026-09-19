@@ -1,4 +1,4 @@
-"""Dynamic Application Security Testing (OWASP ZAP baseline scan).
+"""Dynamic Application Security Testing (OWASP ZAP).
 
 Ports the bash security:dast flow:
 
@@ -12,9 +12,33 @@ Ports the bash security:dast flow:
   + python3 .ss/scripts/generate-dast-md.py
   + python3 .ss/scripts/check-dast-alerts.py
 
-into one self-contained check. The only check today that takes a CLI
-arg (`--target URL`); plumbed through `slopstopper run security:dast
--- --target https://example.com`.
+into one self-contained check. Takes a CLI arg (`--target URL`);
+plumbed through `slopstopper run security:dast -- --target
+https://example.com`.
+
+Two scan modes, picked by whether an OpenAPI spec is configured:
+
+  baseline (default)
+      `zap-baseline.py -t <target>` spiders the site from a root URL.
+      Right for an HTML surface, useless against a JSON API — there are
+      no links to crawl, so it reports next to nothing.
+
+  api (when `api.openapi.spec` or `--spec` is set)
+      `zap-api-scan.py -t <spec> -f openapi` reads the spec and
+      exercises the operations it declares. `-O` overrides the host in
+      the spec so a spec naming production can be scanned against a
+      preview URL.
+
+A spec may be a URL or a repo-relative file. A file is staged into the
+already-mounted report directory rather than adding a second bind mount
+(ZAP only sees `/zap/wrk/`), and removed afterwards.
+
+Configuration (.slopstopper.yml):
+
+    api:
+      openapi:
+        spec:            # URL or repo-relative path; unset → baseline mode
+        host_override:   # true (default) to pass the target as ZAP's -O
 
 ZAP is Apache-2.0. Subprocess-invokes `docker` to run the official
 ZAP image — slopstopper-cli wheel ships zero ZAP code.
@@ -27,9 +51,11 @@ the full rules. The swallowed-CSP block is prepended to the report
 MD so the PR bot comment keeps showing what got filtered.
 
 Exit codes:
-  0 — ZAP ran and the gate found no blocking alerts
+  0 — ZAP ran and the gate found no blocking alerts, or API mode was
+      requested with no spec configured (graceful skip)
   1 — gate found blocking alerts (riskcode >= 2 on a non-swallowed
       finding) OR Docker not installed / localhost not reachable
+      OR the configured spec file does not exist
   2 — ZAP report missing or unparseable (treat as misconfig)
 """
 
@@ -47,7 +73,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from slopstopper import dast_gate, output
+from slopstopper import config, dast_gate, output
 
 REPORT_DIR = Path(".ss/reports/dast")
 REPORT_JSON = REPORT_DIR / "dast-report.json"
@@ -86,6 +112,20 @@ def _parse_args(args: list[str] | None) -> argparse.Namespace:
         help="Site URL to scan (alternative to --target; e.g. http://localhost:8080)",
     )
     p.add_argument("--target", default=DEFAULT_TARGET, help="Site URL to scan (default: http://localhost:8080)")
+    p.add_argument(
+        "--spec",
+        default=None,
+        help=(
+            "OpenAPI spec (URL or repo-relative file). Switches the scan from "
+            "ZAP's site spider to its API scan, which is the only mode that "
+            "finds anything on a JSON API"
+        ),
+    )
+    p.add_argument(
+        "--no-host-override",
+        action="store_true",
+        help="Don't pass the target as ZAP's -O host override in API mode",
+    )
     p.add_argument("--help", "-h", action="help")
     return p.parse_args(args or [])
 
@@ -145,9 +185,56 @@ def _docker_host_target(target: str) -> str:
     return f"http://{host}:{port}"
 
 
-def _run_zap(target: str) -> None:
+# ── OpenAPI spec resolution ──────────────────────────────────────
+
+
+STAGED_SPEC_NAME = "openapi-spec"
+
+
+def _resolve_spec(flag_spec: str | None) -> str | None:
+    """The configured OpenAPI spec, or None for baseline mode."""
+    spec = flag_spec or config.get("api.openapi.spec")
+    spec = str(spec).strip() if spec else ""
+    return spec or None
+
+
+def _spec_is_url(spec: str) -> bool:
+    return spec.startswith("http://") or spec.startswith("https://")
+
+
+def _stage_spec_file(spec: str) -> str | None:
+    """Copy a local spec into the mounted report dir so ZAP can read it.
+
+    The container only sees `/zap/wrk/`, which is bound to the report
+    directory. Staging the spec there keeps the invocation to a single
+    bind mount and avoids quoting an arbitrary host path into it.
+    Returns the container-side path, or None when the file is missing.
+    """
+    source = Path(spec)
+    if not source.is_file():
+        return None
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    os.chmod(REPORT_DIR, 0o777)
+    staged = REPORT_DIR / f"{STAGED_SPEC_NAME}{source.suffix or '.yaml'}"
+    shutil.copyfile(source, staged)
+    return f"/zap/wrk/{staged.name}"
+
+
+def _cleanup_staged_spec() -> None:
+    for path in REPORT_DIR.glob(f"{STAGED_SPEC_NAME}.*"):
+        path.unlink(missing_ok=True)
+
+
+def _zap_command(
+    target: str,
+    *,
+    spec: str | None = None,
+    host_override: bool = True,
+) -> list[str]:
+    """Build the docker invocation for whichever scan mode applies.
+
+    Split out from `_run_zap` so the command can be asserted in tests —
+    ZAP itself needs a Docker daemon, which CI sandboxes often lack.
+    """
     cmd = [
         "docker", "run", "--rm",
         "-v", f"{Path.cwd() / REPORT_DIR}:/zap/wrk/:rw",
@@ -155,16 +242,29 @@ def _run_zap(target: str) -> None:
     rules_path = Path(".zap/rules.tsv")
     if rules_path.exists():
         cmd += ["-v", f"{Path.cwd() / '.zap'}:/zap/wrk/.zap:ro"]
-    cmd += [
-        "ghcr.io/zaproxy/zaproxy:stable",
-        "zap-baseline.py",
-        "-t", target,
-        "-J", "dast-report.json",
-        "-I",
-    ]
+    cmd += ["ghcr.io/zaproxy/zaproxy:stable"]
+
+    if spec:
+        cmd += ["zap-api-scan.py", "-t", spec, "-f", "openapi"]
+        if host_override and target:
+            # The spec's own `servers` block usually names production; -O
+            # points the same operations at whatever we're actually scanning.
+            cmd += ["-O", target]
+    else:
+        cmd += ["zap-baseline.py", "-t", target]
+
+    cmd += ["-J", "dast-report.json", "-I"]
     if rules_path.exists():
         cmd += ["-c", ".zap/rules.tsv"]
-    subprocess.run(cmd, check=False)
+    return cmd
+
+
+def _run_zap(target: str, *, spec: str | None = None, host_override: bool = True) -> None:
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    os.chmod(REPORT_DIR, 0o777)
+    subprocess.run(
+        _zap_command(target, spec=spec, host_override=host_override), check=False
+    )
 
 
 def _read_data() -> dict:
@@ -314,7 +414,20 @@ def run(args: list[str] | None = None) -> int:
 
     parsed = _parse_args(args)
     target = parsed.url_positional or parsed.target
-    output.status("🌐", f"Running DAST analysis against {target}…")
+    spec = _resolve_spec(parsed.spec)
+
+    scan_spec = spec
+    if spec and not _spec_is_url(spec):
+        scan_spec = _stage_spec_file(spec)
+        if scan_spec is None:
+            output.error(f"OpenAPI spec not found: {spec}")
+            output._emit("   Set api.openapi.spec to a file in the repo, or to a URL.")
+            return 1
+
+    mode = "API scan (OpenAPI)" if spec else "baseline scan"
+    output.status("🌐", f"Running DAST {mode} against {target}…")
+    if spec:
+        output._emit(f"   Spec: {spec}")
 
     server_proc: subprocess.Popen | None = None
     try:
@@ -325,7 +438,10 @@ def run(args: list[str] | None = None) -> int:
                 output._emit("   Start your app's server first, then re-run.")
                 return 1
 
-        _run_zap(target)
+        host_override = not parsed.no_host_override and bool(
+            config.get("api.openapi.host_override", True)
+        )
+        _run_zap(target, spec=scan_spec, host_override=host_override)
         data = _read_data()
         if not data:
             output.error("ZAP report missing or unparseable")
@@ -336,3 +452,4 @@ def run(args: list[str] | None = None) -> int:
     finally:
         if server_proc is not None:
             server_proc.terminate()
+        _cleanup_staged_spec()

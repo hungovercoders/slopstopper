@@ -159,18 +159,22 @@ workflows a repo of that shape shouldn't carry.
 | Profile | Shape | Drops |
 | ------- | ----- | ----- |
 | `ui` (default) | Serves HTML to a browser | Nothing — every check applies |
-| `api` | JSON/gRPC endpoints, no browser surface | The eight browser-and-SEO checks, plus DAST. Keeps the two API checks and CSP exceptions (APIs still set response headers) |
+| `api` | JSON/gRPC endpoints, no browser surface | The eight browser-and-SEO checks. Keeps the two API checks, CSP exceptions (APIs still set response headers) and DAST, via ZAP's OpenAPI mode |
 | `library` | Library, CLI or package; nothing deployed | The eight above, plus DAST, CSP exceptions and the two API checks — everything that needs a URL |
 
-**DAST is dropped from `api` because the shipped implementation can't scan an
-API yet, not because an API doesn't need it.** Two things block it: the
-workflow builds the repo and serves it on `localhost:8080` rather than
-resolving a URL, and the check runs ZAP's **baseline** scan, which *spiders a
-site from a root URL* — against a JSON API there are no links to follow, so it
-finds next to nothing. ZAP's API mode is a separate entry point
-(`zap-api-scan`, driven by `-f openapi`) that reads the spec instead. Until that lands (see the
-increment note below), an API repo should treat dynamic security testing as
-uncovered by this suite rather than as handled.
+**DAST scans an API through ZAP's OpenAPI mode.** The default scan is ZAP's
+*baseline*, which spiders a site from a root URL — right for an HTML surface,
+useless against a JSON API, which exposes no links to crawl. Setting
+`api.openapi.spec` switches the check to ZAP's API scan (`-f openapi`), which
+reads the spec and exercises the operations it declares. The scanned URL is
+passed as ZAP's `-O` host override, so a spec whose `servers` block names
+production can be run against a preview environment.
+
+Until a spec is configured the check skips rather than scanning nothing — the
+same "unconfigured is not failing" contract as the other API checks. The
+workflow branches the same way: with a spec it audits a resolved URL
+(`urls.preview` on PRs, `urls.production` on main), and without one it keeps
+the original path of building the repo and serving it on `localhost:8080`.
 
 ```bash
 bash install.sh --profile api      # writes `profile: api` into .slopstopper.yml
@@ -219,9 +223,9 @@ visibly red). When signals conflict, UI wins for the same reason.
 don't apply; it doesn't add the ones that should. The API-shaped analogues don't
 exist yet — OpenAPI spec↔routes drift (the analogue of docs-accuracy),
 health-endpoint smoke with response-schema assertions (smoke), CORS and JSON
-response-header audit (CSP exceptions), a latency/payload budget (Core Web
-Vitals), and ZAP's API-scan mode driven by the spec (DAST). Those are the next
-increment, not a gap in the profile mechanism.
+response-header audit (CSP exceptions), and a latency/payload budget (Core Web
+Vitals). Those are the next increment, not a gap in the profile mechanism.
+(API health, API headers and ZAP's spec-driven API scan have since landed.)
 
 ## PR feedback: one summary, compact detail
 

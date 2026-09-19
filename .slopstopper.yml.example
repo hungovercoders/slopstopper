@@ -38,12 +38,11 @@
 #            the eight browser-and-SEO reliability checks (smoke,
 #            accessibility, Core Web Vitals, SEO, broken links, llms.txt,
 #            robots.txt, sitemap) — they assume HTML and a public web
-#            surface, so on an API they fail rather than no-op. Also drops
-#            DAST: the shipped workflow builds and serves a site, and the
-#            scan spiders from a root URL, so it cannot audit an API yet —
-#            a tooling gap, not a judgement that APIs don't need DAST.
-#            Keeps the two API checks (api-health, api-headers — see the
-#            `api:` block below) and CSP exceptions
+#            surface, so on an API they fail rather than no-op. Keeps the
+#            two API checks (api-health, api-headers — see the `api:`
+#            block below), DAST (which scans an API via ZAP's OpenAPI
+#            mode once you set api.openapi.spec, and skips until you do)
+#            and CSP exceptions
 #            (APIs still set response headers; that check stays inert
 #            until you set headers.source above).
 #   library  A library, CLI or package with no deployed surface at all.
@@ -181,6 +180,24 @@ api:
     # a note and never enforced. This is not a latency check; it's a
     # guard against a health endpoint that's doing far too much work.
     max_response_ms:
+
+  # ── security:dast (API scan mode) ──────────────────────────────────
+  # ZAP's default baseline scan spiders a site from a root URL, which
+  # finds nothing on a JSON API — there are no links to crawl. Point this
+  # at an OpenAPI spec and security:dast switches to ZAP's API scan,
+  # which exercises the operations the spec declares instead.
+  #
+  # Unset (default) → the baseline scan, unchanged. On an `api` profile
+  # with no spec the DAST workflow skips rather than scanning nothing.
+  openapi:
+    # URL or repo-relative file, e.g. https://api.example.com/openapi.json
+    # or openapi.yaml. A local file is staged into ZAP's mounted report
+    # directory for the run and removed afterwards.
+    spec:
+    # Pass the scanned URL as ZAP's -O host override, so a spec whose
+    # `servers` block names production can be scanned against a preview
+    # environment. Set false if your spec already names the right host.
+    host_override: true
 
   # ── security:api-headers ───────────────────────────────────────────
   # Audits response headers and CORS policy. On an HTML surface CSP is the
