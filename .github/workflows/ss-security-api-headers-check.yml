@@ -127,4 +127,4 @@ jobs:
         if: github.event_name == 'pull_request' && steps.url.outputs.skip == 'false' && always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: slopstopper emit security:api-headers --target pr-comment
+        run: slopstopper emit security:api-headers --target pr-comment --status ${{ steps.audit.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete

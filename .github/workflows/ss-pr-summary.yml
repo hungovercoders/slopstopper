@@ -1,0 +1,89 @@
+name: SlopStopper · PR Summary
+
+# Posts ONE comment per pull request summarising every slopstopper check,
+# so a reviewer sees "2 of 22 failed" instead of scrolling 22 comment
+# cards. Green PRs get a three-line comment; red ones lead with a table of
+# just the failures and fold the rest away.
+#
+# Why `workflow_run` rather than running inside each check: the summary is
+# built from the workflow runs GitHub already recorded for the head commit
+# (`slopstopper summary`), so it needs no coordination with the checks and
+# cannot race them into a half-written comment. It re-renders after every
+# check finishes, converging on the full picture.
+#
+# `workflow_run` only fires for workflows on the default branch, and the
+# triggering list below has to name each workflow explicitly — globs aren't
+# supported. Add a row when you add a check workflow.
+#
+# Permissions note: `workflow_run` runs in the base-repo context with a
+# token that can write PR comments even for fork PRs. It never checks out
+# or executes PR code — it only reads run conclusions via the API — so the
+# usual `pull_request_target` footgun doesn't apply here.
+
+on:
+  workflow_run:
+    types: [completed]
+    workflows:
+      - "SlopStopper · Code Complexity Check"
+      - "SlopStopper · Hygiene - CSP Exceptions Drift Check"
+      - "SlopStopper · Hygiene - Documentation Accuracy Check"
+      - "SlopStopper · Documentation Size Monitor"
+      - "SlopStopper · Hygiene - Documentation Structure Check"
+      - "SlopStopper · Hygiene - Entry-File Budget Check"
+      - "SlopStopper · Hygiene - Auto Label PRs"
+      - "SlopStopper · Accessibility Check"
+      - "SlopStopper · API Health Check"
+      - "SlopStopper · Broken Links Check"
+      - "SlopStopper · Core Web Vitals"
+      - "SlopStopper · llms.txt Check"
+      - "SlopStopper · robots.txt Check"
+      - "SlopStopper · SEO Metatag Check"
+      - "SlopStopper · sitemap Check"
+      - "SlopStopper · Reliability Smoke Tests"
+      - "SlopStopper · API Headers Check"
+      - "SlopStopper · DAST Analysis"
+      - "SlopStopper · SAST Analysis"
+      - "SlopStopper · Secrets Detection"
+      - "SlopStopper · Dependency Vulnerability Scan"
+      - "SlopStopper · Dependency review"
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+
+concurrency:
+  # One summary render at a time per PR head, and never cancel a render:
+  # the last one to run is the one that has every check's conclusion.
+  group: ss-pr-summary-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  summary:
+    name: Summarise check status on the PR
+    # Only for runs that belong to a pull request. A push to main has no
+    # PR to comment on, and `slopstopper summary` exits 0 in that case
+    # anyway — this just skips the job entirely.
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Set up slopstopper toolchain
+        uses: jdx/mise-action@v2
+
+      - name: Install slopstopper-cli from source (slopstopper.dev only)
+        if: ${{ hashFiles('cli/pyproject.toml') != '' }}
+        run: pip install -e ./cli
+
+      - name: Upsert the PR status summary
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: slopstopper summary --target pr-comment

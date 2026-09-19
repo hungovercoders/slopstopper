@@ -89,8 +89,15 @@ def test_emit_pr_comment_fails_when_gh_missing(monkeypatch, isolated_cwd, capsys
 
 
 def test_emit_pr_comment_fails_when_report_missing(monkeypatch, isolated_cwd, capsys):
+    """A missing report is still an error on the posting path.
+
+    The check now runs *after* PR resolution, because `--on-pass=delete`
+    has to be able to clean up a stale comment when the report is gone.
+    """
     monkeypatch.setattr(emit, "_gh_available", lambda: True)
-    rc = emit.emit_pr_comment(Path("nonexistent.md"), "discrim")
+    monkeypatch.setattr(emit, "_repo_slug", lambda: "owner/repo")
+    monkeypatch.setattr(emit, "_pr_number_from_event", lambda: 42)
+    rc = emit.emit_pr_comment(Path("nonexistent.md"), "discrim", check_name="hygiene:docs-size")
     assert rc == 1
     assert "Report not found" in capsys.readouterr().err
 
@@ -423,14 +430,18 @@ def test_close_issue_searches_with_augmented_labels(monkeypatch):
 def test_emit_routes_pr_comment(monkeypatch):
     called: dict = {}
 
-    def fake_pr(report_path, discrim):
-        called["pr"] = (report_path, discrim)
+    def fake_pr(report_path, discrim, **kwargs):
+        called["pr"] = (report_path, discrim, kwargs)
         return 0
 
     monkeypatch.setattr(emit, "emit_pr_comment", fake_pr)
-    rc = emit.emit("pr-comment", SAMPLE_META)
+    rc = emit.emit("pr-comment", SAMPLE_META, check_name="hygiene:docs-size", status="pass")
     assert rc == 0
     assert called["pr"][1] == "📚 Test Report"
+    # status and check_name have to reach the emitter: they pick the verdict
+    # line and the comment marker respectively.
+    assert called["pr"][2]["status"] == "pass"
+    assert called["pr"][2]["check_name"] == "hygiene:docs-size"
 
 
 def test_emit_routes_issue(monkeypatch):
@@ -544,3 +555,224 @@ def test_every_check_has_meta():
         "or add the check name to EMIT_EXEMPT in this test with a documented "
         "reason."
     )
+
+
+# ── compact PR comments + delete-on-pass ─────────────────────────
+
+
+def _pr_env(monkeypatch, comments=None):
+    """Stub the gh boundary and PR context; record every gh call."""
+    calls = []
+
+    def fake_gh(*args, capture=False):
+        calls.append(args)
+        import subprocess as sp
+
+        return sp.CompletedProcess(list(args), 0, stdout="", stderr="")
+
+    monkeypatch.setattr(emit, "_gh_available", lambda: True)
+    monkeypatch.setattr(emit, "_repo_slug", lambda: "owner/repo")
+    monkeypatch.setattr(emit, "_pr_number_from_event", lambda: 42)
+    monkeypatch.setattr(emit, "_list_pr_comments", lambda repo, pr: comments or [])
+    monkeypatch.setattr(emit, "_gh", fake_gh)
+    return calls
+
+
+def _bot_comment(cid, body):
+    return {"id": cid, "user": {"type": "Bot"}, "body": body}
+
+
+def test_pr_comment_body_is_compact_not_the_whole_report(monkeypatch, isolated_cwd):
+    calls = _pr_env(monkeypatch)
+    report = isolated_cwd / "r.md"
+    report.write_text("# Big Report\n\n" + "\n".join(f"line {i}" for i in range(200)))
+
+    assert emit.emit_pr_comment(report, "Big Report", check_name="reliability:seo", status="fail") == 0
+
+    body = (isolated_cwd / "r.comment.md").read_text()
+    assert body.startswith("### ❌ SEO")
+    assert "<details>" in body
+    # posted via `gh pr comment --body-file <the compact body>`, not the report
+    assert any("pr" in c and "comment" in c for c in calls)
+
+
+def test_pass_with_on_pass_delete_removes_the_comment(monkeypatch, isolated_cwd):
+    marker = "<!-- slopstopper:check=reliability:seo -->"
+    calls = _pr_env(monkeypatch, comments=[_bot_comment(7, f"### ❌ SEO\n{marker}")])
+    report = isolated_cwd / "r.md"
+    report.write_text("# R\n")
+
+    rc = emit.emit_pr_comment(
+        report, "SEO", check_name="reliability:seo", status="pass", on_pass="delete"
+    )
+    assert rc == 0
+    deletes = [c for c in calls if "DELETE" in c]
+    assert deletes, f"expected a DELETE call, got {calls}"
+    assert "repos/owner/repo/issues/comments/7" in deletes[0]
+
+
+def test_pass_with_on_pass_delete_is_a_noop_when_nothing_posted(monkeypatch, isolated_cwd, capsys):
+    calls = _pr_env(monkeypatch, comments=[])
+    report = isolated_cwd / "r.md"
+    report.write_text("# R\n")
+
+    rc = emit.emit_pr_comment(
+        report, "SEO", check_name="reliability:seo", status="pass", on_pass="delete"
+    )
+    assert rc == 0
+    assert not calls, "nothing to delete means no gh calls at all"
+    assert "no prior comment" in capsys.readouterr().out
+
+
+def test_warn_is_not_treated_as_a_pass_for_deletion(monkeypatch, isolated_cwd):
+    """An advisory check with findings must keep its comment."""
+    calls = _pr_env(monkeypatch, comments=[_bot_comment(4, "<!-- slopstopper:check=hygiene:docs-size -->")])
+    report = isolated_cwd / "r.md"
+    report.write_text("# Docs\n\n⚠️  27 files\n")
+
+    rc = emit.emit_pr_comment(
+        report, "Docs", check_name="hygiene:docs-size", status="warn", on_pass="delete"
+    )
+    assert rc == 0
+    assert not any("DELETE" in c for c in calls)
+    assert (isolated_cwd / "r.comment.md").read_text().startswith("### ⚠️ Docs Size")
+
+
+def test_pass_without_on_pass_still_posts_a_one_line_comment(monkeypatch, isolated_cwd):
+    _pr_env(monkeypatch)
+    report = isolated_cwd / "r.md"
+    report.write_text("# R\n")
+
+    assert emit.emit_pr_comment(report, "SEO", check_name="reliability:seo", status="pass") == 0
+    body = (isolated_cwd / "r.comment.md").read_text()
+    assert body.startswith("### ✅ SEO — passed")
+
+
+def test_delete_on_pass_does_not_need_the_report_to_exist(monkeypatch, isolated_cwd):
+    """The report is gone when the check short-circuited; the stale comment
+    should still be cleaned up rather than erroring."""
+    calls = _pr_env(monkeypatch, comments=[_bot_comment(3, "<!-- slopstopper:check=reliability:seo -->")])
+    rc = emit.emit_pr_comment(
+        isolated_cwd / "missing.md",
+        "SEO",
+        check_name="reliability:seo",
+        status="pass",
+        on_pass="delete",
+    )
+    assert rc == 0
+    assert any("DELETE" in c for c in calls)
+
+
+# ── comment lookup ───────────────────────────────────────────────
+
+
+def test_find_comment_prefers_the_marker_over_the_discriminator():
+    comments = [
+        _bot_comment(1, "🔎 SEO mentioned in passing"),
+        _bot_comment(2, "<!-- slopstopper:check=reliability:seo -->"),
+    ]
+    found = emit._find_existing_pr_comment(
+        comments, "🔎 SEO", "<!-- slopstopper:check=reliability:seo -->"
+    )
+    assert found == 2
+
+
+def test_find_comment_falls_back_to_discriminator_for_pre_marker_comments():
+    """Comments posted by an older CLI have no marker and must still be
+    updated in place rather than duplicated."""
+    comments = [_bot_comment(5, "# 🔎 SEO / Social-Share Metatag Report\n…")]
+    found = emit._find_existing_pr_comment(comments, "🔎 SEO", "<!-- slopstopper:check=x -->")
+    assert found == 5
+
+
+def test_find_comment_ignores_human_comments():
+    comments = [{"id": 9, "user": {"type": "User"}, "body": "<!-- slopstopper:check=x -->"}]
+    assert emit._find_existing_pr_comment(comments, "nope", "<!-- slopstopper:check=x -->") is None
+
+
+# ── head sha / run url ───────────────────────────────────────────
+
+
+def test_head_sha_prefers_the_pr_head_over_the_merge_commit(monkeypatch, tmp_path):
+    event = tmp_path / "event.json"
+    event.write_text(json.dumps({"pull_request": {"number": 1, "head": {"sha": "head123"}}}))
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+    monkeypatch.setenv("GITHUB_SHA", "merge999")
+    assert emit._head_sha() == "head123"
+
+
+def test_head_sha_reads_workflow_run_payload(monkeypatch, tmp_path):
+    event = tmp_path / "event.json"
+    event.write_text(json.dumps({"workflow_run": {"head_sha": "run123", "pull_requests": []}}))
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+    monkeypatch.delenv("GITHUB_SHA", raising=False)
+    assert emit._head_sha() == "run123"
+
+
+def test_head_sha_falls_back_to_env(monkeypatch, tmp_path):
+    event = tmp_path / "event.json"
+    event.write_text(json.dumps({}))
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+    monkeypatch.setenv("GITHUB_SHA", "push123")
+    assert emit._head_sha() == "push123"
+
+
+def test_run_url_needs_the_full_actions_context(monkeypatch):
+    monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.com")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+    monkeypatch.setenv("GITHUB_RUN_ID", "77")
+    assert emit._run_url() == "https://github.com/o/r/actions/runs/77"
+    monkeypatch.delenv("GITHUB_RUN_ID")
+    assert emit._run_url() is None
+
+
+# ── aggregate summary ────────────────────────────────────────────
+
+
+def test_summary_context_reads_the_pr_from_a_workflow_run(monkeypatch, tmp_path):
+    event = tmp_path / "event.json"
+    event.write_text(
+        json.dumps({"workflow_run": {"head_sha": "abc", "pull_requests": [{"number": 31}]}})
+    )
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    assert emit._summary_pr_context() == ("owner/repo", 31, "abc")
+
+
+def test_summary_exits_zero_when_the_event_has_no_pr(monkeypatch, tmp_path, capsys):
+    event = tmp_path / "event.json"
+    event.write_text(json.dumps({"workflow_run": {"head_sha": "abc", "pull_requests": []}}))
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setattr(emit, "_gh_available", lambda: True)
+    assert emit.emit_pr_summary() == 0
+    assert "No pull request" in capsys.readouterr().err
+
+
+def test_summary_upserts_one_comment(monkeypatch, isolated_cwd, tmp_path):
+    event = tmp_path / "event.json"
+    event.write_text(
+        json.dumps({"workflow_run": {"head_sha": "abc1234", "pull_requests": [{"number": 8}]}})
+    )
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    calls = _pr_env(monkeypatch, comments=[])
+    monkeypatch.setattr(emit, "_pr_number_from_event", lambda: None)
+    monkeypatch.setattr(
+        emit,
+        "_list_workflow_runs",
+        lambda repo, sha: [
+            {
+                "path": ".github/workflows/ss-security-sast-check.yml",
+                "conclusion": "failure",
+                "status": "completed",
+                "created_at": "2026-09-17T12:00:00Z",
+                "html_url": "https://x/1",
+            }
+        ],
+    )
+    assert emit.emit_pr_summary() == 0
+    body = Path(".ss/reports/pr-summary.md").read_text()
+    assert body.startswith("## ❌ SlopStopper — 1 of 1 check failed")
+    assert "**SAST**" in body
+    assert any("pr" in c and "comment" in c for c in calls)

@@ -788,6 +788,7 @@ GENERIC_WORKFLOWS=(
   "ss-security-vulnerability-all-check.yml"
   "ss-security-vulnerability-new-check.yml"
   "ss-workflow-failure-issue.yml"
+  "ss-pr-summary.yml"
   # Layer 2 — web-app dynamic (need a URL)
   "ss-security-dast-check.yml"
   "ss-reliability-smoke-tests.yml"

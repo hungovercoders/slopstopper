@@ -69,4 +69,4 @@ jobs:
         if: github.event_name == 'pull_request' && always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: slopstopper emit hygiene:csp-exceptions --target pr-comment
+        run: slopstopper emit hygiene:csp-exceptions --target pr-comment --status ${{ steps.check.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete

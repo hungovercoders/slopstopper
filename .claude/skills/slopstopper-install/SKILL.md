@@ -31,7 +31,7 @@ The install ships ~21 GitHub Actions workflows in one shot, pins + installs `slo
 
 | Shape | Profile | Install with | Gets |
 | ----- | ------- | ------------ | ---- |
-| Serves HTML to a browser | `ui` (default) | `bash install.sh` | everything (24 workflows) |
+| Serves HTML to a browser | `ui` (default) | `bash install.sh` | everything (24 checks) |
 | JSON/gRPC API, no browser surface | `api` | `bash install.sh --profile api` | 16 — static layer, DAST, and the two API checks (`api-health`, `api-headers`); no browser checks |
 | Library, CLI or package, nothing deployed | `library` | `bash install.sh --profile library` | 12 — the static layer only |
 
@@ -53,7 +53,7 @@ Then, whatever the shape, learn enough about the target to predict where it'll b
    ```
    to the existing Taskfile.
 
-2. **Does the target already have GitHub Actions workflows?** Slopstopper adds up to 24 new `ss-*.yml` workflows (16 under `--profile api`, 12 under `--profile library`). They're all `ss-`-prefixed so they group in the Actions UI, but the user should know they're getting that many checks running on every PR.
+2. **Does the target already have GitHub Actions workflows?** Slopstopper adds up to 25 new `ss-*.yml` workflows — 24 checks (16 under `--profile api`, 12 under `--profile library`) plus `ss-pr-summary.yml`, which posts the single status comment and ships under every profile. They're all `ss-`-prefixed so they group in the Actions UI, but the user should know they're getting that many checks running on every PR.
 
 3. **What `engines.node` does the target need?** Node is pinned in `mise.toml` (`[tools] node`) — mise installs it locally and the workflows get the same version from that pin via `jdx/mise-action` (no `setup-node` step, no repo variable). `install.sh` seeds `node = "20"` on first install and leaves any existing node pin / `.node-version` / `.nvmrc` alone. If the target needs Node 22+ (Astro 6, recent Next, SvelteKit), run `mise use node@22`. One source of truth; survives `install.sh` re-runs.
 
@@ -86,7 +86,7 @@ git status                              # must show clean
 git checkout -b chore/slopstopper-install   # or chore/slopstopper-refresh for a refresh
 ```
 
-`install.sh` adds up to 24 workflow files, a `Taskfile.ss.yml`, and `.ss/server.js` to the repo in one shot. On `main` that's an awkward 25+-file commit; on a dedicated branch the diff is reviewable and the rollback is `git checkout main && git branch -D <branch>`. If `git status` is dirty, stop and reconcile first — the installer doesn't ask before writing into `ss-*.yml` or `Taskfile.ss.yml`. On a refresh, the wipe-and-replace behaviour will clobber anything sitting in the tracked files it rewrites — commit or stash first.
+`install.sh` adds up to 25 workflow files, a `Taskfile.ss.yml`, and `.ss/server.js` to the repo in one shot. On `main` that's an awkward 25+-file commit; on a dedicated branch the diff is reviewable and the rollback is `git checkout main && git branch -D <branch>`. If `git status` is dirty, stop and reconcile first — the installer doesn't ask before writing into `ss-*.yml` or `Taskfile.ss.yml`. On a refresh, the wipe-and-replace behaviour will clobber anything sitting in the tracked files it rewrites — commit or stash first.
 
 From the target repo root, download-review-run in two steps:
 
@@ -168,7 +168,8 @@ Sanity-check the install dropped what you expect:
 - `Taskfile.yml` — created if missing (otherwise: needs manual `includes:` block per Step 1.1).
 - `.ss/server.js` — tiny static-server shim for serving the built site on `:8080` during the local loop. The **only** file the installer seeds into `.ss/` for a fresh adopter — every other CLI-managed file (Playwright specs, Playwright config, lighthouserc dev + prod) lives inside the slopstopper-cli wheel and only lands in `.ss/` if you opt in by writing a same-named override there.
 - `.ss/.workflows-installed` — manifest of installed workflows (tracks deletions on reinstall; commit this).
-- `.github/workflows/ss-*.yml` — the curated installer set, minus whatever the profile drops (24 on `ui`, 16 on `api`, 12 on `library`). Each workflow body is now ~8 lines: install CLI, `slopstopper run …`, `slopstopper emit … --target pr-comment|issue`.
+- `.github/workflows/ss-*.yml` — the curated installer set, minus whatever the profile drops (24 checks on `ui`, 16 on `api`, 12 on `library`), plus `ss-pr-summary.yml` under all three. Each workflow body is now ~8 lines: install CLI, `slopstopper run …`, `slopstopper emit … --target pr-comment|issue`.
+- `ss-pr-summary.yml` — posts **one** rolling comment per PR summarising every check (`❌ SlopStopper — 2 of 22 checks failed`, failures in a table, the rest folded). The per-check workflows post compact comments — a verdict line, the failing items, the report folded away — and **delete their comment when they pass**, so a green PR carries only the summary. Tell the user this up front: the first green PR looking "empty" of bot comments is the intended behaviour, not a broken install.
 - `.slopstopper.yml` `profile:` — the key the installer wrote (or left alone). Confirm the installed set matches it with `slopstopper profile show`: it prints the active profile, where it came from, and every workflow this repo is deliberately not carrying. Worth running before the missing-workflow comparison below — a workflow the profile dropped is *supposed* to be absent, and will otherwise read as a gap.
 - `package.json` — devDeps merged.
 - `.claude/skills/slopstopper-install/SKILL.md` + `.claude/skills/slopstopper-triage/SKILL.md` — the project-level Claude Code playbooks. Auto-discovered by Claude Code for any contributor working in this repo. Commit them.
@@ -620,6 +621,7 @@ This skill names specific files, env vars, workflow IDs, the `GENERIC_WORKFLOWS`
 Triggers that require revisiting this skill:
 
 - A workflow is added, removed, or renamed under `slopstopper/.github/workflows/ss-*.yml` → update the workflow count in the intro, Step 1.2, and Step 3; add/remove the matching local-CLI row in Step 7's Pass A or Pass B; add/remove the badge example in Step 6. Also classify it into the profiles: whether it applies to an API or a library decides which `disables` lists in `cli/slopstopper/data/profiles.json` it belongs to, and the per-profile counts quoted in Step 1.2, Step 3 and Pass B move with it. (The per-check failure entry lives in `slopstopper-triage` — update there too.)
+- A check workflow is added or renamed → its `name:` must also land in `ss-pr-summary.yml`'s `workflow_run.workflows` list, or the PR summary silently stops re-rendering when that check finishes. Check this whenever the workflow inventory in Step 3 changes.
 - A profile is added, or a profile's `disables` list changes in `cli/slopstopper/data/profiles.json` → update the shape table in Step 1's pre-flight framing, the per-profile workflow counts (Step 1.2, Step 2, Step 3), the Pass B callout in Step 7, and the `profile:` bullet in the Refresh-only knobs list.
 - A new key lands under `api:` in `.slopstopper.yml.example` → update Step 4's "Configure the API checks" block, which is the only place this skill spells that schema out.
 - The `GENERIC_WORKFLOWS` array in `slopstopper/install.sh` changes → confirm the "What just landed" inventory in Step 3 still matches.

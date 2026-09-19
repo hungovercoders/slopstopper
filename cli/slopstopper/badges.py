@@ -96,14 +96,22 @@ def _detect_owner_repo() -> tuple[str | None, str | None]:
     return None, None
 
 
+# Workflows with no status worth badging. ss-pr-summary.yml only ever runs
+# in response to a PR's checks, so on `main` its badge would permanently
+# read "no runs".
+BADGE_EXCLUDED = {"ss-pr-summary.yml"}
+
+
 def _list_installed_workflows() -> list[str]:
     workflows_dir = Path(".github/workflows")
     if not workflows_dir.exists():
         return []
-    return sorted(p.name for p in workflows_dir.glob("ss-*.yml"))
+    return sorted(
+        p.name for p in workflows_dir.glob("ss-*.yml") if p.name not in BADGE_EXCLUDED
+    )
 
 
-def _group_workflow(filename: str) -> tuple[str, str]:
+def group_workflow(filename: str) -> tuple[str, str]:
     if filename in WORKFLOW_DISPLAY:
         return WORKFLOW_DISPLAY[filename]
     m = re.match(r"^ss-(security|hygiene|reliability)-(.+?)(?:-check)?\.yml$", filename)
@@ -143,7 +151,7 @@ def _group_installed(workflows: list[str]) -> dict[str, list[tuple[str, str]]]:
     """Bucket workflows into the loop groups, preserving filename order."""
     grouped: dict[str, list[tuple[str, str]]] = {g: [] for g in GROUP_ORDER}
     for wf in workflows:
-        group, display = _group_workflow(wf)
+        group, display = group_workflow(wf)
         grouped.setdefault(group, []).append((display, wf))
     return grouped
 

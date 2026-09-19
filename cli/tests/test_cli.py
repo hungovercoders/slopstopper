@@ -63,11 +63,10 @@ def test_emit_routes_to_emit_module(monkeypatch):
     with the target, META dict, check_name, and on_pass kwargs."""
     called: dict = {}
 
-    def fake_emit(target, meta, *, check_name=None, on_pass=None):
-        called["target"] = target
-        called["meta"] = meta
-        called["check_name"] = check_name
-        called["on_pass"] = on_pass
+    def fake_emit(target, meta, *, check_name=None, on_pass=None, status="fail"):
+        called.update(
+            target=target, meta=meta, check_name=check_name, on_pass=on_pass, status=status
+        )
         return 0
 
     monkeypatch.setattr(cli.emit_mod, "emit", fake_emit)
@@ -76,13 +75,14 @@ def test_emit_routes_to_emit_module(monkeypatch):
     assert called["target"] == "issue"
     assert called["check_name"] == "hygiene:docs-size"
     assert called["on_pass"] is None
+    assert called["status"] == "fail", "default must not silently claim a pass"
     assert "comment_discriminator" in called["meta"]
 
 
 def test_emit_threads_on_pass_close_through(monkeypatch):
     called: dict = {}
 
-    def fake_emit(target, meta, *, check_name=None, on_pass=None):
+    def fake_emit(target, meta, *, check_name=None, on_pass=None, status="fail"):
         called["on_pass"] = on_pass
         return 0
 
@@ -92,10 +92,52 @@ def test_emit_threads_on_pass_close_through(monkeypatch):
     assert called["on_pass"] == "close"
 
 
-def test_emit_rejects_on_pass_with_pr_comment_target(capsys):
+def test_emit_threads_status_and_delete_through(monkeypatch):
+    called: dict = {}
+
+    def fake_emit(target, meta, *, check_name=None, on_pass=None, status="fail"):
+        called.update(on_pass=on_pass, status=status)
+        return 0
+
+    monkeypatch.setattr(cli.emit_mod, "emit", fake_emit)
+    rc = cli.main(
+        [
+            "emit", "hygiene:docs-size", "--target", "pr-comment",
+            "--status", "pass", "--on-pass=delete",
+        ]
+    )
+    assert rc == 0
+    assert called == {"on_pass": "delete", "status": "pass"}
+
+
+def test_emit_rejects_on_pass_close_with_pr_comment_target(capsys):
     rc = cli.main(["emit", "hygiene:docs-size", "--target", "pr-comment", "--on-pass=close"])
     assert rc == 2
-    assert "--on-pass is only valid with --target issue" in capsys.readouterr().err
+    assert "--on-pass=close is only valid with --target issue" in capsys.readouterr().err
+
+
+def test_emit_rejects_on_pass_delete_with_issue_target(capsys):
+    rc = cli.main(["emit", "hygiene:docs-size", "--target", "issue", "--on-pass=delete"])
+    assert rc == 2
+    assert "--on-pass=delete is only valid with --target pr-comment" in capsys.readouterr().err
+
+
+def test_summary_subcommand_routes_to_the_emitter(monkeypatch):
+    called: dict = {}
+
+    def fake_summary():
+        called["ran"] = True
+        return 0
+
+    monkeypatch.setattr(cli.emit_mod, "emit_pr_summary", fake_summary)
+    assert cli.main(["summary", "--target", "pr-comment"]) == 0
+    assert called == {"ran": True}
+
+
+def test_summary_requires_a_target(capsys):
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["summary"])
+    assert exc.value.code != 0
 
 
 def test_emit_requires_target_flag(capsys):

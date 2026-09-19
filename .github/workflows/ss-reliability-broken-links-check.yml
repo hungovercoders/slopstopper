@@ -152,6 +152,7 @@ jobs:
       - name: Run broken-link checks
         env:
           BROKEN_LINKS_PAGES: ${{ env.BROKEN_LINKS_PAGES }}
+        id: links
         run: task ss:reliability:broken-links -- ${{ steps.url.outputs.url }} --ci
 
       - name: Stop local server
@@ -173,7 +174,7 @@ jobs:
         if: github.event_name == 'pull_request' && always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: slopstopper emit reliability:broken-links --target pr-comment
+        run: slopstopper emit reliability:broken-links --target pr-comment --status ${{ steps.links.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete
 
       - name: Emit issue on broken-links failure (main)
         if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'

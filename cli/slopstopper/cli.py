@@ -9,6 +9,11 @@ Subcommands:
   run <category>:<check>            Run a check, write reports under .ss/reports/.
   emit <category>:<check> --target  Post the report to a PR comment or main-
         {pr-comment, issue}         branch tracking issue (find-or-update).
+        [--status {pass,fail}]      PR comments are compact: a verdict line, the
+        [--on-pass {close,delete}]  failing items, full report folded away.
+  summary --target pr-comment       Upsert ONE comment covering every check on
+                                    the PR, from the workflow runs GitHub
+                                    recorded for the head commit.
   discover <check> --event <e>      Resolve pages.<check> via sitemap /
                                     changed-pages / explicit list, print
                                     comma-separated paths.
@@ -79,6 +84,7 @@ Usage:  slopstopper <command> [options]
 Commands:
   run        Run a quality check (security, hygiene, reliability)
   emit       Post a check's report to a PR or main-branch issue
+  summary    Upsert the single aggregate check-status comment on a PR
   discover   Resolve pages.<check> for a reliability check
   config     Read .slopstopper.yml values
   templates  Inspect / eject bundled templates
@@ -134,6 +140,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     _add_run(sub)
     _add_emit(sub)
+    _add_summary(sub)
     _add_discover(sub)
     _add_config(sub)
     _add_templates(sub)
@@ -191,6 +198,8 @@ def _add_emit(sub) -> None:
             "  slopstopper emit hygiene:docs-size --target pr-comment\n"
             "  slopstopper emit security:dast --target issue\n"
             "  slopstopper emit security:dast --target issue --on-pass=close\n"
+            "  slopstopper emit reliability:seo --target pr-comment --status fail\n"
+            "  slopstopper emit reliability:seo --target pr-comment --status pass --on-pass=delete\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -205,13 +214,49 @@ def _add_emit(sub) -> None:
         help="Where to send the report: pr-comment | issue",
     )
     p.add_argument(
+        "--status",
+        choices=["pass", "fail", "warn"],
+        default="fail",
+        help=(
+            "The check's own outcome, as the workflow saw it (default: fail). "
+            "'warn' is for the advisory checks that report findings while exiting 0. "
+            "Drives the comment's verdict line instead of parsing the report — "
+            "pass `--status ${{ steps.<id>.outcome == 'success' && 'pass' || 'fail' }}`"
+        ),
+    )
+    p.add_argument(
         "--on-pass",
-        choices=["close"],
+        choices=["close", "delete"],
         default=None,
         help=(
-            "Post-pass behaviour (only with --target issue): "
-            "'close' comments + closes any open issue matching the check's labels"
+            "Post-pass behaviour. 'close' (--target issue) comments + closes any open "
+            "issue matching the check's labels. 'delete' (--target pr-comment) removes "
+            "the check's rolling comment, so a green PR carries only the summary"
         ),
+    )
+
+
+def _add_summary(sub) -> None:
+    p = sub.add_parser(
+        "summary",
+        help="Upsert the single aggregate SlopStopper status comment on a PR",
+        description=(
+            "Render one status comment covering every slopstopper check on the\n"
+            "pull request, from the workflow runs GitHub already recorded for the\n"
+            "head commit. Needs no coordination with the check workflows, so it\n"
+            "cannot race them: a green PR gets a three-line comment, a red one\n"
+            "leads with a table of just the failures.\n\n"
+            "Intended to run from `ss-pr-summary.yml` on `workflow_run: completed`.\n"
+            "Exits 0 when the event has no associated pull request.\n"
+        ),
+        epilog="Example:\n  slopstopper summary --target pr-comment\n",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument(
+        "--target",
+        required=True,
+        choices=["pr-comment"],
+        help="Where to send the summary (only pr-comment today)",
     )
 
 
@@ -499,7 +544,8 @@ def _add_profile(sub) -> None:
 # gains subcommands.
 _DISPATCHERS = {
     "run":       lambda a: _dispatch_run(a.check, a.check_args),
-    "emit":      lambda a: _dispatch_emit(a.check, a.target, on_pass=a.on_pass),
+    "emit":      lambda a: _dispatch_emit(a.check, a.target, on_pass=a.on_pass, status=a.status),
+    "summary":   lambda a: emit_mod.emit_pr_summary(),
     "discover":  lambda a: _dispatch_discover(a.check, a.event),
     "config":    lambda a: _dispatch_config_get(a.key, a.default),
     "templates": lambda a: _dispatch_templates(a.templates_action, getattr(a, "name", None)),
@@ -649,14 +695,22 @@ def _dispatch_templates(action: str, name: str | None) -> int:
     return 2
 
 
-def _dispatch_emit(check_name: str, target: str, *, on_pass: str | None = None) -> int:
+def _dispatch_emit(
+    check_name: str, target: str, *, on_pass: str | None = None, status: str = "fail"
+) -> int:
     """Look up the check's META dict (from its module) and emit."""
     if check_name not in REGISTRY:
         print(f"❌ unknown check: {check_name}", file=sys.stderr)
         return 2
-    if on_pass is not None and target != "issue":
+    if on_pass == "close" and target != "issue":
         print(
-            f"❌ --on-pass is only valid with --target issue (got --target {target})",
+            f"❌ --on-pass=close is only valid with --target issue (got --target {target})",
+            file=sys.stderr,
+        )
+        return 2
+    if on_pass == "delete" and target != "pr-comment":
+        print(
+            f"❌ --on-pass=delete is only valid with --target pr-comment (got --target {target})",
             file=sys.stderr,
         )
         return 2
@@ -677,7 +731,7 @@ def _dispatch_emit(check_name: str, target: str, *, on_pass: str | None = None) 
             file=sys.stderr,
         )
         return 2
-    return emit_mod.emit(target, meta, check_name=check_name, on_pass=on_pass)
+    return emit_mod.emit(target, meta, check_name=check_name, on_pass=on_pass, status=status)
 
 
 # ── checks list ──────────────────────────────────────────────────

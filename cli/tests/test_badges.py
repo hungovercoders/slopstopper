@@ -97,12 +97,12 @@ def test_list_installed_workflows_returns_empty_when_no_dir(isolated_cwd):
 
 
 def test_group_workflow_uses_curated_display():
-    assert badges._group_workflow("ss-security-sast-check.yml") == ("security", "SAST")
-    assert badges._group_workflow("ss-security-vulnerability-all-check.yml") == (
+    assert badges.group_workflow("ss-security-sast-check.yml") == ("security", "SAST")
+    assert badges.group_workflow("ss-security-vulnerability-all-check.yml") == (
         "security",
         "Dependency CVEs",
     )
-    assert badges._group_workflow("ss-workflow-failure-issue.yml") == (
+    assert badges.group_workflow("ss-workflow-failure-issue.yml") == (
         "operational",
         "Workflow Failures",
     )
@@ -110,7 +110,7 @@ def test_group_workflow_uses_curated_display():
 
 def test_group_workflow_falls_back_to_filename_derivation():
     # An imaginary new workflow not yet in WORKFLOW_DISPLAY:
-    group, display = badges._group_workflow("ss-security-future-thing-check.yml")
+    group, display = badges.group_workflow("ss-security-future-thing-check.yml")
     assert group == "security"
     assert display == "Future Thing"
 
