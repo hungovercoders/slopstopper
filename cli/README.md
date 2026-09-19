@@ -74,7 +74,7 @@ This workflow is slopstopper-internal — it is **not** part of the distributed 
 - `slopstopper/templates.py` — bundled-template resolver + `templates {list, path, eject}` API
 - `slopstopper/emit.py` — `gh` CLI wrapper for PR comment + main-branch issue emission
 - `slopstopper/discovery.py` — pages-to-audit resolver for reliability checks
-- `slopstopper/profiles.py` — project-shape profiles: resolves which workflows a repo carries (`profile:` ∪ `workflows.disabled` − `workflows.enabled`), plus the check → workflow map. `install.sh` imports this module directly, so it is the only implementation
+- `slopstopper/profiles.py` — project-shape profiles: resolves which workflows a repo carries with `(profile.disables − workflows.enabled) ∪ workflows.disabled` (explicit `workflows.disabled` wins if the same workflow is listed in both), plus the check → workflow map. `install.sh` imports this module directly, so it is the only implementation
 - `slopstopper/checks/` — one module per check; registry in `__init__.py`
 - `slopstopper/data/` — bundled Playwright specs, lighthouserc dev/prod, server.js, `profiles.json`
 

@@ -371,8 +371,8 @@ def test_report_lists_per_path_findings():
     )
     assert "❌ FAIL" in md
     assert "/health" in md
-    assert "app.example.com" in md
     assert "How to Fix" in md
+    assert "Access-Control-Allow-Origin" in md
 
 
 def test_meta_is_declared_for_emit():
