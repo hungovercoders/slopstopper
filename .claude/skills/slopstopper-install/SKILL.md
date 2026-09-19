@@ -32,7 +32,7 @@ The install ships ~21 GitHub Actions workflows in one shot, pins + installs `slo
 | Shape | Profile | Install with | Gets |
 | ----- | ------- | ------------ | ---- |
 | Serves HTML to a browser | `ui` (default) | `bash install.sh` | everything (24 checks) |
-| JSON/gRPC API, no browser surface | `api` | `bash install.sh --profile api` | 16 — static layer plus the two API checks (`api-health`, `api-headers`); no browser checks, and no DAST (its scan spiders a site, so it can't audit an API yet — flag this to the user as a real coverage gap, not a non-issue) |
+| JSON/gRPC API, no browser surface | `api` | `bash install.sh --profile api` | 17 — static layer, the two API checks (`api-health`, `api-headers`) and DAST via ZAP's OpenAPI mode; no browser checks |
 | Library, CLI or package, nothing deployed | `library` | `bash install.sh --profile library` | 12 — the static layer only |
 
 The two API checks (`reliability:api-health`, `security:api-headers`) ship under `ui` as well as `api`, and stay inert until `api.health.path` / `api.headers.paths` are set — so a UI repo with API routes (Next.js handlers, Astro endpoints) gets them without having to find `workflows.enabled`. Configuring them is Step 4.
@@ -234,11 +234,15 @@ api:
   headers:
     paths: [/health]        # empty → security:api-headers skips
     allowed_origins: [https://app.example.com]
+  openapi:
+    spec: openapi.yaml      # unset → security:dast falls back to the site
+                            # spider, which finds nothing on an API
 ```
 
 Two things to get right with the user:
 
 - **`expect_fields` is the point.** Without it, `{"status": "degraded"}` behind an HTTP 200 passes. Ask what the endpoint returns when it's genuinely healthy and encode that.
+- **`api.openapi.spec` is what gives an API repo any DAST at all.** A URL or a repo-relative file. If the target generates its spec at build time, point at the served URL so it can't drift from the routes.
 - **`allow_wildcard_cors`.** If the API is public and read-only, `Access-Control-Allow-Origin: *` is correct and the knob should be `true`. On anything credentialed, leave it `false` — and note that a wildcard sent *with* credentials fails regardless, because browsers reject that pair, so the intended policy was never being enforced.
 
 These checks need a reachable URL and never build the target locally (an API isn't a static bundle). On PRs they audit `urls.preview`; with no preview environment the PR run skips and the deployed-main / scheduled runs carry the coverage — worth saying out loud so the user isn't surprised by a skipped check on their first PR.
@@ -547,14 +551,15 @@ For each failure: fix the root cause locally, re-run **just that one check** to 
 
 ### Pass B — Dynamic checks (need a URL + a built site)
 
-**Under `--profile library` there is no Pass B** — every URL-driven check is dropped, so Pass A *is* the local loop. Under `--profile api` the browser checks and DAST are gone, so Pass B is just the two API checks:
+**Under `--profile library` there is no Pass B** — every URL-driven check is dropped, so Pass A *is* the local loop. Under `--profile api` the browser checks are gone, so Pass B is the two API checks plus DAST:
 
 ```bash
 task ss:reliability:api-health  -- https://api-preview.example.com
 task ss:security:api-headers    -- https://api-preview.example.com
+task ss:security:dast           -- https://api-preview.example.com   # needs Docker
 ```
 
-Say plainly that **an `api` repo has no dynamic security scanning from this suite**: DAST is dropped because its scan spiders a site from a root URL and the workflow serves a local build, neither of which fits an API — a tooling gap, not a sign the risk is absent. Running `task ss:security:dast` against an API by hand technically works but finds little, so don't present it as coverage.
+**DAST on an API needs `api.openapi.spec` set** (Step 4). Without it the check falls back to ZAP's baseline scan, which spiders a site from a root URL — a JSON API exposes no links to crawl, so it reports almost nothing. The workflow skips rather than scanning nothing, so an unconfigured `api` repo has **no dynamic security coverage**; say that plainly and treat pointing it at a spec as the step that closes it, not an optional extra.
 
 Run those against a **deployed** environment where you can. The CORS and HSTS headers `api-headers` audits usually come from the edge or proxy, which a local process doesn't reproduce — a clean local run is weaker evidence than a clean run against a preview URL. And if both checks report "nothing to audit — skipping", that's the unconfigured state, not a pass: go back to Step 4. `slopstopper profile show` tells you which of the commands below still have a workflow behind them; running a dropped check locally still works (the registry is complete regardless of profile), it just isn't gating anything in CI.
 

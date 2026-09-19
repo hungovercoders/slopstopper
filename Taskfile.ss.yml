@@ -348,14 +348,29 @@ tasks:
   security:dast:
     desc: Run dynamic application security testing using OWASP ZAP
     summary: |
-      Subprocess-invokes `docker run ghcr.io/zaproxy/zaproxy:stable
-      zap-baseline.py` (Docker must be running). The CLI also runs the
-      CSP-exception gate against the resulting JSON — see
-      docs/security/CSP_EXCEPTIONS.md.
+      Subprocess-invokes `docker run ghcr.io/zaproxy/zaproxy:stable`
+      (Docker must be running). The CLI also runs the CSP-exception gate
+      against the resulting JSON — see docs/security/CSP_EXCEPTIONS.md.
+
+      Two scan modes, picked by whether an OpenAPI spec is configured:
+
+        baseline (default) — ZAP spiders the site from the URL you pass.
+          Right for an HTML surface; useless on a JSON API, which exposes
+          no links to crawl.
+        API — set `api.openapi.spec` in .slopstopper.yml (or pass
+          `--spec`) and ZAP reads the spec and exercises the operations it
+          declares instead. The URL you pass becomes ZAP's -O host
+          override, so a spec naming production can be scanned against a
+          preview environment.
+
+      Flags:
+        --spec S             - OpenAPI spec: URL or repo-relative file
+        --no-host-override   - don't pass the target as ZAP's -O
 
       Usage:
         task ss:security:dast -- http://localhost:8080
         task ss:security:dast -- https://staging.example.com
+        task ss:security:dast -- https://api.example.com --spec openapi.yaml
     cmds:
       - slopstopper run security:dast -- {{.CLI_ARGS}}
 

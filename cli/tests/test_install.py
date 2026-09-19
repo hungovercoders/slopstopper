@@ -490,7 +490,6 @@ API_DROPPED = {
     "ss-reliability-llms-txt-check.yml",
     "ss-reliability-robots-txt-check.yml",
     "ss-reliability-sitemap-check.yml",
-    "ss-security-dast-check.yml",
 }
 
 
@@ -502,9 +501,10 @@ def test_profile_flag_writes_the_key_and_drops_those_workflows(tmp_path):
     assert _profile_key(target) == "api"
     installed = _installed(target)
     assert not (installed & API_DROPPED), f"api profile installed browser checks: {installed & API_DROPPED}"
-    # The static layer stays in place.
+    # The static layer stays in place, and DAST rides along: it scans an
+    # API through ZAP's OpenAPI mode and skips until a spec is configured.
     assert "ss-security-sast-check.yml" in installed
-    assert "ss-security-dast-check.yml" not in installed
+    assert "ss-security-dast-check.yml" in installed
 
 
 def test_profile_env_var_is_equivalent_to_the_flag(tmp_path):

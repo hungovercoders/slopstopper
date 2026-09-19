@@ -81,7 +81,7 @@ slopstopper serve                              # bundled static server</code></p
                 <h2>⚙️ GitHub Actions</h2>
                 <span class="tool-license">Platform</span>
                 <p>All checks run as GitHub Actions workflows triggered on every pull request and push to main. Each workflow body is ~8 lines: install the CLI, <code>slopstopper run …</code>, <code>slopstopper emit …</code>.</p>
-                <p><em>Which</em> workflows land is driven by the <code>profile:</code> key in <code>.slopstopper.yml</code> — <code>ui</code> installs all 25, <code>api</code> drops the eight browser-and-SEO checks plus DAST (whose scan spiders a site, so it can't audit an API yet), <code>library</code> also drops CSP exceptions and the two API checks. Set it with <code>install.sh --profile api</code>, inspect it with <code>slopstopper profile show</code>, and take back any single check with <code>workflows.enabled</code>.</p>
+                <p><em>Which</em> workflows land is driven by the <code>profile:</code> key in <code>.slopstopper.yml</code> — <code>ui</code> installs all 25, <code>api</code> drops the eight browser-and-SEO checks, <code>library</code> also drops DAST, CSP exceptions and the two API checks. Set it with <code>install.sh --profile api</code>, inspect it with <code>slopstopper profile show</code>, and take back any single check with <code>workflows.enabled</code>.</p>
                 <p>Feedback lands as <strong>one rolling comment per PR</strong> — <code>❌ SlopStopper — 2 of 22 checks failed</code>, failures in a table, passes folded away — rendered from the run conclusions GitHub already recorded, so it can't race the checks. Each failing check adds a compact comment (verdict line, failing items, report folded); passing checks delete theirs, so a green PR carries only the summary.</p>
                 <details class="details">
                     <summary>See it in action</summary>
@@ -226,6 +226,7 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
                 <h2>🕷️ OWASP ZAP</h2>
                 <span class="tool-license">Apache-2.0</span>
                 <p>Dynamic application security testing (DAST). Probes a running deployment for common web vulnerabilities such as XSS, injection and insecure headers.</p>
+                <p>Two modes: the <strong>baseline</strong> scan spiders an HTML site, and the <strong>API</strong> scan reads an OpenAPI spec and exercises the operations it declares — the only mode that finds anything on a JSON API, since there are no links to crawl. Point <code>api.openapi.spec</code> at your spec to switch.</p>
                 <details class="details">
                     <summary>Workflow excerpt</summary>
                     <div class="details__body">

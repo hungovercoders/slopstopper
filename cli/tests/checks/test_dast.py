@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from slopstopper.checks import dast
 
 
@@ -193,7 +195,7 @@ def test_run_returns_one_for_localhost_with_no_server(monkeypatch, isolated_cwd,
 
 
 def test_run_clean_when_no_alerts(monkeypatch, isolated_cwd, capsys):
-    def fake_zap(_target):
+    def fake_zap(_target, **_kwargs):
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps({"site": []}))
 
@@ -213,7 +215,7 @@ def test_run_with_blocking_alerts(monkeypatch, isolated_cwd, capsys):
     so blocking alerts surface as a non-zero exit. The summary and
     report content are unchanged.
     """
-    def fake_zap(_target):
+    def fake_zap(_target, **_kwargs):
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps(_zap_payload(HIGH_ALERT, MEDIUM_ALERT, LOW_ALERT)))
 
@@ -230,7 +232,7 @@ def test_run_with_blocking_alerts(monkeypatch, isolated_cwd, capsys):
 
 
 def test_run_with_only_low_or_info(monkeypatch, isolated_cwd, capsys):
-    def fake_zap(_target):
+    def fake_zap(_target, **_kwargs):
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps(_zap_payload(LOW_ALERT, INFO_ALERT)))
 
@@ -240,3 +242,172 @@ def test_run_with_only_low_or_info(monkeypatch, isolated_cwd, capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "Found 2 alert(s) — none high/medium" in out
+
+
+# ── scan-mode selection (ZAP API scan) ───────────────────────────
+
+
+def _cmd(*args, **kwargs) -> str:
+    return " ".join(dast._zap_command(*args, **kwargs))
+
+
+def test_baseline_is_the_default_mode():
+    """No spec configured → the original site spider, unchanged."""
+    cmd = _cmd("http://localhost:8080")
+    assert "zap-baseline.py" in cmd
+    assert "zap-api-scan.py" not in cmd
+    assert "-f openapi" not in cmd
+    assert "-t http://localhost:8080" in cmd
+
+
+def test_spec_switches_to_the_api_scan():
+    cmd = _cmd("https://api.example.com", spec="https://api.example.com/openapi.json")
+    assert "zap-api-scan.py" in cmd
+    assert "zap-baseline.py" not in cmd
+    # The spec is ZAP's target in API mode; the URL becomes the host override.
+    assert "-t https://api.example.com/openapi.json" in cmd
+    assert "-f openapi" in cmd
+    assert "-O https://api.example.com" in cmd
+
+
+def test_host_override_can_be_turned_off():
+    cmd = _cmd("https://api.example.com", spec="spec.yaml", host_override=False)
+    assert "-O" not in cmd.split()
+
+
+def test_both_modes_keep_the_report_and_warn_flags():
+    for cmd in (_cmd("http://x:8080"), _cmd("http://x:8080", spec="s.json")):
+        assert "-J dast-report.json" in cmd
+        assert cmd.split()[-1] == "-I"
+
+
+def test_rules_file_is_mounted_and_passed_in_both_modes(isolated_cwd):
+    (isolated_cwd / ".zap").mkdir()
+    (isolated_cwd / ".zap/rules.tsv").write_text("10038\tIGNORE\n")
+    for cmd in (_cmd("http://x:8080"), _cmd("http://x:8080", spec="s.json")):
+        assert "/zap/wrk/.zap:ro" in cmd
+        assert "-c .zap/rules.tsv" in cmd
+
+
+# ── spec resolution ──────────────────────────────────────────────
+
+
+def test_spec_comes_from_config(write_config):
+    write_config("api:\n  openapi:\n    spec: openapi.yaml\n")
+    assert dast._resolve_spec(None) == "openapi.yaml"
+
+
+def test_flag_beats_config(write_config):
+    write_config("api:\n  openapi:\n    spec: from-config.yaml\n")
+    assert dast._resolve_spec("from-flag.yaml") == "from-flag.yaml"
+
+
+def test_no_spec_anywhere_is_none(write_config):
+    write_config("urls:\n  production: https://x\n")
+    assert dast._resolve_spec(None) is None
+
+
+def test_blank_spec_is_treated_as_unset(write_config):
+    write_config("api:\n  openapi:\n    spec: '  '\n")
+    assert dast._resolve_spec(None) is None
+
+
+@pytest.mark.parametrize(
+    "spec,is_url",
+    [
+        ("https://api.example.com/openapi.json", True),
+        ("http://localhost:8080/openapi.json", True),
+        ("openapi.yaml", False),
+        ("docs/api/openapi.json", False),
+    ],
+)
+def test_spec_url_detection(spec, is_url):
+    assert dast._spec_is_url(spec) is is_url
+
+
+# ── local spec staging ───────────────────────────────────────────
+
+
+def test_local_spec_is_staged_into_the_mounted_report_dir(isolated_cwd):
+    """ZAP only sees /zap/wrk/, so a repo file has to be copied in."""
+    (isolated_cwd / "openapi.yaml").write_text("openapi: 3.0.0\n")
+    staged = dast._stage_spec_file("openapi.yaml")
+    assert staged == "/zap/wrk/openapi-spec.yaml"
+    assert (dast.REPORT_DIR / "openapi-spec.yaml").read_text() == "openapi: 3.0.0\n"
+
+
+def test_staged_spec_keeps_the_original_extension(isolated_cwd):
+    (isolated_cwd / "spec.json").write_text("{}")
+    assert dast._stage_spec_file("spec.json") == "/zap/wrk/openapi-spec.json"
+
+
+def test_missing_spec_file_stages_nothing(isolated_cwd):
+    assert dast._stage_spec_file("nope.yaml") is None
+
+
+def test_staged_spec_is_cleaned_up(isolated_cwd):
+    (isolated_cwd / "openapi.yaml").write_text("openapi: 3.0.0\n")
+    dast._stage_spec_file("openapi.yaml")
+    dast._cleanup_staged_spec()
+    assert not list(dast.REPORT_DIR.glob("openapi-spec.*"))
+
+
+# ── run() wiring ─────────────────────────────────────────────────
+
+
+def test_run_fails_clearly_when_the_spec_file_is_missing(
+    monkeypatch, isolated_cwd, write_config, capsys
+):
+    write_config("api:\n  openapi:\n    spec: missing.yaml\n")
+    monkeypatch.setattr(dast, "_docker_available", lambda: True)
+    rc = dast.run(["--target", "https://api.example.com"])
+    assert rc == 1
+    assert "OpenAPI spec not found" in capsys.readouterr().out
+
+
+def test_run_passes_the_spec_through_to_zap(monkeypatch, isolated_cwd, write_config):
+    write_config("api:\n  openapi:\n    spec: https://api.example.com/openapi.json\n")
+    seen: dict = {}
+
+    def fake_zap(target, **kwargs):
+        seen.update(target=target, **kwargs)
+        dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+        dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+
+    monkeypatch.setattr(dast, "_docker_available", lambda: True)
+    monkeypatch.setattr(dast, "_run_zap", fake_zap)
+    assert dast.run(["--target", "https://api.example.com"]) == 0
+    assert seen["spec"] == "https://api.example.com/openapi.json"
+    assert seen["host_override"] is True
+
+
+def test_run_honours_the_host_override_config(monkeypatch, isolated_cwd, write_config):
+    write_config(
+        "api:\n  openapi:\n    spec: https://x/openapi.json\n    host_override: false\n"
+    )
+    seen: dict = {}
+
+    def fake_zap(target, **kwargs):
+        seen.update(kwargs)
+        dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+        dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+
+    monkeypatch.setattr(dast, "_docker_available", lambda: True)
+    monkeypatch.setattr(dast, "_run_zap", fake_zap)
+    assert dast.run(["--target", "https://x"]) == 0
+    assert seen["host_override"] is False
+
+
+def test_run_without_a_spec_stays_on_baseline(monkeypatch, isolated_cwd, write_config):
+    write_config("urls:\n  production: https://example.com\n")
+    seen: dict = {}
+
+    def fake_zap(target, **kwargs):
+        seen.update(kwargs)
+        dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+        dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+
+    monkeypatch.setattr(dast, "_docker_available", lambda: True)
+    monkeypatch.setattr(dast, "_run_zap", fake_zap)
+    assert dast.run(["--target", "https://example.com"]) == 0
+    assert seen["spec"] is None
