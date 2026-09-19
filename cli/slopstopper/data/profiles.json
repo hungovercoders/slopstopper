@@ -21,7 +21,7 @@
     },
     "api": {
       "summary": "An HTTP API — JSON/gRPC endpoints with no browser-rendered surface.",
-      "detail": "Drops the eight browser-and-SEO checks: they assume HTML, a DOM and a public web surface, so on an API repo they fail rather than no-op. Keeps the two API checks (api-health, api-headers), CSP exceptions (APIs still set response headers; inert until you set headers.source) and DAST, which scans an API through ZAP's OpenAPI mode once you set api.openapi.spec and skips until you do.",
+      "detail": "Drops the eight browser-and-SEO checks: they assume HTML, a DOM and a public web surface, so on an API repo they fail rather than no-op. Keeps the four API checks (api-health, api-headers, api-latency, openapi drift), CSP exceptions (APIs still set response headers; inert until you set headers.source) and DAST, which scans an API through ZAP's OpenAPI mode once you set api.openapi.spec. All of them skip until configured.",
       "disables": [
         "ss-reliability-smoke-tests.yml",
         "ss-reliability-accessibility-check.yml",
@@ -35,7 +35,7 @@
     },
     "library": {
       "summary": "A library, CLI or package — no deployed surface of any kind.",
-      "detail": "Drops everything that needs a URL: the eight browser-and-SEO checks, DAST and CSP exceptions, and the two API checks. What remains is the static-analysis layer, which is the whole of what applies to code that nothing serves.",
+      "detail": "Drops everything that needs a URL: the eight browser-and-SEO checks, DAST and CSP exceptions, and the four API checks. Note hygiene:openapi is dropped here too — it is the one hygiene check that needs a live API, since drift means the spec against the thing it documents. What remains is the static-analysis layer, which is the whole of what applies to code that nothing serves.",
       "disables": [
         "ss-reliability-smoke-tests.yml",
         "ss-reliability-accessibility-check.yml",
@@ -48,7 +48,9 @@
         "ss-security-dast-check.yml",
         "ss-hygiene-csp-exceptions-check.yml",
         "ss-reliability-api-health-check.yml",
-        "ss-security-api-headers-check.yml"
+        "ss-security-api-headers-check.yml",
+        "ss-reliability-api-latency-check.yml",
+        "ss-hygiene-openapi-check.yml"
       ]
     }
   }

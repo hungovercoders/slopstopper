@@ -171,6 +171,7 @@ jobs:
                     <li><strong>Doc Accuracy</strong> — Documentation reflects the actual code</li>
                     <li><strong>Doc Size</strong> — Prevents documentation from going stale or unwieldy</li>
                     <li><strong>CSP Exceptions Drift</strong> — Keeps <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> in sync so per-page CSP relaxations stay documented</li>
+                    <li><strong>OpenAPI Drift</strong> — Compares your committed spec against the one the live API serves, and probes every documented path that takes no parameters. The doc-accuracy check for an API: a spec that stopped describing reality</li>
                     <li><strong>Auto-label PRs</strong> — PRs labelled from the paths changed</li>
                     <li><strong>Local pre-push gate</strong> — a pre-push git hook runs the fast hygiene checks before every push, so the first CI run confirms rather than discovers</li>
                 </ul>
@@ -285,8 +286,9 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
                     <li><strong>robots.txt</strong> — Guards against an accidental blanket <code>Disallow: /</code> that de-indexes the whole site, and requires a <code>Sitemap:</code> pointer</li>
                     <li><strong>sitemap.xml</strong> — Crawls the site from <code>/</code> and cross-checks the sitemap: a reachable page missing from it or a <code>&lt;loc&gt;</code> that 404s fails; recommends generating the file from your routes</li>
                     <li><strong>API Health</strong> — Probes a JSON API's health/readiness endpoint and asserts its contract: status code, JSON content-type, and the body fields you declare. <code>{"status": "degraded"}</code> behind an HTTP 200 passes a reachability probe and fails here</li>
+                    <li><strong>API Latency</strong> — Samples each endpoint several times and reports the median and slowest response plus the payload size. Core Web Vitals for something that renders nothing. Budgets gate on the median, so one slow sample from a shared runner doesn't fail your PR</li>
                 </ul>
-                <p class="card-intro">Every check in this loop except API Health assumes HTML and a served site, so an API repo installs with <code>--profile api</code> and gets the API check without the browser ones; a library repo (<code>--profile library</code>) gets neither — see <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/README.md#project-shape-profiles" rel="noopener noreferrer">project-shape profiles</a>. The security and hygiene loops apply to any code, whatever the profile.</p>
+                <p class="card-intro">Every check in this loop except API Health and API Latency assumes HTML and a served site, so an API repo installs with <code>--profile api</code> and gets the API checks without the browser ones; a library repo (<code>--profile library</code>) gets neither — see <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/README.md#project-shape-profiles" rel="noopener noreferrer">project-shape profiles</a>. The security and hygiene loops apply to any code, whatever the profile — with one exception: <strong>OpenAPI Drift</strong> needs a live API, so <code>--profile library</code> drops that one too.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
 
                 <details class="details">

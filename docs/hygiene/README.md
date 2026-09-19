@@ -97,6 +97,63 @@ task ss:hygiene:csp-exceptions
 Workflow: `ss-hygiene-csp-exceptions-check.yml` — runs on PRs/pushes touching
 `worker/headers.json` or `docs/security/CSP_EXCEPTIONS.md`.
 
+### OpenAPI Drift
+
+The API-shaped analogue of the documentation-accuracy check. That one catches a
+doc referencing a file that moved; this one catches a spec that has stopped
+describing the API it documents — documentation that quietly became fiction, on
+a different surface.
+
+**The only hygiene check that needs a URL**, since drift means the spec measured
+against the thing it documents. So it is the one hygiene check `library` drops,
+and deliberately **not** part of `task ss:hygiene:test` — that aggregate is what
+the pre-push hook runs and is all-static, so adding it would make every `git
+push` hit the network.
+
+| Signal | What it means | Needs |
+|---|---|---|
+| Served but not committed | the committed spec is stale against what is deployed | `served_spec` |
+| Committed but not served | a route was removed and the spec wasn't updated, or the deploy is behind | `served_spec` |
+| Documented path returns 404 | the spec describes a route that isn't there | a URL |
+| Documented path returns 5xx | the route exists but is broken | a URL |
+
+The committed-vs-served comparison is the headline: it compares operation sets
+(method + path), not whole documents, so a reordered spec or a different
+`servers` block is not drift — no probing, no guessing, no false positives.
+
+Paths taking parameters (`/users/{id}`) are counted but never probed: a 404 from
+one could mean "route missing" or merely "no such record", and reporting both as
+failures would train people to ignore the check. A 405 proves the route exists
+and passes; only `GET` is sent. Detecting *undocumented* routes is out of scope —
+it needs framework-specific route introspection.
+
+**JSON specs only.** `slopstopper-cli` ships no third-party dependencies, so it
+has no YAML parser. A YAML spec is a graceful skip with that guidance, not a
+failure — most frameworks serve the JSON form at `/openapi.json`.
+
+```yaml
+# .slopstopper.yml
+api:
+  openapi:
+    spec:                 # URL or repo-relative JSON file; shared with security:dast
+    served_spec:          # URL the live API publishes its spec at
+    probe_paths: true     # probe parameterless documented paths
+    ignore_paths: []      # globs excluded from probing and comparison
+```
+
+With `api.openapi.spec` unset the check exits 0 with a note — an unconfigured
+check is not a failing check.
+
+```bash
+task ss:hygiene:openapi -- https://api.example.com
+```
+
+Report: `.ss/reports/openapi/openapi-report.{md,json}`. Workflow:
+`ss-hygiene-openapi-check.yml`, resolving `urls.preview` on pull requests and
+`urls.production` on main, schedules and deployment events like the API
+workflows. With no URL the committed-vs-served comparison still runs (it needs
+only `served_spec`); just the probes are skipped.
+
 ## Quick Reference
 
 Run all hygiene checks:
@@ -113,6 +170,9 @@ task ss:hygiene:docs-structure    # Validate structure matches governance
 task ss:hygiene:docs-accuracy     # Check for broken links and stale refs
 task ss:hygiene:csp-exceptions    # Validate CSP exceptions are fully documented
 ```
+
+`task ss:hygiene:test` runs everything above **except** `hygiene:openapi`, which
+needs a live API — run that one separately with a URL.
 
 ## Contents
 
