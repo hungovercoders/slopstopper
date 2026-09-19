@@ -159,8 +159,18 @@ workflows a repo of that shape shouldn't carry.
 | Profile | Shape | Drops |
 | ------- | ----- | ----- |
 | `ui` (default) | Serves HTML to a browser | Nothing — every check applies |
-| `api` | JSON/gRPC endpoints, no browser surface | The eight browser-and-SEO checks. Keeps DAST (ZAP scans an API fine) and CSP exceptions (APIs still set response headers) |
-| `library` | Library, CLI or package; nothing deployed | The eight above, plus DAST and CSP exceptions — everything that needs a URL |
+| `api` | JSON/gRPC endpoints, no browser surface | The eight browser-and-SEO checks, plus DAST. Keeps the two API checks and CSP exceptions (APIs still set response headers) |
+| `library` | Library, CLI or package; nothing deployed | The eight above, plus DAST, CSP exceptions and the two API checks — everything that needs a URL |
+
+**DAST is dropped from `api` because the shipped implementation can't scan an
+API yet, not because an API doesn't need it.** Two things block it: the
+workflow builds the repo and serves it on `localhost:8080` rather than
+resolving a URL, and the check runs ZAP's **baseline** scan, which *spiders a
+site from a root URL* — against a JSON API there are no links to follow, so it
+finds next to nothing. ZAP's API mode is a separate entry point
+(`zap-api-scan`, driven by `-f openapi`) that reads the spec instead. Until that lands (see the
+increment note below), an API repo should treat dynamic security testing as
+uncovered by this suite rather than as handled.
 
 ```bash
 bash install.sh --profile api      # writes `profile: api` into .slopstopper.yml

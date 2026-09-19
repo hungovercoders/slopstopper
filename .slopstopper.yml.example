@@ -38,9 +38,12 @@
 #            the eight browser-and-SEO reliability checks (smoke,
 #            accessibility, Core Web Vitals, SEO, broken links, llms.txt,
 #            robots.txt, sitemap) — they assume HTML and a public web
-#            surface, so on an API they fail rather than no-op. Keeps the
-#            two API checks (api-health, api-headers — see the `api:`
-#            block below), DAST (ZAP scans an API fine) and CSP exceptions
+#            surface, so on an API they fail rather than no-op. Also drops
+#            DAST: the shipped workflow builds and serves a site, and the
+#            scan spiders from a root URL, so it cannot audit an API yet —
+#            a tooling gap, not a judgement that APIs don't need DAST.
+#            Keeps the two API checks (api-health, api-headers — see the
+#            `api:` block below) and CSP exceptions
 #            (APIs still set response headers; that check stays inert
 #            until you set headers.source above).
 #   library  A library, CLI or package with no deployed surface at all.
