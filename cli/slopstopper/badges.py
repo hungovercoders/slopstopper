@@ -55,6 +55,8 @@ WORKFLOW_DISPLAY: dict[str, tuple[str, str]] = {
     "ss-reliability-core-web-vitals.yml": ("reliability", "Core Web Vitals"),
     "ss-reliability-seo-check.yml": ("reliability", "SEO"),
     "ss-reliability-api-health-check.yml": ("reliability", "API Health"),
+    "ss-reliability-api-latency-check.yml": ("reliability", "API Latency"),
+    "ss-hygiene-openapi-check.yml": ("hygiene", "OpenAPI Drift"),
     "ss-reliability-llms-txt-check.yml": ("reliability", "llms.txt"),
     "ss-reliability-robots-txt-check.yml": ("reliability", "robots.txt"),
     "ss-reliability-sitemap-check.yml": ("reliability", "Sitemap"),
