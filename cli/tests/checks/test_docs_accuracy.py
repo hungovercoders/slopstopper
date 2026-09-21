@@ -177,3 +177,121 @@ def test_run_flags_broken_link(isolated_cwd):
     data = json.loads(docs_accuracy.REPORT_JSON.read_text())
     assert data["clean"] is False
     assert any(i["type"] == "broken_link" for i in data["issues"])
+
+
+# ── extra_paths: files outside docs/ ─────────────────────────────
+#
+# Every piece of site/skill drift the repo review found lived in a file
+# the docs/-only scan never read. `hygiene.docs_accuracy.extra_paths`
+# brings those files into scope; HTML files get a repo-link check.
+
+
+def test_collect_extra_targets_is_empty_by_default(isolated_cwd):
+    assert docs_accuracy._collect_extra_targets() == []
+
+
+def test_collect_extra_targets_expands_globs_and_dedupes(write_config):
+    _write(Path("app/a.html"), "")
+    _write(Path("app/b.html"), "")
+    _write(Path(".claude/skills/x/SKILL.md"), "")
+    write_config(
+        "hygiene:\n  docs_accuracy:\n    extra_paths: [app/*.html, app/a.html, .claude/skills/**/*.md]\n"
+    )
+    assert docs_accuracy._collect_extra_targets() == [
+        Path("app/a.html"),
+        Path("app/b.html"),
+        Path(".claude/skills/x/SKILL.md"),
+    ]
+
+
+def test_check_repo_links_flags_a_missing_path(isolated_cwd):
+    html = Path("app/tools.html")
+    _write(html, '<a href="https://github.com/acme/site/blob/main/scripts/gone.py">x</a>\n')
+    issues = docs_accuracy._check_repo_links(html, "acme", "site")
+    assert len(issues) == 1
+    assert issues[0]["type"] == "broken_repo_link"
+    assert "scripts/gone.py" in issues[0]["message"]
+
+
+def test_check_repo_links_accepts_existing_paths_and_strips_fragments(isolated_cwd):
+    _write(Path("docs/x/README.md"), "# x\n")
+    html = Path("app/tools.html")
+    _write(
+        html,
+        '<a href="https://github.com/acme/site/blob/main/docs/x/README.md#section">a</a>\n'
+        '<a href="https://github.com/acme/site/tree/main/docs/x/">b</a>\n'
+        '<a href="https://github.com/acme/site/blob/v1.2/docs/x/README.md?plain=1">c</a>\n',
+    )
+    assert docs_accuracy._check_repo_links(html, "acme", "site") == []
+
+
+def test_check_repo_links_ignores_other_repositories(isolated_cwd):
+    html = Path("app/tools.html")
+    _write(html, '<a href="https://github.com/someone/else/blob/main/does/not/exist.md">x</a>\n')
+    assert docs_accuracy._check_repo_links(html, "acme", "site") == []
+
+
+def test_extra_markdown_gets_only_the_precise_checks(write_config, monkeypatch):
+    """A skill describes an adopter's tree, so relative links and backtick
+    paths in it are examples, not claims about this checkout. Only
+    references that name a real target here are checked."""
+    skill = Path(".claude/skills/demo/SKILL.md")
+    _write(
+        skill,
+        "See [gone](missing.md), edit `vercel.json`, run `task ss:hygiene:nope`, "
+        "read `.github/workflows/ss-gone.yml` and "
+        "https://github.com/acme/site/blob/main/also/gone.py\n",
+    )
+    write_config("hygiene:\n  docs_accuracy:\n    extra_paths: [.claude/skills/**/*.md]\n")
+    monkeypatch.setattr(docs_accuracy, "_detect_owner_repo", lambda: ("acme", "site"))
+    issues = docs_accuracy._collect_extra_issues(
+        docs_accuracy._collect_extra_targets(), {"ss:hygiene:complexity"}, set()
+    )
+    assert sorted(i["type"] for i in issues) == [
+        "broken_repo_link",
+        "stale_task_ref",
+        "stale_workflow_ref",
+    ]
+
+
+def test_extra_html_is_skipped_with_a_warning_when_repo_is_unknown(write_config, monkeypatch, capsys):
+    _write(Path("app/x.html"), '<a href="https://github.com/a/b/blob/main/nope.md">x</a>\n')
+    write_config("hygiene:\n  docs_accuracy:\n    extra_paths: [app/*.html]\n")
+    monkeypatch.setattr(docs_accuracy, "_detect_owner_repo", lambda: (None, None))
+    issues = docs_accuracy._collect_extra_issues(docs_accuracy._collect_extra_targets(), set(), set())
+    assert issues == []
+    assert "were not checked" in capsys.readouterr().out
+
+
+def test_run_scans_extra_paths(write_config, monkeypatch):
+    _write(Path("docs/index.md"), "# map\n")
+    _write(Path("app/x.html"), '<a href="https://github.com/acme/site/blob/main/nope.md">x</a>\n')
+    write_config("hygiene:\n  docs_accuracy:\n    extra_paths: [app/*.html]\n")
+    monkeypatch.setattr(docs_accuracy, "_detect_owner_repo", lambda: ("acme", "site"))
+    assert docs_accuracy.run() == 1
+    assert "Broken Links Into This Repository" in docs_accuracy.REPORT_MD.read_text()
+
+
+# ── task-reference boundaries ────────────────────────────────────
+
+
+def test_check_task_references_sees_backticked_refs(isolated_cwd):
+    """Docs write `task ss:x`; requiring whitespace before `task` exempted every one."""
+    md = isolated_cwd / "docs" / "x.md"
+    _write(md, "Run `task ss:hygiene:nope` first.\n")
+    issues = docs_accuracy._check_task_references(md, {"ss:hygiene:complexity"})
+    assert [i["type"] for i in issues] == ["stale_task_ref"]
+    assert "ss:hygiene:nope" in issues[0]["message"]
+
+
+def test_check_task_references_ignores_wildcards(isolated_cwd):
+    """`task ss:hygiene:*` in prose is a family, not a target."""
+    md = isolated_cwd / "docs" / "x.md"
+    _write(md, "Every `task ss:hygiene:*` target and `task ss:security:*` too.\n")
+    assert docs_accuracy._check_task_references(md, {"ss:hygiene:complexity"}) == []
+
+
+def test_check_task_references_ignores_angle_placeholders(isolated_cwd):
+    md = isolated_cwd / "docs" / "x.md"
+    _write(md, "Invoke `task ss:<category>:<check>` for any check.\n")
+    assert docs_accuracy._check_task_references(md, set()) == []

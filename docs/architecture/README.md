@@ -28,7 +28,7 @@ slopstopper/
 │   ├── slopstopper/checks/   # One module per check (security/hygiene/reliability)
 │   ├── slopstopper/data/     # Bundled Playwright specs, lighthouserc dev/prod, server.js
 │   ├── slopstopper/templates.py / emit.py / discovery.py / config.py
-│   ├── tests/                # pytest suite (949 tests)
+│   ├── tests/                # pytest suite (`task -t cli/Taskfile.yml test`)
 │   └── pyproject.toml        # Beta — standalone: `pipx install slopstopper-cli`; suite: pinned in mise.toml
 ├── app/                      # Static site — bound as the [assets] dir on the Worker
 │   ├── index.html            # Hero + Get Started (CLI quick-try + mise suite install) + capability grid
@@ -136,7 +136,7 @@ separate `setup-node` step or `SLOPSTOPPER_NODE_VERSION` repo variable.
 `install.sh` seeds `node = "20"` into an adopter's `mise.toml` only when they
 haven't already declared a Node version (`mise.toml` / `.node-version` / `.nvmrc`).
 
-Why Task stays the interface: `task ss:check` sits alongside an adopter's own
+Why Task stays the interface: `task ss:<category>:<check>` sits alongside an adopter's own
 `task build` / `task deploy`, so the suite shares their existing command surface
 rather than introducing a parallel one. mise auto-installs `task`, so it remains a
 one-install story — install mise, everything else flows from `mise.toml`.

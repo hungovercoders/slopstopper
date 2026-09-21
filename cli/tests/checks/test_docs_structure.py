@@ -178,3 +178,55 @@ def test_run_returns_one_when_index_missing(isolated_cwd, capsys):
     rc = docs_structure.run()
     assert rc == 1
     assert "docs/index.md not found" in capsys.readouterr().out
+
+
+# ── every doc in a category must be linked from its README ───────
+#
+# docs/index.md → category README → doc is a chain. The first link was
+# always enforced; the second was not, so "the single index of all
+# project documentation" was true one level deep.
+
+
+def test_check_category_contents_flags_an_unlinked_doc(isolated_cwd):
+    docs = Path("docs")
+    cat = _seed_category(docs, "hygiene")
+    (cat / "ORPHAN.md").write_text("# Nobody links here\n")
+    violations = docs_structure._check_category_contents(docs, ["hygiene"])
+    assert [v["type"] for v in violations] == ["unindexed_doc"]
+    assert violations[0]["path"] == "docs/hygiene/ORPHAN.md"
+
+
+def test_check_category_contents_accepts_a_linked_doc(isolated_cwd):
+    docs = Path("docs")
+    cat = _seed_category(docs, "hygiene")
+    (cat / "README.md").write_text("# hygiene\n\n## Contents\n\n- [DETAIL.md](DETAIL.md) — more\n")
+    (cat / "DETAIL.md").write_text("# Detail\n")
+    assert docs_structure._check_category_contents(docs, ["hygiene"]) == []
+
+
+def test_check_category_contents_accepts_dot_slash_and_anchored_links(isolated_cwd):
+    docs = Path("docs")
+    cat = _seed_category(docs, "hygiene")
+    (cat / "README.md").write_text("[a](./A.md) and [b](B.md#section)\n")
+    (cat / "A.md").write_text("# A\n")
+    (cat / "B.md").write_text("# B\n")
+    assert docs_structure._check_category_contents(docs, ["hygiene"]) == []
+
+
+def test_check_category_contents_skips_a_category_with_no_readme(isolated_cwd):
+    """That case is reported as missing_readme, not as N unindexed docs."""
+    docs = Path("docs")
+    cat = _seed_category(docs, "hygiene", with_readme=False)
+    (cat / "X.md").write_text("# X\n")
+    assert docs_structure._check_category_contents(docs, ["hygiene"]) == []
+
+
+def test_run_fails_on_an_unindexed_doc(isolated_cwd):
+    docs = Path("docs")
+    _seed_index(docs, ["hygiene"])
+    cat = _seed_category(docs, "hygiene")
+    (cat / "ORPHAN.md").write_text("# Orphan\n")
+    assert docs_structure.run() == 1
+    md = docs_structure.REPORT_MD.read_text()
+    assert "Unindexed Docs" in md
+    assert "docs/hygiene/ORPHAN.md" in md

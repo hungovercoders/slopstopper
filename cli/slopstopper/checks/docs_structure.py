@@ -3,7 +3,9 @@
 Ports .ss/scripts/check-docs-structure.py + generate-docs-structure-md.py.
 Validates that the docs/ tree matches the governance model declared
 in docs/index.md (each category named in the index must exist with a
-README.md; nothing in docs/ should exist that the index doesn't sanction).
+README.md; nothing in docs/ should exist that the index doesn't sanction;
+every doc inside a category is linked from that category's README, so
+the index → category README → doc chain is unbroken).
 
 Writes a JSON report (machine-readable, drives downstream tooling) and a
 markdown report (human-readable). Exit codes mirror the bash:
@@ -94,6 +96,49 @@ def _check_unexpected_items(docs_dir: Path, expected: list[str]) -> list[dict]:
     return violations
 
 
+_MD_LINK_TARGET_RE = re.compile(r"\]\(([^)#?]+)")
+
+
+def _linked_files(readme: Path) -> set[str]:
+    """Filenames a category README links to, resolved relative to it."""
+    out: set[str] = set()
+    for target in _MD_LINK_TARGET_RE.findall(readme.read_text()):
+        target = target.strip()
+        if target.startswith(("http://", "https://", "mailto:")):
+            continue
+        out.add(Path(target).name)
+    return out
+
+
+def _check_category_contents(docs_dir: Path, expected: list[str]) -> list[dict]:
+    """Every doc inside a category must be reachable from that category's README.
+
+    The map is a chain: docs/index.md lists categories, each category
+    README lists its docs. The first link was always enforced; the second
+    was not, so a file could sit in docs/<category>/ that no index anywhere
+    mentioned — and "docs/index.md is the single index of all project
+    documentation" was true one level deep.
+    """
+    violations: list[dict] = []
+    for category in expected:
+        readme = docs_dir / category / "README.md"
+        if not readme.is_file():
+            continue  # reported by _check_expected_categories
+        linked = _linked_files(readme)
+        for doc in sorted((docs_dir / category).glob("*.md")):
+            if doc.name == "README.md" or doc.name in linked:
+                continue
+            violations.append({
+                "type": "unindexed_doc",
+                "path": f"docs/{category}/{doc.name}",
+                "message": (
+                    f"Unindexed doc: docs/{category}/{doc.name} is not linked from "
+                    f"docs/{category}/README.md"
+                ),
+            })
+    return violations
+
+
 def _generated_at() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
@@ -137,6 +182,11 @@ def _format_violations_content(violations: list[dict]) -> str:
             "unexpected_directory",
             "### Unexpected Directories\n\n",
             "  *Either add to `docs/index.md` or remove the directory*\n",
+        ),
+        (
+            "unindexed_doc",
+            "### Unindexed Docs\n\n",
+            "  *Link it from the category README (a Contents list is the convention) or remove it*\n",
         ),
     ]
 
@@ -204,6 +254,10 @@ def _build_md_report(data: dict, generated_at: str) -> str:
         "   - If they should be part of governance: Add to the table in `docs/index.md`\n"
         "   - If they shouldn't exist: Delete them\n"
         "\n"
+        "4. **For unindexed docs:**\n"
+        "   - Link the file from its category's `README.md` — a `## Contents` list is the convention\n"
+        "   - The map is a chain (`docs/index.md` → category README → doc); every doc must be on it\n"
+        "\n"
         "## More Information\n"
         "\n"
         "- See [`docs/index.md`](../index.md) for the governance model\n"
@@ -227,6 +281,7 @@ def _check_structure(docs_dir: Path) -> tuple[list[dict], list[str]] | None:
     expected = _extract_categories(index_path.read_text())
     violations = _check_expected_categories(docs_dir, expected)
     violations += _check_unexpected_items(docs_dir, expected)
+    violations += _check_category_contents(docs_dir, expected)
     return violations, expected
 
 

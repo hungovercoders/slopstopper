@@ -39,7 +39,7 @@ smoke:
 
 # The docs-size defaults (150 KB total / 25 files) were set when the suite
 # had noticeably fewer checks. Every check legitimately costs a section in
-# its category README, so this repo — which documents all 26 — sits above
+# its category README, so this repo — which documents all 24 — sits above
 # them. The advisory is still useful as a growth signal, so the ceiling is
 # raised rather than removed; the per-file 20 KB cap is untouched, because
 # that one is about a single document staying readable.
@@ -47,6 +47,10 @@ hygiene:
   docs_size:
     max_total_size_kb: 175
     max_files: 30
+  # Every piece of site and skill drift the repo review found lived in a
+  # file the docs/-only scan never read. Scan those surfaces too.
+  docs_accuracy:
+    extra_paths: [app/*.html, .claude/skills/**/*.md]
 
 workflows:
   disabled: []

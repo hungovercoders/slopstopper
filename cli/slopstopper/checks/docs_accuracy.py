@@ -9,6 +9,24 @@ AGENTS.md, CLAUDE.md, CONTRIBUTING.md) for four kinds of drift:
   - stale_workflow_ref — .github/workflows/<file> doesn't exist
   - stale_file_ref     — backtick-quoted filepath not found on disk
 
+Optionally scans more files, with only the checks that are precise for
+them: `stale_task_ref` and `stale_workflow_ref` for markdown, and for
+both markdown and HTML a fifth kind —
+
+  - broken_repo_link   — a `github.com/<this repo>/blob|tree/<ref>/<path>`
+                         link whose path does not exist
+
+That is how a marketing page quoting a script that was deleted two
+releases ago gets caught, which the docs/-only scan never could. The
+relative-link and backtick-path checks are not applied outside docs/:
+a skill or a site page describes an adopter's tree, not this one.
+
+Configuration (.slopstopper.yml — all optional):
+
+    hygiene:
+      docs_accuracy:
+        extra_paths: []   # repo-relative globs, e.g. [app/*.html, .claude/skills/**/*.md]
+
 Writes a JSON report (machine-readable) and a Markdown report (human-
 readable). Exit codes mirror the bash:
 
@@ -23,7 +41,8 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from slopstopper import output
+from slopstopper import config, output
+from slopstopper.badges import _detect_owner_repo
 
 REPORT_DIR = Path(".ss/reports/docs")
 REPORT_JSON = REPORT_DIR / "docs-accuracy-report.json"
@@ -72,7 +91,11 @@ _SUGGESTION_CTX = re.compile(
 
 _TASKFILE_TASK_RE = re.compile(r"^  ([a-z][a-z0-9:_-]+):", re.MULTILINE)
 _MD_LINK_RE = re.compile(r'\[([^\]]*)\]\(([^)]+)\)')
-_TASK_REF_RE = re.compile(r'(?:^|\s)task\s+([a-z][a-z0-9_-]*:[a-z0-9:_-]+)')
+# A leading backtick counts as a word boundary: docs write `task ss:x`,
+# and requiring whitespace before `task` silently exempted every one.
+# The trailing lookahead stops `task ss:hygiene:*` (a wildcard in prose)
+# from half-matching as `ss:hygiene:`.
+_TASK_REF_RE = re.compile(r'(?:^|[\s`])task\s+([a-z][a-z0-9_-]*:[a-z0-9:_-]+)(?![*:\w-])')
 _WF_REF_RE = re.compile(r'\.github/workflows/([a-z0-9_.-]+\.(?:yml|md))')
 _BACKTICK_FILE_RE = re.compile(r'`([a-zA-Z0-9_./-]+\.[a-z]{1,4})`')
 
@@ -202,6 +225,47 @@ def _collect_targets() -> list[Path]:
     return targets
 
 
+def _collect_extra_targets() -> list[Path]:
+    """Files named by `hygiene.docs_accuracy.extra_paths`, deduplicated, in order."""
+    seen: set[Path] = set()
+    out: list[Path] = []
+    raw = config.get("hygiene.docs_accuracy.extra_paths", []) or []
+    patterns = raw if isinstance(raw, list) else [raw]
+    for pattern in patterns:
+        for hit in sorted(Path(".").glob(str(pattern).strip())):
+            if hit.is_file() and hit not in seen:
+                seen.add(hit)
+                out.append(hit)
+    return out
+
+
+# `https://github.com/<owner>/<repo>/blob|tree/<ref>/<path>` — the shape
+# every "View source →" link on a site takes. Only links into *this* repo
+# are checked; anyone else's paths are not ours to verify.
+_REPO_LINK_RE = re.compile(
+    r'https://github\.com/([^/"\s]+)/([^/"\s]+)/(?:blob|tree)/[^/"\s]+/([^"\s#?)<]+)'
+)
+
+
+def _check_repo_links(path: Path, owner: str, repo: str) -> list[dict]:
+    issues: list[dict] = []
+    content = path.read_text(errors="replace")
+    for m in _REPO_LINK_RE.finditer(content):
+        link_owner, link_repo, target = m.groups()
+        if (link_owner, link_repo.removesuffix(".git")) != (owner, repo):
+            continue
+        target = target.rstrip("/")
+        if Path(target).exists():
+            continue
+        issues.append({
+            "type": "broken_repo_link",
+            "file": str(path),
+            "line": _line_of(content, m.start()),
+            "message": f"Link into this repo points at `{target}`, which does not exist",
+        })
+    return issues
+
+
 def _collect_all_issues(targets: list[Path], valid_tasks: set[str], valid_workflows: set[str]) -> list[dict]:
     issues: list[dict] = []
     for md_file in targets:
@@ -209,6 +273,40 @@ def _collect_all_issues(targets: list[Path], valid_tasks: set[str], valid_workfl
         issues += _check_task_references(md_file, valid_tasks)
         issues += _check_workflow_references(md_file, valid_workflows)
         issues += _check_source_file_references(md_file)
+    return issues
+
+
+def _collect_extra_issues(
+    extra: list[Path], valid_tasks: set[str], valid_workflows: set[str]
+) -> list[dict]:
+    """Route each extra file to the checks that are precise for it.
+
+    Files outside docs/ get only the checks whose references name a real
+    target in *this* repo: `task ss:…`, `.github/workflows/…`, and links
+    into this repo on github.com. They deliberately do not get the
+    relative-link or backtick-path checks — a skill or a marketing page
+    describes an adopter's tree, so `vercel.json` or `[category/](category/)`
+    in it is an example, not a claim about this checkout, and flagging
+    those would train people to ignore the check.
+    """
+    supported = {".md", ".html", ".htm"}
+    files = [p for p in extra if p.suffix.lower() in supported]
+    issues: list[dict] = []
+    for path in files:
+        if path.suffix.lower() == ".md":
+            issues += _check_task_references(path, valid_tasks)
+            issues += _check_workflow_references(path, valid_workflows)
+    if not files:
+        return issues
+    owner, repo = _detect_owner_repo()
+    if not owner or not repo:
+        output.warn(
+            "could not detect this repo's owner/name (no $GITHUB_REPOSITORY, no github.com "
+            f"remote) — links into this repo in {len(files)} extra file(s) were not checked"
+        )
+        return issues
+    for path in files:
+        issues += _check_repo_links(path, owner, repo)
     return issues
 
 
@@ -221,6 +319,7 @@ _TYPE_LABELS = {
     "stale_task_ref": "Stale Taskfile References",
     "stale_workflow_ref": "Stale Workflow References",
     "stale_file_ref": "Possible Stale File References",
+    "broken_repo_link": "Broken Links Into This Repository",
 }
 
 
@@ -279,6 +378,7 @@ def run(_args: list[str] | None = None) -> int:
     valid_workflows = _get_workflow_files()
     targets = _collect_targets()
     issues = _collect_all_issues(targets, valid_tasks, valid_workflows)
+    issues += _collect_extra_issues(_collect_extra_targets(), valid_tasks, valid_workflows)
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     data = {
