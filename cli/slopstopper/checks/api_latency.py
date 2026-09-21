@@ -386,15 +386,6 @@ def _parse_args(args: list[str] | None) -> argparse.Namespace:
     return p.parse_args(args or [])
 
 
-def _config_int(path: str, default: int | None) -> int | None:
-    """Coerce a config value to int — the YAML subset yields strings."""
-    raw = config.get(path, default)
-    try:
-        return int(raw)
-    except (TypeError, ValueError):
-        return default
-
-
 def _env_paths() -> list[str]:
     raw = os.environ.get("API_LATENCY_PATHS", "")
     return [part.strip() for part in raw.split(",") if part.strip()]
@@ -404,11 +395,11 @@ def _resolve_options(parsed: argparse.Namespace) -> dict:
     return {
         "base_path": config.get("api.base_path", "") or "",
         "paths": list(parsed.path or _env_paths() or config.get("api.latency.paths", []) or []),
-        "samples": parsed.samples or _config_int("api.latency.samples", DEFAULT_SAMPLES),
-        "warmup": parsed.warmup if parsed.warmup is not None else _config_int("api.latency.warmup", DEFAULT_WARMUP),
-        "median_ms": parsed.median_ms or _config_int("api.latency.median_ms", None),
-        "slowest_ms": parsed.slowest_ms or _config_int("api.latency.slowest_ms", None),
-        "max_bytes": parsed.max_bytes or _config_int("api.latency.max_bytes", None),
+        "samples": parsed.samples or config.get_int("api.latency.samples", DEFAULT_SAMPLES),
+        "warmup": parsed.warmup if parsed.warmup is not None else config.get_int("api.latency.warmup", DEFAULT_WARMUP),
+        "median_ms": parsed.median_ms or config.get_int("api.latency.median_ms", None),
+        "slowest_ms": parsed.slowest_ms or config.get_int("api.latency.slowest_ms", None),
+        "max_bytes": parsed.max_bytes or config.get_int("api.latency.max_bytes", None),
     }
 
 

@@ -461,11 +461,11 @@ def _resolve_options(parsed: argparse.Namespace) -> dict:
         "base_path": config.get("api.base_path", "") or "",
         "paths": list(parsed.path or _env_paths() or config.get("api.headers.paths", []) or []),
         "require_hsts": not parsed.no_require_hsts
-        and bool(config.get("api.headers.require_hsts", True)),
+        and config.get_bool("api.headers.require_hsts", True),
         "require_nosniff": not parsed.no_require_nosniff
-        and bool(config.get("api.headers.require_nosniff", True)),
+        and config.get_bool("api.headers.require_nosniff", True),
         "allow_wildcard_cors": parsed.allow_wildcard_cors
-        or bool(config.get("api.headers.allow_wildcard_cors", False)),
+        or config.get_bool("api.headers.allow_wildcard_cors", False),
         "allowed_origins": list(
             parsed.allowed_origin or config.get("api.headers.allowed_origins", []) or []
         ),

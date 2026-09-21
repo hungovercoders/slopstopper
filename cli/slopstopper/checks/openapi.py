@@ -422,7 +422,7 @@ def _resolve_options(parsed: argparse.Namespace) -> dict:
     return {
         "spec": str(spec).strip() if spec else "",
         "served_spec": parsed.served_spec or config.get("api.openapi.served_spec") or "",
-        "probe_paths": not parsed.no_probe and bool(config.get("api.openapi.probe_paths", True)),
+        "probe_paths": not parsed.no_probe and config.get_bool("api.openapi.probe_paths", True),
         "ignore_paths": list(parsed.ignore or config.get("api.openapi.ignore_paths", []) or []),
     }
 

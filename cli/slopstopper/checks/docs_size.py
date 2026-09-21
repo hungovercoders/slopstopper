@@ -58,19 +58,11 @@ def _iter_doc_files(docs_dir: Path = DOCS_DIR) -> list[Path]:
     return [p for p in sorted(docs_dir.rglob("*.md")) if archive not in p.parents]
 
 
-def _config_int(path: str, default: int) -> int:
-    raw = config.get(path, default)
-    try:
-        return int(raw)
-    except (TypeError, ValueError):
-        return default
-
-
 def _load_thresholds() -> dict[str, int]:
     return {
-        "max_total_size_kb": _config_int("hygiene.docs_size.max_total_size_kb", DEFAULT_MAX_TOTAL_SIZE_KB),
-        "max_file_size_kb": _config_int("hygiene.docs_size.max_file_size_kb", DEFAULT_MAX_FILE_SIZE_KB),
-        "max_files": _config_int("hygiene.docs_size.max_files", DEFAULT_MAX_FILES),
+        "max_total_size_kb": config.get_int("hygiene.docs_size.max_total_size_kb", DEFAULT_MAX_TOTAL_SIZE_KB),
+        "max_file_size_kb": config.get_int("hygiene.docs_size.max_file_size_kb", DEFAULT_MAX_FILE_SIZE_KB),
+        "max_files": config.get_int("hygiene.docs_size.max_files", DEFAULT_MAX_FILES),
     }
 
 

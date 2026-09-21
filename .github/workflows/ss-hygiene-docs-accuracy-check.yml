@@ -89,7 +89,7 @@ jobs:
         run: task ss:hygiene:docs-accuracy
 
       - name: Emit PR comment
-        if: github.event_name == 'pull_request' && steps.check.outcome == 'failure'
+        if: github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit hygiene:docs-accuracy --target pr-comment --status ${{ steps.check.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete

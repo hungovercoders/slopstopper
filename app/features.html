@@ -166,7 +166,7 @@ jobs:
                 <h2>🧹 Hygiene</h2>
                 <p class="card-intro">Keep the codebase auditable and the docs honest — complexity caps, structure / accuracy / size checks for docs, and auto-labelled PRs.</p>
                 <ul>
-                    <li><strong>Complexity</strong> — Lizard + Bandit cap cyclomatic complexity and Python security smells</li>
+                    <li><strong>Complexity</strong> — Lizard caps cyclomatic complexity per function (CCN ≤ 15 by default, tunable in <code>.slopstopper.yml</code>) across every language it parses</li>
                     <li><strong>Doc Structure</strong> — Enforces <code>docs/index.md</code> as the documentation map; README / AGENTS.md / CLAUDE.md stay thin pointers</li>
                     <li><strong>Doc Accuracy</strong> — Documentation reflects the actual code</li>
                     <li><strong>Doc Size</strong> — Prevents documentation from going stale or unwieldy</li>

@@ -1,10 +1,17 @@
 """Read values from .slopstopper.yml.
 
 Stdlib-only YAML subset parser, lifted from .ss/scripts/load_config.py
-during the CLI pivot. Slopstopper deliberately avoids a PyYAML
-dependency so the CLI installs cleanly via pipx with zero runtime
-dependencies. The subset is enough for the .slopstopper.yml shape:
-scalars, nested mappings, sequences of scalars, and `null`/empty values.
+during the CLI pivot. Slopstopper deliberately avoids a PyYAML dependency
+so the CLI's dependency surface stays minimal (lizard is the one runtime
+dep, for the complexity check). The subset is enough for the
+.slopstopper.yml shape: scalars, nested mappings, sequences of scalars,
+inline lists, and `null`/empty values. Not supported — and warned about
+on stderr when seen — are tab indentation, inline maps, folded/literal
+block scalars, anchors and quoted keys.
+
+Values are never coerced: numbers and booleans come back as the strings
+the file spelled. Use get_int / get_bool / get_str / get_list rather than
+wrapping get() in int() or bool() — `bool("false")` is True.
 
 If the file doesn't exist or a key is absent, get() returns the supplied
 default. Errors during parsing are non-fatal — they fall back to defaults
@@ -54,6 +61,13 @@ def _parse_scalar(raw: str) -> object:
 
 
 def _strip_comment(line: str) -> str:
+    """Drop a trailing `# comment`, YAML-style.
+
+    A `#` starts a comment only at the beginning of the line or after
+    whitespace — the same rule real YAML applies. Without that rule an
+    unquoted `url: https://example.com/#anchor` silently lost its
+    fragment and became a different, valid-looking URL.
+    """
     if "#" not in line:
         return line
     in_squote = False
@@ -64,7 +78,8 @@ def _strip_comment(line: str) -> str:
         elif ch == '"' and not in_squote:
             in_dquote = not in_dquote
         elif ch == "#" and not in_squote and not in_dquote:
-            return line[:i].rstrip()
+            if i == 0 or line[i - 1].isspace():
+                return line[:i].rstrip()
     return line
 
 
@@ -129,7 +144,7 @@ def _load_yaml_subset(path: Path) -> dict:
     root: dict = {}
     stack: list[tuple[int, object]] = [(-1, root)]
 
-    for raw_line in raw.splitlines():
+    for lineno, raw_line in enumerate(raw.splitlines(), start=1):
         line = _strip_comment(raw_line)
         if not line.strip():
             continue
@@ -142,10 +157,28 @@ def _load_yaml_subset(path: Path) -> dict:
             return root
         if _LIST_ITEM_RE.match(body):
             _handle_list_item(parent, body, stack)
-        else:
+        elif _KV_RE.match(body):
             _handle_key_value(parent, indent, body, stack)
+        else:
+            # Outside the subset (tab indentation, inline maps, folded
+            # scalars, anchors, quoted keys…). Say so: a silently skipped
+            # line means the check runs with a default the adopter thinks
+            # they overrode, and there is nothing in the output to tell
+            # them why.
+            _warn_unparsed(path, lineno, raw_line)
 
     return _convert_empty_dicts_to_lists_if_needed(root, raw)
+
+
+def _warn_unparsed(path: Path, lineno: int, raw_line: str) -> None:
+    hint = ""
+    if raw_line.startswith("\t"):
+        hint = " (tab indentation — use spaces)"
+    print(
+        f"⚠  slopstopper.config: {path}:{lineno} is outside the supported YAML subset"
+        f"{hint} and was ignored: {raw_line.strip()!r}",
+        file=sys.stderr,
+    )
 
 
 def _convert_empty_dicts_to_lists_if_needed(node: object, raw_yaml: str) -> object:
@@ -184,6 +217,64 @@ def get(path: str, default: object = None) -> object:
     if isinstance(node, dict) and not node:
         return default
     return node
+
+
+# ── typed accessors ──────────────────────────────────────────────
+#
+# The subset parser never coerces: `max_ccn: 15` comes back as the string
+# '15', and `"false"` (quoted) as the string 'false'. Every check used to
+# hand-roll its own int() / bool() around get(), four of them with a
+# byte-identical helper and two with a bare int() that raised a traceback
+# on `max_ccn: fifteen`. These are the one copy.
+
+_TRUE_WORDS = frozenset({"true", "yes", "1", "on"})
+_FALSE_WORDS = frozenset({"false", "no", "0", "off"})
+
+
+def get_int(path: str, default: int | None = None) -> int | None:
+    """Integer at `path`, or `default` when unset or not a number."""
+    raw = get(path, default)
+    if isinstance(raw, bool):
+        return default
+    try:
+        return int(raw)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return default
+
+
+def get_bool(path: str, default: bool = False) -> bool:
+    """Boolean at `path`.
+
+    Accepts real booleans and the usual spellings as strings, so a quoted
+    `"false"` is False rather than a non-empty (truthy) string. Anything
+    else falls back to `default`.
+    """
+    raw = get(path, default)
+    if isinstance(raw, bool):
+        return raw
+    if isinstance(raw, str):
+        word = raw.strip().lower()
+        if word in _TRUE_WORDS:
+            return True
+        if word in _FALSE_WORDS:
+            return False
+    return default
+
+
+def get_str(path: str, default: str = "") -> str:
+    """String at `path`, or `default` when unset."""
+    raw = get(path, default)
+    return default if raw is None else str(raw)
+
+
+def get_list(path: str, default: list | None = None) -> list:
+    """List at `path`. A lone scalar becomes a one-item list; unset → default or []."""
+    raw = get(path, None)
+    if raw is None:
+        return list(default) if default is not None else []
+    if isinstance(raw, list):
+        return list(raw)
+    return [raw]
 
 
 def reload() -> None:

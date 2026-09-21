@@ -226,7 +226,7 @@ def run(_args: list[str] | None = None) -> int:
         output.error(_LIZARD_INSTALL_HELP)
         return 1
 
-    max_ccn = int(config.get("hygiene.complexity.max_ccn", DEFAULT_MAX_CCN))
+    max_ccn = config.get_int("hygiene.complexity.max_ccn", DEFAULT_MAX_CCN)
 
     output.running("Analyzing code complexity…")
     REPORT_DIR.mkdir(parents=True, exist_ok=True)

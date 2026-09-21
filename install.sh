@@ -818,8 +818,8 @@ MARKER_FILE="$TARGET_DIR/.ss/.workflows-installed"
 # honoured both in the install loop below (skip, and remove a copy an
 # earlier profile left behind) and in the sweep further down (which also
 # catches names outside GENERIC_WORKFLOWS).
-PROFILE_ACTIVE="$(profile_active)"
-DISABLED_WORKFLOWS="$(profile_effective_disabled)"
+PROFILE_ACTIVE="$(profile_active)" || true
+DISABLED_WORKFLOWS="$(profile_effective_disabled)" || true
 
 # Degrade safely: if the profiles module couldn't be imported at all, resolve
 # to the default (which disables nothing) rather than to an empty name. An

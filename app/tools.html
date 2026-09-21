@@ -149,31 +149,17 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             <div class="card">
                 <h2>🔷 TypeScript</h2>
                 <span class="tool-license">Apache-2.0</span>
-                <p>All application and test code is written in TypeScript for static type safety, reducing a whole class of bugs before code is even run.</p>
+                <p>The Cloudflare Worker that serves the site and applies its security headers is TypeScript, bundled by Wrangler at deploy time. It reads the same <code>worker/headers.json</code> the local dev server and the CSP-drift check read, so there is one header policy with three consumers.</p>
                 <details class="details">
-                    <summary>tsconfig.json</summary>
+                    <summary>worker/index.ts excerpt</summary>
                     <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>{
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "strict": true,
-    "outDir": "./dist"
-  }
-}</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/tsconfig.json" rel="noopener noreferrer">View tsconfig.json →</a>
-                    </div>
-                </details>
-            </div>
-
-            <div class="card">
-                <h2>🐍 Python</h2>
-                <span class="tool-license">PSF-2.0</span>
-                <p>Reporting scripts that generate structured JSON reports for security, complexity, documentation and dependency checks used across CI workflows.</p>
-                <details class="details">
-                    <summary>See the scripts</summary>
-                    <div class="details__body">
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/tree/main/.ss/scripts" rel="noopener noreferrer">View .ss/scripts/ on GitHub →</a>
+                        <div class="codeblock codeblock--yaml"><pre><code>const response = await env.ASSETS.fetch(assetRequest);
+const next = new Response(response.body, response);
+for (const [name, value] of Object.entries(headersForPath(url.pathname))) {
+  next.headers.set(name, value);
+}
+return next;</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/worker/index.ts" rel="noopener noreferrer">View worker/index.ts →</a>
                     </div>
                 </details>
             </div>
@@ -356,10 +342,10 @@ on:
                         <div class="codeblock codeblock--yaml"><pre><code>reliability:seo:
   desc: Validate SEO + social-share metatags on a live URL
   cmds:
-    - python3 .ss/scripts/check-seo-metatags.py
+    - slopstopper run reliability:seo -- {{.CLI_ARGS}}
   # Env: SEO_TEST_URL, SEO_PAGES (csv, default /),
   #      SEO_REQUIRE_OG_IMAGE, SEO_VERIFY_OG_IMAGE</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.ss/scripts/check-seo-metatags.py" rel="noopener noreferrer">View check script →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/checks/seo.py" rel="noopener noreferrer">View check script →</a>
                         <br>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-seo-check.yml" rel="noopener noreferrer">View workflow →</a>
                     </div>
@@ -433,18 +419,16 @@ on:
             <div class="card">
                 <h2>📝 markdownlint</h2>
                 <span class="tool-license">MIT</span>
-                <p>Lints all documentation as part of the hygiene checks, keeping markdown style, headings and link structure consistent across the repo.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/DOCS_SIZE_MONITORING.md" rel="noopener noreferrer">Learn more about Doc monitoring →</a>
+                <p>Seeded, not enforced. <code>install.sh</code> merges <code>markdownlint-cli</code> into your devDependencies and drops a starter <code>.markdownlint.json</code>, ready to wire into your own lint script or pre-commit. The suite's own hygiene checks are about documentation <em>structure, accuracy and size</em> — markdown style is left to you, because every repo's house style differs.</p>
+                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about the hygiene checks →</a>
                 <details class="details">
-                    <summary>Workflow excerpt</summary>
+                    <summary>Seeded config</summary>
                     <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>jobs:
-  check-docs-structure:
-    steps:
-      - uses: actions/checkout@v6
-      - run: npx markdownlint-cli 'docs/**/*.md'</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-structure-check.yml" rel="noopener noreferrer">View source →</a>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/templates/markdownlint.json.example" rel="noopener noreferrer">View the starter .markdownlint.json →</a>
                     </div>
+                </details>
+            </div>
+        </div>
                 </details>
             </div>
         </div>

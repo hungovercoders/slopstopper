@@ -1,10 +1,17 @@
-"""Guard: every check workflow appears in ss-pr-summary.yml's trigger list.
+"""Guard: every check workflow appears in both `workflow_run` trigger lists.
 
-`ss-pr-summary.yml` re-renders the single rolling PR comment on
-`workflow_run`, and GitHub does not support globs there — each workflow
-must be named in full. A workflow left out of the list still runs and
-still posts its own comment, but the summary silently stops re-rendering
-after it, so the headline count goes stale without anything going red.
+Two workflows react to the others finishing, and GitHub does not support
+globs in `workflow_run.workflows` — each name must be spelled out:
+
+- `ss-pr-summary.yml` re-renders the single rolling PR comment. A
+  workflow left out still runs and still posts its own comment, but the
+  summary silently stops re-rendering after it, so the headline count
+  goes stale without anything going red.
+- `ss-workflow-failure-issue.yml` raises a tracking issue when a check
+  fails on main. A workflow left out can fail on main and nobody hears —
+  the product's "nothing fails silently" promise, broken in its own repo.
+  When this test was added the list was eleven checks stale and named a
+  workflow that no longer existed.
 
 The requirement is documented in AGENTS.md and both skills; nothing
 enforced it until this test, and adding checks is exactly when it bites.
@@ -24,18 +31,25 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS_DIR = REPO_ROOT / ".github/workflows"
-SUMMARY_WORKFLOW = WORKFLOWS_DIR / "ss-pr-summary.yml"
 
-# Workflows that are not checks and so have no place in the summary:
-#   ss-pr-summary          the summary itself — it would trigger on itself
-#   ss-release             publishes the CLI; not a PR verdict
-#   ss-workflow-failure-issue  reacts to failures on main, not PRs
-#   ss-hygiene-doc-updater.lock  the agentic doc updater; opens a PR, isn't a check
+# Workflows that are not checks:
+#   ss-pr-summary               the PR summary itself
+#   ss-release                  publishes the CLI; not a check verdict
+#   ss-workflow-failure-issue   reacts to failures; not a check
+#   ss-hygiene-doc-updater.lock the agentic doc updater; opens a PR
 NON_CHECK_WORKFLOWS = {
     "ss-pr-summary.yml",
     "ss-release.yml",
     "ss-workflow-failure-issue.yml",
     "ss-hygiene-doc-updater.lock.yml",
+}
+
+# Each trigger list and the workflows it is allowed to leave out. The
+# failure tracker also watches the doc updater (a failed weekly sync is
+# worth an issue), so its exclusion set is smaller.
+TRIGGER_LISTS = {
+    "ss-pr-summary.yml": NON_CHECK_WORKFLOWS,
+    "ss-workflow-failure-issue.yml": NON_CHECK_WORKFLOWS - {"ss-hygiene-doc-updater.lock.yml"},
 }
 
 
@@ -55,9 +69,9 @@ def _workflow_name(path: Path) -> str | None:
     return None
 
 
-def _trigger_list() -> list[str]:
-    """The `workflow_run.workflows` entries from ss-pr-summary.yml."""
-    lines = SUMMARY_WORKFLOW.read_text(encoding="utf-8").splitlines()
+def _trigger_list(workflow: Path) -> list[str]:
+    """The `workflow_run.workflows` entries from a reacting workflow."""
+    lines = workflow.read_text(encoding="utf-8").splitlines()
     names: list[str] = []
     inside = False
     for line in lines:
@@ -65,6 +79,8 @@ def _trigger_list() -> list[str]:
             inside = True
             continue
         if not inside:
+            continue
+        if re.match(r"^\s+#", line):
             continue
         match = re.match(r"^\s+-\s+(.+)$", line)
         if match:
@@ -74,11 +90,11 @@ def _trigger_list() -> list[str]:
     return names
 
 
-def _check_workflows() -> dict[str, str]:
-    """{filename: workflow name} for every ss-*.yml that is a check."""
+def _expected_workflows(excluded: set[str]) -> dict[str, str]:
+    """{filename: workflow name} for every ss-*.yml a trigger list must carry."""
     out = {}
     for path in sorted(WORKFLOWS_DIR.glob("ss-*.yml")):
-        if path.name in NON_CHECK_WORKFLOWS:
+        if path.name in excluded:
             continue
         name = _workflow_name(path)
         assert name, f"{path.name} has no top-level `name:`"
@@ -86,36 +102,40 @@ def _check_workflows() -> dict[str, str]:
     return out
 
 
+LISTS = sorted(TRIGGER_LISTS)
+
+
 def test_the_fixture_finds_workflows():
     """Sanity: a broken glob would make every assertion below vacuous."""
-    assert len(_check_workflows()) >= 15
-    assert len(_trigger_list()) >= 15
+    assert len(_expected_workflows(NON_CHECK_WORKFLOWS)) >= 15
+    for name in LISTS:
+        assert len(_trigger_list(WORKFLOWS_DIR / name)) >= 15
 
 
-def test_every_check_workflow_is_in_the_summary_trigger_list():
-    triggers = set(_trigger_list())
-    missing = {
-        filename: name for filename, name in _check_workflows().items() if name not in triggers
-    }
+@pytest.mark.parametrize("reacting", LISTS)
+def test_every_expected_workflow_is_in_the_trigger_list(reacting):
+    triggers = set(_trigger_list(WORKFLOWS_DIR / reacting))
+    expected = _expected_workflows(TRIGGER_LISTS[reacting])
+    missing = {f: n for f, n in expected.items() if n not in triggers}
     assert not missing, (
-        "These check workflows are missing from ss-pr-summary.yml's "
-        "`workflow_run.workflows` list, so the PR summary will never re-render "
-        f"after them: {missing}"
+        f"These workflows are missing from {reacting}'s `workflow_run.workflows` "
+        f"list, so it will never react to them: {missing}"
     )
 
 
-def test_the_trigger_list_names_no_workflow_that_does_not_exist():
+@pytest.mark.parametrize("reacting", LISTS)
+def test_the_trigger_list_names_no_workflow_that_does_not_exist(reacting):
     """A renamed workflow leaves a dead entry behind, which is just as silent."""
-    known = set(_check_workflows().values())
-    unknown = [name for name in _trigger_list() if name not in known]
+    known = {_workflow_name(p) for p in WORKFLOWS_DIR.glob("ss-*.yml")}
+    unknown = [n for n in _trigger_list(WORKFLOWS_DIR / reacting) if n not in known]
     assert not unknown, (
-        "ss-pr-summary.yml triggers on workflows that no longer exist under "
-        f"these names: {unknown}"
+        f"{reacting} triggers on workflows that no longer exist under these names: {unknown}"
     )
 
 
-def test_the_trigger_list_has_no_duplicates():
-    triggers = _trigger_list()
+@pytest.mark.parametrize("reacting", LISTS)
+def test_the_trigger_list_has_no_duplicates(reacting):
+    triggers = _trigger_list(WORKFLOWS_DIR / reacting)
     assert len(triggers) == len(set(triggers))
 
 
@@ -125,4 +145,6 @@ def test_the_trigger_list_has_no_duplicates():
 )
 def test_the_newest_checks_are_covered(filename):
     """Named explicitly so a deletion can't quietly shrink the guard."""
-    assert _workflow_name(WORKFLOWS_DIR / filename) in set(_trigger_list())
+    name = _workflow_name(WORKFLOWS_DIR / filename)
+    for reacting in LISTS:
+        assert name in set(_trigger_list(WORKFLOWS_DIR / reacting)), reacting
