@@ -1,414 +1,85 @@
 # Security
 
-Overview of security scanning and controls for this project.
+Security scanning and controls for this project: what each `security:*` check
+looks at, how it blocks, and where to tune it. One file per check; this page
+is the map.
 
 ## Contents
 
-- [SAST — Static Application Security Testing](#sast--static-application-security-testing)
-- [DAST — Dynamic Application Security Testing](#dast--dynamic-application-security-testing)
-- [Dependency Vulnerability Scanning](#dependency-vulnerability-scanning)
-- [Secrets Detection](#secrets-detection)
-- [CSP Exceptions](#csp-exceptions) — strict-default + per-path exceptions pattern
-- [API Headers & CORS](#api-headers--cors) — the JSON-API analogue of CSP exceptions
+| Check | Tool | Blocks on | Detail |
+| ----- | ---- | --------- | ------ |
+| `security:sast` | Semgrep | findings at or above `security.sast.fail_on` (default ERROR) in your own code | [SAST.md](SAST.md) |
+| `security:dast` | OWASP ZAP | High / Medium alerts on the running site or API | [DAST.md](DAST.md) |
+| `security:vulnerability:all` | Trivy | CRITICAL / HIGH CVEs in dependencies | [VULNERABILITY.md](VULNERABILITY.md) |
+| `security:secrets` | Gitleaks | any secret, in files or git history | [SECRETS.md](SECRETS.md) |
+| `security:api-headers` | stdlib Python | credentialed CORS wildcards, missing HSTS / `nosniff` | [API_HEADERS.md](API_HEADERS.md) |
+| `hygiene:csp-exceptions` | stdlib Python | drift between `worker/headers.json` and the exceptions doc | [CSP_EXCEPTIONS.md](CSP_EXCEPTIONS.md) |
 
----
+Every check follows the same shape: run it locally with
+`task ss:security:<check>`, read the report under `.ss/reports/<check>/`,
+get a PR comment on pull requests and a GitHub issue when a blocking
+finding lands on `main`. Disable one by listing its workflow under
+`workflows.disabled` in `.slopstopper.yml` (or by choosing a
+[profile](../architecture/README.md) that drops it).
 
-# API Headers & CORS
+## SAST — Static Application Security Testing
 
-On a JSON API, CORS — not CSP — decides who may read a response. `security:api-headers` audits that policy, plus HSTS and `nosniff`.
+Semgrep pattern-matches **your own source code** for dangerous calls,
+injection risks and hardcoded secrets. ERROR blocks; WARNING and INFO are
+reported; `security.sast.fail_on` moves that line. Narrow, documented
+`nosemgrep` suppressions beat disabling a rule.
 
-See **[API_HEADERS.md](API_HEADERS.md)** for the findings, the hard-fail split, knobs and commands.
+→ [SAST.md](SAST.md): quick start, severity table, the suppression pattern
+and this repo's current suppressions.
 
----
-
-# CSP Exceptions
-
-The site ships a strict `default-src 'self'; script-src 'self'` Content
-Security Policy on every path. When a third-party widget is genuinely
-required on a single page (e.g. Giscus on `/feedback.html`), we admit it
-via a **scoped, documented, SRI-pinned per-path exception** rather than
-weakening the site-wide CSP.
-
-The full pattern — and the live list of exceptions — is in
-[`CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md). The
-[`ss:hygiene:csp-exceptions`](../../Taskfile.ss.yml) check enforces drift
-between `worker/headers.json` and that document.
-
-**For adopters:** this is the pattern to reuse the moment your site needs
-GTM, Sentry, Intercom or any analytics tag. Copy the schema, drop the
-hygiene check via the installer, and your auditors will thank you.
-
----
-
-# SAST — Static Application Security Testing
-
-This template includes automated Static Application Security Testing (SAST) using **Semgrep** to detect security bugs and anti-patterns in your own source code. This guide explains how to customise and use this feature.
-
-## Quick Start
-
-### Run Analysis Locally
-```bash
-task ss:security:sast
-```
-
-### What You Get Automatically
-- ✅ PR comments with SAST findings report
-- ✅ Merge blocking on findings at or above `security.sast.fail_on` (default: ERROR)
-- ✅ GitHub issues on main branch when blocking findings land
-
-### Common Issues
-
-| Problem | Solution |
-|---------|----------|
-| Workflow not triggering? | Check workflow is at `.github/workflows/ss-security-sast-check.yml` |
-| Want stricter/looser rules? | Use a custom Semgrep config file (see below) |
-| Don't want SAST checks? | Delete `.github/workflows/ss-security-sast-check.yml` |
-
-### Severity Reference
-
-| Severity | Status | Action |
-|----------|--------|--------|
-| ERROR | 🔴 Blocking | Must be fixed before merge |
-| WARNING | ⚠️ Non-blocking | Review recommended |
-| INFO | ℹ️ Informational | Awareness only |
-
-### Documented suppressions
-
-Some Semgrep rules are too broad for known-safe patterns. Rather than disable rules globally (which would hurt adopters whose code legitimately needs them), we use narrow inline annotations with a rationale at the call site:
-
-- `# nosemgrep: <full-rule-id>` for Python — placed on the affected statement, with a brief comment explaining why the pattern is safe here
-- `<!-- nosemgrep: <full-rule-id> --><rationale>` for HTML — placed on the line directly above the affected element
-
-Both are visible in code review and act as documentation; nothing is silently disabled. Current suppressions in this repo:
-
-| Rule | Where | Why it's safe here |
-| ---- | ----- | ------------------ |
-| `python.lang.security.audit.dynamic-urllib-use-detected` | `cli/slopstopper/checks/seo.py` (`_fetch` + `_head_ok`) | URL originates from `SEO_TEST_URL` env var (operator-supplied) and `_require_safe_url()` is called before every `urlopen()` to reject any scheme other than `http`/`https`. So `file://`/`ftp://` reads are impossible by construction. |
-| `html.security.audit.missing-integrity` | `<link rel="canonical">` in `app/index.html`, `app/features.html`, `app/tools.html`, `app/feedback.html` | Canonical links declare URL identity for search engines. They load no subresource, so Subresource Integrity is structurally inapplicable. The rule fires on any `<link>` without `integrity=` regardless of whether the tag loads anything. |
-
-**For adopters:** when SlopStopper flags noise in your code, prefer this narrow-suppression-with-rationale pattern over disabling a rule globally — it keeps the rule active for real findings while you accept the false positive at the exact site that needs it.
-
----
-
-## Overview
-
-What SAST checks: **your own source code** for security vulnerabilities and anti-patterns using pattern matching (e.g. dangerous function calls, injection risks, hardcoded secrets).
-
-The SAST workflow:
-- ✅ Runs automatically on every PR to `main` and push to `main`
-- ✅ Analyses code using Semgrep's auto-configured rule set
-- ✅ Posts findings as PR comments
-- ✅ Creates GitHub issues when blocking findings land on `main` (a scan that couldn't run fails the job but opens no issue)
-- ✅ Fails PRs with blocking findings, and fails closed when Semgrep produces no readable report
-
-## Files Involved
-
-| File | Purpose |
-|------|---------|
-| `.github/workflows/ss-security-sast-check.yml` | GitHub Actions workflow |
-| `Taskfile.ss.yml` (`sast` task) | Local task runner shim → `slopstopper run security:sast` |
-| `cli/slopstopper/checks/sast.py` | Check implementation (subprocess-invokes Semgrep, renders MD report) |
-| `.gitignore` | Excludes `.ss/reports/sast/` |
-
-## Key Configuration Points
-
-### Custom Rule Set
-
-By default, Semgrep runs with `--config=auto`. To use a specific ruleset, update the `sast:analyze` task in `Taskfile.yml`:
-
-```yaml
-semgrep \
-  --config=p/owasp-top-ten \   # ← replace --config=auto
-  --json \
-  ...
-```
-
-### Failure threshold
-
-Semgrep reports findings at ERROR, WARNING and INFO severity. By default only ERROR fails the check; the rest are reported. `security.sast.fail_on` in `.slopstopper.yml` moves the line — `warning` makes warnings block too, `none` reports without ever failing. The check's exit code is the verdict; the workflow no longer re-counts findings in a separate step.
-
-```yaml
-security:
-  sast:
-    fail_on: error   # error | warning | info | none
-```
-
-### Disable SAST Checking
-
-```bash
-# Option A: delete the workflow
-rm .github/workflows/ss-security-sast-check.yml
-
-# Option B: disable in GitHub UI → Actions → SAST Analysis → Disable workflow
-```
-
-## Running Locally
-
-```bash
-# Install Task (one-time)
-curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
-
-# Run SAST
-task ss:security:sast
-```
-
-Reports are saved to `.ss/reports/sast/`.
-
-## For More Information
-
-- **Semgrep Documentation:** https://semgrep.dev/docs/
-- **Semgrep Registry:** https://semgrep.dev/r
-- **Task Documentation:** https://taskfile.dev
-
----
-
-# DAST — Dynamic Application Security Testing
+## DAST — Dynamic Application Security Testing
 
 OWASP ZAP scans the running app for common web vulnerabilities. Two modes: the
 **baseline** scan spiders an HTML site, and the **API** scan reads an OpenAPI
 spec and exercises its operations — the only mode that finds anything on a
 JSON API.
 
-See **[DAST.md](DAST.md)** for local commands, the CI wiring, risk levels, the
+→ [DAST.md](DAST.md): local commands, the CI wiring, risk levels, the
 CSP-exception gate and the `api.openapi.spec` knob.
 
-# Dependency Vulnerability Scanning
+## Dependency Vulnerability Scanning
 
-This template includes automated dependency vulnerability scanning using **Trivy** to detect known CVEs in your project's dependencies. This guide explains how to customise and use this feature.
+Trivy scans the project filesystem for known CVEs in your packages and lock
+files. CRITICAL and HIGH block. A companion GitHub-native workflow
+(`ss-security-vulnerability-new-check.yml`) reviews newly-added dependencies
+on PRs and fails on denied (copyleft) licences.
 
-> **Companion check — Dependency Review + licence gate.** A separate
-> GitHub-native workflow, `ss-security-vulnerability-new-check.yml`, runs
-> [`actions/dependency-review-action`](https://github.com/actions/dependency-review-action)
-> on PRs. Beyond flagging newly-introduced vulnerable versions, it also
-> **fails the PR when a new dependency carries a denied (copyleft) licence** —
-> shipped default `deny-licenses: GPL-2.0-or-later, GPL-3.0-or-later, LGPL-2.1-or-later, AGPL-3.0-or-later`,
-> keeping permissively-licensed projects free of copyleft obligations. It only
-> inspects dependency-manifest changes, so subprocess-only tools never trip it.
-> Edit the `deny-licenses` (SPDX) list in that workflow to match your own
-> licence policy, or remove it to disable the gate.
+→ [VULNERABILITY.md](VULNERABILITY.md): quick start, why local and CI can
+disagree (DB cache, binary version) and how to resolve it, the licence gate.
 
-## Quick Start
+## Secrets Detection
 
-### Run Analysis Locally
-```bash
-task ss:security:vulnerability:all
-```
+Gitleaks scans all files **and full git history** for credentials, tokens
+and private keys. Always blocking. Allowlist known false positives in
+`.gitleaks.toml`.
 
-### What You Get Automatically
-- ✅ PR comments with vulnerability report
-- ✅ Merge blocking if any CRITICAL or HIGH vulnerabilities exist
-- ✅ GitHub issues on main branch for blocking vulnerabilities
+→ [SECRETS.md](SECRETS.md): quick start, the allowlist format, and what to
+do the moment a real secret is detected.
 
-### Common Issues
+## CSP Exceptions
 
-| Problem | Solution |
-|---------|----------|
-| Workflow not triggering? | Check workflow is at `.github/workflows/ss-security-vulnerability-all-check.yml` |
-| Want to change blocking threshold? | Edit severity check in `ss-security-vulnerability-all-check.yml` |
-| Don't want vulnerability scans? | Delete `.github/workflows/ss-security-vulnerability-all-check.yml` |
+The site ships a strict `default-src 'self'; script-src 'self'` Content
+Security Policy on every path. When a third-party widget is genuinely
+required on a single page (e.g. Giscus on `/feedback.html`), we admit it
+via a **scoped, documented, SRI-pinned per-path exception** rather than
+weakening the site-wide CSP. The
+[`ss:hygiene:csp-exceptions`](../../Taskfile.ss.yml) check enforces drift
+between `worker/headers.json` and that document.
 
-### Severity Reference
+→ [CSP_EXCEPTIONS.md](CSP_EXCEPTIONS.md): the pattern and the live list of
+exceptions. **For adopters:** this is the pattern to reuse the moment your
+site needs GTM, Sentry, Intercom or any analytics tag.
 
-| Severity | Status | Action |
-|----------|--------|--------|
-| CRITICAL | 🔴 Blocking | Must be fixed before merge |
-| HIGH | 🟠 Blocking | Must be fixed before merge |
-| MEDIUM | 🟡 Non-blocking | Review recommended |
-| LOW | 🔵 Non-blocking | Update when convenient |
+## API Headers & CORS
 
----
+On a JSON API, CORS — not CSP — decides who may read a response.
+`security:api-headers` audits that policy, plus HSTS and `nosniff`, and
+splits findings into hard failures and advisory notes.
 
-## Overview
-
-What dependency scanning checks: **known CVEs in your project's packages** — npm dependencies, lock files, and other supported ecosystems.
-
-The dependency scanning workflow:
-- ✅ Runs automatically on every PR to `main` and push to `main`
-- ✅ Scans the project filesystem with Trivy
-- ✅ Posts vulnerability report as PR comments
-- ✅ Creates GitHub issues when CRITICAL/HIGH vulnerabilities land on `main`
-- ✅ Fails PRs with CRITICAL or HIGH vulnerabilities
-
-## Local/CI Parity
-
-Trivy is one of the few checks where local and CI can legitimately disagree on the same code — usually as "CI fails on a CVE the local run didn't flag." Treat CI as the canonical verdict when they diverge.
-
-### Why they can disagree
-
-- **24h DB cache.** Trivy caches its vulnerability database (macOS: `~/Library/Caches/trivy/db/`, Linux: `~/.cache/trivy/db/`) and reuses it for ~24 hours before redownloading. CI runs start cacheless and always pull the freshest DB, so your local trivy can be up to a day behind on newly-published CVEs.
-- **Binary version.** CI installs trivy via `apt-get install -y trivy` (latest from the aquasecurity Debian repo). Local installs vary (`brew install trivy`, downloaded tarball, etc.). Different binary versions can ship different parsers, default checks, and output schemas — producing dramatic deltas independent of DB state.
-
-### Diagnose
-
-```bash
-# Binary version on both sides — compare local against the CI workflow's "Install Trivy" step log
-trivy --version
-
-# Local DB age (macOS path; Linux: ~/.cache/trivy/db/metadata.json)
-cat ~/Library/Caches/trivy/db/metadata.json | jq .UpdatedAt
-```
-
-### Resolve
-
-- **Stale local DB** — clear the cache and rescan so local matches CI's cold-start behaviour:
-  ```bash
-  trivy clean --vuln-db && task ss:security:vulnerability:all
-  ```
-- **Binary version drift** — bump local trivy (`brew upgrade trivy` or re-download the release tarball) until `trivy --version` matches the workflow's installed version.
-
-## Files Involved
-
-| File | Purpose |
-|------|---------|
-| `.github/workflows/ss-security-vulnerability-all-check.yml` | GitHub Actions workflow |
-| `Taskfile.ss.yml` (`vulnerability:all` task) | Local task runner shim → `slopstopper run security:vulnerability:all` |
-| `cli/slopstopper/checks/vulnerability_all.py` | Check implementation (subprocess-invokes Trivy, renders MD report) |
-| `.gitignore` | Excludes `.ss/reports/vulnerability-all/` |
-
-## Key Configuration Points
-
-### Change the Blocking Threshold
-
-To block only on CRITICAL (not HIGH), edit the `check-dependencies` step in `ss-security-vulnerability-all-check.yml`:
-
-```bash
-# Change this line:
-if v.get('Severity', '').upper() in ('CRITICAL', 'HIGH'):
-# To:
-if v.get('Severity', '').upper() == 'CRITICAL':
-```
-
-### Disable Dependency Scanning
-
-```bash
-# Option A: delete the workflow
-rm .github/workflows/ss-security-vulnerability-all-check.yml
-
-# Option B: disable in GitHub UI → Actions → Dependency Vulnerability Scan → Disable workflow
-```
-
-## Running Locally
-
-```bash
-# Install Task (one-time)
-curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
-
-# Run dependency scan
-task ss:security:vulnerability:all
-```
-
-Reports are saved to `.ss/reports/dependencies/`.
-
-## For More Information
-
-- **Trivy Documentation:** https://trivy.dev/
-- **Task Documentation:** https://taskfile.dev
-
----
-
-# Secrets Detection
-
-This template includes automated secrets detection using **Gitleaks** to identify hardcoded credentials, API keys, and other sensitive data in your source code and git history. This guide explains how to customise and use this feature.
-
-## Quick Start
-
-### Run Analysis Locally
-```bash
-task ss:security:secrets
-```
-
-### What You Get Automatically
-- ✅ PR comments with secrets detection report
-- ✅ Merge blocking if any secrets are detected
-- ✅ GitHub issues on main branch if secrets land there
-
-### Common Issues
-
-| Problem | Solution |
-|---------|----------|
-| Workflow not triggering? | Check workflow is at `.github/workflows/ss-security-secrets-check.yml` |
-| False positives? | Add a `.gitleaks.toml` allowlist (see below) |
-| Don't want secrets checks? | Delete `.github/workflows/ss-security-secrets-check.yml` |
-
----
-
-## Overview
-
-What secrets detection checks: **hardcoded credentials** — API keys, tokens, passwords, private keys, and other sensitive values in source code files and git history.
-
-The secrets workflow:
-- ✅ Runs automatically on every PR to `main` and push to `main`
-- ✅ Scans all files and full git history with Gitleaks
-- ✅ Posts findings as PR comments
-- ✅ Creates GitHub issues when secrets land on `main`
-- ✅ Fails PRs whenever secrets are detected (always blocking)
-- ✅ Never writes the credential to disk — gitleaks runs with `--redact`, and the check strips `Secret` / `Match` / `Line` / `Message` (a commit message can quote the value) plus author PII before anything reads the JSON; rule, file, line number and commit survive. A report that can't be parsed is scrubbed and fails the check rather than reading as "no findings". CI artifacts are downloadable by anyone with read access, so a check that contains a leak must not widen its audience
-
-## Files Involved
-
-| File | Purpose |
-|------|---------|
-| `.github/workflows/ss-security-secrets-check.yml` | GitHub Actions workflow |
-| `Taskfile.ss.yml` (`secrets` task) | Local task runner shim → `slopstopper run security:secrets` |
-| `cli/slopstopper/checks/secrets.py` | Check implementation (subprocess-invokes Gitleaks, renders MD report) |
-| `.gitignore` | Excludes `.ss/reports/secrets/` |
-
-## Suppressing False Positives
-
-Create a `.gitleaks.toml` in the project root to allowlist known false positives:
-
-```toml
-[allowlist]
-description = "Project allowlist"
-
-# Allowlist a specific file
-paths = [
-  '''tests/fixtures/.*'''
-]
-
-# Allowlist a specific pattern (e.g. a test key)
-regexes = [
-  '''AKIAIOSFODNN7EXAMPLE'''
-]
-
-# Allowlist a specific commit
-commits = [
-  "abc123def456"
-]
-```
-
-## If Secrets Are Detected
-
-Act immediately:
-
-1. **Revoke** the exposed credential (rotate API keys, invalidate tokens)
-2. **Remove** the secret from the codebase
-3. **Clean git history** if the secret was committed:
-   ```bash
-   git filter-branch --force --index-filter \
-     "git rm --cached --ignore-unmatch path/to/file" \
-     --prune-empty --tag-name-filter cat -- --all
-   ```
-   Or use [BFG Repo Cleaner](https://rtyley.github.io/bfg-repo-cleaner/) for a simpler approach.
-4. **Force-push** the cleaned history (coordinate with your team)
-
-## Disable Secrets Checking
-
-```bash
-# Option A: delete the workflow
-rm .github/workflows/ss-security-secrets-check.yml
-
-# Option B: disable in GitHub UI → Actions → Secrets Detection → Disable workflow
-```
-
-## Running Locally
-
-```bash
-# Install Task (one-time)
-curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
-
-# Run secrets detection
-task ss:security:secrets
-```
-
-Reports are saved to `.ss/reports/secrets/`.
+→ [API_HEADERS.md](API_HEADERS.md): the findings, the hard-fail split,
+knobs and commands.
