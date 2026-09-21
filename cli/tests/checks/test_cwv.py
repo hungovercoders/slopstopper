@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from slopstopper.checks import cwv
+from slopstopper.checks import _playwright, cwv
 
 
 # ── helpers ──────────────────────────────────────────────────────
@@ -266,9 +266,10 @@ def test_write_report_marks_failed_on_nonzero_lhci_exit(monkeypatch, isolated_cw
 
 
 def test_npx_available_via_which(monkeypatch):
-    monkeypatch.setattr(cwv.shutil, "which", lambda _: "/usr/bin/npx")
+    """`_npx_available` is the shared _playwright.npx_available; patch where it looks."""
+    monkeypatch.setattr(_playwright.shutil, "which", lambda _: "/usr/bin/npx")
     assert cwv._npx_available() is True
-    monkeypatch.setattr(cwv.shutil, "which", lambda _: None)
+    monkeypatch.setattr(_playwright.shutil, "which", lambda _: None)
     assert cwv._npx_available() is False
 
 

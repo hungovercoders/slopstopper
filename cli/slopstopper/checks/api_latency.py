@@ -59,16 +59,14 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import statistics
 import time
 import urllib.error
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks import _http, _report
 from slopstopper.checks._contract import refuse_unsafe_url
 
 
@@ -77,7 +75,6 @@ REPORT_MD = REPORT_DIR / "api-latency-report.md"
 REPORT_JSON = REPORT_DIR / "api-latency-report.json"
 USER_AGENT = "SlopStopper-ApiLatency-Check/1.0"
 TIMEOUT_SECONDS = 15
-ALLOWED_SCHEMES = ("http", "https")
 
 DEFAULT_SAMPLES = 5
 DEFAULT_WARMUP = 1
@@ -93,13 +90,12 @@ META = {
 # ── safety ───────────────────────────────────────────────────────
 
 
+_LABEL = "API latency check"
+
+
 def _require_safe_url(url: str) -> None:
     """Reject any URL whose scheme isn't http/https (blocks file:// SSRF)."""
-    scheme = urllib.parse.urlparse(url).scheme.lower()
-    if scheme not in ALLOWED_SCHEMES:
-        raise ValueError(
-            f"API latency check refuses scheme {scheme!r} (only http/https allowed). url={url!r}"
-        )
+    _http.require_safe_url(url, _LABEL)
 
 
 def _fetch(url: str) -> tuple[int, int, float]:
@@ -109,12 +105,9 @@ def _fetch(url: str) -> tuple[int, int, float]:
     against the sample, because a timing taken from an error response is
     not a latency measurement worth keeping.
     """
-    _require_safe_url(url)
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     started = time.monotonic()
     try:
-        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:  # nosec B310
+        with _http.open_url(url, USER_AGENT, timeout=TIMEOUT_SECONDS, label=_LABEL) as resp:
             body = resp.read()
             return resp.status, len(body), (time.monotonic() - started) * 1000
     except urllib.error.HTTPError as e:
@@ -126,9 +119,7 @@ def _fetch(url: str) -> tuple[int, int, float]:
 
 
 def _join(url: str, base_path: str, path: str) -> str:
-    prefix = (base_path or "").rstrip("/")
-    suffix = path if path.startswith("/") else f"/{path}"
-    return f"{url.rstrip('/')}{prefix}{suffix}"
+    return _http.join_url(url, base_path, path)
 
 
 def _status_ok(status: int) -> bool:
@@ -255,27 +246,13 @@ def _audit(url: str, opts: dict) -> dict:
 
 
 def _render_skip() -> list[str]:
-    return [
-        "**Overall:** ⏭️ SKIPPED — no `api.latency.paths` configured.",
-        "",
-        "List the endpoints to sample in `.slopstopper.yml`:",
-        "",
-        "```yaml",
-        "api:",
-        "  latency:",
-        "    paths: [/health, /v1/items]",
-        "```",
-        "",
-    ]
+    return _report.render_skip(
+        'no `api.latency.paths` configured.',
+        ['List the endpoints to sample in `.slopstopper.yml`:', '', '```yaml', 'api:', '  latency:', '    paths: [/health, /v1/items]', '```'],
+    )
 
 
-def _render_findings(label: str, icon: str, findings: list[str]) -> list[str]:
-    if not findings:
-        return []
-    lines = [f"**{label}:**"]
-    lines.extend(f"- {icon} {finding}" for finding in findings)
-    lines.append("")
-    return lines
+_render_findings = _report.render_findings
 
 
 def _timing_table(paths: list[dict]) -> list[str]:
@@ -343,9 +320,7 @@ def _build_markdown_report(result: dict) -> str:
 
 
 def _write_reports(result: dict) -> None:
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    REPORT_JSON.write_text(json.dumps(result, indent=2) + "\n")
-    REPORT_MD.write_text(_build_markdown_report(result))
+    _report.write_reports(REPORT_DIR, REPORT_JSON, REPORT_MD, result, _build_markdown_report)
 
 
 def _print_result(result: dict) -> None:

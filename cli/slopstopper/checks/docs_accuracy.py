@@ -48,12 +48,12 @@ import json
 import os
 import re
 import subprocess
-from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 
 from slopstopper import config, output
 from slopstopper.badges import detect_owner_repo
+from slopstopper.checks import _report
 from slopstopper.checks._contract import reject_extra_args
 
 REPORT_DIR = Path(".ss/reports/docs")
@@ -435,8 +435,7 @@ def _collect_extra_issues(
     return issues
 
 
-def _generated_at() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+_generated_at = _report.generated_at
 
 
 _TYPE_LABELS = {

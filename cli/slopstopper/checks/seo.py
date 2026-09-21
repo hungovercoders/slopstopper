@@ -46,12 +46,12 @@ import json
 import os
 import urllib.error
 import urllib.parse
-import urllib.request
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Optional
 
 from slopstopper import discovery, output
+from slopstopper.checks import _http, _report
 from slopstopper.checks._contract import refuse_unsafe_url
 
 
@@ -59,7 +59,6 @@ REPORT_DIR = Path(".ss/reports/seo")
 REPORT_MD = REPORT_DIR / "seo-metatags-report.md"
 USER_AGENT = "SlopStopper-SEO-Check/1.0"
 TIMEOUT_SECONDS = 15
-ALLOWED_SCHEMES = ("http", "https")
 
 # Consumed by `slopstopper emit reliability:seo --target pr-comment`.
 # Discriminator `🔎 SEO` matches both the pre-flip JS heading
@@ -77,19 +76,12 @@ META = {
 # ── safety ───────────────────────────────────────────────────────
 
 
-def _require_safe_url(url: str) -> None:
-    """Reject any URL whose scheme isn't http/https.
+_LABEL = "SEO check"
 
-    urllib.request.urlopen happily handles file:// and ftp:// too, which
-    could let a hostile SEO_TEST_URL value (e.g. file:///etc/passwd) be
-    read by this checker. Validating the scheme up-front makes the
-    urlopen calls safe by construction.
-    """
-    scheme = urllib.parse.urlparse(url).scheme.lower()
-    if scheme not in ALLOWED_SCHEMES:
-        raise ValueError(
-            f"SEO check refuses scheme {scheme!r} (only http/https allowed). url={url!r}"
-        )
+
+def _require_safe_url(url: str) -> None:
+    """Reject any URL whose scheme isn't http/https (blocks file:// SSRF)."""
+    _http.require_safe_url(url, _LABEL)
 
 
 # ── HTML parser: only walks the <head>, captures meta/title/link ─
@@ -130,24 +122,13 @@ class HeadParser(HTMLParser):
 
 
 def _fetch(url: str) -> tuple[int, str, str]:
-    _require_safe_url(url)
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-    with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:  # nosec B310
-        return (
-            resp.status,
-            resp.headers.get("Content-Type", ""),
-            resp.read().decode("utf-8", errors="replace"),
-        )
+    return _http.fetch_text(url, USER_AGENT, timeout=TIMEOUT_SECONDS, label=_LABEL)
 
 
 def _head_ok(url: str) -> tuple[bool, str]:
     """Return (ok, detail). Validates og:image is reachable and is an image."""
     try:
-        _require_safe_url(url)
-        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT}, method="HEAD")
-        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:  # nosec B310
+        with _http.open_url(url, USER_AGENT, method="HEAD", timeout=TIMEOUT_SECONDS, label=_LABEL) as resp:
             ct = resp.headers.get("Content-Type", "")
             if resp.status != 200:
                 return False, f"HTTP {resp.status}"

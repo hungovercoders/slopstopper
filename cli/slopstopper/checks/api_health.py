@@ -56,11 +56,10 @@ import json
 import os
 import time
 import urllib.error
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks import _http, _report
 from slopstopper.checks._contract import refuse_unsafe_url
 
 
@@ -69,7 +68,6 @@ REPORT_MD = REPORT_DIR / "api-health-report.md"
 REPORT_JSON = REPORT_DIR / "api-health-report.json"
 USER_AGENT = "SlopStopper-ApiHealth-Check/1.0"
 TIMEOUT_SECONDS = 15
-ALLOWED_SCHEMES = ("http", "https")
 DEFAULT_EXPECT_STATUS = 200
 JSON_CONTENT_TYPES = ("application/json", "application/health+json", "+json")
 
@@ -84,13 +82,12 @@ META = {
 # ── safety ───────────────────────────────────────────────────────
 
 
+_LABEL = "API health check"
+
+
 def _require_safe_url(url: str) -> None:
     """Reject any URL whose scheme isn't http/https (blocks file:// SSRF)."""
-    scheme = urllib.parse.urlparse(url).scheme.lower()
-    if scheme not in ALLOWED_SCHEMES:
-        raise ValueError(
-            f"API health check refuses scheme {scheme!r} (only http/https allowed). url={url!r}"
-        )
+    _http.require_safe_url(url, _LABEL)
 
 
 def _fetch(url: str) -> tuple[int, str, str, float]:
@@ -100,12 +97,9 @@ def _fetch(url: str) -> tuple[int, str, str, float]:
     got against the status it expected, so HTTPError is unwrapped rather
     than propagated.
     """
-    _require_safe_url(url)
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     started = time.monotonic()
     try:
-        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:  # nosec B310
+        with _http.open_url(url, USER_AGENT, timeout=TIMEOUT_SECONDS, label=_LABEL) as resp:
             body = resp.read().decode("utf-8", errors="replace")
             elapsed = (time.monotonic() - started) * 1000
             return resp.status, resp.headers.get("Content-Type", ""), body, elapsed
@@ -198,9 +192,7 @@ def _check_body(
 
 
 def _join(url: str, base_path: str, path: str) -> str:
-    prefix = (base_path or "").rstrip("/")
-    suffix = path if path.startswith("/") else f"/{path}"
-    return f"{url.rstrip('/')}{prefix}{suffix}"
+    return _http.join_url(url, base_path, path)
 
 
 def _audit(url: str, opts: dict) -> dict:
@@ -327,9 +319,7 @@ def _build_markdown_report(result: dict) -> str:
 
 
 def _write_reports(result: dict) -> None:
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    REPORT_JSON.write_text(json.dumps(result, indent=2) + "\n")
-    REPORT_MD.write_text(_build_markdown_report(result))
+    _report.write_reports(REPORT_DIR, REPORT_JSON, REPORT_MD, result, _build_markdown_report)
 
 
 def _print_result(result: dict) -> None:

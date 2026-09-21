@@ -37,10 +37,10 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks import _report
 from slopstopper.checks._contract import reject_extra_args
 
 ENTRY_FILES = ("README.md", "AGENTS.md", "CLAUDE.md")
@@ -169,8 +169,7 @@ def _measure_all(
     return measurements, missing
 
 
-def _generated_at() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+_generated_at = _report.generated_at
 
 
 def _has_violations(measurements: list[dict], map_file_missing: bool) -> bool:

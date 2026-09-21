@@ -70,11 +70,10 @@ import argparse
 import fnmatch
 import json
 import urllib.error
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks import _http, _report
 from slopstopper.checks._contract import refuse_unsafe_url
 
 
@@ -83,7 +82,6 @@ REPORT_MD = REPORT_DIR / "openapi-report.md"
 REPORT_JSON = REPORT_DIR / "openapi-report.json"
 USER_AGENT = "SlopStopper-OpenAPI-Check/1.0"
 TIMEOUT_SECONDS = 15
-ALLOWED_SCHEMES = ("http", "https")
 
 # Keys OpenAPI/Swagger use to declare the spec version. One must be present
 # for the document to be a spec rather than arbitrary JSON.
@@ -103,22 +101,18 @@ META = {
 # ── safety ───────────────────────────────────────────────────────
 
 
+_LABEL = "OpenAPI check"
+
+
 def _require_safe_url(url: str) -> None:
     """Reject any URL whose scheme isn't http/https (blocks file:// SSRF)."""
-    scheme = urllib.parse.urlparse(url).scheme.lower()
-    if scheme not in ALLOWED_SCHEMES:
-        raise ValueError(
-            f"OpenAPI check refuses scheme {scheme!r} (only http/https allowed). url={url!r}"
-        )
+    _http.require_safe_url(url, _LABEL)
 
 
 def _fetch(url: str) -> tuple[int, str]:
     """GET the URL. Returns (status, body). A 4xx/5xx is data, not an error."""
-    _require_safe_url(url)
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:  # nosec B310
+        with _http.open_url(url, USER_AGENT, timeout=TIMEOUT_SECONDS, label=_LABEL) as resp:
             return resp.status, resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", errors="replace") if e.fp else ""
@@ -319,20 +313,10 @@ def _audit(url: str | None, document: dict, opts: dict) -> dict:
 # ── markdown report ──────────────────────────────────────────────
 
 
-def _render_skip(reason: str, guidance: list[str]) -> list[str]:
-    lines = [f"**Overall:** ⏭️ SKIPPED — {reason}", ""]
-    lines.extend(guidance)
-    lines.append("")
-    return lines
+_render_skip = _report.render_skip
 
 
-def _render_findings(label: str, icon: str, findings: list[str]) -> list[str]:
-    if not findings:
-        return []
-    lines = [f"**{label}:**"]
-    lines.extend(f"- {icon} {finding}" for finding in findings)
-    lines.append("")
-    return lines
+_render_findings = _report.render_findings
 
 
 def _render_probe_table(probes: list[dict]) -> list[str]:
@@ -386,9 +370,7 @@ def _build_markdown_report(result: dict) -> str:
 
 
 def _write_reports(result: dict) -> None:
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    REPORT_JSON.write_text(json.dumps(result, indent=2) + "\n")
-    REPORT_MD.write_text(_build_markdown_report(result))
+    _report.write_reports(REPORT_DIR, REPORT_JSON, REPORT_MD, result, _build_markdown_report)
 
 
 def _print_result(result: dict) -> None:

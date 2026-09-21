@@ -75,6 +75,7 @@ from datetime import datetime
 from pathlib import Path
 
 from slopstopper import config, dast_gate, output
+from slopstopper.checks import _report
 
 REPORT_DIR = Path(".ss/reports/dast")
 REPORT_JSON = REPORT_DIR / "dast-report.json"
@@ -315,8 +316,7 @@ def _format_alert_section(alerts: list[dict], section_title: str, icon: str) -> 
     return out
 
 
-def _generated_at() -> str:
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+_generated_at = _report.generated_at
 
 
 def _build_md_report(data: dict, swallowed: list[dict] | None = None) -> str:

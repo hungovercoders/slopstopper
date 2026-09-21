@@ -43,15 +43,14 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import re
 import urllib.error
 import urllib.parse
-import urllib.request
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks import _http, _report
 from slopstopper.checks._contract import refuse_unsafe_url
 
 
@@ -59,7 +58,6 @@ REPORT_DIR = Path(".ss/reports/robots-txt")
 REPORT_MD = REPORT_DIR / "robots-txt-report.md"
 USER_AGENT = "SlopStopper-RobotsTxt-Check/1.0"
 TIMEOUT_SECONDS = 15
-ALLOWED_SCHEMES = ("http", "https")
 DEFAULT_PATH = "/robots.txt"
 PLAIN_CONTENT_TYPES = ("text/plain",)
 
@@ -75,41 +73,21 @@ META = {
 # ── safety ───────────────────────────────────────────────────────
 
 
+_LABEL = "robots.txt check"
+
+
 def _require_safe_url(url: str) -> None:
     """Reject any URL whose scheme isn't http/https (blocks file:// SSRF)."""
-    scheme = urllib.parse.urlparse(url).scheme.lower()
-    if scheme not in ALLOWED_SCHEMES:
-        raise ValueError(
-            f"robots.txt check refuses scheme {scheme!r} (only http/https allowed). url={url!r}"
-        )
+    _http.require_safe_url(url, _LABEL)
 
 
 def _fetch(url: str) -> tuple[int, str, str]:
-    _require_safe_url(url)
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-    with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:  # nosec B310
-        return (
-            resp.status,
-            resp.headers.get("Content-Type", ""),
-            resp.read().decode("utf-8", errors="replace"),
-        )
+    return _http.fetch_text(url, USER_AGENT, timeout=TIMEOUT_SECONDS, label=_LABEL)
 
 
 def _head_ok(url: str) -> tuple[bool, str]:
     """Return (ok, detail) for a link target — reachable and non-4xx/5xx."""
-    try:
-        _require_safe_url(url)
-        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT}, method="HEAD")
-        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:  # nosec B310
-            if resp.status >= 400:
-                return False, f"HTTP {resp.status}"
-            return True, f"HTTP {resp.status}"
-    except urllib.error.HTTPError as e:
-        return False, f"HTTP {e.code}"
-    except (urllib.error.URLError, TimeoutError, ValueError) as e:
-        return False, f"{type(e).__name__}: {e}"
+    return _http.head_ok(url, USER_AGENT, timeout=TIMEOUT_SECONDS, label=_LABEL)
 
 
 # ── robots.txt parsing ───────────────────────────────────────────
@@ -203,7 +181,7 @@ def _validate_body(
 def _check_links(urls: list[str], notes: list[str]) -> list[dict]:
     results: list[dict] = []
     for target in urls:
-        if urllib.parse.urlparse(target).scheme.lower() not in ALLOWED_SCHEMES:
+        if urllib.parse.urlparse(target).scheme.lower() not in _http.ALLOWED_SCHEMES:
             continue
         ok, detail = _head_ok(target)
         results.append({"url": target, "ok": ok, "detail": detail})
@@ -307,9 +285,7 @@ def _build_markdown_report(result: dict) -> str:
 
 
 def _write_reports(result: dict) -> None:
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    (REPORT_DIR / "robots-txt-report.json").write_text(json.dumps(result, indent=2) + "\n")
-    REPORT_MD.write_text(_build_markdown_report(result))
+    _report.write_reports(REPORT_DIR, REPORT_DIR / "robots-txt-report.json", REPORT_MD, result, _build_markdown_report)
 
 
 def _print_result(result: dict) -> None:
