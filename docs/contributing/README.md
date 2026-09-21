@@ -89,6 +89,10 @@ the shims are thin and call the same code path either way.
 - Confirm documentation is updated when behavior or structure changes.
 - Ensure no accidental scope creep is included.
 
+## Actions are pinned to commits
+
+Every third-party action in the hand-written workflows is `uses: owner/repo@<sha> # vN` — a commit, not a tag. A tag can be moved; the job that publishes to PyPI with `id-token: write` should not run whatever a moved tag points at. Dependabot (`.github/dependabot.yml`) opens a weekly PR when a new release lands and updates both the SHA and the version comment, so pinning costs nothing day to day. `cli/tests/test_action_pins.py` fails on any floating ref. The gh-aw lock file is generated and carries its own pins — edit the `.md` source and recompile, never the lock.
+
 ## Commit conventions
 
 [Conventional Commits](https://www.conventionalcommits.org/):
