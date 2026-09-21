@@ -218,7 +218,7 @@ Deployed via [Cloudflare Workers Builds](https://developers.cloudflare.com/worke
 
 ## Acknowledgements
 
-slopstopper-cli ships with no third-party Python dependencies — every check invokes its tool via `subprocess` only. Full credit, licences and upstream links for every tool we drive live in [`ATTRIBUTIONS.md`](./ATTRIBUTIONS.md).
+slopstopper-cli has one third-party Python dependency, `lizard` (for `hygiene:complexity`); every other tool runs via `subprocess`. Full credit, licences and upstream links for every tool we drive live in [`ATTRIBUTIONS.md`](./ATTRIBUTIONS.md).
 
 ## License
 

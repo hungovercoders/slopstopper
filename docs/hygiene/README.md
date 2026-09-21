@@ -130,8 +130,8 @@ failures would train people to ignore the check. A 405 proves the route exists
 and passes; only `GET` is sent. Detecting *undocumented* routes is out of scope —
 it needs framework-specific route introspection.
 
-**JSON specs only.** `slopstopper-cli` ships no third-party dependencies, so it
-has no YAML parser. A YAML spec is a graceful skip with that guidance, not a
+**JSON specs only.** `slopstopper-cli` ships no YAML parser (its only
+third-party dependency is `lizard`, for `hygiene:complexity`). A YAML spec is a graceful skip with that guidance, not a
 failure — most frameworks serve the JSON form at `/openapi.json`.
 
 ```yaml
