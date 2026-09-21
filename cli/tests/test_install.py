@@ -681,3 +681,61 @@ def test_no_task_leaves_no_task_invocation_in_any_workflow(tmp_path):
     assert not leftovers, leftovers
     sast = (workflows / "ss-security-sast-check.yml").read_text()
     assert "slopstopper run security:sast" in sast
+
+
+# ── the config seed is a starter, not the schema ─────────────────
+#
+# install.sh used to copy the 430-line .slopstopper.yml.example verbatim
+# as the adopter's config. This repo's own config is 52 lines; a typical
+# repo touches about eight keys. The seed is now templates/slopstopper.yml.starter;
+# the example stays the schema reference and is linked from the starter.
+
+STARTER = REPO_ROOT / "templates" / "slopstopper.yml.starter"
+EXAMPLE = REPO_ROOT / ".slopstopper.yml.example"
+
+
+def _keys(tree: dict, prefix: str = "") -> set[str]:
+    out: set[str] = set()
+    for k, v in tree.items():
+        path = f"{prefix}{k}"
+        out.add(path)
+        if isinstance(v, dict):
+            out |= _keys(v, path + ".")
+    return out
+
+
+def test_the_starter_is_short_and_parses():
+    from slopstopper import config
+
+    assert STARTER.is_file()
+    assert len(STARTER.read_text().splitlines()) <= 60, "the starter should stay under a screenful"
+    tree = config._load_yaml_subset(STARTER)
+    assert tree["profile"] == "ui"
+    assert "urls" in tree and "pages" in tree and "workflows" in tree
+
+
+def test_every_starter_key_exists_in_the_schema_reference():
+    """The starter is a subset of the schema, never a fork of it."""
+    from slopstopper import config
+
+    starter_keys = _keys(config._load_yaml_subset(STARTER))
+    example_keys = _keys(config._load_yaml_subset(EXAMPLE))
+    assert starter_keys <= example_keys, sorted(starter_keys - example_keys)
+
+
+def test_first_install_seeds_the_starter_not_the_schema(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, args=["--no-hooks", "--no-skills"])
+    assert result.returncode == 0, result.stderr
+    seeded = (target / ".slopstopper.yml").read_text()
+    assert seeded == STARTER.read_text()
+    assert "Schema reference:" not in seeded
+
+
+def test_profile_flag_writes_into_the_seeded_starter(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, args=["--profile", "api", "--no-hooks", "--no-skills"])
+    assert result.returncode == 0, result.stderr
+    lines = (target / ".slopstopper.yml").read_text().splitlines()
+    assert lines.count("profile: api") == 1
+    assert "profile: ui" not in lines

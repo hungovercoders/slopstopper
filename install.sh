@@ -603,12 +603,15 @@ fi
 # already present in the target, the CLI's templates module prefers
 # those files over the package data — same shape as the workflows.
 #
-# .slopstopper.yml is still seeded (it carries every other config knob); it
-# just no longer holds the CLI pin. A legacy cli_version is migrated into
-# mise.toml and stripped below.
-if [ ! -f "$TARGET_DIR/.slopstopper.yml" ] && [ -f "$SCRIPT_DIR/.slopstopper.yml.example" ]; then
-  cp "$SCRIPT_DIR/.slopstopper.yml.example" "$TARGET_DIR/.slopstopper.yml"
-  success ".slopstopper.yml: seeded $TARGET_DIR/.slopstopper.yml"
+# .slopstopper.yml is seeded from templates/slopstopper.yml.starter — the
+# handful of keys most repos set, with a pointer to the full schema
+# reference (.slopstopper.yml.example) for everything else. The schema
+# reference used to be copied verbatim: 430 lines landing as an adopter's
+# first impression, for a file this repo's own copy keeps to 50. A legacy
+# cli_version is migrated into mise.toml and stripped below.
+if [ ! -f "$TARGET_DIR/.slopstopper.yml" ] && [ -f "$SCRIPT_DIR/templates/slopstopper.yml.starter" ]; then
+  cp "$SCRIPT_DIR/templates/slopstopper.yml.starter" "$TARGET_DIR/.slopstopper.yml"
+  success ".slopstopper.yml: seeded $TARGET_DIR/.slopstopper.yml (starter — the full schema is in .slopstopper.yml.example)"
 fi
 
 # Apply --profile / SLOPSTOPPER_PROFILE by writing the key into the
@@ -1027,7 +1030,7 @@ seed_template() {
   success "$label: seeded $dst"
 }
 
-# .slopstopper.yml — config carrier (schema reference + adopter seed) is
+# .slopstopper.yml — the adopter's config (seeded from the starter template) is
 # seeded earlier, just before sync_mise_cli, so any legacy cli_version pin can
 # be read for migration into mise.toml.
 
