@@ -62,7 +62,7 @@ task test
 task -t cli/Taskfile.yml test -- -k docs_size
 ```
 
-The same `task test` target is what CI runs (see [`.github/workflows/ci-cli.yml`](../.github/workflows/ci-cli.yml)), so local and CI invocations stay in sync. The Taskfile creates and reuses a project-local venv at `cli/.venv/` (gitignored) so it doesn't conflict with system Python under PEP 668.
+From the repo root `task contributing:test` is an alias for the same target. It is also what CI runs (see [`ci-cli.yml`](https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ci-cli.yml)), so local and CI invocations stay in sync. The Taskfile creates and reuses a project-local venv at `cli/.venv/` (gitignored) so it doesn't conflict with system Python under PEP 668.
 
 This workflow is slopstopper-internal — it is **not** part of the distributed `ss-*-check.yml` suite and is never seeded into adopter repos.
 
@@ -80,20 +80,15 @@ This workflow is slopstopper-internal — it is **not** part of the distributed 
 
 ## Adding a check
 
-1. Add `slopstopper/checks/<name>.py` exposing `run(args) -> int`. Start the module docstring with a one-line summary (`slopstopper checks list` reads it).
-2. Register it in `slopstopper/checks/__init__.py`'s `REGISTRY` dict, and map it to its workflow in `slopstopper/profiles.py`'s `CHECK_WORKFLOWS`.
-   If the check doesn't apply to every project shape, add its workflow to the relevant `disables` lists in `slopstopper/data/profiles.json`.
-3. Write the report to `.ss/reports/<category>/<name>-report.md` in the CWD.
-4. Use `from slopstopper import output` for any user-facing print calls so `--quiet` and the consistent visual language come for free.
-5. If the check should be postable to a PR or issue, declare a `META` dict in the module — `emit.py` reads it.
+A check is more than a module: it needs a workflow, a Task target, profile classification, a badge label, docs, site copy and a skills entry. The single checklist lives in the **"New quality check"** row of [`AGENTS.md`](https://github.com/hungovercoders/slopstopper/blob/main/AGENTS.md) — follow that, not a summary here. Inside this package the conventions are: `slopstopper/checks/<name>.py` exposes `run(args) -> int` (0 pass, 1 findings, 2 could-not-run), its docstring's first line is what `slopstopper checks list` prints, it registers in `checks/__init__.py`'s `REGISTRY`, prints through `from slopstopper import output` so `--quiet` works, and declares a `META` dict if `emit.py` should post it.
 
 ## Skills for agents
 
-The duo under [`.claude/skills/slopstopper-{install,triage}/SKILL.md`](../.claude/skills/) is the long-form playbook for Claude Code agents working with this CLI. Update them when you add or rename a check, env var, `task ss:*` target, or profile.
+The duo under [`.claude/skills/slopstopper-{install,triage}/`](https://github.com/hungovercoders/slopstopper/tree/main/.claude/skills) is the long-form playbook for Claude Code agents working with this CLI. Update them when you add or rename a check, env var, `task ss:*` target, or profile.
 
 ## Acknowledgements
 
-slopstopper-cli ships with no third-party Python dependencies — every check invokes its tool via `subprocess` only. Full credit, licences and upstream links for every tool we drive live in [`ATTRIBUTIONS.md`](../ATTRIBUTIONS.md).
+slopstopper-cli has one third-party Python dependency, [`lizard`](https://pypi.org/project/lizard/) — the complexity engine behind `hygiene:complexity`, which must live in the same interpreter the CLI runs from. Every other tool (Playwright, axe-core, Lighthouse, Semgrep, Gitleaks, Trivy, ZAP) is invoked via `subprocess` only. Full credit, licences and upstream links for every tool we drive live in [`ATTRIBUTIONS.md`](https://github.com/hungovercoders/slopstopper/blob/main/ATTRIBUTIONS.md).
 
 ## License
 

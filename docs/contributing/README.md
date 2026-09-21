@@ -24,10 +24,11 @@ Run `task --list` for the full set. The most-used ones:
 
 | Task | What it does |
 | ---- | ------------ |
-| `task contributing:setup` | Install dependencies |
-| `task contributing:run` | Local dev server on port 8080 (via `slopstopper serve`) |
-| `task contributing:test` | Playwright smoke + a11y suite (via the CLI) |
-| `task contributing:lint` | Lint checks |
+| `task contributing:setup` | `npm install` + editable `pip install -e ./cli` + wire the pre-push hook |
+| `task contributing:test` | The CLI's pytest suite under `cli/tests/` (what `ci-cli.yml` runs) |
+| `task contributing:run` | Serve `app/` on port 8080 via `slopstopper serve` |
+| `task contributing:test:site` | Playwright smoke + a11y against `SITE_URL` (default the server above) |
+| `task contributing:lint` | markdownlint over `docs/` — advisory, not a CI gate |
 | `task ss:hygiene:complexity` | Cyclomatic complexity check (Lizard) |
 | `task ss:hygiene:entry-files` | Enforce <2k token budget on entry files |
 | `task ss:hygiene:docs-accuracy` | Catch broken links + stale task/workflow refs |
@@ -65,17 +66,36 @@ Run these before opening a PR. Each one mirrors the equivalent CI check
 exactly:
 
 ```bash
-task contributing:run                 # Local server on :8080
-task contributing:test                # Playwright smoke + a11y
-task ss:reliability:accessibility     # axe-core audit
-task ss:reliability:cwv               # Lighthouse CI
-task ss:hygiene:test                  # Full hygiene suite
+task contributing:test                # CLI pytest suite (ci-cli.yml)
+task ss:hygiene:test                  # Full hygiene suite (also the pre-push hook)
+task contributing:run                 # Serve app/ on :8080 — separate terminal
+task contributing:test:site           # Playwright smoke + a11y against it
+task ss:reliability:cwv -- --url http://localhost:8080   # Lighthouse CI
 task ss:security:sast                 # Semgrep
 ```
 
 Or call the CLI directly if you'd rather skip the `task` shim layer
 (`slopstopper serve &`, `slopstopper run reliability:smoke`, etc.) —
 the shims are thin and call the same code path either way.
+
+## The CLI test suite (pytest)
+
+The product is the Python package under [`cli/`](../../cli/); its tests
+live in `cli/tests/` and are the first thing to run after any change to a
+check, the installer, or a workflow (several tests read the workflow files
+and the skills as fixtures — `cli/tests/test_workflow_triggers.py`, for one, so a
+YAML edit can fail a Python test).
+
+```bash
+task contributing:test                       # whole suite
+task contributing:test -- -k docs_size       # filter (any pytest args after --)
+task -t cli/Taskfile.yml test                # same thing, without the alias
+```
+
+The target creates and reuses a project-local venv at `cli/.venv/`
+(gitignored) with the `test` extra installed, so it doesn't fight system
+Python under PEP 668. CI runs the identical target from
+[`ci-cli.yml`](../../.github/workflows/ci-cli.yml).
 
 ## Workflow
 

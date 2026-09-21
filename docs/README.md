@@ -33,5 +33,6 @@ Documentation has its own Task targets — see
 [`Taskfile.yml`](../Taskfile.yml) and run `task --list` for the full set.
 Examples:
 
-- `task decisions:validate`
-- `task decisions:new SLUG=<name>`
+- `task contributing:test` — the CLI's pytest suite
+- `task decisions:validate` — check `decisions/README.md` still carries the log + template
+- `task decisions:new SLUG=<name>` — scaffold a supporting decision note
