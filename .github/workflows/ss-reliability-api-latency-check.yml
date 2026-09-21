@@ -54,60 +54,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-
-      - name: Set up slopstopper toolchain
-        # Installs node + task (and, in adopter repos, the pinned
-        # slopstopper-cli) from mise.toml and puts them on PATH for later
-        # steps. The pins live in mise.toml ([tools]); mise resolves them
-        # per-repo, so CI and local runs share one version.
-        uses: jdx/mise-action@v2
-
-      - name: Install slopstopper-cli from source (slopstopper.dev only)
-        # In this repo the CLI runs from source (HEAD), so mise.toml carries
-        # no slopstopper-cli pin — install it editable here. Adopter repos
-        # skip this (no cli/ source) and use the mise-pinned wheel.
-        if: ${{ hashFiles('cli/pyproject.toml') != '' }}
-        run: pip install -e ./cli
+      - name: Set up slopstopper
+        # Python, the mise-pinned toolchain (task, node, slopstopper-cli) and,
+        # in the slopstopper repo only, the CLI from source. One local
+        # composite action; install.sh copies it in next to the workflows.
+        uses: ./.github/actions/ss-setup
 
       - name: Determine audit URL
         id: url
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          INPUT_URL: ${{ github.event.inputs.url }}
-          DEPLOYMENT_URL: ${{ github.event.deployment_status.target_url }}
-        run: |
-          validate_url() {
-            local url="$1"
-            if [[ ! "$url" =~ ^https?://[^[:space:][:cntrl:]]+$ ]]; then
-              echo "Error: Invalid URL format: $url" >&2
-              exit 1
-            fi
-            printf '%s' "$url"
-          }
-
-          # CUSTOMISE FOR YOUR APP: point urls.preview at the environment
-          # your PRs deploy to. Timings from a preview environment are
-          # noisier than production ones — derive budgets from what you
-          # actually observe there, or the check becomes noise.
-          case "$EVENT_NAME" in
-            workflow_dispatch) CANDIDATE="$INPUT_URL" ;;
-            deployment_status) CANDIDATE="$DEPLOYMENT_URL" ;;
-            pull_request)      CANDIDATE="$(slopstopper config get urls.preview)" ;;
-            *)                 CANDIDATE="$(slopstopper config get urls.production)" ;;
-          esac
-
-          if [ -z "$CANDIDATE" ]; then
-            echo "::notice::No URL resolved for this event — set urls.preview / urls.production in .slopstopper.yml to enable the API latency check here."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            SAFE_URL="$(validate_url "$CANDIDATE")"
-            echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
+        # CUSTOMISE FOR YOUR APP: urls.production / urls.preview in
+        # .slopstopper.yml. See .github/actions/ss-resolve-url for the
+        # event → URL table.
+        uses: ./.github/actions/ss-resolve-url
+        with:
+          mode: skip
+          url: ${{ github.event.inputs.url }}
+          deployment-url: ${{ github.event.deployment_status.target_url }}
+          check: API Latency Check
 
       - name: Run API latency audit
         if: steps.url.outputs.skip == 'false'

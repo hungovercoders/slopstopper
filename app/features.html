@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: pip install semgrep
       - run: task ss:security:sast
       - if: github.event_name == 'pull_request'
@@ -106,7 +106,7 @@ jobs:
     name: Dynamic Application Security Testing with OWASP ZAP
     steps:
       - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: npm ci &amp;&amp; npm run build &amp;&amp; slopstopper serve &amp;
       - run: task ss:security:dast -- http://localhost:8080
       - if: github.event_name == 'pull_request'
@@ -128,7 +128,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with: { fetch-depth: 0 }
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: curl -sL gitleaks/install.sh | bash
       - run: task ss:security:secrets
       - if: github.event_name == 'pull_request'
@@ -149,7 +149,7 @@ jobs:
     name: Scan Dependencies with Trivy
     steps:
       - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: brew install aquasecurity/trivy/trivy
       - run: task ss:security:vulnerability:all
       - if: github.event_name == 'pull_request'
@@ -189,7 +189,7 @@ jobs:
     name: Check Code Complexity with Lizard
     steps:
       - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: pip install lizard
       - run: task ss:hygiene:complexity
       - if: github.event_name == 'pull_request'
@@ -230,7 +230,7 @@ jobs:
   check-csp-exceptions:
     steps:
       - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: task ss:hygiene:csp-exceptions
       - if: github.event_name == 'pull_request'
         run: slopstopper emit hygiene:csp-exceptions --target pr-comment</code></pre></div>
@@ -304,7 +304,7 @@ jobs:
   smoke-test:
     steps:
       - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
       - run: task ss:reliability:smoke -- --ci
@@ -329,7 +329,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
       - run: task ss:reliability:broken-links -- --ci
@@ -353,7 +353,7 @@ jobs:
     name: Accessibility Audit (axe-core / WCAG 2.1 AA)
     steps:
       - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
       - run: task ss:reliability:accessibility -- --ci
@@ -377,7 +377,7 @@ jobs:
     name: Core Web Vitals (Lighthouse CI)
     steps:
       - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: npm ci &amp;&amp; npm run build
       - run: slopstopper serve &amp;
       - run: task ss:reliability:cwv -- --url http://localhost:8080
@@ -401,7 +401,7 @@ jobs:
     name: SEO Metatag Audit (OpenGraph + Twitter Card + canonical)
     steps:
       - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
       - run: task ss:reliability:seo   # title, description, canonical,
@@ -426,7 +426,7 @@ jobs:
     name: llms.txt AI-discoverability audit
     steps:
       - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
       - run: task ss:reliability:llms-txt -- --check-links   # H1, summary,
@@ -451,7 +451,7 @@ jobs:
     name: robots.txt discoverability audit
     steps:
       - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
       - run: task ss:reliability:robots-txt -- --check-links  # no blanket
@@ -476,7 +476,7 @@ jobs:
     name: sitemap completeness audit
     steps:
       - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
       - run: task ss:reliability:sitemap -- http://localhost:8080

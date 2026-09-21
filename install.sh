@@ -24,6 +24,7 @@
 #   Taskfile.ss.yml             # all SlopStopper task shims; always
 #                               #   refreshed on re-run so updates flow through
 #   .ss/.workflows-installed    # manifest of installed workflows (commit this)
+#   .github/actions/ss-*/       # composite steps the workflows share (refreshed every run)
 #   .ss/reports/                # SlopStopper-owned scan/report output dirs
 #                               # (every CLI-managed file — Playwright specs,
 #                               # Playwright config, lighthouserc dev/prod,
@@ -915,6 +916,25 @@ done
 printf '%s' "$NEW_MARKER_CONTENT" > "$MARKER_FILE.tmp" && mv "$MARKER_FILE.tmp" "$MARKER_FILE"
 
 success "$INSTALLED_WORKFLOWS workflow(s) installed, $REFRESHED_WORKFLOWS refreshed, $DELETED_RESPECTED previously-deleted skipped"
+
+# Composite actions every ss-* workflow builds on (`uses: ./.github/actions/ss-*`).
+# Plumbing, not checks: always copied, never tracked in the marker, never
+# dropped by a profile. A stale copy is removed first so a renamed action
+# doesn't leave its old directory behind.
+ACTIONS_SRC="$SCRIPT_DIR/.github/actions"
+ACTIONS_DST="$TARGET_DIR/.github/actions"
+if [ -d "$ACTIONS_SRC" ]; then
+  mkdir -p "$ACTIONS_DST"
+  ACTIONS_INSTALLED=""
+  for action_dir in "$ACTIONS_SRC"/ss-*/; do
+    [ -d "$action_dir" ] || continue
+    action_name="$(basename "$action_dir")"
+    rm -rf "${ACTIONS_DST:?}/${action_name:?}"
+    cp -R "$action_dir" "$ACTIONS_DST/$action_name"
+    ACTIONS_INSTALLED="${ACTIONS_INSTALLED:+$ACTIONS_INSTALLED, }$action_name"
+  done
+  success "composite actions refreshed under .github/actions/ ($ACTIONS_INSTALLED)"
+fi
 
 if [ "$PROFILE_SKIPPED" -gt 0 ]; then
   info "profile '$PROFILE_ACTIVE': $PROFILE_SKIPPED workflow(s) not installed for this repo shape ($PROFILE_REMOVED removed from a previous install)"
