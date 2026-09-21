@@ -52,7 +52,8 @@ Exit codes:
   0 — every path reachable and within any configured budget, or no paths
       configured (graceful skip)
   1 — a path was unreachable / answered non-2xx, a configured budget was
-      exceeded, the URL is missing, or an unsafe-scheme URL was supplied
+      exceeded, or an unsafe-scheme URL was supplied
+  2 — the URL is missing
 """
 
 from __future__ import annotations
@@ -429,7 +430,7 @@ def run(args: list[str] | None = None) -> int:
         output._emit(
             "  API_LATENCY_TEST_URL=https://api.example.com slopstopper run reliability:api-latency"
         )
-        return 1
+        return 2
 
     output.status("⏱", f"API latency audit against: {url}")
     output._emit(

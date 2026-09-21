@@ -122,19 +122,19 @@ def test_npx_available_via_which(monkeypatch):
     assert accessibility._npx_available() is False
 
 
-def test_run_returns_one_when_npx_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_npx_missing(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(accessibility, "_npx_available", lambda: False)
     rc = accessibility.run()
-    assert rc == 1
+    assert rc == 2  # could not run
     assert "npx is not available" in capsys.readouterr().out
 
 
-def test_run_returns_one_when_url_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_url_missing(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(accessibility, "_npx_available", lambda: True)
     monkeypatch.delenv("ACCESSIBILITY_TEST_URL", raising=False)
     monkeypatch.delenv("SMOKE_TEST_URL", raising=False)
     rc = accessibility.run([])
-    assert rc == 1
+    assert rc == 2
     assert "accessibility target URL is required" in capsys.readouterr().out
 
 

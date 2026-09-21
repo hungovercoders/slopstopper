@@ -342,6 +342,15 @@ reliability:
     sitemap_path: /sitemap.xml
     llms_path: /llms.txt
 
+# ── Security-check thresholds ────────────────────────────────────────
+security:
+  sast:
+    # Lowest Semgrep severity that fails security:sast. Semgrep reports
+    # ERROR, WARNING and INFO; the default fails on ERROR only, which is
+    # what the workflow used to enforce in a separate step. `warning`
+    # makes warnings block too; `none` reports without ever failing.
+    fail_on: error
+
 # ── Hygiene-check thresholds ─────────────────────────────────────────
 # Every hygiene check reads its own thresholds from here. Values shown
 # are the defaults used when a key is unset. Tune when a check fails for

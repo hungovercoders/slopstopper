@@ -30,7 +30,9 @@ Configuration (.slopstopper.yml — all optional):
 
 Exit codes:
   0 — analysis completed, no function over `max_ccn`
-  1 — a function exceeds `max_ccn`, or lizard is not installed
+  1 — a function exceeds `max_ccn`
+  2 — lizard is not installed, or arguments were passed (this check
+      takes none)
 """
 
 from __future__ import annotations
@@ -43,6 +45,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks._args import reject_extra_args
 
 REPORT_DIR = Path(".ss/reports/complexity")
 REPORT_CSV = REPORT_DIR / "complexity-report.csv"
@@ -221,10 +224,12 @@ def _build_md_report(rows: list[tuple], max_ccn: int) -> str:
     return md
 
 
-def run(_args: list[str] | None = None) -> int:
+def run(args: list[str] | None = None) -> int:
+    if args:
+        return reject_extra_args("hygiene:complexity", args)
     if not _lizard_available():
         output.error(_LIZARD_INSTALL_HELP)
-        return 1
+        return 2
 
     max_ccn = config.get_int("hygiene.complexity.max_ccn", DEFAULT_MAX_CCN)
 

@@ -34,7 +34,8 @@ See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
   0 — llms.txt present and well-formed
-  1 — failures detected, URL missing, or unsafe-scheme URL supplied
+  1 — failures detected, or an unsafe-scheme URL was supplied
+  2 — the URL is missing
 """
 
 from __future__ import annotations
@@ -319,7 +320,7 @@ def run(args: list[str] | None = None) -> int:
         output._emit("Usage:")
         output._emit("  slopstopper run reliability:llms-txt -- --url https://your-site.example.com")
         output._emit("  LLMS_TXT_TEST_URL=https://your-site slopstopper run reliability:llms-txt")
-        return 1
+        return 2
 
     path = _resolve_path(parsed.path)
     check_links = parsed.check_links or config.get_bool("reliability.llms_txt.check_links", False)

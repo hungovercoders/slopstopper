@@ -176,10 +176,11 @@ def test_lizard_available_returns_true_on_success(monkeypatch):
 # ── run() exit codes ─────────────────────────────────────────────
 
 
-def test_run_returns_one_when_lizard_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_lizard_missing(monkeypatch, isolated_cwd, capsys):
+    """A missing tool is 'could not run', not 'the repo failed'."""
     monkeypatch.setattr(complexity, "_lizard_available", lambda: False)
     rc = complexity.run()
-    assert rc == 1
+    assert rc == 2
     assert "lizard is not installed" in capsys.readouterr().out
 
 

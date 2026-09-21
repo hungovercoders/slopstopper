@@ -25,7 +25,9 @@ actually enforced.
 
 Exit codes:
   0 — lhci passed all thresholds
-  non-zero — lhci failed thresholds (report still written) or URL/config missing
+  1 — lhci failed a threshold (report still written)
+  2 — npx (Node.js) not available, the URL is missing, or the Lighthouse
+      config does not exist
 """
 
 from __future__ import annotations
@@ -250,7 +252,7 @@ def _write_report(url: str, output: str, lhci_exit: int) -> None:
 def run(args: list[str] | None = None) -> int:
     if not _npx_available():
         output.error("npx is not available — install Node.js to run Lighthouse CI")
-        return 1
+        return 2
 
     parsed = _parse_args(args)
     url = _resolve_url(parsed.url_positional or parsed.url)
@@ -259,18 +261,19 @@ def run(args: list[str] | None = None) -> int:
         output._emit("Usage:")
         output._emit("  slopstopper run reliability:cwv -- --url https://your-site.example.com")
         output._emit("  CWV_URL=https://your-site slopstopper run reliability:cwv")
-        return 1
+        return 2
 
     config_path = (
         Path(parsed.config) if parsed.config else templates.lighthouserc(prod=parsed.prod)
     )
     if not config_path.exists():
         output.error(f"Lighthouse CI config not found at {config_path}")
-        return 1
+        return 2
 
     output.status("🚦", f"Running Core Web Vitals audit against: {url}")
     cmd = _build_cmd(url, str(config_path))
     rc, captured = _run_lhci(cmd)
     _write_report(url, captured, rc)
     output.footer(REPORT_DIR, [REPORT_MD.name])
-    return rc
+    # lhci's own exit code is kept in the report; the contract needs 0 / 1.
+    return 1 if rc else 0

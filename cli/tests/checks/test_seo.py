@@ -341,10 +341,10 @@ def test_build_markdown_report_with_failures():
 # ── end-to-end run() ─────────────────────────────────────────────
 
 
-def test_run_returns_one_when_url_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_url_missing(monkeypatch, isolated_cwd, capsys):
     monkeypatch.delenv("SEO_TEST_URL", raising=False)
     rc = seo.run([])
-    assert rc == 1
+    assert rc == 2
     assert "SEO target URL is required" in capsys.readouterr().out
 
 

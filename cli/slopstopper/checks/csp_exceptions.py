@@ -16,7 +16,8 @@ adapters.
 Exit codes mirror the bash:
   0 — source and doc agree (or no source configured — graceful skip)
   1 — drift detected (details in report)
-  2 — required input files missing OR unknown adapter format
+  2 — required input files missing, unknown adapter format, or arguments
+      were passed (this check takes none)
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ import sys
 from pathlib import Path
 
 from slopstopper import config, headers_adapters, output
+from slopstopper.checks._args import reject_extra_args
 
 EXCEPTIONS_DOC = Path("docs/security/CSP_EXCEPTIONS.md")
 REPORT_DIR = Path(".ss/reports/csp")
@@ -290,7 +292,9 @@ def _print_results(headers_count: int, doc_count: int, issues: list[dict], sourc
     output.separator()
 
 
-def run(_args: list[str] | None = None) -> int:
+def run(args: list[str] | None = None) -> int:
+    if args:
+        return reject_extra_args("hygiene:csp-exceptions", args)
     source_path, format_name, skip_reason = _resolve_source()
     if source_path is None:
         output.info(f"CSP exceptions check: {skip_reason} — skipping.")

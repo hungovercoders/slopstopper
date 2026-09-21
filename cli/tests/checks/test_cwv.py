@@ -272,28 +272,28 @@ def test_npx_available_via_which(monkeypatch):
     assert cwv._npx_available() is False
 
 
-def test_run_returns_one_when_npx_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_npx_missing(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(cwv, "_npx_available", lambda: False)
     rc = cwv.run()
-    assert rc == 1
+    assert rc == 2  # could not run
     assert "npx is not available" in capsys.readouterr().out
 
 
-def test_run_returns_one_when_url_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_url_missing(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(cwv, "_npx_available", lambda: True)
     monkeypatch.delenv("CWV_URL", raising=False)
     rc = cwv.run([])
-    assert rc == 1
+    assert rc == 2
     assert "CWV target URL is required" in capsys.readouterr().out
 
 
-def test_run_returns_one_when_explicit_config_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_explicit_config_missing(monkeypatch, isolated_cwd, capsys):
     """An explicit --config that doesn't exist still errors out. The
     default (no --config flag) resolves via templates and always finds
     something."""
     monkeypatch.setattr(cwv, "_npx_available", lambda: True)
     rc = cwv.run(["--url", "https://example.com", "--config", "missing.json"])
-    assert rc == 1
+    assert rc == 2  # could not run
     assert "Lighthouse CI config not found" in capsys.readouterr().out
 
 

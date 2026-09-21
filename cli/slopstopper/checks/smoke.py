@@ -29,7 +29,9 @@ See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
   0 — playwright tests passed
-  non-zero — playwright tests failed, or URL/spec missing
+  1 — playwright tests failed (report still written)
+  2 — npx (Node.js) not available, the URL is missing, or the bundled
+      spec could not be found
 """
 
 from __future__ import annotations
@@ -155,7 +157,7 @@ def _write_report(exit_code: int, url: str) -> None:
 def run(args: list[str] | None = None) -> int:
     if not _npx_available():
         output.error("npx is not available — install Node.js to run Playwright tests")
-        return 1
+        return 2
 
     parsed = _parse_args(args)
     url = _resolve_url(parsed.url_positional or parsed.url)
@@ -164,7 +166,7 @@ def run(args: list[str] | None = None) -> int:
         output._emit("Usage:")
         output._emit("  slopstopper run reliability:smoke -- --url https://your-site.example.com")
         output._emit("  SMOKE_TEST_URL=https://your-site slopstopper run reliability:smoke")
-        return 1
+        return 2
 
     output.running(f"Running smoke tests against: {url}")
     _ensure_playwright_assets_ejected()
@@ -172,4 +174,5 @@ def run(args: list[str] | None = None) -> int:
     cmd = _build_cmd(parsed.ci)
     result = subprocess.run(cmd, env=env, check=False)
     _write_report(result.returncode, url)
-    return result.returncode
+    # Playwright's own exit code is kept in the report; the contract needs 0 / 1.
+    return 1 if result.returncode else 0

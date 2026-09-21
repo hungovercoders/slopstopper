@@ -161,10 +161,11 @@ def test_read_data_parses_payload(isolated_cwd):
     assert data["results"] == [ERROR_FINDING]
 
 
-def test_run_returns_one_when_semgrep_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_semgrep_missing(monkeypatch, isolated_cwd, capsys):
+    """A missing tool is 'could not run', not 'the repo failed'."""
     monkeypatch.setattr(sast, "_semgrep_available", lambda: False)
     rc = sast.run()
-    assert rc == 1
+    assert rc == 2
     assert "semgrep is not installed" in capsys.readouterr().out
 
 
@@ -181,20 +182,59 @@ def test_run_clean_when_no_results(monkeypatch, isolated_cwd, capsys):
     assert "No findings detected" in sast.REPORT_MD.read_text()
 
 
-def test_run_with_findings_returns_zero_and_writes_report(monkeypatch, isolated_cwd, capsys):
+def _stub_semgrep(monkeypatch, *findings):
     def fake_semgrep():
         sast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
-        sast.REPORT_JSON.write_text(json.dumps(
-            {"results": [ERROR_FINDING, WARNING_FINDING], "errors": []}
-        ))
+        sast.REPORT_JSON.write_text(json.dumps({"results": list(findings), "errors": []}))
 
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
     monkeypatch.setattr(sast, "_run_semgrep", fake_semgrep)
+
+
+def test_run_with_an_error_finding_returns_one_and_writes_report(monkeypatch, isolated_cwd, capsys):
+    """The check is the gate. The workflow used to re-derive this from the
+    JSON in a Python heredoc; now the exit code is the verdict."""
+    _stub_semgrep(monkeypatch, ERROR_FINDING, WARNING_FINDING)
     rc = sast.run()
-    # Bash flow returns 0 even with findings; gating happens elsewhere.
-    assert rc == 0
+    assert rc == 1
     out = capsys.readouterr().out
     assert "Found 2 finding(s)" in out
+    assert "1 finding(s) at or above `fail_on: error`" in out
     md = sast.REPORT_MD.read_text()
     assert "rule.x.error" in md
     assert "rule.y.warning" in md
+
+
+def test_warnings_alone_do_not_fail_by_default(monkeypatch, isolated_cwd, capsys):
+    _stub_semgrep(monkeypatch, WARNING_FINDING)
+    assert sast.run() == 0
+    assert "none at or above `fail_on: error`" in capsys.readouterr().out
+
+
+def test_fail_on_warning_makes_warnings_fail(monkeypatch, write_config):
+    write_config("security:\n  sast:\n    fail_on: warning\n")
+    _stub_semgrep(monkeypatch, WARNING_FINDING)
+    assert sast.run() == 1
+
+
+def test_fail_on_none_never_fails(monkeypatch, write_config):
+    write_config("security:\n  sast:\n    fail_on: none\n")
+    _stub_semgrep(monkeypatch, ERROR_FINDING)
+    assert sast.run() == 0
+
+
+def test_unknown_fail_on_warns_and_uses_the_default(monkeypatch, write_config, capsys):
+    write_config("security:\n  sast:\n    fail_on: loud\n")
+    _stub_semgrep(monkeypatch, WARNING_FINDING)
+    assert sast.run() == 0
+    assert "not one of error, warning, info, none" in capsys.readouterr().out
+
+
+def test_blocking_findings_ranks_severities():
+    info = {"extra": {"severity": "INFO"}}
+    assert sast._blocking_findings([ERROR_FINDING, WARNING_FINDING, info], "error") == [ERROR_FINDING]
+    assert sast._blocking_findings([ERROR_FINDING, WARNING_FINDING, info], "warning") == [
+        ERROR_FINDING, WARNING_FINDING
+    ]
+    assert len(sast._blocking_findings([ERROR_FINDING, WARNING_FINDING, info], "info")) == 3
+    assert sast._blocking_findings([ERROR_FINDING], "none") == []

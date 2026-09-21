@@ -36,7 +36,8 @@ See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
   0 — robots.txt present and healthy
-  1 — failures detected, URL missing, or unsafe-scheme URL supplied
+  1 — failures detected, or an unsafe-scheme URL was supplied
+  2 — the URL is missing
 """
 
 from __future__ import annotations
@@ -356,7 +357,7 @@ def run(args: list[str] | None = None) -> int:
         output._emit("Usage:")
         output._emit("  slopstopper run reliability:robots-txt -- --url https://your-site.example.com")
         output._emit("  ROBOTS_TXT_TEST_URL=https://your-site slopstopper run reliability:robots-txt")
-        return 1
+        return 2
 
     path = _resolve_path(parsed.path)
     check_links = parsed.check_links or config.get_bool("reliability.robots_txt.check_links", False)

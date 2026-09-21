@@ -27,14 +27,17 @@ Two layers, so no window exists in which an unredacted file sits on disk:
      this module or any importer ever sees an unredacted finding.
 
 A report that cannot be read or parsed is scrubbed and replaced by one
-sentinel finding, and the check exits 1: an unparseable report may still
+sentinel finding, and the check exits 2: an unparseable report may still
 hold a secret, and it must never turn into "no findings" for the workflow
 gate, which counts list entries.
 
 Exit codes:
-  0 — analysis completed (gating happens at the workflow level)
-  1 — gitleaks is not installed, or its report could not be read or parsed
-      (fail closed — see above)
+  0 — no secrets detected
+  1 — one or more secrets detected. The check itself is the gate; the
+      workflow no longer re-derives the verdict from the JSON
+  2 — gitleaks is not installed, arguments were passed (this check takes
+      none), or its report could not be read or parsed — fail closed: an
+      unparseable report is "could not run", never "no findings"
 """
 
 from __future__ import annotations
@@ -46,6 +49,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import output
+from slopstopper.checks._args import reject_extra_args
 
 REPORT_DIR = Path(".ss/reports/secrets")
 REPORT_JSON = REPORT_DIR / "secrets-report.json"
@@ -222,10 +226,12 @@ def _build_md_report(findings: list[dict]) -> str:
     return md
 
 
-def run(_args: list[str] | None = None) -> int:
+def run(args: list[str] | None = None) -> int:
+    if args:
+        return reject_extra_args("security:secrets", args)
     if not _gitleaks_available():
         output.error(_INSTALL_HELP)
-        return 1
+        return 2
 
     output.status("🔑", "Running secrets detection…")
     _run_gitleaks()
@@ -238,10 +244,10 @@ def run(_args: list[str] | None = None) -> int:
             "counted as a finding; treat this run as failed and re-run it"
         )
         output.footer(REPORT_DIR, [REPORT_MD.name])
-        return 1
+        return 2
     if findings:
         output.warn(f"Found {len(findings)} secret(s) — revoke and remove immediately")
     else:
         output.success("No secrets detected")
     output.footer(REPORT_DIR, [REPORT_MD.name])
-    return 0
+    return 1 if findings else 0

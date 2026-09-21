@@ -29,7 +29,8 @@ See .slopstopper.yml.example for the canonical schema.
 Exit codes:
   0 — all entry files within budget AND pointer rule satisfied
   1 — at least one budget OR pointer violation
-  2 — required input files missing
+  2 — required input files missing, or arguments were passed (this
+      check takes none)
 """
 
 from __future__ import annotations
@@ -40,6 +41,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks._args import reject_extra_args
 
 ENTRY_FILES = ("README.md", "AGENTS.md", "CLAUDE.md")
 MAP_POINTER_FILES = ("README.md", "AGENTS.md")
@@ -362,7 +364,9 @@ def _print_summary(
     output.footer(REPORT_DIR, [REPORT_MD.name])
 
 
-def run(_args: list[str] | None = None) -> int:
+def run(args: list[str] | None = None) -> int:
+    if args:
+        return reject_extra_args("hygiene:entry-files", args)
     max_words = _load_max_words()
     require_pointer = _load_require_map_pointer()
     map_path = _load_map_path()

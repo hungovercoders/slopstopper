@@ -102,10 +102,11 @@ def test_gitleaks_available_uses_shutil_which(monkeypatch):
     assert secrets._gitleaks_available() is False
 
 
-def test_run_returns_one_when_gitleaks_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_gitleaks_missing(monkeypatch, isolated_cwd, capsys):
+    """A missing tool is 'could not run', not 'the repo failed'."""
     monkeypatch.setattr(secrets, "_gitleaks_available", lambda: False)
     rc = secrets.run()
-    assert rc == 1
+    assert rc == 2
     assert "gitleaks is not installed" in capsys.readouterr().out
 
 
@@ -123,7 +124,10 @@ def test_run_clean_path_when_no_findings(monkeypatch, isolated_cwd, capsys):
     assert "✅ No secrets detected" in capsys.readouterr().out
 
 
-def test_run_with_findings_returns_zero_but_reports_count(monkeypatch, isolated_cwd, capsys):
+def test_run_with_findings_returns_one(monkeypatch, isolated_cwd, capsys):
+    """The check is the gate. It used to return 0 with the verdict living
+    in a Python heredoc inside the workflow, where no test could reach it —
+    so `slopstopper run security:secrets` exited 0 on a live credential."""
     def fake_gitleaks():
         secrets.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         secrets.REPORT_JSON.write_text(json.dumps(SAMPLE_FINDINGS))
@@ -131,9 +135,7 @@ def test_run_with_findings_returns_zero_but_reports_count(monkeypatch, isolated_
     monkeypatch.setattr(secrets, "_gitleaks_available", lambda: True)
     monkeypatch.setattr(secrets, "_run_gitleaks", fake_gitleaks)
     rc = secrets.run()
-    # CLI matches bash: returns 0 even when findings present (gating
-    # happens at the workflow level via summary scan, not via exit code).
-    assert rc == 0
+    assert rc == 1
     out = capsys.readouterr().out
     assert "Found 2 secret(s)" in out
     md = secrets.REPORT_MD.read_text()
@@ -204,7 +206,7 @@ def test_run_rewrites_the_json_on_disk_without_secret_values(monkeypatch, isolat
 
     monkeypatch.setattr(secrets, "_gitleaks_available", lambda: True)
     monkeypatch.setattr(secrets, "_run_gitleaks", fake_gitleaks)
-    assert secrets.run() == 0
+    assert secrets.run() == 1  # findings are the gate
 
     on_disk = secrets.REPORT_JSON.read_text()
     assert PLANTED_KEY not in on_disk
@@ -229,7 +231,7 @@ def test_run_scrubs_a_malformed_report_and_fails_closed(monkeypatch, isolated_cw
 
     monkeypatch.setattr(secrets, "_gitleaks_available", lambda: True)
     monkeypatch.setattr(secrets, "_run_gitleaks", fake_gitleaks)
-    assert secrets.run() == 1
+    assert secrets.run() == 2  # could not run, not "findings"
 
     on_disk = secrets.REPORT_JSON.read_text()
     assert PLANTED_KEY not in on_disk
@@ -249,7 +251,7 @@ def test_run_scrubs_a_report_that_is_not_utf8_and_fails_closed(monkeypatch, isol
 
     monkeypatch.setattr(secrets, "_gitleaks_available", lambda: True)
     monkeypatch.setattr(secrets, "_run_gitleaks", fake_gitleaks)
-    assert secrets.run() == 1
+    assert secrets.run() == 2
     assert PLANTED_KEY not in secrets.REPORT_JSON.read_text()
 
 
@@ -318,7 +320,7 @@ def test_real_gitleaks_output_is_redacted_end_to_end(isolated_cwd):
     subprocess.run([*git, "add", "-A"], check=True)
     subprocess.run([*git, "commit", "-q", "-m", "leak"], check=True)
 
-    assert secrets.run() == 0
+    assert secrets.run() == 1  # the planted token is a finding
 
     findings = json.loads(secrets.REPORT_JSON.read_text())
     assert len(findings) >= 1, "gitleaks should have flagged the planted key"

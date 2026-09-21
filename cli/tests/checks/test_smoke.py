@@ -104,18 +104,18 @@ def test_npx_available_via_which(monkeypatch):
     assert smoke._npx_available() is False
 
 
-def test_run_returns_one_when_npx_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_npx_missing(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(smoke, "_npx_available", lambda: False)
     rc = smoke.run()
-    assert rc == 1
+    assert rc == 2  # could not run
     assert "npx is not available" in capsys.readouterr().out
 
 
-def test_run_returns_one_when_url_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_url_missing(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(smoke, "_npx_available", lambda: True)
     monkeypatch.delenv("SMOKE_TEST_URL", raising=False)
     rc = smoke.run([])
-    assert rc == 1
+    assert rc == 2
     out = capsys.readouterr().out
     assert "smoke target URL is required" in out
 

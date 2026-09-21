@@ -45,7 +45,8 @@ See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
   0 — endpoint healthy, or no endpoint configured (graceful skip)
-  1 — failures detected, URL missing, or unsafe-scheme URL supplied
+  1 — failures detected, or an unsafe-scheme URL was supplied
+  2 — the URL is missing
 """
 
 from __future__ import annotations
@@ -409,7 +410,7 @@ def run(args: list[str] | None = None) -> int:
         output._emit("Usage:")
         output._emit("  slopstopper run reliability:api-health -- --url https://api.example.com")
         output._emit("  API_HEALTH_TEST_URL=https://api.example.com slopstopper run reliability:api-health")
-        return 1
+        return 2
 
     output.status("🩺", f"API health audit against: {_join(url, opts['base_path'], opts['path'])}")
     output.separator()

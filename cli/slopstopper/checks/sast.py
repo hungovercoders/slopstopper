@@ -14,9 +14,21 @@ not MIT/Apache. `import semgrep` would drag LGPL contagion into the
 slopstopper-cli MIT contract. Subprocess invocation keeps it on the
 adopter's side.
 
+The verdict lives here, not in the workflow. Semgrep reports findings
+at ERROR, WARNING and INFO severity; `security.sast.fail_on` names the
+lowest severity that fails the check.
+
+Configuration (.slopstopper.yml — optional):
+
+    security:
+      sast:
+        fail_on: error     # error (default) | warning | info | none
+
 Exit codes:
-  0 — analysis completed
-  1 — semgrep is not installed
+  0 — no findings at or above `security.sast.fail_on`
+  1 — one or more findings at or above `security.sast.fail_on`
+  2 — semgrep is not installed, or arguments were passed (this check
+      takes none)
 """
 
 from __future__ import annotations
@@ -27,7 +39,8 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from slopstopper import output
+from slopstopper import config, output
+from slopstopper.checks._args import reject_extra_args
 
 REPORT_DIR = Path(".ss/reports/sast")
 REPORT_JSON = REPORT_DIR / "sast-report.json"
@@ -58,6 +71,35 @@ _INSTALL_HELP = (
 
 def _semgrep_available() -> bool:
     return shutil.which("semgrep") is not None
+
+
+# Semgrep's severities, ranked. `fail_on: warning` means WARNING and
+# everything above it fails; `none` reports without ever failing.
+SEVERITY_RANK = {"ERROR": 2, "WARNING": 1, "INFO": 0}
+FAIL_ON_CHOICES = ("error", "warning", "info", "none")
+DEFAULT_FAIL_ON = "error"
+
+
+def _fail_on() -> str:
+    raw = str(config.get("security.sast.fail_on", DEFAULT_FAIL_ON) or DEFAULT_FAIL_ON).strip().lower()
+    if raw in FAIL_ON_CHOICES:
+        return raw
+    output.warn(
+        f"security.sast.fail_on: {raw!r} is not one of {', '.join(FAIL_ON_CHOICES)} — "
+        f"using {DEFAULT_FAIL_ON!r}"
+    )
+    return DEFAULT_FAIL_ON
+
+
+def _blocking_findings(results: list[dict], fail_on: str) -> list[dict]:
+    """Findings at or above the configured severity."""
+    if fail_on == "none":
+        return []
+    threshold = SEVERITY_RANK[fail_on.upper()]
+    return [
+        r for r in results
+        if SEVERITY_RANK.get(r.get("extra", {}).get("severity", "").upper(), 0) >= threshold
+    ]
 
 
 def _run_semgrep() -> None:
@@ -205,10 +247,12 @@ def _build_md_report(data: dict) -> str:
     return md
 
 
-def run(_args: list[str] | None = None) -> int:
+def run(args: list[str] | None = None) -> int:
+    if args:
+        return reject_extra_args("security:sast", args)
     if not _semgrep_available():
         output.error(_INSTALL_HELP)
-        return 1
+        return 2
 
     output.running("Running SAST analysis…")
     _run_semgrep()
@@ -216,12 +260,18 @@ def run(_args: list[str] | None = None) -> int:
     REPORT_MD.write_text(_build_md_report(data))
 
     results = data.get("results", [])
+    fail_on = _fail_on()
+    blocking = _blocking_findings(results, fail_on)
     if results:
         errors, warnings = _categorize_findings(results)
         output.warn(
             f"Found {len(results)} finding(s): {len(errors)} error(s), {len(warnings)} warning(s)"
         )
+        if blocking:
+            output.error(f"{len(blocking)} finding(s) at or above `fail_on: {fail_on}` — failing")
+        else:
+            output.info(f"none at or above `fail_on: {fail_on}` — not failing")
     else:
         output.success("No findings detected")
     output.footer(REPORT_DIR, [REPORT_MD.name])
-    return 0
+    return 1 if blocking else 0

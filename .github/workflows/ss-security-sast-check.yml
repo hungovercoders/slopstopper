@@ -52,28 +52,12 @@ jobs:
         if: ${{ hashFiles('cli/pyproject.toml') != '' }}
         run: pip install -e ./cli
 
+      # The check itself is the gate: it exits 1 on blocking findings, so
+      # this step's outcome IS the verdict. No separate detect / fail-job
+      # steps, and the local `task ss:security:sast` agrees with CI.
       - name: Run SAST analysis
         id: sast
         run: task ss:security:sast
-
-      - name: Detect error-severity findings
-        id: gate
-        run: |
-          if [ -f .ss/reports/sast/sast-report.json ]; then
-            ERROR_COUNT=$(python3 -c "
-          import json
-          with open('.ss/reports/sast/sast-report.json') as f:
-              data = json.load(f)
-          errors = [r for r in data.get('results', []) if r.get('extra', {}).get('severity', '').upper() == 'ERROR']
-          print(len(errors))
-          ")
-          else
-            ERROR_COUNT=0
-          fi
-          echo "errors_found=$([ "$ERROR_COUNT" -gt 0 ] && echo 1 || echo 0)" >> "$GITHUB_OUTPUT"
-          if [ "$ERROR_COUNT" -gt 0 ]; then
-            echo "⚠️  Found $ERROR_COUNT error-severity finding(s)"
-          fi
 
       - name: Upload SAST reports
         if: always()
@@ -87,25 +71,19 @@ jobs:
           if-no-files-found: warn
 
       - name: Emit PR comment
-        if: github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: slopstopper emit security:sast --target pr-comment --status ${{ steps.gate.outputs.errors_found == '1' && 'fail' || 'pass' }} --on-pass=delete
+        run: slopstopper emit security:sast --target pr-comment --status ${{ steps.sast.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete
 
       - name: Emit issue on main (if error-severity findings)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.gate.outputs.errors_found == '1'
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.sast.outcome == 'failure'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit security:sast --target issue
 
       - name: Close issue on main when clean
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.gate.outputs.errors_found != '1'
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.sast.outcome == 'success'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit security:sast --target issue --on-pass=close
-
-      - name: Fail job if error-severity findings
-        if: steps.gate.outputs.errors_found == '1'
-        run: |
-          echo "::error::SAST error-severity findings detected. Review and address before merge."
-          exit 1

@@ -35,7 +35,8 @@ See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
   0 — all pages passed
-  1 — failures detected, URL missing, or unsafe-scheme URL supplied
+  1 — failures detected, or an unsafe-scheme URL was supplied
+  2 — the URL is missing
 """
 
 from __future__ import annotations
@@ -488,7 +489,7 @@ def run(args: list[str] | None = None) -> int:
         output._emit("Usage:")
         output._emit("  slopstopper run reliability:seo -- --url https://your-site.example.com")
         output._emit("  SEO_TEST_URL=https://your-site slopstopper run reliability:seo")
-        return 1
+        return 2
 
     require_og_image = not parsed.no_require_og_image
     verify_og_image = not parsed.no_verify_og_image

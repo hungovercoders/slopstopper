@@ -51,7 +51,8 @@ See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
   0 — sitemap present, complete and free of dead entries
-  1 — failures detected, URL missing, or unsafe-scheme URL supplied
+  1 — failures detected, or an unsafe-scheme URL was supplied
+  2 — the URL is missing
 """
 
 from __future__ import annotations
@@ -587,7 +588,7 @@ def run(args: list[str] | None = None) -> int:
         output._emit("Usage:")
         output._emit("  slopstopper run reliability:sitemap -- --url https://your-site.example.com")
         output._emit("  SITEMAP_TEST_URL=https://your-site slopstopper run reliability:sitemap")
-        return 1
+        return 2
 
     output.status("🗺️", f"sitemap completeness audit against: {url}")
     output.separator()

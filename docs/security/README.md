@@ -123,6 +123,16 @@ semgrep \
   ...
 ```
 
+### Failure threshold
+
+Semgrep reports findings at ERROR, WARNING and INFO severity. By default only ERROR fails the check; the rest are reported. `security.sast.fail_on` in `.slopstopper.yml` moves the line — `warning` makes warnings block too, `none` reports without ever failing. The check's exit code is the verdict; the workflow no longer re-counts findings in a separate step.
+
+```yaml
+security:
+  sast:
+    fail_on: error   # error | warning | info | none
+```
+
 ### Disable SAST Checking
 
 ```bash

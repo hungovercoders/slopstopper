@@ -44,6 +44,21 @@ For CI-style output (retries, HTML reports, fail-on-flake), pass
 e.g. `task ss:reliability:accessibility -- --ci`. Same Task command runs
 in both loops; the flag toggles the run shape.
 
+## Exit codes
+
+Every check returns the same three codes, and CI gates on them directly —
+there is no per-check post-processing step deciding the verdict:
+
+| Code | Meaning |
+|---|---|
+| `0` | Ran; nothing to fail on. Includes a graceful skip — an unconfigured check is not a failing check |
+| `1` | Ran; the repo failed it. Findings over a threshold, drift, a budget exceeded |
+| `2` | Could not run. Missing tool, missing input, unreadable report, an argument the check has no parser for |
+
+The full contract, and why it matters, is in the `slopstopper.checks`
+package docstring; `cli/tests/test_exit_code_contract.py` checks every
+check's docstring against what its code can actually return.
+
 ## Quick verification checklist
 
 Run these before opening a PR. Each one mirrors the equivalent CI check
