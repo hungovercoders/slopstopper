@@ -19,10 +19,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.11'
 
@@ -37,7 +37,7 @@ jobs:
         # Installs node + task from mise.toml ([tools]) onto PATH, so both are
         # single-sourced from the pin (no curl-installed Taskfile, no hardcoded
         # Node version). The version follows the repo, same as CI and local.
-        uses: jdx/mise-action@v2
+        uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
 
       - name: Install slopstopper-cli from source
         # This repo runs the CLI from source (HEAD), so mise.toml carries no
@@ -53,6 +53,6 @@ jobs:
         run: npx playwright install chromium --with-deps
 
       - name: Install gh-aw extension
-        uses: github/gh-aw/actions/setup-cli@v0.50.7
+        uses: github/gh-aw/actions/setup-cli@9cbca3cd9be433a23a38e4da332635097fd40251 # v0.50.7
         with:
           version: v0.50.7

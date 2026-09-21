@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           # CHANGELOG diff and git describe both need full history.
           fetch-depth: 0
@@ -70,7 +70,7 @@ jobs:
           fi
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.11'
 
@@ -93,7 +93,7 @@ jobs:
       # No keys to manage, no token rotation — the OIDC token is scoped
       # to this workflow run.
       - name: Generate build provenance attestation
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
           subject-path: 'cli/dist/*'
 
@@ -147,7 +147,7 @@ jobs:
       # One-time setup: see docs/runbooks/RELEASE.md "One-time PyPI
       # Trusted Publisher setup".
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           packages-dir: cli/dist
           skip-existing: true
