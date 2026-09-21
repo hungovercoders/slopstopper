@@ -105,6 +105,49 @@ tasks:
     cmds:
       - slopstopper run reliability:api-health -- {{.CLI_ARGS}}
 
+  reliability:api-latency:
+    desc: Sample API endpoint response times and payload sizes against budgets
+    summary: |
+      The API-shaped analogue of Core Web Vitals. There is no rendering on
+      a JSON API, so the answerable question is narrower: how long does the
+      endpoint take to answer, and how much does it send back.
+
+      Samples each path in `api.latency.paths` several times and reports
+      the median and slowest sample plus the response size.
+
+      Deliberately not "p95": five samples cannot support a 95th
+      percentile, and calling max() a percentile would dress up one noisy
+      reading as statistics. Budgets gate on the median, because a single
+      slow sample from a shared CI runner moves the maximum and not the
+      middle. `slowest_ms` is there for anyone who wants an explicit tail
+      ceiling, opt-in.
+
+      Budgets are opt-in throughout: with none set the check reports
+      timings as notes and exits 0. Reachability is not — an endpoint that
+      errors or answers non-2xx fails whether or not a budget is set,
+      because timing a connection error is meaningless.
+
+      Skips gracefully (exit 0) when `api.latency.paths` is empty — an
+      unconfigured check is not a failing check.
+
+      Configuration (environment variables; every knob below is also read
+      from .slopstopper.yml's `api.latency`):
+        API_LATENCY_TEST_URL - base URL of the API (required)
+        API_LATENCY_PATHS    - comma-separated paths to sample
+
+      Flags:
+        --samples N       - measured requests per endpoint (default: 5)
+        --warmup N        - discarded requests before measuring (default: 1)
+        --median-ms N     - fail if the median exceeds this
+        --slowest-ms N    - fail if any sample exceeds this
+        --max-bytes N     - fail if the response exceeds this size
+
+      Usage:
+        task ss:reliability:api-latency -- https://api.example.com
+        API_LATENCY_TEST_URL=https://api.example.com task ss:reliability:api-latency
+    cmds:
+      - slopstopper run reliability:api-latency -- {{.CLI_ARGS}}
+
   reliability:llms-txt:
     desc: Validate the llms.txt AI-discoverability map on a live URL
     summary: |
@@ -311,8 +354,56 @@ tasks:
     cmds:
       - slopstopper run hygiene:docs-accuracy
 
+  hygiene:openapi:
+    desc: Detect drift between the OpenAPI spec and the API it documents
+    summary: |
+      The API-shaped analogue of docs-accuracy. Two directions, both of
+      which this can answer without introspecting the app's routes:
+
+      - Committed vs served. When `api.openapi.spec` is a file in the repo
+        and `api.openapi.served_spec` is the URL the running API publishes
+        its spec at, the two operation sets are compared. A difference
+        means the committed artifact is stale against what is deployed.
+        This is the headline: no probing, no guessing, no false positives.
+      - Documented vs reachable. Every documented path taking no
+        parameters is probed; a 404 or 5xx means the spec describes a
+        route that isn't there. A 405 proves the route exists and passes.
+
+      Paths with parameters (/users/{id}) are counted but not probed: a
+      404 from one could mean "route missing" or merely "no such record",
+      and this check can't tell those apart.
+
+      JSON specs only — slopstopper-cli ships no third-party dependencies,
+      so it can't parse YAML. A YAML spec skips with guidance rather than
+      failing; most frameworks serve the JSON form at /openapi.json.
+
+      Skips gracefully (exit 0) when `api.openapi.spec` is unset — an
+      unconfigured check is not a failing check.
+
+      Configuration (.slopstopper.yml's `api.openapi`):
+        spec          - the spec: URL or repo-relative JSON file
+                        (shared with security:dast)
+        served_spec   - URL the live API serves its spec at
+        probe_paths   - false to skip the reachability probes
+        ignore_paths  - globs excluded from probing and comparison
+
+      Flags:
+        --spec X          - override api.openapi.spec
+        --served-spec X   - override api.openapi.served_spec
+        --no-probe        - skip the reachability probes
+        --ignore GLOB     - path glob to skip (repeatable)
+
+      Usage:
+        task ss:hygiene:openapi -- https://api.example.com
+    cmds:
+      - slopstopper run hygiene:openapi -- {{.CLI_ARGS}}
+
   hygiene:test:
     desc: Run all hygiene checks (docs-size, docs-structure, docs-accuracy, entry-files, csp-exceptions, complexity)
+    # Deliberately excludes hygiene:openapi. This aggregate is what the
+    # installed pre-push hook runs, and it is all-static by design —
+    # adding a URL-driven check would make every `git push` hit the
+    # network.
     cmds:
       - task: hygiene:docs-size
       - task: hygiene:docs-structure

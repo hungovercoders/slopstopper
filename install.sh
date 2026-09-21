@@ -800,7 +800,11 @@ GENERIC_WORKFLOWS=(
   "ss-reliability-robots-txt-check.yml"
   "ss-reliability-sitemap-check.yml"
   "ss-reliability-api-health-check.yml"
+  "ss-reliability-api-latency-check.yml"
   "ss-security-api-headers-check.yml"
+  # The one hygiene check that needs a URL: drift means the spec measured
+  # against the thing it documents, so it lives in layer 2 with the rest.
+  "ss-hygiene-openapi-check.yml"
   # Layer 3 — agentic doc-updater (needs ANTHROPIC_API_KEY)
   # NB: gh-aw workflows ship as a .md source + .lock.yml compiled artifact.
   "ss-hygiene-doc-updater.md"
@@ -1365,7 +1369,7 @@ if [ "$INSTALL_HOOKS" = "true" ]; then
 fi
 # Which URL-driven checks this repo actually carries depends on the
 # profile, so build the list from what landed on disk rather than naming
-# all six unconditionally.
+# them all unconditionally.
 DYNAMIC_LABELS=""
 add_dynamic_label() {
   [ -f "$TARGET_DIR/.github/workflows/$1" ] || return 0
@@ -1385,7 +1389,9 @@ add_dynamic_label "ss-reliability-llms-txt-check.yml"       "llms.txt"
 add_dynamic_label "ss-reliability-robots-txt-check.yml"     "robots.txt"
 add_dynamic_label "ss-reliability-sitemap-check.yml"        "Sitemap"
 add_dynamic_label "ss-reliability-api-health-check.yml"     "API Health"
+add_dynamic_label "ss-reliability-api-latency-check.yml"    "API Latency"
 add_dynamic_label "ss-security-api-headers-check.yml"       "API Headers"
+add_dynamic_label "ss-hygiene-openapi-check.yml"            "OpenAPI Drift"
 
 if [ -n "$DYNAMIC_LABELS" ]; then
   echo "  ⏳ Active once you point them at your app (edit .slopstopper.yml):"

@@ -87,8 +87,8 @@ Five loops of feedback, all running on every PR and push to `main`:
 | Loop | What it does | Tools | Docs |
 | ---- | ------------ | ----- | ---- |
 | 🔒 **Security** | SAST, DAST, secrets detection, dependency CVEs, API header + CORS audit | Semgrep, OWASP ZAP, Gitleaks, Trivy | [Security →](./docs/security/README.md) |
-| 🧹 **Hygiene** | Cyclomatic complexity caps, doc structure/accuracy/size checks, auto-labelled PRs | Lizard, markdownlint | [Hygiene →](./docs/hygiene/README.md) |
-| ✅ **Reliability** | E2E + smoke tests, broken-link audits, accessibility (WCAG 2.1 AA), Core Web Vitals, SEO metatags, llms.txt, robots.txt, sitemap.xml, API health | Playwright, axe-core, Lighthouse CI, stdlib Python | [Reliability →](./docs/reliability/README.md) |
+| 🧹 **Hygiene** | Complexity caps, doc structure/accuracy/size checks, OpenAPI drift, auto-labelled PRs | Lizard, markdownlint | [Hygiene →](./docs/hygiene/README.md) |
+| ✅ **Reliability** | E2E + smoke tests, broken-link audits, accessibility (WCAG 2.1 AA), Core Web Vitals, SEO metatags, llms.txt, robots.txt, sitemap.xml, API health + latency | Playwright, axe-core, Lighthouse CI, stdlib Python | [Reliability →](./docs/reliability/README.md) |
 | 🤖 **Runbooks** | One rolling PR comment summarises every check; failed workflows auto-raise issues; an agentic doc updater opens weekly sync PRs | GitHub Actions, gh-aw | [Runbooks →](./docs/runbooks/README.md) |
 | 🚀 **Deployment** | Preview deploys per PR, automated production releases, automatic preview cleanup | Cloudflare Workers Builds (Git integration) | [Deployment →](./docs/deployment/README.md) |
 
@@ -99,7 +99,7 @@ Three portability layers. Layer 1 runs on install; layers 2–3 need a little co
 | Layer | Checks | What you provide |
 | ----- | ------ | ---------------- |
 | **1. Static analysis** (any code) | SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure/Accuracy/Size, Auto-label PRs, Workflow-failure tracker | Nothing — works out of the box |
-| **2. Deployed surface** (need a URL) | Smoke, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, llms.txt, robots.txt, sitemap.xml, DAST, Playwright, API Health, API Headers | `urls.production` / `urls.preview` in `.slopstopper.yml` ([per-check env vars](./docs/reliability/README.md) also work) |
+| **2. Deployed surface** (need a URL) | Smoke, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, llms.txt, robots.txt, sitemap.xml, DAST, Playwright, API Health/Latency/Headers, OpenAPI Drift | `urls.production` / `urls.preview` in `.slopstopper.yml` ([per-check env vars](./docs/reliability/README.md) also work) |
 | **3. Agentic doc-updater** | Weekly doc-sync PRs | `COPILOT_GITHUB_TOKEN` repo secret |
 
 Don't use a check? Delete its workflow or list it under `workflows.disabled` — re-runs respect both.
@@ -188,6 +188,7 @@ This repo hosts both **slopstopper-cli** (the product, under [`cli/`](./cli)) an
 [![Docs Accuracy](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-docs-accuracy-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-docs-accuracy-check.yml)
 [![Docs Size](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-docs-size-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-docs-size-check.yml)
 [![Docs Structure](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-docs-structure-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-docs-structure-check.yml)
+[![OpenAPI Drift](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-openapi-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-openapi-check.yml)
 [![Auto Label PRs](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-auto-label-pr.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-auto-label-pr.yml)
 
 #### ✅ Reliability
@@ -200,6 +201,7 @@ This repo hosts both **slopstopper-cli** (the product, under [`cli/`](./cli)) an
 [![robots.txt](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-robots-txt-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-robots-txt-check.yml)
 [![sitemap](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-sitemap-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-sitemap-check.yml)
 [![API Health](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-api-health-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-api-health-check.yml)
+[![API Latency](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-api-latency-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-api-latency-check.yml)
 
 #### 🤖 Operational
 [![Doc Auto-Updater](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-doc-updater.lock.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-doc-updater.lock.yml)

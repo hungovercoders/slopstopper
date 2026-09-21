@@ -1,0 +1,130 @@
+name: SlopStopper · API Latency Check
+
+# Samples each endpoint in `api.latency.paths` several times and reports
+# the median and slowest response, plus the payload size. The API-shaped
+# analogue of Core Web Vitals: there is no rendering on a JSON API, so
+# the answerable question is how long the endpoint takes and how much it
+# sends back.
+# Triggers: PR, push to main, daily schedule, Cloudflare deployment
+# events. Emits a rolling PR comment; workflow fails when an endpoint is
+# unreachable or a configured budget is exceeded — no separate
+# main-branch issue (exit code is the signal).
+# Docs: docs/reliability/README.md.
+#
+# Budgets are opt-in: with none set the check reports timings and exits
+# 0. Reachability is not opt-in — a non-2xx endpoint fails regardless,
+# because a timing taken from an error response is not a measurement.
+#
+# Like the other API workflows this never tries to build and serve the
+# repo locally: it audits a URL you point it at (urls.preview on PRs,
+# urls.production on main/schedule) and skips cleanly when neither is
+# configured.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  deployment_status:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Base URL of the API to sample'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  api-latency:
+    name: API latency and payload budget audit
+    if: |
+      github.event_name != 'deployment_status' ||
+      github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Set up slopstopper toolchain
+        # Installs node + task (and, in adopter repos, the pinned
+        # slopstopper-cli) from mise.toml and puts them on PATH for later
+        # steps. The pins live in mise.toml ([tools]); mise resolves them
+        # per-repo, so CI and local runs share one version.
+        uses: jdx/mise-action@v2
+
+      - name: Install slopstopper-cli from source (slopstopper.dev only)
+        # In this repo the CLI runs from source (HEAD), so mise.toml carries
+        # no slopstopper-cli pin — install it editable here. Adopter repos
+        # skip this (no cli/ source) and use the mise-pinned wheel.
+        if: ${{ hashFiles('cli/pyproject.toml') != '' }}
+        run: pip install -e ./cli
+
+      - name: Determine audit URL
+        id: url
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_URL: ${{ github.event.inputs.url }}
+          DEPLOYMENT_URL: ${{ github.event.deployment_status.target_url }}
+        run: |
+          validate_url() {
+            local url="$1"
+            if [[ ! "$url" =~ ^https?://[^[:space:][:cntrl:]]+$ ]]; then
+              echo "Error: Invalid URL format: $url" >&2
+              exit 1
+            fi
+            printf '%s' "$url"
+          }
+
+          # CUSTOMISE FOR YOUR APP: point urls.preview at the environment
+          # your PRs deploy to. Timings from a preview environment are
+          # noisier than production ones — derive budgets from what you
+          # actually observe there, or the check becomes noise.
+          case "$EVENT_NAME" in
+            workflow_dispatch) CANDIDATE="$INPUT_URL" ;;
+            deployment_status) CANDIDATE="$DEPLOYMENT_URL" ;;
+            pull_request)      CANDIDATE="$(slopstopper config get urls.preview)" ;;
+            *)                 CANDIDATE="$(slopstopper config get urls.production)" ;;
+          esac
+
+          if [ -z "$CANDIDATE" ]; then
+            echo "::notice::No URL resolved for this event — set urls.preview / urls.production in .slopstopper.yml to enable the API latency check here."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            SAFE_URL="$(validate_url "$CANDIDATE")"
+            echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run API latency audit
+        if: steps.url.outputs.skip == 'false'
+        id: audit
+        run: task ss:reliability:api-latency -- ${{ steps.url.outputs.url }}
+
+      - name: Upload API latency report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-latency-report-${{ github.run_id }}
+          path: .ss/reports/api-latency/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Emit PR comment
+        if: github.event_name == 'pull_request' && steps.url.outputs.skip == 'false' && always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: slopstopper emit reliability:api-latency --target pr-comment --status ${{ steps.audit.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete

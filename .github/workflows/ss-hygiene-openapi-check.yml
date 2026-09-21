@@ -1,0 +1,125 @@
+name: SlopStopper · OpenAPI Drift Check
+
+# Compares the committed OpenAPI spec against the API it documents: the
+# operation set the live deployment publishes (`api.openapi.served_spec`)
+# and the reachability of every documented path that takes no parameters.
+# The API-shaped analogue of the docs-accuracy check — same failure, a
+# document that quietly became fiction, on a different surface.
+# Triggers: PR, push to main, daily schedule, Cloudflare deployment
+# events. Emits a rolling PR comment; workflow fails on drift — no
+# separate main-branch issue (exit code is the signal).
+# Docs: docs/hygiene/README.md.
+#
+# The only hygiene check that needs a URL. It still skips gracefully
+# (exit 0) when `api.openapi.spec` is unset, or points at a YAML spec the
+# dependency-free CLI can't parse.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  deployment_status:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Base URL of the API to audit'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  openapi:
+    name: OpenAPI spec drift audit
+    if: |
+      github.event_name != 'deployment_status' ||
+      github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Set up slopstopper toolchain
+        # Installs node + task (and, in adopter repos, the pinned
+        # slopstopper-cli) from mise.toml and puts them on PATH for later
+        # steps. The pins live in mise.toml ([tools]); mise resolves them
+        # per-repo, so CI and local runs share one version.
+        uses: jdx/mise-action@v2
+
+      - name: Install slopstopper-cli from source (slopstopper.dev only)
+        # In this repo the CLI runs from source (HEAD), so mise.toml carries
+        # no slopstopper-cli pin — install it editable here. Adopter repos
+        # skip this (no cli/ source) and use the mise-pinned wheel.
+        if: ${{ hashFiles('cli/pyproject.toml') != '' }}
+        run: pip install -e ./cli
+
+      - name: Determine audit URL
+        id: url
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_URL: ${{ github.event.inputs.url }}
+          DEPLOYMENT_URL: ${{ github.event.deployment_status.target_url }}
+        run: |
+          validate_url() {
+            local url="$1"
+            if [[ ! "$url" =~ ^https?://[^[:space:][:cntrl:]]+$ ]]; then
+              echo "Error: Invalid URL format: $url" >&2
+              exit 1
+            fi
+            printf '%s' "$url"
+          }
+
+          # CUSTOMISE FOR YOUR APP: point urls.preview at the environment
+          # your PRs deploy to. With no URL the check still runs — the
+          # committed-vs-served comparison only needs
+          # `api.openapi.served_spec` — but documented paths are not
+          # probed for reachability.
+          case "$EVENT_NAME" in
+            workflow_dispatch) CANDIDATE="$INPUT_URL" ;;
+            deployment_status) CANDIDATE="$DEPLOYMENT_URL" ;;
+            pull_request)      CANDIDATE="$(slopstopper config get urls.preview)" ;;
+            *)                 CANDIDATE="$(slopstopper config get urls.production)" ;;
+          esac
+
+          if [ -z "$CANDIDATE" ]; then
+            echo "::notice::No URL resolved for this event — set urls.preview / urls.production in .slopstopper.yml to enable the OpenAPI drift check here."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            SAFE_URL="$(validate_url "$CANDIDATE")"
+            echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run OpenAPI drift audit
+        if: steps.url.outputs.skip == 'false'
+        id: audit
+        run: task ss:hygiene:openapi -- ${{ steps.url.outputs.url }}
+
+      - name: Upload OpenAPI drift report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-report-${{ github.run_id }}
+          path: .ss/reports/openapi/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Emit PR comment
+        if: github.event_name == 'pull_request' && steps.url.outputs.skip == 'false' && always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: slopstopper emit hygiene:openapi --target pr-comment --status ${{ steps.audit.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete

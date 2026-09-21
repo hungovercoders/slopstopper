@@ -28,7 +28,7 @@ slopstopper/
 │   ├── slopstopper/checks/   # One module per check (security/hygiene/reliability)
 │   ├── slopstopper/data/     # Bundled Playwright specs, lighthouserc dev/prod, server.js
 │   ├── slopstopper/templates.py / emit.py / discovery.py / config.py
-│   ├── tests/                # pytest suite (486 tests)
+│   ├── tests/                # pytest suite (949 tests)
 │   └── pyproject.toml        # Beta — standalone: `pipx install slopstopper-cli`; suite: pinned in mise.toml
 ├── app/                      # Static site — bound as the [assets] dir on the Worker
 │   ├── index.html            # Hero + Get Started (CLI quick-try + mise suite install) + capability grid
@@ -219,13 +219,16 @@ never writes the key: a curl-piped install is non-interactive, and a wrong
 silent pick (checks quietly off) is worse than the default superset (checks
 visibly red). When signals conflict, UI wins for the same reason.
 
-**Profiles make `api` quiet, not covered.** Subtraction removes checks that
-don't apply; it doesn't add the ones that should. The API-shaped analogues don't
-exist yet — OpenAPI spec↔routes drift (the analogue of docs-accuracy),
-health-endpoint smoke with response-schema assertions (smoke), CORS and JSON
-response-header audit (CSP exceptions), and a latency/payload budget (Core Web
-Vitals). Those are the next increment, not a gap in the profile mechanism.
-(API health, API headers and ZAP's spec-driven API scan have since landed.)
+**Profiles made `api` quiet before they made it covered.** Subtraction removes
+checks that don't apply; it doesn't add the ones that should. The API-shaped
+analogues were a separate increment, not a gap in the mechanism, and have all
+landed: smoke → [api-health](../reliability/README.md#api-health-check), Core
+Web Vitals → [api-latency](../reliability/README.md#api-latency-check), CSP
+exceptions → [api-headers](../security/API_HEADERS.md), docs-accuracy →
+[openapi](../hygiene/README.md#openapi-drift), DAST's spider → [its OpenAPI
+scan mode](../security/DAST.md). Each is inert until configured, so all five
+ship under `ui` too. Out of reach: detecting *undocumented* routes, which needs
+framework-specific route introspection.
 
 ## PR feedback: one summary, compact detail
 
@@ -243,14 +246,14 @@ Feedback now arrives in two layers.
 renders a single rolling comment covering every check:
 
 ```
-## ❌ SlopStopper — 2 of 22 checks failed
+## ❌ SlopStopper — 2 of 24 checks failed
 
 | | Check | |
 |---|---|---|
 | ❌ | **Complexity** | logs → |
 | ❌ | **SEO**        | logs → |
 
-<details><summary>The other 20 checks</summary>…</details>
+<details><summary>The other 22 checks</summary>…</details>
 ```
 
 A green PR gets three lines and a group listing; a red one leads with
@@ -278,10 +281,10 @@ green PR the summary is the only thing there.
 **The summary reads GitHub, not the checks.** It is built from the
 workflow runs already recorded against the head commit
 (`GET /repos/{repo}/actions/runs?head_sha=…`), so it needs no
-coordination with the 22 check workflows and cannot race them into a
+coordination with the 24 check workflows and cannot race them into a
 half-written comment. The alternative — each check editing its own
 section of one shared comment — is a read-modify-write on a single
-resource from 22 concurrent jobs, where a lost update silently drops a
+resource from 24 concurrent jobs, where a lost update silently drops a
 check's status. Reading the runs makes the comment a pure function of
 state GitHub already holds, so every re-render converges on the truth
 regardless of what order the checks finish in.

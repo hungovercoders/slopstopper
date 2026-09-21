@@ -39,16 +39,18 @@
 #            accessibility, Core Web Vitals, SEO, broken links, llms.txt,
 #            robots.txt, sitemap) — they assume HTML and a public web
 #            surface, so on an API they fail rather than no-op. Keeps the
-#            two API checks (api-health, api-headers — see the `api:`
-#            block below), DAST (which scans an API via ZAP's OpenAPI
-#            mode once you set api.openapi.spec, and skips until you do)
-#            and CSP exceptions
+#            four API checks (api-health, api-latency, api-headers and
+#            openapi drift — see the `api:` block below), DAST (which
+#            scans an API via ZAP's OpenAPI mode once you set
+#            api.openapi.spec, and skips until you do) and CSP exceptions
 #            (APIs still set response headers; that check stays inert
 #            until you set headers.source above).
 #   library  A library, CLI or package with no deployed surface at all.
 #            Drops everything that needs a URL: the eight above, DAST, CSP
-#            exceptions and both API checks, leaving the static-analysis
-#            layer.
+#            exceptions and the four API checks, leaving the
+#            static-analysis layer. That includes hygiene:openapi — the
+#            one hygiene check that needs a live API, since drift means
+#            the spec measured against the thing it documents.
 #
 # The `ui` default keeps the API checks, which stay inert until you
 # configure them — a UI repo with API routes (Next.js handlers, Astro
@@ -181,7 +183,45 @@ api:
     # guard against a health endpoint that's doing far too much work.
     max_response_ms:
 
-  # ── security:dast (API scan mode) ──────────────────────────────────
+  # ── reliability:api-latency ────────────────────────────────────────
+  # Samples each endpoint several times and reports the median and the
+  # slowest sample, plus the payload size. The API-shaped analogue of
+  # Core Web Vitals: there is no rendering on a JSON API, so the
+  # answerable question is how long the endpoint takes and how much it
+  # sends back.
+  #
+  # Deliberately not "p95": five samples cannot support a 95th
+  # percentile. Budgets gate on the median, because one slow sample from
+  # a shared CI runner moves the maximum and not the middle.
+  #
+  # Every budget below is opt-in — unset, the timings are reported as
+  # notes and nothing is enforced. Reachability is not opt-in: an
+  # endpoint that errors or answers non-2xx fails either way, because
+  # timing a connection error is not a measurement.
+  latency:
+    # Endpoints to sample. Empty (default) → the check skips. List the
+    # ones whose response time you actually care about.
+    paths: []
+    # Measured requests per endpoint.
+    samples: 5
+    # Requests made and thrown away before measuring. The first hit pays
+    # for DNS, TLS and whatever cold start the platform imposes, none of
+    # which is the steady-state latency a budget is about.
+    warmup: 1
+    # Fail if the median sample exceeds this. The flake-resistant knob,
+    # and the one to reach for first.
+    median_ms:
+    # Fail if ANY sample exceeds this. An explicit tail ceiling for
+    # anyone who wants one — noisier than the median by construction.
+    slowest_ms:
+    # Fail if the response body exceeds this many bytes. Usually catches
+    # an endpoint that stopped paginating or started embedding a
+    # relation it used to reference.
+    max_bytes:
+    # Derive these from numbers you have observed, not from numbers that
+    # sound right. A guessed budget on a shared runner is noise.
+
+  # ── security:dast (API scan mode) + hygiene:openapi ────────────────
   # ZAP's default baseline scan spiders a site from a root URL, which
   # finds nothing on a JSON API — there are no links to crawl. Point this
   # at an OpenAPI spec and security:dast switches to ZAP's API scan,
@@ -189,15 +229,42 @@ api:
   #
   # Unset (default) → the baseline scan, unchanged. On an `api` profile
   # with no spec the DAST workflow skips rather than scanning nothing.
+  #
+  # `hygiene:openapi` reads the same `spec` key and asks the other
+  # question: has the spec stopped describing the API it documents? Same
+  # failure as a stale doc, different surface.
   openapi:
     # URL or repo-relative file, e.g. https://api.example.com/openapi.json
     # or openapi.yaml. A local file is staged into ZAP's mounted report
     # directory for the run and removed afterwards.
+    #
+    # DAST takes either form. `hygiene:openapi` reads JSON only —
+    # slopstopper-cli ships no third-party dependencies, so it can't
+    # parse YAML, and it skips with that guidance rather than failing.
+    # Most frameworks serve the JSON form at /openapi.json.
     spec:
     # Pass the scanned URL as ZAP's -O host override, so a spec whose
     # `servers` block names production can be scanned against a preview
     # environment. Set false if your spec already names the right host.
+    # DAST only — hygiene:openapi ignores this.
     host_override: true
+    # hygiene:openapi only, from here down.
+    #
+    # URL the live API publishes its own spec at. Set this and the check
+    # compares the committed spec's operation set against the deployed
+    # one — the headline drift signal, and the one with no false
+    # positives: no probing, no guessing. Unset → only the reachability
+    # probes below run, and the check says so.
+    served_spec:
+    # Probe every documented path that takes no parameters. A 404 or 5xx
+    # means the spec describes a route that isn't there; a 405 proves the
+    # route exists and passes. Paths with parameters (/users/{id}) are
+    # never probed — a 404 from one could mean "route missing" or merely
+    # "no such record", and this check can't tell those apart.
+    probe_paths: true
+    # Globs excluded from both the probing and the comparison. For routes
+    # that are deliberately undeployed, or that differ per environment.
+    ignore_paths: []
 
   # ── security:api-headers ───────────────────────────────────────────
   # Audits response headers and CORS policy. On an HTML surface CSP is the

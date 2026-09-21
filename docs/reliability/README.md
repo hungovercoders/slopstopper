@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains documentation for SlopStopper's reliability checks: portable smoke tests, broken-link audits, accessibility audits (see [ACCESSIBILITY.md](ACCESSIBILITY.md)), Core Web Vitals via Lighthouse CI, SEO/social-share metatags (see [SEO.md](SEO.md)), the llms.txt AI-discoverability map (see [LLMS_TXT.md](LLMS_TXT.md)), the robots.txt discoverability + de-index guard (see [ROBOTS_TXT.md](ROBOTS_TXT.md)) the sitemap.xml completeness + drift check (see [SITEMAP.md](SITEMAP.md)) and the API health/readiness endpoint audit (below). These checks are wired against any reachable URL.
+This directory contains documentation for SlopStopper's reliability checks: portable smoke tests, broken-link audits, accessibility audits (see [ACCESSIBILITY.md](ACCESSIBILITY.md)), Core Web Vitals via Lighthouse CI, SEO/social-share metatags (see [SEO.md](SEO.md)), the llms.txt AI-discoverability map (see [LLMS_TXT.md](LLMS_TXT.md)), the robots.txt discoverability + de-index guard (see [ROBOTS_TXT.md](ROBOTS_TXT.md)) the sitemap.xml completeness + drift check (see [SITEMAP.md](SITEMAP.md)), the API health/readiness endpoint audit and the API latency + payload budget audit (both below). These checks are wired against any reachable URL.
 
 ## Configuration (env vars)
 
@@ -32,6 +32,8 @@ All reliability checks read their target URL and audit scope from environment va
 | `SITEMAP_PATH` | `/sitemap.xml` | sitemap check — path to the sitemap |
 | `API_HEALTH_TEST_URL` | (none) | API health check — base URL of the API |
 | `API_HEALTH_PATH` | (none — unset skips the check) | API health check — path to the health endpoint |
+| `API_LATENCY_TEST_URL` | (none) | API latency check — base URL of the API |
+| `API_LATENCY_PATHS` | (none — unset skips the check) | API latency check — comma-separated paths to sample |
 
 ## API Health Check
 
@@ -90,6 +92,67 @@ Report: `.ss/reports/api-health/api-health-report.{md,json}`.
 `ss-reliability-api-health-check.yml` audits `urls.preview` on pull requests and `urls.production` on pushes to main, schedules and Cloudflare deployment events. Unlike the browser checks it **never builds and serves the repo locally** — an API isn't a static bundle `slopstopper serve` can host, and guessing a start command would be worse than not guessing. With neither URL configured the PR run emits a notice and skips; the deployed-main and scheduled runs still cover the endpoint.
 
 The check ships under every [project-shape profile](../architecture/README.md#project-shape-profiles) except `library`, and stays inert until configured — so a UI repo with API routes gets it without having to opt in.
+
+## API Latency Check
+
+The API-shaped analogue of Core Web Vitals. There is no rendering on a JSON API, so the equivalent question is narrower and more answerable: how long does the endpoint take to answer, and how much does it send back. Each configured path is sampled several times; the check reports the **median**, the **slowest** sample and the response size.
+
+**Why not p95:** five samples cannot support a 95th percentile, and calling `max()` a percentile would dress up one noisy reading as statistics. Budgets gate on the **median**, which is flake-resistant — one slow sample from a shared CI runner moves the maximum and not the middle. `slowest_ms` is an opt-in tail ceiling for anyone who wants one.
+
+### What it checks
+
+| Assertion | Hard fail? | Knob |
+|---|---|---|
+| Every sample completes | yes | — |
+| Status is 2xx/3xx | yes | — |
+| Median response time | only with a budget set | `api.latency.median_ms` |
+| Slowest sample | only with a budget set | `api.latency.slowest_ms` |
+| Response size | only with a budget set | `api.latency.max_bytes` |
+
+Reachability is the floor and never opt-in: a 500 that answers in 3ms is not fast, and a timing from a connection error is not a measurement. Everything else is advisory until you set a budget.
+
+### Configuration
+
+```yaml
+# .slopstopper.yml
+api:
+  base_path: ''          # prefix the API is served under, e.g. /api/v1
+  latency:
+    paths: []            # empty → the check skips gracefully (exit 0)
+    samples: 5           # measured requests per endpoint
+    warmup: 1            # discarded first requests (DNS, TLS, cold start)
+    median_ms:           # unset → timings reported, never enforced
+    slowest_ms:
+    max_bytes:
+```
+
+Warmup requests are thrown away rather than averaged in: the first hit pays for DNS, TLS and whatever cold start the platform imposes, none of which is the steady-state latency a budget is about.
+
+**Derive budgets from numbers you have observed, not from numbers that sound right.** A guessed budget on a shared runner is noise, and a check people learn to ignore is worse than no check. Run it with no budgets for a week, read the reports, then set one.
+
+### Running locally
+
+```bash
+task ss:reliability:api-latency -- https://api.example.com
+
+# Override config from the command line
+task ss:reliability:api-latency -- https://api.example.com \
+  --path /v1/items --samples 9 --median-ms 400 --max-bytes 200000
+
+# Or set the env vars
+API_LATENCY_TEST_URL=https://api.example.com \
+  API_LATENCY_PATHS=/health,/v1/items task ss:reliability:api-latency
+```
+
+Report: `.ss/reports/api-latency/api-latency-report.{md,json}`.
+
+### Running in CI
+
+`ss-reliability-api-latency-check.yml` resolves its URL exactly as the API health workflow does — `urls.preview` on pull requests, `urls.production` on main, schedules and deployment events — and never builds or serves the repo locally.
+
+One caveat specific to this check: **timings from a preview environment are not timings from production.** A cold-started preview deploy is slower and noisier. Either set budgets loose enough for it, or leave them unset on PRs and rely on the scheduled production run.
+
+Ships under every [project-shape profile](../architecture/README.md#project-shape-profiles) except `library`, and stays inert until configured.
 
 ## Broken Link Checks
 
