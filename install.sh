@@ -180,7 +180,7 @@ https://mise.jdx.dev. A legacy .slopstopper.yml cli_version pin is migrated into
 mise.toml automatically on the next run.
 
 The installer also writes the SlopStopper Claude Code skills into
-<target>/.claude/skills/slopstopper-*/SKILL.md so every contributor on the
+<target>/.claude/skills/slopstopper-*/ so every contributor on the
 repo benefits from them on git clone (Claude Code auto-discovers project-
 level skills). Pass --no-skills to skip this step. To refresh skills later
 without re-running the whole installer, use install-skill.sh.
@@ -1147,16 +1147,15 @@ fi
 
 # ── install Claude Code skills (project level) ──────────────────────────────
 
-# Skills land in <target>/.claude/skills/slopstopper-*/SKILL.md so every
+# Skills land in <target>/.claude/skills/slopstopper-*/ (SKILL.md + references/) so every
 # contributor that clones the repo gets them automatically (Claude Code
 # auto-discovers project-level skills the same way as user-level). Disable
 # with --no-skills / SLOPSTOPPER_NO_SKILLS.
 #
-# Same atomic-fetch + frontmatter-validation logic as install-skill.sh:
-# fetch each SKILL.md to a temp file, validate it starts with `---`,
-# only then overwrite the destination. Re-runs that hit no upstream
-# change are no-ops. install-skill.sh remains a standalone way to refresh
-# just the skills without re-running the full installer.
+# Same staging + frontmatter-validation logic as install-skill.sh (the
+# function body is identical in both — keep them in sync). Re-runs that
+# hit no upstream change are no-ops. install-skill.sh remains a standalone
+# way to refresh just the skills without re-running the full installer.
 
 SKILL_NAMES=(
   "slopstopper-install"
@@ -1167,39 +1166,59 @@ OBSOLETE_SKILLS=(
   "slopstopper-update"
 )
 
-install_skill_file() {
+SKILLS_RAW="https://raw.githubusercontent.com/hungovercoders/slopstopper/main/.claude/skills"
+# Prefer the checkout we are running from: no network, and the skills match
+# the workflows and templates copied from the same tree instead of `main`.
+SKILLS_SRC_DIR="$SCRIPT_DIR/.claude/skills"
+SKILL_FAIL() { warn "$* (non-fatal)."; }
+
+# A skill is a directory: SKILL.md plus the references/*.md files it links
+# (the long tables live there and are read on demand, so the skill costs one
+# page of context until a step needs detail). Running from a checkout copies
+# the directory; a curl-piped install fetches SKILL.md, validates it, then
+# fetches every references/<name>.md it mentions. Either way the result is
+# staged in a temp dir and swapped in whole, so an interrupted run cannot
+# leave a half-skill behind.
+install_skill_dir() {
   local skill="$1"
-  local src="https://raw.githubusercontent.com/hungovercoders/slopstopper/main/.claude/skills/${skill}/SKILL.md"
   local dest_dir="${TARGET_DIR}/.claude/skills/${skill}"
-  local dest_file="${dest_dir}/SKILL.md"
-  local tmp_file
-  tmp_file="$(mktemp)"
+  local stage
+  stage="$(mktemp -d)"
   # shellcheck disable=SC2064
-  trap "rm -f \"${tmp_file}\"" RETURN
+  trap "rm -rf \"${stage}\"" RETURN
 
-  mkdir -p "${dest_dir}"
-
-  if ! curl -fsSL "${src}" -o "${tmp_file}"; then
-    warn "Failed to download ${skill}/SKILL.md (non-fatal)."
-    return 1
-  fi
-
-  if ! head -n 1 "${tmp_file}" | grep -q "^---$"; then
-    warn "Downloaded ${skill}/SKILL.md does not look like a skill (no frontmatter). Skipping."
-    return 1
-  fi
-
-  if [ -f "${dest_file}" ]; then
-    if cmp -s "${tmp_file}" "${dest_file}"; then
-      info "${skill}: already up to date"
-    else
-      mv "${tmp_file}" "${dest_file}"
-      success "${skill}: refreshed"
-    fi
+  if [ -n "${SKILLS_SRC_DIR:-}" ] && [ -f "${SKILLS_SRC_DIR}/${skill}/SKILL.md" ]; then
+    cp -R "${SKILLS_SRC_DIR}/${skill}/." "${stage}/"
   else
-    mv "${tmp_file}" "${dest_file}"
-    success "${skill}: installed"
+    if ! curl -fsSL "${SKILLS_RAW}/${skill}/SKILL.md" -o "${stage}/SKILL.md"; then
+      SKILL_FAIL "Failed to download ${skill}/SKILL.md"
+      return 1
+    fi
+    local ref
+    for ref in $(grep -o 'references/[A-Za-z0-9_.-]*\.md' "${stage}/SKILL.md" | sort -u); do
+      mkdir -p "${stage}/references"
+      if ! curl -fsSL "${SKILLS_RAW}/${skill}/${ref}" -o "${stage}/${ref}"; then
+        SKILL_FAIL "Failed to download ${skill}/${ref}"
+        return 1
+      fi
+    done
   fi
+
+  if ! head -n 1 "${stage}/SKILL.md" | grep -q "^---$"; then
+    SKILL_FAIL "${skill}/SKILL.md does not look like a Claude Code skill (no frontmatter). Skipping."
+    return 1
+  fi
+
+  if [ -d "${dest_dir}" ] && diff -rq "${stage}" "${dest_dir}" >/dev/null 2>&1; then
+    info "${skill}: already up to date"
+    return 0
+  fi
+  local had_it=false
+  [ -d "${dest_dir}" ] && had_it=true
+  mkdir -p "$(dirname "${dest_dir}")"
+  rm -rf "${dest_dir}"
+  cp -R "${stage}" "${dest_dir}"
+  if [ "${had_it}" = true ]; then success "${skill}: refreshed"; else success "${skill}: installed"; fi
 }
 
 install_claude_skills() {
@@ -1214,7 +1233,7 @@ install_claude_skills() {
   sep
 
   for skill in "${SKILL_NAMES[@]}"; do
-    install_skill_file "${skill}" || true
+    install_skill_dir "${skill}" || true
   done
 
   # Clean up obsolete skill directories left by older installer versions.

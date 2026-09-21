@@ -23,8 +23,8 @@
 #   bash install-skill.sh /path/to/repo
 #
 # What lands:
-#   <target>/.claude/skills/slopstopper-install/SKILL.md   # install + refresh
-#   <target>/.claude/skills/slopstopper-triage/SKILL.md    # diagnose a failing check
+#   <target>/.claude/skills/slopstopper-install/   # install + refresh (SKILL.md + references/)
+#   <target>/.claude/skills/slopstopper-triage/    # diagnose a failing check
 #
 # Migration:
 #   - If a previous version installed a single `install-slopstopper` skill,
@@ -41,12 +41,13 @@
 #
 # What this affects:
 #   Nothing outside <target>/.claude/skills/slopstopper-*/. Re-running
-#   overwrites each SKILL.md in place only if the upstream content
-#   differs — safe to refresh on a schedule.
+#   replaces each skill directory only if the upstream content differs —
+#   safe to refresh on a schedule.
 
 set -euo pipefail
 
-REPO_RAW="https://raw.githubusercontent.com/hungovercoders/slopstopper/main"
+# Override to fetch from a mirror or a local checkout (file:///path/to/slopstopper).
+REPO_RAW="${SLOPSTOPPER_REPO_RAW:-https://raw.githubusercontent.com/hungovercoders/slopstopper/main}"
 SKILLS=(
   "slopstopper-install"
   "slopstopper-triage"
@@ -79,50 +80,69 @@ fi
 
 sep
 echo "  🧠  SlopStopper — installing the Claude Code skills (project level)"
-echo "  Source : ${REPO_RAW}/.claude/skills/<skill>/SKILL.md"
-echo "  Target : ${TARGET_DIR}/.claude/skills/<skill>/SKILL.md"
+echo "  Source : ${REPO_RAW}/.claude/skills/<skill>/  (SKILL.md + references/)"
+echo "  Target : ${TARGET_DIR}/.claude/skills/<skill>/"
 sep
 
 # ── install each skill ──────────────────────────────────────────────────────
 
-# Atomic fetch via temp file per skill: only overwrite the destination
-# if the download succeeded AND looks like a Claude Code skill (frontmatter
-# present). An interrupted install can't leave a half-file behind.
-install_skill() {
+SKILLS_RAW="${REPO_RAW}/.claude/skills"
+# Standalone script: there is no checkout to copy from, so SKILLS_SRC_DIR
+# stays unset and every file is fetched. install.sh sets it.
+SKILLS_SRC_DIR=""
+SKILL_FAIL() { error "$*"; }
+
+# A skill is a directory: SKILL.md plus the references/*.md files it links
+# (the long tables live there and are read on demand, so the skill costs one
+# page of context until a step needs detail). Running from a checkout copies
+# the directory; a curl-piped install fetches SKILL.md, validates it, then
+# fetches every references/<name>.md it mentions. Either way the result is
+# staged in a temp dir and swapped in whole, so an interrupted run cannot
+# leave a half-skill behind.
+install_skill_dir() {
   local skill="$1"
-  local src="${REPO_RAW}/.claude/skills/${skill}/SKILL.md"
   local dest_dir="${TARGET_DIR}/.claude/skills/${skill}"
-  local dest_file="${dest_dir}/SKILL.md"
-  local tmp_file
-  tmp_file="$(mktemp)"
-  # shellcheck disable=SC2064 # we want $tmp_file expanded now, not on EXIT
-  trap "rm -f \"${tmp_file}\"" RETURN
+  local stage
+  stage="$(mktemp -d)"
+  # shellcheck disable=SC2064
+  trap "rm -rf \"${stage}\"" RETURN
 
-  mkdir -p "${dest_dir}"
-
-  if ! curl -fsSL "${src}" -o "${tmp_file}"; then
-    error "Failed to download ${skill}/SKILL.md from ${src}"
-  fi
-
-  if ! head -n 1 "${tmp_file}" | grep -q "^---$"; then
-    error "Downloaded ${skill}/SKILL.md does not look like a Claude Code skill (no frontmatter). Aborting."
-  fi
-
-  if [ -f "${dest_file}" ]; then
-    if cmp -s "${tmp_file}" "${dest_file}"; then
-      success "${skill} already up to date — no changes."
-    else
-      mv "${tmp_file}" "${dest_file}"
-      success "${skill} refreshed."
-    fi
+  if [ -n "${SKILLS_SRC_DIR:-}" ] && [ -f "${SKILLS_SRC_DIR}/${skill}/SKILL.md" ]; then
+    cp -R "${SKILLS_SRC_DIR}/${skill}/." "${stage}/"
   else
-    mv "${tmp_file}" "${dest_file}"
-    success "${skill} installed."
+    if ! curl -fsSL "${SKILLS_RAW}/${skill}/SKILL.md" -o "${stage}/SKILL.md"; then
+      SKILL_FAIL "Failed to download ${skill}/SKILL.md"
+      return 1
+    fi
+    local ref
+    for ref in $(grep -o 'references/[A-Za-z0-9_.-]*\.md' "${stage}/SKILL.md" | sort -u); do
+      mkdir -p "${stage}/references"
+      if ! curl -fsSL "${SKILLS_RAW}/${skill}/${ref}" -o "${stage}/${ref}"; then
+        SKILL_FAIL "Failed to download ${skill}/${ref}"
+        return 1
+      fi
+    done
   fi
+
+  if ! head -n 1 "${stage}/SKILL.md" | grep -q "^---$"; then
+    SKILL_FAIL "${skill}/SKILL.md does not look like a Claude Code skill (no frontmatter). Skipping."
+    return 1
+  fi
+
+  if [ -d "${dest_dir}" ] && diff -rq "${stage}" "${dest_dir}" >/dev/null 2>&1; then
+    info "${skill}: already up to date"
+    return 0
+  fi
+  local had_it=false
+  [ -d "${dest_dir}" ] && had_it=true
+  mkdir -p "$(dirname "${dest_dir}")"
+  rm -rf "${dest_dir}"
+  cp -R "${stage}" "${dest_dir}"
+  if [ "${had_it}" = true ]; then success "${skill}: refreshed"; else success "${skill}: installed"; fi
 }
 
 for skill in "${SKILLS[@]}"; do
-  install_skill "${skill}"
+  install_skill_dir "${skill}"
 done
 
 # ── clean up obsolete skill directories ──────────────────────────────────────

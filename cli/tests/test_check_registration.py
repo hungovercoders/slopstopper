@@ -187,6 +187,8 @@ EXPECTED_INSTALLED_WORKFLOWS = 27  # every ss-*.yml except ss-release.yml
 # "check(s)" / "workflow(s)". A number outside the set is drift.
 PROSE_SITES = {
     ".claude/skills/slopstopper-install/SKILL.md": {"checks": {24, 16, 10}, "workflows": {27}},
+    ".claude/skills/slopstopper-install/references/preflight.md": {"checks": {24, 16, 10}, "workflows": {27}},
+    ".claude/skills/slopstopper-install/references/install.md": {"checks": {24, 16, 10}, "workflows": {27}},
     "app/tools.html": {"checks": {24}, "workflows": {27}},
     # 22: the worked example reads "2 of 24 checks failed … The other 22 checks".
     "docs/architecture/README.md": {"checks": {24, 22}, "workflows": {24}},

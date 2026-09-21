@@ -18,6 +18,7 @@ deterministically, without performing the real mise install.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -681,3 +682,53 @@ def test_no_task_leaves_no_task_invocation_in_any_workflow(tmp_path):
     assert not leftovers, leftovers
     sast = (workflows / "ss-security-sast-check.yml").read_text()
     assert "slopstopper run security:sast" in sast
+
+
+# ── skills install as directories ────────────────────────────────
+
+
+def test_skills_install_from_the_local_checkout_with_their_references(tmp_path):
+    """Run from a checkout, install.sh copies each skill directory — no
+    network — and every references/*.md the SKILL.md links comes with it."""
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, args=["--no-hooks"])
+    assert result.returncode == 0, result.stderr
+    for skill in ("slopstopper-install", "slopstopper-triage"):
+        skill_md = target / ".claude/skills" / skill / "SKILL.md"
+        assert skill_md.is_file(), skill
+        text = skill_md.read_text()
+        assert text.startswith("---\n")
+        for ref in set(re.findall(r"references/([A-Za-z0-9_.-]+\.md)", text)):
+            assert (target / ".claude/skills" / skill / "references" / ref).is_file(), f"{skill}/{ref}"
+    assert "installed" in result.stdout
+
+
+def test_skills_are_refreshed_as_a_whole_directory(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--no-hooks"]).returncode == 0
+    stray = target / ".claude/skills/slopstopper-install/references/stale.md"
+    stray.write_text("# left over from an older skill\n")
+    second = _run_install(target, args=["--no-hooks"])
+    assert second.returncode == 0, second.stderr
+    assert not stray.exists(), "a refresh must replace the directory, not merge into it"
+    assert "refreshed" in second.stdout
+
+
+def test_install_skill_sh_fetches_skill_md_and_every_linked_reference(tmp_path):
+    """The standalone script has no checkout to copy from: it fetches SKILL.md,
+    then each references/*.md the map links. Pointed at a file:// copy of this
+    repo so the test needs no network."""
+    target = tmp_path / "adopter"
+    target.mkdir()
+    result = subprocess.run(
+        ["bash", str(REPO_ROOT / "install-skill.sh"), str(target)],
+        capture_output=True, text=True,
+        env={**os.environ, "SLOPSTOPPER_REPO_RAW": f"file://{REPO_ROOT}"},
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    for skill in ("slopstopper-install", "slopstopper-triage"):
+        text = (target / ".claude/skills" / skill / "SKILL.md").read_text()
+        refs = set(re.findall(r"references/([A-Za-z0-9_.-]+\.md)", text))
+        assert refs, skill
+        for ref in refs:
+            assert (target / ".claude/skills" / skill / "references" / ref).is_file(), f"{skill}/{ref}"
