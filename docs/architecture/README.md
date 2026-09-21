@@ -18,8 +18,9 @@ Notation: C4 (Context + Container).
 
 ```
 slopstopper/
+├── .github/actions/          # Composite steps every ss-* workflow shares (ss-setup, ss-resolve-url)
 ├── .github/workflows/        # All SlopStopper workflows are `ss-*.yml`
-│                             #   (jdx/mise-action installs the pinned CLI + task, then `task ss:…` / `slopstopper run …`)
+│                             #   (`uses: ./.github/actions/ss-setup`, then `task ss:…` / `slopstopper run …`)
 ├── .ss/                      # SlopStopper-owned (adopter side)
 │   ├── reports/              # CLI writes here (.gitignored)
 │   └── .workflows-installed  # Manifest of installed workflows (commit this)

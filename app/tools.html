@@ -275,7 +275,7 @@ return next;</code></pre></div>
                         <div class="codeblock codeblock--yaml"><pre><code>jobs:
   complexity:
     steps:
-      - uses: jdx/mise-action@v2
+      - uses: ./.github/actions/ss-setup
       - run: task ss:hygiene:complexity   # fails above hygiene.complexity.max_ccn (15)</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-complexity-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>

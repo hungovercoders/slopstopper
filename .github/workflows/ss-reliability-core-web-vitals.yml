@@ -46,32 +46,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Set up slopstopper toolchain
-        # Installs node + task (and, in adopter repos, the pinned
-        # slopstopper-cli) from mise.toml and puts them on PATH for later
-        # steps. The pins live in mise.toml ([tools]); mise resolves them
-        # per-repo, so CI and local runs share one version.
-        uses: jdx/mise-action@v2
+      - name: Set up slopstopper
+        # Python, the mise-pinned toolchain (task, node, slopstopper-cli) and,
+        # in the slopstopper repo only, the CLI from source. One local
+        # composite action; install.sh copies it in next to the workflows.
+        uses: ./.github/actions/ss-setup
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-
-      - name: Install slopstopper-cli from source (slopstopper.dev only)
-        # In this repo the CLI runs from source (HEAD), so mise.toml carries
-        # no slopstopper-cli pin — install it editable here. Adopter repos
-        # skip this (no cli/ source) and use the mise-pinned wheel.
-        if: ${{ hashFiles('cli/pyproject.toml') != '' }}
-        run: pip install -e ./cli
-
-      # ── Local server (PR / push to main) ────────────────────────────────────
-      # CUSTOMISE FOR YOUR APP: these two steps build and serve this
-      # repo's static site. Replace with your app's build/serve
-      # commands, or remove them and only audit deployed URLs.
       - name: Build site
         if: github.event_name == 'pull_request' || github.event_name == 'push'
         run: |
@@ -96,51 +79,16 @@ jobs:
 
       - name: Determine audit URL
         id: audit-url
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          INPUT_URL: ${{ github.event.inputs.url }}
-          DEPLOYMENT_URL: ${{ github.event.deployment_status.target_url }}
-        run: |
-          validate_url() {
-            local url="$1"
-            if [[ ! "$url" =~ ^https?://[^[:space:][:cntrl:]]+$ ]]; then
-              echo "Error: Invalid URL format: $url" >&2
-              exit 1
-            fi
-            printf '%s' "$url"
-          }
-
-          # `prod` toggles the stricter lighthouserc (deployment_status,
-          # schedule, and the no-event fallback all use it).
-          if [ "$EVENT_NAME" == "pull_request" ] || [ "$EVENT_NAME" == "push" ]; then
-            echo "url=http://localhost:8080" >> "$GITHUB_OUTPUT"
-            echo "prod=false" >> "$GITHUB_OUTPUT"
-          elif [ "$EVENT_NAME" == "workflow_dispatch" ]; then
-            DISPATCH_URL="$INPUT_URL"
-            if [ -z "$DISPATCH_URL" ]; then
-              DISPATCH_URL="$(slopstopper config get urls.production)"
-              if [ -z "$DISPATCH_URL" ]; then
-                echo "::error::No url input given and urls.production is unset in .slopstopper.yml" >&2
-                exit 1
-              fi
-            fi
-            SAFE_URL="$(validate_url "$DISPATCH_URL")"
-            echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
-            echo "prod=false" >> "$GITHUB_OUTPUT"
-          elif [ "$EVENT_NAME" == "deployment_status" ]; then
-            SAFE_URL="$(validate_url "$DEPLOYMENT_URL")"
-            echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
-            echo "prod=true" >> "$GITHUB_OUTPUT"
-          else
-            CONFIG_URL="$(slopstopper config get urls.production)"
-            if [ -z "$CONFIG_URL" ]; then
-              echo "::error::Scheduled run requires urls.production in .slopstopper.yml" >&2
-              exit 1
-            fi
-            SAFE_URL="$(validate_url "$CONFIG_URL")"
-            echo "url=$SAFE_URL" >> "$GITHUB_OUTPUT"
-            echo "prod=true" >> "$GITHUB_OUTPUT"
-          fi
+        # CUSTOMISE FOR YOUR APP: urls.production / urls.preview in
+        # .slopstopper.yml. See .github/actions/ss-resolve-url for the
+        # event → URL table.
+        uses: ./.github/actions/ss-resolve-url
+        with:
+          mode: local
+          url: ${{ github.event.inputs.url }}
+          deployment-url: ${{ github.event.deployment_status.target_url }}
+          dispatch-fallback: production
+          check: Core Web Vitals
 
       - name: Run Core Web Vitals audit
         id: cwv

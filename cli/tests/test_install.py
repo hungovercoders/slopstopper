@@ -681,3 +681,34 @@ def test_no_task_leaves_no_task_invocation_in_any_workflow(tmp_path):
     assert not leftovers, leftovers
     sast = (workflows / "ss-security-sast-check.yml").read_text()
     assert "slopstopper run security:sast" in sast
+
+
+# ── composite actions ────────────────────────────────────────────
+#
+# Every ss-* workflow starts with `uses: ./.github/actions/ss-setup`, so
+# the actions must land next to the workflows or every check fails on
+# its first step. They are plumbing, not checks: copied under every
+# profile, refreshed wholesale, never tracked in the marker.
+
+
+@pytest.mark.parametrize("profile", ["ui", "api", "library"])
+def test_composite_actions_land_under_every_profile(tmp_path, profile):
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, args=["--profile", profile, "--no-hooks", "--no-skills"])
+    assert result.returncode == 0, result.stderr
+    for action in ("ss-setup", "ss-resolve-url"):
+        assert (target / ".github/actions" / action / "action.yml").is_file(), action
+    marker = (target / ".ss/.workflows-installed").read_text()
+    assert "ss-setup" not in marker
+
+
+def test_composite_actions_are_refreshed_not_respected_as_deletions(tmp_path):
+    """Deleting a workflow is a choice the installer respects; deleting the
+    plumbing every workflow needs is not — it comes back."""
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
+    action = target / ".github/actions/ss-setup/action.yml"
+    action.write_text("# hand-edited\n")
+    assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
+    assert "hand-edited" not in action.read_text()
+    assert "using: composite" in action.read_text()

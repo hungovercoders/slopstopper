@@ -7,7 +7,7 @@ description: Diagnose and fix a failing slopstopper check, including a check tha
 
 You're being asked to fix a slopstopper check that's failing. This skill is reactive — it assumes the install is in place and at least one check is red. If the user is mid-install or refreshing an existing install, the install playbook (`slopstopper-install` Step 7) already handed off here. Either way, the procedure is the same.
 
-Every check now runs through `slopstopper-cli`. The workflow body for each `ss-*.yml` is ~8 lines: install the CLI, `slopstopper run <category>:<check>`, `slopstopper emit <category>:<check> --target {pr-comment,issue}`. So the local reproducer is always `slopstopper run …` (or its `task ss:*` shim).
+Every check now runs through `slopstopper-cli`. The workflow body for each `ss-*.yml` is ~8 lines: `uses: ./.github/actions/ss-setup` (Python, the mise toolchain, the CLI), `slopstopper run <category>:<check>`, `slopstopper emit <category>:<check> --target {pr-comment,issue}`. URL-driven checks add `uses: ./.github/actions/ss-resolve-url`, which turns the event into the URL to audit — if a check ran against the wrong URL, that action's table is the first place to look. So the local reproducer is always `slopstopper run …` (or its `task ss:*` shim).
 
 The shape of the fix depends on which of three things you're looking at:
 

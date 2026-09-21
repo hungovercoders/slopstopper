@@ -1,0 +1,135 @@
+name: Resolve the URL a check audits
+description: >-
+  Turns the triggering event into the URL a URL-driven check should audit,
+  validated to http(s). Two modes: `local` for the browser checks, which
+  build and serve the repo on pull requests and pushes; `skip` for the API
+  checks, which audit a deployed environment or skip when none is configured.
+
+# Twelve workflows carried a copy of this logic, each with its own
+# `validate_url()`. The shape is the same in all of them:
+#
+#   workflow_dispatch   → the `url` input (mode local: else the fallback;
+#                         mode skip: else urls.production)
+#   deployment_status   → the deployment's target URL
+#   schedule            → urls.production (an error if unset — a scheduled
+#                         run has nothing else to audit)
+#   pull_request        → mode local:  http://localhost:8080, use_local=true
+#                         mode skip:   urls.preview, skip=true if unset
+#   push (main)         → mode local:  http://localhost:8080, use_local=true
+#                         mode skip:   urls.production, skip=true if unset
+#
+# CUSTOMISE FOR YOUR APP: `urls.production` and `urls.preview` live in
+# .slopstopper.yml. Point `urls.preview` at the environment your PRs deploy
+# to and the API checks cover it; with none set, the PR run of a `skip`-mode
+# check emits a notice and does nothing, and the deployed-main / scheduled
+# runs carry the coverage.
+
+inputs:
+  mode:
+    description: "`local` (build and serve on PR/push) or `skip` (audit a deployed URL or skip)"
+    required: false
+    default: local
+  url:
+    description: The workflow_dispatch `url` input, if any
+    required: false
+    default: ''
+  deployment-url:
+    description: The deployment_status target URL, if any
+    required: false
+    default: ''
+  dispatch-fallback:
+    description: "Mode local only: where a blank dispatch goes — `local` or `production`"
+    required: false
+    default: local
+  check:
+    description: Human name of the check, for the skip notice
+    required: false
+    default: this check
+
+outputs:
+  url:
+    description: The URL to audit (empty when skip=true)
+    value: ${{ steps.resolve.outputs.url }}
+  skip:
+    description: "`true` when no URL could be resolved for this event (mode skip)"
+    value: ${{ steps.resolve.outputs.skip }}
+  use_local:
+    description: "`true` when the workflow should build and serve the repo itself (mode local)"
+    value: ${{ steps.resolve.outputs.use_local }}
+  prod:
+    description: "`true` when the URL is a deployed environment (deployment or urls.production)"
+    value: ${{ steps.resolve.outputs.prod }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve
+      id: resolve
+      shell: bash
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        MODE: ${{ inputs.mode }}
+        INPUT_URL: ${{ inputs.url }}
+        DEPLOYMENT_URL: ${{ inputs.deployment-url }}
+        DISPATCH_FALLBACK: ${{ inputs.dispatch-fallback }}
+        CHECK: ${{ inputs.check }}
+      run: |
+        validate_url() {
+          local url="$1"
+          if [[ ! "$url" =~ ^https?://[^[:space:][:cntrl:]]+$ ]]; then
+            echo "::error::Invalid URL format: $url" >&2
+            exit 1
+          fi
+          printf '%s' "$url"
+        }
+        emit() { # url skip use_local prod
+          {
+            echo "url=$1"
+            echo "skip=$2"
+            echo "use_local=$3"
+            echo "prod=$4"
+          } >> "$GITHUB_OUTPUT"
+        }
+        local_build() { emit "http://localhost:8080" false true false; }
+        from_config() { # key prod
+          local url
+          url="$(slopstopper config get "$1")"
+          if [ -z "$url" ]; then
+            return 1
+          fi
+          emit "$(validate_url "$url")" false false "$2"
+        }
+        skip_with_notice() {
+          echo "::notice::No URL resolved for this event — set urls.preview / urls.production in .slopstopper.yml to enable ${CHECK} here."
+          emit "" true false false
+        }
+
+        case "$EVENT_NAME" in
+          workflow_dispatch)
+            if [ -n "$INPUT_URL" ]; then
+              emit "$(validate_url "$INPUT_URL")" false false false
+            elif [ "$MODE" = "local" ] && [ "$DISPATCH_FALLBACK" = "local" ]; then
+              local_build
+            else
+              from_config urls.production true || {
+                echo "::error::No url input given and urls.production is unset in .slopstopper.yml" >&2
+                exit 1
+              }
+            fi
+            ;;
+          deployment_status)
+            emit "$(validate_url "$DEPLOYMENT_URL")" false false true
+            ;;
+          schedule)
+            from_config urls.production true || {
+              echo "::error::Scheduled run requires urls.production in .slopstopper.yml" >&2
+              exit 1
+            }
+            ;;
+          pull_request)
+            if [ "$MODE" = "local" ]; then local_build; else from_config urls.preview false || skip_with_notice; fi
+            ;;
+          *)
+            if [ "$MODE" = "local" ]; then local_build; else from_config urls.production true || skip_with_notice; fi
+            ;;
+        esac
