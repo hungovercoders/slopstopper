@@ -226,14 +226,34 @@ def _collect_targets() -> list[Path]:
 
 
 def _collect_extra_targets() -> list[Path]:
-    """Files named by `hygiene.docs_accuracy.extra_paths`, deduplicated, in order."""
+    """Files named by `hygiene.docs_accuracy.extra_paths`, deduplicated, in order.
+
+    Files the primary scan already covers (`docs/**` and the root entry
+    files) are left out, so an overlapping glob like `**/*.md` never
+    double-counts an issue. A pattern the glob engine can't take — empty,
+    absolute, or not a string — warns and is skipped, matching the
+    config.py contract that a bad value never surfaces as a traceback.
+    """
+    primary = set(_collect_targets())
     seen: set[Path] = set()
     out: list[Path] = []
     raw = config.get("hygiene.docs_accuracy.extra_paths", []) or []
     patterns = raw if isinstance(raw, list) else [raw]
     for pattern in patterns:
-        for hit in sorted(Path(".").glob(str(pattern).strip())):
-            if hit.is_file() and hit not in seen:
+        text = str(pattern).strip() if pattern is not None else ""
+        if not text or text.startswith(("/", "~")) or ":" in text.split("/", 1)[0]:
+            output.warn(
+                f"hygiene.docs_accuracy.extra_paths entry {pattern!r} is not a "
+                "repo-relative glob — ignored"
+            )
+            continue
+        try:
+            hits = sorted(Path(".").glob(text))
+        except (ValueError, NotImplementedError) as exc:
+            output.warn(f"hygiene.docs_accuracy.extra_paths entry {pattern!r} is invalid ({exc}) — ignored")
+            continue
+        for hit in hits:
+            if hit.is_file() and hit not in seen and hit not in primary:
                 seen.add(hit)
                 out.append(hit)
     return out
@@ -243,20 +263,35 @@ def _collect_extra_targets() -> list[Path]:
 # every "View source →" link on a site takes. Only links into *this* repo
 # are checked; anyone else's paths are not ours to verify.
 _REPO_LINK_RE = re.compile(
-    r'https://github\.com/([^/"\s]+)/([^/"\s]+)/(?:blob|tree)/[^/"\s]+/([^"\s#?)<]+)'
+    r"""https://github\.com/([^/"'\s]+)/([^/"'\s]+)/(?:blob|tree)/([^"'`\s#?)<>]+)"""
 )
+# A bare URL at the end of a sentence carries the sentence's punctuation.
+_LINK_TRAILING_PUNCT = ".,;:!"
+
+
+def _repo_link_resolves(ref_and_path: str) -> bool:
+    """True if any split of `<ref>/<path>` names a file or directory here.
+
+    A ref can itself contain slashes (`feat/x`, `release/1.2`), so the
+    boundary between ref and path is ambiguous from the URL alone. Try
+    every split; the link is broken only if none of them exists.
+    """
+    parts = ref_and_path.split("/")
+    return any(Path("/".join(parts[i:])).exists() for i in range(1, len(parts)))
 
 
 def _check_repo_links(path: Path, owner: str, repo: str) -> list[dict]:
     issues: list[dict] = []
     content = path.read_text(errors="replace")
     for m in _REPO_LINK_RE.finditer(content):
-        link_owner, link_repo, target = m.groups()
-        if (link_owner, link_repo.removesuffix(".git")) != (owner, repo):
+        link_owner, link_repo, ref_and_path = m.groups()
+        # GitHub owner and repo names are case-insensitive.
+        if (link_owner.lower(), link_repo.removesuffix(".git").lower()) != (owner.lower(), repo.lower()):
             continue
-        target = target.rstrip("/")
-        if Path(target).exists():
-            continue
+        ref_and_path = ref_and_path.rstrip(_LINK_TRAILING_PUNCT).rstrip("/")
+        if "/" not in ref_and_path or _repo_link_resolves(ref_and_path):
+            continue  # a bare ref (`tree/main`) names no file; nothing to check
+        target = ref_and_path.split("/", 1)[1]
         issues.append({
             "type": "broken_repo_link",
             "file": str(path),

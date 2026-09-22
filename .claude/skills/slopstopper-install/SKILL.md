@@ -21,7 +21,7 @@ ls .slopstopper.yml .ss/.workflows-installed 2>/dev/null
 
 Slopstopper is a portable suite of GitHub Actions plus a `slopstopper-cli` Python package that owns every check's logic. The install drops a consistent quality pipeline into any repository. This skill walks you through doing that responsibly — and, critically, getting every check green **locally** before pushing, so the first CI run is a confirmation pass rather than a discovery pass.
 
-The install ships ~21 GitHub Actions workflows in one shot, pins + installs `slopstopper-cli` via **mise** (`mise.toml` `[tools]` "pipx:slopstopper-cli"), merges devDeps into `package.json`, and creates a `Taskfile.yml` if the target doesn't have one. That's a lot of moving parts. Don't run it blind — work through the pre-flight first, then drive every check to green locally before opening a PR.
+The install ships up to 27 GitHub Actions workflows in one shot (24 checks plus three plumbing workflows), pins + installs `slopstopper-cli` via **mise** (`mise.toml` `[tools]` "pipx:slopstopper-cli"), merges devDeps into `package.json`, and creates a `Taskfile.yml` if the target doesn't have one. That's a lot of moving parts. Don't run it blind — work through the pre-flight first, then drive every check to green locally before opening a PR.
 
 **The CLI is the single source of truth for every check.** Every workflow boils down to two CLI commands: `slopstopper run <category>:<check>` (executes the check, writes reports under `.ss/reports/`) and `slopstopper emit <category>:<check> --target {pr-comment,issue} [--on-pass=close]` (posts the report to GitHub on failure, or closes any prior issue when the check now passes on `main`). Reliability checks also use `slopstopper discover <check> --event=<event>` (resolves which pages to audit) and the installer itself uses `slopstopper config get <key>` to read `.slopstopper.yml`. No bash scripts under `.ss/scripts/` any more — pure Python, one package, one upgrade path.
 
@@ -297,6 +297,8 @@ hygiene:
     max_words: 1500          # default — README.md, CLAUDE.md, AGENTS.md, etc.
   complexity:
     max_ccn: 15              # default — CCN ceiling; a function above this fails
+  docs_accuracy:
+    extra_paths: []          # default — globs outside docs/ to scan too, e.g. [app/*.html, .claude/skills/**/*.md]
 ```
 
 `hygiene.complexity.max_ccn` gates locally, in the pre-push hook, and in CI off one exit code (there is no separate CI-only threshold) — so `task ss:hygiene:complexity` reproduces the CI result exactly. Drop it to `10` for McCabe-strict.

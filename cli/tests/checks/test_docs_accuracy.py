@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from slopstopper.checks import docs_accuracy
 
 
@@ -295,3 +297,45 @@ def test_check_task_references_ignores_angle_placeholders(isolated_cwd):
     md = isolated_cwd / "docs" / "x.md"
     _write(md, "Invoke `task ss:<category>:<check>` for any check.\n")
     assert docs_accuracy._check_task_references(md, set()) == []
+
+
+# ── review follow-ups: extra_paths robustness + link-shape false positives ──
+
+
+def test_extra_paths_bad_patterns_warn_and_are_skipped(write_config, capsys):
+    """An absolute or empty glob must never surface as a traceback."""
+    _write(Path("app/x.html"), "<p>x</p>\n")
+    write_config(
+        "hygiene:\n  docs_accuracy:\n    extra_paths: [/abs/site/*.html, '', app/*.html]\n"
+    )
+    assert docs_accuracy._collect_extra_targets() == [Path("app/x.html")]
+    out = capsys.readouterr().out
+    assert "/abs/site/*.html" in out and "ignored" in out
+
+
+def test_extra_paths_never_double_count_the_primary_scan(write_config):
+    """`**/*.md` overlaps docs/ and the root entry files — those stay primary-only."""
+    _write(Path("docs/hygiene/README.md"), "# h\n")
+    _write(Path("README.md"), "# root\n")
+    _write(Path("packages/a/README.md"), "# a\n")
+    write_config("hygiene:\n  docs_accuracy:\n    extra_paths: ['**/*.md']\n")
+    assert docs_accuracy._collect_extra_targets() == [Path("packages/a/README.md")]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "<a href='https://github.com/acme/site/blob/main/docs/x/README.md'>a</a>",
+        "<https://github.com/acme/site/blob/main/docs/x/README.md>",
+        "see https://github.com/acme/site/blob/main/docs/x/README.md.",
+        "`https://github.com/acme/site/blob/main/docs/x/README.md`",
+        "https://github.com/Acme/Site/blob/feat/x/docs/x/README.md",
+    ],
+)
+def test_check_repo_links_tolerates_common_link_shapes(isolated_cwd, text):
+    """Quotes, autolink brackets, backticks, sentence punctuation and case
+    must not turn a valid link into a `broken_repo_link`."""
+    _write(Path("docs/x/README.md"), "# x\n")
+    page = Path("app/tools.html")
+    _write(page, text + "\n")
+    assert docs_accuracy._check_repo_links(page, "acme", "site") == []

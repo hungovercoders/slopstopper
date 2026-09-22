@@ -118,7 +118,9 @@ headers:
 #                                 it on localhost; the API checks and DAST's
 #                                 API mode audit urls.preview and skip when
 #                                 it is unset
-#   - workflow_dispatch         → the URL you pass, else production
+#   - workflow_dispatch         → the URL you pass; with none, the browser
+#                                 checks fall back to urls.production and the
+#                                 API checks skip with a notice
 urls:
   production:
   preview:

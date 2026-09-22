@@ -47,6 +47,7 @@ The documentation index is the **sole source of truth for documentation structur
 - All expected categories from docs/index.md exist
 - Each category has a README.md file
 - No unexpected files outside the governed structure
+- Every doc inside a category is linked from that category's README (`unindexed_doc`) — the map is a chain, `docs/index.md` → category README → doc, and a file no README mentions is unreachable from the map
 - Violations are raised as blocking issues for discussion
 
 ```bash

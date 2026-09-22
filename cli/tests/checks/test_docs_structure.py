@@ -230,3 +230,31 @@ def test_run_fails_on_an_unindexed_doc(isolated_cwd):
     md = docs_structure.REPORT_MD.read_text()
     assert "Unindexed Docs" in md
     assert "docs/hygiene/ORPHAN.md" in md
+
+
+# ── review follow-ups: link resolution in the unindexed-doc rule ──
+
+
+def test_check_category_contents_accepts_titled_reference_and_html_links(isolated_cwd):
+    docs = Path("docs")
+    cat = _seed_category(docs, "hygiene")
+    (cat / "README.md").write_text(
+        '- [a](A.md "Design notes")\n'
+        "- [b][bref]\n\n[bref]: B.md\n"
+        '- <a href="C.md">c</a>\n'
+    )
+    for name in ("A", "B", "C"):
+        (cat / f"{name}.md").write_text(f"# {name}\n")
+    assert docs_structure._check_category_contents(docs, ["hygiene"]) == []
+
+
+def test_check_category_contents_does_not_accept_a_same_named_file_elsewhere(isolated_cwd):
+    """A link to ../security/DAST.md must not index docs/hygiene/DAST.md."""
+    docs = Path("docs")
+    sec = _seed_category(docs, "security")
+    (sec / "DAST.md").write_text("# real\n")
+    cat = _seed_category(docs, "hygiene")
+    (cat / "README.md").write_text("[dast](../security/DAST.md)\n")
+    (cat / "DAST.md").write_text("# orphan copy\n")
+    violations = docs_structure._check_category_contents(docs, ["hygiene"])
+    assert [v["path"] for v in violations] == ["docs/hygiene/DAST.md"]

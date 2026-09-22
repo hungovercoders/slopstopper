@@ -137,6 +137,7 @@ Config-driven knobs (no file edit needed beyond `.slopstopper.yml`):
 | `reliability:smoke` | `pages.smoke`, `smoke.og_image_path` | `/`, `/og-image.png` |
 | `reliability:{accessibility,seo,broken_links}` | `pages.<check>`, `reliability.coverage.<event>` | `/`, hand-list mode |
 | `hygiene:csp-exceptions` | `headers.source`, `headers.format` | unset (graceful skip) |
+| `hygiene:docs-accuracy` | `hygiene.docs_accuracy.extra_paths` | `[]` — only `docs/` + the root entry files are scanned |
 
 Tunings that are NOT yet config-driven (require code/file edits):
 

@@ -96,17 +96,30 @@ def _check_unexpected_items(docs_dir: Path, expected: list[str]) -> list[dict]:
     return violations
 
 
-_MD_LINK_TARGET_RE = re.compile(r"\]\(([^)#?]+)")
+# Inline `](target)` / `](target "title")`, reference definitions
+# `[ref]: target`, and HTML `href="target"` — the three ways a README can
+# point at a sibling doc.
+_LINK_TARGET_RES = (
+    re.compile(r"\]\(\s*<?([^)\s>]+)>?(?:\s+(?:\"[^\"]*\"|'[^']*'))?\s*\)"),
+    re.compile(r"^\s*\[[^\]]+\]:\s*<?([^\s>]+)>?", re.M),
+    re.compile(r"""href\s*=\s*["']([^"']+)["']"""),
+)
 
 
-def _linked_files(readme: Path) -> set[str]:
-    """Filenames a category README links to, resolved relative to it."""
-    out: set[str] = set()
-    for target in _MD_LINK_TARGET_RE.findall(readme.read_text()):
-        target = target.strip()
-        if target.startswith(("http://", "https://", "mailto:")):
-            continue
-        out.add(Path(target).name)
+def _linked_files(readme: Path) -> set[Path]:
+    """Files a category README links to, resolved relative to it.
+
+    Resolved paths, not basenames: a link to a same-named file in another
+    category must not count as indexing this category's copy.
+    """
+    out: set[Path] = set()
+    text = readme.read_text()
+    for pattern in _LINK_TARGET_RES:
+        for target in pattern.findall(text):
+            target = target.split("#", 1)[0].split("?", 1)[0].strip()
+            if not target or target.startswith(("http://", "https://", "mailto:")):
+                continue
+            out.add((readme.parent / target).resolve())
     return out
 
 
@@ -126,7 +139,7 @@ def _check_category_contents(docs_dir: Path, expected: list[str]) -> list[dict]:
             continue  # reported by _check_expected_categories
         linked = _linked_files(readme)
         for doc in sorted((docs_dir / category).glob("*.md")):
-            if doc.name == "README.md" or doc.name in linked:
+            if doc.name == "README.md" or doc.resolve() in linked:
                 continue
             violations.append({
                 "type": "unindexed_doc",

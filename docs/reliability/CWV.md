@@ -4,7 +4,7 @@
 
 ## What it measures
 
-Lighthouse loads the page three times (`numberOfRuns: 3`) and asserts on the median. The headline metrics and their default budgets:
+Lighthouse loads the page three times (`numberOfRuns: 3`). Neither bundled config sets `assert.aggregationMethod`, so Lighthouse CI's default `optimistic` aggregation applies: each assertion is judged on the **best** of the three runs, which is what keeps one slow run on a noisy CI runner from failing the build. The headline metrics and their default budgets:
 
 | Metric | Budget | Fails? |
 |---|---|---|
@@ -42,13 +42,22 @@ Needs `node` (Lighthouse runs in headless Chrome via `npx lhci`). The check gene
 
 ## Running in CI
 
-`ss-reliability-core-web-vitals.yml` behaves like the other browser checks: on pull requests and pushes it builds the site, serves it on `localhost:8080` and audits that with the dev budgets; on the daily schedule and Cloudflare deployment events it audits `urls.production` with `--prod`. It posts the rolling PR comment, opens a tracking issue when `main` regresses, and closes that issue automatically on the next green run.
+`ss-reliability-core-web-vitals.yml` picks the URL and the budget set from the event, in its `Determine audit URL` step:
+
+| Event | URL audited | Budgets |
+|---|---|---|
+| `pull_request`, `push` | the site built and served on `localhost:8080` | dev |
+| `workflow_dispatch` | the `url` input, else `urls.production` | dev |
+| `deployment_status` (e.g. a Cloudflare deploy) | that deployment's own `target_url` — a preview deploy audits the preview | `--prod` |
+| `schedule` (daily) | `urls.production` | `--prod` |
+
+It posts the rolling PR comment, opens a tracking issue when `main` regresses, and closes that issue automatically on the next green run.
 
 ## Reading a failure
 
 - **Performance score under 70 with LCP over budget** — almost always an unoptimised hero image or a render-blocking stylesheet. Lighthouse's HTML report (linked from the check's report) names the resource.
 - **CLS over 0.25** — an image or embed without explicit `width`/`height`, or a web font swapping in late.
 - **TBT over 600 ms** — long JavaScript tasks on load. On a static site this usually means a third-party script.
-- **Everything passes locally, fails in CI** — the CI runner is slower and noisier than your laptop. Look at the median across the three runs before touching a budget; if the numbers are consistently near the line, the budget is telling you something.
+- **Everything passes locally, fails in CI** — the CI runner is slower and noisier than your laptop. Look at all three runs in the Lighthouse output before touching a budget — the gate passes on the best one, so a failure means every run missed; if the numbers are consistently near the line, the budget is telling you something.
 
 Dropped by `--profile api` and `--profile library`; there is no page to render.

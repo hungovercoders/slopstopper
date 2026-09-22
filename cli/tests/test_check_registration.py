@@ -27,6 +27,9 @@ import pytest
 
 from slopstopper import badges, profiles
 from slopstopper.checks import REGISTRY
+from slopstopper.checks.docs_accuracy import _TASKFILE_TASK_RE
+
+from tests.test_workflow_triggers import NON_CHECK_WORKFLOWS, _expected_workflows, _trigger_list
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -78,7 +81,8 @@ def _module_name(check: str) -> str:
 
 
 def _taskfile_targets() -> set[str]:
-    return set(re.findall(r"^  ([a-z][a-z0-9:_-]+):", TASKFILE.read_text(encoding="utf-8"), re.M))
+    # The same regex docs-accuracy uses, so "what is a Task target" has one definition.
+    return set(_TASKFILE_TASK_RE.findall(TASKFILE.read_text(encoding="utf-8")))
 
 
 def _generic_workflows() -> set[str]:
@@ -172,21 +176,28 @@ def test_check_is_documented_under_its_category(check):
 # (the summary itself, the failure tracker, the doc updater, the
 # release workflow) is plumbing.
 #
-# When these numbers change, the prose that quotes them has to follow:
-#   .claude/skills/slopstopper-install/SKILL.md   (shape table, Step 1.2, 1.12, Step 3, Step 9)
-#   app/tools.html                                 (GitHub Actions card)
-#   docs/architecture/README.md                    (PR feedback section)
-#   .slopstopper.yml                               (docs_size comment)
-
-NON_CHECK_WORKFLOWS = {
-    "ss-pr-summary.yml",
-    "ss-release.yml",
-    "ss-workflow-failure-issue.yml",
-    "ss-hygiene-doc-updater.lock.yml",
-}
+# When these numbers change, the prose that quotes them has to follow —
+# PROSE_SITES below is that list, and the count test reads each file so a
+# stale number fails here rather than surviving in a playbook.
 
 EXPECTED_CHECKS = 24
 EXPECTED_INSTALLED_WORKFLOWS = 27  # every ss-*.yml except ss-release.yml
+
+# Files that quote the counts, and the numbers each may pair with the word
+# "check(s)" / "workflow(s)". A number outside the set is drift.
+PROSE_SITES = {
+    ".claude/skills/slopstopper-install/SKILL.md": {"checks": {24, 16, 10}, "workflows": {27}},
+    "app/tools.html": {"checks": {24}, "workflows": {27}},
+    # 22: the worked example reads "2 of 24 checks failed … The other 22 checks".
+    "docs/architecture/README.md": {"checks": {24, 22}, "workflows": {24}},
+    ".slopstopper.yml": {"checks": {24}, "workflows": set()},
+}
+# "24 checks", "27 new `ss-*.yml` workflows", "~21 GitHub Actions workflows" —
+# a number, at most one qualifier, then the noun. Nothing looser, or
+# "2 of 24 checks" reads as a stale 2.
+_COUNT_RE = re.compile(
+    r"~?(\d+)\+?\s+(?:new\s+|`ss-\*\.yml`\s+|GitHub Actions\s+|check\s+)?(checks?|workflows?)\b"
+)
 
 
 def _installed_workflows() -> set[str]:
@@ -196,10 +207,25 @@ def _installed_workflows() -> set[str]:
 def test_the_check_count_is_the_one_quoted_in_the_docs():
     checks = _installed_workflows() - NON_CHECK_WORKFLOWS
     assert len(checks) == EXPECTED_CHECKS, (
-        f"{len(checks)} check workflows on disk; update EXPECTED_CHECKS and the prose "
-        "sites listed above this test"
+        f"{len(checks)} check workflows on disk; update EXPECTED_CHECKS and PROSE_SITES"
     )
+    # The definition, not just the number: a check is what ss-pr-summary.yml summarises.
+    summarised = _expected_workflows(NON_CHECK_WORKFLOWS)  # {filename: workflow name}
+    assert set(summarised) == checks
+    assert set(_trigger_list(WORKFLOWS_DIR / "ss-pr-summary.yml")) == set(summarised.values())
     assert len(_installed_workflows()) == EXPECTED_INSTALLED_WORKFLOWS
+
+
+@pytest.mark.parametrize("site", sorted(PROSE_SITES))
+def test_prose_quotes_the_current_counts(site):
+    allowed = PROSE_SITES[site]
+    text = (REPO_ROOT / site).read_text(encoding="utf-8")
+    stale = [
+        m.group(0)
+        for m in _COUNT_RE.finditer(text)
+        if int(m.group(1)) not in allowed["checks" if m.group(2).startswith("check") else "workflows"]
+    ]
+    assert not stale, f"{site} quotes a count that is not current: {stale}"
 
 
 @pytest.mark.parametrize(
