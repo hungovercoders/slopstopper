@@ -10,8 +10,9 @@ Notation: C4 (Context + Container).
 - Static HTML/CSS/JS pages served in production by a Cloudflare
   Worker with the `[assets]` binding.
 - Local development and DAST use `slopstopper serve` (the bundled static server inside slopstopper-cli).
-- Security headers live in `worker/headers.json`. The Worker, the
-  local server and the CSP-drift gate all read the same file.
+- Security headers live in `worker/headers.json`. The Worker applies them
+  per path on every response, `slopstopper serve` applies the same file
+  locally, and the CSP-drift gate reads it too — prod and local stay identical.
 
 ## Project Layout
 
@@ -321,16 +322,6 @@ from the same place.
 "does the body still contain the report's H1". The old discriminator
 substring is still tried as a fallback, so comments posted by an earlier
 CLI are updated in place instead of duplicated.
-
-## Request Flow (Minimal)
-
-1. Browser requests a page.
-2. In production, the Cloudflare Worker fetches the asset via the
-   `[assets]` binding, then applies the per-path headers from
-   `worker/headers.json` before returning the response.
-3. In local/dev scanning, `slopstopper serve` (bundled inside
-   slopstopper-cli) serves the same `app/` directory and auto-detects
-   the same `worker/headers.json` so prod and local stay identical.
 
 ## Development Loops
 
