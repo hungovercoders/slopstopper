@@ -6,23 +6,17 @@ name: CI · slopstopper-cli
 # install.sh. Adopters never receive cli/, so they never need to run
 # its tests.
 #
-# Two jobs:
-#   test    — pytest suite under cli/tests/
-#   parity  — runs each ported check via BOTH the legacy bash/python
-#             implementation under .ss/scripts/ and the CLI port, then
-#             diffs their reports. Any divergence fails CI. This is the
-#             load-bearing proof we can trust the CLI to replace each
-#             bash script.
+# One job: the pytest suite under cli/tests/, via cli/Taskfile.yml so
+# the exact command developers run locally is what CI runs. As the CLI
+# grows beyond pytest (lint, type-check, build, packaging smoke test),
+# add task targets in cli/Taskfile.yml and steps here rather than
+# spinning up new ss-*-check.yml workflows.
 #
-# Both jobs delegate to cli/Taskfile.yml so the exact same command
-# developers run locally is what CI runs. As the CLI grows beyond
-# pytest (lint, type-check, build, packaging smoke test), add task
-# targets in cli/Taskfile.yml and steps here rather than spinning up
-# new ss-*-check.yml workflows.
-#
-# `paths:` covers cli/** AND every .ss/scripts/<script> the parity job
-# currently exercises. When a check is fully cut over (workflow
-# flipped, bash deleted), drop its bash path from this list.
+# A bash↔CLI "parity" job used to live here too. It diffed each ported
+# check against the bash script it replaced; every row was removed as
+# the scripts were deleted, and for a while the job kept running an
+# empty loop and printing "All parity checks passed." Dead green is
+# worse than absent, so it's gone.
 
 on:
   pull_request:
@@ -30,47 +24,17 @@ on:
     paths:
       - 'cli/**'
       - '.github/workflows/ci-cli.yml'
-      # Flipped ss-*-check.yml workflows — changes here depend on the
-      # CLI's `slopstopper run` and `slopstopper emit` working, so the
-      # CLI tests must run too. As more workflows flip, add them here.
-      - '.github/workflows/ss-hygiene-docs-size-check.yml'
-      - '.github/workflows/ss-hygiene-entry-files-check.yml'
-      - '.github/workflows/ss-hygiene-docs-structure-check.yml'
-      - '.github/workflows/ss-hygiene-complexity-check.yml'
-      - '.github/workflows/ss-hygiene-docs-accuracy-check.yml'
-      - '.github/workflows/ss-hygiene-csp-exceptions-check.yml'
-      - '.github/workflows/ss-security-secrets-check.yml'
-      - '.github/workflows/ss-security-sast-check.yml'
-      - '.github/workflows/ss-security-vulnerability-all-check.yml'
-      - '.github/workflows/ss-reliability-smoke-tests.yml'
-      - '.github/workflows/ss-reliability-broken-links-check.yml'
-      - '.github/workflows/ss-reliability-accessibility-check.yml'
-      - '.github/workflows/ss-reliability-seo-check.yml'
-      - '.github/workflows/ss-reliability-core-web-vitals.yml'
-      - '.github/workflows/ss-security-dast-check.yml'
+      # Every ss-* workflow calls `slopstopper run` / `slopstopper emit`,
+      # so a change to any of them needs the CLI tests too.
+      - '.github/workflows/ss-*.yml'
   push:
     branches: [ main ]
     paths:
       - 'cli/**'
       - '.github/workflows/ci-cli.yml'
-      # Flipped ss-*-check.yml workflows — changes here depend on the
-      # CLI's `slopstopper run` and `slopstopper emit` working, so the
-      # CLI tests must run too. As more workflows flip, add them here.
-      - '.github/workflows/ss-hygiene-docs-size-check.yml'
-      - '.github/workflows/ss-hygiene-entry-files-check.yml'
-      - '.github/workflows/ss-hygiene-docs-structure-check.yml'
-      - '.github/workflows/ss-hygiene-complexity-check.yml'
-      - '.github/workflows/ss-hygiene-docs-accuracy-check.yml'
-      - '.github/workflows/ss-hygiene-csp-exceptions-check.yml'
-      - '.github/workflows/ss-security-secrets-check.yml'
-      - '.github/workflows/ss-security-sast-check.yml'
-      - '.github/workflows/ss-security-vulnerability-all-check.yml'
-      - '.github/workflows/ss-reliability-smoke-tests.yml'
-      - '.github/workflows/ss-reliability-broken-links-check.yml'
-      - '.github/workflows/ss-reliability-accessibility-check.yml'
-      - '.github/workflows/ss-reliability-seo-check.yml'
-      - '.github/workflows/ss-reliability-core-web-vitals.yml'
-      - '.github/workflows/ss-security-dast-check.yml'
+      # Every ss-* workflow calls `slopstopper run` / `slopstopper emit`,
+      # so a change to any of them needs the CLI tests too.
+      - '.github/workflows/ss-*.yml'
   workflow_dispatch:
 
 permissions:
@@ -91,18 +55,3 @@ jobs:
         uses: jdx/mise-action@v2
       - name: Run CLI tests
         run: task -t cli/Taskfile.yml test
-
-  parity:
-    name: bash↔cli parity
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-      - name: Set up toolchain (task)
-        # Installs the mise-pinned `task` (mise.toml [tools]) — same
-        # version locally and in CI. Replaces a `curl | sh` bootstrap.
-        uses: jdx/mise-action@v2
-      - name: Run parity diffs (bash vs CLI)
-        run: task -t cli/Taskfile.yml parity

@@ -1,10 +1,20 @@
 """Read values from .slopstopper.yml.
 
 Stdlib-only YAML subset parser, lifted from .ss/scripts/load_config.py
-during the CLI pivot. Slopstopper deliberately avoids a PyYAML
-dependency so the CLI installs cleanly via pipx with zero runtime
-dependencies. The subset is enough for the .slopstopper.yml shape:
-scalars, nested mappings, sequences of scalars, and `null`/empty values.
+during the CLI pivot. Slopstopper deliberately avoids a PyYAML dependency
+so the CLI's dependency surface stays minimal (lizard is the one runtime
+dep, for the complexity check). The subset is enough for the
+.slopstopper.yml shape: scalars, nested mappings, sequences of scalars,
+inline lists, and `null`/empty values. Not supported — and warned about
+on stderr when seen — are tab indentation, inline maps, folded/literal
+block scalars, anchors and quoted keys.
+
+Values are never coerced: numbers and booleans come back as the strings
+the file spelled. Use get_int / get_bool / get_str rather than wrapping
+get() in int() or bool() — `bool("false")` is True. A value that is set
+but unusable (`max_ccn: fifteen`) falls back to the default AND warns on
+stderr, for the same reason an unparsed line does: an override the
+adopter thinks applied must never vanish silently.
 
 If the file doesn't exist or a key is absent, get() returns the supplied
 default. Errors during parsing are non-fatal — they fall back to defaults
@@ -23,6 +33,7 @@ _INDENT_RE = re.compile(r"^( *)(.*)$")
 _KV_RE = re.compile(r"^([A-Za-z0-9_\-]+):\s*(.*)$")
 _LIST_ITEM_RE = re.compile(r"^-\s+(.*)$")
 _INLINE_LIST_RE = re.compile(r"^\[(.*)\]$")
+_DOCUMENT_MARKERS = frozenset({"---", "..."})
 
 _KEYWORDS = {"": None, "null": None, "~": None, "true": True, "false": False}
 
@@ -53,17 +64,33 @@ def _parse_scalar(raw: str) -> object:
     return s
 
 
+# A quote opens a quoted scalar only at a scalar boundary: the start of the
+# line, after whitespace, or after `[` / `,` inside an inline list. An
+# apostrophe inside a plain scalar (`desc: don't panic`) is just a character.
+_QUOTE_OPENERS = frozenset(" \t[,")
+
+
 def _strip_comment(line: str) -> str:
+    """Drop a trailing `# comment`, YAML-style.
+
+    A `#` starts a comment only at the beginning of the line or after
+    whitespace — the same rule real YAML applies. Without that rule an
+    unquoted `url: https://example.com/#anchor` silently lost its
+    fragment and became a different, valid-looking URL. Quoted scalars
+    are skipped over, so `title: "a # b"` keeps its `#`.
+    """
     if "#" not in line:
         return line
-    in_squote = False
-    in_dquote = False
+    quote: str | None = None  # the quote character that opened the current scalar
     for i, ch in enumerate(line):
-        if ch == "'" and not in_dquote:
-            in_squote = not in_squote
-        elif ch == '"' and not in_squote:
-            in_dquote = not in_dquote
-        elif ch == "#" and not in_squote and not in_dquote:
+        if quote is not None:
+            if ch == quote:
+                quote = None
+            continue
+        if ch in ("'", '"'):
+            if i == 0 or line[i - 1] in _QUOTE_OPENERS:
+                quote = ch
+        elif ch == "#" and (i == 0 or line[i - 1].isspace()):
             return line[:i].rstrip()
     return line
 
@@ -76,18 +103,15 @@ def _pop_to_parent(stack: list, indent: int) -> object | None:
     return stack[-1][1]
 
 
-def _handle_list_item(parent: object, body: str, stack: list) -> None:
-    """Append a parsed list item to the parent container.
+def _handle_list_item(parent: object, item: re.Match, stack: list) -> None:
+    """Append a parsed list item (an `_LIST_ITEM_RE` match) to the parent.
 
     If the parent is an empty dict opened by `key:` with no value, this is
     actually a block list — retroactively convert it to a list under the
     grandparent (so the dict→list ambiguity inherent to YAML is resolved
     on the first list item encountered).
     """
-    match = _LIST_ITEM_RE.match(body)
-    if not match:
-        return
-    value = _parse_scalar(match.group(1))
+    value = _parse_scalar(item.group(1))
     if isinstance(parent, list):
         parent.append(value)
         return
@@ -102,11 +126,9 @@ def _handle_list_item(parent: object, body: str, stack: list) -> None:
                     return
 
 
-def _handle_key_value(parent: object, indent: int, body: str, stack: list) -> None:
+def _handle_key_value(parent: object, indent: int, kv: re.Match, stack: list) -> None:
+    """Store a `key: value` line (a `_KV_RE` match) under the parent mapping."""
     if not isinstance(parent, dict):
-        return
-    kv = _KV_RE.match(body)
-    if not kv:
         return
     key, value_str = kv.group(1), kv.group(2)
     if value_str == "":
@@ -129,7 +151,7 @@ def _load_yaml_subset(path: Path) -> dict:
     root: dict = {}
     stack: list[tuple[int, object]] = [(-1, root)]
 
-    for raw_line in raw.splitlines():
+    for lineno, raw_line in enumerate(raw.splitlines(), start=1):
         line = _strip_comment(raw_line)
         if not line.strip():
             continue
@@ -140,12 +162,36 @@ def _load_yaml_subset(path: Path) -> dict:
         parent = _pop_to_parent(stack, indent)
         if parent is None:
             return root
-        if _LIST_ITEM_RE.match(body):
-            _handle_list_item(parent, body, stack)
+        if indent == 0 and body in _DOCUMENT_MARKERS:
+            # `---` / `...` are valid, common and carry nothing — not
+            # something to warn about.
+            continue
+        item = _LIST_ITEM_RE.match(body)
+        kv = None if item else _KV_RE.match(body)
+        if item:
+            _handle_list_item(parent, item, stack)
+        elif kv:
+            _handle_key_value(parent, indent, kv, stack)
         else:
-            _handle_key_value(parent, indent, body, stack)
+            # Outside the subset (tab indentation, inline maps, folded
+            # scalars, anchors, quoted keys…). Say so: a silently skipped
+            # line means the check runs with a default the adopter thinks
+            # they overrode, and there is nothing in the output to tell
+            # them why.
+            _warn_unparsed(path, lineno, raw_line)
 
     return _convert_empty_dicts_to_lists_if_needed(root, raw)
+
+
+def _warn_unparsed(path: Path, lineno: int, raw_line: str) -> None:
+    hint = ""
+    if raw_line.startswith("\t"):
+        hint = " (tab indentation — use spaces)"
+    print(
+        f"⚠  slopstopper.config: {path}:{lineno} is outside the supported YAML subset"
+        f"{hint} and was ignored: {raw_line.strip()!r}",
+        file=sys.stderr,
+    )
 
 
 def _convert_empty_dicts_to_lists_if_needed(node: object, raw_yaml: str) -> object:
@@ -184,6 +230,76 @@ def get(path: str, default: object = None) -> object:
     if isinstance(node, dict) and not node:
         return default
     return node
+
+
+# ── typed accessors ──────────────────────────────────────────────
+#
+# The subset parser never coerces: `max_ccn: 15` comes back as the string
+# '15', and `"false"` (quoted) as the string 'false'. Every check used to
+# hand-roll its own int() / bool() around get(), four of them with a
+# byte-identical helper and two with a bare int() that raised a traceback
+# on `max_ccn: fifteen`. These are the one copy.
+
+_TRUE_WORDS = frozenset({"true", "yes", "1", "on"})
+_FALSE_WORDS = frozenset({"false", "no", "0", "off"})
+
+
+def _warn_unusable(path: str, raw: object, kind: str, default: object) -> None:
+    print(
+        f"⚠  slopstopper.config: {path} is set to {raw!r}, which is not {kind} — "
+        f"using the default ({default!r})",
+        file=sys.stderr,
+    )
+
+
+_UNSET = object()
+
+
+def get_int(path: str, default: int | None = None) -> int | None:
+    """Integer at `path`, or `default` when unset.
+
+    A value that is set but not an integer (`max_ccn: fifteen`, or a bare
+    `true`) also yields `default` — and warns on stderr, so the override
+    the adopter wrote doesn't silently turn into the default.
+    """
+    raw = get(path, _UNSET)
+    if raw is _UNSET:
+        return default
+    if not isinstance(raw, bool):
+        try:
+            return int(raw)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            pass
+    _warn_unusable(path, raw, "an integer", default)
+    return default
+
+
+def get_bool(path: str, default: bool = False) -> bool:
+    """Boolean at `path`, or `default` when unset.
+
+    Accepts real booleans and the usual spellings as strings, so a quoted
+    `"false"` is False rather than a non-empty (truthy) string. Anything
+    else yields `default` and warns on stderr.
+    """
+    raw = get(path, _UNSET)
+    if raw is _UNSET:
+        return default
+    if isinstance(raw, bool):
+        return raw
+    if isinstance(raw, str):
+        word = raw.strip().lower()
+        if word in _TRUE_WORDS:
+            return True
+        if word in _FALSE_WORDS:
+            return False
+    _warn_unusable(path, raw, "a boolean", default)
+    return default
+
+
+def get_str(path: str, default: str = "") -> str:
+    """String at `path`, or `default` when unset."""
+    raw = get(path, default)
+    return default if raw is None else str(raw)
 
 
 def reload() -> None:

@@ -322,10 +322,8 @@ def run(args: list[str] | None = None) -> int:
         return 1
 
     path = _resolve_path(parsed.path)
-    check_links = parsed.check_links or bool(config.get("reliability.llms_txt.check_links", False))
-    require_summary = parsed.require_summary or bool(
-        config.get("reliability.llms_txt.require_summary", False)
-    )
+    check_links = parsed.check_links or config.get_bool("reliability.llms_txt.check_links", False)
+    require_summary = parsed.require_summary or config.get_bool("reliability.llms_txt.require_summary", False)
 
     output.status("📄", f"llms.txt audit against: {url}{path}")
     output.separator()

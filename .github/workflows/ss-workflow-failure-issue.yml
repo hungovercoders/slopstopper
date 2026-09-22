@@ -3,21 +3,35 @@ name: SlopStopper · Raise Issue on Workflow Failure
 on:
   workflow_run:
     workflows:
-      - "SlopStopper · Hygiene - Auto Label PRs"
+      # Every check workflow plus the doc updater. workflow_run can't
+      # glob, so a name left out here fails on main with no issue raised
+      # — cli/tests/test_workflow_triggers.py keeps this list in step
+      # with ss-pr-summary.yml.
       - "SlopStopper · Code Complexity Check"
-      - "SlopStopper · Hygiene - Documentation Updater"
+      - "SlopStopper · Hygiene - CSP Exceptions Drift Check"
       - "SlopStopper · Hygiene - Documentation Accuracy Check"
       - "SlopStopper · Documentation Size Monitor"
       - "SlopStopper · Hygiene - Documentation Structure Check"
-      - "SlopStopper · Playwright Tests"
+      - "SlopStopper · Hygiene - Entry-File Budget Check"
+      - "SlopStopper · OpenAPI Drift Check"
+      - "SlopStopper · Hygiene - Auto Label PRs"
+      - "SlopStopper · Accessibility Check"
+      - "SlopStopper · API Health Check"
+      - "SlopStopper · API Latency Check"
+      - "SlopStopper · Broken Links Check"
+      - "SlopStopper · Core Web Vitals"
+      - "SlopStopper · llms.txt Check"
+      - "SlopStopper · robots.txt Check"
+      - "SlopStopper · SEO Metatag Check"
+      - "SlopStopper · sitemap Check"
       - "SlopStopper · Reliability Smoke Tests"
+      - "SlopStopper · API Headers Check"
       - "SlopStopper · DAST Analysis"
       - "SlopStopper · SAST Analysis"
       - "SlopStopper · Secrets Detection"
       - "SlopStopper · Dependency Vulnerability Scan"
       - "SlopStopper · Dependency review"
-      - "SlopStopper · Accessibility Check"
-      - "SlopStopper · Core Web Vitals"
+      - "SlopStopper · Hygiene - Documentation Updater"
     types:
       - completed
 

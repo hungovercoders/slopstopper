@@ -371,25 +371,17 @@ def _parse_args(args: list[str] | None) -> argparse.Namespace:
     return p.parse_args(args or [])
 
 
-def _config_int(path: str, default: int | None) -> int | None:
-    raw = config.get(path, default)
-    try:
-        return int(raw)
-    except (TypeError, ValueError):
-        return default
-
-
 def _resolve_options(parsed: argparse.Namespace) -> dict:
     return {
         "base_path": config.get("api.base_path", "") or "",
         "path": parsed.path or os.environ.get("API_HEALTH_PATH") or config.get("api.health.path"),
         "expect_status": parsed.expect_status
-        or _config_int("api.health.expect_status", DEFAULT_EXPECT_STATUS),
+        or config.get_int("api.health.expect_status", DEFAULT_EXPECT_STATUS),
         "require_json": not parsed.allow_non_json
-        and bool(config.get("api.health.require_json", True)),
+        and config.get_bool("api.health.require_json", True),
         "require_fields": list(parsed.require_field or config.get("api.health.require_fields", []) or []),
         "expect_fields": config.get("api.health.expect_fields", {}) or {},
-        "max_response_ms": parsed.max_response_ms or _config_int("api.health.max_response_ms", None),
+        "max_response_ms": parsed.max_response_ms or config.get_int("api.health.max_response_ms", None),
     }
 
 

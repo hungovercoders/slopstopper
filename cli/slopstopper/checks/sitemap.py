@@ -570,12 +570,12 @@ def _resolve_opts(parsed: argparse.Namespace) -> dict:
     return {
         "sitemap_path": _resolve_path(parsed.path),
         "llms_path": parsed.llms_path or config.get("reliability.sitemap.llms_path") or DEFAULT_LLMS_PATH,
-        "max_pages": parsed.max_pages or int(config.get("reliability.sitemap.max_pages", DEFAULT_MAX_PAGES)),
+        "max_pages": parsed.max_pages or config.get_int("reliability.sitemap.max_pages", DEFAULT_MAX_PAGES),
         "ignore_paths": list(parsed.ignore or config.get("reliability.sitemap.ignore_paths", []) or []),
         "allow_orphans": not parsed.strict_orphans
-        and bool(config.get("reliability.sitemap.allow_orphans", True)),
+        and config.get_bool("reliability.sitemap.allow_orphans", True),
         "require_llms_complete": parsed.require_llms_complete
-        or bool(config.get("reliability.sitemap.require_llms_complete", False)),
+        or config.get_bool("reliability.sitemap.require_llms_complete", False),
     }
 
 

@@ -28,3 +28,5 @@ app/*.js
 # Local Claude Code state — but ship shared skills with the repo
 .claude/*
 !.claude/skills/
+# Lighthouse CI output (reliability:cwv writes here; uploaded as an artifact)
+.lighthouseci/

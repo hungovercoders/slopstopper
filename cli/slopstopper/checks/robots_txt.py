@@ -359,11 +359,9 @@ def run(args: list[str] | None = None) -> int:
         return 1
 
     path = _resolve_path(parsed.path)
-    check_links = parsed.check_links or bool(config.get("reliability.robots_txt.check_links", False))
-    require_llms = parsed.require_llms or bool(config.get("reliability.robots_txt.require_llms", False))
-    allow_disallow_all = parsed.allow_disallow_all or bool(
-        config.get("reliability.robots_txt.allow_disallow_all", False)
-    )
+    check_links = parsed.check_links or config.get_bool("reliability.robots_txt.check_links", False)
+    require_llms = parsed.require_llms or config.get_bool("reliability.robots_txt.require_llms", False)
+    allow_disallow_all = parsed.allow_disallow_all or config.get_bool("reliability.robots_txt.allow_disallow_all", False)
 
     output.status("🤖", f"robots.txt audit against: {url}{path}")
     output.separator()

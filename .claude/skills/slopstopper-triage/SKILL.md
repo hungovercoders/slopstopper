@@ -116,7 +116,6 @@ The check's heuristic is misfiring on this codebase. Use the check's documented 
 |---|---|---|
 | Secrets (gitleaks) | `.gitleaks.toml` `[allowlist]` block | Path or regex |
 | SAST (Semgrep) | `# nosemgrep: <rule-id>` inline, or `.semgrepignore` for path-scoped | Inline or path |
-| SAST (Bandit, if used) | `# nosec` inline | Inline |
 | DAST (OWASP ZAP) — CSP findings | `docs/security/CSP_EXCEPTIONS.md` `## Exceptions` → `### /path` heading (glob patterns supported: `/*`, `/blog/*`) | Per-path |
 | DAST — other rule false positives | `.zap/rules.tsv` → `<plugin-id>\tIGNORE\t# why` | Per-rule, site-wide |
 | Accessibility (axe-core) | `disabledRules` in the spec, or scope the spec to exclude the offending selector | Per-rule or per-element |

@@ -438,8 +438,8 @@ def run(args: list[str] | None = None) -> int:
                 output._emit("   Start your app's server first, then re-run.")
                 return 1
 
-        host_override = not parsed.no_host_override and bool(
-            config.get("api.openapi.host_override", True)
+        host_override = not parsed.no_host_override and config.get_bool(
+            "api.openapi.host_override", True
         )
         _run_zap(target, spec=scan_spec, host_override=host_override)
         data = _read_data()

@@ -818,13 +818,23 @@ MARKER_FILE="$TARGET_DIR/.ss/.workflows-installed"
 # honoured both in the install loop below (skip, and remove a copy an
 # earlier profile left behind) and in the sweep further down (which also
 # catches names outside GENERIC_WORKFLOWS).
-PROFILE_ACTIVE="$(profile_active)"
-DISABLED_WORKFLOWS="$(profile_effective_disabled)"
+PROFILE_ACTIVE="$(profile_active)" || true
+DISABLED_WORKFLOWS="$(profile_effective_disabled)" || true
 
-# Degrade safely: if the profiles module couldn't be imported at all, resolve
-# to the default (which disables nothing) rather than to an empty name. An
-# unreadable mapping must never look like "this repo carries fewer checks".
-[ -n "$PROFILE_ACTIVE" ] || PROFILE_ACTIVE="ui"
+# Degrade safely — and never silently. If the profiles module couldn't be
+# resolved (no python3, unreadable cli/ tree), an empty name must not look
+# like "this repo carries fewer checks" — but the full `ui` set must not
+# land in a repo whose config explicitly opted out of it either. So: a
+# non-default `profile:` aborts here (no workflows have been written yet);
+# the default warns and continues.
+if [ -z "$PROFILE_ACTIVE" ]; then
+  CONFIGURED_PROFILE="$(sed -n "s/^profile:[[:space:]]*[\"']\{0,1\}\([A-Za-z0-9_-]*\).*/\1/p" "$TARGET_DIR/.slopstopper.yml" 2>/dev/null | head -n 1)"
+  if [ -n "$CONFIGURED_PROFILE" ] && [ "$CONFIGURED_PROFILE" != "ui" ]; then
+    error "could not resolve the workflow set for profile '$CONFIGURED_PROFILE' (python3 or the slopstopper.profiles module is unavailable). Refusing to install the full 'ui' set into a repo that opted out of it — fix the toolchain and re-run; no workflows were written."
+  fi
+  warn "profile lookup failed (python3 or slopstopper.profiles unavailable) — defaulting to 'ui', so every check installs. Re-run once the toolchain works if that is not what you want."
+  PROFILE_ACTIVE="ui"
+fi
 
 workflow_is_disabled() {
   [ -n "$DISABLED_WORKFLOWS" ] && printf '%s\n' "$DISABLED_WORKFLOWS" | grep -Fxq "$1"

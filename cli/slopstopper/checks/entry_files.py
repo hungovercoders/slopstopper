@@ -66,40 +66,16 @@ _MD_LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
 _AGENTS_DIRECTIVE_RE = re.compile(r"^@AGENTS\.md\s*$", re.MULTILINE)
 
 
-def _config_int(path: str, default: int) -> int:
-    raw = config.get(path, default)
-    try:
-        return int(raw)
-    except (TypeError, ValueError):
-        return default
-
-
-def _config_bool(path: str, default: bool) -> bool:
-    raw = config.get(path, default)
-    if isinstance(raw, bool):
-        return raw
-    if isinstance(raw, str):
-        return raw.strip().lower() in ("true", "yes", "1", "on")
-    return default
-
-
-def _config_str(path: str, default: str) -> str:
-    raw = config.get(path, default)
-    if raw is None:
-        return default
-    return str(raw)
-
-
 def _load_max_words() -> int:
-    return _config_int("hygiene.entry_files.max_words", DEFAULT_MAX_WORDS)
+    return config.get_int("hygiene.entry_files.max_words", DEFAULT_MAX_WORDS)
 
 
 def _load_require_map_pointer() -> bool:
-    return _config_bool("hygiene.entry_files.require_map_pointer", True)
+    return config.get_bool("hygiene.entry_files.require_map_pointer", True)
 
 
 def _load_map_path() -> str:
-    return _config_str("hygiene.entry_files.map_path", DEFAULT_MAP_PATH)
+    return config.get_str("hygiene.entry_files.map_path", DEFAULT_MAP_PATH)
 
 
 def _count_words(path: Path) -> int:

@@ -635,3 +635,28 @@ def test_no_profile_flag_leaves_an_existing_install_unchanged(tmp_path):
     assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
     assert _profile_key(target) is None, "no flag → no key written"
     assert API_DROPPED <= _installed(target)
+
+
+# When the profiles module cannot be resolved at all (no python3, or an
+# unreadable cli/ tree — simulated here by breaking the interpreter), the
+# installer must not quietly hand a repo the full `ui` workflow set it
+# explicitly opted out of. PYTHONHOME pointing nowhere makes every
+# `python3 -c …` in install.sh fail the way a missing interpreter would.
+_BROKEN_PYTHON = {"PYTHONHOME": "/nonexistent-python-home"}
+
+
+def test_unresolvable_profile_aborts_when_the_config_opted_out(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    (target / ".slopstopper.yml").write_text("profile: api\n")
+    result = _run_install(target, env_extra=_BROKEN_PYTHON)
+    assert result.returncode != 0
+    assert "profile 'api'" in result.stdout + result.stderr
+    assert not _installed(target), "must abort before any workflow lands"
+
+
+def test_unresolvable_profile_warns_and_installs_everything_for_the_default(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, env_extra=_BROKEN_PYTHON)
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert "defaulting to 'ui'" in result.stdout + result.stderr
+    assert "ss-reliability-smoke-tests.yml" in _installed(target)
