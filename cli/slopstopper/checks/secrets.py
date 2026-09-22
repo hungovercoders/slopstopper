@@ -3,25 +3,38 @@
 Ports the bash security:secrets flow into one self-contained check:
 
   task secrets:check-tool   (installs gitleaks if missing)
-  + gitleaks detect --source=. --report-format=json --report-path=...
+  + gitleaks detect --source=. --redact --report-format=json --report-path=...
   + python3 .ss/scripts/generate-secrets-md.py
 
 Subprocess-invokes `gitleaks` — the same licensing-boundary pattern as
 complexity (lizard). Adopters install gitleaks themselves (MIT). The
 slopstopper-cli wheel ships zero gitleaks code.
 
-The JSON report is redacted before anything else can read it. Gitleaks'
-native output carries the captured credential verbatim (`Secret`) and the
-source line around it (`Match`, `Line`). Both reports are uploaded as CI
-artifacts, which anyone with read access to the repo can download for the
-retention window — so a check whose job is to contain a leak would
-otherwise widen its audience. What survives is everything a human needs
-to find and fix the finding (rule, file, line number, commit,
-fingerprint) and nothing they'd need to use it.
+The JSON report never holds a credential on disk. Gitleaks' native output
+carries the captured value verbatim (`Secret`), the source text around it
+(`Match`, `Line`) and the commit message (`Message`), which can quote the
+same value. Both reports are uploaded as CI artifacts, which anyone with
+read access to the repo can download for the retention window — so a
+check whose job is to contain a leak would otherwise widen its audience.
+Two layers, so no window exists in which an unredacted file sits on disk:
+
+  1. gitleaks runs with `--redact`, so `Secret` / `Match` are written as
+     "REDACTED" by the scanner itself — nothing to clean up if the check
+     is killed between the scan and the rewrite.
+  2. `_read_findings` is the report's only read site: it strips the
+     credential-bearing keys (plus `Author` / `Email`, PII with no use in
+     a report) and rewrites the file before returning, so no caller in
+     this module or any importer ever sees an unredacted finding.
+
+A report that cannot be read or parsed is scrubbed and replaced by one
+sentinel finding, and the check exits 1: an unparseable report may still
+hold a secret, and it must never turn into "no findings" for the workflow
+gate, which counts list entries.
 
 Exit codes:
   0 — analysis completed (gating happens at the workflow level)
-  1 — gitleaks is not installed
+  1 — gitleaks is not installed, or its report could not be read or parsed
+      (fail closed — see above)
 """
 
 from __future__ import annotations
@@ -76,6 +89,9 @@ def _run_gitleaks() -> None:
         [
             "gitleaks", "detect",
             "--source=.",
+            # Scrub `Secret` / `Match` in the report file itself, not just
+            # the logs — the first of the two redaction layers.
+            "--redact",
             "--report-format=json",
             f"--report-path={REPORT_JSON}",
         ],
@@ -83,23 +99,27 @@ def _run_gitleaks() -> None:
     )
 
 
-def _read_findings() -> list[dict]:
-    if not REPORT_JSON.exists():
-        return []
-    content = REPORT_JSON.read_text().strip()
-    if not content or content == "null":
-        return []
-    try:
-        data = json.loads(content)
-    except json.JSONDecodeError:
-        return []
-    return data if isinstance(data, list) else []
-
-
 # Keys in gitleaks' native finding schema that carry the credential itself
-# or the source text around it. Matched case-insensitively because the
-# report code above already tolerates both `RuleID` and `ruleID` spellings.
-REDACTED_KEYS = frozenset({"secret", "match", "line"})
+# (`Secret`), the source text around it (`Match`, `Line`), the commit
+# message (which can quote the value verbatim) and author PII. Matched
+# case-insensitively because the report code tolerates both `RuleID` and
+# `ruleID` spellings.
+REDACTED_KEYS = frozenset({"secret", "match", "line", "message", "author", "email"})
+
+# Written in place of a report slopstopper could not read or parse. It is a
+# list entry, so the workflow gate (which counts entries) stays closed, and
+# it carries nothing gitleaks captured.
+UNREADABLE_RULE_ID = "slopstopper-unreadable-report"
+UNREADABLE_REPORT_FINDING = {
+    "RuleID": UNREADABLE_RULE_ID,
+    "Description": (
+        "gitleaks wrote a report slopstopper could not read or parse; it was "
+        "scrubbed and counted as a finding so the check fails closed"
+    ),
+    "File": str(REPORT_JSON),
+    "StartLine": 0,
+    "Commit": "",
+}
 
 
 def _redact_finding(finding: dict) -> dict:
@@ -111,17 +131,52 @@ def _redact_findings(findings: list[dict]) -> list[dict]:
     return [_redact_finding(f) if isinstance(f, dict) else f for f in findings]
 
 
+def _report_is_unreadable(findings: list[dict]) -> bool:
+    return any(
+        isinstance(f, dict) and f.get("RuleID") == UNREADABLE_RULE_ID for f in findings
+    )
+
+
+def _read_findings() -> list[dict]:
+    """The report's findings, redacted — and the report on disk rewritten.
+
+    This is the only place the JSON is read, so every caller gets redacted
+    findings and the file is scrubbed before this returns. A report that
+    cannot be read (`OSError`) or parsed (`ValueError` — which covers both
+    `JSONDecodeError` and `UnicodeDecodeError`) or is not a list becomes
+    the single `UNREADABLE_REPORT_FINDING`: it is still counted as a
+    finding, and its bytes never survive.
+    """
+    if not REPORT_JSON.exists():
+        return []
+    try:
+        content = REPORT_JSON.read_text().strip()
+        data = json.loads(content) if content and content != "null" else []
+        if not isinstance(data, list):
+            raise ValueError("gitleaks report is not a JSON list")
+        findings = _redact_findings(data)
+    except (OSError, ValueError):
+        findings = [dict(UNREADABLE_REPORT_FINDING)]
+    _write_redacted_json(findings)
+    return findings
+
+
 def _write_redacted_json(findings: list[dict]) -> None:
     """Overwrite gitleaks' report with the redacted findings.
 
-    Always rewrites when gitleaks produced a file, including the
-    malformed case (which `_read_findings` reads as no findings): an
-    unparseable report is still a file that may contain secrets, and
-    the workflow gate counts it as zero either way.
+    Only ever called for a file gitleaks produced. If the rewrite itself
+    fails, the file is removed instead: a report that cannot be scrubbed
+    must not be left for the artifact upload. If even that fails, the
+    error propagates — the check must not report success over an
+    unredacted file.
     """
     if not REPORT_JSON.exists():
         return
-    REPORT_JSON.write_text(json.dumps(findings, indent=2) + "\n")
+    try:
+        REPORT_JSON.write_text(json.dumps(findings, indent=2) + "\n")
+    except OSError:
+        REPORT_JSON.unlink()
+        raise
 
 
 def _format_finding_row(finding: dict) -> str:
@@ -174,10 +229,16 @@ def run(_args: list[str] | None = None) -> int:
 
     output.status("🔑", "Running secrets detection…")
     _run_gitleaks()
-    findings = _redact_findings(_read_findings())
-    _write_redacted_json(findings)
+    findings = _read_findings()
     REPORT_MD.write_text(_build_md_report(findings))
 
+    if _report_is_unreadable(findings):
+        output.error(
+            "gitleaks' report could not be read or parsed — it was scrubbed and "
+            "counted as a finding; treat this run as failed and re-run it"
+        )
+        output.footer(REPORT_DIR, [REPORT_MD.name])
+        return 1
     if findings:
         output.warn(f"Found {len(findings)} secret(s) — revoke and remove immediately")
     else:

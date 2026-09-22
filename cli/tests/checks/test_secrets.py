@@ -87,10 +87,11 @@ def test_read_findings_parses_list_payload(isolated_cwd):
     assert len(out) == 2
 
 
-def test_read_findings_returns_empty_on_dict_payload(isolated_cwd):
-    secrets.REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    secrets.REPORT_JSON.write_text(json.dumps({"oops": "not a list"}))
-    assert secrets._read_findings() == []
+def test_read_findings_treats_a_dict_payload_as_unreadable(isolated_cwd):
+    secrets.REPORT_DIR.mkdir(parents=True)
+    secrets.REPORT_JSON.write_text(json.dumps({"not": "a list"}))
+    out = secrets._read_findings()
+    assert [f["RuleID"] for f in out] == [secrets.UNREADABLE_RULE_ID]
 
 
 def test_gitleaks_available_uses_shutil_which(monkeypatch):
@@ -172,10 +173,12 @@ RAW_FINDING = {
 
 
 def test_redact_finding_strips_credential_bearing_keys():
-    redacted = secrets._redact_finding(RAW_FINDING)
-    assert "Secret" not in redacted
-    assert "Match" not in redacted
-    assert "Line" not in redacted
+    redacted = secrets._redact_finding(
+        {**RAW_FINDING, "Message": f"hotfix: set {PLANTED_KEY}", "Author": "Dev", "Email": "dev@x"}
+    )
+    for key in ("Secret", "Match", "Line", "Message", "Author", "Email"):
+        assert key not in redacted, key
+    assert PLANTED_KEY not in json.dumps(redacted)
     # Everything a human needs to find and fix it survives.
     assert redacted["RuleID"] == "github-pat"
     assert redacted["File"] == "config/prod.env"
@@ -212,8 +215,13 @@ def test_run_rewrites_the_json_on_disk_without_secret_values(monkeypatch, isolat
     assert PLANTED_KEY not in secrets.REPORT_MD.read_text()
 
 
-def test_run_rewrites_a_malformed_report_rather_than_leaving_it(monkeypatch, isolated_cwd):
-    """An unparseable report is still a file that may hold a secret."""
+def test_run_scrubs_a_malformed_report_and_fails_closed(monkeypatch, isolated_cwd):
+    """An unparseable report may hold a secret, and must not read as "none".
+
+    The workflow gate counts list entries, so the scrubbed file carries one
+    sentinel finding and the check exits 1 — a truncated report that did
+    contain findings can never turn a PR green.
+    """
 
     def fake_gitleaks():
         secrets.REPORT_DIR.mkdir(parents=True, exist_ok=True)
@@ -221,8 +229,70 @@ def test_run_rewrites_a_malformed_report_rather_than_leaving_it(monkeypatch, iso
 
     monkeypatch.setattr(secrets, "_gitleaks_available", lambda: True)
     monkeypatch.setattr(secrets, "_run_gitleaks", fake_gitleaks)
-    assert secrets.run() == 0
+    assert secrets.run() == 1
+
+    on_disk = secrets.REPORT_JSON.read_text()
+    assert PLANTED_KEY not in on_disk
+    findings = json.loads(on_disk)
+    assert [f["RuleID"] for f in findings] == [secrets.UNREADABLE_RULE_ID]
+    assert secrets.UNREADABLE_RULE_ID in secrets.REPORT_MD.read_text()
+
+
+def test_run_scrubs_a_report_that_is_not_utf8_and_fails_closed(monkeypatch, isolated_cwd):
+    """UnicodeDecodeError is a ValueError, not a JSONDecodeError — it must
+    still land in the scrub-and-fail path rather than a traceback that
+    leaves the raw file behind for the artifact upload."""
+
+    def fake_gitleaks():
+        secrets.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+        secrets.REPORT_JSON.write_bytes(b'\xff\xfe[{"Secret": "' + PLANTED_KEY.encode() + b'"}]')
+
+    monkeypatch.setattr(secrets, "_gitleaks_available", lambda: True)
+    monkeypatch.setattr(secrets, "_run_gitleaks", fake_gitleaks)
+    assert secrets.run() == 1
     assert PLANTED_KEY not in secrets.REPORT_JSON.read_text()
+
+
+def test_run_removes_a_report_it_cannot_rewrite(monkeypatch, isolated_cwd):
+    """If the scrub itself fails the raw file is unlinked and the error
+    propagates — never a green exit over an unredacted report."""
+
+    class Unwritable(type(secrets.REPORT_JSON)):
+        def write_text(self, *a, **k):
+            raise OSError("read-only filesystem")
+
+    def fake_gitleaks():
+        secrets.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+        secrets.REPORT_JSON.write_text(json.dumps([RAW_FINDING]))
+        monkeypatch.setattr(secrets, "REPORT_JSON", Unwritable(secrets.REPORT_JSON))
+
+    monkeypatch.setattr(secrets, "_gitleaks_available", lambda: True)
+    monkeypatch.setattr(secrets, "_run_gitleaks", fake_gitleaks)
+    with pytest.raises(OSError):
+        secrets.run()
+    assert not secrets.REPORT_JSON.exists()
+
+
+def test_read_findings_is_the_only_read_site_and_returns_redacted(isolated_cwd):
+    """Any future importer that reads findings through the module gets
+    redacted dicts and finds the file already scrubbed."""
+    secrets.REPORT_DIR.mkdir(parents=True)
+    secrets.REPORT_JSON.write_text(json.dumps([RAW_FINDING]))
+    out = secrets._read_findings()
+    assert "Secret" not in out[0] and "Match" not in out[0]
+    assert PLANTED_KEY not in secrets.REPORT_JSON.read_text()
+
+
+def test_run_gitleaks_redacts_at_the_source(monkeypatch, isolated_cwd):
+    """`--redact` makes gitleaks write REDACTED into the report file itself,
+    so no unredacted bytes exist even if the check dies before the rewrite."""
+    seen = {}
+    monkeypatch.setattr(
+        secrets.subprocess, "run", lambda argv, **kw: seen.setdefault("argv", argv)
+    )
+    secrets._run_gitleaks()
+    assert "--redact" in seen["argv"]
+    assert seen["argv"].index("--redact") < seen["argv"].index("--report-format=json")
 
 
 def test_write_redacted_json_does_not_create_a_file_gitleaks_never_wrote(isolated_cwd):
@@ -230,11 +300,19 @@ def test_write_redacted_json_does_not_create_a_file_gitleaks_never_wrote(isolate
     assert not secrets.REPORT_JSON.exists()
 
 
-@pytest.mark.skipif(shutil.which("gitleaks") is None, reason="gitleaks not on PATH")
+@pytest.mark.skipif(
+    shutil.which("gitleaks") is None or shutil.which("git") is None,
+    reason="gitleaks and git must both be on PATH",
+)
 def test_real_gitleaks_output_is_redacted_end_to_end(isolated_cwd):
     """Plant a token, run the real binary, prove it never reaches disk."""
     planted = PLANTED_KEY
-    git = ["git", "-c", "user.email=t@t", "-c", "user.name=t"]
+    # Hermetic: a contributor's global commit.gpgsign / defaultBranch must
+    # not reach into the temp repo.
+    git = [
+        "git", "-c", "user.email=t@t", "-c", "user.name=t",
+        "-c", "commit.gpgsign=false", "-c", "init.defaultBranch=main",
+    ]
     subprocess.run([*git, "init", "-q", "."], check=True)
     (isolated_cwd / "config.env").write_text(f"GITHUB_TOKEN={planted}\n")
     subprocess.run([*git, "add", "-A"], check=True)
@@ -245,9 +323,8 @@ def test_real_gitleaks_output_is_redacted_end_to_end(isolated_cwd):
     findings = json.loads(secrets.REPORT_JSON.read_text())
     assert len(findings) >= 1, "gitleaks should have flagged the planted key"
     for finding in findings:
-        assert "Secret" not in finding
-        assert "Match" not in finding
-        assert "Line" not in finding
+        for key in ("Secret", "Match", "Line", "Message", "Author", "Email"):
+            assert key not in finding, key
     assert planted not in secrets.REPORT_JSON.read_text()
     assert planted not in secrets.REPORT_MD.read_text()
     # The redacted report still says where to look.

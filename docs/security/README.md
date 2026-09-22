@@ -332,7 +332,7 @@ The secrets workflow:
 - ✅ Posts findings as PR comments
 - ✅ Creates GitHub issues when secrets land on `main`
 - ✅ Fails PRs whenever secrets are detected (always blocking)
-- ✅ Redacts the credential itself from both reports before they're uploaded — the JSON keeps rule, file, line and commit, never the `Secret` / `Match` values gitleaks captures. CI artifacts are downloadable by anyone with read access, so a check that contains a leak must not widen its audience
+- ✅ Never writes the credential to disk — gitleaks runs with `--redact`, and the check strips `Secret` / `Match` / `Line` / `Message` (a commit message can quote the value) plus author PII before anything reads the JSON; rule, file, line number and commit survive. A report that can't be parsed is scrubbed and fails the check rather than reading as "no findings". CI artifacts are downloadable by anyone with read access, so a check that contains a leak must not widen its audience
 
 ## Files Involved
 
