@@ -15,8 +15,15 @@ slopstopper-cli MIT contract. Subprocess invocation keeps it on the
 adopter's side.
 
 The verdict lives here, not in the workflow. Semgrep reports findings
-at ERROR, WARNING and INFO severity; `security.sast.fail_on` names the
-lowest severity that fails the check.
+at ERROR, WARNING and INFO severity (newer registry rules also use
+CRITICAL / HIGH / MEDIUM / LOW, which rank alongside them);
+`security.sast.fail_on` names the lowest severity that fails the check.
+A severity this module doesn't recognise ranks as ERROR — an unknown
+label must not quietly fall below the gate.
+
+A scan that produced no readable report (Semgrep crashed, timed out
+fetching rules, or wrote nothing) is "could not run", not "no findings":
+the check exits 2 rather than passing a scan that never happened.
 
 Configuration (.slopstopper.yml — optional):
 
@@ -27,8 +34,8 @@ Configuration (.slopstopper.yml — optional):
 Exit codes:
   0 — no findings at or above `security.sast.fail_on`
   1 — one or more findings at or above `security.sast.fail_on`
-  2 — semgrep is not installed, or arguments were passed (this check
-      takes none)
+  2 — semgrep is not installed, its report is missing or unreadable,
+      or arguments were passed (this check takes none)
 """
 
 from __future__ import annotations
@@ -57,7 +64,7 @@ META = {
     "comment_discriminator": "SAST Analysis",
     "issue_title": "⚠️ SAST Issues in Main Branch",
     "issue_labels": ["sast", "security"],
-    "issue_followup": "🔔 SAST error-severity findings detected again in commit",
+    "issue_followup": "🔔 SAST findings at or above `security.sast.fail_on` detected again in commit",
 }
 
 _INSTALL_HELP = (
@@ -75,13 +82,23 @@ def _semgrep_available() -> bool:
 
 # Semgrep's severities, ranked. `fail_on: warning` means WARNING and
 # everything above it fails; `none` reports without ever failing.
-SEVERITY_RANK = {"ERROR": 2, "WARNING": 1, "INFO": 0}
+# Semgrep's classic severities plus the CRITICAL/HIGH/MEDIUM/LOW scale
+# newer registry rules report. Anything else ranks as ERROR (_rank).
+SEVERITY_RANK = {
+    "CRITICAL": 2, "HIGH": 2, "ERROR": 2,
+    "MEDIUM": 1, "WARNING": 1,
+    "LOW": 0, "INFO": 0,
+}
+ERROR_RANK = 2
 FAIL_ON_CHOICES = ("error", "warning", "info", "none")
 DEFAULT_FAIL_ON = "error"
 
 
 def _fail_on() -> str:
-    raw = str(config.get("security.sast.fail_on", DEFAULT_FAIL_ON) or DEFAULT_FAIL_ON).strip().lower()
+    # get_str, not get(): a bare `fail_on: false` parses as a boolean, and
+    # must reach the invalid-value warning below rather than silently
+    # collapsing to the default.
+    raw = config.get_str("security.sast.fail_on", DEFAULT_FAIL_ON).strip().lower()
     if raw in FAIL_ON_CHOICES:
         return raw
     output.warn(
@@ -98,8 +115,13 @@ def _blocking_findings(results: list[dict], fail_on: str) -> list[dict]:
     threshold = SEVERITY_RANK[fail_on.upper()]
     return [
         r for r in results
-        if SEVERITY_RANK.get(r.get("extra", {}).get("severity", "").upper(), 0) >= threshold
+        if _rank(r) >= threshold
     ]
+
+
+def _rank(finding: dict) -> int:
+    severity = str(finding.get("extra", {}).get("severity", "")).upper()
+    return SEVERITY_RANK.get(severity, ERROR_RANK)
 
 
 def _run_semgrep() -> None:
@@ -118,21 +140,28 @@ def _run_semgrep() -> None:
     )
 
 
-def _read_data() -> dict:
+def _read_data() -> dict | None:
+    """Semgrep's JSON report, or None when there is no usable report.
+
+    None means the scan could not run — the caller exits 2. Returning an
+    empty result set here would turn a crashed scan into a clean pass.
+    """
     if not REPORT_JSON.exists():
-        return {"results": [], "errors": []}
+        return None
     try:
-        return json.loads(REPORT_JSON.read_text())
-    except json.JSONDecodeError:
-        return {"results": [], "errors": []}
+        data = json.loads(REPORT_JSON.read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict) or not isinstance(data.get("results"), list):
+        return None
+    return data
 
 
 def _categorize_findings(results: list[dict]) -> tuple[list[dict], list[dict]]:
     errors: list[dict] = []
     warnings: list[dict] = []
     for finding in results:
-        severity = finding.get("extra", {}).get("severity", "").upper()
-        if severity == "ERROR":
+        if _rank(finding) >= ERROR_RANK:
             errors.append(finding)
         else:
             warnings.append(finding)
@@ -204,7 +233,7 @@ def _generated_at() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
-def _build_md_report(data: dict) -> str:
+def _build_md_report(data: dict, fail_on: str = DEFAULT_FAIL_ON) -> str:
     results = data.get("results", [])
     errors = data.get("errors", [])
     error_findings, warning_findings = _categorize_findings(results)
@@ -230,8 +259,11 @@ def _build_md_report(data: dict) -> str:
         md += _format_findings_section(warning_findings, "Warning Findings", "⚠️")
 
     md += "## Guidelines\n\n"
-    md += "- **Errors**: Must be reviewed and addressed before merging\n"
-    md += "- **Warnings**: Should be reviewed; may indicate potential issues\n"
+    if fail_on == "none":
+        md += "- **Blocking**: nothing — `security.sast.fail_on: none` reports findings without failing\n"
+    else:
+        md += f"- **Blocking**: findings at or above `fail_on: {fail_on}` fail the check — fix them or suppress narrowly with a `# why`\n"
+        md += "- **Below the threshold**: reported for review; they don't fail the check\n"
     md += "- Run `task sast` locally to reproduce findings\n\n"
     md += "## Limitations\n\n"
     md += "This scan uses **Semgrep OSS** (open-source version). The following enterprise features are not available:\n\n"
@@ -257,10 +289,21 @@ def run(args: list[str] | None = None) -> int:
     output.running("Running SAST analysis…")
     _run_semgrep()
     data = _read_data()
-    REPORT_MD.write_text(_build_md_report(data))
+    if data is None:
+        REPORT_DIR.mkdir(parents=True, exist_ok=True)
+        REPORT_MD.write_text(
+            "# SAST Analysis Report\n\n## ❌ Scan did not complete\n\n"
+            f"Semgrep produced no readable report at `{REPORT_JSON}`. The scan is "
+            "treated as not run — not as clean. Re-run it and check Semgrep's output above.\n"
+        )
+        output.error("Semgrep produced no readable report — the scan did not complete")
+        output.footer(REPORT_DIR, [REPORT_MD.name])
+        return 2
+
+    fail_on = _fail_on()
+    REPORT_MD.write_text(_build_md_report(data, fail_on))
 
     results = data.get("results", [])
-    fail_on = _fail_on()
     blocking = _blocking_findings(results, fail_on)
     if results:
         errors, warnings = _categorize_findings(results)

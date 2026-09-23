@@ -167,9 +167,9 @@ def test_run_clean_returns_zero(isolated_cwd):
     assert data["issue_count"] == 0
 
 
-def test_run_returns_one_when_docs_missing(isolated_cwd, capsys):
+def test_run_returns_two_when_docs_missing(isolated_cwd, capsys):
     rc = docs_accuracy.run()
-    assert rc == 1
+    assert rc == 2
     assert "docs/ directory not found" in capsys.readouterr().out
 
 

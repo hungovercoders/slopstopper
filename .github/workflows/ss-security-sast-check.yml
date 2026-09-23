@@ -1,10 +1,11 @@
 name: SlopStopper · SAST Analysis
 
-# Runs Semgrep static analysis. Workflow gates fail and emit-issue
-# on the count of ERROR-severity findings in the Semgrep JSON;
-# INFO/WARNING findings are reported but non-blocking. Triggers: PR,
-# push to main. Emits a rolling PR comment with all findings and a
-# main-branch tracking issue on ERROR-severity regressions.
+# Runs Semgrep static analysis. The check itself is the gate: it exits 1
+# when a finding is at or above `security.sast.fail_on` (default: error)
+# and 2 when the scan couldn't run; findings below the threshold are
+# reported but non-blocking. Triggers: PR, push to main. Emits a rolling
+# PR comment with all findings and a main-branch tracking issue when
+# blocking findings land (exit 1 only).
 # Docs: docs/security/README.md.
 
 on:
@@ -57,7 +58,16 @@ jobs:
       # steps, and the local `task ss:security:sast` agrees with CI.
       - name: Run SAST analysis
         id: sast
-        run: task ss:security:sast
+        # `task -x` passes the CLI's exit code through (plain `task` maps
+        # every failure to 201). The code is kept as an output so later
+        # steps can tell findings (1) from could-not-run (2).
+        shell: bash
+        run: |
+          set +e
+          task -x ss:security:sast
+          rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          exit $rc
 
       - name: Upload SAST reports
         if: always()
@@ -71,13 +81,14 @@ jobs:
           if-no-files-found: warn
 
       - name: Emit PR comment
-        if: always() && github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request' && steps.sast.outcome != 'skipped'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit security:sast --target pr-comment --status ${{ steps.sast.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete
 
       - name: Emit issue on main (if error-severity findings)
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.sast.outcome == 'failure'
+        # rc 1 only — exit 2 means the scan didn't run, which is not a finding
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.sast.outputs.rc == '1'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit security:sast --target issue

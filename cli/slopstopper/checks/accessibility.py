@@ -35,9 +35,10 @@ modes.
 
 Exit codes:
   0 — playwright tests passed
-  1 — playwright tests failed (report still written)
-  2 — npx (Node.js) not available, the URL is missing, or the bundled
-      spec could not be found
+  1 — playwright tests failed (Playwright exited 1; report still written)
+  2 — npx (Node.js) not available, the URL is missing, the bundled
+      spec could not be found, or Playwright exited with any other
+      non-zero code (the suite didn't run to a verdict)
 """
 
 from __future__ import annotations
@@ -200,5 +201,13 @@ def run(args: list[str] | None = None) -> int:
     cmd = _build_cmd(parsed.ci)
     result = subprocess.run(cmd, env=env, check=False)
     _write_report(result.returncode, url)
-    # Playwright's own exit code is kept in the report; the contract needs 0 / 1.
-    return 1 if result.returncode else 0
+    # Playwright's own exit code is kept in the report. It exits 1 when tests failed — a verdict on the site. Any
+    # other non-zero (a config error, a missing binary, a signal) means
+    # the suite didn't run to a verdict: 2.
+    return _playwright_exit(result.returncode)
+
+
+def _playwright_exit(returncode: int) -> int:
+    if returncode == 0:
+        return 0
+    return 1 if returncode == 1 else 2

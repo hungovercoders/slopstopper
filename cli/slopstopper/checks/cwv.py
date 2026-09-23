@@ -25,9 +25,10 @@ actually enforced.
 
 Exit codes:
   0 — lhci passed all thresholds
-  1 — lhci failed a threshold (report still written)
-  2 — npx (Node.js) not available, the URL is missing, or the Lighthouse
-      config does not exist
+  1 — lhci failed a threshold (lhci exited 1; report still written)
+  2 — npx (Node.js) not available, the URL is missing, the Lighthouse
+      config does not exist, or lhci exited with any other non-zero
+      code (Lighthouse didn't run to a verdict)
 """
 
 from __future__ import annotations
@@ -276,4 +277,9 @@ def run(args: list[str] | None = None) -> int:
     _write_report(url, captured, rc)
     output.footer(REPORT_DIR, [REPORT_MD.name])
     # lhci's own exit code is kept in the report; the contract needs 0 / 1.
-    return 1 if rc else 0
+    # lhci exits 1 when an assertion failed; any other non-zero means
+    # Lighthouse didn't run to a verdict (Chrome failed to launch, a
+    # config error, a signal): 2, not a verdict on the site.
+    if rc == 0:
+        return 0
+    return 1 if rc == 1 else 2

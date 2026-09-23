@@ -18,8 +18,9 @@ markdown report (human-readable).
 
 Exit codes:
   0 — clean
-  1 — violations OR docs/ / docs/index.md missing
-  2 — arguments were passed (this check takes none)
+  1 — violations
+  2 — docs/ or docs/index.md missing (no map to check against), or
+      arguments were passed (this check takes none)
 """
 
 from __future__ import annotations
@@ -339,7 +340,7 @@ def run(args: list[str] | None = None) -> int:
 
     result = _check_structure(DOCS_DIR)
     if result is None:
-        return 1
+        return 2
     violations, expected = result
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)

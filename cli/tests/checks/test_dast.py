@@ -178,19 +178,19 @@ def test_read_data_parses_payload(isolated_cwd):
     assert data["site"][0]["alerts"][0]["name"] == "SQL Injection"
 
 
-def test_run_returns_one_when_docker_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_docker_missing(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(dast, "_docker_available", lambda: False)
     rc = dast.run()
-    assert rc == 1
+    assert rc == 2
     assert "Docker is required" in capsys.readouterr().out
 
 
-def test_run_returns_one_for_localhost_with_no_server(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_for_localhost_with_no_server(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_localhost_responding", lambda url="http://localhost:8080": False)
     monkeypatch.setattr(dast, "_start_local_server", lambda: None)
     rc = dast.run(["--target", "http://localhost:8080"])
-    assert rc == 1
+    assert rc == 2
     assert "Nothing listening" in capsys.readouterr().out
 
 
@@ -361,7 +361,7 @@ def test_run_fails_clearly_when_the_spec_file_is_missing(
     write_config("api:\n  openapi:\n    spec: missing.yaml\n")
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     rc = dast.run(["--target", "https://api.example.com"])
-    assert rc == 1
+    assert rc == 2
     assert "OpenAPI spec not found" in capsys.readouterr().out
 
 

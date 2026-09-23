@@ -166,17 +166,17 @@ def test_run_flags_missing_category_directory(isolated_cwd):
     assert any(v["type"] == "missing_directory" for v in data["violations"])
 
 
-def test_run_returns_one_when_docs_dir_missing(isolated_cwd, capsys):
+def test_run_returns_two_when_docs_dir_missing(isolated_cwd, capsys):
     # No docs/ directory at all
     rc = docs_structure.run()
-    assert rc == 1
+    assert rc == 2
     assert "docs/ directory not found" in capsys.readouterr().out
 
 
-def test_run_returns_one_when_index_missing(isolated_cwd, capsys):
+def test_run_returns_two_when_index_missing(isolated_cwd, capsys):
     Path("docs").mkdir()
     rc = docs_structure.run()
-    assert rc == 1
+    assert rc == 2
     assert "docs/index.md not found" in capsys.readouterr().out
 
 

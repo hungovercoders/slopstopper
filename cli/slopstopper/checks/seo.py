@@ -35,8 +35,8 @@ See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
   0 — all pages passed
-  1 — failures detected, or an unsafe-scheme URL was supplied
-  2 — the URL is missing
+  1 — failures detected
+  2 — the URL is missing, or its scheme is not http/https
 """
 
 from __future__ import annotations
@@ -489,6 +489,13 @@ def run(args: list[str] | None = None) -> int:
         output._emit("Usage:")
         output._emit("  slopstopper run reliability:seo -- --url https://your-site.example.com")
         output._emit("  SEO_TEST_URL=https://your-site slopstopper run reliability:seo")
+        return 2
+
+    try:
+        _require_safe_url(url)
+    except ValueError as e:
+        # A file:// or ftp:// URL is a bad input, not a site failure.
+        output.error(str(e))
         return 2
 
     require_og_image = not parsed.no_require_og_image

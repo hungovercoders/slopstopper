@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from slopstopper.checks import sast
 
 
@@ -144,14 +146,14 @@ def test_semgrep_available_via_which(monkeypatch):
     assert sast._semgrep_available() is False
 
 
-def test_read_data_returns_empty_when_file_missing(isolated_cwd):
-    assert sast._read_data() == {"results": [], "errors": []}
+def test_read_data_is_none_when_file_missing(isolated_cwd):
+    assert sast._read_data() is None
 
 
-def test_read_data_handles_malformed_json(isolated_cwd):
+def test_read_data_is_none_for_malformed_json(isolated_cwd):
     sast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
     sast.REPORT_JSON.write_text("not json")
-    assert sast._read_data() == {"results": [], "errors": []}
+    assert sast._read_data() is None
 
 
 def test_read_data_parses_payload(isolated_cwd):
@@ -238,3 +240,47 @@ def test_blocking_findings_ranks_severities():
     ]
     assert len(sast._blocking_findings([ERROR_FINDING, WARNING_FINDING, info], "info")) == 3
     assert sast._blocking_findings([ERROR_FINDING], "none") == []
+
+
+# ── review follow-ups ─────────────────────────────────────────────
+
+
+def test_run_returns_two_when_semgrep_writes_no_report(monkeypatch, isolated_cwd, capsys):
+    """A crashed scan is 'could not run', never a clean pass."""
+    monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
+    monkeypatch.setattr(sast, "_run_semgrep", lambda: None)
+    assert sast.run() == 2
+    assert "did not complete" in capsys.readouterr().out
+    assert "Scan did not complete" in sast.REPORT_MD.read_text()
+
+
+def test_run_returns_two_when_the_report_is_malformed(monkeypatch, isolated_cwd):
+    def fake_semgrep():
+        sast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+        sast.REPORT_JSON.write_text('{"results": [')
+
+    monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
+    monkeypatch.setattr(sast, "_run_semgrep", fake_semgrep)
+    assert sast.run() == 2
+
+
+@pytest.mark.parametrize("severity", ["CRITICAL", "HIGH", "SOMETHING-NEW"])
+def test_new_and_unknown_severities_block_by_default(monkeypatch, isolated_cwd, severity):
+    """Registry rules may report CRITICAL/HIGH; an unrecognised label must
+    not rank below the gate."""
+    _stub_semgrep(monkeypatch, {"check_id": "r", "extra": {"severity": severity}})
+    assert sast.run() == 1
+
+
+def test_medium_and_low_rank_as_warning_and_info():
+    medium = {"extra": {"severity": "MEDIUM"}}
+    low = {"extra": {"severity": "LOW"}}
+    assert sast._blocking_findings([medium, low], "error") == []
+    assert sast._blocking_findings([medium, low], "warning") == [medium]
+
+
+def test_fail_on_false_warns_instead_of_silently_defaulting(monkeypatch, write_config, capsys):
+    write_config("security:\n  sast:\n    fail_on: false\n")
+    _stub_semgrep(monkeypatch, WARNING_FINDING)
+    assert sast.run() == 0
+    assert "not one of error, warning, info, none" in capsys.readouterr().out

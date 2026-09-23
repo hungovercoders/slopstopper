@@ -53,8 +53,8 @@ task ss:security:sast
 
 ### What You Get Automatically
 - ✅ PR comments with SAST findings report
-- ✅ Merge blocking if any ERROR-severity findings exist
-- ✅ GitHub issues on main branch for error-severity problems
+- ✅ Merge blocking on findings at or above `security.sast.fail_on` (default: ERROR)
+- ✅ GitHub issues on main branch when blocking findings land
 
 ### Common Issues
 
@@ -98,8 +98,8 @@ The SAST workflow:
 - ✅ Runs automatically on every PR to `main` and push to `main`
 - ✅ Analyses code using Semgrep's auto-configured rule set
 - ✅ Posts findings as PR comments
-- ✅ Creates GitHub issues when error-severity findings land on `main`
-- ✅ Fails PRs with error-severity findings
+- ✅ Creates GitHub issues when blocking findings land on `main` (a scan that couldn't run fails the job but opens no issue)
+- ✅ Fails PRs with blocking findings, and fails closed when Semgrep produces no readable report
 
 ## Files Involved
 

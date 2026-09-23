@@ -202,3 +202,11 @@ def test_meta_matches_legacy_workflow_strings():
     assert smoke.META["issue_title"] == "❌ Smoke Tests Failing"
     assert "smoke-test-failure" in smoke.META["issue_labels"]
     assert "reliability" in smoke.META["issue_labels"]
+
+
+def test_playwright_exit_codes_map_to_the_contract():
+    """1 is a verdict on the site; any other non-zero means no verdict."""
+    assert smoke._playwright_exit(0) == 0
+    assert smoke._playwright_exit(1) == 1
+    for code in (2, 127, 130, -9):
+        assert smoke._playwright_exit(code) == 2

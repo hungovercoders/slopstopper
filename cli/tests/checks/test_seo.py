@@ -376,7 +376,7 @@ def test_run_returns_one_when_pages_fail(monkeypatch, isolated_cwd, capsys):
 def test_run_rejects_unsafe_url_scheme(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(seo, "_discover_pages", lambda: None)
     rc = seo.run(["--url", "file:///etc/passwd"])
-    assert rc == 1
+    assert rc == 2
     assert "refuses scheme 'file'" in capsys.readouterr().out
 
 

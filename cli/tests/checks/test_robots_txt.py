@@ -267,5 +267,5 @@ def test_run_returns_one_on_failure(monkeypatch, isolated_cwd, capsys):
 
 def test_run_rejects_unsafe_url_scheme(monkeypatch, isolated_cwd, capsys):
     rc = robots_txt.run(["--url", "file:///etc/passwd"])
-    assert rc == 1
+    assert rc == 2
     assert "refuses scheme 'file'" in capsys.readouterr().out

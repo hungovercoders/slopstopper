@@ -37,8 +37,9 @@ readable).
 
 Exit codes:
   0 — clean
-  1 — issues OR docs/ missing
-  2 — arguments were passed (this check takes none)
+  1 — issues
+  2 — docs/ missing (nothing to check), or arguments were passed
+      (this check takes none)
 """
 
 from __future__ import annotations
@@ -498,7 +499,7 @@ def run(args: list[str] | None = None) -> int:
 
     if not DOCS_DIR.is_dir():
         output.error("docs/ directory not found")
-        return 1
+        return 2
 
     valid_tasks = _get_taskfile_tasks()
     valid_workflows = _get_workflow_files()

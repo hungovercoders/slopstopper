@@ -301,6 +301,9 @@ hygiene:
     extra_paths: []          # default — globs outside docs/ to scan too, e.g. [app/*.html, .claude/skills/**/*.md]
   docs_structure:
     require_indexed_docs: true  # default — every doc must be linked from a README above it
+security:
+  sast:
+    fail_on: error           # default — lowest Semgrep severity that fails (error | warning | info | none)
 ```
 
 `hygiene.complexity.max_ccn` gates locally, in the pre-push hook, and in CI off one exit code (there is no separate CI-only threshold) — so `task ss:hygiene:complexity` reproduces the CI result exactly. Drop it to `10` for McCabe-strict.
