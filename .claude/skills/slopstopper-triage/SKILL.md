@@ -138,6 +138,7 @@ Config-driven knobs (no file edit needed beyond `.slopstopper.yml`):
 | `reliability:{accessibility,seo,broken_links}` | `pages.<check>`, `reliability.coverage.<event>` | `/`, hand-list mode |
 | `hygiene:csp-exceptions` | `headers.source`, `headers.format` | unset (graceful skip) |
 | `hygiene:docs-accuracy` | `hygiene.docs_accuracy.extra_paths` | `[]` — only `docs/` + the root entry files are scanned |
+| `hygiene:docs-structure` | `hygiene.docs_structure.require_indexed_docs` | `true` — every doc linked from a README above it |
 
 Tunings that are NOT yet config-driven (require code/file edits):
 

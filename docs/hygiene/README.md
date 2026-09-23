@@ -47,7 +47,7 @@ The documentation index is the **sole source of truth for documentation structur
 - All expected categories from docs/index.md exist
 - Each category has a README.md file
 - No unexpected files outside the governed structure
-- Every doc inside a category is linked from that category's README (`unindexed_doc`) — the map is a chain, `docs/index.md` → category README → doc, and a file no README mentions is unreachable from the map
+- Every doc inside a category, sub-directories included, is linked from its category README or a README.md above it (`unindexed_doc`) — the map is a chain, `docs/index.md` → category README → doc, and a file no README mentions is unreachable from the map. `hygiene.docs_structure.require_indexed_docs: false` turns this rule off
 - Violations are raised as blocking issues for discussion
 
 ```bash

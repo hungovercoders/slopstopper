@@ -390,6 +390,13 @@ hygiene:
     # slopstopper.dev scans its own site and the Claude Code skills it
     # ships; a typical adopter leaves this empty.
     extra_paths: []
+  # ── hygiene:docs-structure ──────────────────────────────────────────
+  docs_structure:
+    # Every doc inside docs/<category>/ (sub-directories included) must be
+    # linked from its category README or a README.md above it, so the
+    # docs/index.md → category README → doc chain has no dead ends. Set
+    # false to check only that the categories and their READMEs exist.
+    require_indexed_docs: true
 
 # ── Reliability coverage modes ───────────────────────────────────────
 # Opt-in alternative to the hand-list above. When set, accessibility,

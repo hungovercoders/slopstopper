@@ -258,3 +258,33 @@ def test_check_category_contents_does_not_accept_a_same_named_file_elsewhere(iso
     (cat / "DAST.md").write_text("# orphan copy\n")
     violations = docs_structure._check_category_contents(docs, ["hygiene"])
     assert [v["path"] for v in violations] == ["docs/hygiene/DAST.md"]
+
+
+# ── review follow-ups (round 2): sub-directories and the knob ──
+
+
+def test_check_category_contents_descends_into_subdirectories(isolated_cwd):
+    docs = Path("docs")
+    cat = _seed_category(docs, "decisions")
+    (cat / "adr").mkdir()
+    (cat / "adr" / "0001-foo.md").write_text("# ADR 1\n")
+    violations = docs_structure._check_category_contents(docs, ["decisions"])
+    assert [v["path"] for v in violations] == ["docs/decisions/adr/0001-foo.md"]
+
+
+def test_a_nested_readme_can_index_its_own_directory(isolated_cwd):
+    docs = Path("docs")
+    cat = _seed_category(docs, "decisions")
+    (cat / "README.md").write_text("[ADRs](adr/README.md)\n")
+    (cat / "adr").mkdir()
+    (cat / "adr" / "README.md").write_text("- [1](0001-foo.md)\n")
+    (cat / "adr" / "0001-foo.md").write_text("# ADR 1\n")
+    assert docs_structure._check_category_contents(docs, ["decisions"]) == []
+
+
+def test_require_indexed_docs_false_turns_the_rule_off(write_config):
+    write_config("hygiene:\n  docs_structure:\n    require_indexed_docs: false\n")
+    docs = Path("docs")
+    cat = _seed_category(docs, "hygiene")
+    (cat / "ORPHAN.md").write_text("# nobody links here\n")
+    assert docs_structure._check_category_contents(docs, ["hygiene"]) == []

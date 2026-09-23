@@ -71,7 +71,7 @@ ADVERT_BADGE = (
 )
 
 
-def _detect_owner_repo() -> tuple[str | None, str | None]:
+def detect_owner_repo() -> tuple[str | None, str | None]:
     """Detect OWNER/REPO from $GITHUB_REPOSITORY (CI) or git remote (local)."""
     env = os.environ.get("GITHUB_REPOSITORY")
     if env and "/" in env:
@@ -103,6 +103,10 @@ def _detect_owner_repo() -> tuple[str | None, str | None]:
 # read "no runs".
 BADGE_EXCLUDED = {"ss-pr-summary.yml"}
 
+
+
+# Back-compat alias for callers written before the helper was public.
+_detect_owner_repo = detect_owner_repo
 
 def _list_installed_workflows() -> list[str]:
     workflows_dir = Path(".github/workflows")
@@ -137,7 +141,7 @@ def _badge_line(owner: str, repo: str, display: str, workflow: str) -> str:
 def _resolve_owner_repo(owner: str | None, repo: str | None) -> tuple[str, str]:
     """Coalesce explicit args with auto-detection; raise if neither yields a pair."""
     if not owner or not repo:
-        detected_owner, detected_repo = _detect_owner_repo()
+        detected_owner, detected_repo = detect_owner_repo()
         owner = owner or detected_owner
         repo = repo or detected_repo
     if not owner or not repo:

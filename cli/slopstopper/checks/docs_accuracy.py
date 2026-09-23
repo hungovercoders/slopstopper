@@ -14,7 +14,12 @@ them: `stale_task_ref` and `stale_workflow_ref` for markdown, and for
 both markdown and HTML a fifth kind —
 
   - broken_repo_link   — a `github.com/<this repo>/blob|tree/<ref>/<path>`
-                         link whose path does not exist
+                         link whose path does not exist. For the default
+                         or current branch that means the working tree
+                         (what the branch holds once this change lands);
+                         for a tag, SHA or other branch git knows, the
+                         path at that ref; a ref this checkout can't
+                         resolve is not checked rather than guessed at
 
 That is how a marketing page quoting a script that was deleted two
 releases ago gets caught, which the docs/-only scan never could. The
@@ -37,12 +42,15 @@ readable). Exit codes mirror the bash:
 from __future__ import annotations
 
 import json
+import os
 import re
+import subprocess
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 
 from slopstopper import config, output
-from slopstopper.badges import _detect_owner_repo
+from slopstopper.badges import detect_owner_repo
 
 REPORT_DIR = Path(".ss/reports/docs")
 REPORT_JSON = REPORT_DIR / "docs-accuracy-report.json"
@@ -95,7 +103,10 @@ _MD_LINK_RE = re.compile(r'\[([^\]]*)\]\(([^)]+)\)')
 # and requiring whitespace before `task` silently exempted every one.
 # The trailing lookahead stops `task ss:hygiene:*` (a wildcard in prose)
 # from half-matching as `ss:hygiene:`.
-_TASK_REF_RE = re.compile(r'(?:^|[\s`])task\s+([a-z][a-z0-9_-]*:[a-z0-9:_-]+)(?![*:\w-])')
+# `task <ns:name>` after any non-word character (start of line, space,
+# backtick, `(`, `"`). The name never ends in `:`, and a name followed by
+# `:`, `*`, `<` or `{` is a placeholder (`ss:hygiene:<check>`), not a ref.
+_TASK_REF_RE = re.compile(r'(?<![\w-])task\s+([a-z][a-z0-9_-]*(?::[a-z0-9_-]+)+)(?![*:\w<{-])')
 _WF_REF_RE = re.compile(r'\.github/workflows/([a-z0-9_.-]+\.(?:yml|md))')
 _BACKTICK_FILE_RE = re.compile(r'`([a-zA-Z0-9_./-]+\.[a-z]{1,4})`')
 
@@ -225,36 +236,53 @@ def _collect_targets() -> list[Path]:
     return targets
 
 
-def _collect_extra_targets() -> list[Path]:
+def _is_repo_relative_glob(text: str) -> bool:
+    return bool(text) and not (
+        text.startswith(("/", "~"))
+        or ":" in text.split("/", 1)[0]
+        or ".." in Path(text).parts
+    )
+
+
+def _glob_extra_pattern(pattern: object, root: Path) -> list[Path]:
+    """Files one `extra_paths` entry names inside the repo. Warns and returns
+    [] for an entry that isn't a usable repo-relative glob, or matches nothing."""
+    text = str(pattern).strip() if pattern is not None else ""
+    if not _is_repo_relative_glob(text):
+        output.warn(
+            f"hygiene.docs_accuracy.extra_paths entry {pattern!r} is not a "
+            "repo-relative glob — ignored"
+        )
+        return []
+    try:
+        hits = sorted(Path(".").glob(text))
+    except (ValueError, NotImplementedError) as exc:
+        output.warn(f"hygiene.docs_accuracy.extra_paths entry {pattern!r} is invalid ({exc}) — ignored")
+        return []
+    hits = [h for h in hits if h.is_file() and h.resolve().is_relative_to(root)]
+    if not hits:
+        output.warn(f"hygiene.docs_accuracy.extra_paths entry {pattern!r} matched no files")
+    return hits
+
+
+def _collect_extra_targets(primary_targets: list[Path] | None = None) -> list[Path]:
     """Files named by `hygiene.docs_accuracy.extra_paths`, deduplicated, in order.
 
     Files the primary scan already covers (`docs/**` and the root entry
     files) are left out, so an overlapping glob like `**/*.md` never
-    double-counts an issue. A pattern the glob engine can't take — empty,
-    absolute, or not a string — warns and is skipped, matching the
-    config.py contract that a bad value never surfaces as a traceback.
+    double-counts an issue. An entry that is empty, absolute, climbs out
+    of the repo with `..`, or matches nothing warns and is skipped —
+    matching the config.py contract that a bad value never surfaces as a
+    traceback or as a silent pass.
     """
-    primary = set(_collect_targets())
-    seen: set[Path] = set()
-    out: list[Path] = []
+    primary = set(primary_targets if primary_targets is not None else _collect_targets())
+    root = Path.cwd().resolve()
     raw = config.get("hygiene.docs_accuracy.extra_paths", []) or []
     patterns = raw if isinstance(raw, list) else [raw]
+    out: list[Path] = []
     for pattern in patterns:
-        text = str(pattern).strip() if pattern is not None else ""
-        if not text or text.startswith(("/", "~")) or ":" in text.split("/", 1)[0]:
-            output.warn(
-                f"hygiene.docs_accuracy.extra_paths entry {pattern!r} is not a "
-                "repo-relative glob — ignored"
-            )
-            continue
-        try:
-            hits = sorted(Path(".").glob(text))
-        except (ValueError, NotImplementedError) as exc:
-            output.warn(f"hygiene.docs_accuracy.extra_paths entry {pattern!r} is invalid ({exc}) — ignored")
-            continue
-        for hit in hits:
-            if hit.is_file() and hit not in seen and hit not in primary:
-                seen.add(hit)
+        for hit in _glob_extra_pattern(pattern, root):
+            if hit not in primary and hit not in out:
                 out.append(hit)
     return out
 
@@ -269,15 +297,64 @@ _REPO_LINK_RE = re.compile(
 _LINK_TRAILING_PUNCT = ".,;:!"
 
 
-def _repo_link_resolves(ref_and_path: str) -> bool:
-    """True if any split of `<ref>/<path>` names a file or directory here.
+@lru_cache(maxsize=None)
+def _git(cwd: str, *args: str) -> str | None:
+    """stdout of `git <args>` in `cwd`, or None when git fails or is absent."""
+    try:
+        result = subprocess.run(
+            ["git", *args], cwd=cwd, capture_output=True, text=True, timeout=10, check=False
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return result.stdout.strip() if result.returncode == 0 else None
 
-    A ref can itself contain slashes (`feat/x`, `release/1.2`), so the
-    boundary between ref and path is ambiguous from the URL alone. Try
-    every split; the link is broken only if none of them exists.
+
+def _working_tree_refs() -> set[str]:
+    """Refs whose links are checked against the working tree.
+
+    A link to `blob/main/...` is a claim about what main will hold once
+    this change lands — which is the working tree, not main's current
+    commit. Same for the branch being worked on.
     """
+    cwd = str(Path.cwd())
+    refs = {"main", "master"}
+    origin_head = _git(cwd, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
+    if origin_head:
+        refs.add(origin_head.split("/", 1)[-1])
+    current = _git(cwd, "rev-parse", "--abbrev-ref", "HEAD")
+    if current and current != "HEAD":
+        refs.add(current)
+    for var in ("GITHUB_BASE_REF", "GITHUB_HEAD_REF"):
+        if os.environ.get(var):
+            refs.add(os.environ[var])
+    return refs
+
+
+def _repo_link_resolves(ref_and_path: str) -> bool | None:
+    """Whether `<ref>/<path>` from a blob/tree URL points at something real.
+
+    True / False when it can tell; None when the ref is one this checkout
+    can't resolve (the link is then not checked — guessing produced both
+    false passes and false failures).
+
+    A ref can contain slashes (`feat/x`), so the ref/path boundary is
+    ambiguous from the URL alone. It is never resolved by "does any
+    suffix of the path exist": `docs/gone/README.md` would then pass on
+    the root README.md.
+    """
+    # 1. The default or current branch: the working tree.
+    for ref in sorted(_working_tree_refs(), key=len, reverse=True):
+        if ref_and_path.startswith(ref + "/"):
+            return Path(ref_and_path[len(ref) + 1:]).exists()
+    # 2. A tag, SHA or other branch git knows: the path at that ref.
+    cwd = str(Path.cwd())
     parts = ref_and_path.split("/")
-    return any(Path("/".join(parts[i:])).exists() for i in range(1, len(parts)))
+    for i in range(1, len(parts)):
+        ref, path = "/".join(parts[:i]), "/".join(parts[i:])
+        for candidate in (ref, f"origin/{ref}"):
+            if _git(cwd, "rev-parse", "--verify", "--quiet", f"{candidate}^{{commit}}") is not None:
+                return _git(cwd, "cat-file", "-e", f"{candidate}:{path}") is not None
+    return None
 
 
 def _check_repo_links(path: Path, owner: str, repo: str) -> list[dict]:
@@ -289,8 +366,10 @@ def _check_repo_links(path: Path, owner: str, repo: str) -> list[dict]:
         if (link_owner.lower(), link_repo.removesuffix(".git").lower()) != (owner.lower(), repo.lower()):
             continue
         ref_and_path = ref_and_path.rstrip(_LINK_TRAILING_PUNCT).rstrip("/")
-        if "/" not in ref_and_path or _repo_link_resolves(ref_and_path):
+        if "/" not in ref_and_path:
             continue  # a bare ref (`tree/main`) names no file; nothing to check
+        if _repo_link_resolves(ref_and_path) is not False:
+            continue  # resolves, or the ref can't be checked from here
         target = ref_and_path.split("/", 1)[1]
         issues.append({
             "type": "broken_repo_link",
@@ -326,6 +405,13 @@ def _collect_extra_issues(
     """
     supported = {".md", ".html", ".htm"}
     files = [p for p in extra if p.suffix.lower() in supported]
+    skipped = [p for p in extra if p.suffix.lower() not in supported]
+    if skipped:
+        sample = ", ".join(str(p) for p in skipped[:3]) + (" …" if len(skipped) > 3 else "")
+        output.warn(
+            f"{len(skipped)} file(s) matched hygiene.docs_accuracy.extra_paths but only "
+            f".md and .html are scanned — skipped: {sample}"
+        )
     issues: list[dict] = []
     for path in files:
         if path.suffix.lower() == ".md":
@@ -333,7 +419,7 @@ def _collect_extra_issues(
             issues += _check_workflow_references(path, valid_workflows)
     if not files:
         return issues
-    owner, repo = _detect_owner_repo()
+    owner, repo = detect_owner_repo()
     if not owner or not repo:
         output.warn(
             "could not detect this repo's owner/name (no $GITHUB_REPOSITORY, no github.com "
@@ -413,7 +499,7 @@ def run(_args: list[str] | None = None) -> int:
     valid_workflows = _get_workflow_files()
     targets = _collect_targets()
     issues = _collect_all_issues(targets, valid_tasks, valid_workflows)
-    issues += _collect_extra_issues(_collect_extra_targets(), valid_tasks, valid_workflows)
+    issues += _collect_extra_issues(_collect_extra_targets(targets), valid_tasks, valid_workflows)
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     data = {

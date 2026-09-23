@@ -7,6 +7,12 @@ README.md; nothing in docs/ should exist that the index doesn't sanction;
 every doc inside a category is linked from that category's README, so
 the index → category README → doc chain is unbroken).
 
+Configuration (.slopstopper.yml — optional):
+
+    hygiene:
+      docs_structure:
+        require_indexed_docs: true   # the category README → doc rule
+
 Writes a JSON report (machine-readable, drives downstream tooling) and a
 markdown report (human-readable). Exit codes mirror the bash:
 
@@ -21,7 +27,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from slopstopper import output
+from slopstopper import config, output
 
 DOCS_DIR = Path("docs")
 INDEX_PATH = DOCS_DIR / "index.md"
@@ -123,30 +129,55 @@ def _linked_files(readme: Path) -> set[Path]:
     return out
 
 
+def _indexing_readmes(doc: Path, category_dir: Path) -> list[Path]:
+    """READMEs that may index `doc`: one per directory from its own up to the category."""
+    out: list[Path] = []
+    directory = doc.parent
+    while True:
+        readme = directory / "README.md"
+        if readme.is_file() and readme != doc:
+            out.append(readme)
+        if directory == category_dir or category_dir not in directory.parents:
+            break
+        directory = directory.parent
+    return out
+
+
 def _check_category_contents(docs_dir: Path, expected: list[str]) -> list[dict]:
-    """Every doc inside a category must be reachable from that category's README.
+    """Every doc inside a category must be reachable from a README above it.
 
     The map is a chain: docs/index.md lists categories, each category
     README lists its docs. The first link was always enforced; the second
     was not, so a file could sit in docs/<category>/ that no index anywhere
     mentioned — and "docs/index.md is the single index of all project
     documentation" was true one level deep.
+
+    Sub-directories count: docs/<category>/adr/0001.md is indexed by
+    docs/<category>/adr/README.md or docs/<category>/README.md. Turn the
+    rule off with `hygiene.docs_structure.require_indexed_docs: false`.
     """
+    if not config.get_bool("hygiene.docs_structure.require_indexed_docs", True):
+        return []
     violations: list[dict] = []
+    links: dict[Path, set[Path]] = {}
     for category in expected:
-        readme = docs_dir / category / "README.md"
+        category_dir = docs_dir / category
+        readme = category_dir / "README.md"
         if not readme.is_file():
             continue  # reported by _check_expected_categories
-        linked = _linked_files(readme)
-        for doc in sorted((docs_dir / category).glob("*.md")):
-            if doc.name == "README.md" or doc.resolve() in linked:
+        for doc in sorted(category_dir.rglob("*.md")):
+            if doc == readme:
                 continue
+            indexers = _indexing_readmes(doc, category_dir)
+            if any(doc.resolve() in links.setdefault(r, _linked_files(r)) for r in indexers):
+                continue
+            rel = doc.relative_to(docs_dir).as_posix()
             violations.append({
                 "type": "unindexed_doc",
-                "path": f"docs/{category}/{doc.name}",
+                "path": f"docs/{rel}",
                 "message": (
-                    f"Unindexed doc: docs/{category}/{doc.name} is not linked from "
-                    f"docs/{category}/README.md"
+                    f"Unindexed doc: docs/{rel} is not linked from "
+                    f"docs/{category}/README.md or a README.md above it"
                 ),
             })
     return violations

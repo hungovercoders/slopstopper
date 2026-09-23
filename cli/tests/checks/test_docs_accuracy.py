@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -245,7 +246,7 @@ def test_extra_markdown_gets_only_the_precise_checks(write_config, monkeypatch):
         "https://github.com/acme/site/blob/main/also/gone.py\n",
     )
     write_config("hygiene:\n  docs_accuracy:\n    extra_paths: [.claude/skills/**/*.md]\n")
-    monkeypatch.setattr(docs_accuracy, "_detect_owner_repo", lambda: ("acme", "site"))
+    monkeypatch.setattr(docs_accuracy, "detect_owner_repo", lambda: ("acme", "site"))
     issues = docs_accuracy._collect_extra_issues(
         docs_accuracy._collect_extra_targets(), {"ss:hygiene:complexity"}, set()
     )
@@ -259,7 +260,7 @@ def test_extra_markdown_gets_only_the_precise_checks(write_config, monkeypatch):
 def test_extra_html_is_skipped_with_a_warning_when_repo_is_unknown(write_config, monkeypatch, capsys):
     _write(Path("app/x.html"), '<a href="https://github.com/a/b/blob/main/nope.md">x</a>\n')
     write_config("hygiene:\n  docs_accuracy:\n    extra_paths: [app/*.html]\n")
-    monkeypatch.setattr(docs_accuracy, "_detect_owner_repo", lambda: (None, None))
+    monkeypatch.setattr(docs_accuracy, "detect_owner_repo", lambda: (None, None))
     issues = docs_accuracy._collect_extra_issues(docs_accuracy._collect_extra_targets(), set(), set())
     assert issues == []
     assert "were not checked" in capsys.readouterr().out
@@ -269,7 +270,7 @@ def test_run_scans_extra_paths(write_config, monkeypatch):
     _write(Path("docs/index.md"), "# map\n")
     _write(Path("app/x.html"), '<a href="https://github.com/acme/site/blob/main/nope.md">x</a>\n')
     write_config("hygiene:\n  docs_accuracy:\n    extra_paths: [app/*.html]\n")
-    monkeypatch.setattr(docs_accuracy, "_detect_owner_repo", lambda: ("acme", "site"))
+    monkeypatch.setattr(docs_accuracy, "detect_owner_repo", lambda: ("acme", "site"))
     assert docs_accuracy.run() == 1
     assert "Broken Links Into This Repository" in docs_accuracy.REPORT_MD.read_text()
 
@@ -339,3 +340,74 @@ def test_check_repo_links_tolerates_common_link_shapes(isolated_cwd, text):
     page = Path("app/tools.html")
     _write(page, text + "\n")
     assert docs_accuracy._check_repo_links(page, "acme", "site") == []
+
+
+# ── review follow-ups (round 2): link resolution, task refs, extra_paths ──
+
+
+def test_a_deleted_category_readme_is_not_masked_by_the_root_readme(isolated_cwd):
+    """`docs/gone/README.md` must not 'resolve' because README.md exists at the root."""
+    _write(Path("README.md"), "# root\n")
+    page = Path("app/tools.html")
+    _write(page, '<a href="https://github.com/acme/site/blob/main/docs/gone/README.md">x</a>\n')
+    issues = docs_accuracy._check_repo_links(page, "acme", "site")
+    assert [i["type"] for i in issues] == ["broken_repo_link"]
+    assert "docs/gone/README.md" in issues[0]["message"]
+
+
+def test_links_pinned_to_a_tag_are_checked_at_that_tag(isolated_cwd):
+    """A permalink to a file as it existed at v1 is valid even after the file moved."""
+    git = ["git", "-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false"]
+    subprocess.run([*git, "init", "-q", "-b", "main", "."], check=True)
+    _write(Path("scripts/old.py"), "print(1)\n")
+    subprocess.run([*git, "add", "-A"], check=True)
+    subprocess.run([*git, "commit", "-q", "-m", "v1"], check=True)
+    subprocess.run([*git, "tag", "v1"], check=True)
+    Path("scripts/old.py").unlink()
+    page = Path("app/tools.html")
+    _write(
+        page,
+        '<a href="https://github.com/acme/site/blob/v1/scripts/old.py">ok</a>\n'
+        '<a href="https://github.com/acme/site/blob/v1/scripts/never.py">bad</a>\n'
+        '<a href="https://github.com/acme/site/blob/main/scripts/old.py">moved</a>\n',
+    )
+    issues = docs_accuracy._check_repo_links(page, "acme", "site")
+    assert sorted(i["message"].split("`")[1] for i in issues) == ["scripts/never.py", "scripts/old.py"]
+
+
+def test_a_ref_this_checkout_cannot_resolve_is_not_checked(isolated_cwd):
+    page = Path("app/tools.html")
+    _write(page, '<a href="https://github.com/acme/site/blob/some-branch/nope.md">x</a>\n')
+    assert docs_accuracy._check_repo_links(page, "acme", "site") == []
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("run `task ss:hygiene:<check>` for any check", []),
+        ("run `task ss:hygiene:{name}`", []),
+        ("run `task ss:hygiene:*`", []),
+        ("(task ss:bogus:x)", ["ss:bogus:x"]),
+        ('"task ss:bogus:y"', ["ss:bogus:y"]),
+        ("subtask ss:bogus:z", []),
+    ],
+)
+def test_task_ref_regex_skips_placeholders_and_accepts_any_prefix(text, expected):
+    assert docs_accuracy._TASK_REF_RE.findall(text) == expected
+
+
+def test_extra_paths_reject_parent_segments_and_warn_on_empty_matches(write_config, capsys):
+    _write(Path("app/x.html"), "<p>x</p>\n")
+    write_config(
+        "hygiene:\n  docs_accuracy:\n    extra_paths: ['../elsewhere/*.md', 'site/**/*.mdx', app/*.html]\n"
+    )
+    assert docs_accuracy._collect_extra_targets() == [Path("app/x.html")]
+    out = capsys.readouterr().out
+    assert "'../elsewhere/*.md'" in out and "not a repo-relative glob" in out
+    assert "'site/**/*.mdx' matched no files" in out
+
+
+def test_extra_files_of_an_unscanned_type_are_reported_not_dropped(capsys):
+    docs_accuracy._collect_extra_issues([Path("site/a.mdx"), Path("site/b.txt")], set(), set())
+    out = capsys.readouterr().out
+    assert "2 file(s) matched" in out and "only .md and .html are scanned" in out
