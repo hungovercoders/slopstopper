@@ -18,6 +18,7 @@ deterministically, without performing the real mise install.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -685,10 +686,10 @@ def test_no_task_leaves_no_task_invocation_in_any_workflow(tmp_path):
 
 # ── the config seed is a starter, not the schema ─────────────────
 #
-# install.sh used to copy the 430-line .slopstopper.yml.example verbatim
-# as the adopter's config. This repo's own config is 52 lines; a typical
-# repo touches about eight keys. The seed is now templates/slopstopper.yml.starter;
-# the example stays the schema reference and is linked from the starter.
+# install.sh used to copy the whole .slopstopper.yml.example verbatim as
+# the adopter's config, when a typical repo touches about eight keys. The
+# seed is now templates/slopstopper.yml.starter; the example stays the
+# schema reference, linked from the starter at the pinned CLI's release.
 
 STARTER = REPO_ROOT / "templates" / "slopstopper.yml.starter"
 EXAMPLE = REPO_ROOT / ".slopstopper.yml.example"
@@ -723,13 +724,49 @@ def test_every_starter_key_exists_in_the_schema_reference():
     assert starter_keys <= example_keys, sorted(starter_keys - example_keys)
 
 
+def _leaves(tree: dict, prefix: str = "") -> dict:
+    out: dict = {}
+    for k, v in tree.items():
+        if isinstance(v, dict):
+            out |= _leaves(v, f"{prefix}{k}.")
+        else:
+            out[f"{prefix}{k}"] = v
+    return out
+
+
+def test_the_starter_seeds_the_schemas_defaults():
+    """A starter value that drifted from the schema default would pin every
+    fresh install to a stale explicit value that overrides the new default."""
+    from slopstopper import config
+
+    starter = _leaves(config._load_yaml_subset(STARTER))
+    example = _leaves(config._load_yaml_subset(EXAMPLE))
+    drifted = {k: (v, example[k]) for k, v in starter.items() if k in example and example[k] != v}
+    assert not drifted, drifted
+
+
+_SCHEMA_LINK = re.compile(r"github\.com/hungovercoders/slopstopper/blob/([^/\s]+)/\.slopstopper\.yml\.example")
+
+
 def test_first_install_seeds_the_starter_not_the_schema(tmp_path):
     target = _make_minimal_target(tmp_path)
-    result = _run_install(target, args=["--no-hooks", "--no-skills"])
+    result = _run_install(target, args=["--cli-version", "0.9.0", "--no-hooks", "--no-skills"])
     assert result.returncode == 0, result.stderr
     seeded = (target / ".slopstopper.yml").read_text()
-    assert seeded == STARTER.read_text()
-    assert "Schema reference:" not in seeded
+    # The starter, byte for byte, apart from the schema link's ref.
+    assert _SCHEMA_LINK.sub("REF", seeded) == _SCHEMA_LINK.sub("REF", STARTER.read_text())
+    assert seeded != EXAMPLE.read_text()
+
+
+def test_the_schema_link_follows_the_pinned_cli(tmp_path):
+    """The schema at the pinned release lists only knobs that CLI reads."""
+    target = _make_minimal_target(tmp_path)
+    cfg = target / ".slopstopper.yml"
+    assert _run_install(target, args=["--cli-version", "0.9.0", "--no-hooks", "--no-skills"]).returncode == 0
+    assert _SCHEMA_LINK.findall(cfg.read_text()) == ["v0.9.0"]
+    # A re-run that moves the pin moves the link with it.
+    assert _run_install(target, args=["--cli-version", "0.9.1", "--no-hooks", "--no-skills"]).returncode == 0
+    assert _SCHEMA_LINK.findall(cfg.read_text()) == ["v0.9.1"]
 
 
 def test_profile_flag_writes_into_the_seeded_starter(tmp_path):

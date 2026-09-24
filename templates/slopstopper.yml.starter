@@ -2,7 +2,9 @@
 #
 # This is the starter install.sh seeds: the handful of keys most repos
 # actually set. Every other knob has a sensible default and is documented,
-# with its default, in the full schema reference:
+# with its default, in the schema reference — linked at the release of the
+# slopstopper-cli this repo pins in mise.toml (install.sh keeps it in step
+# with the pin), so every key there is one your CLI reads:
 #   https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example
 # Copy a block from there when you need it. Re-running install.sh never
 # overwrites this file.
@@ -16,8 +18,9 @@ profile: ui
 
 # Where the deployed app lives. production is what the scheduled runs and
 # pushes to main audit; preview is the environment your PRs deploy to. The
-# browser checks build and serve the repo on PRs, so preview only matters
-# for the API checks — leave it blank if you have no preview environment.
+# browser checks build and serve the repo on PRs; preview is what the API
+# checks and DAST's API mode (api.openapi.spec) hit on a PR, and without it
+# they skip there. Leave it blank if you have no preview environment.
 urls:
   production:
   preview:

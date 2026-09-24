@@ -9,8 +9,8 @@
 # pointing back here for the rest. Existing .slopstopper.yml files are
 # never overwritten; re-running install.sh is safe.
 #
-# Slopstopper scripts and workflows that need a per-repo value read from
-# here first. Defaults below are the values used when a key is unset.
+# Nothing reads this file: slopstopper only ever reads .slopstopper.yml.
+# Each default below is the value used when that key is unset there.
 #
 # What lives here:
 #   - Defaults for env-var-driven checks (URLs, page lists, og-image path)

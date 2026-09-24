@@ -464,13 +464,17 @@ Either flag wraps `mise use` to rewrite the `"pipx:slopstopper-cli"` entry in `m
 
 ### Spot newly-shipped knobs in `.slopstopper.yml.example`
 
-The `.slopstopper.yml.example` file in the slopstopper repo is the schema reference. Diff it against your repo's `.slopstopper.yml`:
+The `.slopstopper.yml.example` file in the slopstopper repo is the schema reference. Don't diff it against the repo's `.slopstopper.yml`: a config seeded from the starter deliberately carries only the keys the repo sets, so that diff lists every default as "missing". Diff the schema between the CLI release the repo was pinned to before this refresh and the one it's pinned to now:
 
 ```bash
-diff <(curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/.slopstopper.yml.example) .slopstopper.yml
+pin() { sed -n 's/.*pipx:slopstopper-cli"\{0,1\}[[:space:]]*=[[:space:]]*"\([0-9][0-9.]*\)".*/\1/p'; }
+old="$(git show HEAD:mise.toml | pin)"   # the pin before this refresh
+new="$(pin < mise.toml)"                 # the pin now
+raw=https://raw.githubusercontent.com/hungovercoders/slopstopper
+diff <(curl -fsSL "$raw/v$old/.slopstopper.yml.example") <(curl -fsSL "$raw/v$new/.slopstopper.yml.example")
 ```
 
-Any keys present upstream but missing locally are new knobs you can opt into. Most ship with sensible defaults so no action is required — but the diff is the easiest way to know what changed.
+Lines added on the right are knobs shipped since the last pin. If the pin didn't move (`old` = `new`), no new knob reached this repo; the refresh only rewrote workflows. Most knobs ship with sensible defaults, so no action is required, but this diff is the easiest way to know what changed. The link at the top of the repo's `.slopstopper.yml` points at the schema for the pinned release, so copy blocks from there.
 
 Surfaces worth checking explicitly:
 
