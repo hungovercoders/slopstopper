@@ -24,6 +24,7 @@
 #   Taskfile.ss.yml             # all SlopStopper task shims; always
 #                               #   refreshed on re-run so updates flow through
 #   .ss/.workflows-installed    # manifest of installed workflows (commit this)
+#   .ss/.installed-from         # slopstopper commit this install came from (commit this)
 #   .ss/reports/                # SlopStopper-owned scan/report output dirs
 #                               # (every CLI-managed file — Playwright specs,
 #                               # Playwright config, lighthouserc dev/prod,
@@ -607,13 +608,11 @@ fi
 # handful of keys most repos set, with a pointer to the full schema
 # reference (.slopstopper.yml.example) for everything else. The schema
 # reference used to be copied verbatim, so an adopter's first config was
-# the whole schema rather than the few keys they set. The starter's schema
-# link is re-pointed at the pinned CLI release once the pin is known
-# (pin_schema_link, below). A legacy cli_version is migrated into mise.toml
-# and stripped below.
+# the whole schema rather than the few keys they set. A legacy cli_version
+# is migrated into mise.toml and stripped below.
 if [ ! -f "$TARGET_DIR/.slopstopper.yml" ] && [ -f "$SCRIPT_DIR/templates/slopstopper.yml.starter" ]; then
   cp "$SCRIPT_DIR/templates/slopstopper.yml.starter" "$TARGET_DIR/.slopstopper.yml"
-  success ".slopstopper.yml: seeded $TARGET_DIR/.slopstopper.yml (starter — the full schema is in .slopstopper.yml.example)"
+  success ".slopstopper.yml: seeded $TARGET_DIR/.slopstopper.yml (a starter — every other key: https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example)"
 fi
 
 # Apply --profile / SLOPSTOPPER_PROFILE by writing the key into the
@@ -722,18 +721,6 @@ sync_mise_cli() {
 
 sync_mise_cli
 
-# Point the config's link to the schema reference at the release of the
-# pinned CLI, so every knob it offers is one this repo's CLI reads. A knob
-# copied from main that the pinned CLI predates would be ignored without a
-# word. Rewritten on every run, so it follows --upgrade-cli / --cli-version;
-# a config without the link (hand-written, or pre-starter) is left alone.
-pin_schema_link() {
-  local cfg="$TARGET_DIR/.slopstopper.yml" ver="${SLOPSTOPPER_CLI_VERSION:-}"
-  [ -f "$cfg" ] && [ -n "$ver" ] || return 0
-  sed -E "s#(github\.com/hungovercoders/slopstopper/blob/)[^/[:space:]]+(/\.slopstopper\.yml\.example)#\1v${ver}\2#" \
-    "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
-}
-pin_schema_link
 
 # 4. .ss/ overlay — nothing is seeded by default. Every CLI-managed
 #    file (Playwright specs, Playwright config, lighthouserc dev/prod,
@@ -931,6 +918,16 @@ done
 
 # Write the updated marker (atomic via tmp + mv).
 printf '%s' "$NEW_MARKER_CONTENT" > "$MARKER_FILE.tmp" && mv "$MARKER_FILE.tmp" "$MARKER_FILE"
+
+# Record the slopstopper commit this install came from. Everything above —
+# workflows, Taskfile.ss.yml, the config schema those read — is that
+# commit's, so a refresh can diff upstream between the committed value and
+# the new one (the slopstopper-install skill's "Spot newly-shipped knobs").
+# Skipped when the source isn't a git checkout.
+if [ -e "$SCRIPT_DIR/.git" ]; then
+  SOURCE_SHA="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || true)"
+  [ -n "$SOURCE_SHA" ] && printf '%s\n' "$SOURCE_SHA" > "$TARGET_DIR/.ss/.installed-from"
+fi
 
 success "$INSTALLED_WORKFLOWS workflow(s) installed, $REFRESHED_WORKFLOWS refreshed, $DELETED_RESPECTED previously-deleted skipped"
 

@@ -2,10 +2,10 @@
 #
 # This is the starter install.sh seeds: the handful of keys most repos
 # actually set. Every other knob has a sensible default and is documented,
-# with its default, in the schema reference — linked at the release of the
-# slopstopper-cli this repo pins in mise.toml (install.sh keeps it in step
-# with the pin), so every key there is one your CLI reads:
+# with its default, in the schema reference:
 #   https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example
+# It tracks slopstopper's main branch. A knob the CLI reads takes effect
+# once the slopstopper-cli pinned in mise.toml is a release that has it.
 # Copy a block from there when you need it. Re-running install.sh never
 # overwrites this file.
 
@@ -44,8 +44,8 @@ smoke:
 headers:
   source: null
 
-# Serving an API? Uncomment and fill `api:` from the schema reference — the
-# four API checks ship inert until api.health.path / api.latency.paths /
+# Serving an API? Copy the `api:` block from the schema reference above —
+# the four API checks ship inert until api.health.path / api.latency.paths /
 # api.headers.paths / api.openapi.spec are set.
 
 # Any check you don't want, by workflow filename. A profile drops whole

@@ -18,7 +18,6 @@ deterministically, without performing the real mise install.
 from __future__ import annotations
 
 import os
-import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -689,7 +688,7 @@ def test_no_task_leaves_no_task_invocation_in_any_workflow(tmp_path):
 # install.sh used to copy the whole .slopstopper.yml.example verbatim as
 # the adopter's config, when a typical repo touches about eight keys. The
 # seed is now templates/slopstopper.yml.starter; the example stays the
-# schema reference, linked from the starter at the pinned CLI's release.
+# schema reference, linked from the starter.
 
 STARTER = REPO_ROOT / "templates" / "slopstopper.yml.starter"
 EXAMPLE = REPO_ROOT / ".slopstopper.yml.example"
@@ -745,28 +744,35 @@ def test_the_starter_seeds_the_schemas_defaults():
     assert not drifted, drifted
 
 
-_SCHEMA_LINK = re.compile(r"github\.com/hungovercoders/slopstopper/blob/([^/\s]+)/\.slopstopper\.yml\.example")
-
-
 def test_first_install_seeds_the_starter_not_the_schema(tmp_path):
     target = _make_minimal_target(tmp_path)
-    result = _run_install(target, args=["--cli-version", "0.9.0", "--no-hooks", "--no-skills"])
+    result = _run_install(target, args=["--no-hooks", "--no-skills"])
     assert result.returncode == 0, result.stderr
     seeded = (target / ".slopstopper.yml").read_text()
-    # The starter, byte for byte, apart from the schema link's ref.
-    assert _SCHEMA_LINK.sub("REF", seeded) == _SCHEMA_LINK.sub("REF", STARTER.read_text())
+    assert seeded == STARTER.read_text()
     assert seeded != EXAMPLE.read_text()
 
 
-def test_the_schema_link_follows_the_pinned_cli(tmp_path):
-    """The schema at the pinned release lists only knobs that CLI reads."""
+def test_a_rerun_leaves_the_config_byte_for_byte(tmp_path):
+    """The config is adopter-owned: a re-run doesn't rewrite it."""
     target = _make_minimal_target(tmp_path)
     cfg = target / ".slopstopper.yml"
-    assert _run_install(target, args=["--cli-version", "0.9.0", "--no-hooks", "--no-skills"]).returncode == 0
-    assert _SCHEMA_LINK.findall(cfg.read_text()) == ["v0.9.0"]
-    # A re-run that moves the pin moves the link with it.
-    assert _run_install(target, args=["--cli-version", "0.9.1", "--no-hooks", "--no-skills"]).returncode == 0
-    assert _SCHEMA_LINK.findall(cfg.read_text()) == ["v0.9.1"]
+    assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
+    cfg.write_text(cfg.read_text() + "# a note the adopter added\n")
+    before = cfg.read_text()
+    assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
+    assert cfg.read_text() == before
+
+
+def test_install_records_the_source_commit(tmp_path):
+    """A refresh diffs upstream from this commit — see the install skill's
+    "Spot newly-shipped knobs"."""
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
+    head = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    assert (target / ".ss" / ".installed-from").read_text() == head + "\n"
 
 
 def test_profile_flag_writes_into_the_seeded_starter(tmp_path):

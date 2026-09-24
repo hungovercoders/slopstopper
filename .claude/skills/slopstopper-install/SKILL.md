@@ -119,7 +119,7 @@ Three categories of write, in order of "how much trust to extend on re-run":
 
 **Always overwritten — slopstopper-owned, safe to clobber:**
 
-- `Taskfile.ss.yml`, `.ss/server.js`, `.ss/.workflows-installed`
+- `Taskfile.ss.yml`, `.ss/server.js`, `.ss/.workflows-installed`, `.ss/.installed-from` (the slopstopper commit this install came from; the baseline for the refresh diff below)
 - Workflows under `.github/workflows/ss-*.yml` that are in `GENERIC_WORKFLOWS` and not listed in `.slopstopper.yml` `workflows.disabled`
 - `mise.toml` — the `"pipx:slopstopper-cli"` + `task` + `node` pins (written via `mise use`); `slopstopper-cli` itself is installed/activated by mise at the **pinned** version. A plain re-run never bumps the CLI; `node` is seeded (`= "20"`) only when the repo doesn't already declare one; `--upgrade-cli` / `--cli-version` move the CLI pin
 - `<repo>/.claude/skills/slopstopper-install/SKILL.md` and `<repo>/.claude/skills/slopstopper-triage/SKILL.md` (project level — opt out with `--no-skills`)
@@ -127,7 +127,7 @@ Three categories of write, in order of "how much trust to extend on re-run":
 
 **Seeded only if missing — adopter-owned, NEVER overwritten on re-run:**
 
-- `.slopstopper.yml` (config; once it exists `install.sh` never touches it — **except** stripping a legacy `cli_version` pin line (value migrated into `mise.toml` once) and a dead `node_version` key (just removed — node lives in `mise.toml`)). The CLI + node pins now live in `mise.toml`, which the installer writes on first install and rewrites only when you pass `--upgrade-cli` / `--cli-version`
+- `.slopstopper.yml` (config; a first install seeds a short starter from `templates/slopstopper.yml.starter` — `profile`, URLs, page lists, og-image path, `headers.source`, `workflows` — that links the full schema reference for every other key. Once it exists `install.sh` never touches it — **except** stripping a legacy `cli_version` pin line (value migrated into `mise.toml` once) and a dead `node_version` key (just removed — node lives in `mise.toml`)). The CLI + node pins now live in `mise.toml`, which the installer writes on first install and rewrites only when you pass `--upgrade-cli` / `--cli-version`
 - `.github/labeler.yml`, `.zap/rules.tsv`, `.markdownlint.json`
 - Root `Taskfile.yml` — only if absent; otherwise install.sh prints the `includes:` block to paste in
 - `package.json` — only if absent (otherwise see below)
@@ -170,6 +170,8 @@ Sanity-check the install dropped what you expect:
 - `Taskfile.yml` — created if missing (otherwise: needs manual `includes:` block per Step 1.1).
 - `.ss/server.js` — tiny static-server shim for serving the built site on `:8080` during the local loop. The **only** file the installer seeds into `.ss/` for a fresh adopter — every other CLI-managed file (Playwright specs, Playwright config, lighthouserc dev + prod) lives inside the slopstopper-cli wheel and only lands in `.ss/` if you opt in by writing a same-named override there.
 - `.ss/.workflows-installed` — manifest of installed workflows (tracks deletions on reinstall; commit this).
+- `.ss/.installed-from` — the slopstopper commit this install came from; a refresh diffs upstream against it (commit this).
+- `.slopstopper.yml` — on a first install, a short starter (the keys most repos set, each commented) with a link to the full schema reference for everything else. Existing configs are left as they are.
 - `.github/workflows/ss-*.yml` — the curated installer set, minus whatever the profile drops (24 checks on `ui`, 16 on `api`, 10 on `library`), plus `ss-pr-summary.yml`, `ss-workflow-failure-issue.yml` and the doc-updater under all three. Each workflow body is now ~8 lines: install CLI, `slopstopper run …`, `slopstopper emit … --target pr-comment|issue`.
 - `ss-pr-summary.yml` — posts **one** rolling comment per PR summarising every check (`❌ SlopStopper — 2 of 24 checks failed`, failures in a table, the rest folded). The per-check workflows post compact comments — a verdict line, the failing items, the report folded away — and **delete their comment when they pass**, so a green PR carries only the summary. Tell the user this up front: the first green PR looking "empty" of bot comments is the intended behaviour, not a broken install.
 - `.slopstopper.yml` `profile:` — the key the installer wrote (or left alone). Confirm the installed set matches it with `slopstopper profile show`: it prints the active profile, where it came from, and every workflow this repo is deliberately not carrying. Worth running before the missing-workflow comparison below — a workflow the profile dropped is *supposed* to be absent, and will otherwise read as a gap.
@@ -464,17 +466,18 @@ Either flag wraps `mise use` to rewrite the `"pipx:slopstopper-cli"` entry in `m
 
 ### Spot newly-shipped knobs in `.slopstopper.yml.example`
 
-The `.slopstopper.yml.example` file in the slopstopper repo is the schema reference. Don't diff it against the repo's `.slopstopper.yml`: a config seeded from the starter deliberately carries only the keys the repo sets, so that diff lists every default as "missing". Diff the schema between the CLI release the repo was pinned to before this refresh and the one it's pinned to now:
+The `.slopstopper.yml.example` file in the slopstopper repo is the schema reference. Don't diff it against the repo's `.slopstopper.yml`: a config seeded from the starter deliberately carries only the keys the repo sets, so that diff lists every default as "missing". Diff the schema between the slopstopper commit the previous install came from and the one this refresh came from. The installer records it in `.ss/.installed-from`, and the old value is still in `HEAD` until you commit the refresh:
 
 ```bash
-pin() { sed -n 's/.*pipx:slopstopper-cli"\{0,1\}[[:space:]]*=[[:space:]]*"\([0-9][0-9.]*\)".*/\1/p'; }
-old="$(git show HEAD:mise.toml | pin)"   # the pin before this refresh
-new="$(pin < mise.toml)"                 # the pin now
 raw=https://raw.githubusercontent.com/hungovercoders/slopstopper
-diff <(curl -fsSL "$raw/v$old/.slopstopper.yml.example") <(curl -fsSL "$raw/v$new/.slopstopper.yml.example")
+old="$(git show HEAD:.ss/.installed-from 2>/dev/null)"   # the previous install's commit
+new="$(cat .ss/.installed-from)"                          # this refresh's commit
+[ -n "$old" ] && diff <(curl -fsSL "$raw/$old/.slopstopper.yml.example") <(curl -fsSL "$raw/$new/.slopstopper.yml.example")
 ```
 
-Lines added on the right are knobs shipped since the last pin. If the pin didn't move (`old` = `new`), no new knob reached this repo; the refresh only rewrote workflows. Most knobs ship with sensible defaults, so no action is required, but this diff is the easiest way to know what changed. The link at the top of the repo's `.slopstopper.yml` points at the schema for the pinned release, so copy blocks from there.
+Lines added on the right are knobs shipped since the last install. This commit is what the workflows, `Taskfile.ss.yml` and installer came from, so an empty diff (or `old` = `new`) really does mean no new knobs. If `old` is empty, the previous install predates the marker: read the schema's history since the last refresh (`git log -1 --format=%cs -- .ss/.workflows-installed` gives the date) at https://github.com/hungovercoders/slopstopper/commits/main/.slopstopper.yml.example instead.
+
+A knob read by the CLI (rather than by a workflow or the installer) only takes effect once the `slopstopper-cli` pinned in `mise.toml` is a release that has it. If a new knob does nothing, check the changelog and move the pin with `install.sh --upgrade-cli`. Most knobs ship with sensible defaults, so no action is required. The link at the top of the repo's `.slopstopper.yml` is the schema to copy blocks from.
 
 Surfaces worth checking explicitly:
 
