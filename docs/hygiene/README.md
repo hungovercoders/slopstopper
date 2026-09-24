@@ -47,6 +47,7 @@ The documentation index is the **sole source of truth for documentation structur
 - All expected categories from docs/index.md exist
 - Each category has a README.md file
 - No unexpected files outside the governed structure
+- Every doc inside a category, sub-directories included, is linked from its category README or a README.md above it (`unindexed_doc`) — the map is a chain, `docs/index.md` → category README → doc, and a file no README mentions is unreachable from the map. `hygiene.docs_structure.require_indexed_docs: false` turns this rule off
 - Violations are raised as blocking issues for discussion
 
 ```bash
@@ -61,6 +62,8 @@ Runs **weekly on a schedule** (Monday 07:00 UTC), on PRs/pushes that change docs
 ```bash
 task ss:hygiene:docs-accuracy
 ```
+
+By default it reads `docs/**/*.md` and the four root entry files. `hygiene.docs_accuracy.extra_paths` (repo-relative globs in `.slopstopper.yml`) brings more files into scope, with only the checks that are precise for a file describing an adopter's tree rather than this one: `task ss:…` and workflow references must exist (markdown), and every `github.com/<this repo>/blob|tree/<ref>/<path>` link must point at a path that exists (markdown and HTML). slopstopper.dev scans `app/*.html` and `.claude/skills/**/*.md` this way, because every piece of site and skill drift the repo review found lived in a file the `docs/`-only scan never read.
 
 ### Entry-File Budget
 Enforces the "thin pointer" principle declared in [`docs/index.md`](../index.md#the-map-pattern):

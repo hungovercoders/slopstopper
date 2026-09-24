@@ -10,8 +10,9 @@ Notation: C4 (Context + Container).
 - Static HTML/CSS/JS pages served in production by a Cloudflare
   Worker with the `[assets]` binding.
 - Local development and DAST use `slopstopper serve` (the bundled static server inside slopstopper-cli).
-- Security headers live in `worker/headers.json`. The Worker, the
-  local server and the CSP-drift gate all read the same file.
+- Security headers live in `worker/headers.json`. The Worker applies them
+  per path on every response, `slopstopper serve` applies the same file
+  locally, and the CSP-drift gate reads it too — prod and local stay identical.
 
 ## Project Layout
 
@@ -28,7 +29,7 @@ slopstopper/
 │   ├── slopstopper/checks/   # One module per check (security/hygiene/reliability)
 │   ├── slopstopper/data/     # Bundled Playwright specs, lighthouserc dev/prod, server.js
 │   ├── slopstopper/templates.py / emit.py / discovery.py / config.py
-│   ├── tests/                # pytest suite (949 tests)
+│   ├── tests/                # pytest suite (`task -t cli/Taskfile.yml test`)
 │   └── pyproject.toml        # Beta — standalone: `pipx install slopstopper-cli`; suite: pinned in mise.toml
 ├── app/                      # Static site — bound as the [assets] dir on the Worker
 │   ├── index.html            # Hero + Get Started (CLI quick-try + mise suite install) + capability grid
@@ -136,7 +137,7 @@ separate `setup-node` step or `SLOPSTOPPER_NODE_VERSION` repo variable.
 `install.sh` seeds `node = "20"` into an adopter's `mise.toml` only when they
 haven't already declared a Node version (`mise.toml` / `.node-version` / `.nvmrc`).
 
-Why Task stays the interface: `task ss:check` sits alongside an adopter's own
+Why Task stays the interface: `task ss:<category>:<check>` sits alongside an adopter's own
 `task build` / `task deploy`, so the suite shares their existing command surface
 rather than introducing a parallel one. mise auto-installs `task`, so it remains a
 one-install story — install mise, everything else flows from `mise.toml`.
@@ -321,16 +322,6 @@ from the same place.
 "does the body still contain the report's H1". The old discriminator
 substring is still tried as a fallback, so comments posted by an earlier
 CLI are updated in place instead of duplicated.
-
-## Request Flow (Minimal)
-
-1. Browser requests a page.
-2. In production, the Cloudflare Worker fetches the asset via the
-   `[assets]` binding, then applies the per-path headers from
-   `worker/headers.json` before returning the response.
-3. In local/dev scanning, `slopstopper serve` (bundled inside
-   slopstopper-cli) serves the same `app/` directory and auto-detects
-   the same `worker/headers.json` so prod and local stay identical.
 
 ## Development Loops
 

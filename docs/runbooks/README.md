@@ -10,7 +10,7 @@ This directory holds step-by-step runbooks for common operational tasks. As the 
 
 | Runbook | What it covers |
 | ------- | -------------- |
-| [INSTALL_SKILLS.md](./INSTALL_SKILLS.md) | Install the SlopStopper Claude Code skill trio (`slopstopper-install`, `slopstopper-update`, `slopstopper-triage`) into your user profile so any project on this machine can ask Claude Code to add, refresh, or triage SlopStopper |
+| [INSTALL_SKILLS.md](./INSTALL_SKILLS.md) | Install the SlopStopper Claude Code skill duo (`slopstopper-install`, `slopstopper-triage`) into a repo at project level (`<repo>/.claude/skills/`) so Claude Code can add, refresh, or triage SlopStopper there |
 | [UPGRADE_CLI.md](./UPGRADE_CLI.md) | Move the pinned `slopstopper-cli` version (`"pipx:slopstopper-cli"` in `mise.toml`) with `install.sh --upgrade-cli` / `--cli-version` (or `mise use`), and recover from a binary that drifted off the pin |
 | [RELEASE.md](./RELEASE.md) | Cut a `slopstopper-cli` release: CHANGELOG bump, version bump in `cli/pyproject.toml` + `__init__.py`, tag, GitHub Release via `ss-release.yml`, optional manual PyPI publish |
 

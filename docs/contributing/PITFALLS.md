@@ -13,8 +13,8 @@ before; the rule is "do the obvious thing the obvious way."
 - **Putting analysis output anywhere other than under
   `.ss/reports/<category>/`.** It won't be `.gitignore`d and could
   pollute the consumer's repo when they install SlopStopper.
-- **Invoking `task hygiene:complexity` (or any task) without the `ss:`
-  prefix.** "Task not found" — all SlopStopper tasks live under the
+- **Invoking a task without the `ss:` prefix.** A bare `hygiene:complexity`
+  gives "Task not found"; the target is `task ss:hygiene:complexity` — all SlopStopper tasks live under the
   `ss` namespace via the root `Taskfile.yml`'s `includes:` block. Use
   `task ss:hygiene:complexity`.
 

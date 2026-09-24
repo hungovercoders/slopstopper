@@ -853,7 +853,7 @@ was_previously_installed() {
 # explanation is the marker was left over from a prior branch (e.g. a
 # revert) and the deletion-respect logic would now skip every workflow,
 # yielding a silent zero-workflows install. A real user would not delete
-# all 20 workflows; treat this as a stale marker and re-install fresh.
+# every workflow; treat this as a stale marker and re-install fresh.
 #
 # Use `find` rather than `ls` for the count — `ls path/glob*` returns
 # non-zero when the glob has no matches, which combines with `set -e -o

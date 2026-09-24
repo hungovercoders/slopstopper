@@ -114,10 +114,13 @@ headers:
 # ── Dynamic-check URLs ───────────────────────────────────────────────
 # Reliability + DAST workflows pick a URL based on the event:
 #   - push to main / scheduled  → urls.production
-#   - pull_request              → urls.preview (falls back to local build if unset)
-#   - workflow_dispatch         → arg, then preview, then production
-# Sync to GitHub repo variables with:
-#   bash .ss/scripts/sync-config-to-vars.sh   # (helper added by install.sh)
+#   - pull_request              → the browser checks build the site and audit
+#                                 it on localhost; the API checks and DAST's
+#                                 API mode audit urls.preview and skip when
+#                                 it is unset
+#   - workflow_dispatch         → the URL you pass; with none, the browser
+#                                 checks fall back to urls.production and the
+#                                 API checks skip with a notice
 urls:
   production:
   preview:
@@ -374,6 +377,26 @@ hygiene:
     # exit code). 15 is Lizard's own default warning line; drop to 10 for
     # McCabe's classic "review" bound if you want to run stricter.
     max_ccn: 15
+  # ── hygiene:docs-accuracy ───────────────────────────────────────────
+  docs_accuracy:
+    # Files outside docs/ and the root entry files to scan too. Globs,
+    # repo-relative. These get only the checks that are precise for a
+    # file describing an adopter's tree rather than this one: `task ss:…`
+    # and `.github/workflows/…` references must exist (markdown), and
+    # every github.com/<this repo>/blob|tree/<ref>/<path> link must point
+    # at a path that exists (markdown and HTML) — how a marketing page
+    # quoting a script deleted two releases ago gets caught.
+    #
+    # slopstopper.dev scans its own site and the Claude Code skills it
+    # ships; a typical adopter leaves this empty.
+    extra_paths: []
+  # ── hygiene:docs-structure ──────────────────────────────────────────
+  docs_structure:
+    # Every doc inside docs/<category>/ (sub-directories included) must be
+    # linked from its category README or a README.md above it, so the
+    # docs/index.md → category README → doc chain has no dead ends. Set
+    # false to check only that the categories and their READMEs exist.
+    require_indexed_docs: true
 
 # ── Reliability coverage modes ───────────────────────────────────────
 # Opt-in alternative to the hand-list above. When set, accessibility,

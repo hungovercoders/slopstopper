@@ -9,6 +9,29 @@ AGENTS.md, CLAUDE.md, CONTRIBUTING.md) for four kinds of drift:
   - stale_workflow_ref — .github/workflows/<file> doesn't exist
   - stale_file_ref     — backtick-quoted filepath not found on disk
 
+Optionally scans more files, with only the checks that are precise for
+them: `stale_task_ref` and `stale_workflow_ref` for markdown, and for
+both markdown and HTML a fifth kind —
+
+  - broken_repo_link   — a `github.com/<this repo>/blob|tree/<ref>/<path>`
+                         link whose path does not exist. For the default
+                         or current branch that means the working tree
+                         (what the branch holds once this change lands);
+                         for a tag, SHA or other branch git knows, the
+                         path at that ref; a ref this checkout can't
+                         resolve is not checked rather than guessed at
+
+That is how a marketing page quoting a script that was deleted two
+releases ago gets caught, which the docs/-only scan never could. The
+relative-link and backtick-path checks are not applied outside docs/:
+a skill or a site page describes an adopter's tree, not this one.
+
+Configuration (.slopstopper.yml — all optional):
+
+    hygiene:
+      docs_accuracy:
+        extra_paths: []   # repo-relative globs, e.g. [app/*.html, .claude/skills/**/*.md]
+
 Writes a JSON report (machine-readable) and a Markdown report (human-
 readable). Exit codes mirror the bash:
 
@@ -19,11 +42,15 @@ readable). Exit codes mirror the bash:
 from __future__ import annotations
 
 import json
+import os
 import re
+import subprocess
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 
-from slopstopper import output
+from slopstopper import config, output
+from slopstopper.badges import detect_owner_repo
 
 REPORT_DIR = Path(".ss/reports/docs")
 REPORT_JSON = REPORT_DIR / "docs-accuracy-report.json"
@@ -72,7 +99,14 @@ _SUGGESTION_CTX = re.compile(
 
 _TASKFILE_TASK_RE = re.compile(r"^  ([a-z][a-z0-9:_-]+):", re.MULTILINE)
 _MD_LINK_RE = re.compile(r'\[([^\]]*)\]\(([^)]+)\)')
-_TASK_REF_RE = re.compile(r'(?:^|\s)task\s+([a-z][a-z0-9_-]*:[a-z0-9:_-]+)')
+# A leading backtick counts as a word boundary: docs write `task ss:x`,
+# and requiring whitespace before `task` silently exempted every one.
+# The trailing lookahead stops `task ss:hygiene:*` (a wildcard in prose)
+# from half-matching as `ss:hygiene:`.
+# `task <ns:name>` after any non-word character (start of line, space,
+# backtick, `(`, `"`). The name never ends in `:`, and a name followed by
+# `:`, `*`, `<` or `{` is a placeholder (`ss:hygiene:<check>`), not a ref.
+_TASK_REF_RE = re.compile(r'(?<![\w-])task\s+([a-z][a-z0-9_-]*(?::[a-z0-9_-]+)+)(?![*:\w<{-])')
 _WF_REF_RE = re.compile(r'\.github/workflows/([a-z0-9_.-]+\.(?:yml|md))')
 _BACKTICK_FILE_RE = re.compile(r'`([a-zA-Z0-9_./-]+\.[a-z]{1,4})`')
 
@@ -202,6 +236,150 @@ def _collect_targets() -> list[Path]:
     return targets
 
 
+def _is_repo_relative_glob(text: str) -> bool:
+    return bool(text) and not (
+        text.startswith(("/", "~"))
+        or ":" in text.split("/", 1)[0]
+        or ".." in Path(text).parts
+    )
+
+
+def _glob_extra_pattern(pattern: object, root: Path) -> list[Path]:
+    """Files one `extra_paths` entry names inside the repo. Warns and returns
+    [] for an entry that isn't a usable repo-relative glob, or matches nothing."""
+    text = str(pattern).strip() if pattern is not None else ""
+    if not _is_repo_relative_glob(text):
+        output.warn(
+            f"hygiene.docs_accuracy.extra_paths entry {pattern!r} is not a "
+            "repo-relative glob — ignored"
+        )
+        return []
+    try:
+        hits = sorted(Path(".").glob(text))
+    except (ValueError, NotImplementedError) as exc:
+        output.warn(f"hygiene.docs_accuracy.extra_paths entry {pattern!r} is invalid ({exc}) — ignored")
+        return []
+    hits = [h for h in hits if h.is_file() and h.resolve().is_relative_to(root)]
+    if not hits:
+        output.warn(f"hygiene.docs_accuracy.extra_paths entry {pattern!r} matched no files")
+    return hits
+
+
+def _collect_extra_targets(primary_targets: list[Path] | None = None) -> list[Path]:
+    """Files named by `hygiene.docs_accuracy.extra_paths`, deduplicated, in order.
+
+    Files the primary scan already covers (`docs/**` and the root entry
+    files) are left out, so an overlapping glob like `**/*.md` never
+    double-counts an issue. An entry that is empty, absolute, climbs out
+    of the repo with `..`, or matches nothing warns and is skipped —
+    matching the config.py contract that a bad value never surfaces as a
+    traceback or as a silent pass.
+    """
+    primary = set(primary_targets if primary_targets is not None else _collect_targets())
+    root = Path.cwd().resolve()
+    raw = config.get("hygiene.docs_accuracy.extra_paths", []) or []
+    patterns = raw if isinstance(raw, list) else [raw]
+    out: list[Path] = []
+    for pattern in patterns:
+        for hit in _glob_extra_pattern(pattern, root):
+            if hit not in primary and hit not in out:
+                out.append(hit)
+    return out
+
+
+# `https://github.com/<owner>/<repo>/blob|tree/<ref>/<path>` — the shape
+# every "View source →" link on a site takes. Only links into *this* repo
+# are checked; anyone else's paths are not ours to verify.
+_REPO_LINK_RE = re.compile(
+    r"""https://github\.com/([^/"'\s]+)/([^/"'\s]+)/(?:blob|tree)/([^"'`\s#?)<>]+)"""
+)
+# A bare URL at the end of a sentence carries the sentence's punctuation.
+_LINK_TRAILING_PUNCT = ".,;:!"
+
+
+@lru_cache(maxsize=None)
+def _git(cwd: str, *args: str) -> str | None:
+    """stdout of `git <args>` in `cwd`, or None when git fails or is absent."""
+    try:
+        result = subprocess.run(
+            ["git", *args], cwd=cwd, capture_output=True, text=True, timeout=10, check=False
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def _working_tree_refs() -> set[str]:
+    """Refs whose links are checked against the working tree.
+
+    A link to `blob/main/...` is a claim about what main will hold once
+    this change lands — which is the working tree, not main's current
+    commit. Same for the branch being worked on.
+    """
+    cwd = str(Path.cwd())
+    refs = {"main", "master"}
+    origin_head = _git(cwd, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
+    if origin_head:
+        refs.add(origin_head.split("/", 1)[-1])
+    current = _git(cwd, "rev-parse", "--abbrev-ref", "HEAD")
+    if current and current != "HEAD":
+        refs.add(current)
+    for var in ("GITHUB_BASE_REF", "GITHUB_HEAD_REF"):
+        if os.environ.get(var):
+            refs.add(os.environ[var])
+    return refs
+
+
+def _repo_link_resolves(ref_and_path: str) -> bool | None:
+    """Whether `<ref>/<path>` from a blob/tree URL points at something real.
+
+    True / False when it can tell; None when the ref is one this checkout
+    can't resolve (the link is then not checked — guessing produced both
+    false passes and false failures).
+
+    A ref can contain slashes (`feat/x`), so the ref/path boundary is
+    ambiguous from the URL alone. It is never resolved by "does any
+    suffix of the path exist": `docs/gone/README.md` would then pass on
+    the root README.md.
+    """
+    # 1. The default or current branch: the working tree.
+    for ref in sorted(_working_tree_refs(), key=len, reverse=True):
+        if ref_and_path.startswith(ref + "/"):
+            return Path(ref_and_path[len(ref) + 1:]).exists()
+    # 2. A tag, SHA or other branch git knows: the path at that ref.
+    cwd = str(Path.cwd())
+    parts = ref_and_path.split("/")
+    for i in range(1, len(parts)):
+        ref, path = "/".join(parts[:i]), "/".join(parts[i:])
+        for candidate in (ref, f"origin/{ref}"):
+            if _git(cwd, "rev-parse", "--verify", "--quiet", f"{candidate}^{{commit}}") is not None:
+                return _git(cwd, "cat-file", "-e", f"{candidate}:{path}") is not None
+    return None
+
+
+def _check_repo_links(path: Path, owner: str, repo: str) -> list[dict]:
+    issues: list[dict] = []
+    content = path.read_text(errors="replace")
+    for m in _REPO_LINK_RE.finditer(content):
+        link_owner, link_repo, ref_and_path = m.groups()
+        # GitHub owner and repo names are case-insensitive.
+        if (link_owner.lower(), link_repo.removesuffix(".git").lower()) != (owner.lower(), repo.lower()):
+            continue
+        ref_and_path = ref_and_path.rstrip(_LINK_TRAILING_PUNCT).rstrip("/")
+        if "/" not in ref_and_path:
+            continue  # a bare ref (`tree/main`) names no file; nothing to check
+        if _repo_link_resolves(ref_and_path) is not False:
+            continue  # resolves, or the ref can't be checked from here
+        target = ref_and_path.split("/", 1)[1]
+        issues.append({
+            "type": "broken_repo_link",
+            "file": str(path),
+            "line": _line_of(content, m.start()),
+            "message": f"Link into this repo points at `{target}`, which does not exist",
+        })
+    return issues
+
+
 def _collect_all_issues(targets: list[Path], valid_tasks: set[str], valid_workflows: set[str]) -> list[dict]:
     issues: list[dict] = []
     for md_file in targets:
@@ -209,6 +387,47 @@ def _collect_all_issues(targets: list[Path], valid_tasks: set[str], valid_workfl
         issues += _check_task_references(md_file, valid_tasks)
         issues += _check_workflow_references(md_file, valid_workflows)
         issues += _check_source_file_references(md_file)
+    return issues
+
+
+def _collect_extra_issues(
+    extra: list[Path], valid_tasks: set[str], valid_workflows: set[str]
+) -> list[dict]:
+    """Route each extra file to the checks that are precise for it.
+
+    Files outside docs/ get only the checks whose references name a real
+    target in *this* repo: `task ss:…`, `.github/workflows/…`, and links
+    into this repo on github.com. They deliberately do not get the
+    relative-link or backtick-path checks — a skill or a marketing page
+    describes an adopter's tree, so `vercel.json` or `[category/](category/)`
+    in it is an example, not a claim about this checkout, and flagging
+    those would train people to ignore the check.
+    """
+    supported = {".md", ".html", ".htm"}
+    files = [p for p in extra if p.suffix.lower() in supported]
+    skipped = [p for p in extra if p.suffix.lower() not in supported]
+    if skipped:
+        sample = ", ".join(str(p) for p in skipped[:3]) + (" …" if len(skipped) > 3 else "")
+        output.warn(
+            f"{len(skipped)} file(s) matched hygiene.docs_accuracy.extra_paths but only "
+            f".md and .html are scanned — skipped: {sample}"
+        )
+    issues: list[dict] = []
+    for path in files:
+        if path.suffix.lower() == ".md":
+            issues += _check_task_references(path, valid_tasks)
+            issues += _check_workflow_references(path, valid_workflows)
+    if not files:
+        return issues
+    owner, repo = detect_owner_repo()
+    if not owner or not repo:
+        output.warn(
+            "could not detect this repo's owner/name (no $GITHUB_REPOSITORY, no github.com "
+            f"remote) — links into this repo in {len(files)} extra file(s) were not checked"
+        )
+        return issues
+    for path in files:
+        issues += _check_repo_links(path, owner, repo)
     return issues
 
 
@@ -221,6 +440,7 @@ _TYPE_LABELS = {
     "stale_task_ref": "Stale Taskfile References",
     "stale_workflow_ref": "Stale Workflow References",
     "stale_file_ref": "Possible Stale File References",
+    "broken_repo_link": "Broken Links Into This Repository",
 }
 
 
@@ -279,6 +499,7 @@ def run(_args: list[str] | None = None) -> int:
     valid_workflows = _get_workflow_files()
     targets = _collect_targets()
     issues = _collect_all_issues(targets, valid_tasks, valid_workflows)
+    issues += _collect_extra_issues(_collect_extra_targets(targets), valid_tasks, valid_workflows)
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     data = {

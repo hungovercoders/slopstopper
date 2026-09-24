@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains documentation for SlopStopper's reliability checks: portable smoke tests, broken-link audits, accessibility audits (see [ACCESSIBILITY.md](ACCESSIBILITY.md)), Core Web Vitals via Lighthouse CI, SEO/social-share metatags (see [SEO.md](SEO.md)), the llms.txt AI-discoverability map (see [LLMS_TXT.md](LLMS_TXT.md)), the robots.txt discoverability + de-index guard (see [ROBOTS_TXT.md](ROBOTS_TXT.md)) the sitemap.xml completeness + drift check (see [SITEMAP.md](SITEMAP.md)), the API health/readiness endpoint audit and the API latency + payload budget audit (both below). These checks are wired against any reachable URL.
+This directory contains documentation for SlopStopper's reliability checks: portable smoke tests, broken-link audits, accessibility audits (see [ACCESSIBILITY.md](ACCESSIBILITY.md)), Core Web Vitals via Lighthouse CI (see [CWV.md](CWV.md)), SEO/social-share metatags (see [SEO.md](SEO.md)), the llms.txt AI-discoverability map (see [LLMS_TXT.md](LLMS_TXT.md)), the robots.txt discoverability + de-index guard (see [ROBOTS_TXT.md](ROBOTS_TXT.md)) the sitemap.xml completeness + drift check (see [SITEMAP.md](SITEMAP.md)), the API health/readiness endpoint audit and the API latency + payload budget audit (both below). These checks are wired against any reachable URL.
 
 ## Configuration (env vars)
 
@@ -19,7 +19,7 @@ All reliability checks read their target URL and audit scope from environment va
 | `ACCESSIBILITY_PAGES` | `/` | accessibility — comma-separated paths |
 | `ACCESSIBILITY_IMPACT` | `serious` | accessibility — min `critical`/`serious`/`moderate`/`minor` |
 | `ACCESSIBILITY_THRESHOLD` | `0` | accessibility — max violations before failing |
-| `LIGHTHOUSE_URL` / `CWV_URL` | (none) | Lighthouse CI — URL to audit |
+| `CWV_URL` | (none) | Core Web Vitals — URL to audit (see [CWV.md](CWV.md)) |
 | `SEO_TEST_URL` | (none) | SEO metatag check — base URL to audit |
 | `SEO_PAGES` | `/` | SEO metatag check — comma-separated paths, e.g. `/,/features.html` |
 | `SEO_REQUIRE_OG_IMAGE` | `1` | SEO metatag check — set `0` to skip og:image presence check |
