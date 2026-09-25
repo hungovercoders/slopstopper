@@ -356,3 +356,19 @@ def test_run_accepts_explicit_config(monkeypatch, isolated_cwd):
     rc = cwv.run(["--url", "https://example.com", "--config", str(custom)])
     assert rc == 0
     assert f"--config={custom}" in captured["cmd"]
+
+
+def test_an_lhci_exit_one_without_a_fresh_result_is_could_not_run(monkeypatch, isolated_cwd):
+    """Chrome failed to launch: lhci exits 1, but audited nothing this run.
+    A result left over from an earlier run doesn't count."""
+    import os
+
+    lhci = Path(".lighthouseci")
+    lhci.mkdir()
+    stale = lhci / "lhr-1.json"
+    stale.write_text(json.dumps(_sample_lhr()))
+    os.utime(stale, (1_000_000, 1_000_000))
+
+    monkeypatch.setattr(cwv, "_npx_available", lambda: True)
+    monkeypatch.setattr(cwv, "_run_lhci", lambda cmd: (1, "Unable to launch Chrome"))
+    assert cwv.run(["--url", "https://example.com"]) == 2

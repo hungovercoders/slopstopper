@@ -28,7 +28,7 @@ import sys
 from pathlib import Path
 
 from slopstopper import config, headers_adapters, output
-from slopstopper.checks._args import reject_extra_args
+from slopstopper.checks._contract import reject_extra_args
 
 EXCEPTIONS_DOC = Path("docs/security/CSP_EXCEPTIONS.md")
 REPORT_DIR = Path(".ss/reports/csp")

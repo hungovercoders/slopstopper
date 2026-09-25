@@ -6,6 +6,7 @@ import os
 import subprocess
 
 from slopstopper.checks import accessibility
+from tests._fakes import playwright_failed
 
 
 # ── helpers ──────────────────────────────────────────────────────
@@ -103,13 +104,13 @@ def test_build_cmd_default_reporter():
     cmd = accessibility._build_cmd(ci_mode=False)
     assert cmd[0] == "npx"
     assert "playwright" in cmd
-    assert "--reporter=list" in cmd
+    assert "--reporter=list,json" in cmd
     assert any("accessibility.spec.ts" in arg for arg in cmd)
 
 
 def test_build_cmd_ci_uses_list_html_reporter():
     cmd = accessibility._build_cmd(ci_mode=True)
-    assert "--reporter=list,html" in cmd
+    assert "--reporter=list,html,json" in cmd
 
 
 # ── subprocess / runtime ─────────────────────────────────────────
@@ -153,7 +154,7 @@ def test_run_invokes_playwright(monkeypatch, isolated_cwd):
     rc = accessibility.run(["--url", "https://example.com"])
     assert rc == 0
     assert captured["cmd"][:2] == ["npx", "playwright"]
-    assert "--reporter=list" in captured["cmd"]
+    assert "--reporter=list,json" in captured["cmd"]
     assert captured["env"]["ACCESSIBILITY_TEST_URL"] == "https://example.com"
 
 
@@ -171,7 +172,7 @@ def test_run_ci_mode_threads_html_reporter(monkeypatch, isolated_cwd):
 
     rc = accessibility.run(["--url", "https://example.com", "--ci"])
     assert rc == 0
-    assert "--reporter=list,html" in captured["cmd"]
+    assert "--reporter=list,html,json" in captured["cmd"]
     assert captured["env"]["CI"] == "true"
 
 
@@ -180,7 +181,7 @@ def test_run_propagates_playwright_failure(monkeypatch, isolated_cwd):
     monkeypatch.setattr(accessibility, "_discover_pages", lambda: None)
     monkeypatch.setattr(
         accessibility.subprocess, "run",
-        lambda cmd, env, check: subprocess.CompletedProcess(cmd, 1),
+        playwright_failed,
     )
 
     rc = accessibility.run(["--url", "https://example.com"])
@@ -209,7 +210,7 @@ def test_run_writes_report_on_failure(monkeypatch, isolated_cwd):
     monkeypatch.setattr(accessibility, "_discover_pages", lambda: None)
     monkeypatch.setattr(
         accessibility.subprocess, "run",
-        lambda cmd, env, check: subprocess.CompletedProcess(cmd, 1),
+        playwright_failed,
     )
     rc = accessibility.run(["--url", "https://example.com"])
     assert rc == 1

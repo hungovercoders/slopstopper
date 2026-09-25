@@ -52,6 +52,7 @@ import urllib.request
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks._contract import refuse_unsafe_url
 
 
 REPORT_DIR = Path(".ss/reports/robots-txt")
@@ -359,12 +360,8 @@ def run(args: list[str] | None = None) -> int:
         output._emit("  ROBOTS_TXT_TEST_URL=https://your-site slopstopper run reliability:robots-txt")
         return 2
 
-    try:
-        _require_safe_url(url)
-    except ValueError as e:
-        # A file:// or ftp:// URL is a bad input, not a site failure.
-        output.error(str(e))
-        return 2
+    if (rc := refuse_unsafe_url(url, _require_safe_url)) is not None:
+        return rc
 
     path = _resolve_path(parsed.path)
     check_links = parsed.check_links or config.get_bool("reliability.robots_txt.check_links", False)
@@ -377,8 +374,10 @@ def run(args: list[str] | None = None) -> int:
     try:
         result = _audit(url, path, check_links, require_llms, allow_disallow_all)
     except ValueError as e:
+        # A bad input the up-front URL guard couldn't see (a configured path
+        # that composes to an unusable URL): the check could not run.
         output.error(str(e))
-        return 1
+        return 2
 
     _write_reports(result)
     _print_result(result)

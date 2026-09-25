@@ -6,6 +6,7 @@ import os
 import subprocess
 
 from slopstopper.checks import smoke
+from tests._fakes import playwright_failed
 
 
 # ── helpers ──────────────────────────────────────────────────────
@@ -83,7 +84,7 @@ def test_build_cmd_default_reporter():
     assert cmd[0] == "npx"
     assert "playwright" in cmd
     assert "test" in cmd
-    assert "--reporter=list" in cmd
+    assert "--reporter=list,json" in cmd
     # The resolved spec path is whatever templates.playwright_spec returns
     # (override under .ss/ or the bundled package-data file).
     assert any("smoke.spec.ts" in arg for arg in cmd)
@@ -91,7 +92,7 @@ def test_build_cmd_default_reporter():
 
 def test_build_cmd_ci_uses_list_html_reporter():
     cmd = smoke._build_cmd(ci_mode=True)
-    assert "--reporter=list,html" in cmd
+    assert "--reporter=list,html,json" in cmd
 
 
 # ── subprocess / runtime ─────────────────────────────────────────
@@ -134,7 +135,7 @@ def test_run_invokes_playwright_with_expected_args(monkeypatch, isolated_cwd):
     rc = smoke.run(["--url", "https://example.com"])
     assert rc == 0
     assert captured["cmd"][:2] == ["npx", "playwright"]
-    assert "--reporter=list" in captured["cmd"]
+    assert "--reporter=list,json" in captured["cmd"]
     assert captured["env"]["SMOKE_TEST_URL"] == "https://example.com"
 
 
@@ -151,7 +152,7 @@ def test_run_ci_mode_threads_html_reporter_and_ci_env(monkeypatch, isolated_cwd)
 
     rc = smoke.run(["--url", "https://example.com", "--ci"])
     assert rc == 0
-    assert "--reporter=list,html" in captured["cmd"]
+    assert "--reporter=list,html,json" in captured["cmd"]
     assert captured["env"]["CI"] == "true"
 
 
@@ -159,7 +160,7 @@ def test_run_propagates_playwright_failure(monkeypatch, isolated_cwd):
     monkeypatch.setattr(smoke, "_npx_available", lambda: True)
     monkeypatch.setattr(
         smoke.subprocess, "run",
-        lambda cmd, env, check: subprocess.CompletedProcess(cmd, 1),
+        playwright_failed,
     )
 
     rc = smoke.run(["--url", "https://example.com"])
@@ -187,7 +188,7 @@ def test_run_writes_report_on_failure_with_playwright_link(monkeypatch, isolated
     monkeypatch.setattr(smoke, "_npx_available", lambda: True)
     monkeypatch.setattr(
         smoke.subprocess, "run",
-        lambda cmd, env, check: subprocess.CompletedProcess(cmd, 1),
+        playwright_failed,
     )
     rc = smoke.run(["--url", "https://example.com"])
     assert rc == 1
@@ -203,10 +204,3 @@ def test_meta_matches_legacy_workflow_strings():
     assert "smoke-test-failure" in smoke.META["issue_labels"]
     assert "reliability" in smoke.META["issue_labels"]
 
-
-def test_playwright_exit_codes_map_to_the_contract():
-    """1 is a verdict on the site; any other non-zero means no verdict."""
-    assert smoke._playwright_exit(0) == 0
-    assert smoke._playwright_exit(1) == 1
-    for code in (2, 127, 130, -9):
-        assert smoke._playwright_exit(code) == 2

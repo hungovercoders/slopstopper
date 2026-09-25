@@ -54,7 +54,7 @@ from pathlib import Path
 
 from slopstopper import config, output
 from slopstopper.badges import detect_owner_repo
-from slopstopper.checks._args import reject_extra_args
+from slopstopper.checks._contract import reject_extra_args
 
 REPORT_DIR = Path(".ss/reports/docs")
 REPORT_JSON = REPORT_DIR / "docs-accuracy-report.json"

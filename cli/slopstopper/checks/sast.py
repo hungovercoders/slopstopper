@@ -34,8 +34,9 @@ Configuration (.slopstopper.yml — optional):
 Exit codes:
   0 — no findings at or above `security.sast.fail_on`
   1 — one or more findings at or above `security.sast.fail_on`
-  2 — semgrep is not installed, its report is missing or unreadable,
-      or arguments were passed (this check takes none)
+  2 — semgrep is not installed, exited with an error (a failed rules
+      fetch, a bad config), wrote no readable report, or arguments were
+      passed (this check takes none)
 """
 
 from __future__ import annotations
@@ -47,7 +48,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import config, output
-from slopstopper.checks._args import reject_extra_args
+from slopstopper.checks._contract import reject_extra_args, scan_incomplete
 
 REPORT_DIR = Path(".ss/reports/sast")
 REPORT_JSON = REPORT_DIR / "sast-report.json"
@@ -88,6 +89,8 @@ SEVERITY_RANK = {
     "CRITICAL": 2, "HIGH": 2, "ERROR": 2,
     "MEDIUM": 1, "WARNING": 1,
     "LOW": 0, "INFO": 0,
+    # Non-security severities some registry rules emit: informational.
+    "INVENTORY": 0, "EXPERIMENT": 0,
 }
 ERROR_RANK = 2
 FAIL_ON_CHOICES = ("error", "warning", "info", "none")
@@ -120,13 +123,28 @@ def _blocking_findings(results: list[dict], fail_on: str) -> list[dict]:
 
 
 def _rank(finding: dict) -> int:
-    severity = str(finding.get("extra", {}).get("severity", "")).upper()
+    """A finding's rank. A severity Semgrep has never emitted (or none at
+    all — a malformed finding) ranks as ERROR: fail closed, not open."""
+    severity = str((finding.get("extra") or {}).get("severity", "")).upper()
     return SEVERITY_RANK.get(severity, ERROR_RANK)
 
 
-def _run_semgrep() -> None:
+# Semgrep's exit codes for a scan that completed: 0, or 1 when `--error`
+# is in effect and there are findings. Anything else — 2 (fatal), 7
+# (missing config), a rules-registry fetch that failed — is a scan that
+# did not run, even if Semgrep still wrote a JSON with `"results": []`.
+SEMGREP_COMPLETED = frozenset({0, 1})
+
+
+def _run_semgrep() -> int:
+    """Run Semgrep and return its exit code.
+
+    The previous run's report is removed first: a scan that dies before
+    writing must leave no report, not last run's.
+    """
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    subprocess.run(
+    REPORT_JSON.unlink(missing_ok=True)
+    return subprocess.run(
         [
             "semgrep",
             "--config=auto",
@@ -137,7 +155,7 @@ def _run_semgrep() -> None:
             ".",
         ],
         check=False,
-    )
+    ).returncode
 
 
 def _read_data() -> dict | None:
@@ -172,8 +190,9 @@ def _format_finding_row(finding: dict) -> str:
     check_id = finding.get("check_id", "unknown")
     path = finding.get("path", "unknown")
     start_line = finding.get("start", {}).get("line", "?")
-    message = finding.get("extra", {}).get("message", "").replace("\n", " ").strip()
-    severity = finding.get("extra", {}).get("severity", "unknown")
+    extra = finding.get("extra") or {}
+    message = str(extra.get("message") or "").replace("\n", " ").strip()
+    severity = extra.get("severity") or "unknown"
     location = f"`{path}:{start_line}`"
     truncated = (message[:77] + "...") if len(message) > 80 else message
     return f"| {check_id} | {severity} | {location} | {truncated} |"
@@ -287,18 +306,16 @@ def run(args: list[str] | None = None) -> int:
         return 2
 
     output.running("Running SAST analysis…")
-    _run_semgrep()
+    rc = _run_semgrep()
     data = _read_data()
-    if data is None:
-        REPORT_DIR.mkdir(parents=True, exist_ok=True)
-        REPORT_MD.write_text(
-            "# SAST Analysis Report\n\n## ❌ Scan did not complete\n\n"
-            f"Semgrep produced no readable report at `{REPORT_JSON}`. The scan is "
-            "treated as not run — not as clean. Re-run it and check Semgrep's output above.\n"
+    if data is None or rc not in SEMGREP_COMPLETED:
+        return scan_incomplete(
+            REPORT_DIR, REPORT_MD, "SAST Analysis Report",
+            f"Semgrep exited {rc} and "
+            + ("wrote no readable report" if data is None else "reported a fatal error")
+            + f" (`{REPORT_JSON}`). The scan is treated as not run — not as clean. "
+            "Re-run it and check Semgrep's output above.",
         )
-        output.error("Semgrep produced no readable report — the scan did not complete")
-        output.footer(REPORT_DIR, [REPORT_MD.name])
-        return 2
 
     fail_on = _fail_on()
     REPORT_MD.write_text(_build_md_report(data, fail_on))

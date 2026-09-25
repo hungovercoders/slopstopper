@@ -660,3 +660,24 @@ def test_unresolvable_profile_warns_and_installs_everything_for_the_default(tmp_
     assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
     assert "defaulting to 'ui'" in result.stdout + result.stderr
     assert "ss-reliability-smoke-tests.yml" in _installed(target)
+
+
+# ── --no-task rewrites every Task invocation ─────────────────────
+
+
+def test_no_task_leaves_no_task_invocation_in_any_workflow(tmp_path):
+    """`task -x ss:…` (exit-code passthrough) must be rewritten as well as
+    `task ss:…` — otherwise --no-task installs still need Task."""
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, args=["--no-task", "--no-hooks", "--no-skills"])
+    assert result.returncode == 0, result.stderr
+    workflows = target / ".github" / "workflows"
+    leftovers = {
+        p.name: line.strip()
+        for p in workflows.glob("ss-*.yml")
+        for line in p.read_text().splitlines()
+        if "task ss:" in line or "task -x ss:" in line
+    }
+    assert not leftovers, leftovers
+    sast = (workflows / "ss-security-sast-check.yml").read_text()
+    assert "slopstopper run security:sast" in sast

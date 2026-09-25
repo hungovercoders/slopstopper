@@ -45,7 +45,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import config, output
-from slopstopper.checks._args import reject_extra_args
+from slopstopper.checks._contract import reject_extra_args
 
 REPORT_DIR = Path(".ss/reports/complexity")
 REPORT_CSV = REPORT_DIR / "complexity-report.csv"

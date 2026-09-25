@@ -69,6 +69,7 @@ import urllib.request
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks._contract import refuse_unsafe_url
 
 
 REPORT_DIR = Path(".ss/reports/api-latency")
@@ -432,12 +433,8 @@ def run(args: list[str] | None = None) -> int:
         )
         return 2
 
-    try:
-        _require_safe_url(url)
-    except ValueError as e:
-        # A file:// or ftp:// URL is a bad input, not a site failure.
-        output.error(str(e))
-        return 2
+    if (rc := refuse_unsafe_url(url, _require_safe_url)) is not None:
+        return rc
 
     output.status("⏱", f"API latency audit against: {url}")
     output._emit(

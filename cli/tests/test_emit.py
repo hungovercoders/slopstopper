@@ -6,6 +6,8 @@ import json
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from slopstopper import emit
 
 
@@ -776,3 +778,41 @@ def test_summary_upserts_one_comment(monkeypatch, isolated_cwd, tmp_path):
     assert body.startswith("## ❌ SlopStopper — 1 of 1 check failed")
     assert "**SAST**" in body
     assert any("pr" in c and "comment" in c for c in calls)
+
+
+# ── exit 2 never becomes an issue ────────────────────────────────
+
+
+def _fail_if_called(*a, **kw):
+    raise AssertionError("gh must not be touched for a run that could not run")
+
+
+@pytest.mark.parametrize("on_pass", [None, "close"])
+def test_a_run_that_could_not_run_neither_opens_nor_closes_an_issue(
+    monkeypatch, isolated_cwd, capsys, on_pass
+):
+    monkeypatch.setattr(emit, "_gh", _fail_if_called)
+    monkeypatch.setattr(emit, "_gh_available", lambda: True)
+    emit.record_exit("security:dast", 2)
+    meta = {
+        "report_path": "report.md",
+        "issue_title": "t",
+        "issue_labels": ["x"],
+        "issue_followup": "f",
+    }
+    assert emit.emit("issue", meta, check_name="security:dast", on_pass=on_pass) == 0
+    assert "could not run (exit 2)" in capsys.readouterr().out
+
+
+def test_record_and_read_back_the_last_exit(isolated_cwd):
+    assert emit.last_exit("security:vulnerability:all") is None
+    emit.record_exit("security:vulnerability:all", 1)
+    assert emit.last_exit("security:vulnerability:all") == 1
+
+
+def test_run_records_the_exit_code_for_emit(isolated_cwd, monkeypatch):
+    from slopstopper import cli
+
+    monkeypatch.setitem(cli.REGISTRY, "hygiene:test-two", lambda _args: 2)
+    assert cli.main(["run", "hygiene:test-two"]) == 2
+    assert emit.last_exit("hygiene:test-two") == 2

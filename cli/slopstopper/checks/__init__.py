@@ -11,8 +11,14 @@ own cases and `cli/tests/test_exit_code_contract.py` enforces:
       thing. This is the verdict CI gates on.
   2 — the check could not run: a required tool is not installed, a
       required input is missing, a report came back unreadable, an
-      unknown option or argument was passed. Not a verdict about the
-      repo; something for the person running it to fix first.
+      unknown option or argument was passed, or the check crashed (the
+      dispatcher maps any uncaught exception to 2). Not a verdict about
+      the repo; something for the person running it to fix first — so
+      `slopstopper emit --target issue` never opens, updates or closes a
+      tracking issue for it (`run` records each exit code for `emit`).
+
+The mappings from "something went wrong" to a code live in
+`checks/_contract.py`, not in each check.
 
 Two checks used to blur this — `security:vulnerability:all` returned 2
 for findings, and `security:sast` / `security:secrets` always returned

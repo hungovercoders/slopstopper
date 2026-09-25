@@ -117,9 +117,10 @@ def test_a_yaml_spec_skips_rather_than_failing(write_config, capsys, spec):
     assert "/openapi.json" in out
 
 
-def test_a_missing_spec_file_fails(write_config, capsys):
+def test_a_missing_spec_file_is_could_not_run(write_config, capsys):
+    """Nothing to compare is exit 2 — the same as DAST for the same config."""
     write_config("api:\n  openapi:\n    spec: nowhere.json\n")
-    assert openapi.run(["https://api.example.com"]) == 1
+    assert openapi.run(["https://api.example.com"]) == 2
     assert "spec file not found" in capsys.readouterr().out
 
 
@@ -371,3 +372,10 @@ def test_report_lists_drift_and_the_probe_table(monkeypatch):
 def test_meta_is_declared_for_emit():
     assert openapi.META["report_path"].endswith("openapi-report.md")
     assert openapi.META["comment_discriminator"]
+
+
+def test_an_unsafe_target_url_is_could_not_run(write_config, isolated_cwd, capsys):
+    (isolated_cwd / "openapi.json").write_text('{"openapi": "3.0.0", "paths": {}}')
+    write_config("api:\n  openapi:\n    spec: openapi.json\n")
+    assert openapi.run(["file:///etc/passwd"]) == 2
+    assert "refuses scheme" in capsys.readouterr().out

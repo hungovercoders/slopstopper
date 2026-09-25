@@ -37,25 +37,44 @@ def _module(check: str):
     return inspect.getmodule(REGISTRY[check])
 
 
+# The `_contract` helpers that can hand a check a 2 to return.
+CONTRACT_HELPERS_RETURNING_TWO = frozenset(
+    {"reject_extra_args", "refuse_unsafe_url", "runner_exit", "scan_incomplete"}
+)
+
+
 def _returns_two(check: str) -> bool:
     """True if any function in the check's module can return 2.
 
-    A literal `return 2`, or `return reject_extra_args(...)` — the shared
-    helper that always returns 2 for a check that takes no arguments.
+    A literal `return 2` / `return EXIT_CANNOT_RUN`, or a call to one of
+    the `_contract` helpers that yield 2 (whose result the check returns).
     """
     source = Path(inspect.getsourcefile(_module(check))).read_text(encoding="utf-8")
     for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Call):
+            func = node.func
+            name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
+            if name in CONTRACT_HELPERS_RETURNING_TWO:
+                return True
         if not isinstance(node, ast.Return) or node.value is None:
             continue
         value = node.value
         if isinstance(value, ast.Constant) and value.value == 2:
             return True
-        if isinstance(value, ast.Call):
-            func = value.func
-            name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
-            if name == "reject_extra_args":
-                return True
+        if isinstance(value, ast.Name) and value.id == "EXIT_CANNOT_RUN":
+            return True
     return False
+
+
+def test_a_crash_in_any_check_is_could_not_run(monkeypatch, isolated_cwd):
+    """The dispatcher, not each check, owns the crash → 2 mapping."""
+    from slopstopper import cli
+
+    def boom(_args):
+        raise RuntimeError("boom")
+
+    monkeypatch.setitem(cli.REGISTRY, "hygiene:test-boom", boom)
+    assert cli.main(["run", "hygiene:test-boom"]) == 2
 
 
 def _exit_codes_block(check: str) -> str:

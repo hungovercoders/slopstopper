@@ -25,10 +25,11 @@ actually enforced.
 
 Exit codes:
   0 — lhci passed all thresholds
-  1 — lhci failed a threshold (lhci exited 1; report still written)
+  1 — lhci audited the page and failed a threshold (report still written)
   2 — npx (Node.js) not available, the URL is missing, the Lighthouse
-      config does not exist, or lhci exited with any other non-zero
-      code (Lighthouse didn't run to a verdict)
+      config does not exist, or lhci didn't run to a verdict: any exit
+      other than 0/1, or an exit 1 with no Lighthouse result written this
+      run (Chrome failed to launch, collection aborted)
 """
 
 from __future__ import annotations
@@ -40,9 +41,11 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from slopstopper import output, templates
+from slopstopper.checks._contract import runner_exit
 
 
 REPORT_DIR = Path(".ss/reports/cwv")
@@ -273,13 +276,20 @@ def run(args: list[str] | None = None) -> int:
 
     output.status("🚦", f"Running Core Web Vitals audit against: {url}")
     cmd = _build_cmd(url, str(config_path))
+    started = time.time()
     rc, captured = _run_lhci(cmd)
     _write_report(url, captured, rc)
     output.footer(REPORT_DIR, [REPORT_MD.name])
-    # lhci's own exit code is kept in the report; the contract needs 0 / 1.
-    # lhci exits 1 when an assertion failed; any other non-zero means
-    # Lighthouse didn't run to a verdict (Chrome failed to launch, a
-    # config error, a signal): 2, not a verdict on the site.
-    if rc == 0:
-        return 0
-    return 1 if rc == 1 else 2
+    # lhci exits 1 both when an assertion failed (a verdict on the site) and
+    # when Chrome never launched or collection aborted. Only the first
+    # leaves a Lighthouse result written during this run.
+    return runner_exit(rc, ran=_audited_since(started))
+
+
+def _audited_since(started: float) -> bool:
+    """True if lhci wrote a Lighthouse result during this run."""
+    lhr = _latest_lhr_json()
+    try:
+        return lhr is not None and lhr.stat().st_mtime >= started - 1
+    except OSError:
+        return False

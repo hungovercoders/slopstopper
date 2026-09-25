@@ -56,6 +56,7 @@ import os
 import shutil
 import subprocess
 import sys
+import traceback
 
 from slopstopper import (
     __version__,
@@ -591,7 +592,21 @@ def _dispatch_run(check_name: str, check_args: list[str]) -> int:
         print(f"❌ unknown check: {check_name}", file=sys.stderr)
         print(f"   known checks: {', '.join(sorted(REGISTRY))}", file=sys.stderr)
         return 2
-    return REGISTRY[check_name](check_args)
+    try:
+        rc = REGISTRY[check_name](check_args)
+    except Exception:  # noqa: BLE001 — any crash is "could not run"
+        # Python's default for an uncaught exception is exit 1, which the
+        # contract (and every workflow gate) reads as "the repo failed the
+        # check". A crash in the check is not a verdict on the repo.
+        traceback.print_exc()
+        print(
+            f"❌ {check_name} crashed — exit 2 (could not run), not a verdict on the repo",
+            file=sys.stderr,
+        )
+        rc = 2
+    # Read back by `emit --target issue`, which never files exit 2 as a finding.
+    emit_mod.record_exit(check_name, rc)
+    return rc
 
 
 def _dispatch_config_get(key: str, default: str) -> int:

@@ -64,8 +64,9 @@ def test_build_md_report_with_findings():
     assert "github-token" in md
 
 
-def test_read_findings_empty_when_file_missing(isolated_cwd):
-    assert secrets._read_findings() == []
+def test_read_findings_is_none_when_gitleaks_wrote_no_report(isolated_cwd):
+    """No report is "the scan did not run", never "no findings"."""
+    assert secrets._read_findings() is None
 
 
 def test_read_findings_handles_null_payload(isolated_cwd):
@@ -231,7 +232,7 @@ def test_run_scrubs_a_malformed_report_and_fails_closed(monkeypatch, isolated_cw
 
     monkeypatch.setattr(secrets, "_gitleaks_available", lambda: True)
     monkeypatch.setattr(secrets, "_run_gitleaks", fake_gitleaks)
-    assert secrets.run() == 2  # could not run, not "findings"
+    assert secrets.run() == 1  # possibly a secret: counted as one, never "clean"
 
     on_disk = secrets.REPORT_JSON.read_text()
     assert PLANTED_KEY not in on_disk
@@ -251,7 +252,7 @@ def test_run_scrubs_a_report_that_is_not_utf8_and_fails_closed(monkeypatch, isol
 
     monkeypatch.setattr(secrets, "_gitleaks_available", lambda: True)
     monkeypatch.setattr(secrets, "_run_gitleaks", fake_gitleaks)
-    assert secrets.run() == 2
+    assert secrets.run() == 1
     assert PLANTED_KEY not in secrets.REPORT_JSON.read_text()
 
 
@@ -332,3 +333,23 @@ def test_real_gitleaks_output_is_redacted_end_to_end(isolated_cwd):
     # The redacted report still says where to look.
     assert findings[0]["File"] == "config.env"
     assert findings[0]["StartLine"] == 1
+
+
+# ── a scan that never wrote a report ─────────────────────────────
+
+
+def test_run_returns_two_when_gitleaks_writes_no_report(monkeypatch, isolated_cwd, capsys):
+    monkeypatch.setattr(secrets, "_gitleaks_available", lambda: True)
+    monkeypatch.setattr(secrets, "_run_gitleaks", lambda: None)
+    assert secrets.run() == 2
+    assert "did not complete" in capsys.readouterr().out
+    assert "Scan did not complete" in secrets.REPORT_MD.read_text()
+
+
+def test_a_previous_runs_report_cannot_stand_in_for_this_one(monkeypatch, isolated_cwd):
+    """gitleaks dies before writing: last run's clean `[]` must not be read."""
+    secrets.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    secrets.REPORT_JSON.write_text("[]")
+    monkeypatch.setattr(secrets, "_gitleaks_available", lambda: True)
+    monkeypatch.setattr(secrets.subprocess, "run", lambda argv, **kw: None)  # writes nothing
+    assert secrets.run() == 2

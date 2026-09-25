@@ -35,10 +35,12 @@ modes.
 
 Exit codes:
   0 — playwright tests passed
-  1 — playwright tests failed (Playwright exited 1; report still written)
+  1 — playwright tests ran and failed (report still written)
   2 — npx (Node.js) not available, the URL is missing, the bundled
       spec could not be found, or Playwright exited with any other
-      non-zero code (the suite didn't run to a verdict)
+      non-zero code (the suite didn't run to a verdict).
+      Playwright exiting 1 without running the tests (a config error,
+      no tests found, the browser failing to launch) is 2 as well
 """
 
 from __future__ import annotations
@@ -50,9 +52,13 @@ import subprocess
 from pathlib import Path
 
 from slopstopper import discovery, output, templates
+from slopstopper.checks._contract import playwright_ran, runner_exit
 
 SPEC_NAME = "accessibility"
 REPORT_DIR = Path(".ss/reports/reliability")
+# Playwright's JSON reporter output: whether the tests ran at all (see
+# `_contract.playwright_ran`) — its exit code alone can't say.
+PLAYWRIGHT_JSON = REPORT_DIR / "accessibility-results.json"
 REPORT_MD = REPORT_DIR / "accessibility-report.md"
 
 # Consumed by `slopstopper emit reliability:accessibility --target {pr-comment,issue}`.
@@ -110,6 +116,7 @@ def _discover_pages() -> str | None:
 
 def _build_env(url: str, ci_mode: bool) -> dict[str, str]:
     env = dict(os.environ)
+    env["PLAYWRIGHT_JSON_OUTPUT_NAME"] = str(Path.cwd() / PLAYWRIGHT_JSON)
     env["ACCESSIBILITY_TEST_URL"] = url
     if "ACCESSIBILITY_PAGES" not in env:
         pages = _discover_pages()
@@ -134,7 +141,7 @@ def _ensure_playwright_assets_ejected() -> None:
 
 
 def _build_cmd(ci_mode: bool) -> list[str]:
-    reporter = "list,html" if ci_mode else "list"
+    reporter = "list,html,json" if ci_mode else "list,json"
     return [
         "npx", "playwright", "test",
         f"--config={templates.playwright_config()}",
@@ -199,15 +206,11 @@ def run(args: list[str] | None = None) -> int:
     output.status("♿", f"Running accessibility audit against: {url}")
     env = _build_env(url, parsed.ci)
     cmd = _build_cmd(parsed.ci)
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    PLAYWRIGHT_JSON.unlink(missing_ok=True)
     result = subprocess.run(cmd, env=env, check=False)
     _write_report(result.returncode, url)
-    # Playwright's own exit code is kept in the report. It exits 1 when tests failed — a verdict on the site. Any
-    # other non-zero (a config error, a missing binary, a signal) means
-    # the suite didn't run to a verdict: 2.
-    return _playwright_exit(result.returncode)
-
-
-def _playwright_exit(returncode: int) -> int:
-    if returncode == 0:
-        return 0
-    return 1 if returncode == 1 else 2
+    # Playwright's own exit code is kept in the report. It exits 1 both when
+    # tests failed (a verdict on the site) and when they never ran (bad
+    # config, no browser): the JSON report tells the two apart.
+    return runner_exit(result.returncode, ran=playwright_ran(PLAYWRIGHT_JSON))
