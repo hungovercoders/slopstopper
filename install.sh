@@ -24,6 +24,7 @@
 #   Taskfile.ss.yml             # all SlopStopper task shims; always
 #                               #   refreshed on re-run so updates flow through
 #   .ss/.workflows-installed    # manifest of installed workflows (commit this)
+#   .ss/.installed-from         # slopstopper commit this install came from (commit this)
 #   .ss/reports/                # SlopStopper-owned scan/report output dirs
 #                               # (every CLI-managed file — Playwright specs,
 #                               # Playwright config, lighthouserc dev/prod,
@@ -603,12 +604,15 @@ fi
 # already present in the target, the CLI's templates module prefers
 # those files over the package data — same shape as the workflows.
 #
-# .slopstopper.yml is still seeded (it carries every other config knob); it
-# just no longer holds the CLI pin. A legacy cli_version is migrated into
-# mise.toml and stripped below.
-if [ ! -f "$TARGET_DIR/.slopstopper.yml" ] && [ -f "$SCRIPT_DIR/.slopstopper.yml.example" ]; then
-  cp "$SCRIPT_DIR/.slopstopper.yml.example" "$TARGET_DIR/.slopstopper.yml"
-  success ".slopstopper.yml: seeded $TARGET_DIR/.slopstopper.yml"
+# .slopstopper.yml is seeded from templates/slopstopper.yml.starter — the
+# handful of keys most repos set, with a pointer to the full schema
+# reference (.slopstopper.yml.example) for everything else. The schema
+# reference used to be copied verbatim, so an adopter's first config was
+# the whole schema rather than the few keys they set. A legacy cli_version
+# is migrated into mise.toml and stripped below.
+if [ ! -f "$TARGET_DIR/.slopstopper.yml" ] && [ -f "$SCRIPT_DIR/templates/slopstopper.yml.starter" ]; then
+  cp "$SCRIPT_DIR/templates/slopstopper.yml.starter" "$TARGET_DIR/.slopstopper.yml"
+  success ".slopstopper.yml: seeded $TARGET_DIR/.slopstopper.yml (a starter — every other key: https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example)"
 fi
 
 # Apply --profile / SLOPSTOPPER_PROFILE by writing the key into the
@@ -716,6 +720,7 @@ sync_mise_cli() {
 }
 
 sync_mise_cli
+
 
 # 4. .ss/ overlay — nothing is seeded by default. Every CLI-managed
 #    file (Playwright specs, Playwright config, lighthouserc dev/prod,
@@ -914,6 +919,16 @@ done
 # Write the updated marker (atomic via tmp + mv).
 printf '%s' "$NEW_MARKER_CONTENT" > "$MARKER_FILE.tmp" && mv "$MARKER_FILE.tmp" "$MARKER_FILE"
 
+# Record the slopstopper commit this install came from. Everything above —
+# workflows, Taskfile.ss.yml, the config schema those read — is that
+# commit's, so a refresh can diff upstream between the committed value and
+# the new one (the slopstopper-install skill's "Spot newly-shipped knobs").
+# Skipped when the source isn't a git checkout.
+if [ -e "$SCRIPT_DIR/.git" ]; then
+  SOURCE_SHA="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || true)"
+  [ -n "$SOURCE_SHA" ] && printf '%s\n' "$SOURCE_SHA" > "$TARGET_DIR/.ss/.installed-from"
+fi
+
 success "$INSTALLED_WORKFLOWS workflow(s) installed, $REFRESHED_WORKFLOWS refreshed, $DELETED_RESPECTED previously-deleted skipped"
 
 if [ "$PROFILE_SKIPPED" -gt 0 ]; then
@@ -1027,7 +1042,7 @@ seed_template() {
   success "$label: seeded $dst"
 }
 
-# .slopstopper.yml — config carrier (schema reference + adopter seed) is
+# .slopstopper.yml — the adopter's config (seeded from the starter template) is
 # seeded earlier, just before sync_mise_cli, so any legacy cli_version pin can
 # be read for migration into mise.toml.
 

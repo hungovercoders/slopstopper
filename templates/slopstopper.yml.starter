@@ -1,0 +1,56 @@
+# .slopstopper.yml — slopstopper's per-repo config.
+#
+# This is the starter install.sh seeds: the handful of keys most repos
+# actually set. Every other knob has a sensible default and is documented,
+# with its default, in the schema reference:
+#   https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example
+# It tracks slopstopper's main branch. A knob the CLI reads takes effect
+# once the slopstopper-cli pinned in mise.toml is a release that has it.
+# Copy a block from there when you need it. Re-running install.sh never
+# overwrites this file.
+
+# What shape is this repo? ui (default: a site or app that serves HTML),
+# api (JSON/gRPC endpoints, no browser surface — drops the eight browser
+# checks) or library (nothing deployed — drops everything that needs a URL).
+# `install.sh --profile api` writes this for you; re-run install.sh after
+# changing it so the workflow set follows.
+profile: ui
+
+# Where the deployed app lives. production is what the scheduled runs and
+# pushes to main audit; preview is the environment your PRs deploy to. The
+# browser checks build and serve the repo on PRs; preview is what the API
+# checks and DAST's API mode (api.openapi.spec) hit on a PR, and without it
+# they skip there. Leave it blank if you have no preview environment.
+urls:
+  production:
+  preview:
+
+# Paths each browser check audits, comma-separated. `/` is the default.
+# For a larger site, `reliability.coverage.*` in the schema reference
+# derives these from your sitemap or the PR's diff instead.
+pages:
+  smoke:         /
+  accessibility: /
+  seo:           /
+  broken_links:  /
+
+# The site-wide share image the smoke test asserts. '' skips the assertion.
+smoke:
+  og_image_path: /og-image.png
+
+# Your security-headers file, for the CSP-drift check. Common values:
+# public/_headers (Cloudflare Pages / Netlify) or worker/headers.json.
+# null skips the check.
+headers:
+  source: null
+
+# Serving an API? Copy the `api:` block from the schema reference above —
+# the four API checks ship inert until api.health.path / api.latency.paths /
+# api.headers.paths / api.openapi.spec are set.
+
+# Any check you don't want, by workflow filename. A profile drops whole
+# sets; this is for one-offs. `enabled` takes a single check back from a
+# profile.
+workflows:
+  disabled: []
+  enabled: []

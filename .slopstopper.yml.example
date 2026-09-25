@@ -1,14 +1,16 @@
 # .slopstopper.yml — repo-level config for slopstopper.
 #
-# This file serves a dual role:
-#   - Schema reference: the canonical inventory of every key slopstopper
-#     checks and workflows read. Adopters and agents link to it.
-#   - Adopter seed: install.sh copies this file into adopter repos as
-#     `.slopstopper.yml` on first install. Existing files are never
-#     overwritten — re-running install.sh is safe.
+# This file is the schema reference: the canonical inventory of every key
+# slopstopper checks and workflows read, each with its default. Adopters
+# and agents link to it and copy blocks from it.
 #
-# Slopstopper scripts and workflows that need a per-repo value read from
-# here first. Defaults below are the values used when a key is unset.
+# It is NOT what install.sh seeds. A fresh install gets
+# templates/slopstopper.yml.starter — the handful of keys most repos set,
+# pointing back here for the rest. Existing .slopstopper.yml files are
+# never overwritten; re-running install.sh is safe.
+#
+# Nothing reads this file: slopstopper only ever reads .slopstopper.yml.
+# Each default below is the value used when that key is unset there.
 #
 # What lives here:
 #   - Defaults for env-var-driven checks (URLs, page lists, og-image path)

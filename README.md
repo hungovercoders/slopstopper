@@ -121,7 +121,7 @@ slopstopper run hygiene:complexity            # underlying CLI if you skip Task
 
 Most checks work out of the box. To wire up the full suite:
 
-**[`.slopstopper.yml`](./.slopstopper.yml.example)** at the repo root is the canonical config carrier. `install.sh` seeds a starter file (`headers.source: null`, empty URLs) so the first PR is green; opt knobs in by editing it. Survives reinstalls.
+**[`.slopstopper.yml`](./.slopstopper.yml.example)** at the repo root is the canonical config carrier. `install.sh` seeds a short starter (`profile`, URLs, page lists, `headers.source: null`) so the first PR is green; the link above is the full schema. Survives reinstalls.
 
 **Repo secrets** (under Settings → Secrets and variables → Actions):
 
