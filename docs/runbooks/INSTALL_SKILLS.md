@@ -52,14 +52,18 @@ bash install-skill.sh /path/to/repo
 
 ## What lands
 
-Two files, one per skill, written under the target repo root:
+Two directories, one per skill, written under the target repo root:
 
 ```
-<repo>/.claude/skills/slopstopper-install/SKILL.md
+<repo>/.claude/skills/slopstopper-install/SKILL.md      # the playbook map — loaded on trigger
+<repo>/.claude/skills/slopstopper-install/references/   # the long sections — read when a step needs them
 <repo>/.claude/skills/slopstopper-triage/SKILL.md
+<repo>/.claude/skills/slopstopper-triage/references/
 ```
 
-Nothing outside `<repo>/.claude/skills/slopstopper-*/` is touched. The script is atomic per skill — it fetches to a temp file, validates the download looks like a Claude Code skill (frontmatter present), and only then overwrites the destination. An interrupted run cannot leave a half-file behind.
+Each skill's map file (SKILL.md) is short (under 1,500 words — the same cap this repo puts on its own entry files) and links the `references/*.md` files that hold the full tables. Claude Code loads the map when the skill triggers and reads a reference only when the map points at it, so the skill costs one page of context until a step needs detail.
+
+Nothing outside `<repo>/.claude/skills/slopstopper-*/` is touched. The script is atomic per skill — it stages the whole directory in a temp dir, validates the map file looks like a Claude Code skill (frontmatter present), and only then swaps it in. An interrupted run cannot leave a half-skill behind. `install.sh` run from a checkout copies the directory from that checkout; the curl-piped scripts fetch the map and then every reference it links.
 
 **Commit the resulting files** alongside the workflows that `install.sh` lands. The `.gitignore` block that `install.sh` appends already includes a carve-out for `.claude/skills/` so repos with a blanket `.claude/*` ignore don't silently shadow them.
 
@@ -98,7 +102,7 @@ Per-invocation context stays small because Claude only loads the one skill that 
 
 ## Refresh
 
-Re-run either script any time. Each compares the downloaded SKILL.md against what's installed and only writes if content differs.
+Re-run either script any time. Each compares the staged directory against what's installed and only replaces it if content differs — as a whole, so a reference file from an older skill layout does not linger.
 
 ## Uninstall
 
