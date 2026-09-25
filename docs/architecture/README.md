@@ -298,11 +298,13 @@ has to grow when a check workflow is added.
 
 **The verdict comes from the workflow, not from parsing the report.**
 `--status pass|fail` is passed in, because where "did it pass" lives
-differs per check: most fail their own step, but `security:sast` exits 0
-and gates on a later step's finding count, and `hygiene:docs-size` is
-advisory — it always exits 0 while its report says
-`❌ Status: THRESHOLDS EXCEEDED`. Inferring a verdict from report text
-would get both of those wrong, in the direction that hides failures. The
+is the workflow's knowledge, not the report's: every check's own step
+carries the verdict as its exit code (0 / 1 / 2 — see
+[contributing](../contributing/README.md#exit-codes)), except
+`hygiene:docs-size`, which is advisory — it always exits 0 while its
+report says `❌ Status: THRESHOLDS EXCEEDED`. Inferring a verdict from
+report text would get that one wrong, in the direction that hides
+failures. The
 default is `fail`, so a miswired workflow over-reports rather than
 silently greenwashing.
 

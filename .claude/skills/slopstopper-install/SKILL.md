@@ -301,6 +301,9 @@ hygiene:
     extra_paths: []          # default — globs outside docs/ to scan too, e.g. [app/*.html, .claude/skills/**/*.md]
   docs_structure:
     require_indexed_docs: true  # default — every doc must be linked from a README above it
+security:
+  sast:
+    fail_on: error           # default — lowest Semgrep severity that fails (error | warning | info | none)
 ```
 
 `hygiene.complexity.max_ccn` gates locally, in the pre-push hook, and in CI off one exit code (there is no separate CI-only threshold) — so `task ss:hygiene:complexity` reproduces the CI result exactly. Drop it to `10` for McCabe-strict.
@@ -476,6 +479,7 @@ Surfaces worth checking explicitly:
 - **`hygiene.complexity.max_ccn`** — CCN ceiling (default 15). As of this knob, the complexity gate lives in the CLI, so `task ss:hygiene:complexity` fails locally and in the pre-push hook exactly as it does in CI (previously it warned locally but only failed in CI). If a function newly blocks a push and is genuinely well-factored, raise the ceiling here rather than contorting the code.
 - **`hygiene.docs_accuracy.extra_paths`** — globs for files outside `docs/` the accuracy check should scan (task and workflow references in markdown, plus every `github.com/<this repo>/blob|tree/…` link in markdown or HTML, must resolve). Off by default. Worth setting for a repo with a marketing site that links into its own source tree, or that ships skills/instructions naming files — those rot silently otherwise.
 - **`hygiene.docs_structure.require_indexed_docs`** — on by default: `hygiene:docs-structure` now fails when a doc under `docs/<category>/` (sub-directories included) isn't linked from a README above it. An existing install upgrading the CLI may see its first `unindexed_doc` findings — link the doc, or set this to `false` while you sort the map out.
+- **`security.sast.fail_on`** — lowest Semgrep severity that fails `security:sast` (`error` default; `warning`, `info`, `none`). The check's exit code is now the verdict — the workflow no longer re-counts findings in a separate step, so what you see locally is what CI gates on.
 - **`api.latency.*`** — endpoints to sample plus three opt-in budgets (`median_ms`, `slowest_ms`, `max_bytes`). Set `paths` and leave the budgets unset on first adoption: the check reports timings and enforces nothing until a budget exists, and budgets should be derived from observed numbers rather than guessed.
 - **`api.openapi.served_spec` / `probe_paths` / `ignore_paths`** — new keys alongside the existing `spec` (which DAST already used). `served_spec` is the one worth setting: it turns `hygiene:openapi` from a reachability prober into a committed-vs-deployed drift comparison, which is the signal with no false positives. Note `hygiene:openapi` reads **JSON specs only** — if `spec` is YAML it skips with guidance, while DAST keeps using it.
 - **`reliability.coverage.{pr,main,cron}`** — page-discovery modes. Adopters with a sitemap should opt in to `sitemap` on main and `changed` on PRs; otherwise reliability checks only audit `/` by default.

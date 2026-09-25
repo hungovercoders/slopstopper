@@ -941,8 +941,10 @@ workflows_dst = Path(sys.argv[1])
 
 # Order matters: handle the `-- ` separator form first, then bare invocations.
 # Shim names match CLI check names one-to-one — no alias mapping needed.
-invoke_with_args = re.compile(r"task ss:([a-z][a-z0-9_:-]+) -- ")
-invoke_bare      = re.compile(r"task ss:([a-z][a-z0-9_:-]+)")
+# `task -x` (pass the command's exit code through instead of Task's 201)
+# is matched too; the CLI returns the check's own code natively.
+invoke_with_args = re.compile(r"task (?:-x )?ss:([a-z][a-z0-9_:-]+) -- ")
+invoke_bare      = re.compile(r"task (?:-x )?ss:([a-z][a-z0-9_:-]+)")
 
 transformed = 0
 for path in sorted(workflows_dst.glob("ss-*.yml")):

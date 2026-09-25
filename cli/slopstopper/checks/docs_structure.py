@@ -14,10 +14,13 @@ Configuration (.slopstopper.yml — optional):
         require_indexed_docs: true   # the category README → doc rule
 
 Writes a JSON report (machine-readable, drives downstream tooling) and a
-markdown report (human-readable). Exit codes mirror the bash:
+markdown report (human-readable).
 
+Exit codes:
   0 — clean
-  1 — violations OR docs/ / docs/index.md missing
+  1 — violations
+  2 — docs/ or docs/index.md missing (no map to check against), or
+      arguments were passed (this check takes none)
 """
 
 from __future__ import annotations
@@ -28,6 +31,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks._contract import reject_extra_args
 
 DOCS_DIR = Path("docs")
 INDEX_PATH = DOCS_DIR / "index.md"
@@ -329,12 +333,14 @@ def _check_structure(docs_dir: Path) -> tuple[list[dict], list[str]] | None:
     return violations, expected
 
 
-def run(_args: list[str] | None = None) -> int:
+def run(args: list[str] | None = None) -> int:
+    if args:
+        return reject_extra_args("hygiene:docs-structure", args)
     output.running("Validating documentation structure…")
 
     result = _check_structure(DOCS_DIR)
     if result is None:
-        return 1
+        return 2
     violations, expected = result
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)

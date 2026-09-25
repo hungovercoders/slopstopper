@@ -516,9 +516,23 @@ tasks:
 
   security:scan:
     desc: Run full security scan suite (SAST + vulnerabilities + DAST + API headers + secrets)
+    # Runs every scan even when an earlier one fails — sast now exits 1 on
+    # findings, and a sequential `task:` list would stop there and never
+    # reach secrets. Calls the CLI the way each shim does and exits with
+    # the worst code: 2 (couldn't run) > 1 > 0. A target passed after `--`
+    # goes to dast and api-headers, as their shims pass it; the other
+    # three take no arguments and would reject it.
+    #   task ss:security:scan -- https://staging.example.com
     cmds:
-      - task: security:sast
-      - task: security:vulnerability:all
-      - task: security:dast
-      - task: security:api-headers
-      - task: security:secrets
+      - |
+        worst=0
+        for check in sast vulnerability:all dast api-headers secrets; do
+          code=0
+          # `|| code=$?` — Task's shell exits on the first failing command.
+          case "$check" in
+            dast|api-headers) slopstopper run "security:$check" -- {{.CLI_ARGS}} || code=$? ;;
+            *) slopstopper run "security:$check" || code=$? ;;
+          esac
+          if [ "$code" -gt "$worst" ]; then worst=$code; fi
+        done
+        exit "$worst"

@@ -6,6 +6,7 @@ import os
 import subprocess
 
 from slopstopper.checks import broken_links
+from tests._fakes import playwright_failed
 
 
 def test_parse_args_defaults():
@@ -99,13 +100,13 @@ def test_build_cmd_default_reporter():
     cmd = broken_links._build_cmd(ci_mode=False)
     assert cmd[0] == "npx"
     assert "playwright" in cmd
-    assert "--reporter=list" in cmd
+    assert "--reporter=list,json" in cmd
     assert any("broken-links.spec.ts" in arg for arg in cmd)
 
 
 def test_build_cmd_ci_uses_list_html_reporter():
     cmd = broken_links._build_cmd(ci_mode=True)
-    assert "--reporter=list,html" in cmd
+    assert "--reporter=list,html,json" in cmd
 
 
 def test_npx_available_via_which(monkeypatch):
@@ -115,19 +116,19 @@ def test_npx_available_via_which(monkeypatch):
     assert broken_links._npx_available() is False
 
 
-def test_run_returns_one_when_npx_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_npx_missing(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(broken_links, "_npx_available", lambda: False)
     rc = broken_links.run()
-    assert rc == 1
+    assert rc == 2  # could not run
     assert "npx is not available" in capsys.readouterr().out
 
 
-def test_run_returns_one_when_url_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_url_missing(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(broken_links, "_npx_available", lambda: True)
     monkeypatch.delenv("BROKEN_LINKS_TEST_URL", raising=False)
     monkeypatch.delenv("SMOKE_TEST_URL", raising=False)
     rc = broken_links.run([])
-    assert rc == 1
+    assert rc == 2
     assert "broken-links target URL is required" in capsys.readouterr().out
 
 
@@ -146,7 +147,7 @@ def test_run_invokes_playwright(monkeypatch, isolated_cwd):
     rc = broken_links.run(["--url", "https://example.com"])
     assert rc == 0
     assert captured["cmd"][:2] == ["npx", "playwright"]
-    assert "--reporter=list" in captured["cmd"]
+    assert "--reporter=list,json" in captured["cmd"]
     assert captured["env"]["BROKEN_LINKS_TEST_URL"] == "https://example.com"
 
 
@@ -164,7 +165,7 @@ def test_run_ci_mode_threads_html_reporter(monkeypatch, isolated_cwd):
 
     rc = broken_links.run(["--url", "https://example.com", "--ci"])
     assert rc == 0
-    assert "--reporter=list,html" in captured["cmd"]
+    assert "--reporter=list,html,json" in captured["cmd"]
     assert captured["env"]["CI"] == "true"
 
 
@@ -173,7 +174,7 @@ def test_run_propagates_playwright_failure(monkeypatch, isolated_cwd):
     monkeypatch.setattr(broken_links, "_discover_pages", lambda: None)
     monkeypatch.setattr(
         broken_links.subprocess, "run",
-        lambda cmd, env, check: subprocess.CompletedProcess(cmd, 1),
+        playwright_failed,
     )
 
     rc = broken_links.run(["--url", "https://example.com"])
@@ -202,7 +203,7 @@ def test_run_writes_report_on_failure(monkeypatch, isolated_cwd):
     monkeypatch.setattr(broken_links, "_discover_pages", lambda: None)
     monkeypatch.setattr(
         broken_links.subprocess, "run",
-        lambda cmd, env, check: subprocess.CompletedProcess(cmd, 1),
+        playwright_failed,
     )
     rc = broken_links.run(["--url", "https://example.com"])
     assert rc == 1

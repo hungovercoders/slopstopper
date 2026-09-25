@@ -272,28 +272,28 @@ def test_npx_available_via_which(monkeypatch):
     assert cwv._npx_available() is False
 
 
-def test_run_returns_one_when_npx_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_npx_missing(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(cwv, "_npx_available", lambda: False)
     rc = cwv.run()
-    assert rc == 1
+    assert rc == 2  # could not run
     assert "npx is not available" in capsys.readouterr().out
 
 
-def test_run_returns_one_when_url_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_url_missing(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(cwv, "_npx_available", lambda: True)
     monkeypatch.delenv("CWV_URL", raising=False)
     rc = cwv.run([])
-    assert rc == 1
+    assert rc == 2
     assert "CWV target URL is required" in capsys.readouterr().out
 
 
-def test_run_returns_one_when_explicit_config_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_explicit_config_missing(monkeypatch, isolated_cwd, capsys):
     """An explicit --config that doesn't exist still errors out. The
     default (no --config flag) resolves via templates and always finds
     something."""
     monkeypatch.setattr(cwv, "_npx_available", lambda: True)
     rc = cwv.run(["--url", "https://example.com", "--config", "missing.json"])
-    assert rc == 1
+    assert rc == 2  # could not run
     assert "Lighthouse CI config not found" in capsys.readouterr().out
 
 
@@ -356,3 +356,19 @@ def test_run_accepts_explicit_config(monkeypatch, isolated_cwd):
     rc = cwv.run(["--url", "https://example.com", "--config", str(custom)])
     assert rc == 0
     assert f"--config={custom}" in captured["cmd"]
+
+
+def test_an_lhci_exit_one_without_a_fresh_result_is_could_not_run(monkeypatch, isolated_cwd):
+    """Chrome failed to launch: lhci exits 1, but audited nothing this run.
+    A result left over from an earlier run doesn't count."""
+    import os
+
+    lhci = Path(".lighthouseci")
+    lhci.mkdir()
+    stale = lhci / "lhr-1.json"
+    stale.write_text(json.dumps(_sample_lhr()))
+    os.utime(stale, (1_000_000, 1_000_000))
+
+    monkeypatch.setattr(cwv, "_npx_available", lambda: True)
+    monkeypatch.setattr(cwv, "_run_lhci", lambda cmd: (1, "Unable to launch Chrome"))
+    assert cwv.run(["--url", "https://example.com"]) == 2

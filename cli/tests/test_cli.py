@@ -551,6 +551,21 @@ def test_quiet_default_is_off(isolated_cwd, capsys, monkeypatch):
     assert seen["quiet"] is False
 
 
+
+def test_a_crashing_check_exits_two_not_one(isolated_cwd, capsys, monkeypatch):
+    """An uncaught exception defaults to exit 1 — "the repo failed". A crash
+    in the check is "could not run", so no tracking issue gets opened."""
+
+    def fake_run(_args):
+        raise AttributeError("'NoneType' object has no attribute 'get'")
+
+    monkeypatch.setitem(cli.REGISTRY, "hygiene:test-fake-crash", fake_run)
+    assert cli.main(["run", "hygiene:test-fake-crash"]) == 2
+    err = capsys.readouterr().err
+    assert "AttributeError" in err  # the traceback is still shown
+    assert "could not run" in err
+
+
 # ── badges subcommand ────────────────────────────────────────────
 
 

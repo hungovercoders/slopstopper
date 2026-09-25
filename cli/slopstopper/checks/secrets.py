@@ -27,14 +27,19 @@ Two layers, so no window exists in which an unredacted file sits on disk:
      this module or any importer ever sees an unredacted finding.
 
 A report that cannot be read or parsed is scrubbed and replaced by one
-sentinel finding, and the check exits 1: an unparseable report may still
-hold a secret, and it must never turn into "no findings" for the workflow
-gate, which counts list entries.
+sentinel finding, and the check exits 1: gitleaks ran and wrote
+something, which may have been a secret, so it is treated as one — a
+tracking issue is opened rather than the run shrugged off. No report at
+all means gitleaks never got as far as writing one (not a git repo, a bad
+ref, killed): that is exit 2. The previous run's report is removed before
+every scan, so it can never stand in for this one.
 
 Exit codes:
-  0 — analysis completed (gating happens at the workflow level)
-  1 — gitleaks is not installed, or its report could not be read or parsed
-      (fail closed — see above)
+  0 — no secrets detected
+  1 — one or more secrets detected, or gitleaks' report could not be read
+      (counted as a finding — see above). The check itself is the gate
+  2 — gitleaks is not installed, arguments were passed (this check takes
+      none), or gitleaks wrote no report — the scan did not run
 """
 
 from __future__ import annotations
@@ -46,6 +51,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import output
+from slopstopper.checks._contract import reject_extra_args, scan_incomplete
 
 REPORT_DIR = Path(".ss/reports/secrets")
 REPORT_JSON = REPORT_DIR / "secrets-report.json"
@@ -81,10 +87,13 @@ def _gitleaks_available() -> bool:
 def _run_gitleaks() -> None:
     """Invoke `gitleaks detect --source=. ...`.
 
-    Exit code 1 from gitleaks means findings — that's expected and not an
-    error of the check. We rely on report file content, not the exit code.
+    gitleaks exits 1 both for findings and for a fatal error, so its exit
+    code can't tell them apart; the report is the signal. The previous
+    run's report is removed first, so "no report" really means this scan
+    wrote none.
     """
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    REPORT_JSON.unlink(missing_ok=True)
     subprocess.run(
         [
             "gitleaks", "detect",
@@ -106,9 +115,8 @@ def _run_gitleaks() -> None:
 # `ruleID` spellings.
 REDACTED_KEYS = frozenset({"secret", "match", "line", "message", "author", "email"})
 
-# Written in place of a report slopstopper could not read or parse. It is a
-# list entry, so the workflow gate (which counts entries) stays closed, and
-# it carries nothing gitleaks captured.
+# Written in place of a report slopstopper could not read or parse. It is
+# counted as a finding (exit 1), and it carries nothing gitleaks captured.
 UNREADABLE_RULE_ID = "slopstopper-unreadable-report"
 UNREADABLE_REPORT_FINDING = {
     "RuleID": UNREADABLE_RULE_ID,
@@ -137,7 +145,7 @@ def _report_is_unreadable(findings: list[dict]) -> bool:
     )
 
 
-def _read_findings() -> list[dict]:
+def _read_findings() -> list[dict] | None:
     """The report's findings, redacted — and the report on disk rewritten.
 
     This is the only place the JSON is read, so every caller gets redacted
@@ -145,10 +153,11 @@ def _read_findings() -> list[dict]:
     cannot be read (`OSError`) or parsed (`ValueError` — which covers both
     `JSONDecodeError` and `UnicodeDecodeError`) or is not a list becomes
     the single `UNREADABLE_REPORT_FINDING`: it is still counted as a
-    finding, and its bytes never survive.
+    finding, and its bytes never survive. None means gitleaks wrote no
+    report at all — the scan did not run.
     """
     if not REPORT_JSON.exists():
-        return []
+        return None
     try:
         content = REPORT_JSON.read_text().strip()
         data = json.loads(content) if content and content != "null" else []
@@ -222,20 +231,29 @@ def _build_md_report(findings: list[dict]) -> str:
     return md
 
 
-def run(_args: list[str] | None = None) -> int:
+def run(args: list[str] | None = None) -> int:
+    if args:
+        return reject_extra_args("security:secrets", args)
     if not _gitleaks_available():
         output.error(_INSTALL_HELP)
-        return 1
+        return 2
 
     output.status("🔑", "Running secrets detection…")
     _run_gitleaks()
     findings = _read_findings()
+    if findings is None:
+        return scan_incomplete(
+            REPORT_DIR, REPORT_MD, "Secrets Detection Report",
+            f"gitleaks wrote no report at `{REPORT_JSON}` — often not a git repository, "
+            "a shallow clone missing the history it was asked to scan, or a killed "
+            "process. The scan is treated as not run, not as clean.",
+        )
     REPORT_MD.write_text(_build_md_report(findings))
 
     if _report_is_unreadable(findings):
         output.error(
             "gitleaks' report could not be read or parsed — it was scrubbed and "
-            "counted as a finding; treat this run as failed and re-run it"
+            "counted as a finding; re-run the scan to see what it holds"
         )
         output.footer(REPORT_DIR, [REPORT_MD.name])
         return 1
@@ -244,4 +262,4 @@ def run(_args: list[str] | None = None) -> int:
     else:
         output.success("No secrets detected")
     output.footer(REPORT_DIR, [REPORT_MD.name])
-    return 0
+    return 1 if findings else 0

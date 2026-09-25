@@ -35,7 +35,8 @@ See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
   0 — all pages passed
-  1 — failures detected, URL missing, or unsafe-scheme URL supplied
+  1 — failures detected
+  2 — the URL is missing, or its scheme is not http/https
 """
 
 from __future__ import annotations
@@ -51,6 +52,7 @@ from pathlib import Path
 from typing import Optional
 
 from slopstopper import discovery, output
+from slopstopper.checks._contract import refuse_unsafe_url
 
 
 REPORT_DIR = Path(".ss/reports/seo")
@@ -488,7 +490,10 @@ def run(args: list[str] | None = None) -> int:
         output._emit("Usage:")
         output._emit("  slopstopper run reliability:seo -- --url https://your-site.example.com")
         output._emit("  SEO_TEST_URL=https://your-site slopstopper run reliability:seo")
-        return 1
+        return 2
+
+    if (rc := refuse_unsafe_url(url, _require_safe_url)) is not None:
+        return rc
 
     require_og_image = not parsed.no_require_og_image
     verify_og_image = not parsed.no_verify_og_image
@@ -506,8 +511,10 @@ def run(args: list[str] | None = None) -> int:
             _check_page(url, p, require_og_image, verify_og_image, og_image_base) for p in pages
         ]
     except ValueError as e:
+        # A bad input the up-front URL guard couldn't see (a configured path
+        # that composes to an unusable URL): the check could not run.
         output.error(str(e))
-        return 1
+        return 2
 
     _write_reports(results, url)
     _print_results(results)

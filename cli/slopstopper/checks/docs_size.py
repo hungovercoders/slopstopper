@@ -14,6 +14,11 @@ Configuration (.slopstopper.yml — all keys optional):
         max_files: 25            # total doc count
 
 See .slopstopper.yml.example for the canonical schema.
+
+Exit codes:
+  0 — always; the thresholds are advisory and the report carries the
+      verdict (`❌ Status: THRESHOLDS EXCEEDED`), never the exit code
+  2 — arguments were passed (this check takes none)
 """
 
 from __future__ import annotations
@@ -22,6 +27,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks._contract import reject_extra_args
 
 DOCS_DIR = Path("docs")
 ARCHIVE_PREFIX = Path("docs/archive")
@@ -216,7 +222,9 @@ def _print_terminal_summary(
     output.blank()
 
 
-def run(_args: list[str] | None = None) -> int:
+def run(args: list[str] | None = None) -> int:
+    if args:
+        return reject_extra_args("hygiene:docs-size", args)
     thresholds = _load_thresholds()
     files_with_size = [(p, p.stat().st_size) for p in _iter_doc_files()]
     stats = _compute_stats(files_with_size)

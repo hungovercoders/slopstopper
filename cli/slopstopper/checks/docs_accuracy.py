@@ -33,10 +33,13 @@ Configuration (.slopstopper.yml — all optional):
         extra_paths: []   # repo-relative globs, e.g. [app/*.html, .claude/skills/**/*.md]
 
 Writes a JSON report (machine-readable) and a Markdown report (human-
-readable). Exit codes mirror the bash:
+readable).
 
+Exit codes:
   0 — clean
-  1 — issues OR docs/ missing
+  1 — issues
+  2 — docs/ missing (nothing to check), or arguments were passed
+      (this check takes none)
 """
 
 from __future__ import annotations
@@ -51,6 +54,7 @@ from pathlib import Path
 
 from slopstopper import config, output
 from slopstopper.badges import detect_owner_repo
+from slopstopper.checks._contract import reject_extra_args
 
 REPORT_DIR = Path(".ss/reports/docs")
 REPORT_JSON = REPORT_DIR / "docs-accuracy-report.json"
@@ -488,12 +492,14 @@ def _build_md_report(data: dict, generated_at: str) -> str:
     return "\n".join(lines) + "\n"
 
 
-def run(_args: list[str] | None = None) -> int:
+def run(args: list[str] | None = None) -> int:
+    if args:
+        return reject_extra_args("hygiene:docs-accuracy", args)
     output.running("Checking documentation accuracy…")
 
     if not DOCS_DIR.is_dir():
         output.error("docs/ directory not found")
-        return 1
+        return 2
 
     valid_tasks = _get_taskfile_tasks()
     valid_workflows = _get_workflow_files()

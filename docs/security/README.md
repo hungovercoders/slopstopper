@@ -53,8 +53,8 @@ task ss:security:sast
 
 ### What You Get Automatically
 - ✅ PR comments with SAST findings report
-- ✅ Merge blocking if any ERROR-severity findings exist
-- ✅ GitHub issues on main branch for error-severity problems
+- ✅ Merge blocking on findings at or above `security.sast.fail_on` (default: ERROR)
+- ✅ GitHub issues on main branch when blocking findings land
 
 ### Common Issues
 
@@ -98,8 +98,8 @@ The SAST workflow:
 - ✅ Runs automatically on every PR to `main` and push to `main`
 - ✅ Analyses code using Semgrep's auto-configured rule set
 - ✅ Posts findings as PR comments
-- ✅ Creates GitHub issues when error-severity findings land on `main`
-- ✅ Fails PRs with error-severity findings
+- ✅ Creates GitHub issues when blocking findings land on `main` (a scan that couldn't run fails the job but opens no issue)
+- ✅ Fails PRs with blocking findings, and fails closed when Semgrep produces no readable report
 
 ## Files Involved
 
@@ -121,6 +121,16 @@ semgrep \
   --config=p/owasp-top-ten \   # ← replace --config=auto
   --json \
   ...
+```
+
+### Failure threshold
+
+Semgrep reports findings at ERROR, WARNING and INFO severity. By default only ERROR fails the check; the rest are reported. `security.sast.fail_on` in `.slopstopper.yml` moves the line — `warning` makes warnings block too, `none` reports without ever failing. The check's exit code is the verdict; the workflow no longer re-counts findings in a separate step.
+
+```yaml
+security:
+  sast:
+    fail_on: error   # error | warning | info | none
 ```
 
 ### Disable SAST Checking

@@ -57,8 +57,11 @@ See .slopstopper.yml.example for the canonical schema.
 Exit codes:
   0 — spec and API agree, or nothing configured / the spec is YAML
       (graceful skip)
-  1 — drift detected, the spec is unreadable or malformed, or an
-      unsafe-scheme URL was supplied
+  1 — drift detected, or the committed spec is not valid JSON / not an
+      OpenAPI document — a verdict about the repo
+  2 — the spec could not be loaded (file missing, URL unreachable,
+      refused or unsafe) or the target URL has an unsafe scheme — the
+      check could not run, the same as DAST for the same config
 """
 
 from __future__ import annotations
@@ -72,6 +75,7 @@ import urllib.request
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks._contract import refuse_unsafe_url
 
 
 REPORT_DIR = Path(".ss/reports/openapi")
@@ -439,7 +443,7 @@ def _skip(reason: str, guidance: list[str]) -> int:
     return 0
 
 
-def _fail(message: str) -> int:
+def _fail(message: str, rc: int = 1) -> int:
     output.error(message)
     _write_reports(
         {
@@ -453,7 +457,7 @@ def _fail(message: str) -> int:
             "notes": [],
         }
     )
-    return 1
+    return rc
 
 
 def run(args: list[str] | None = None) -> int:
@@ -478,13 +482,15 @@ def run(args: list[str] | None = None) -> int:
 
     text, error = _load_spec_text(opts["spec"])
     if error:
-        return _fail(error)
+        return _fail(error, 2)  # nothing to compare: could not run
 
     document, error = _parse_spec(text, f"the spec ({opts['spec']})")
     if error:
         return _fail(error)
 
     url = parsed.url_positional or parsed.url
+    if url and (rc := refuse_unsafe_url(url, _require_safe_url)) is not None:
+        return rc
     output.status("📘", f"OpenAPI drift audit — spec: {opts['spec']}")
     output.separator()
 

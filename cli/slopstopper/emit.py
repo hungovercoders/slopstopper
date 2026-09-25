@@ -500,6 +500,38 @@ def _close_issue(labels: list[str], close_comment: str) -> int:
     return _gh("issue", "close", str(existing)).returncode
 
 
+# ── the last run's exit code ─────────────────────────────────────
+#
+# `slopstopper run` records each check's exit code here, and `emit
+# --target issue` reads it back. Exit 2 is "could not run" — never a
+# finding — so it must neither open a tracking issue nor close one as
+# clean. Recording it in the CLI puts that rule in one place instead of in
+# every workflow's `if:` (the run and emit steps share a job workspace).
+
+LAST_EXIT_DIR = Path(".ss/reports/.last-exit")
+
+
+def _last_exit_path(check_name: str) -> Path:
+    return LAST_EXIT_DIR / check_name.replace(":", "-")
+
+
+def record_exit(check_name: str, rc: int) -> None:
+    """Remember `check_name`'s exit code for a later `emit`. Best effort."""
+    try:
+        LAST_EXIT_DIR.mkdir(parents=True, exist_ok=True)
+        _last_exit_path(check_name).write_text(f"{rc}\n")
+    except OSError:
+        pass
+
+
+def last_exit(check_name: str) -> int | None:
+    """The exit code `slopstopper run` recorded for `check_name`, if any."""
+    try:
+        return int(_last_exit_path(check_name).read_text().strip())
+    except (OSError, ValueError):
+        return None
+
+
 # ── public dispatcher ────────────────────────────────────────────
 
 
@@ -529,6 +561,12 @@ def emit(
             on_pass=on_pass,
         )
     if target == "issue":
+        if check_name and last_exit(check_name) == 2:
+            print(
+                f"· {check_name} could not run (exit 2) — not a finding, so no issue "
+                "is opened, updated or closed. See the run step's output."
+            )
+            return 0
         if on_pass == "close":
             return _close_issue(
                 meta["issue_labels"],

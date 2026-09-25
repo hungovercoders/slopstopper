@@ -108,7 +108,7 @@ def test_run_skips_with_exit_zero_when_no_paths_configured(write_config, capsys)
 def test_run_requires_a_url_once_configured(write_config, monkeypatch, capsys):
     write_config("api:\n  headers:\n    paths: [/health]\n")
     monkeypatch.delenv("API_HEADERS_TEST_URL", raising=False)
-    assert api_headers.run([]) == 1
+    assert api_headers.run([]) == 2  # missing input, not a verdict
     assert "URL is required" in capsys.readouterr().out
 
 

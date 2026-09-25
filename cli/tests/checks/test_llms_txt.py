@@ -214,10 +214,10 @@ def test_build_markdown_report_fail():
 # ── end-to-end run() ─────────────────────────────────────────────
 
 
-def test_run_returns_one_when_url_missing(monkeypatch, isolated_cwd, capsys):
+def test_run_returns_two_when_url_missing(monkeypatch, isolated_cwd, capsys):
     monkeypatch.delenv("LLMS_TXT_TEST_URL", raising=False)
     rc = llms_txt.run([])
-    assert rc == 1
+    assert rc == 2
     assert "llms.txt target URL is required" in capsys.readouterr().out
 
 
@@ -239,5 +239,5 @@ def test_run_returns_one_on_failure(monkeypatch, isolated_cwd, capsys):
 
 def test_run_rejects_unsafe_url_scheme(monkeypatch, isolated_cwd, capsys):
     rc = llms_txt.run(["--url", "file:///etc/passwd"])
-    assert rc == 1
+    assert rc == 2
     assert "refuses scheme 'file'" in capsys.readouterr().out

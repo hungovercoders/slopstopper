@@ -54,9 +54,10 @@ Exit codes:
   0 — ZAP ran and the gate found no blocking alerts, or API mode was
       requested with no spec configured (graceful skip)
   1 — gate found blocking alerts (riskcode >= 2 on a non-swallowed
-      finding) OR Docker not installed / localhost not reachable
-      OR the configured spec file does not exist
-  2 — ZAP report missing or unparseable (treat as misconfig)
+      finding)
+  2 — could not run: Docker not installed, nothing listening on
+      localhost, the configured spec file does not exist, or the ZAP
+      report is missing or unparseable
 """
 
 from __future__ import annotations
@@ -410,7 +411,7 @@ def run(args: list[str] | None = None) -> int:
     if not _docker_available():
         output.error("Docker is required to run OWASP ZAP")
         output._emit("Please install Docker: https://docs.docker.com/get-docker/")
-        return 1
+        return 2
 
     parsed = _parse_args(args)
     target = parsed.url_positional or parsed.target
@@ -422,7 +423,7 @@ def run(args: list[str] | None = None) -> int:
         if scan_spec is None:
             output.error(f"OpenAPI spec not found: {spec}")
             output._emit("   Set api.openapi.spec to a file in the repo, or to a URL.")
-            return 1
+            return 2
 
     mode = "API scan (OpenAPI)" if spec else "baseline scan"
     output.status("🌐", f"Running DAST {mode} against {target}…")
@@ -436,7 +437,7 @@ def run(args: list[str] | None = None) -> int:
             if target is None:
                 output.error("Nothing listening on localhost and no server.js to start.")
                 output._emit("   Start your app's server first, then re-run.")
-                return 1
+                return 2
 
         host_override = not parsed.no_host_override and config.get_bool(
             "api.openapi.host_override", True

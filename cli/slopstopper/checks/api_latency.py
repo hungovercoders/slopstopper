@@ -51,8 +51,9 @@ See .slopstopper.yml.example for the canonical schema.
 Exit codes:
   0 — every path reachable and within any configured budget, or no paths
       configured (graceful skip)
-  1 — a path was unreachable / answered non-2xx, a configured budget was
-      exceeded, the URL is missing, or an unsafe-scheme URL was supplied
+  1 — a path was unreachable / answered non-2xx, or a configured budget
+      was exceeded
+  2 — the URL is missing, or its scheme is not http/https
 """
 
 from __future__ import annotations
@@ -68,6 +69,7 @@ import urllib.request
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks._contract import refuse_unsafe_url
 
 
 REPORT_DIR = Path(".ss/reports/api-latency")
@@ -429,7 +431,10 @@ def run(args: list[str] | None = None) -> int:
         output._emit(
             "  API_LATENCY_TEST_URL=https://api.example.com slopstopper run reliability:api-latency"
         )
-        return 1
+        return 2
+
+    if (rc := refuse_unsafe_url(url, _require_safe_url)) is not None:
+        return rc
 
     output.status("⏱", f"API latency audit against: {url}")
     output._emit(

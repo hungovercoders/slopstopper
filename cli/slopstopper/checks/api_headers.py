@@ -65,7 +65,8 @@ See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
   0 — every probed path passes, or no paths configured (graceful skip)
-  1 — failures detected, URL missing, or unsafe-scheme URL supplied
+  1 — failures detected
+  2 — the URL is missing, or its scheme is not http/https
 """
 
 from __future__ import annotations
@@ -79,6 +80,7 @@ import urllib.request
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks._contract import refuse_unsafe_url
 
 
 REPORT_DIR = Path(".ss/reports/api-headers")
@@ -496,7 +498,10 @@ def run(args: list[str] | None = None) -> int:
         output._emit("Usage:")
         output._emit("  slopstopper run security:api-headers -- --url https://api.example.com")
         output._emit("  API_HEADERS_TEST_URL=https://api.example.com slopstopper run security:api-headers")
-        return 1
+        return 2
+
+    if (rc := refuse_unsafe_url(url, _require_safe_url)) is not None:
+        return rc
 
     output.status("🛡", f"API header + CORS audit against: {url}")
     output._emit(f"   Paths: {', '.join(opts['paths'])}")
@@ -505,8 +510,10 @@ def run(args: list[str] | None = None) -> int:
     try:
         result = _audit(url, opts)
     except ValueError as e:
+        # A bad input the up-front URL guard couldn't see (a configured path
+        # that composes to an unusable URL): the check could not run.
         output.error(str(e))
-        return 1
+        return 2
 
     _write_reports(result)
     _print_result(result)

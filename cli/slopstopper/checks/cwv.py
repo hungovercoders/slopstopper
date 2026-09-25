@@ -25,7 +25,11 @@ actually enforced.
 
 Exit codes:
   0 — lhci passed all thresholds
-  non-zero — lhci failed thresholds (report still written) or URL/config missing
+  1 — lhci audited the page and failed a threshold (report still written)
+  2 — npx (Node.js) not available, the URL is missing, the Lighthouse
+      config does not exist, or lhci didn't run to a verdict: any exit
+      other than 0/1, or an exit 1 with no Lighthouse result written this
+      run (Chrome failed to launch, collection aborted)
 """
 
 from __future__ import annotations
@@ -37,9 +41,11 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from slopstopper import output, templates
+from slopstopper.checks._contract import runner_exit
 
 
 REPORT_DIR = Path(".ss/reports/cwv")
@@ -250,7 +256,7 @@ def _write_report(url: str, output: str, lhci_exit: int) -> None:
 def run(args: list[str] | None = None) -> int:
     if not _npx_available():
         output.error("npx is not available — install Node.js to run Lighthouse CI")
-        return 1
+        return 2
 
     parsed = _parse_args(args)
     url = _resolve_url(parsed.url_positional or parsed.url)
@@ -259,18 +265,31 @@ def run(args: list[str] | None = None) -> int:
         output._emit("Usage:")
         output._emit("  slopstopper run reliability:cwv -- --url https://your-site.example.com")
         output._emit("  CWV_URL=https://your-site slopstopper run reliability:cwv")
-        return 1
+        return 2
 
     config_path = (
         Path(parsed.config) if parsed.config else templates.lighthouserc(prod=parsed.prod)
     )
     if not config_path.exists():
         output.error(f"Lighthouse CI config not found at {config_path}")
-        return 1
+        return 2
 
     output.status("🚦", f"Running Core Web Vitals audit against: {url}")
     cmd = _build_cmd(url, str(config_path))
+    started = time.time()
     rc, captured = _run_lhci(cmd)
     _write_report(url, captured, rc)
     output.footer(REPORT_DIR, [REPORT_MD.name])
-    return rc
+    # lhci exits 1 both when an assertion failed (a verdict on the site) and
+    # when Chrome never launched or collection aborted. Only the first
+    # leaves a Lighthouse result written during this run.
+    return runner_exit(rc, ran=_audited_since(started))
+
+
+def _audited_since(started: float) -> bool:
+    """True if lhci wrote a Lighthouse result during this run."""
+    lhr = _latest_lhr_json()
+    try:
+        return lhr is not None and lhr.stat().st_mtime >= started - 1
+    except OSError:
+        return False
