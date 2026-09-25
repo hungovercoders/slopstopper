@@ -1,0 +1,22 @@
+# Keeps the SHA-pinned actions moving. Every third-party action in the
+# hand-written workflows and the composite actions is pinned to a commit
+# (`uses: owner/repo@<sha> # vN`); Dependabot opens a PR when a new
+# release lands, updating both the SHA and the version comment.
+#
+# The gh-aw lock file (ss-hygiene-doc-updater.lock.yml) is generated and
+# carries its own pins; edit the .md source and recompile, never the lock.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directories:
+      - "/"
+      - "/.github/actions/*"
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      github-actions:
+        patterns: ["*"]
+    labels: ["dependencies", "github-actions"]
+    commit-message:
+      prefix: "chore(ci)"
