@@ -51,16 +51,16 @@ Exit codes:
 
 from __future__ import annotations
 
+import functools
 import argparse
 import json
 import os
 import time
 import urllib.error
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks import _http, _report
 from slopstopper.checks._contract import refuse_unsafe_url
 
 
@@ -68,8 +68,6 @@ REPORT_DIR = Path(".ss/reports/api-health")
 REPORT_MD = REPORT_DIR / "api-health-report.md"
 REPORT_JSON = REPORT_DIR / "api-health-report.json"
 USER_AGENT = "SlopStopper-ApiHealth-Check/1.0"
-TIMEOUT_SECONDS = 15
-ALLOWED_SCHEMES = ("http", "https")
 DEFAULT_EXPECT_STATUS = 200
 JSON_CONTENT_TYPES = ("application/json", "application/health+json", "+json")
 
@@ -84,13 +82,13 @@ META = {
 # ── safety ───────────────────────────────────────────────────────
 
 
-def _require_safe_url(url: str) -> None:
-    """Reject any URL whose scheme isn't http/https (blocks file:// SSRF)."""
-    scheme = urllib.parse.urlparse(url).scheme.lower()
-    if scheme not in ALLOWED_SCHEMES:
-        raise ValueError(
-            f"API health check refuses scheme {scheme!r} (only http/https allowed). url={url!r}"
-        )
+_LABEL = "API health check"
+
+
+# The URL guard in this check's name, handed to `_contract.refuse_unsafe_url`
+# for the up-front check on the target. Requests themselves are guarded in
+# `_http.open_url`, redirects included.
+_require_safe_url = functools.partial(_http.require_safe_url, label=_LABEL)
 
 
 def _fetch(url: str) -> tuple[int, str, str, float]:
@@ -100,12 +98,9 @@ def _fetch(url: str) -> tuple[int, str, str, float]:
     got against the status it expected, so HTTPError is unwrapped rather
     than propagated.
     """
-    _require_safe_url(url)
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     started = time.monotonic()
     try:
-        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:  # nosec B310
+        with _http.open_url(url, USER_AGENT, label=_LABEL) as resp:
             body = resp.read().decode("utf-8", errors="replace")
             elapsed = (time.monotonic() - started) * 1000
             return resp.status, resp.headers.get("Content-Type", ""), body, elapsed
@@ -198,9 +193,7 @@ def _check_body(
 
 
 def _join(url: str, base_path: str, path: str) -> str:
-    prefix = (base_path or "").rstrip("/")
-    suffix = path if path.startswith("/") else f"/{path}"
-    return f"{url.rstrip('/')}{prefix}{suffix}"
+    return _http.join_url(url, base_path, path)
 
 
 def _audit(url: str, opts: dict) -> dict:
@@ -254,19 +247,21 @@ def _build_markdown_report(result: dict) -> str:
     lines.append("# 🩺 API Health Report")
     lines.append("")
     if result["status"] == "skipped":
-        lines.append("**Overall:** ⏭️ SKIPPED — no `api.health.path` configured.")
-        lines.append("")
-        lines.append(
-            "Point this check at your health/readiness endpoint in `.slopstopper.yml`:"
+        lines.extend(
+            _report.render_skip(
+                "no `api.health.path` configured.",
+                [
+                    "Point this check at your health/readiness endpoint in `.slopstopper.yml`:",
+                    "",
+                    "```yaml",
+                    "api:",
+                    "  health:",
+                    "    path: /health",
+                    "    require_fields: [status]",
+                    "```",
+                ],
+            )
         )
-        lines.append("")
-        lines.append("```yaml")
-        lines.append("api:")
-        lines.append("  health:")
-        lines.append("    path: /health")
-        lines.append("    require_fields: [status]")
-        lines.append("```")
-        lines.append("")
         return "\n".join(lines) + "\n"
 
     lines.append(f"**Endpoint:** {result['url']}")
@@ -278,16 +273,8 @@ def _build_markdown_report(result: dict) -> str:
     if result["response_ms"] is not None:
         lines.append(f"**Response time:** {result['response_ms']}ms")
         lines.append("")
-    if result["issues"]:
-        lines.append("**Issues:**")
-        for issue in result["issues"]:
-            lines.append(f"- ❌ {issue}")
-        lines.append("")
-    if result["notes"]:
-        lines.append("**Notes:**")
-        for note in result["notes"]:
-            lines.append(f"- ⚠️  {note}")
-        lines.append("")
+    lines.extend(_report.render_issues(result["issues"]))
+    lines.extend(_report.render_notes(result["notes"]))
     if result["body_preview"]:
         lines.append("<details><summary>Response body (first 500 bytes)</summary>")
         lines.append("")
@@ -327,9 +314,7 @@ def _build_markdown_report(result: dict) -> str:
 
 
 def _write_reports(result: dict) -> None:
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    REPORT_JSON.write_text(json.dumps(result, indent=2) + "\n")
-    REPORT_MD.write_text(_build_markdown_report(result))
+    _report.write_reports(REPORT_DIR, REPORT_JSON, REPORT_MD, result, _build_markdown_report)
 
 
 def _print_result(result: dict) -> None:

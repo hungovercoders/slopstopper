@@ -47,11 +47,11 @@ from __future__ import annotations
 
 import argparse
 import os
-import shutil
 import subprocess
 from pathlib import Path
 
 from slopstopper import discovery, output, templates
+from slopstopper.checks import _playwright, _tools
 from slopstopper.checks._contract import playwright_ran, runner_exit
 
 SPEC_NAME = "accessibility"
@@ -90,8 +90,7 @@ def _parse_args(args: list[str] | None) -> argparse.Namespace:
     return p.parse_args(args or [])
 
 
-def _npx_available() -> bool:
-    return shutil.which("npx") is not None
+_npx_available = _tools.npx_available
 
 
 def _resolve_url(parsed_url: str | None) -> str | None:
@@ -128,58 +127,20 @@ def _build_env(url: str, ci_mode: bool) -> dict[str, str]:
 
 
 def _ensure_playwright_assets_ejected() -> None:
-    """Auto-eject the playwright config and the spec we're about to run.
-
-    The bundled assets live inside the pipx venv where node_modules
-    can't be resolved by Playwright. Ejecting into `.ss/` puts them in
-    the adopter's CWD where node_modules IS reachable. Idempotent.
-    """
-    for name in (templates.PLAYWRIGHT_CONFIG_NAME, f"tests/{SPEC_NAME}.spec.ts"):
-        dest, was_new = templates.ensure_ejected(name)
-        if was_new:
-            output.info(f"ejected {dest} (Playwright must run from a path with node_modules reachable)")
+    _playwright.ensure_assets_ejected(SPEC_NAME)
 
 
 def _build_cmd(ci_mode: bool) -> list[str]:
-    reporter = "list,html,json" if ci_mode else "list,json"
-    return [
-        "npx", "playwright", "test",
-        f"--config={templates.playwright_config()}",
-        str(templates.playwright_spec(SPEC_NAME)),
-        f"--reporter={reporter}",
-    ]
+    return _playwright.build_cmd(SPEC_NAME, ci_mode)
 
 
-def _gha_run_url() -> str | None:
-    server = os.environ.get("GITHUB_SERVER_URL")
-    repo = os.environ.get("GITHUB_REPOSITORY")
-    run_id = os.environ.get("GITHUB_RUN_ID")
-    if not (server and repo and run_id):
-        return None
-    return f"{server}/{repo}/actions/runs/{run_id}"
 
 
 def _write_report(exit_code: int, url: str) -> None:
-    """Write a minimal markdown summary consumable by `slopstopper emit`."""
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    status = "✅ PASSED" if exit_code == 0 else "❌ FAILED"
-    lines = [
-        "## ♿ Accessibility Audit Results",
-        "",
-        f"**Status:** {status}",
-        f"**Target:** `{url}`",
-    ]
-    if exit_code != 0:
-        lines += [
-            "",
-            "Accessibility violations detected. Investigate the failing assertions in the "
-            "[Playwright HTML report](playwright-report/index.html) "
-            "(uploaded as an artifact in CI).",
-        ]
-        run_url = _gha_run_url()
-        if run_url:
-            lines += ["", f"[View the workflow run]({run_url})"]
-    REPORT_MD.write_text("\n".join(lines) + "\n")
+    _playwright.write_summary(
+        REPORT_DIR, REPORT_MD, '## ♿ Accessibility Audit Results', exit_code, url,
+        'Accessibility violations detected. Investigate the failing assertions in the [Playwright HTML report](playwright-report/index.html) (uploaded as an artifact in CI).',
+    )
 
 
 def run(args: list[str] | None = None) -> int:
