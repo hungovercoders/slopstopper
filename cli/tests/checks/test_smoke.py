@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 
-from slopstopper.checks import _playwright, smoke
+from slopstopper.checks import _tools, smoke
 from tests._fakes import playwright_failed
 
 
@@ -99,10 +99,10 @@ def test_build_cmd_ci_uses_list_html_reporter():
 
 
 def test_npx_available_via_which(monkeypatch):
-    """`_npx_available` is the shared _playwright.npx_available; patch where it looks."""
-    monkeypatch.setattr(_playwright.shutil, "which", lambda _: "/usr/bin/npx")
+    """`_npx_available` is the shared _tools.npx_available; patch where it looks."""
+    monkeypatch.setattr(_tools.shutil, "which", lambda _: "/usr/bin/npx")
     assert smoke._npx_available() is True
-    monkeypatch.setattr(_playwright.shutil, "which", lambda _: None)
+    monkeypatch.setattr(_tools.shutil, "which", lambda _: None)
     assert smoke._npx_available() is False
 
 

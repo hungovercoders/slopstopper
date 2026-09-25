@@ -51,6 +51,7 @@ Exit codes:
 
 from __future__ import annotations
 
+import functools
 import argparse
 import json
 import os
@@ -67,7 +68,6 @@ REPORT_DIR = Path(".ss/reports/api-health")
 REPORT_MD = REPORT_DIR / "api-health-report.md"
 REPORT_JSON = REPORT_DIR / "api-health-report.json"
 USER_AGENT = "SlopStopper-ApiHealth-Check/1.0"
-TIMEOUT_SECONDS = 15
 DEFAULT_EXPECT_STATUS = 200
 JSON_CONTENT_TYPES = ("application/json", "application/health+json", "+json")
 
@@ -85,9 +85,10 @@ META = {
 _LABEL = "API health check"
 
 
-def _require_safe_url(url: str) -> None:
-    """Reject any URL whose scheme isn't http/https (blocks file:// SSRF)."""
-    _http.require_safe_url(url, _LABEL)
+# The URL guard in this check's name, handed to `_contract.refuse_unsafe_url`
+# for the up-front check on the target. Requests themselves are guarded in
+# `_http.open_url`, redirects included.
+_require_safe_url = functools.partial(_http.require_safe_url, label=_LABEL)
 
 
 def _fetch(url: str) -> tuple[int, str, str, float]:
@@ -99,7 +100,7 @@ def _fetch(url: str) -> tuple[int, str, str, float]:
     """
     started = time.monotonic()
     try:
-        with _http.open_url(url, USER_AGENT, timeout=TIMEOUT_SECONDS, label=_LABEL) as resp:
+        with _http.open_url(url, USER_AGENT, label=_LABEL) as resp:
             body = resp.read().decode("utf-8", errors="replace")
             elapsed = (time.monotonic() - started) * 1000
             return resp.status, resp.headers.get("Content-Type", ""), body, elapsed
@@ -246,19 +247,21 @@ def _build_markdown_report(result: dict) -> str:
     lines.append("# 🩺 API Health Report")
     lines.append("")
     if result["status"] == "skipped":
-        lines.append("**Overall:** ⏭️ SKIPPED — no `api.health.path` configured.")
-        lines.append("")
-        lines.append(
-            "Point this check at your health/readiness endpoint in `.slopstopper.yml`:"
+        lines.extend(
+            _report.render_skip(
+                "no `api.health.path` configured.",
+                [
+                    "Point this check at your health/readiness endpoint in `.slopstopper.yml`:",
+                    "",
+                    "```yaml",
+                    "api:",
+                    "  health:",
+                    "    path: /health",
+                    "    require_fields: [status]",
+                    "```",
+                ],
+            )
         )
-        lines.append("")
-        lines.append("```yaml")
-        lines.append("api:")
-        lines.append("  health:")
-        lines.append("    path: /health")
-        lines.append("    require_fields: [status]")
-        lines.append("```")
-        lines.append("")
         return "\n".join(lines) + "\n"
 
     lines.append(f"**Endpoint:** {result['url']}")
@@ -270,16 +273,8 @@ def _build_markdown_report(result: dict) -> str:
     if result["response_ms"] is not None:
         lines.append(f"**Response time:** {result['response_ms']}ms")
         lines.append("")
-    if result["issues"]:
-        lines.append("**Issues:**")
-        for issue in result["issues"]:
-            lines.append(f"- ❌ {issue}")
-        lines.append("")
-    if result["notes"]:
-        lines.append("**Notes:**")
-        for note in result["notes"]:
-            lines.append(f"- ⚠️  {note}")
-        lines.append("")
+    lines.extend(_report.render_issues(result["issues"]))
+    lines.extend(_report.render_notes(result["notes"]))
     if result["body_preview"]:
         lines.append("<details><summary>Response body (first 500 bytes)</summary>")
         lines.append("")

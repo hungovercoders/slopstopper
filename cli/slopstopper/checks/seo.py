@@ -41,6 +41,7 @@ Exit codes:
 
 from __future__ import annotations
 
+import functools
 import argparse
 import json
 import os
@@ -58,7 +59,6 @@ from slopstopper.checks._contract import refuse_unsafe_url
 REPORT_DIR = Path(".ss/reports/seo")
 REPORT_MD = REPORT_DIR / "seo-metatags-report.md"
 USER_AGENT = "SlopStopper-SEO-Check/1.0"
-TIMEOUT_SECONDS = 15
 
 # Consumed by `slopstopper emit reliability:seo --target pr-comment`.
 # Discriminator `🔎 SEO` matches both the pre-flip JS heading
@@ -79,9 +79,10 @@ META = {
 _LABEL = "SEO check"
 
 
-def _require_safe_url(url: str) -> None:
-    """Reject any URL whose scheme isn't http/https (blocks file:// SSRF)."""
-    _http.require_safe_url(url, _LABEL)
+# The URL guard in this check's name, handed to `_contract.refuse_unsafe_url`
+# for the up-front check on the target. Requests themselves are guarded in
+# `_http.open_url`, redirects included.
+_require_safe_url = functools.partial(_http.require_safe_url, label=_LABEL)
 
 
 # ── HTML parser: only walks the <head>, captures meta/title/link ─
@@ -122,20 +123,22 @@ class HeadParser(HTMLParser):
 
 
 def _fetch(url: str) -> tuple[int, str, str]:
-    return _http.fetch_text(url, USER_AGENT, timeout=TIMEOUT_SECONDS, label=_LABEL)
+    return _http.fetch_text(url, USER_AGENT, label=_LABEL)
 
 
 def _head_ok(url: str) -> tuple[bool, str]:
     """Return (ok, detail). Validates og:image is reachable and is an image."""
     try:
-        with _http.open_url(url, USER_AGENT, method="HEAD", timeout=TIMEOUT_SECONDS, label=_LABEL) as resp:
+        with _http.open_url(url, USER_AGENT, method="HEAD", label=_LABEL) as resp:
             ct = resp.headers.get("Content-Type", "")
             if resp.status != 200:
                 return False, f"HTTP {resp.status}"
             if not ct.startswith("image/"):
                 return False, f"Content-Type is {ct!r}, expected image/*"
             return True, ct
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
+    except (urllib.error.URLError, TimeoutError, ValueError) as e:
+        # ValueError: a data:/ftp: og:image, or a redirect off http(s). A
+        # finding about the page, not a reason the whole check can't run.
         return False, f"{type(e).__name__}: {e}"
 
 
@@ -309,17 +312,11 @@ def _check_page(
 
 
 def _append_issues(lines: list[str], issues: list[str]) -> None:
-    lines.append("**Issues:**")
-    for issue in issues:
-        lines.append(f"- ❌ {issue}")
-    lines.append("")
+    lines.extend(_report.render_issues(issues))
 
 
 def _append_notes(lines: list[str], notes: list[str]) -> None:
-    lines.append("**Notes:**")
-    for note in notes:
-        lines.append(f"- ⚠️  {note}")
-    lines.append("")
+    lines.extend(_report.render_notes(notes))
 
 
 def _append_tags(lines: list[str], tags: dict[str, str]) -> None:

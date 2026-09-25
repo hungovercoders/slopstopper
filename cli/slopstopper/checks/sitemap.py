@@ -57,6 +57,7 @@ Exit codes:
 
 from __future__ import annotations
 
+import functools
 import argparse
 import fnmatch
 import os
@@ -76,7 +77,6 @@ from slopstopper.discovery import SITEMAP_NS, _collect_from_urlset
 REPORT_DIR = Path(".ss/reports/sitemap")
 REPORT_MD = REPORT_DIR / "sitemap-report.md"
 USER_AGENT = "SlopStopper-Sitemap-Check/1.0"
-TIMEOUT_SECONDS = 15
 DEFAULT_PATH = "/sitemap.xml"
 DEFAULT_LLMS_PATH = "/llms.txt"
 DEFAULT_MAX_PAGES = 200
@@ -97,18 +97,19 @@ META = {
 _LABEL = "sitemap check"
 
 
-def _require_safe_url(url: str) -> None:
-    """Reject any URL whose scheme isn't http/https (blocks file:// SSRF)."""
-    _http.require_safe_url(url, _LABEL)
+# The URL guard in this check's name, handed to `_contract.refuse_unsafe_url`
+# for the up-front check on the target. Requests themselves are guarded in
+# `_http.open_url`, redirects included.
+_require_safe_url = functools.partial(_http.require_safe_url, label=_LABEL)
 
 
 def _fetch(url: str) -> tuple[int, str, str]:
-    return _http.fetch_text(url, USER_AGENT, timeout=TIMEOUT_SECONDS, label=_LABEL)
+    return _http.fetch_text(url, USER_AGENT, label=_LABEL)
 
 
 def _head_ok(url: str) -> tuple[bool, str]:
     """Return (ok, detail) for a link target — reachable and non-4xx/5xx."""
-    return _http.head_ok(url, USER_AGENT, timeout=TIMEOUT_SECONDS, label=_LABEL)
+    return _http.head_ok(url, USER_AGENT, label=_LABEL)
 
 
 # ── path helpers ─────────────────────────────────────────────────
@@ -197,7 +198,7 @@ def _next_links(base: str, url: str, body: str, visited: set[str], ignore_paths:
     for href in _extract_hrefs(body):
         target = urllib.parse.urljoin(url, href)
         parsed = urllib.parse.urlparse(target)
-        if parsed.scheme.lower() not in _http.ALLOWED_SCHEMES or not _same_origin(base, target):
+        if not _http.is_http_url(target) or not _same_origin(base, target):
             continue
         npath = _normalise_path(parsed.path or "/")
         if npath in visited or _ignored(npath, ignore_paths):
@@ -320,7 +321,7 @@ def _llms_paths(base: str, llms_path: str) -> tuple[set[str] | None, str | None]
     for link in _extract_links(body):
         target = urllib.parse.urljoin(url, link)
         parsed = urllib.parse.urlparse(target)
-        if parsed.scheme.lower() not in _http.ALLOWED_SCHEMES:
+        if not _http.is_http_url(target):
             continue
         paths.add(_normalise_path(parsed.path or "/"))
     return paths, None
@@ -456,16 +457,8 @@ def _build_markdown_report(result: dict) -> str:
         f"**Sitemap entries:** {result['sitemap_count']}"
     )
     lines.append("")
-    if result["issues"]:
-        lines.append("**Issues:**")
-        for issue in result["issues"]:
-            lines.append(f"- ❌ {issue}")
-        lines.append("")
-    if result["notes"]:
-        lines.append("**Notes:**")
-        for note in result["notes"]:
-            lines.append(f"- ⚠️  {note}")
-        lines.append("")
+    lines.extend(_report.render_issues(result["issues"]))
+    lines.extend(_report.render_notes(result["notes"]))
     lines.append("---")
     lines.append("")
     lines.append("## How to Fix")

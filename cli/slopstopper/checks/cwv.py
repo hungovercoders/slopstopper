@@ -44,7 +44,7 @@ import time
 from pathlib import Path
 
 from slopstopper import output, templates
-from slopstopper.checks import _playwright
+from slopstopper.checks import _tools
 from slopstopper.checks._contract import runner_exit
 
 
@@ -101,7 +101,7 @@ def _parse_args(args: list[str] | None) -> argparse.Namespace:
     return p.parse_args(args or [])
 
 
-_npx_available = _playwright.npx_available
+_npx_available = _tools.npx_available
 
 
 def _resolve_url(parsed_url: str | None) -> str | None:

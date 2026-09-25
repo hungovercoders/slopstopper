@@ -71,6 +71,7 @@ Exit codes:
 
 from __future__ import annotations
 
+import functools
 import argparse
 import os
 import urllib.error
@@ -86,7 +87,6 @@ REPORT_DIR = Path(".ss/reports/api-headers")
 REPORT_MD = REPORT_DIR / "api-headers-report.md"
 REPORT_JSON = REPORT_DIR / "api-headers-report.json"
 USER_AGENT = "SlopStopper-ApiHeaders-Check/1.0"
-TIMEOUT_SECONDS = 15
 
 # An origin no API should ever trust. Sent to see whether the server
 # reflects whatever Origin it is handed. `.invalid` is reserved by
@@ -110,9 +110,10 @@ META = {
 _LABEL = "API headers check"
 
 
-def _require_safe_url(url: str) -> None:
-    """Reject any URL whose scheme isn't http/https (blocks file:// SSRF)."""
-    _http.require_safe_url(url, _LABEL)
+# The URL guard in this check's name, handed to `_contract.refuse_unsafe_url`
+# for the up-front check on the target. Requests themselves are guarded in
+# `_http.open_url`, redirects included.
+_require_safe_url = functools.partial(_http.require_safe_url, label=_LABEL)
 
 
 def _fetch_headers(url: str, origin: str | None) -> tuple[int, dict]:
@@ -124,7 +125,7 @@ def _fetch_headers(url: str, origin: str | None) -> tuple[int, dict]:
     """
     extra = {"Origin": origin} if origin else None
     try:
-        with _http.open_url(url, USER_AGENT, headers=extra, timeout=TIMEOUT_SECONDS, label=_LABEL) as resp:
+        with _http.open_url(url, USER_AGENT, headers=extra, label=_LABEL) as resp:
             return resp.status, dict(resp.headers.items())
     except urllib.error.HTTPError as e:
         return e.code, dict(e.headers.items()) if e.headers else {}
@@ -308,7 +309,6 @@ def _render_skip() -> list[str]:
     )
 
 
-_render_findings = _report.render_findings
 
 
 def _render_origin_table(origin_checks: list[dict]) -> list[str]:
@@ -333,8 +333,8 @@ def _render_path(page: dict) -> list[str]:
         f"HTTP {page['http_status'] if page['http_status'] else 'unreachable'}",
         "",
     ]
-    lines.extend(_render_findings("Issues", "❌", page["issues"]))
-    lines.extend(_render_findings("Notes", "⚠️ ", page["notes"]))
+    lines.extend(_report.render_issues(page["issues"]))
+    lines.extend(_report.render_notes(page["notes"]))
     lines.extend(_render_origin_table(page["origin_checks"]))
     if not page["issues"] and not page["notes"]:
         lines.extend(["No issues.", ""])

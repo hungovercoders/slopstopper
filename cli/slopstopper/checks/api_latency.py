@@ -58,6 +58,7 @@ Exit codes:
 
 from __future__ import annotations
 
+import functools
 import argparse
 import os
 import statistics
@@ -74,7 +75,6 @@ REPORT_DIR = Path(".ss/reports/api-latency")
 REPORT_MD = REPORT_DIR / "api-latency-report.md"
 REPORT_JSON = REPORT_DIR / "api-latency-report.json"
 USER_AGENT = "SlopStopper-ApiLatency-Check/1.0"
-TIMEOUT_SECONDS = 15
 
 DEFAULT_SAMPLES = 5
 DEFAULT_WARMUP = 1
@@ -93,9 +93,10 @@ META = {
 _LABEL = "API latency check"
 
 
-def _require_safe_url(url: str) -> None:
-    """Reject any URL whose scheme isn't http/https (blocks file:// SSRF)."""
-    _http.require_safe_url(url, _LABEL)
+# The URL guard in this check's name, handed to `_contract.refuse_unsafe_url`
+# for the up-front check on the target. Requests themselves are guarded in
+# `_http.open_url`, redirects included.
+_require_safe_url = functools.partial(_http.require_safe_url, label=_LABEL)
 
 
 def _fetch(url: str) -> tuple[int, int, float]:
@@ -107,7 +108,7 @@ def _fetch(url: str) -> tuple[int, int, float]:
     """
     started = time.monotonic()
     try:
-        with _http.open_url(url, USER_AGENT, timeout=TIMEOUT_SECONDS, label=_LABEL) as resp:
+        with _http.open_url(url, USER_AGENT, label=_LABEL) as resp:
             body = resp.read()
             return resp.status, len(body), (time.monotonic() - started) * 1000
     except urllib.error.HTTPError as e:
@@ -252,7 +253,6 @@ def _render_skip() -> list[str]:
     )
 
 
-_render_findings = _report.render_findings
 
 
 def _timing_table(paths: list[dict]) -> list[str]:
@@ -290,8 +290,8 @@ def _build_markdown_report(result: dict) -> str:
 
     issues = [i for page in result["paths"] for i in page["issues"]]
     notes = [n for page in result["paths"] for n in page["notes"]]
-    lines.extend(_render_findings("Issues", "❌", issues))
-    lines.extend(_render_findings("Notes", "⚠️ ", notes))
+    lines.extend(_report.render_issues(issues))
+    lines.extend(_report.render_notes(notes))
 
     lines.append("---")
     lines.append("")

@@ -218,13 +218,13 @@ def _claude_pointer_snippet() -> str:
 
 def _map_file_snippet(map_path: str) -> str:
     return (
-        f"# Documentation Index\n\n"
-        f"This file is **the map** — every other entry point in the repo "
-        f"defers to it.\n\n"
-        f"| Category | Purpose | README |\n"
-        f"| -------- | ------- | ------ |\n"
-        f"| [example/](example/) | Replace with a real category | "
-        f"[README](example/README.md) |\n"
+        "# Documentation Index\n\n"
+        "This file is **the map** — every other entry point in the repo "
+        "defers to it.\n\n"
+        "| Category | Purpose | README |\n"
+        "| -------- | ------- | ------ |\n"
+        "| [example/](example/) | Replace with a real category | "
+        "[README](example/README.md) |\n"
     )
 
 

@@ -66,6 +66,7 @@ Exit codes:
 
 from __future__ import annotations
 
+import functools
 import argparse
 import fnmatch
 import json
@@ -81,7 +82,6 @@ REPORT_DIR = Path(".ss/reports/openapi")
 REPORT_MD = REPORT_DIR / "openapi-report.md"
 REPORT_JSON = REPORT_DIR / "openapi-report.json"
 USER_AGENT = "SlopStopper-OpenAPI-Check/1.0"
-TIMEOUT_SECONDS = 15
 
 # Keys OpenAPI/Swagger use to declare the spec version. One must be present
 # for the document to be a spec rather than arbitrary JSON.
@@ -104,15 +104,16 @@ META = {
 _LABEL = "OpenAPI check"
 
 
-def _require_safe_url(url: str) -> None:
-    """Reject any URL whose scheme isn't http/https (blocks file:// SSRF)."""
-    _http.require_safe_url(url, _LABEL)
+# The URL guard in this check's name, handed to `_contract.refuse_unsafe_url`
+# for the up-front check on the target. Requests themselves are guarded in
+# `_http.open_url`, redirects included.
+_require_safe_url = functools.partial(_http.require_safe_url, label=_LABEL)
 
 
 def _fetch(url: str) -> tuple[int, str]:
     """GET the URL. Returns (status, body). A 4xx/5xx is data, not an error."""
     try:
-        with _http.open_url(url, USER_AGENT, timeout=TIMEOUT_SECONDS, label=_LABEL) as resp:
+        with _http.open_url(url, USER_AGENT, label=_LABEL) as resp:
             return resp.status, resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", errors="replace") if e.fp else ""
@@ -316,7 +317,6 @@ def _audit(url: str | None, document: dict, opts: dict) -> dict:
 _render_skip = _report.render_skip
 
 
-_render_findings = _report.render_findings
 
 
 def _render_probe_table(probes: list[dict]) -> list[str]:
@@ -341,8 +341,8 @@ def _build_markdown_report(result: dict) -> str:
     lines.append("")
     lines.append(f"**Operations declared:** {result['operation_count']}")
     lines.append("")
-    lines.extend(_render_findings("Issues", "❌", result["issues"]))
-    lines.extend(_render_findings("Notes", "⚠️ ", result["notes"]))
+    lines.extend(_report.render_issues(result["issues"]))
+    lines.extend(_report.render_notes(result["notes"]))
     lines.extend(_render_probe_table(result["probes"]))
 
     lines.append("---")

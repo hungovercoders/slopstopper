@@ -40,6 +40,16 @@ def render_findings(label: str, icon: str, findings: list[str]) -> list[str]:
     return lines
 
 
+def render_issues(findings: list[str]) -> list[str]:
+    """The failing items, as the bullets `comment.extract_failures` reads."""
+    return render_findings("Issues", FAIL_ICON, findings)
+
+
+def render_notes(findings: list[str]) -> list[str]:
+    """Advisory items: shown, never parsed as failures."""
+    return render_findings("Notes", NOTE_ICON, findings)
+
+
 def render_skip(reason: str, guidance: list[str]) -> list[str]:
     """The graceful-skip block: an unconfigured check is not a failing check."""
     lines = [f"**Overall:** ⏭️ SKIPPED — {reason}", ""]

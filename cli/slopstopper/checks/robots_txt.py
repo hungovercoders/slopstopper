@@ -42,9 +42,9 @@ Exit codes:
 
 from __future__ import annotations
 
+import functools
 import argparse
 import os
-import re
 import urllib.error
 import urllib.parse
 from pathlib import Path
@@ -57,7 +57,6 @@ from slopstopper.checks._contract import refuse_unsafe_url
 REPORT_DIR = Path(".ss/reports/robots-txt")
 REPORT_MD = REPORT_DIR / "robots-txt-report.md"
 USER_AGENT = "SlopStopper-RobotsTxt-Check/1.0"
-TIMEOUT_SECONDS = 15
 DEFAULT_PATH = "/robots.txt"
 PLAIN_CONTENT_TYPES = ("text/plain",)
 
@@ -76,18 +75,19 @@ META = {
 _LABEL = "robots.txt check"
 
 
-def _require_safe_url(url: str) -> None:
-    """Reject any URL whose scheme isn't http/https (blocks file:// SSRF)."""
-    _http.require_safe_url(url, _LABEL)
+# The URL guard in this check's name, handed to `_contract.refuse_unsafe_url`
+# for the up-front check on the target. Requests themselves are guarded in
+# `_http.open_url`, redirects included.
+_require_safe_url = functools.partial(_http.require_safe_url, label=_LABEL)
 
 
 def _fetch(url: str) -> tuple[int, str, str]:
-    return _http.fetch_text(url, USER_AGENT, timeout=TIMEOUT_SECONDS, label=_LABEL)
+    return _http.fetch_text(url, USER_AGENT, label=_LABEL)
 
 
 def _head_ok(url: str) -> tuple[bool, str]:
     """Return (ok, detail) for a link target — reachable and non-4xx/5xx."""
-    return _http.head_ok(url, USER_AGENT, timeout=TIMEOUT_SECONDS, label=_LABEL)
+    return _http.head_ok(url, USER_AGENT, label=_LABEL)
 
 
 # ── robots.txt parsing ───────────────────────────────────────────
@@ -181,7 +181,7 @@ def _validate_body(
 def _check_links(urls: list[str], notes: list[str]) -> list[dict]:
     results: list[dict] = []
     for target in urls:
-        if urllib.parse.urlparse(target).scheme.lower() not in _http.ALLOWED_SCHEMES:
+        if not _http.is_http_url(target):
             continue
         ok, detail = _head_ok(target)
         results.append({"url": target, "ok": ok, "detail": detail})
@@ -242,16 +242,8 @@ def _build_markdown_report(result: dict) -> str:
     lines.append("")
     lines.append(f"**Sitemaps referenced:** {result['sitemap_count']}")
     lines.append("")
-    if result["issues"]:
-        lines.append("**Issues:**")
-        for issue in result["issues"]:
-            lines.append(f"- ❌ {issue}")
-        lines.append("")
-    if result["notes"]:
-        lines.append("**Notes:**")
-        for note in result["notes"]:
-            lines.append(f"- ⚠️  {note}")
-        lines.append("")
+    lines.extend(_report.render_issues(result["issues"]))
+    lines.extend(_report.render_notes(result["notes"]))
     if result["link_checks"]:
         lines.append("<details><summary>Link checks</summary>")
         lines.append("")

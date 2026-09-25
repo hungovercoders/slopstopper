@@ -13,15 +13,10 @@ adopter's CWD puts them next to `node_modules`. It is idempotent.
 
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
 from slopstopper import output, templates
-from slopstopper.checks._report import gha_run_url
-
-
-def npx_available() -> bool:
-    return shutil.which("npx") is not None
+from slopstopper.checks import _report
 
 
 def ensure_assets_ejected(spec_name: str) -> None:
@@ -63,7 +58,7 @@ def write_summary(
     lines = [title, "", f"**Status:** {status}", f"**Target:** `{url}`"]
     if exit_code != 0:
         lines += ["", failure_hint]
-        run_url = gha_run_url()
+        run_url = _report.gha_run_url()  # looked up at call time, so patching _report works
         if run_url:
             lines += ["", f"[View the workflow run]({run_url})"]
     md_path.write_text("\n".join(lines) + "\n")

@@ -44,8 +44,8 @@ import os
 import subprocess
 from pathlib import Path
 
-from slopstopper import config, output, templates
-from slopstopper.checks import _playwright, _report
+from slopstopper import config, output
+from slopstopper.checks import _playwright, _tools
 from slopstopper.checks._contract import playwright_ran, runner_exit
 
 SPEC_NAME = "smoke"
@@ -82,7 +82,7 @@ def _parse_args(args: list[str] | None) -> argparse.Namespace:
     return p.parse_args(args or [])
 
 
-_npx_available = _playwright.npx_available
+_npx_available = _tools.npx_available
 
 
 def _resolve_url(parsed_url: str | None) -> str | None:
@@ -108,7 +108,6 @@ def _build_cmd(ci_mode: bool) -> list[str]:
     return _playwright.build_cmd(SPEC_NAME, ci_mode)
 
 
-_gha_run_url = _report.gha_run_url
 
 
 def _write_report(exit_code: int, url: str) -> None:

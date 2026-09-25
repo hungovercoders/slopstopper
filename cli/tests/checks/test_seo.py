@@ -397,3 +397,12 @@ def test_run_threads_og_image_base(monkeypatch, isolated_cwd):
     assert rc == 0
     # og:image was https://example.com/og.png; should have been rewritten
     assert any("localhost:8080" in u for u in captured["urls"])
+
+
+@pytest.mark.parametrize("og_image", ["data:image/png;base64,AA", "ftp://cdn.example/og.png"])
+def test_a_non_http_og_image_is_a_finding_not_a_crash(og_image):
+    """The scheme guard raises ValueError; for an og:image that is "not
+    reachable", reported on the page — not a reason the check can't run."""
+    ok, detail = seo._head_ok(og_image)
+    assert ok is False
+    assert "refuses scheme" in detail
