@@ -172,7 +172,7 @@ For each missing or incomplete documentation:
    - Test changes → `docs/reliability/`
    - Code quality changes → `docs/hygiene/`
    - Architecture changes → `docs/architecture/`
-   - New decisions → `docs/decisions/` (use DECISION_TEMPLATE.md)
+   - New decisions → a row in `docs/decisions/README.md` (supporting note via `task decisions:new SLUG=<name>`)
    - Setup/contribution changes → `docs/README.md` or `docs/CONTRIBUTING.md`
 
 2. **Update the appropriate file(s)** using the edit tool:
