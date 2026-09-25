@@ -4,6 +4,24 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.15.0](https://github.com/hungovercoders/slopstopper/compare/v0.14.0...v0.15.0) (2026-09-25)
+
+
+### Features
+
+* **api:** add reliability:api-latency and hygiene:openapi checks ([#333](https://github.com/hungovercoders/slopstopper/issues/333)) ([f693490](https://github.com/hungovercoders/slopstopper/commit/f693490d9e85c29115c7e2c36e5afc008c87a3cc))
+* **ci:** one PR summary comment, compact per-check detail ([#329](https://github.com/hungovercoders/slopstopper/issues/329)) ([7bd97aa](https://github.com/hungovercoders/slopstopper/commit/7bd97aae6edd46812f860de7504985af688addab))
+* **security:** scan APIs with ZAP's OpenAPI mode ([#332](https://github.com/hungovercoders/slopstopper/issues/332)) ([5618969](https://github.com/hungovercoders/slopstopper/commit/5618969f933000c33ea0bfb1dbfc08984b3a4acc))
+* tailor the installed check set to the repo's shape via profiles ([#326](https://github.com/hungovercoders/slopstopper/issues/326)) ([0f6af67](https://github.com/hungovercoders/slopstopper/commit/0f6af675be3fc4f47c2de72bf3316f5716835cda))
+* tailor the installed check set to the repo's shape via profiles ([#327](https://github.com/hungovercoders/slopstopper/issues/327)) ([322b7b7](https://github.com/hungovercoders/slopstopper/commit/322b7b785dec9968324f8101fd1816ee107e1fa7))
+
+
+### Bug Fixes
+
+* **cli:** one exit-code contract, honoured by every check ([#337](https://github.com/hungovercoders/slopstopper/issues/337)) ([e73a4e7](https://github.com/hungovercoders/slopstopper/commit/e73a4e75290a82756b939fbed6b0c78bf9853660))
+* nine drift fixes from the repo review ([#335](https://github.com/hungovercoders/slopstopper/issues/335)) ([fa98432](https://github.com/hungovercoders/slopstopper/commit/fa9843266962114f51f6ef07b3b331a1d12549ae))
+* **security:** redact secret values from the gitleaks JSON report ([#334](https://github.com/hungovercoders/slopstopper/issues/334)) ([9b52539](https://github.com/hungovercoders/slopstopper/commit/9b5253997fc17396ea74d2d347ce16482c5f8173))
+
 ## [0.14.0](https://github.com/hungovercoders/slopstopper/compare/v0.13.0...v0.14.0) (2026-07-10)
 
 
