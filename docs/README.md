@@ -12,20 +12,11 @@ This directory holds the structured project documentation.
 
 ## Categories
 
-See [`index.md`](index.md) for the canonical list, but at a glance:
-
-| Category | Purpose |
-| -------- | ------- |
-| [`app/`](app/) | What the site does and how pages are organised |
-| [`architecture/`](architecture/) | System structure and boundaries |
-| [`contributing/`](contributing/) | Contributor workflow and expectations |
-| [`decisions/`](decisions/) | Significant decisions and rationale |
-| [`deployment/`](deployment/) | Release and environment workflows |
-| [`hygiene/`](hygiene/) | Quality gates and maintenance |
-| [`reliability/`](reliability/) | Service level, accessibility, incident response |
-| [`runbooks/`](runbooks/) | Operational procedures |
-| [`security/`](security/) | Security scanning and controls |
-| [`support/`](support/) | How to get help and escalation flow |
+The category map — every directory under `docs/`, its purpose, README and
+Task namespace — lives in [`index.md`](index.md) and nowhere else. The
+[`ss:hygiene:docs-structure`](hygiene/README.md) check keeps the directory
+tree honest against it, and `cli/tests/test_docs_layout.py` keeps this file
+from growing a second copy.
 
 ## Tasks
 

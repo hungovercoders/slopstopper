@@ -7,7 +7,7 @@ This template includes automated Dynamic Application Security Testing (DAST) usi
 ### Run Analysis Locally
 ```bash
 # Start the site first
-task start &
+task contributing:run &
 # Run DAST scan against it
 task ss:security:dast -- http://localhost:8080
 ```
@@ -109,7 +109,7 @@ rm .github/workflows/ss-security-dast-check.yml
 curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
 
 # Start the site
-task start &
+task contributing:run &
 
 # Run DAST scan (requires Docker)
 task ss:security:dast -- http://localhost:8080
