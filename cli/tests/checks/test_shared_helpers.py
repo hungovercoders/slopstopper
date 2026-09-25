@@ -195,8 +195,8 @@ def test_build_cmd_names_the_spec_and_reporter(monkeypatch):
     assert cmd[:3] == ["npx", "playwright", "test"]
     assert "--config=/cfg/playwright.config.js" in cmd
     assert "/cfg/tests/smoke.spec.ts" in cmd
-    assert "--reporter=list,html" in cmd
-    assert "--reporter=list" in _playwright.build_cmd("smoke", ci_mode=False)
+    assert "--reporter=list,html,json" in cmd  # json: see _contract.playwright_ran
+    assert "--reporter=list,json" in _playwright.build_cmd("smoke", ci_mode=False)
 
 
 def test_ensure_assets_ejected_ejects_config_and_the_named_spec(monkeypatch, capsys):
