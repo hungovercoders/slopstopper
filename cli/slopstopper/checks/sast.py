@@ -248,9 +248,6 @@ def _format_scan_errors_explanation(errors: list[dict]) -> str:
     return out
 
 
-_generated_at = _report.generated_at
-
-
 def _build_md_report(data: dict, fail_on: str = DEFAULT_FAIL_ON) -> str:
     results = data.get("results", [])
     errors = data.get("errors", [])
@@ -258,7 +255,7 @@ def _build_md_report(data: dict, fail_on: str = DEFAULT_FAIL_ON) -> str:
     total_findings = len(results)
 
     md = "# SAST Analysis Report\n\n"
-    md += f"**Generated**: {_generated_at()}\n\n"
+    md += f"**Generated**: {_report.generated_at()}\n\n"
     md += "## Summary\n\n"
 
     if errors:

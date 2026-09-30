@@ -53,13 +53,9 @@ def test_playwright_did_not_run_without_a_report(tmp_path):
 
 
 def test_refuse_unsafe_url(capsys):
-    def guard(url):
-        if not url.startswith("https://"):
-            raise ValueError(f"refuses scheme for {url}")
-
-    assert _contract.refuse_unsafe_url("https://example.com", guard) is None
-    assert _contract.refuse_unsafe_url("file:///etc/passwd", guard) == 2
-    assert "refuses scheme" in capsys.readouterr().out
+    assert _contract.refuse_unsafe_url("https://example.com", "Test check") is None
+    assert _contract.refuse_unsafe_url("file:///etc/passwd", "Test check") == 2
+    assert "Test check refuses scheme 'file'" in capsys.readouterr().out
 
 
 def test_scan_incomplete_says_so_and_returns_two(tmp_path, capsys):

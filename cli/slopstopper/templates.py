@@ -112,8 +112,8 @@ def ensure_ejected(name: str) -> tuple[Path, bool]:
 
     Used by the reliability checks before they invoke `npx playwright`:
     Playwright resolves `@playwright/test` from the directory of its
-    own config, and the bundled config lives inside the pipx venv where
-    no `node_modules` is reachable. Ejecting the config (and the spec
+    own config, and the bundled config lives inside the installed package
+    (mise's tool install), where no `node_modules` is reachable. Ejecting the config (and the spec
     Playwright is about to run) into `.ss/` puts them in the adopter's
     CWD where node_modules IS reachable.
 

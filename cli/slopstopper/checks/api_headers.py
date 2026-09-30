@@ -71,7 +71,6 @@ Exit codes:
 
 from __future__ import annotations
 
-import functools
 import argparse
 import os
 import urllib.error
@@ -81,7 +80,6 @@ from pathlib import Path
 from slopstopper import config, output
 from slopstopper.checks import _http, _report
 from slopstopper.checks._contract import refuse_unsafe_url
-
 
 REPORT_DIR = Path(".ss/reports/api-headers")
 REPORT_MD = REPORT_DIR / "api-headers-report.md"
@@ -108,12 +106,6 @@ META = {
 
 
 _LABEL = "API headers check"
-
-
-# The URL guard in this check's name, handed to `_contract.refuse_unsafe_url`
-# for the up-front check on the target. Requests themselves are guarded in
-# `_http.open_url`, redirects included.
-_require_safe_url = functools.partial(_http.require_safe_url, label=_LABEL)
 
 
 def _fetch_headers(url: str, origin: str | None) -> tuple[int, dict]:
@@ -309,8 +301,6 @@ def _render_skip() -> list[str]:
     )
 
 
-
-
 def _render_origin_table(origin_checks: list[dict]) -> list[str]:
     if not origin_checks:
         return []
@@ -382,7 +372,7 @@ def _build_markdown_report(result: dict) -> str:
 
 
 def _write_reports(result: dict) -> None:
-    _report.write_reports(REPORT_DIR, REPORT_JSON, REPORT_MD, result, _build_markdown_report)
+    _report.write_reports(REPORT_JSON, REPORT_MD, result, _build_markdown_report)
 
 
 def _print_result(result: dict) -> None:
@@ -474,7 +464,7 @@ def run(args: list[str] | None = None) -> int:
         output._emit("  API_HEADERS_TEST_URL=https://api.example.com slopstopper run security:api-headers")
         return 2
 
-    if (rc := refuse_unsafe_url(url, _require_safe_url)) is not None:
+    if (rc := refuse_unsafe_url(url, _LABEL)) is not None:
         return rc
 
     output.status("🛡", f"API header + CORS audit against: {url}")

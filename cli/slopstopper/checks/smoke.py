@@ -108,8 +108,6 @@ def _build_cmd(ci_mode: bool) -> list[str]:
     return _playwright.build_cmd(SPEC_NAME, ci_mode)
 
 
-
-
 def _write_report(exit_code: int, url: str) -> None:
     _playwright.write_summary(
         REPORT_DIR, REPORT_MD, '## Smoke Test Results', exit_code, url,

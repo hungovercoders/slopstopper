@@ -25,9 +25,12 @@ FAIL_ICON = "❌"
 NOTE_ICON = "⚠️ "
 
 
-def generated_at() -> str:
-    """The one timestamp format: UTC, second precision, suffixed."""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+def generated_at(precision: str = "seconds") -> str:
+    """The one timestamp format: UTC, suffixed. Reports use seconds; the
+    rolling PR comment uses `precision="minutes"` — it is a freshness
+    marker that re-renders on every check, where seconds are noise."""
+    fmt = "%Y-%m-%d %H:%M:%S UTC" if precision == "seconds" else "%Y-%m-%d %H:%M UTC"
+    return datetime.now(timezone.utc).strftime(fmt)
 
 
 def render_findings(label: str, icon: str, findings: list[str]) -> list[str]:
@@ -59,14 +62,14 @@ def render_skip(reason: str, guidance: list[str]) -> list[str]:
 
 
 def write_reports(
-    report_dir: Path,
     json_path: Path,
     md_path: Path,
     result: dict,
     render_markdown: Callable[[dict], str],
 ) -> None:
     """Write the JSON result and the markdown rendered from it."""
-    report_dir.mkdir(parents=True, exist_ok=True)
+    for directory in {json_path.parent, md_path.parent}:
+        directory.mkdir(parents=True, exist_ok=True)
     json_path.write_text(json.dumps(result, indent=2) + "\n")
     md_path.write_text(render_markdown(result))
 

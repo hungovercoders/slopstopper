@@ -66,7 +66,6 @@ Exit codes:
 
 from __future__ import annotations
 
-import functools
 import argparse
 import fnmatch
 import json
@@ -76,7 +75,6 @@ from pathlib import Path
 from slopstopper import config, output
 from slopstopper.checks import _http, _report
 from slopstopper.checks._contract import refuse_unsafe_url
-
 
 REPORT_DIR = Path(".ss/reports/openapi")
 REPORT_MD = REPORT_DIR / "openapi-report.md"
@@ -102,12 +100,6 @@ META = {
 
 
 _LABEL = "OpenAPI check"
-
-
-# The URL guard in this check's name, handed to `_contract.refuse_unsafe_url`
-# for the up-front check on the target. Requests themselves are guarded in
-# `_http.open_url`, redirects included.
-_require_safe_url = functools.partial(_http.require_safe_url, label=_LABEL)
 
 
 def _fetch(url: str) -> tuple[int, str]:
@@ -317,8 +309,6 @@ def _audit(url: str | None, document: dict, opts: dict) -> dict:
 _render_skip = _report.render_skip
 
 
-
-
 def _render_probe_table(probes: list[dict]) -> list[str]:
     if not probes:
         return []
@@ -370,7 +360,7 @@ def _build_markdown_report(result: dict) -> str:
 
 
 def _write_reports(result: dict) -> None:
-    _report.write_reports(REPORT_DIR, REPORT_JSON, REPORT_MD, result, _build_markdown_report)
+    _report.write_reports(REPORT_JSON, REPORT_MD, result, _build_markdown_report)
 
 
 def _print_result(result: dict) -> None:
@@ -471,7 +461,7 @@ def run(args: list[str] | None = None) -> int:
         return _fail(error)
 
     url = parsed.url_positional or parsed.url
-    if url and (rc := refuse_unsafe_url(url, _require_safe_url)) is not None:
+    if url and (rc := refuse_unsafe_url(url, _LABEL)) is not None:
         return rc
     output.status("📘", f"OpenAPI drift audit — spec: {opts['spec']}")
     output.separator()

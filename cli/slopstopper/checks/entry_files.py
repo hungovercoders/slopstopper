@@ -169,9 +169,6 @@ def _measure_all(
     return measurements, missing
 
 
-_generated_at = _report.generated_at
-
-
 def _has_violations(measurements: list[dict], map_file_missing: bool) -> bool:
     if map_file_missing:
         return True
@@ -380,7 +377,7 @@ def run(args: list[str] | None = None) -> int:
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     clean = not _has_violations(measurements, map_file_missing)
-    generated_at = _generated_at()
+    generated_at = _report.generated_at()
     status_line = _status_line(clean, max_words)
 
     REPORT_JSON.write_text(

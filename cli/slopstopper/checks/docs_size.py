@@ -112,9 +112,6 @@ def _compute_alerts(
     return parts
 
 
-_generated_at = _report.generated_at
-
-
 def _build_report_md(
     *,
     stats: dict[str, int],
@@ -130,7 +127,7 @@ def _build_report_md(
         if has_alerts
         else "✅ Documentation size within acceptable limits"
     )
-    generated = generated_at or _generated_at()
+    generated = generated_at or _report.generated_at()
 
     report = (
         f"# 📚 Documentation Size Report\n"

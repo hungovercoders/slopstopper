@@ -200,13 +200,10 @@ def _format_finding_row(finding: dict) -> str:
     return f"| {rule_id} | {location} | {short_commit} | {desc_truncated} |"
 
 
-_generated_at = _report.generated_at
-
-
 def _build_md_report(findings: list[dict]) -> str:
     total = len(findings)
     md = "# Secrets Detection Report\n\n"
-    md += f"**Generated**: {_generated_at()}\n\n"
+    md += f"**Generated**: {_report.generated_at()}\n\n"
     md += "## Summary\n\n"
     if total == 0:
         md += "## ✅ Secrets Status\n\nNo secrets detected.\n\n"

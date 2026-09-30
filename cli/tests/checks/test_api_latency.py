@@ -13,7 +13,7 @@ import urllib.error
 
 import pytest
 
-from slopstopper.checks import api_latency
+from slopstopper.checks import _http, api_latency
 
 
 def _opts(**overrides) -> dict:
@@ -298,12 +298,12 @@ def test_join(url, base_path, path, expected):
 @pytest.mark.parametrize("url", ["file:///etc/passwd", "ftp://example.com/x", "gopher://x"])
 def test_refuses_non_http_schemes(url):
     with pytest.raises(ValueError, match="refuses scheme"):
-        api_latency._require_safe_url(url)
+        _http.require_safe_url(url, api_latency._LABEL)
 
 
 @pytest.mark.parametrize("url", ["http://api.example.com", "https://api.example.com"])
 def test_allows_http_and_https(url):
-    api_latency._require_safe_url(url)
+    _http.require_safe_url(url, api_latency._LABEL)
 
 
 # ── report ───────────────────────────────────────────────────────

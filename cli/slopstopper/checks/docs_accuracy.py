@@ -435,9 +435,6 @@ def _collect_extra_issues(
     return issues
 
 
-_generated_at = _report.generated_at
-
-
 _TYPE_LABELS = {
     "broken_link": "Broken Internal Links",
     "stale_task_ref": "Stale Taskfile References",
@@ -513,7 +510,7 @@ def run(args: list[str] | None = None) -> int:
         "clean": len(issues) == 0,
     }
     REPORT_JSON.write_text(json.dumps(data, indent=2))
-    REPORT_MD.write_text(_build_md_report(data, _generated_at()))
+    REPORT_MD.write_text(_build_md_report(data, _report.generated_at()))
 
     if issues:
         output.warn(f"Found {len(issues)} accuracy issue(s)")

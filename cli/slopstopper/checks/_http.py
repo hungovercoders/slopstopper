@@ -10,9 +10,11 @@ The guard is the point. `urllib.request.urlopen` happily handles
 `file://` and `ftp://`, so a hostile `*_TEST_URL` value such as
 `file:///etc/passwd` would be read by a checker and, on some paths,
 echoed into a report. Every request a check makes goes through
-`open_url`, which refuses anything but http/https before opening it —
-and again on every redirect: urllib follows a `302 Location: ftp://…`
-on its own, so a guard on the first URL alone is not a guard.
+`open_url`, which refuses anything but http/https before opening it
+(ValueError — a bad input) and again on every redirect: urllib follows a
+`302 Location: ftp://…` on its own, so a guard on the first URL alone is
+not a guard. A refused redirect is an HTTPError — a fact about the target,
+reported like any other status — never an abort.
 
 Checks keep a module-level `_fetch` / `_head_ok` name that delegates
 here, so tests can monkeypatch the check they are testing without
@@ -21,6 +23,7 @@ reaching into this module. Every check uses `DEFAULT_TIMEOUT`.
 
 from __future__ import annotations
 
+import functools
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -49,21 +52,41 @@ def require_safe_url(url: str, label: str = "slopstopper") -> None:
 
 class _GuardedRedirects(urllib.request.HTTPRedirectHandler):
     """Follow redirects only to http/https. urllib's default handler also
-    follows `ftp://`, which would walk straight past the first-hop guard."""
+    follows `ftp://`, which would walk straight past the first-hop guard.
+
+    A refused redirect raises `HTTPError` carrying the 3xx response — the
+    same thing urllib raises for a `file://` redirect — so every caller's
+    existing HTTPError handling reports it as data about the target ("the
+    endpoint answered 302 to somewhere we won't follow"), and the caller
+    that handles the error owns closing the response.
+    """
 
     def __init__(self, label: str) -> None:
         self.label = label
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        require_safe_url(newurl, self.label)
+        if not is_http_url(newurl):
+            scheme = urllib.parse.urlparse(newurl).scheme.lower()
+            raise urllib.error.HTTPError(
+                newurl, code,
+                f"{msg} - {self.label} refuses to follow a redirect to scheme "
+                f"{scheme!r} (only http/https allowed)",
+                headers, fp,
+            )
         return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+@functools.lru_cache(maxsize=None)
+def _opener(label: str) -> urllib.request.OpenerDirector:
+    """One opener per check label, built once. A sitemap crawl or a latency
+    run makes hundreds of requests; none of them should pay for this."""
+    return urllib.request.build_opener(_GuardedRedirects(label))
 
 
 def _send(req: urllib.request.Request, timeout: int, label: str) -> Any:
     """Open an already-guarded request, re-guarding every redirect hop."""
-    opener = urllib.request.build_opener(_GuardedRedirects(label))
     # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-    return opener.open(req, timeout=timeout)  # nosec B310 — scheme guarded, redirects too
+    return _opener(label).open(req, timeout=timeout)  # nosec B310 — scheme guarded, redirects too
 
 
 def open_url(
@@ -78,9 +101,9 @@ def open_url(
     """Open `url` after the scheme guard. Returns the response context manager.
 
     Raises the same things `urllib.request.urlopen` raises (HTTPError,
-    URLError, TimeoutError) plus ValueError for a refused scheme — on the
-    URL itself or on any redirect — and each caller decides which of
-    those are data and which are failures.
+    URLError, TimeoutError) plus ValueError for a refused scheme on the URL
+    itself. A redirect off http/https raises HTTPError with the 3xx status,
+    so it lands in the handlers every check already has for statuses.
     """
     require_safe_url(url, label)
     request_headers = {"User-Agent": user_agent, **(headers or {})}

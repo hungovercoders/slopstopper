@@ -187,9 +187,6 @@ def _check_category_contents(docs_dir: Path, expected: list[str]) -> list[dict]:
     return violations
 
 
-_generated_at = _report.generated_at
-
-
 def _format_expected_categories_section(categories: list[str]) -> str:
     if not categories:
         return (
@@ -351,7 +348,7 @@ def run(args: list[str] | None = None) -> int:
         "expected_categories": expected,
     }
     REPORT_JSON.write_text(json.dumps(data, indent=2))
-    REPORT_MD.write_text(_build_md_report(data, _generated_at()))
+    REPORT_MD.write_text(_build_md_report(data, _report.generated_at()))
 
     if violations:
         output.error(f"Found {len(violations)} structure violation(s)")

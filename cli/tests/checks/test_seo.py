@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pytest
 
-from slopstopper.checks import seo
+from slopstopper.checks import _http, seo
 
 
 # ── arg / config plumbing ────────────────────────────────────────
@@ -86,18 +86,18 @@ def test_resolve_pages_defaults_to_root(monkeypatch, isolated_cwd):
 
 
 def test_require_safe_url_accepts_http():
-    seo._require_safe_url("http://example.com")
-    seo._require_safe_url("https://example.com")
+    _http.require_safe_url("http://example.com", seo._LABEL)
+    _http.require_safe_url("https://example.com", seo._LABEL)
 
 
 def test_require_safe_url_rejects_file_scheme():
     with pytest.raises(ValueError, match="refuses scheme 'file'"):
-        seo._require_safe_url("file:///etc/passwd")
+        _http.require_safe_url("file:///etc/passwd", seo._LABEL)
 
 
 def test_require_safe_url_rejects_ftp_scheme():
     with pytest.raises(ValueError, match="refuses scheme 'ftp'"):
-        seo._require_safe_url("ftp://example.com")
+        _http.require_safe_url("ftp://example.com", seo._LABEL)
 
 
 # ── HTML parsing ─────────────────────────────────────────────────

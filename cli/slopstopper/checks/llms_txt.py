@@ -40,7 +40,6 @@ Exit codes:
 
 from __future__ import annotations
 
-import functools
 import argparse
 import os
 import re
@@ -52,8 +51,8 @@ from slopstopper import config, output
 from slopstopper.checks import _http, _report
 from slopstopper.checks._contract import refuse_unsafe_url
 
-
 REPORT_DIR = Path(".ss/reports/llms-txt")
+REPORT_JSON = REPORT_DIR / "llms-txt-report.json"
 REPORT_MD = REPORT_DIR / "llms-txt-report.md"
 USER_AGENT = "SlopStopper-LlmsTxt-Check/1.0"
 DEFAULT_PATH = "/llms.txt"
@@ -75,12 +74,6 @@ META = {
 
 
 _LABEL = "llms.txt check"
-
-
-# The URL guard in this check's name, handed to `_contract.refuse_unsafe_url`
-# for the up-front check on the target. Requests themselves are guarded in
-# `_http.open_url`, redirects included.
-_require_safe_url = functools.partial(_http.require_safe_url, label=_LABEL)
 
 
 def _fetch(url: str) -> tuple[int, str, str]:
@@ -245,7 +238,7 @@ def _build_markdown_report(result: dict) -> str:
 
 
 def _write_reports(result: dict) -> None:
-    _report.write_reports(REPORT_DIR, REPORT_DIR / "llms-txt-report.json", REPORT_MD, result, _build_markdown_report)
+    _report.write_reports(REPORT_JSON, REPORT_MD, result, _build_markdown_report)
 
 
 def _print_result(result: dict) -> None:
@@ -291,7 +284,7 @@ def run(args: list[str] | None = None) -> int:
         output._emit("  LLMS_TXT_TEST_URL=https://your-site slopstopper run reliability:llms-txt")
         return 2
 
-    if (rc := refuse_unsafe_url(url, _require_safe_url)) is not None:
+    if (rc := refuse_unsafe_url(url, _LABEL)) is not None:
         return rc
 
     path = _resolve_path(parsed.path)

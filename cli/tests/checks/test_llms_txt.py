@@ -6,7 +6,7 @@ import urllib.error
 
 import pytest
 
-from slopstopper.checks import llms_txt
+from slopstopper.checks import _http, llms_txt
 
 
 VALID_BODY = (
@@ -65,13 +65,13 @@ def test_resolve_path_env_override(monkeypatch):
 
 
 def test_require_safe_url_accepts_http():
-    llms_txt._require_safe_url("http://example.com")
-    llms_txt._require_safe_url("https://example.com")
+    _http.require_safe_url("http://example.com", llms_txt._LABEL)
+    _http.require_safe_url("https://example.com", llms_txt._LABEL)
 
 
 def test_require_safe_url_rejects_file_scheme():
     with pytest.raises(ValueError, match="refuses scheme 'file'"):
-        llms_txt._require_safe_url("file:///etc/passwd")
+        _http.require_safe_url("file:///etc/passwd", llms_txt._LABEL)
 
 
 # ── content parsing ──────────────────────────────────────────────

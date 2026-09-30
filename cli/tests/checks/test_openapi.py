@@ -14,7 +14,7 @@ import json
 
 import pytest
 
-from slopstopper.checks import openapi
+from slopstopper.checks import _http, openapi
 
 
 def _spec(paths: dict) -> dict:
@@ -334,12 +334,12 @@ def test_ignore_paths_applies_to_probing():
 @pytest.mark.parametrize("url", ["file:///etc/passwd", "ftp://example.com/x", "gopher://x"])
 def test_refuses_non_http_schemes(url):
     with pytest.raises(ValueError, match="refuses scheme"):
-        openapi._require_safe_url(url)
+        _http.require_safe_url(url, openapi._LABEL)
 
 
 @pytest.mark.parametrize("url", ["http://api.example.com", "https://api.example.com"])
 def test_allows_http_and_https(url):
-    openapi._require_safe_url(url)
+    _http.require_safe_url(url, openapi._LABEL)
 
 
 # ── report ───────────────────────────────────────────────────────

@@ -12,7 +12,7 @@ import urllib.error
 
 import pytest
 
-from slopstopper.checks import api_headers
+from slopstopper.checks import _http, api_headers
 
 
 def _opts(**overrides) -> dict:
@@ -332,7 +332,7 @@ def test_base_path_is_applied_to_every_probe(monkeypatch):
 @pytest.mark.parametrize("url", ["file:///etc/passwd", "ftp://example.com/x"])
 def test_refuses_non_http_schemes(url):
     with pytest.raises(ValueError, match="refuses scheme"):
-        api_headers._require_safe_url(url)
+        _http.require_safe_url(url, api_headers._LABEL)
 
 
 def test_probe_origin_uses_a_reserved_tld():

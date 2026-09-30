@@ -47,7 +47,6 @@ from slopstopper import output, templates
 from slopstopper.checks import _tools
 from slopstopper.checks._contract import runner_exit
 
-
 REPORT_DIR = Path(".ss/reports/cwv")
 REPORT_MD = REPORT_DIR / "cwv-report.md"
 LHCI_DIR = Path(".lighthouseci")

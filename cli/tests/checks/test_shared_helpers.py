@@ -7,9 +7,7 @@ and this is where its behaviour is pinned.
 
 from __future__ import annotations
 
-import http.server
 import io
-import threading
 import urllib.error
 from pathlib import Path
 
@@ -163,7 +161,7 @@ def test_render_skip_shape():
 def test_write_reports_writes_json_and_rendered_markdown(tmp_path):
     report_dir = tmp_path / "r"
     _report.write_reports(
-        report_dir, report_dir / "x.json", report_dir / "x.md",
+        report_dir / "x.json", report_dir / "x.md",
         {"status": "pass", "n": 1}, lambda r: f"# Report {r['status']}\n",
     )
     assert (report_dir / "x.md").read_text() == "# Report pass\n"
@@ -228,49 +226,26 @@ def test_write_summary_pass_and_fail(tmp_path, monkeypatch):
 # ── redirects are guarded too ────────────────────────────────────
 
 
-class _Redirector(http.server.BaseHTTPRequestHandler):
-    """302s every request to whatever `target` the test sets."""
-
-    target = ""
-
-    def do_GET(self):  # noqa: N802 — the stdlib's name
-        self.send_response(302)
-        self.send_header("Location", self.target)
-        self.end_headers()
-
-    do_HEAD = do_GET  # noqa: N815
-
-    def log_message(self, *a):
-        pass
+@pytest.mark.parametrize("target", ["ftp://127.0.0.1/secret", "file:///etc/passwd"])
+def test_a_redirect_off_http_is_refused_as_an_http_error(redirecting_server, target):
+    """urllib follows `302 Location: ftp://…` by default; open_url must not.
+    Refused the way urllib refuses `file://`, so both schemes behave alike
+    and every caller's HTTPError handling reports it as a status."""
+    url = redirecting_server(target)
+    with pytest.raises(urllib.error.HTTPError) as exc:
+        _http.open_url(url, "ua", timeout=5, label="Test check")
+    assert exc.value.code == 302
+    exc.value.close()
 
 
-@pytest.fixture
-def redirecting_server():
-    server = http.server.HTTPServer(("127.0.0.1", 0), _Redirector)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    yield f"http://127.0.0.1:{server.server_port}/"
-    server.shutdown()
+def test_head_ok_reports_a_refused_redirect_as_its_status(redirecting_server):
+    ok, detail = _http.head_ok(redirecting_server("ftp://127.0.0.1/secret"), "ua", timeout=5)
+    assert (ok, detail) == (False, "HTTP 302")
 
 
-def test_a_redirect_to_ftp_is_refused(redirecting_server):
-    """urllib follows `302 Location: ftp://…` by default; open_url must not."""
-    _Redirector.target = "ftp://127.0.0.1/secret"
-    with pytest.raises(ValueError, match="Test check refuses scheme 'ftp'"):
-        _http.open_url(redirecting_server, "ua", timeout=5, label="Test check")
-
-
-def test_a_redirect_to_file_is_never_followed(redirecting_server):
-    """urllib itself refuses file:// redirects; either refusal will do."""
-    _Redirector.target = "file:///etc/passwd"
-    with pytest.raises((ValueError, urllib.error.HTTPError)):
-        _http.open_url(redirecting_server, "ua", timeout=5)
-
-
-def test_head_ok_reports_a_refused_redirect_as_unreachable(redirecting_server):
-    _Redirector.target = "ftp://127.0.0.1/secret"
-    ok, detail = _http.head_ok(redirecting_server, "ua", timeout=5)
-    assert ok is False and "refuses scheme" in detail
+def test_the_opener_is_built_once_per_label():
+    assert _http._opener("A check") is _http._opener("A check")
+    assert _http._opener("A check") is not _http._opener("Another check")
 
 
 @pytest.mark.parametrize(
@@ -280,3 +255,10 @@ def test_head_ok_reports_a_refused_redirect_as_unreachable(redirecting_server):
 )
 def test_is_http_url(url, expected):
     assert _http.is_http_url(url) is expected
+
+
+def test_generated_at_precisions():
+    import re as _re
+
+    assert _re.fullmatch(r"\d{4}-\d\d-\d\d \d\d:\d\d:\d\d UTC", _report.generated_at())
+    assert _re.fullmatch(r"\d{4}-\d\d-\d\d \d\d:\d\d UTC", _report.generated_at(precision="minutes"))

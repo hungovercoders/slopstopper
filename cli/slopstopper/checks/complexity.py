@@ -195,13 +195,10 @@ def _format_high_complexity_section(rows: list[tuple], max_ccn: int) -> str:
     return out
 
 
-_generated_at = _report.generated_at
-
-
 def _build_md_report(rows: list[tuple], max_ccn: int) -> str:
     summary = _compute_summary_lines(rows, max_ccn)
     md = "# Code Complexity Analysis Report\n\n"
-    md += f"**Generated**: {_generated_at()}\n\n"
+    md += f"**Generated**: {_report.generated_at()}\n\n"
     md += "## Summary\n\n"
     md += _format_summary_section(summary)
     md += _format_high_complexity_section(rows, max_ccn)

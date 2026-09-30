@@ -6,7 +6,8 @@ Playwright's own HTML report. The spec name and the wording differ; the
 plumbing was copied three times.
 
 The eject dance is the non-obvious part and is documented once, here:
-the bundled config and specs live inside the pipx venv, where Playwright
+the bundled config and specs live inside the installed slopstopper-cli
+package (mise's tool install, per mise.toml), where Playwright
 cannot resolve `node_modules`. Ejecting them into `.ss/` in the
 adopter's CWD puts them next to `node_modules`. It is idempotent.
 """

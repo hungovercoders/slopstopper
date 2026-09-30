@@ -12,10 +12,10 @@ a change to the contract is one edit rather than one per check.
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
 from pathlib import Path
 
 from slopstopper import output
+from slopstopper.checks import _http
 
 EXIT_PASS = 0
 EXIT_FAIL = 1
@@ -42,14 +42,12 @@ def reject_extra_args(check_name: str, args: list[str]) -> int:
     return EXIT_MISCONFIGURED
 
 
-def refuse_unsafe_url(url: str, guard: Callable[[str], None]) -> int | None:
-    """Run a check's URL guard before any request: 2 if it refuses, else None.
-
-    `guard` raises ValueError for a scheme other than http/https. A
-    `file://` or `ftp://` target is a bad input, not a site failure.
-    """
+def refuse_unsafe_url(url: str, label: str) -> int | None:
+    """Check a target URL before any request: 2 if its scheme isn't
+    http/https, else None. A `file://` or `ftp://` target is a bad input,
+    not a site failure. `label` names the check in the message."""
     try:
-        guard(url)
+        _http.require_safe_url(url, label)
     except ValueError as e:
         output.error(str(e))
         return EXIT_CANNOT_RUN

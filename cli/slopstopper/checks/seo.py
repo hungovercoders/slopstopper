@@ -41,7 +41,6 @@ Exit codes:
 
 from __future__ import annotations
 
-import functools
 import argparse
 import json
 import os
@@ -54,7 +53,6 @@ from typing import Optional
 from slopstopper import discovery, output
 from slopstopper.checks import _http, _report
 from slopstopper.checks._contract import refuse_unsafe_url
-
 
 REPORT_DIR = Path(".ss/reports/seo")
 REPORT_MD = REPORT_DIR / "seo-metatags-report.md"
@@ -77,12 +75,6 @@ META = {
 
 
 _LABEL = "SEO check"
-
-
-# The URL guard in this check's name, handed to `_contract.refuse_unsafe_url`
-# for the up-front check on the target. Requests themselves are guarded in
-# `_http.open_url`, redirects included.
-_require_safe_url = functools.partial(_http.require_safe_url, label=_LABEL)
 
 
 # ── HTML parser: only walks the <head>, captures meta/title/link ─
@@ -470,7 +462,7 @@ def run(args: list[str] | None = None) -> int:
         output._emit("  SEO_TEST_URL=https://your-site slopstopper run reliability:seo")
         return 2
 
-    if (rc := refuse_unsafe_url(url, _require_safe_url)) is not None:
+    if (rc := refuse_unsafe_url(url, _LABEL)) is not None:
         return rc
 
     require_og_image = not parsed.no_require_og_image
