@@ -27,10 +27,10 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks import _report
 from slopstopper.checks._contract import reject_extra_args
 
 DOCS_DIR = Path("docs")
@@ -185,10 +185,6 @@ def _check_category_contents(docs_dir: Path, expected: list[str]) -> list[dict]:
                 ),
             })
     return violations
-
-
-def _generated_at() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
 def _format_expected_categories_section(categories: list[str]) -> str:
@@ -352,7 +348,7 @@ def run(args: list[str] | None = None) -> int:
         "expected_categories": expected,
     }
     REPORT_JSON.write_text(json.dumps(data, indent=2))
-    REPORT_MD.write_text(_build_md_report(data, _generated_at()))
+    REPORT_MD.write_text(_build_md_report(data, _report.generated_at()))
 
     if violations:
         output.error(f"Found {len(violations)} structure violation(s)")

@@ -47,10 +47,10 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
-from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import output
+from slopstopper.checks import _report
 from slopstopper.checks._contract import reject_extra_args, scan_incomplete
 
 REPORT_DIR = Path(".ss/reports/secrets")
@@ -200,14 +200,10 @@ def _format_finding_row(finding: dict) -> str:
     return f"| {rule_id} | {location} | {short_commit} | {desc_truncated} |"
 
 
-def _generated_at() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-
-
 def _build_md_report(findings: list[dict]) -> str:
     total = len(findings)
     md = "# Secrets Detection Report\n\n"
-    md += f"**Generated**: {_generated_at()}\n\n"
+    md += f"**Generated**: {_report.generated_at()}\n\n"
     md += "## Summary\n\n"
     if total == 0:
         md += "## ✅ Secrets Status\n\nNo secrets detected.\n\n"

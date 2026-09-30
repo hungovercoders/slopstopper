@@ -14,7 +14,7 @@ import urllib.error
 
 import pytest
 
-from slopstopper.checks import api_health
+from slopstopper.checks import _http, api_health
 
 
 HEALTHY = json.dumps({"status": "ok", "version": "1.2.3", "deps": {"db": "up"}})
@@ -258,12 +258,12 @@ def test_audit_notes_a_non_object_body_when_fields_unasserted(monkeypatch):
 @pytest.mark.parametrize("url", ["file:///etc/passwd", "ftp://example.com/x", "gopher://x"])
 def test_refuses_non_http_schemes(url):
     with pytest.raises(ValueError, match="refuses scheme"):
-        api_health._require_safe_url(url)
+        _http.require_safe_url(url, api_health._LABEL)
 
 
 @pytest.mark.parametrize("url", ["http://api.example.com", "https://api.example.com"])
 def test_allows_http_and_https(url):
-    api_health._require_safe_url(url)
+    _http.require_safe_url(url, api_health._LABEL)
 
 
 # ── report ───────────────────────────────────────────────────────

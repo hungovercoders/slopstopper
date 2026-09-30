@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pytest
 
-from slopstopper.checks import seo
+from slopstopper.checks import _http, seo
 
 
 # ── arg / config plumbing ────────────────────────────────────────
@@ -86,18 +86,18 @@ def test_resolve_pages_defaults_to_root(monkeypatch, isolated_cwd):
 
 
 def test_require_safe_url_accepts_http():
-    seo._require_safe_url("http://example.com")
-    seo._require_safe_url("https://example.com")
+    _http.require_safe_url("http://example.com", seo._LABEL)
+    _http.require_safe_url("https://example.com", seo._LABEL)
 
 
 def test_require_safe_url_rejects_file_scheme():
     with pytest.raises(ValueError, match="refuses scheme 'file'"):
-        seo._require_safe_url("file:///etc/passwd")
+        _http.require_safe_url("file:///etc/passwd", seo._LABEL)
 
 
 def test_require_safe_url_rejects_ftp_scheme():
     with pytest.raises(ValueError, match="refuses scheme 'ftp'"):
-        seo._require_safe_url("ftp://example.com")
+        _http.require_safe_url("ftp://example.com", seo._LABEL)
 
 
 # ── HTML parsing ─────────────────────────────────────────────────
@@ -397,3 +397,12 @@ def test_run_threads_og_image_base(monkeypatch, isolated_cwd):
     assert rc == 0
     # og:image was https://example.com/og.png; should have been rewritten
     assert any("localhost:8080" in u for u in captured["urls"])
+
+
+@pytest.mark.parametrize("og_image", ["data:image/png;base64,AA", "ftp://cdn.example/og.png"])
+def test_a_non_http_og_image_is_a_finding_not_a_crash(og_image):
+    """The scheme guard raises ValueError; for an og:image that is "not
+    reachable", reported on the page — not a reason the check can't run."""
+    ok, detail = seo._head_ok(og_image)
+    assert ok is False
+    assert "refuses scheme" in detail

@@ -6,7 +6,7 @@ import urllib.error
 
 import pytest
 
-from slopstopper.checks import sitemap
+from slopstopper.checks import _http, sitemap
 
 
 BASE = "http://t"
@@ -132,13 +132,13 @@ def test_resolve_path_env_override(monkeypatch):
 
 
 def test_require_safe_url_accepts_http():
-    sitemap._require_safe_url("http://example.com")
-    sitemap._require_safe_url("https://example.com")
+    _http.require_safe_url("http://example.com", sitemap._LABEL)
+    _http.require_safe_url("https://example.com", sitemap._LABEL)
 
 
 def test_require_safe_url_rejects_file_scheme():
     with pytest.raises(ValueError, match="refuses scheme 'file'"):
-        sitemap._require_safe_url("file:///etc/passwd")
+        _http.require_safe_url("file:///etc/passwd", sitemap._LABEL)
 
 
 # ── path normalisation ───────────────────────────────────────────

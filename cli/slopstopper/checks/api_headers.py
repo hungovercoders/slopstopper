@@ -72,23 +72,19 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import urllib.error
 import urllib.parse
-import urllib.request
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks import _http, _report
 from slopstopper.checks._contract import refuse_unsafe_url
-
 
 REPORT_DIR = Path(".ss/reports/api-headers")
 REPORT_MD = REPORT_DIR / "api-headers-report.md"
 REPORT_JSON = REPORT_DIR / "api-headers-report.json"
 USER_AGENT = "SlopStopper-ApiHeaders-Check/1.0"
-TIMEOUT_SECONDS = 15
-ALLOWED_SCHEMES = ("http", "https")
 
 # An origin no API should ever trust. Sent to see whether the server
 # reflects whatever Origin it is handed. `.invalid` is reserved by
@@ -109,13 +105,7 @@ META = {
 # ── safety ───────────────────────────────────────────────────────
 
 
-def _require_safe_url(url: str) -> None:
-    """Reject any URL whose scheme isn't http/https (blocks file:// SSRF)."""
-    scheme = urllib.parse.urlparse(url).scheme.lower()
-    if scheme not in ALLOWED_SCHEMES:
-        raise ValueError(
-            f"API headers check refuses scheme {scheme!r} (only http/https allowed). url={url!r}"
-        )
+_LABEL = "API headers check"
 
 
 def _fetch_headers(url: str, origin: str | None) -> tuple[int, dict]:
@@ -125,14 +115,9 @@ def _fetch_headers(url: str, origin: str | None) -> tuple[int, dict]:
     unwrapped rather than raised: an API that 401s still has a CORS
     policy worth auditing.
     """
-    _require_safe_url(url)
-    headers = {"User-Agent": USER_AGENT}
-    if origin:
-        headers["Origin"] = origin
-    req = urllib.request.Request(url, headers=headers)
+    extra = {"Origin": origin} if origin else None
     try:
-        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-        with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:  # nosec B310
+        with _http.open_url(url, USER_AGENT, headers=extra, label=_LABEL) as resp:
             return resp.status, dict(resp.headers.items())
     except urllib.error.HTTPError as e:
         return e.code, dict(e.headers.items()) if e.headers else {}
@@ -260,9 +245,7 @@ def _check_transport_headers(url: str, headers: dict, opts: dict, issues: list[s
 
 
 def _join(url: str, base_path: str, path: str) -> str:
-    prefix = (base_path or "").rstrip("/")
-    suffix = path if path.startswith("/") else f"/{path}"
-    return f"{url.rstrip('/')}{prefix}{suffix}"
+    return _http.join_url(url, base_path, path)
 
 
 def _audit_path(url: str, base_path: str, path: str, opts: dict) -> dict:
@@ -312,27 +295,10 @@ def _audit(url: str, opts: dict) -> dict:
 
 
 def _render_skip() -> list[str]:
-    return [
-        "**Overall:** ⏭️ SKIPPED — no `api.headers.paths` configured.",
-        "",
-        "List the endpoints to probe in `.slopstopper.yml`:",
-        "",
-        "```yaml",
-        "api:",
-        "  headers:",
-        "    paths: [/health, /v1/items]",
-        "```",
-        "",
-    ]
-
-
-def _render_findings(label: str, icon: str, findings: list[str]) -> list[str]:
-    if not findings:
-        return []
-    lines = [f"**{label}:**"]
-    lines.extend(f"- {icon} {finding}" for finding in findings)
-    lines.append("")
-    return lines
+    return _report.render_skip(
+        'no `api.headers.paths` configured.',
+        ['List the endpoints to probe in `.slopstopper.yml`:', '', '```yaml', 'api:', '  headers:', '    paths: [/health, /v1/items]', '```'],
+    )
 
 
 def _render_origin_table(origin_checks: list[dict]) -> list[str]:
@@ -357,8 +323,8 @@ def _render_path(page: dict) -> list[str]:
         f"HTTP {page['http_status'] if page['http_status'] else 'unreachable'}",
         "",
     ]
-    lines.extend(_render_findings("Issues", "❌", page["issues"]))
-    lines.extend(_render_findings("Notes", "⚠️ ", page["notes"]))
+    lines.extend(_report.render_issues(page["issues"]))
+    lines.extend(_report.render_notes(page["notes"]))
     lines.extend(_render_origin_table(page["origin_checks"]))
     if not page["issues"] and not page["notes"]:
         lines.extend(["No issues.", ""])
@@ -406,9 +372,7 @@ def _build_markdown_report(result: dict) -> str:
 
 
 def _write_reports(result: dict) -> None:
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    REPORT_JSON.write_text(json.dumps(result, indent=2) + "\n")
-    REPORT_MD.write_text(_build_markdown_report(result))
+    _report.write_reports(REPORT_JSON, REPORT_MD, result, _build_markdown_report)
 
 
 def _print_result(result: dict) -> None:
@@ -500,7 +464,7 @@ def run(args: list[str] | None = None) -> int:
         output._emit("  API_HEADERS_TEST_URL=https://api.example.com slopstopper run security:api-headers")
         return 2
 
-    if (rc := refuse_unsafe_url(url, _require_safe_url)) is not None:
+    if (rc := refuse_unsafe_url(url, _LABEL)) is not None:
         return rc
 
     output.status("🛡", f"API header + CORS audit against: {url}")

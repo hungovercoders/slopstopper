@@ -41,10 +41,10 @@ import csv
 import io
 import subprocess
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks import _report
 from slopstopper.checks._contract import reject_extra_args
 
 REPORT_DIR = Path(".ss/reports/complexity")
@@ -195,17 +195,10 @@ def _format_high_complexity_section(rows: list[tuple], max_ccn: int) -> str:
     return out
 
 
-def _generated_at() -> str:
-    # Bash uses `datetime.now().strftime(...)` (naive local time). The
-    # parity test strips this line so format is irrelevant, but using
-    # timezone.utc here matches what the docs-size port chose.
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-
-
 def _build_md_report(rows: list[tuple], max_ccn: int) -> str:
     summary = _compute_summary_lines(rows, max_ccn)
     md = "# Code Complexity Analysis Report\n\n"
-    md += f"**Generated**: {_generated_at()}\n\n"
+    md += f"**Generated**: {_report.generated_at()}\n\n"
     md += "## Summary\n\n"
     md += _format_summary_section(summary)
     md += _format_high_complexity_section(rows, max_ccn)

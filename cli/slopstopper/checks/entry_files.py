@@ -37,10 +37,10 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks import _report
 from slopstopper.checks._contract import reject_extra_args
 
 ENTRY_FILES = ("README.md", "AGENTS.md", "CLAUDE.md")
@@ -169,10 +169,6 @@ def _measure_all(
     return measurements, missing
 
 
-def _generated_at() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-
-
 def _has_violations(measurements: list[dict], map_file_missing: bool) -> bool:
     if map_file_missing:
         return True
@@ -219,13 +215,13 @@ def _claude_pointer_snippet() -> str:
 
 def _map_file_snippet(map_path: str) -> str:
     return (
-        f"# Documentation Index\n\n"
-        f"This file is **the map** — every other entry point in the repo "
-        f"defers to it.\n\n"
-        f"| Category | Purpose | README |\n"
-        f"| -------- | ------- | ------ |\n"
-        f"| [example/](example/) | Replace with a real category | "
-        f"[README](example/README.md) |\n"
+        "# Documentation Index\n\n"
+        "This file is **the map** — every other entry point in the repo "
+        "defers to it.\n\n"
+        "| Category | Purpose | README |\n"
+        "| -------- | ------- | ------ |\n"
+        "| [example/](example/) | Replace with a real category | "
+        "[README](example/README.md) |\n"
     )
 
 
@@ -381,7 +377,7 @@ def run(args: list[str] | None = None) -> int:
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     clean = not _has_violations(measurements, map_file_missing)
-    generated_at = _generated_at()
+    generated_at = _report.generated_at()
     status_line = _status_line(clean, max_words)
 
     REPORT_JSON.write_text(

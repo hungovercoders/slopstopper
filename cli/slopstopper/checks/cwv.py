@@ -38,15 +38,14 @@ import argparse
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 import time
 from pathlib import Path
 
 from slopstopper import output, templates
+from slopstopper.checks import _tools
 from slopstopper.checks._contract import runner_exit
-
 
 REPORT_DIR = Path(".ss/reports/cwv")
 REPORT_MD = REPORT_DIR / "cwv-report.md"
@@ -101,8 +100,7 @@ def _parse_args(args: list[str] | None) -> argparse.Namespace:
     return p.parse_args(args or [])
 
 
-def _npx_available() -> bool:
-    return shutil.which("npx") is not None
+_npx_available = _tools.npx_available
 
 
 def _resolve_url(parsed_url: str | None) -> str | None:

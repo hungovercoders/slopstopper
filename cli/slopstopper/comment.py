@@ -29,9 +29,9 @@ string from the same place.
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
 
 from slopstopper import badges, profiles
+from slopstopper.checks import _report
 
 # Hidden markers. The per-check marker makes comment lookup exact rather
 # than "does the body happen to contain the report's H1 text", and the
@@ -98,7 +98,7 @@ def _short_sha(sha: str | None) -> str:
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    return _report.generated_at(precision="minutes")
 
 
 # ── per-check comment body ───────────────────────────────────────

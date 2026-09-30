@@ -44,10 +44,10 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
-from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks import _report
 from slopstopper.checks._contract import reject_extra_args, scan_incomplete
 
 REPORT_DIR = Path(".ss/reports/sast")
@@ -248,10 +248,6 @@ def _format_scan_errors_explanation(errors: list[dict]) -> str:
     return out
 
 
-def _generated_at() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-
-
 def _build_md_report(data: dict, fail_on: str = DEFAULT_FAIL_ON) -> str:
     results = data.get("results", [])
     errors = data.get("errors", [])
@@ -259,7 +255,7 @@ def _build_md_report(data: dict, fail_on: str = DEFAULT_FAIL_ON) -> str:
     total_findings = len(results)
 
     md = "# SAST Analysis Report\n\n"
-    md += f"**Generated**: {_generated_at()}\n\n"
+    md += f"**Generated**: {_report.generated_at()}\n\n"
     md += "## Summary\n\n"
 
     if errors:

@@ -48,12 +48,12 @@ import json
 import os
 import re
 import subprocess
-from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 
 from slopstopper import config, output
 from slopstopper.badges import detect_owner_repo
+from slopstopper.checks import _report
 from slopstopper.checks._contract import reject_extra_args
 
 REPORT_DIR = Path(".ss/reports/docs")
@@ -435,10 +435,6 @@ def _collect_extra_issues(
     return issues
 
 
-def _generated_at() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-
-
 _TYPE_LABELS = {
     "broken_link": "Broken Internal Links",
     "stale_task_ref": "Stale Taskfile References",
@@ -514,7 +510,7 @@ def run(args: list[str] | None = None) -> int:
         "clean": len(issues) == 0,
     }
     REPORT_JSON.write_text(json.dumps(data, indent=2))
-    REPORT_MD.write_text(_build_md_report(data, _generated_at()))
+    REPORT_MD.write_text(_build_md_report(data, _report.generated_at()))
 
     if issues:
         output.warn(f"Found {len(issues)} accuracy issue(s)")

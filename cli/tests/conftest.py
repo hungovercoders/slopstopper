@@ -55,3 +55,20 @@ def docs_tree(isolated_cwd: Path) -> callable:
         return docs
 
     return _build
+
+
+@pytest.fixture
+def redirecting_server():
+    """`redirecting_server(target)` → base URL of a local server that
+    answers every request with `302 Location: target`."""
+    from tests._fakes import start_redirecting_server
+
+    server = start_redirecting_server()
+
+    def _url(target: str) -> str:
+        server.target = target
+        return f"http://127.0.0.1:{server.server_port}"
+
+    yield _url
+    server.shutdown()
+    server.server_close()

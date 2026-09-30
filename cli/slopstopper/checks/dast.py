@@ -69,12 +69,11 @@ import platform
 import re
 import shutil
 import subprocess
-import sys
 import time
-from datetime import datetime
 from pathlib import Path
 
 from slopstopper import config, dast_gate, output
+from slopstopper.checks import _report
 
 REPORT_DIR = Path(".ss/reports/dast")
 REPORT_JSON = REPORT_DIR / "dast-report.json"
@@ -315,17 +314,13 @@ def _format_alert_section(alerts: list[dict], section_title: str, icon: str) -> 
     return out
 
 
-def _generated_at() -> str:
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-
 def _build_md_report(data: dict, swallowed: list[dict] | None = None) -> str:
     alerts = _collect_alerts(data)
     high, medium, low, info = alerts["3"], alerts["2"], alerts["1"], alerts["0"]
     total = sum(len(v) for v in alerts.values())
 
     md = "# DAST Analysis Report\n\n"
-    md += f"**Generated**: {_generated_at()}\n\n"
+    md += f"**Generated**: {_report.generated_at()}\n\n"
     # Pre-emit-flip the workflow's JS prepended this block from
     # dast-gate.json. Now the report owns it directly so the bot
     # comment shows which findings were filtered.

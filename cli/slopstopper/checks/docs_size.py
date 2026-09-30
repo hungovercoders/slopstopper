@@ -23,10 +23,10 @@ Exit codes:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from pathlib import Path
 
 from slopstopper import config, output
+from slopstopper.checks import _report
 from slopstopper.checks._contract import reject_extra_args
 
 DOCS_DIR = Path("docs")
@@ -112,10 +112,6 @@ def _compute_alerts(
     return parts
 
 
-def _generated_at() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-
-
 def _build_report_md(
     *,
     stats: dict[str, int],
@@ -131,7 +127,7 @@ def _build_report_md(
         if has_alerts
         else "✅ Documentation size within acceptable limits"
     )
-    generated = generated_at or _generated_at()
+    generated = generated_at or _report.generated_at()
 
     report = (
         f"# 📚 Documentation Size Report\n"
