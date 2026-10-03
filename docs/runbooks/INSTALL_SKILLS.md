@@ -16,7 +16,7 @@ After install, Claude Code auto-picks the right skill for any SlopStopper-relate
 ## What you need
 
 - **Claude Code** — [claude.com/claude-code](https://claude.com/claude-code). Skills land at project level regardless of whether Claude Code is installed on the machine running the install; any contributor who has Claude Code will pick them up when they open the repo.
-- **curl** — used to fetch each skill file from this repo.
+- **curl** — `install-skill.sh` fetches each skill file from this repo. `install.sh` runs the same script against its own checkout and needs no network for this step.
 - **Write access to the target repo** — the scripts create `.claude/skills/` under the repo root.
 
 ## Install
@@ -63,7 +63,9 @@ Two directories, one per skill, written under the target repo root:
 
 Each skill's map file (SKILL.md) is short (under 1,500 words — the same cap this repo puts on its own entry files) and links the `references/*.md` files that hold the full tables. Claude Code loads the map when the skill triggers and reads a reference only when the map points at it, so the skill costs one page of context until a step needs detail.
 
-Nothing outside `<repo>/.claude/skills/slopstopper-*/` is touched. The script is atomic per skill — it stages the whole directory in a temp dir, validates the map file looks like a Claude Code skill (frontmatter present), and only then swaps it in. An interrupted run cannot leave a half-skill behind. `install.sh` run from a checkout copies the directory from that checkout; the curl-piped scripts fetch the map and then every reference it links.
+Nothing outside `<repo>/.claude/skills/slopstopper-*/` is touched. Per skill, the script fetches the map, checks it looks like a Claude Code skill (frontmatter present), then fetches every reference it links — only linked files, so nothing else in the source tree ships. The result is copied next to the installed skill and then moved into place, so a failed download or copy leaves the installed copy as it was. A skill that fails is named at the end and the script exits non-zero; `install.sh` reports that as a warning and carries on.
+
+`install-skill.sh` is the only implementation: `install.sh` runs it against the checkout `install.sh` itself is running from (`SLOPSTOPPER_REPO_RAW=file://…`), so the skills always match the workflows and templates installed beside them.
 
 **Commit the resulting files** alongside the workflows that `install.sh` lands. The `.gitignore` block that `install.sh` appends already includes a carve-out for `.claude/skills/` so repos with a blanket `.claude/*` ignore don't silently shadow them.
 
@@ -77,7 +79,7 @@ The new model treats skills like every other slopstopper artefact: shipped into 
 
 The previous skill set was a trio: `slopstopper-install`, `slopstopper-update`, `slopstopper-triage`. The install and update skills overlapped heavily — install.sh is idempotent, the local-verify loop was identical, the "what just landed / what changed" inventory was the same surface. The genuinely-update-only content (re-applying customizations, diffing upstream for new knobs, spotting newly-shipped checks) has been folded into `slopstopper-install` as a "Refresh-only" section that the mode-detection branch routes to when `.slopstopper.yml` already exists. One skill, two flows, no churn maintaining two near-identical playbooks.
 
-The old `slopstopper-update` directory is auto-removed by both `install.sh` and `install-skill.sh` (it's listed in the `OBSOLETE_SKILLS` array alongside the older single-skill `install-slopstopper` name).
+The old `slopstopper-update` directory is auto-removed on every install or refresh (it's listed in `install-skill.sh`'s `OBSOLETE_SKILLS` array alongside the older single-skill `install-slopstopper` name).
 
 ## Migrating from the user-level install
 
@@ -89,7 +91,7 @@ rm -rf ~/.claude/skills/slopstopper-install \
        ~/.claude/skills/slopstopper-triage
 ```
 
-Both `install.sh` and `install-skill.sh` detect this scenario and print a one-line warning suggesting the cleanup. They don't execute the `rm` — deleting another contributor's user-level state without consent isn't something an installer should do silently — but they tell you exactly which command to run.
+`install-skill.sh` (and so `install.sh`) detects this scenario and prints a one-line warning suggesting the cleanup. It doesn't execute the `rm` — deleting another contributor's user-level state without consent isn't something an installer should do silently — but it tells you exactly which command to run.
 
 ## How the skills get used
 
@@ -114,7 +116,7 @@ Claude Code stops invoking the skills immediately on next prompt. No other state
 
 ## When this runbook needs updating
 
-- A skill is added to or removed from either script's `SKILLS` / `SKILL_NAMES` array → update the table at the top, the "What lands" file list, and the uninstall command.
+- A skill is added to or removed from `install-skill.sh`'s `SKILLS` array → update the table at the top, the "What lands" file list, and the uninstall command.
 - A skill is renamed → update all the above plus the migration sections.
 - The migration cleanup mechanism changes → update the "What happened to slopstopper-update" and "Migrating from user-level" sections.
 - The skills move back to user level (or a hybrid) → rewrite the "Why project level" section.

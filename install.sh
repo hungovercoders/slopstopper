@@ -922,7 +922,7 @@ success "$INSTALLED_WORKFLOWS workflow(s) installed, $REFRESHED_WORKFLOWS refres
 # dropped by a profile. Each shipped action is replaced wholesale (so a file
 # removed from it upstream goes too). An action slopstopper stops shipping,
 # or renames, goes in OBSOLETE_ACTIONS so re-runs delete the old directory —
-# the same contract as OBSOLETE_SKILLS.
+# the same contract as install-skill.sh's OBSOLETE_SKILLS.
 OBSOLETE_ACTIONS=()
 ACTIONS_SRC="$SCRIPT_DIR/.github/actions"
 ACTIONS_DST="$TARGET_DIR/.github/actions"
@@ -1181,74 +1181,12 @@ fi
 # auto-discovers project-level skills the same way as user-level). Disable
 # with --no-skills / SLOPSTOPPER_NO_SKILLS.
 #
-# Same staging + frontmatter-validation logic as install-skill.sh (the
-# function body is identical in both — keep them in sync). Re-runs that
-# hit no upstream change are no-ops. install-skill.sh remains a standalone
-# way to refresh just the skills without re-running the full installer.
-
-SKILL_NAMES=(
-  "slopstopper-install"
-  "slopstopper-triage"
-)
-OBSOLETE_SKILLS=(
-  "install-slopstopper"
-  "slopstopper-update"
-)
-
-SKILLS_RAW="https://raw.githubusercontent.com/hungovercoders/slopstopper/main/.claude/skills"
-# Prefer the checkout we are running from: no network, and the skills match
-# the workflows and templates copied from the same tree instead of `main`.
-SKILLS_SRC_DIR="$SCRIPT_DIR/.claude/skills"
-SKILL_FAIL() { warn "$* (non-fatal)."; }
-
-# A skill is a directory: SKILL.md plus the references/*.md files it links
-# (the long tables live there and are read on demand, so the skill costs one
-# page of context until a step needs detail). Running from a checkout copies
-# the directory; a curl-piped install fetches SKILL.md, validates it, then
-# fetches every references/<name>.md it mentions. Either way the result is
-# staged in a temp dir and swapped in whole, so an interrupted run cannot
-# leave a half-skill behind.
-install_skill_dir() {
-  local skill="$1"
-  local dest_dir="${TARGET_DIR}/.claude/skills/${skill}"
-  local stage
-  stage="$(mktemp -d)"
-  # shellcheck disable=SC2064
-  trap "rm -rf \"${stage}\"" RETURN
-
-  if [ -n "${SKILLS_SRC_DIR:-}" ] && [ -f "${SKILLS_SRC_DIR}/${skill}/SKILL.md" ]; then
-    cp -R "${SKILLS_SRC_DIR}/${skill}/." "${stage}/"
-  else
-    if ! curl -fsSL "${SKILLS_RAW}/${skill}/SKILL.md" -o "${stage}/SKILL.md"; then
-      SKILL_FAIL "Failed to download ${skill}/SKILL.md"
-      return 1
-    fi
-    local ref
-    for ref in $(grep -o 'references/[A-Za-z0-9_.-]*\.md' "${stage}/SKILL.md" | sort -u); do
-      mkdir -p "${stage}/references"
-      if ! curl -fsSL "${SKILLS_RAW}/${skill}/${ref}" -o "${stage}/${ref}"; then
-        SKILL_FAIL "Failed to download ${skill}/${ref}"
-        return 1
-      fi
-    done
-  fi
-
-  if ! head -n 1 "${stage}/SKILL.md" | grep -q "^---$"; then
-    SKILL_FAIL "${skill}/SKILL.md does not look like a Claude Code skill (no frontmatter). Skipping."
-    return 1
-  fi
-
-  if [ -d "${dest_dir}" ] && diff -rq "${stage}" "${dest_dir}" >/dev/null 2>&1; then
-    info "${skill}: already up to date"
-    return 0
-  fi
-  local had_it=false
-  [ -d "${dest_dir}" ] && had_it=true
-  mkdir -p "$(dirname "${dest_dir}")"
-  rm -rf "${dest_dir}"
-  cp -R "${stage}" "${dest_dir}"
-  if [ "${had_it}" = true ]; then success "${skill}: refreshed"; else success "${skill}: installed"; fi
-}
+# install-skill.sh is the one implementation (skill list, obsolete-skill
+# cleanup, staging, validation). It runs here against the checkout this
+# script is running from — the same tree the workflows and templates were
+# copied from — so the skills always match them and no network is needed.
+# A skill failure is non-fatal for the suite install: the rest is in place,
+# and install-skill.sh can be re-run on its own.
 
 install_claude_skills() {
   if [ "$INSTALL_SKILLS" = "false" ]; then
@@ -1261,33 +1199,9 @@ install_claude_skills() {
   echo "  🧠  Installing the SlopStopper Claude Code skills (project level)…"
   sep
 
-  for skill in "${SKILL_NAMES[@]}"; do
-    install_skill_dir "${skill}" || true
-  done
-
-  # Clean up obsolete skill directories left by older installer versions.
-  # Only act on directories we know we shipped previously — never delete
-  # something the adopter put there.
-  for obsolete in "${OBSOLETE_SKILLS[@]}"; do
-    obsolete_dir="${TARGET_DIR}/.claude/skills/${obsolete}"
-    if [ -d "${obsolete_dir}" ]; then
-      rm -rf "${obsolete_dir}"
-      info "Removed obsolete skill: ${obsolete}"
-    fi
-  done
-
-  # Heads-up if the user has stale user-level copies from the old install
-  # path — they'll shadow the project-level ones when Claude Code merges
-  # skill paths. Don't delete user state silently; surface and let them
-  # decide.
-  if [ -d "${HOME}/.claude/skills/slopstopper-install" ] \
-    || [ -d "${HOME}/.claude/skills/slopstopper-update" ] \
-    || [ -d "${HOME}/.claude/skills/slopstopper-triage" ]; then
-    warn "Stale user-level skills at ~/.claude/skills/slopstopper-* will shadow the project-level copies."
-    info "Clean up with:"
-    info "  rm -rf ~/.claude/skills/slopstopper-install \\"
-    info "         ~/.claude/skills/slopstopper-update \\"
-    info "         ~/.claude/skills/slopstopper-triage"
+  if ! SLOPSTOPPER_REPO_RAW="file://$SCRIPT_DIR" SLOPSTOPPER_SKILLS_QUIET=1 \
+      bash "$SCRIPT_DIR/install-skill.sh" "$TARGET_DIR"; then
+    warn "Claude Code skills not fully installed (non-fatal). Re-run install-skill.sh to retry."
   fi
 }
 

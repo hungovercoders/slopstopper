@@ -90,7 +90,7 @@ Adopter repos should hold exactly the **expected set** of slopstopper artefacts 
 
 **What `install.sh` and `install-skill.sh` already clean up automatically:**
 
-- `<repo>/.claude/skills/<name>/` directories listed in `OBSOLETE_SKILLS` — currently `install-slopstopper` (single-skill legacy) and `slopstopper-update` (folded into `slopstopper-install`). Both installer scripts hold the same list.
+- `<repo>/.claude/skills/<name>/` directories listed in `OBSOLETE_SKILLS` — currently `install-slopstopper` (single-skill legacy) and `slopstopper-update` (folded into `slopstopper-install`). The list lives in `install-skill.sh`, which `install.sh` runs.
 - `.ss/scripts/` — pre-CLI artefact, scrubbed wholesale on every install.
 - Byte-equal copies of `.ss/playwright.config.js`, `.ss/lighthouserc.json`, `.ss/lighthouserc.prod.json`, `.ss/tests/` — these moved into the slopstopper-cli wheel; byte-identical adopter copies are removed (the wheel's version wins via the templates resolver). Customised copies survive.
 - Workflows the adopter explicitly disabled via `.slopstopper.yml` `workflows.disabled` — removed on every install.
@@ -122,4 +122,4 @@ The line to draw before deleting:
 - **Adopter-customised, intentionally divergent** → keep. Examples: an `ss-*.yml` the adopter forked under the same name with bespoke logic, a hand-edited `Taskfile.ss.yml` shim. `.ss/.workflows-installed` tracks adopter deletions but not adopter modifications — when in doubt, ask the user.
 - **Adopter-added content under `.claude/skills/` with a non-`slopstopper-` prefix** → not slopstopper's, never touch.
 
-When a clean-up surfaces something the installer should've handled automatically, the fix is to add it to `OBSOLETE_SKILLS` (or the equivalent list for the artefact type) in both `install.sh` and `install-skill.sh` upstream — see the AGENTS.md change-impact table's "Removing a slopstopper-shipped artefact" row. The next adopter then gets the cleanup for free.
+When a clean-up surfaces something the installer should've handled automatically, the fix is to add it to `OBSOLETE_SKILLS` (or the equivalent list for the artefact type) upstream (`OBSOLETE_SKILLS` lives in `install-skill.sh`; the workflow and action lists in `install.sh`) — see the AGENTS.md change-impact table's "Removing a slopstopper-shipped artefact" row. The next adopter then gets the cleanup for free.

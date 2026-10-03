@@ -47,6 +47,8 @@
 set -euo pipefail
 
 # Override to fetch from a mirror or a local checkout (file:///path/to/slopstopper).
+# install.sh runs this script against its own checkout that way, with
+# SLOPSTOPPER_SKILLS_QUIET=1 to drop the banner and closing guidance.
 REPO_RAW="${SLOPSTOPPER_REPO_RAW:-https://raw.githubusercontent.com/hungovercoders/slopstopper/main}"
 SKILLS=(
   "slopstopper-install"
@@ -72,62 +74,70 @@ sep() { echo "──────────────────────
 
 # ── preflight ────────────────────────────────────────────────────────────────
 
-command -v curl >/dev/null 2>&1 || error "curl is required to fetch the skills. Install it and re-run."
+case "${REPO_RAW}" in
+  file://*) ;;  # a local checkout (install.sh runs us this way) needs no curl
+  *) command -v curl >/dev/null 2>&1 || error "curl is required to fetch the skills. Install it and re-run." ;;
+esac
 
 if [ ! -d "${TARGET_DIR}" ]; then
   error "Target directory does not exist: ${TARGET_DIR}"
 fi
 
-sep
-echo "  🧠  SlopStopper — installing the Claude Code skills (project level)"
-echo "  Source : ${REPO_RAW}/.claude/skills/<skill>/  (SKILL.md + references/)"
-echo "  Target : ${TARGET_DIR}/.claude/skills/<skill>/"
-sep
+if [ -z "${SLOPSTOPPER_SKILLS_QUIET:-}" ]; then
+  sep
+  echo "  🧠  SlopStopper — installing the Claude Code skills (project level)"
+  echo "  Source : ${REPO_RAW}/.claude/skills/<skill>/  (SKILL.md + references/)"
+  echo "  Target : ${TARGET_DIR}/.claude/skills/<skill>/"
+  sep
+fi
 
 # ── install each skill ──────────────────────────────────────────────────────
 
 SKILLS_RAW="${REPO_RAW}/.claude/skills"
-# Standalone script: there is no checkout to copy from, so SKILLS_SRC_DIR
-# stays unset and every file is fetched. install.sh sets it.
-SKILLS_SRC_DIR=""
-SKILL_FAIL() { error "$*"; }
+SKILLS_DST="${TARGET_DIR}/.claude/skills"
+STAGE_ROOT="$(mktemp -d)"
+trap 'rm -rf "${STAGE_ROOT}"' EXIT
+
+fetch() {
+  case "$1" in
+    file://*) cp "${1#file://}" "$2" ;;
+    *) curl -fsSL "$1" -o "$2" ;;
+  esac
+}
 
 # A skill is a directory: SKILL.md plus the references/*.md files it links
 # (the long tables live there and are read on demand, so the skill costs one
-# page of context until a step needs detail). Running from a checkout copies
-# the directory; a curl-piped install fetches SKILL.md, validates it, then
-# fetches every references/<name>.md it mentions. Either way the result is
-# staged in a temp dir and swapped in whole, so an interrupted run cannot
-# leave a half-skill behind.
+# page of context until a step needs detail). Fetch SKILL.md, validate it,
+# then fetch every references/<name>.md it mentions — only linked files, so
+# a stray draft or editor file in the source tree never ships.
+#
+# The result is staged under a directory made with mkdir (so it carries the
+# umask's mode, not mktemp's 0700), copied next to the destination, and only
+# then moved into place: a failed fetch or copy leaves the installed skill
+# untouched. Every step checks its own status, because callers run this on
+# the left of `||`, where `set -e` does not apply.
 install_skill_dir() {
   local skill="$1"
-  local dest_dir="${TARGET_DIR}/.claude/skills/${skill}"
-  local stage
-  stage="$(mktemp -d)"
-  # shellcheck disable=SC2064
-  trap "rm -rf \"${stage}\"" RETURN
+  local dest_dir="${SKILLS_DST}/${skill}"
+  local stage="${STAGE_ROOT}/${skill}"
+  local ref
 
-  if [ -n "${SKILLS_SRC_DIR:-}" ] && [ -f "${SKILLS_SRC_DIR}/${skill}/SKILL.md" ]; then
-    cp -R "${SKILLS_SRC_DIR}/${skill}/." "${stage}/"
-  else
-    if ! curl -fsSL "${SKILLS_RAW}/${skill}/SKILL.md" -o "${stage}/SKILL.md"; then
-      SKILL_FAIL "Failed to download ${skill}/SKILL.md"
-      return 1
-    fi
-    local ref
-    for ref in $(grep -o 'references/[A-Za-z0-9_.-]*\.md' "${stage}/SKILL.md" | sort -u); do
-      mkdir -p "${stage}/references"
-      if ! curl -fsSL "${SKILLS_RAW}/${skill}/${ref}" -o "${stage}/${ref}"; then
-        SKILL_FAIL "Failed to download ${skill}/${ref}"
-        return 1
-      fi
-    done
-  fi
-
-  if ! head -n 1 "${stage}/SKILL.md" | grep -q "^---$"; then
-    SKILL_FAIL "${skill}/SKILL.md does not look like a Claude Code skill (no frontmatter). Skipping."
+  mkdir -p "${stage}/references" || return 1
+  if ! fetch "${SKILLS_RAW}/${skill}/SKILL.md" "${stage}/SKILL.md"; then
+    warn "${skill}: failed to download SKILL.md"
     return 1
   fi
+  if ! head -n 1 "${stage}/SKILL.md" | grep -q "^---$"; then
+    warn "${skill}: SKILL.md does not look like a Claude Code skill (no frontmatter)"
+    return 1
+  fi
+  for ref in $(grep -o 'references/[A-Za-z0-9_.-]*\.md' "${stage}/SKILL.md" | sort -u); do
+    if ! fetch "${SKILLS_RAW}/${skill}/${ref}" "${stage}/${ref}"; then
+      warn "${skill}: failed to download ${ref}"
+      return 1
+    fi
+  done
+  rmdir "${stage}/references" 2>/dev/null || true  # a skill with no references
 
   if [ -d "${dest_dir}" ] && diff -rq "${stage}" "${dest_dir}" >/dev/null 2>&1; then
     info "${skill}: already up to date"
@@ -135,14 +145,28 @@ install_skill_dir() {
   fi
   local had_it=false
   [ -d "${dest_dir}" ] && had_it=true
-  mkdir -p "$(dirname "${dest_dir}")"
-  rm -rf "${dest_dir}"
-  cp -R "${stage}" "${dest_dir}"
+  local incoming="${dest_dir}.incoming.$$" outgoing="${dest_dir}.outgoing.$$"
+  mkdir -p "${SKILLS_DST}" || return 1
+  if ! cp -R "${stage}" "${incoming}"; then
+    rm -rf "${incoming}"
+    warn "${skill}: could not copy into ${SKILLS_DST} — left the installed copy as it was"
+    return 1
+  fi
+  if [ "${had_it}" = true ]; then
+    mv "${dest_dir}" "${outgoing}" || { rm -rf "${incoming}"; return 1; }
+  fi
+  if ! mv "${incoming}" "${dest_dir}"; then
+    [ "${had_it}" = true ] && mv "${outgoing}" "${dest_dir}"
+    rm -rf "${incoming}"
+    return 1
+  fi
+  rm -rf "${outgoing}"
   if [ "${had_it}" = true ]; then success "${skill}: refreshed"; else success "${skill}: installed"; fi
 }
 
+FAILED_SKILLS=()
 for skill in "${SKILLS[@]}"; do
-  install_skill_dir "${skill}"
+  install_skill_dir "${skill}" || FAILED_SKILLS+=("${skill}")
 done
 
 # ── clean up obsolete skill directories ──────────────────────────────────────
@@ -180,6 +204,13 @@ if [ -d "${HOME}/.claude/skills/slopstopper-install" ] \
 fi
 
 # ── post-install guidance ────────────────────────────────────────────────────
+
+if [ "${#FAILED_SKILLS[@]}" -gt 0 ]; then
+  echo "  ❌ Not installed: ${FAILED_SKILLS[*]} (see the warnings above). Any installed copy was left as it was." >&2
+  exit 1
+fi
+
+[ -n "${SLOPSTOPPER_SKILLS_QUIET:-}" ] && exit 0
 
 sep
 echo ""

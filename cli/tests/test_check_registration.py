@@ -185,10 +185,14 @@ EXPECTED_INSTALLED_WORKFLOWS = 27  # every ss-*.yml except ss-release.yml
 
 # Files that quote the counts, and the numbers each may pair with the word
 # "check(s)" / "workflow(s)". A number outside the set is drift.
+# Every skill file is a site: the split into SKILL.md + references/ moved
+# count-bearing prose into files nobody would think to list by hand.
+_SKILL_COUNTS = {"checks": {24, 16, 10}, "workflows": {27}}
 PROSE_SITES = {
-    ".claude/skills/slopstopper-install/SKILL.md": {"checks": {24, 16, 10}, "workflows": {27}},
-    ".claude/skills/slopstopper-install/references/preflight.md": {"checks": {24, 16, 10}, "workflows": {27}},
-    ".claude/skills/slopstopper-install/references/install.md": {"checks": {24, 16, 10}, "workflows": {27}},
+    **{
+        str(p.relative_to(REPO_ROOT)): _SKILL_COUNTS
+        for p in sorted((REPO_ROOT / ".claude/skills").glob("slopstopper-*/**/*.md"))
+    },
     "app/tools.html": {"checks": {24}, "workflows": {27}},
     # 22: the worked example reads "2 of 24 checks failed … The other 22 checks".
     "docs/architecture/README.md": {"checks": {24, 22}, "workflows": {24}},
@@ -216,6 +220,11 @@ def test_the_check_count_is_the_one_quoted_in_the_docs():
     assert set(summarised) == checks
     assert set(_trigger_list(WORKFLOWS_DIR / "ss-pr-summary.yml")) == set(summarised.values())
     assert len(_installed_workflows()) == EXPECTED_INSTALLED_WORKFLOWS
+
+
+def test_every_skill_file_is_a_prose_site():
+    skill_sites = [s for s in PROSE_SITES if s.startswith(".claude/skills/")]
+    assert len(skill_sites) >= 10, "the skills glob matched almost nothing — did .claude/skills move?"
 
 
 @pytest.mark.parametrize("site", sorted(PROSE_SITES))
