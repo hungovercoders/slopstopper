@@ -25,18 +25,25 @@ includes:
     internal: true
 
 vars:
-  # Where `contributing:run` serves app/ and where `contributing:test:site`
-  # points the browser checks. Override with SITE_URL=… on the command line.
-  SITE_URL: '{{.SITE_URL | default "http://localhost:8080"}}'
+  # `contributing:run` serves app/ on PORT; `contributing:test:site` points
+  # the browser checks at SITE_URL, which follows PORT unless set itself.
+  PORT: '{{.PORT | default "8080"}}'
+  SITE_URL: '{{.SITE_URL | default (printf "http://localhost:%s" .PORT)}}'
+  # One CLI for every contributor task: the editable install in cli/.venv
+  # that `cli:install` creates and pytest runs from. A system-wide
+  # `pip install` is refused on PEP 668 Pythons, and a released
+  # slopstopper-cli earlier on PATH would test the wrong code.
+  SLOPSTOPPER: '{{.ROOT_DIR}}/cli/.venv/bin/slopstopper'
 
 tasks:
   # ───────────── Contributing — slopstopper's own dev loop ─────────────
 
   contributing:setup:
-    desc: Install npm + CLI dev dependencies and wire the pre-push hygiene hook
+    desc: Install npm deps, the CLI (editable, in cli/.venv), Playwright's Chromium, and the pre-push hook
     cmds:
       - npm install
-      - pip install -e ./cli
+      - task: cli:install
+      - npx playwright install chromium
       - task: contributing:hooks-install
 
   contributing:hooks-install:
@@ -56,9 +63,10 @@ tasks:
       - npx markdownlint 'docs/**/*.md' CONTRIBUTING.md {{.CLI_ARGS}}
 
   contributing:run:
-    desc: Serve app/ locally on :8080 via `slopstopper serve` (PORT=… to change)
+    desc: Serve app/ locally on :8080 via `slopstopper serve` (PORT=… to change; test:site follows it)
+    deps: [cli:install]
     cmds:
-      - slopstopper serve
+      - PORT={{.PORT}} "{{.SLOPSTOPPER}}" serve
 
   contributing:test:
     desc: Run the CLI's pytest suite (cli/tests) — pass `-- -k <expr>` to filter
@@ -66,12 +74,11 @@ tasks:
       - task: cli:test
 
   contributing:test:site:
-    desc: Browser checks (smoke + accessibility) against SITE_URL (default :8080 — run contributing:run first)
+    desc: Browser checks (smoke + accessibility) against SITE_URL (default the contributing:run server) — `-- --ci` passes through
+    deps: [cli:install]
     cmds:
-      - task: ss:reliability:smoke
-        vars: { CLI_ARGS: '--url {{.SITE_URL}}' }
-      - task: ss:reliability:accessibility
-        vars: { CLI_ARGS: '--url {{.SITE_URL}}' }
+      - '"{{.SLOPSTOPPER}}" run reliability:smoke -- --url {{.SITE_URL}} {{.CLI_ARGS}}'
+      - '"{{.SLOPSTOPPER}}" run reliability:accessibility -- --url {{.SITE_URL}} {{.CLI_ARGS}}'
 
   # ───────────── Decisions — slopstopper's ADR governance ─────────────
   #
@@ -107,18 +114,35 @@ tasks:
         sh: date +%F
     cmds:
       - |
-        if [ -z "{{.SLUG}}" ]; then
+        set -eo pipefail
+        slug='{{.SLUG}}'
+        if [ -z "$slug" ]; then
           echo "❌ Missing SLUG. Usage: task decisions:new SLUG=<decision-name>"
           exit 1
         fi
-        target="docs/decisions/{{.DATE}}-{{.SLUG}}.md"
+        # The slug becomes a filename and a sed replacement: keep it plain.
+        if ! printf '%s' "$slug" | grep -Eq '^[a-z0-9][a-z0-9-]*$'; then
+          echo "❌ SLUG must be lowercase letters, digits and hyphens (got: $slug)"
+          exit 1
+        fi
+        target="docs/decisions/{{.DATE}}-$slug.md"
         if [ -f "$target" ]; then
           echo "❌ $target already exists"
           exit 1
         fi
-        # Copy everything from the '# Decision Template' heading to EOF,
-        # retitling it after the slug and stamping today's date.
-        awk '/^# Decision Template/{p=1} p' docs/decisions/README.md \
-          | sed -e '1s/.*/# Decision: {{.SLUG}}/' -e 's/^- Date: YYYY-MM-DD/- Date: {{.DATE}}/' \
-          > "$target"
-        echo "✅ Created $target — now add a row to the log table in docs/decisions/README.md"
+        # Copy the '# Decision Template' section to EOF, minus the README's
+        # "Use this template…" line, retitled after the slug and dated today.
+        # Written to a temp file first, so a template that went missing
+        # fails here instead of leaving an empty note behind.
+        tmp="$(mktemp)"
+        trap 'rm -f "$tmp"' EXIT
+        awk '/^# Decision Template/{p=1; print; next} p && /^Use this template/{getline; next} p' docs/decisions/README.md \
+          | sed -e "1s/.*/# Decision: $slug/" -e 's/^- Date: YYYY-MM-DD/- Date: {{.DATE}}/' > "$tmp"
+        if ! grep -q '^## Metadata' "$tmp"; then
+          echo "❌ No '# Decision Template' section in docs/decisions/README.md — run task decisions:validate"
+          exit 1
+        fi
+        mv "$tmp" "$target"
+        echo "✅ Created $target"
+        echo "   Now add a row to the log table in docs/decisions/README.md that links it in the Notes column —"
+        echo "   ss:hygiene:docs-structure fails a note nothing links to."

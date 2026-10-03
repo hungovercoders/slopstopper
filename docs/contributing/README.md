@@ -24,10 +24,10 @@ Run `task --list` for the full set. The most-used ones:
 
 | Task | What it does |
 | ---- | ------------ |
-| `task contributing:setup` | `npm install` + editable `pip install -e ./cli` + wire the pre-push hook |
+| `task contributing:setup` | `npm install`, the CLI as an editable install in `cli/.venv` (the one every contributor task and pytest use), Playwright's Chromium, and the pre-push hook |
 | `task contributing:test` | The CLI's pytest suite under `cli/tests/` (what `ci-cli.yml` runs) |
-| `task contributing:run` | Serve `app/` on port 8080 via `slopstopper serve` |
-| `task contributing:test:site` | Playwright smoke + a11y against `SITE_URL` (default the server above) |
+| `task contributing:run` | Serve `app/` on port 8080 via `slopstopper serve` (`PORT=…` to change it; `test:site` follows) |
+| `task contributing:test:site` | Playwright smoke + a11y against `SITE_URL` (default the server above); `-- --ci` passes through |
 | `task contributing:lint` | markdownlint over `docs/` — advisory, not a CI gate |
 | `task ss:hygiene:complexity` | Cyclomatic complexity check (Lizard) |
 | `task ss:hygiene:entry-files` | Enforce <2k token budget on entry files |
