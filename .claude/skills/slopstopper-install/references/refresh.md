@@ -22,7 +22,7 @@ Any line in the output is an `ss-*.yml` workflow that exists upstream but isn't 
 
 ### Re-apply customizations the installer wiped
 
-The installer refreshes `Taskfile.ss.yml`, the `.ss/` overlay, `.githooks/pre-push`, and the `ss-*.yml` workflows wholesale. Anything hand-edited in those files is gone — but `.slopstopper.yml` is **never** overwritten by the installer, so the bulk of customization (headers source/format, URLs, pages, og-image path, disabled workflows, hygiene thresholds) survives every re-run. The Node version lives in `mise.toml` and is seeded only when absent, so a bump you made there survives too.
+The installer refreshes `Taskfile.ss.yml`, the `.ss/` overlay, `.ss/.installed-from`, `.githooks/pre-push`, the `.github/actions/ss-*/` composite actions and the `ss-*.yml` workflows wholesale. Anything hand-edited in those files is gone — but `.slopstopper.yml` is **never** overwritten by the installer, so the bulk of customization (headers source/format, URLs, pages, og-image path, disabled workflows, hygiene thresholds) survives every re-run. The Node version lives in `mise.toml` and is seeded only when absent, so a bump you made there survives too.
 
 What still needs re-checking after a refresh:
 
@@ -51,11 +51,19 @@ The `.slopstopper.yml.example` file in the slopstopper repo is the schema refere
 ```bash
 raw=https://raw.githubusercontent.com/hungovercoders/slopstopper
 old="$(git show HEAD:.ss/.installed-from 2>/dev/null)"   # the previous install's commit
-new="$(cat .ss/.installed-from)"                          # this refresh's commit
-[ -n "$old" ] && diff <(curl -fsSL "$raw/$old/.slopstopper.yml.example") <(curl -fsSL "$raw/$new/.slopstopper.yml.example")
+new="$(cat .ss/.installed-from 2>/dev/null)"              # this refresh's commit
+if [ -z "$old" ] || [ -z "$new" ]; then
+  echo "no commit recorded for the previous install or this one — use the fallback below"
+elif ! a="$(curl -fsSL "$raw/$old/.slopstopper.yml.example")" || ! b="$(curl -fsSL "$raw/$new/.slopstopper.yml.example")"; then
+  echo "a recorded commit isn't on hungovercoders/slopstopper (a fork or local commit?) — use the fallback below"
+else
+  diff <(printf '%s\n' "$a") <(printf '%s\n' "$b")
+fi
 ```
 
-Lines added on the right are knobs shipped since the last install. This commit is what the workflows, `Taskfile.ss.yml` and installer came from, so an empty diff (or `old` = `new`) really does mean no new knobs. If `old` is empty, the previous install predates the marker: read the schema's history since the last refresh (`git log -1 --format=%cs -- .ss/.workflows-installed` gives the date) at https://github.com/hungovercoders/slopstopper/commits/main/.slopstopper.yml.example instead.
+Lines added on the right are knobs shipped since the last install. This commit is what the workflows, `Taskfile.ss.yml` and installer came from, so an empty diff (or `old` = `new`) really does mean no new knobs. Never read a failed fetch as "everything is new" — the script above refuses to diff in that case.
+
+**Fallback** (no marker on one side, or a commit only a fork or a local checkout has): read the schema's history at https://github.com/hungovercoders/slopstopper/commits/main/.slopstopper.yml.example back to `git log -1 --format=%cs -- Taskfile.ss.yml .github/workflows/` — the last commit in which a refresh changed slopstopper's files. A refresh that changed nothing leaves no commit, so that date can be earlier than the last refresh: some of what you read may already be in place, but nothing newer is missed.
 
 A knob read by the CLI (rather than by a workflow or the installer) only takes effect once the `slopstopper-cli` pinned in `mise.toml` is a release that has it. If a new knob does nothing, check the changelog and move the pin with `install.sh --upgrade-cli`. Most knobs ship with sensible defaults, so no action is required. The link at the top of the repo's `.slopstopper.yml` is the schema to copy blocks from.
 

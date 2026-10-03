@@ -55,7 +55,7 @@ These checks need a reachable URL and never build the target locally (an API isn
 
 ### Edit `.slopstopper.yml`
 
-The seeded file is fully commented; the main knobs to fill in:
+A first install seeds a short starter with each key commented. Fill these in. A key the starter doesn't carry (`headers.format` below, the hygiene thresholds, the `api:` block) is added by copying its block from the schema reference linked at the top of the file:
 
 ```yaml
 headers:
@@ -80,7 +80,7 @@ workflows:
 
 ### Optional: tune the hygiene thresholds
 
-Every hygiene check reads its own thresholds from `.slopstopper.yml`, falling back to a sensible default when unset. You don't need to touch these to get started — but if a check fires for a reason that's actually fine (e.g. your repo intentionally has 30 docs pages, or your `CLAUDE.md` is meaningfully longer than 1500 words for project reasons), tune the cap rather than dropping content. Don't tune to silence noise; tune to match a deliberate design decision.
+Every hygiene check reads its own thresholds from `.slopstopper.yml`, falling back to a sensible default when unset. None are in the starter — add the ones you need. You don't need to touch these to get started — but if a check fires for a reason that's actually fine (e.g. your repo intentionally has 30 docs pages, or your `CLAUDE.md` is meaningfully longer than 1500 words for project reasons), tune the cap rather than dropping content. Don't tune to silence noise; tune to match a deliberate design decision.
 
 ```yaml
 hygiene:

@@ -919,16 +919,6 @@ done
 # Write the updated marker (atomic via tmp + mv).
 printf '%s' "$NEW_MARKER_CONTENT" > "$MARKER_FILE.tmp" && mv "$MARKER_FILE.tmp" "$MARKER_FILE"
 
-# Record the slopstopper commit this install came from. Everything above —
-# workflows, Taskfile.ss.yml, the config schema those read — is that
-# commit's, so a refresh can diff upstream between the committed value and
-# the new one (the slopstopper-install skill's "Spot newly-shipped knobs").
-# Skipped when the source isn't a git checkout.
-if [ -e "$SCRIPT_DIR/.git" ]; then
-  SOURCE_SHA="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || true)"
-  [ -n "$SOURCE_SHA" ] && printf '%s\n' "$SOURCE_SHA" > "$TARGET_DIR/.ss/.installed-from"
-fi
-
 success "$INSTALLED_WORKFLOWS workflow(s) installed, $REFRESHED_WORKFLOWS refreshed, $DELETED_RESPECTED previously-deleted skipped"
 
 # Composite actions every ss-* workflow builds on (`uses: ./.github/actions/ss-*`).
@@ -1287,6 +1277,25 @@ install_git_hook() {
 }
 
 install_git_hook
+
+# ── record the source commit ─────────────────────────────────────────────────
+#
+# Written last, once every step above has succeeded: everything installed —
+# workflows, actions, Taskfile.ss.yml, skills, the config schema those read —
+# is this commit's, so a refresh can diff upstream between the committed
+# value and the new one (the slopstopper-install skill's "Spot newly-shipped
+# knobs"). A source that isn't a git checkout has no commit to record, so
+# the marker is removed rather than left naming an install these files
+# didn't come from.
+SOURCE_SHA=""
+if [ -e "$SCRIPT_DIR/.git" ]; then
+  SOURCE_SHA="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || true)"
+fi
+if [ -n "$SOURCE_SHA" ]; then
+  printf '%s\n' "$SOURCE_SHA" > "$TARGET_DIR/.ss/.installed-from"
+else
+  rm -f "$TARGET_DIR/.ss/.installed-from"
+fi
 
 # ── post-install guidance ─────────────────────────────────────────────────────
 

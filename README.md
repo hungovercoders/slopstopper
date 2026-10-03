@@ -75,7 +75,7 @@ Everything SlopStopper owns lives under the `ss` namespace so it can't clash wit
 | `Taskfile.yml` | Created if missing (else: prints the include block to paste in) |
 | `.githooks/pre-push` | Pre-push hygiene gate (`--no-hooks` opts out; defers to husky/lefthook/pre-commit) |
 | `mise.toml` | Toolchain pin (`slopstopper-cli`, `task`), read locally and in CI; moved by `--upgrade-cli`/`--cli-version` |
-| `.slopstopper.yml` | Config seed — profile, URLs, headers, thresholds, page lists (never overwritten) |
+| `.slopstopper.yml` | Config starter — profile, URLs, headers, page lists (never overwritten) |
 | `.ss/reports/` | Where the CLI writes reports — `.gitignore`d |
 | `package.json` | Created (or `devDependencies` merged into an existing file) |
 

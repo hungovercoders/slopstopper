@@ -849,14 +849,21 @@ STARTER = REPO_ROOT / "templates" / "slopstopper.yml.starter"
 EXAMPLE = REPO_ROOT / ".slopstopper.yml.example"
 
 
-def _keys(tree: dict, prefix: str = "") -> set[str]:
-    out: set[str] = set()
+def _leaves(tree: dict, prefix: str = "") -> dict:
+    """Dotted path -> value for every leaf of a parsed config."""
+    out: dict = {}
     for k, v in tree.items():
-        path = f"{prefix}{k}"
-        out.add(path)
-        if isinstance(v, dict):
-            out |= _keys(v, path + ".")
+        if isinstance(v, dict) and v:  # an empty mapping (`production:` with no value) is a leaf
+            out |= _leaves(v, f"{prefix}{k}.")
+        else:
+            out[f"{prefix}{k}"] = v
     return out
+
+
+def _keys(tree: dict) -> set[str]:
+    """Every dotted key path, leaves and the mappings above them."""
+    paths = set(_leaves(tree))
+    return paths | {p.rsplit(".", n)[0] for p in paths for n in range(1, p.count(".") + 1)}
 
 
 def test_the_starter_is_short_and_parses():
@@ -876,16 +883,6 @@ def test_every_starter_key_exists_in_the_schema_reference():
     starter_keys = _keys(config._load_yaml_subset(STARTER))
     example_keys = _keys(config._load_yaml_subset(EXAMPLE))
     assert starter_keys <= example_keys, sorted(starter_keys - example_keys)
-
-
-def _leaves(tree: dict, prefix: str = "") -> dict:
-    out: dict = {}
-    for k, v in tree.items():
-        if isinstance(v, dict):
-            out |= _leaves(v, f"{prefix}{k}.")
-        else:
-            out[f"{prefix}{k}"] = v
-    return out
 
 
 def test_the_starter_seeds_the_schemas_defaults():
@@ -928,6 +925,29 @@ def test_install_records_the_source_commit(tmp_path):
         ["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
     ).stdout.strip()
     assert (target / ".ss" / ".installed-from").read_text() == head + "\n"
+
+
+def test_a_source_without_git_removes_a_stale_marker(tmp_path):
+    """Installed from an unpacked archive, there is no commit to record. A
+    marker left from the previous install would name a commit these files
+    didn't come from, and the refresh diff would report no new knobs."""
+    src = tmp_path / "src"
+    tracked = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "ls-files", "-z"], capture_output=True, text=True, check=True
+    ).stdout.split("\0")
+    for rel in filter(None, tracked):
+        if (REPO_ROOT / rel).is_file():
+            (src / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(REPO_ROOT / rel, src / rel)
+    target = _make_minimal_target(tmp_path)
+    (target / ".ss").mkdir()
+    (target / ".ss" / ".installed-from").write_text("0" * 40 + "\n")
+    result = subprocess.run(
+        ["bash", str(src / "install.sh"), "--no-hooks", "--no-skills", str(target)],
+        capture_output=True, text=True, cwd=src, env={**os.environ, "SKIP_CLI_INSTALL": "1"},
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert not (target / ".ss" / ".installed-from").exists()
 
 
 def test_profile_flag_writes_into_the_seeded_starter(tmp_path):

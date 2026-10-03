@@ -4,10 +4,12 @@
 # actually set. Every other knob has a sensible default and is documented,
 # with its default, in the schema reference:
 #   https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example
-# It tracks slopstopper's main branch. A knob the CLI reads takes effect
-# once the slopstopper-cli pinned in mise.toml is a release that has it.
 # Copy a block from there when you need it. Re-running install.sh never
 # overwrites this file.
+#
+# That link tracks main; .ss/.installed-from names the commit you installed
+# from (put it in place of `main` to see that version). A knob the CLI reads
+# takes effect once the slopstopper-cli pinned in mise.toml has it.
 
 # What shape is this repo? ui (default: a site or app that serves HTML),
 # api (JSON/gRPC endpoints, no browser surface — drops the eight browser
