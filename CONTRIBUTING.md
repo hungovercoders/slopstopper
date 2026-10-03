@@ -24,10 +24,10 @@ Thanks for considering a contribution. The full contributor guide lives at:
 ## Quick checks before pushing
 
 ```bash
-task contributing:build                  # TypeScript build
-task contributing:test                   # Playwright smoke + a11y
-task ss:reliability:accessibility        # axe-core WCAG 2.1 AA
-task ss:hygiene:complexity               # Lizard cap
+task contributing:test                   # CLI pytest suite
+task ss:hygiene:test                     # hygiene suite (the pre-push hook)
+task contributing:run                    # serve app/ on :8080 (separate terminal)
+task contributing:test:site              # Playwright smoke + a11y against it
 task ss:security:sast                    # Semgrep
 ```
 

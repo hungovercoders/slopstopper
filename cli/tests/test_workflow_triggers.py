@@ -17,8 +17,8 @@ The requirement is documented in AGENTS.md and both skills; nothing
 enforced it until this test, and adding checks is exactly when it bites.
 
 Parsed with a small line reader rather than a YAML library: the CLI
-ships no third-party dependencies and the test suite holds the same
-line.
+has no YAML parser (lizard is its only runtime dependency) and the test
+suite holds the same line.
 """
 
 from __future__ import annotations

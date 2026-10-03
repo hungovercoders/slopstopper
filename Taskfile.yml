@@ -6,7 +6,8 @@
 #      by install.sh.
 #   2. `task contributing:*` and `task decisions:*` — slopstopper-internal
 #      tooling for working on the site/CLI/governance. These are NOT
-#      shipped to adopters.
+#      shipped to adopters. Every target here does real work in THIS repo
+#      — nothing degrades to an "ℹ️ nothing to do" echo.
 #
 # See `task --list-all` for the full surface.
 
@@ -15,14 +16,34 @@ version: '3'
 includes:
   ss:
     taskfile: ./Taskfile.ss.yml
+  # The CLI package's own Taskfile (pytest loop). Included as internal so
+  # `contributing:test` can delegate to it without a second public namespace
+  # — invoke it directly with `task -t cli/Taskfile.yml test` if you prefer.
+  cli:
+    taskfile: ./cli/Taskfile.yml
+    dir: ./cli
+    internal: true
+
+vars:
+  # `contributing:run` serves app/ on PORT; `contributing:test:site` points
+  # the browser checks at SITE_URL, which follows PORT unless set itself.
+  PORT: '{{.PORT | default "8080"}}'
+  SITE_URL: '{{.SITE_URL | default (printf "http://localhost:%s" .PORT)}}'
+  # One CLI for every contributor task: the editable install in cli/.venv
+  # that `cli:install` creates and pytest runs from. A system-wide
+  # `pip install` is refused on PEP 668 Pythons, and a released
+  # slopstopper-cli earlier on PATH would test the wrong code.
+  SLOPSTOPPER: '{{.ROOT_DIR}}/cli/.venv/bin/slopstopper'
 
 tasks:
   # ───────────── Contributing — slopstopper's own dev loop ─────────────
 
   contributing:setup:
-    desc: Install project dependencies and wire the pre-push hygiene hook
+    desc: Install npm deps, the CLI (editable, in cli/.venv), Playwright's Chromium, and the pre-push hook
     cmds:
       - npm install
+      - task: cli:install
+      - npx playwright install chromium
       - task: contributing:hooks-install
 
   contributing:hooks-install:
@@ -36,106 +57,92 @@ tasks:
     cmds:
       - node scripts/render-static-assets.js
 
-  contributing:build:
-    desc: Build the project (if a build script is defined)
-    cmds:
-      - |
-        if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.build ? 0 : 1)"; then
-          npm run build {{.CLI_ARGS}}
-        else
-          echo "ℹ️  No build script defined in package.json; nothing to build for this static project."
-        fi
-
   contributing:lint:
-    desc: Run lint checks
+    desc: markdownlint over docs/ and CONTRIBUTING.md (advisory — not a CI gate)
     cmds:
-      - |
-        if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.lint ? 0 : 1)"; then
-          npm run lint {{.CLI_ARGS}}
-        else
-          files="docs/**/*.md"
-          if [ -f CONTRIBUTING.md ]; then
-            files="$files CONTRIBUTING.md"
-          fi
-          npx markdownlint $files
-        fi
+      - npx markdownlint 'docs/**/*.md' CONTRIBUTING.md {{.CLI_ARGS}}
 
   contributing:run:
-    desc: Run local development server (this repo's server.js, if present)
+    desc: Serve app/ locally on :8080 via `slopstopper serve` (PORT=… to change; test:site follows it)
+    deps: [cli:install]
     cmds:
-      - |
-        if [ -f server.js ]; then
-          node server.js
-        else
-          echo "ℹ️  No server.js found in this repo — SlopStopper does not ship a generic dev server."
-          echo "    Start your app's own server, then run SlopStopper tasks against its URL,"
-          echo "    e.g. SMOKE_TEST_URL=http://localhost:3000 task ss:reliability:smoke"
-        fi
-
-  contributing:start:
-    desc: Start local development server
-    cmds:
-      - task: contributing:run
+      - PORT={{.PORT}} "{{.SLOPSTOPPER}}" serve
 
   contributing:test:
-    desc: Run Playwright tests (root config if present, otherwise SlopStopper's portable suite)
+    desc: Run the CLI's pytest suite (cli/tests) — pass `-- -k <expr>` to filter
     cmds:
-      - |
-        if [ -f playwright.config.js ] || [ -f playwright.config.ts ]; then
-          npx playwright test {{.CLI_ARGS}}
-        elif [ -f .ss/playwright.config.js ]; then
-          npx playwright test --config=.ss/playwright.config.js {{.CLI_ARGS}}
-        else
-          echo "ℹ️  No playwright config found — nothing to run."
-        fi
+      - task: cli:test
 
-  contributing:test:headed:
-    desc: Run Playwright tests with headed browser
+  contributing:test:site:
+    desc: Browser checks (smoke + accessibility) against SITE_URL (default the contributing:run server) — `-- --ci` passes through
+    deps: [cli:install]
     cmds:
-      - |
-        if [ -f playwright.config.js ] || [ -f playwright.config.ts ]; then
-          npx playwright test --headed {{.CLI_ARGS}}
-        elif [ -f .ss/playwright.config.js ]; then
-          npx playwright test --config=.ss/playwright.config.js --headed {{.CLI_ARGS}}
-        else
-          echo "ℹ️  No playwright config found — nothing to run."
-        fi
+      - '"{{.SLOPSTOPPER}}" run reliability:smoke -- --url {{.SITE_URL}} {{.CLI_ARGS}}'
+      - '"{{.SLOPSTOPPER}}" run reliability:accessibility -- --url {{.SITE_URL}} {{.CLI_ARGS}}'
 
   # ───────────── Decisions — slopstopper's ADR governance ─────────────
+  #
+  # docs/decisions/README.md is the single decisions file: it carries the
+  # log table AND the note template inline. Supporting notes are optional
+  # siblings named <date>-<slug>.md.
 
   decisions:validate:
-    desc: Validate decisions documentation baseline
+    silent: true
+    desc: Validate docs/decisions/README.md carries the log table + the note template
     cmds:
       - |
-        if [ ! -f docs/decisions/DECISIONS.md ]; then
-          echo "❌ docs/decisions/DECISIONS.md not found"
+        f=docs/decisions/README.md
+        if [ ! -f "$f" ]; then
+          echo "❌ $f not found"
           exit 1
         fi
-        if [ ! -f docs/decisions/DECISION_TEMPLATE.md ]; then
-          echo "❌ docs/decisions/DECISION_TEMPLATE.md not found"
+        if ! grep -q "| Date | Decision | Status | Rationale | Notes |" "$f"; then
+          echo "❌ $f is missing the decisions table header"
           exit 1
         fi
-        if ! grep -q "| Date | Decision | Status | Rationale | Notes |" docs/decisions/DECISIONS.md; then
-          echo "❌ docs/decisions/DECISIONS.md is missing the decisions table header"
+        if ! grep -q "^# Decision Template" "$f"; then
+          echo "❌ $f is missing the '# Decision Template' section"
           exit 1
         fi
         echo "✅ Decisions documentation baseline is valid"
 
   decisions:new:
-    desc: Create a new decision note from template (use SLUG=<name>)
+    silent: true
+    desc: Create docs/decisions/<date>-<slug>.md from the template in README.md (use SLUG=<name>)
     vars:
       DATE:
         sh: date +%F
     cmds:
       - |
-        if [ -z "{{.SLUG}}" ]; then
+        set -eo pipefail
+        slug='{{.SLUG}}'
+        if [ -z "$slug" ]; then
           echo "❌ Missing SLUG. Usage: task decisions:new SLUG=<decision-name>"
           exit 1
         fi
-        target="docs/decisions/{{.DATE}}-{{.SLUG}}.md"
+        # The slug becomes a filename and a sed replacement: keep it plain.
+        if ! printf '%s' "$slug" | grep -Eq '^[a-z0-9][a-z0-9-]*$'; then
+          echo "❌ SLUG must be lowercase letters, digits and hyphens (got: $slug)"
+          exit 1
+        fi
+        target="docs/decisions/{{.DATE}}-$slug.md"
         if [ -f "$target" ]; then
           echo "❌ $target already exists"
           exit 1
         fi
-        cp docs/decisions/DECISION_TEMPLATE.md "$target"
+        # Copy the '# Decision Template' section to EOF, minus the README's
+        # "Use this template…" line, retitled after the slug and dated today.
+        # Written to a temp file first, so a template that went missing
+        # fails here instead of leaving an empty note behind.
+        tmp="$(mktemp)"
+        trap 'rm -f "$tmp"' EXIT
+        awk '/^# Decision Template/{p=1; print; next} p && /^Use this template/{getline; next} p' docs/decisions/README.md \
+          | sed -e "1s/.*/# Decision: $slug/" -e 's/^- Date: YYYY-MM-DD/- Date: {{.DATE}}/' > "$tmp"
+        if ! grep -q '^## Metadata' "$tmp"; then
+          echo "❌ No '# Decision Template' section in docs/decisions/README.md — run task decisions:validate"
+          exit 1
+        fi
+        mv "$tmp" "$target"
         echo "✅ Created $target"
+        echo "   Now add a row to the log table in docs/decisions/README.md that links it in the Notes column —"
+        echo "   ss:hygiene:docs-structure fails a note nothing links to."

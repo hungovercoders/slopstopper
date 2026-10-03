@@ -373,8 +373,8 @@ tasks:
       404 from one could mean "route missing" or merely "no such record",
       and this check can't tell those apart.
 
-      JSON specs only — slopstopper-cli ships no third-party dependencies,
-      so it can't parse YAML. A YAML spec skips with guidance rather than
+      JSON specs only — slopstopper-cli has no YAML parser, so it can't
+      read YAML. A YAML spec skips with guidance rather than
       failing; most frameworks serve the JSON form at /openapi.json.
 
       Skips gracefully (exit 0) when `api.openapi.spec` is unset — an
