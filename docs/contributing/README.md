@@ -109,7 +109,9 @@ Every third-party action in the hand-written workflows is `uses: owner/repo@<sha
 - Keep changes minimal and localized.
 - Follow existing project style and naming patterns.
 
-## Contents
+## Routes
 
-- [PITFALLS.md](PITFALLS.md) — Common gotchas when extending SlopStopper
-  (workflow naming, CSP, brand contrast, task namespace)
+| When you are…                                                              | Do this                                                                             |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| changing anything that ships to adopters (a check, workflow, skill, config key, template, page) | Read [CHANGE_MAP.md](CHANGE_MAP.md) before you start — every surface each kind of change must touch |
+| about to add a workflow, task, report path or external resource            | Read [PITFALLS.md](PITFALLS.md) first — workflow naming, task namespace, CSP, brand contrast |

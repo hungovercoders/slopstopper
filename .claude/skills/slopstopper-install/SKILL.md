@@ -1,6 +1,6 @@
 ---
 name: slopstopper-install
-description: Install slopstopper into a repo for the first time OR refresh an existing slopstopper install. Use when a user asks to add slopstopper, install the slopstopper quality suite, refresh slopstopper, upgrade slopstopper, pull in new slopstopper checks, see what's new in slopstopper, or tailor which checks apply to a UI / API / library repo. Covers pre-flight, picking a project-shape profile, install command, idempotent re-run on existing installs, post-install URL config, Map Pattern setup, README badges, customizations that get wiped on refresh, new-knob discovery, and a local-first verification loop that closes every check before pushing. For per-check failure diagnosis use the slopstopper-triage skill.
+description: Install slopstopper into a repo for the first time OR refresh an existing slopstopper install. Use when a user asks to add slopstopper, install the slopstopper quality suite, refresh slopstopper, upgrade slopstopper, pull in new slopstopper checks, see what's new in slopstopper, or tailor which checks apply to a UI / API / library repo. Covers pre-flight, picking a project-shape profile, install command, idempotent re-run on existing installs, post-install URL config, AGENTS.md-first docs layout setup, README badges, customizations that get wiped on refresh, new-knob discovery, and a local-first verification loop that closes every check before pushing. For per-check failure diagnosis use the slopstopper-triage skill.
 ---
 
 
@@ -34,7 +34,7 @@ A portable suite of GitHub Actions plus the `slopstopper-cli` Python package tha
 | **2. Install** | The one command (`bash install.sh [--profile …]`, on a branch), what it writes and what it leaves alone, `--no-task` / `--no-hooks` / `--no-skills`. | `references/install.md` |
 | **3. What landed** | The file inventory to read back to the user: workflows per profile, `Taskfile.ss.yml`, `mise.toml` pin, the pre-push hook, these skills, the composite actions. | `references/install.md` |
 | **4. Configure** | `.slopstopper.yml`: profile, `urls.production` / `urls.preview`, page lists, the four API checks (they ship inert until `api.*` is set — this is the highest-value step on an API repo), hygiene thresholds, Node version. | `references/configure.md` |
-| **5. Map Pattern** | If keeping the docs checks: `docs/index.md` + per-category READMEs + thin `README.md` / `AGENTS.md` / `CLAUDE.md` pointers. Paste-ready scaffolds. | `references/map-pattern.md` |
+| **5. Docs layout (AGENTS.md first)** | If keeping the docs checks: `AGENTS.md` carries what most tasks need under ~2k tokens with explicit routes, `CLAUDE.md` is `@AGENTS.md`, `docs/README.md` is the map, every doc routed. Decide routes-only / build / fan-out first; paste-ready scaffolds and fixes. | `references/map-pattern.md` |
 | **6. Badges** | `slopstopper badges` → the README block. | `references/configure.md` |
 | **Refresh-only** | Diff installed workflows against upstream, re-apply the customizations the installer wipes, move the CLI pin, spot new knobs and new checks, clean up obsolete artefacts. | `references/refresh.md` |
 | **7. Verify locally** | Pass A (static, seconds) then Pass B (needs a URL). **Every check green locally before pushing** — CI should confirm, not discover. Hand off to `slopstopper-triage` for any red check. | `references/verify.md` |

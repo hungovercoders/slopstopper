@@ -369,19 +369,31 @@ hygiene:
     # Total number of doc files before the report flags it.
     max_files: 25
   entry_files:
-    # Hard cap for entry files (README.md, CLAUDE.md, AGENTS.md, etc.).
-    # ~1500 words ≈ ~2000 tokens — see docs/hygiene/ for the rationale.
-    max_words: 1500
-    # Map Pattern pointer rule. When true (default), the check fails if
-    # README.md or AGENTS.md don't link to the docs map, if CLAUDE.md
-    # isn't a thin pointer to AGENTS.md (link or `@AGENTS.md` directive),
-    # or if the map file itself doesn't exist. The check's report emits a
-    # paste-ready snippet for each violation. Flip to false to disable
-    # the whole pointer rule (the word-budget rule still applies).
+    # AGENTS.md-first: AGENTS.md is loaded into every agent conversation,
+    # so it carries what most tasks need within a token budget and routes
+    # the rest to docs/. Budgets are estimated tokens (chars/4; badge-only
+    # lines don't count). ~2000 tokens is roughly 40–60 rules — about
+    # where models start dropping some. The pre-0.15 `max_words` knob is
+    # ignored with a note.
+    max_tokens: 2000           # AGENTS.md
+    readme_max_tokens: 600     # README.md — orientation + quick start
+    map_max_tokens: 1000       # the docs map (the fallback routing hop)
+    # Path to the docs map, relative to the repo root. A README (not an
+    # index.md) so the repo UI renders it in place when docs/ is browsed;
+    # hygiene:docs-structure reads the same key.
+    map_path: docs/README.md
+    # README.md must link the map and AGENTS.md must route to it ("For
+    # any task not covered above, read docs/README.md"); the map must
+    # exist. The report emits a paste-ready snippet for each violation.
     require_map_pointer: true
-    # Path to the docs map, relative to the repo root. Override if you
-    # keep your map somewhere other than docs/index.md.
-    map_path: docs/index.md
+    # Every `.md` link in AGENTS.md must be an explicit route — a line
+    # that names its trigger and says read ("Before you change CI, read
+    # docs/ci.md"). Agents skip "see docs/ci.md"; they follow a stated
+    # trigger. False accepts soft links (and a soft link to the map).
+    require_explicit_routes: true
+    # CLAUDE.md must be exactly `@AGENTS.md` — one agent entry point with
+    # nothing to drift. False accepts any content.
+    require_claude_include: true
   complexity:
     # Cyclomatic complexity (CCN) ceiling. Any function above this fails
     # the check — locally, in the pre-push hook, and in CI (one gate, one
@@ -403,11 +415,21 @@ hygiene:
     extra_paths: []
   # ── hygiene:docs-structure ──────────────────────────────────────────
   docs_structure:
-    # Every doc inside docs/<category>/ (sub-directories included) must be
-    # linked from its category README or a README.md above it, so the
-    # docs/index.md → category README → doc chain has no dead ends. Set
-    # false to check only that the categories and their READMEs exist.
-    require_indexed_docs: true
+    # Every doc under docs/ must have an explicit route — a trigger-first
+    # "read" line — from AGENTS.md, the map (hygiene.entry_files.map_path)
+    # or a README.md above it. A doc nothing routes to is invisible to
+    # agents. False reports only soft routes in the map, depth, line
+    # budgets and a legacy docs/index.md. (Pre-0.15 `require_indexed_docs`
+    # is read as this key, with a note.)
+    require_routed_docs: true
+    # Most hops a route may take: AGENTS.md → map → directory README →
+    # doc is 3. A README that only routes onward is a turn spent on
+    # nothing — merge it rather than raising this.
+    max_route_depth: 3
+    # Line budget per topic doc (the map is exempt). Past this an agent
+    # burns context on detail it may not need; split by concern and
+    # route each part. 0 disables.
+    max_doc_lines: 300
 
 # ── Reliability coverage modes ───────────────────────────────────────
 # Opt-in alternative to the hand-list above. When set, accessibility,

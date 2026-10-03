@@ -72,7 +72,7 @@ Once you know the symptom, look it up before reasoning from scratch: **`referenc
 
 ## Steps 6–7 — Broader fixes, and deleting the check instead
 
-When the failing check is really a symptom of the repo's shape (wrong profile, no Map Pattern, no headers source), fix the shape. When a check genuinely does not apply, delete it deliberately — `workflows.disabled` or the profile, never a silent workflow deletion. **`references/broader-fixes.md`** covers both, including which checks are safe to drop and which never are.
+When the failing check is really a symptom of the repo's shape (wrong profile, no AGENTS.md-first docs layout, no headers source), fix the shape. When a check genuinely does not apply, delete it deliberately — `workflows.disabled` or the profile, never a silent workflow deletion. **`references/broader-fixes.md`** covers both, including which checks are safe to drop and which never are.
 
 ## When to hand off
 

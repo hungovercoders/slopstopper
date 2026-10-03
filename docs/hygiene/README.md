@@ -39,16 +39,19 @@ task ss:hygiene:docs-size
 ```
 
 ### Documentation Structure Validation
-Validates that the documentation directory structure matches the governance model defined in `docs/index.md`. Ensures all expected categories exist with README files and identifies unexpected files for discussion.
 
-The documentation index is the **sole source of truth for documentation structure**—any deviations require discussion and explicit approval before merging.
+Validates the AGENTS.md-first model: every doc under `docs/` must be reachable by an **explicit route** — a line that names its trigger and says read (`Before you change CI, read docs/ci.md — what task ci runs`, or a row of a "When you are… | Do this" table) — from `AGENTS.md`, the map (`docs/README.md`) or a `README.md` above it. A doc nothing routes to is invisible to agents; a "see also" is skipped. The report lists every reachable doc with its hop count.
 
-**Checks:**
-- All expected categories from docs/index.md exist
-- Each category has a README.md file
-- No unexpected files outside the governed structure
-- Every doc inside a category, sub-directories included, is linked from its category README or a README.md above it (`unindexed_doc`) — the map is a chain, `docs/index.md` → category README → doc, and a file no README mentions is unreachable from the map. `hygiene.docs_structure.require_indexed_docs: false` turns this rule off
-- Violations are raised as blocking issues for discussion
+**Fails on:**
+
+- `unrouted_doc` — a doc with no explicit route (the message says whether it is linked softly, or routed from a README that is itself unreachable)
+- `soft_route` — a `.md` link in the map that does not say when to read it
+- `route_too_deep` — more hops than `hygiene.docs_structure.max_route_depth` (default 3: `AGENTS.md` → map → directory README → doc)
+- `doc_over_lines` — a topic doc past `hygiene.docs_structure.max_doc_lines` (default 300; the map is exempt). Split by concern and route each part
+- `legacy_index` — a legacy index file beside the map. The map is a README so the repo UI renders it in place; fold it in and delete it
+- `broken_route` — a route whose target does not exist
+
+`hygiene.docs_structure.require_routed_docs: false` keeps only the other rules. The map path is shared with the entry-files check (`hygiene.entry_files.map_path`).
 
 ```bash
 task ss:hygiene:docs-structure
@@ -66,19 +69,21 @@ task ss:hygiene:docs-accuracy
 By default it reads `docs/**/*.md` and the four root entry files. `hygiene.docs_accuracy.extra_paths` (repo-relative globs in `.slopstopper.yml`) brings more files into scope, with only the checks that are precise for a file describing an adopter's tree rather than this one: `task ss:…` and workflow references must exist (markdown), and every `github.com/<this repo>/blob|tree/<ref>/<path>` link must point at a path that exists (markdown and HTML). slopstopper.dev scans `app/*.html` and `.claude/skills/**/*.md` this way, because every piece of site and skill drift the repo review found lived in a file the `docs/`-only scan never read.
 
 ### Entry-File Budget
-Enforces the "thin pointer" principle declared in [`docs/index.md`](../index.md#the-map-pattern):
-agent entry files (`README.md`, `AGENTS.md`, `CLAUDE.md`) must stay under
-~2k tokens each so they don't crowd the context window of every agent
-conversation. Threshold is 1,500 words per file (≈ 2k tokens for English
-prose). Fails the build on violation — the fix is to move the over-budget
-file's bulk into the category README that owns the topic, leaving a
-one-line pointer.
+
+Enforces the AGENTS.md-first entry files declared in [`docs/README.md`](../README.md#the-model). `AGENTS.md` is loaded into every agent conversation (it is prompt-cached, so inlining what most tasks need is cheap, while every routing hop costs a tool turn), but instruction-following degrades as rules pile up — so it stays under **~2,000 estimated tokens** (chars/4; roughly 40–60 rules) and routes the overflow. The check enforces:
+
+- **Token budgets** — `AGENTS.md` ≤ `hygiene.entry_files.max_tokens` (2000), `README.md` ≤ `readme_max_tokens` (600, pipeline badges excluded), the map ≤ `map_max_tokens` (1000)
+- **`CLAUDE.md` is exactly `@AGENTS.md`** — one agent entry point, nothing to drift (`require_claude_include`)
+- **Every `.md` link in `AGENTS.md` is an explicit route** — trigger, then "read", then the file (`require_explicit_routes`); and one of them reaches the map, which `README.md` also links (`require_map_pointer`)
+- **The map exists** at `hygiene.entry_files.map_path` (`docs/README.md`)
+
+It prints the **cold-start cost** on every run — always-loaded tokens, the fallback hop, the sum — so a creeping cost is visible before a budget trips. Fails the build on violation; the report carries a paste-ready fix for each one (the route line, the `@AGENTS.md` body, a map skeleton, the rename for a legacy index file). The fix for an over-budget file is to move the content that serves the fewest tasks into a `docs/` topic doc and route it — never to raise the budget.
 
 ```bash
 task ss:hygiene:entry-files
 ```
 
-Workflow: `ss-hygiene-entry-files-check.yml` — runs on PRs/pushes touching `README.md`, `AGENTS.md`, or `CLAUDE.md`.
+Workflow: `ss-hygiene-entry-files-check.yml` — runs on PRs/pushes touching `README.md`, `AGENTS.md`, `CLAUDE.md` or `docs/README.md`.
 
 ### CSP Exceptions Drift Check
 
@@ -168,8 +173,8 @@ Run individual checks:
 ```bash
 task ss:hygiene:complexity        # Analyze code complexity
 task ss:hygiene:docs-size         # Monitor overall documentation size
-task ss:hygiene:entry-files       # Enforce <2k token budget on entry files
-task ss:hygiene:docs-structure    # Validate structure matches governance
+task ss:hygiene:entry-files       # Token budgets + explicit routes on AGENTS.md, README.md, CLAUDE.md, the map
+task ss:hygiene:docs-structure    # Every doc under docs/ has an explicit route
 task ss:hygiene:docs-accuracy     # Check for broken links and stale refs
 task ss:hygiene:csp-exceptions    # Validate CSP exceptions are fully documented
 ```
@@ -177,9 +182,11 @@ task ss:hygiene:csp-exceptions    # Validate CSP exceptions are fully documented
 `task ss:hygiene:test` runs everything above **except** `hygiene:openapi`, which
 needs a live API — run that one separately with a URL.
 
-## Contents
+## Routes
 
-- [DOC_UPDATER.md](DOC_UPDATER.md) - Weekly agentic doc-updater (gh-aw): required setup, what it produces, and how to recompile after edits
+| When you are…                                                              | Do this                                                                                         |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| setting up, editing or debugging the weekly agentic doc-updater (gh-aw)    | Read [DOC_UPDATER.md](DOC_UPDATER.md) — required secret and setting, what it produces, how to recompile after edits |
 
 ## When to Run
 
@@ -195,14 +202,14 @@ The thresholds are designed to:
 1. **Keep code maintainable** - Identifies complex functions that may need refactoring
 2. **Stay within AI context windows** - Ensures documentation can be referenced in full during AI-assisted development
 3. **Maintain document readability** - Prevents any single document from becoming unwieldy
-4. **Keep navigation simple** - Limits file count to maintain a reasonable documentation structure
+4. **Keep navigation cheap** - A typical task needs nothing beyond `AGENTS.md`; a specialised one takes at most a few explicit hops
 5. **Support rapid iteration** - Smaller documentation and simpler code is easier to update and refactor
 
 ## Recommendations
 
 If thresholds are exceeded:
 - Consider consolidating related documentation
-- Move historical/completed content to an archive folder
+- Move history into git (the commit message), not an archive folder
 - Split large files into focused, topic-specific documents
 - Remove redundant or outdated information
 - Use the `.ss/reports/docs/docs-size-report.md` report to identify which files need attention

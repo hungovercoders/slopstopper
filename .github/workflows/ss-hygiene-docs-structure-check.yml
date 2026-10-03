@@ -1,7 +1,7 @@
 name: SlopStopper · Hygiene - Documentation Structure Check
 
-# Validates documentation directory structure (Map Pattern) and the
-# docs/index.md catalogue against the actual tree. Triggers: PR, push
+# Validates that every doc under docs/ has an explicit route from AGENTS.md,
+# the docs map (docs/README.md) or a README above it (AGENTS.md-first). Triggers: PR, push
 # to main. Emits a rolling PR comment and a main-branch tracking
 # issue on violations.
 # Docs: docs/hygiene/README.md.
@@ -10,14 +10,14 @@ on:
   pull_request:
     paths:
       - 'docs/**'
-      - 'docs/index.md'
+      - 'AGENTS.md'
       - '.github/workflows/ss-hygiene-docs-structure-check.yml'
   push:
     branches:
       - main
     paths:
       - 'docs/**'
-      - 'docs/index.md'
+      - 'AGENTS.md'
       - '.github/workflows/ss-hygiene-docs-structure-check.yml'
   workflow_dispatch:
 

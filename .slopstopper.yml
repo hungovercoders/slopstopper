@@ -45,8 +45,8 @@ smoke:
 # that one is about a single document staying readable.
 hygiene:
   docs_size:
-    max_total_size_kb: 175
-    max_files: 30
+    max_total_size_kb: 200
+    max_files: 40   # AGENTS.md-first favours many focused docs over few long ones
   # Every piece of site and skill drift the repo review found lived in a
   # file the docs/-only scan never read. Scan those surfaces too.
   docs_accuracy:

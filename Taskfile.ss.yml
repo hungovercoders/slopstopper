@@ -299,11 +299,13 @@ tasks:
       - slopstopper run hygiene:docs-size
 
   hygiene:docs-structure:
-    desc: Validate documentation structure matches the governance model
+    desc: Validate every doc under docs/ has an explicit route from AGENTS.md or the map
     summary: |
-      Validates that the docs/ tree matches the governance model
-      declared in docs/index.md. Generates JSON + MD reports under
-      .ss/reports/docs/.
+      AGENTS.md-first: a doc is reachable only through a trigger-first
+      "read" line in AGENTS.md, docs/README.md (the map) or a README above
+      it. Fails on an unrouted doc, a soft route in the map, a route deeper
+      than the limit, a topic doc over its line budget, or a legacy
+      docs/index.md. Generates JSON + MD reports under .ss/reports/docs/.
 
       Usage:
         task ss:hygiene:docs-structure
@@ -311,14 +313,15 @@ tasks:
       - slopstopper run hygiene:docs-structure
 
   hygiene:entry-files:
-    desc: Enforce <2k token budget on agent entry files (README.md, AGENTS.md, CLAUDE.md)
+    desc: Enforce token budgets + explicit routes on AGENTS.md, README.md, CLAUDE.md and the docs map
     summary: |
-      The agent entry files are loaded into every conversation. docs/index.md
-      declares they should stay under ~2k tokens each so they don't crowd
-      the context window. This check enforces that with a 1,500-word cap
-      (≈ 2k tokens for English prose) and exits non-zero if any file is
-      over budget — moving the over-budget file's bulk into the category
-      README that owns the topic is the fix.
+      AGENTS.md is loaded into every agent conversation, so it carries what
+      most tasks need within ~2k estimated tokens and routes the rest with
+      explicit "before you X, read Y" lines. This check enforces the token
+      budgets (AGENTS.md, README.md with badges excluded, docs/README.md),
+      that CLAUDE.md is exactly `@AGENTS.md`, that every .md link in
+      AGENTS.md is an explicit route and one reaches the map, and prints
+      the cold-start cost on every run.
 
       Generates a report at .ss/reports/entry-files/entry-file-size-report.md.
 

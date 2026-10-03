@@ -41,9 +41,9 @@ Config-driven knobs (no file edit needed beyond `.slopstopper.yml`):
 | Check | Keys | Defaults |
 | --- | --- | --- |
 | `hygiene:docs-size` | `hygiene.docs_size.max_total_size_kb` / `.max_file_size_kb` / `.max_files` | 150 / 20 / 25 |
-| `hygiene:entry-files` | `hygiene.entry_files.max_words` / `.require_map_pointer` / `.map_path` | 1500 / true / `docs/index.md` |
+| `hygiene:entry-files` | `hygiene.entry_files.max_tokens` / `.readme_max_tokens` / `.map_max_tokens` / `.map_path` / `.require_map_pointer` / `.require_explicit_routes` / `.require_claude_include` | 2000 / 600 / 1000 / `docs/README.md` / true / true / true |
 | `hygiene:docs-accuracy` | `hygiene.docs_accuracy.extra_paths` | `[]` — only `docs/` + the root entry files are scanned |
-| `hygiene:docs-structure` | `hygiene.docs_structure.require_indexed_docs` | `true` — every doc linked from a README above it |
+| `hygiene:docs-structure` | `hygiene.docs_structure.require_routed_docs` / `.max_route_depth` / `.max_doc_lines` | `true` — every doc has an explicit route / 3 / 300 |
 | `reliability:smoke` | `pages.smoke`, `smoke.og_image_path` | `/`, `/og-image.png` |
 | `reliability:{accessibility,seo,broken_links}` | `pages.<check>`, `reliability.coverage.<event>` | `/`, hand-list mode |
 | `hygiene:csp-exceptions` | `headers.source`, `headers.format` | unset (graceful skip) |

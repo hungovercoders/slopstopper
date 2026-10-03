@@ -30,9 +30,9 @@ task ss:security:sast              # Semgrep
 task ss:security:vulnerability:all # Trivy (CVE scan of dependencies)
 task ss:hygiene:complexity         # lizard
 task ss:hygiene:docs-accuracy      # repo-relative link resolver
-task ss:hygiene:docs-structure     # Map Pattern validator
+task ss:hygiene:docs-structure     # every doc under docs/ has an explicit route
 task ss:hygiene:docs-size          # docs/ size budget
-task ss:hygiene:entry-files        # README/AGENTS/CLAUDE word budget
+task ss:hygiene:entry-files        # token budgets + explicit routes on AGENTS.md / README.md / CLAUDE.md / the map
 task ss:hygiene:csp-exceptions     # if headers.source is configured
 ```
 
