@@ -18,7 +18,9 @@ deterministically, without performing the real mise install.
 from __future__ import annotations
 
 import os
+import re
 import shutil
+import stat
 import subprocess
 from pathlib import Path
 
@@ -712,3 +714,125 @@ def test_composite_actions_are_refreshed_not_respected_as_deletions(tmp_path):
     assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
     assert "hand-edited" not in action.read_text()
     assert "using: composite" in action.read_text()
+
+
+# ── skills install as directories ────────────────────────────────
+
+
+def test_skills_install_from_the_local_checkout_with_their_references(tmp_path):
+    """Run from a checkout, install.sh copies each skill directory — no
+    network — and every references/*.md the SKILL.md links comes with it."""
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, args=["--no-hooks"])
+    assert result.returncode == 0, result.stderr
+    for skill in ("slopstopper-install", "slopstopper-triage"):
+        skill_md = target / ".claude/skills" / skill / "SKILL.md"
+        assert skill_md.is_file(), skill
+        text = skill_md.read_text()
+        assert text.startswith("---\n")
+        for ref in set(re.findall(r"references/([A-Za-z0-9_.-]+\.md)", text)):
+            assert (target / ".claude/skills" / skill / "references" / ref).is_file(), f"{skill}/{ref}"
+    assert "installed" in result.stdout
+
+
+def test_skills_are_refreshed_as_a_whole_directory(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--no-hooks"]).returncode == 0
+    stray = target / ".claude/skills/slopstopper-install/references/stale.md"
+    stray.write_text("# left over from an older skill\n")
+    second = _run_install(target, args=["--no-hooks"])
+    assert second.returncode == 0, second.stderr
+    assert not stray.exists(), "a refresh must replace the directory, not merge into it"
+    assert "refreshed" in second.stdout
+
+
+def test_install_skill_sh_fetches_skill_md_and_every_linked_reference(tmp_path):
+    """The standalone script has no checkout to copy from: it fetches SKILL.md,
+    then each references/*.md the map links. Pointed at a file:// copy of this
+    repo so the test needs no network."""
+    target = tmp_path / "adopter"
+    target.mkdir()
+    result = subprocess.run(
+        ["bash", str(REPO_ROOT / "install-skill.sh"), str(target)],
+        capture_output=True, text=True,
+        env={**os.environ, "SLOPSTOPPER_REPO_RAW": f"file://{REPO_ROOT}"},
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    for skill in ("slopstopper-install", "slopstopper-triage"):
+        text = (target / ".claude/skills" / skill / "SKILL.md").read_text()
+        refs = set(re.findall(r"references/([A-Za-z0-9_.-]+\.md)", text))
+        assert refs, skill
+        for ref in refs:
+            assert (target / ".claude/skills" / skill / "references" / ref).is_file(), f"{skill}/{ref}"
+
+
+def _skill_source(tmp_path):
+    """A file:// copy of this repo's skills that a test can break."""
+    src = tmp_path / "src"
+    shutil.copytree(REPO_ROOT / ".claude/skills", src / ".claude/skills")
+    return src
+
+
+def _run_install_skill(target, src, umask=None):
+    cmd = f'bash "{REPO_ROOT / "install-skill.sh"}" "{target}"'
+    if umask is not None:
+        cmd = f"umask {umask}; {cmd}"
+    return subprocess.run(
+        ["bash", "-c", cmd], capture_output=True, text=True,
+        env={**os.environ, "SLOPSTOPPER_REPO_RAW": f"file://{src}"},
+    )
+
+
+def test_install_skill_sh_ships_only_the_files_the_map_links(tmp_path):
+    """An editor swap file or an unlinked draft in the source tree never
+    reaches an adopter — install.sh runs from a working checkout."""
+    src = _skill_source(tmp_path)
+    (src / ".claude/skills/slopstopper-install/references/wip.md").write_text("# draft\n")
+    (src / ".claude/skills/slopstopper-install/.DS_Store").write_text("junk")
+    target = tmp_path / "adopter"
+    target.mkdir()
+    result = _run_install_skill(target, src)
+    assert result.returncode == 0, result.stdout + result.stderr
+    installed = target / ".claude/skills/slopstopper-install"
+    assert not (installed / "references/wip.md").exists()
+    assert not (installed / ".DS_Store").exists()
+
+
+def test_a_failed_skill_leaves_the_installed_copy_and_fails_loudly(tmp_path):
+    src = _skill_source(tmp_path)
+    target = tmp_path / "adopter"
+    target.mkdir()
+    assert _run_install_skill(target, src).returncode == 0
+    installed = target / ".claude/skills/slopstopper-install"
+    before = (installed / "SKILL.md").read_text()
+
+    # Upstream changes the map but one linked reference is missing.
+    skill_src = src / ".claude/skills/slopstopper-install"
+    (skill_src / "SKILL.md").write_text(before + "\nnew upstream line\n")
+    (skill_src / "references/verify.md").unlink()
+    triage_md = src / ".claude/skills/slopstopper-triage/SKILL.md"
+    triage_md.write_text(triage_md.read_text() + "\ntriage update\n")
+
+    result = _run_install_skill(target, src)
+    assert result.returncode == 1
+    assert "slopstopper-install" in result.stdout + result.stderr
+    assert (installed / "SKILL.md").read_text() == before, "a failed refresh must not touch the installed skill"
+    assert (installed / "references/verify.md").is_file()
+    # The other skill still refreshed, and nothing half-swapped is left beside them.
+    assert "triage update" in (target / ".claude/skills/slopstopper-triage/SKILL.md").read_text()
+    leftovers = [p.name for p in (target / ".claude/skills").iterdir() if "." in p.name]
+    assert not leftovers, leftovers
+
+
+def test_installed_skill_directories_follow_the_umask(tmp_path):
+    """Staging in mktemp's 0700 directory used to leave the skills unreadable
+    to anyone else sharing the checkout."""
+    src = _skill_source(tmp_path)
+    target = tmp_path / "adopter"
+    target.mkdir()
+    assert _run_install_skill(target, src, umask="022").returncode == 0
+    for path in (
+        target / ".claude/skills/slopstopper-install",
+        target / ".claude/skills/slopstopper-install/references",
+    ):
+        assert stat.S_IMODE(path.stat().st_mode) == 0o755, path
