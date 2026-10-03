@@ -262,21 +262,6 @@ SMOKE_TEST_URL=https://your-site.example.com \
 
 For assertions beyond "page returns 200 and loads cleanly" (e.g. specific element visibility), add your own specs under your repo's own `tests/` directory — those are picked up by a `playwright.config.js` you write in your repo root, not by SlopStopper's bundled config.
 
-### Best Practices
-
-1. **Keep tests fast** - Smoke tests should complete in under 2 minutes
-2. **Test critical paths only** - Focus on must-work functionality
-3. **Avoid test data dependencies** - Tests should work on any deployment
-4. **Set appropriate timeouts** - Allow for network latency in production
-5. **Monitor regularly** - Run on a schedule to catch degradation early
-
-### Monitoring Recommendations
-
-- **Frequency**: Run every 15-60 minutes depending on SLA requirements
-- **Alerting**: Configure GitHub Actions to notify on failures
-- **Retention**: Keep test results for at least 30 days
-- **Review**: Regularly review test coverage and update as site evolves
-
 ### Troubleshooting
 
 **Tests fail locally but pass in CI (or vice versa):**

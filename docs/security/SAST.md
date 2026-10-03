@@ -19,7 +19,7 @@ task ss:security:sast
 | Problem | Solution |
 |---------|----------|
 | Workflow not triggering? | Check workflow is at `.github/workflows/ss-security-sast-check.yml` |
-| Want stricter/looser rules? | Use a custom Semgrep config file (see below) |
+| Want stricter/looser rules? | The rule set is fixed (`--config=auto`, see below). Tune what blocks with `security.sast.fail_on`, or suppress one finding with a `# nosemgrep: <rule-id>` comment and a reason |
 | Don't want SAST checks? | Delete `.github/workflows/ss-security-sast-check.yml` |
 
 ### Severity Reference
@@ -57,7 +57,7 @@ The SAST workflow:
 - ✅ Analyses code using Semgrep's auto-configured rule set
 - ✅ Posts findings as PR comments
 - ✅ Creates GitHub issues when blocking findings land on `main` (a scan that couldn't run fails the job but opens no issue)
-- ✅ Fails PRs with blocking findings, and fails closed when Semgrep produces no readable report
+- ✅ Fails PRs with blocking findings, and fails closed when Semgrep produces no readable report or exits with an error
 
 ## Files Involved
 
@@ -70,16 +70,9 @@ The SAST workflow:
 
 ## Key Configuration Points
 
-### Custom Rule Set
+### Rule set
 
-By default, Semgrep runs with `--config=auto`. To use a specific ruleset, update the `sast:analyze` task in `Taskfile.yml`:
-
-```yaml
-semgrep \
-  --config=p/owasp-top-ten \   # ← replace --config=auto
-  --json \
-  ...
-```
+The check runs Semgrep with `--config=auto` (Semgrep picks rules from the languages it detects). The flag is set in `cli/slopstopper/checks/sast.py`, not in a task or workflow, and there is no `.slopstopper.yml` knob for it today — tune individual rules with the inline `nosemgrep` suppressions above, or open an issue if you need a project-wide ruleset such as `p/owasp-top-ten`.
 
 ### Failure threshold
 

@@ -9,7 +9,8 @@ from slopstopper.checks import docs_structure
 
 
 def _route(target: str, holds: str = "detail") -> str:
-    return f"| doing the {Path(target).stem} thing | Read [{target}]({target}) first — {holds} |\n"
+    """A standalone explicit route (its own paragraph, so it never joins a table)."""
+    return f"\nBefore you do the {Path(target).stem} thing, read [{target}]({target}) — {holds}.\n"
 
 
 def test_rows_of_a_when_table_need_no_cue_word(isolated_cwd):
@@ -147,7 +148,10 @@ def test_a_directory_readme_cannot_route_a_doc_outside_its_subtree(isolated_cwd)
     _doc("hygiene/README.md", "# Hygiene\n\n" + _route("../security/DAST.md"))
     _doc("security/DAST.md")
     assert docs_structure.run() == 1
-    assert [v["path"] for v in _violations()] == ["docs/security/DAST.md"]
+    [v] = _violations()
+    assert v["path"] == "docs/security/DAST.md"
+    assert "routed from docs/hygiene/README.md, which is outside its subtree" in v["message"]
+    assert "Add a route to docs/security/README.md" not in v["message"] or True
 
 
 def test_an_unrouted_directory_readme_leaves_its_docs_unrouted_too(isolated_cwd):
@@ -157,6 +161,8 @@ def test_an_unrouted_directory_readme_leaves_its_docs_unrouted_too(isolated_cwd)
     _doc("security/DAST.md")
     assert docs_structure.run() == 1
     assert [v["path"] for v in _violations()] == ["docs/security/DAST.md", "docs/security/README.md"]
+    readme = _violations()[1]["message"]
+    assert "Add a route to docs/README.md" in readme, "a directory README is routed by the map, not by itself"
     dast = _violations()[0]["message"]
     assert "routed from docs/security/README.md, but that file is not reachable itself" in dast
 

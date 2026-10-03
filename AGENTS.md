@@ -25,8 +25,10 @@ A change that affects adopters usually touches both layers and the docs.
    CLI tests when `cli/` changes.
 3. **Every check keeps the exit-code contract:** 0 ran clean, 1 ran and
    failed, 2 could not run. CI gates on it directly.
-4. **Budgets are the feature.** When a docs check fails, move content
-   deeper into `docs/` and route it; never raise the budget.
+4. **Budgets are the feature.** When `entry-files` or `docs-structure`
+   fails, move content deeper into `docs/` and route it; those budgets
+   (tokens, lines, hops) never move. `docs-size`'s totals are advisory
+   and sized to the repo — change them only in a commit that says why.
 5. **Conventional Commits** (`feat:`, `fix:`, `docs:`, `chore:` …);
    release-please cuts the CLI release from them. Third-party actions are
    pinned to a commit SHA, never a tag.
@@ -41,8 +43,9 @@ A change that affects adopters usually touches both layers and the docs.
 | `task ss:hygiene:test`                   | the static hygiene suite (what the pre-push hook runs)     |
 | `task ss:security:scan`                  | SAST, secrets, dependency scan                             |
 | `task ss:reliability:<check> -- <url>`   | a browser check against a running site                     |
-| `task -t cli/Taskfile.yml test`          | the pytest suite for `slopstopper-cli`                     |
-| `task contributing:run` / `:test`        | local server on :8080 / Playwright smoke + a11y            |
+| `task contributing:test`                 | the pytest suite for `slopstopper-cli` (`-- -k <expr>` filters) |
+| `task contributing:run` / `:test:site`   | serve `app/` on :8080 / Playwright smoke + a11y against it |
+| `task contributing:setup`                | npm deps, the CLI editable in `cli/.venv`, Chromium, the hook |
 | `slopstopper checks list` / `doctor`     | what exists / which external tools are missing             |
 
 ## Layout

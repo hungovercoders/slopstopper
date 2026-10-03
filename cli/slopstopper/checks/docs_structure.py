@@ -142,38 +142,61 @@ def _walk_routes(docs_dir: Path, map_file: Path) -> tuple[dict[Path, dict], list
     return reached, broken
 
 
-def _mentions(docs_dir: Path, map_file: Path) -> tuple[dict[Path, str], dict[Path, str]]:
+def _mentions(docs_dir: Path, map_file: Path) -> tuple[dict[Path, Path], dict[Path, Path]]:
     """Where every routing file links each doc: `(explicit, soft)`, target → source.
 
     Used to explain an unrouted doc: linked softly (the usual near-miss),
-    or routed from a README that is itself unreachable.
+    routed from a README outside its subtree, or routed from a README that
+    is itself unreachable.
     """
-    explicit: dict[Path, str] = {}
-    soft: dict[Path, str] = {}
+    explicit: dict[Path, Path] = {}
+    soft: dict[Path, Path] = {}
     sources = [p for p in [AGENTS_FILE, map_file] if p.is_file()]
     sources += [p for p in sorted(docs_dir.rglob("README.md")) if p.resolve() != map_file.resolve()]
     for source in sources:
         explicit_here, soft_here = _routes.route_table(source)
         for target in explicit_here:
-            explicit.setdefault(target, _rel(source))
+            explicit.setdefault(target, source.resolve())
         for target in soft_here:
-            soft.setdefault(target, _rel(source))
+            soft.setdefault(target, source.resolve())
     return explicit, soft
 
 
 # ── rules ────────────────────────────────────────────────────────
 
 
-def _why_unrouted(resolved: Path, explicit: dict, soft: dict) -> str:
+def _why_unrouted(
+    resolved: Path, explicit: dict, soft: dict, reached: dict, docs_dir: Path, map_file: Path
+) -> str:
     if resolved in explicit:
-        return f"routed from {explicit[resolved]}, but that file is not reachable itself (route it first)"
+        source = explicit[resolved]
+        if not _may_route(source, resolved, docs_dir, map_file):
+            return (
+                f"routed from {_rel(source)}, which is outside its subtree — a directory README "
+                "routes only the docs beside and below it, so that line is a cross-reference"
+            )
+        if source not in reached:
+            return f"routed from {_rel(source)}, but that file is not reachable itself (route it first)"
     if resolved in soft:
-        return f"linked from {soft[resolved]} without a trigger or 'read'"
+        return f"linked from {_rel(soft[resolved])} without a trigger or 'read'"
     return "not linked from AGENTS.md, the map, or a README above it"
 
 
+def _route_home(doc: Path, docs_dir: Path, map_file: Path) -> str:
+    """The README that should carry the route to `doc`: the nearest README
+    above it (a directory README is routed by its parent's, not itself)."""
+    directory = doc.parent.parent if doc.name == "README.md" else doc.parent
+    while docs_dir.resolve() in directory.resolve().parents or directory.resolve() == docs_dir.resolve():
+        readme = directory / "README.md"
+        if readme.is_file() and readme.resolve() != doc.resolve():
+            return _rel(readme)
+        directory = directory.parent
+    return _rel(map_file)
+
+
 def _check_routed(
-    docs: list[Path], reached: dict, mentions: tuple[dict, dict], settings: dict, map_file: Path
+    docs: list[Path], reached: dict, mentions: tuple[dict, dict], settings: dict,
+    docs_dir: Path, map_file: Path,
 ) -> list[dict]:
     if not settings["require_routed_docs"]:
         return []
@@ -184,8 +207,8 @@ def _check_routed(
         if resolved in reached:
             continue
         rel = _rel(doc)
-        where = _rel(doc.parent / "README.md") if (doc.parent / "README.md").is_file() else _rel(map_file)
-        detail = _why_unrouted(resolved, explicit, soft)
+        where = _route_home(doc, docs_dir, map_file)
+        detail = _why_unrouted(resolved, explicit, soft, reached, docs_dir, map_file)
         violations.append({
             "type": "unrouted_doc",
             "path": rel,
@@ -277,7 +300,7 @@ def _check_structure(docs_dir: Path, settings: dict) -> dict | None:
         return None
     docs = [p for p in sorted(docs_dir.rglob("*.md")) if p.resolve() != map_file.resolve()]
     reached, broken = _walk_routes(docs_dir, map_file)
-    violations = _check_routed(docs, reached, _mentions(docs_dir, map_file), settings, map_file)
+    violations = _check_routed(docs, reached, _mentions(docs_dir, map_file), settings, docs_dir, map_file)
     violations += _check_map_soft_routes(map_file)
     violations += _check_depth(reached, settings)
     violations += _check_doc_lines(docs, settings)

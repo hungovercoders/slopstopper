@@ -14,8 +14,8 @@ here with a message naming the surface. The two `workflow_run` lists
 are covered by `test_workflow_triggers.py`.
 
 Parsed with small line readers rather than a YAML library: the CLI
-ships no third-party dependencies and the test suite holds the same
-line.
+has no YAML parser (lizard is its only runtime dependency) and the test
+suite holds the same line.
 """
 
 from __future__ import annotations

@@ -32,7 +32,7 @@ Monitors overall documentation size and checks against configured thresholds:
 - **Individual file sizes:** max 20 KB
 - **Number of documentation files:** max 25
 
-This check is particularly important for AI-assisted development where documentation needs to fit within context windows efficiently. Running this check generates a detailed report in `.ss/reports/docs/docs-size-report.md`.
+Advisory: it always exits 0 and the report carries the verdict. Under AGENTS.md-first only `AGENTS.md` is always loaded and every other doc is opt-in behind a route, so the per-file cap is the one that protects a reader; the totals are a growth signal, sized to the repo, and moved only in a commit that says why. The report lands in `.ss/reports/docs/docs-size-report.md`.
 
 ```bash
 task ss:hygiene:docs-size
@@ -135,8 +135,8 @@ failures would train people to ignore the check. A 405 proves the route exists
 and passes; only `GET` is sent. Detecting *undocumented* routes is out of scope —
 it needs framework-specific route introspection.
 
-**JSON specs only.** `slopstopper-cli` ships no third-party dependencies, so it
-has no YAML parser. A YAML spec is a graceful skip with that guidance, not a
+**JSON specs only.** `slopstopper-cli` ships no YAML parser (its only
+third-party dependency is `lizard`, for `hygiene:complexity`). A YAML spec is a graceful skip with that guidance, not a
 failure — most frameworks serve the JSON form at `/openapi.json`.
 
 ```yaml
@@ -190,26 +190,4 @@ needs a live API — run that one separately with a URL.
 
 ## When to Run
 
-- **Before commits:** Run `task ss:hygiene:test` to catch code and documentation issues early
-- **During code review:** Complexity analysis helps identify refactoring opportunities
-- **During PR reviews:** Size monitoring helps track documentation growth
-- **In CI/CD:** These checks run automatically in GitHub Actions workflows
-- **Local development:** Run manually to validate changes before pushing
-
-## Thresholds & Rationale
-
-The thresholds are designed to:
-1. **Keep code maintainable** - Identifies complex functions that may need refactoring
-2. **Stay within AI context windows** - Ensures documentation can be referenced in full during AI-assisted development
-3. **Maintain document readability** - Prevents any single document from becoming unwieldy
-4. **Keep navigation cheap** - A typical task needs nothing beyond `AGENTS.md`; a specialised one takes at most a few explicit hops
-5. **Support rapid iteration** - Smaller documentation and simpler code is easier to update and refactor
-
-## Recommendations
-
-If thresholds are exceeded:
-- Consider consolidating related documentation
-- Move history into git (the commit message), not an archive folder
-- Split large files into focused, topic-specific documents
-- Remove redundant or outdated information
-- Use the `.ss/reports/docs/docs-size-report.md` report to identify which files need attention
+`task ss:hygiene:test` before every push (the pre-push hook runs it); CI runs each check on the paths it watches. The thresholds keep code refactorable (complexity), keep every doc readable in one sitting (per-doc size and lines), and keep a typical task to zero reads beyond `AGENTS.md` (entry-file budgets, explicit routes). When one trips, move content deeper and route it; the `.ss/reports/` file for the check names what to move.

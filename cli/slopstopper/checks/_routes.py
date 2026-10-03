@@ -6,10 +6,12 @@ which docs it links, and whether each link is a *route* an agent will
 actually follow. One copy, so the two checks agree on what a route is.
 
 A route is a logical line (paragraph, bullet or table row — fenced code
-is skipped) that links a `.md` file AND names a trigger AND says read:
+is skipped) that links a `.md` file with, in this order, a trigger, then
+"read", then the link:
 
     Before you change CI, read docs/ci.md — it defines what `task ci` runs.
-    | adding a check | Read [hygiene/README.md](hygiene/README.md) first |
+    | When you are…  | Do this                                   |
+    | adding a check | Read [hygiene/README.md](hygiene/README.md) |
 
 "See docs/ci.md for details" is a soft link: agents treat it as optional
 and skip it, then reinvent what the doc already settled. A line with the
@@ -27,8 +29,16 @@ from pathlib import Path
 # than a word count is (a 1,400-word AGENTS.md full of tables and links
 # costs ~3,200 tokens, not ~2,000).
 _BADGE_LINE_RE = re.compile(r"^\s*(?:\[?!\[[^\]]*\]\([^)]*\)\]?(?:\([^)]*\))?\s*)+$")
-_DOC_LINK_RE = re.compile(r"\]\(\s*<?([^)\s>#]+\.md)(?:#[^)\s>]*)?>?(?:\s+(?:\"[^\"]*\"|'[^']*'))?\s*\)")
+# The three ways markdown links a file: inline, reference-style, HTML.
+_INLINE_LINK_RE = re.compile(r"\]\(\s*<?([^)\s>]+)>?(?:\s+(?:\"[^\"]*\"|'[^']*'))?\s*\)")
+_REFERENCE_USE_RE = re.compile(r"\[([^\]]*)\]\[([^\]]*)\]")
+_REFERENCE_DEF_RE = re.compile(r"^\s*\[([^\]]+)\]:\s*<?(\S+?)>?(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^)]*\)))?\s*$")
+_HREF_RE = re.compile(r"""href\s*=\s*["']([^"']+)["']""")
 _BLOCK_START_RE = re.compile(r"^\s*(#|\||[-*+]\s|\d+[.)]\s|>)")
+_FENCE_RE = re.compile(r"^\s*(`{3,}|~{3,})")
+_TABLE_ROW_RE = re.compile(r"^\s*\|")
+# A header separator is made of nothing but pipes, dashes, colons and spaces.
+_TABLE_RULE_RE = re.compile(r"^\s*\|?(?:\s*:?-+:?\s*\|)*\s*:?-+:?\s*\|?\s*$")
 _READ_CUE_RE = re.compile(r"\b(read|open|load|follow)\b", re.I)
 # "For <situation>, read X" is trigger-first too; "read X for details" is not.
 _TRIGGER_CUE_RE = re.compile(
@@ -52,10 +62,6 @@ def count_lines(text: str) -> int:
     return len(text.splitlines())
 
 
-_TABLE_ROW_RE = re.compile(r"^\s*\|")
-_TABLE_RULE_RE = re.compile(r"^\s*\|?\s*:?-{2,}")
-
-
 def _first_cell(row: str) -> str:
     cells = [c.strip() for c in row.strip().strip("|").split("|")]
     return cells[0] if cells else ""
@@ -67,6 +73,7 @@ class _Joiner:
     def __init__(self) -> None:
         self.out: list[str] = []
         self.current: str | None = None
+        self.in_table = False
         self.table_prefix = ""
 
     def flush(self) -> None:
@@ -76,21 +83,28 @@ class _Joiner:
 
     def blank(self) -> None:
         self.flush()
+        self.in_table = False
         self.table_prefix = ""
 
     def table_row(self, stripped: str) -> None:
         self.flush()
-        if _TABLE_RULE_RE.match(stripped.lstrip("|").strip()):
+        if _TABLE_RULE_RE.match(stripped):
             return
-        first = _first_cell(stripped)
-        if not self.table_prefix and _TRIGGER_CUE_RE.search(first) and not doc_links(stripped):
-            self.table_prefix = first + " "  # the header row: its first cell is the trigger
+        if not self.in_table:
+            # The first row of a table is its header. When its first cell
+            # names a trigger ("When you are…") the column *is* the
+            # trigger, so every data row is read with it prefixed.
+            self.in_table = True
+            first = _first_cell(stripped)
+            self.table_prefix = first + " " if _TRIGGER_CUE_RE.search(first) else ""
+            self.current = stripped
             return
         self.current = self.table_prefix + stripped
 
     def block_start(self, stripped: str) -> None:
         self.flush()
         self.current = stripped
+        self.in_table = False
         self.table_prefix = ""
 
     def continuation(self, stripped: str) -> None:
@@ -101,20 +115,24 @@ def logical_lines(text: str) -> list[str]:
     """Paragraphs, bullets and table rows as single strings.
 
     Wrapped prose is joined so a route split over two source lines still
-    reads as one; fenced code blocks are skipped (a link inside a code
-    sample is an example, not a route). A row of a routing table — one
-    whose header's first cell is the trigger ("When you are…") — comes
+    reads as one; fenced code blocks (``` or ~~~) are skipped — a link
+    inside a code sample is an example, not a route. A data row of a
+    table whose header's first cell is a trigger ("When you are…") comes
     back with that header prefixed, so the row reads as the trigger-first
-    sentence it is: the column header *is* the trigger.
+    sentence it is.
     """
     joiner = _Joiner()
-    fenced = False
+    fence: str | None = None
     for line in text.splitlines():
         stripped = line.strip()
-        if stripped.startswith("```"):
-            fenced = not fenced
-        elif fenced:
+        opener = _FENCE_RE.match(line)
+        if opener and (fence is None or stripped.startswith(fence)):
+            fence = None if fence else opener.group(1)[0] * 3
+            joiner.blank()  # a fence is a block boundary either way
+        elif fence:
             continue
+        elif _REFERENCE_DEF_RE.match(line):
+            continue  # a definition is a footnote, not a sentence
         elif not stripped:
             joiner.blank()
         elif _TABLE_ROW_RE.match(line):
@@ -127,16 +145,68 @@ def logical_lines(text: str) -> list[str]:
     return joiner.out
 
 
-def doc_links(line: str) -> list[str]:
+def reference_definitions(text: str) -> dict[str, str]:
+    """`[label]: target` definitions, keyed by lower-cased label."""
+    refs: dict[str, str] = {}
+    for line in text.splitlines():
+        m = _REFERENCE_DEF_RE.match(line)
+        if m:
+            refs.setdefault(m.group(1).strip().lower(), m.group(2))
+    return refs
+
+
+def _is_doc_target(target: str) -> bool:
+    bare = target.split("#", 1)[0].split("?", 1)[0]
+    return bare.endswith(".md") and not target.startswith(("http://", "https://", "mailto:", "/"))
+
+
+def link_spans(line: str, refs: dict[str, str] | None = None) -> list[tuple[int, str]]:
+    """`(position, target)` for every `.md` link on one logical line.
+
+    Inline `[t](x.md)`, reference `[t][ref]` / `[ref][]` resolved through
+    `refs`, and HTML `href="x.md"`. URLs and absolute paths are not docs.
+    """
+    spans: list[tuple[int, str]] = []
+    for m in _INLINE_LINK_RE.finditer(line):
+        spans.append((m.start(), m.group(1)))
+    for m in _HREF_RE.finditer(line):
+        spans.append((m.start(), m.group(1)))
+    for m in _REFERENCE_USE_RE.finditer(line):
+        label = (m.group(2) or m.group(1)).strip().lower()
+        target = (refs or {}).get(label)
+        if target:
+            spans.append((m.start(), target))
+    return sorted((p, t.split("#", 1)[0].split("?", 1)[0]) for p, t in spans if _is_doc_target(t))
+
+
+def doc_links(line: str, refs: dict[str, str] | None = None) -> list[str]:
     """Relative `.md` link targets on one logical line (URLs excluded)."""
-    return [
-        t for t in _DOC_LINK_RE.findall(line)
-        if not t.startswith(("http://", "https://", "mailto:", "/"))
-    ]
+    return [t for _p, t in link_spans(line, refs)]
 
 
-def is_explicit_route(line: str) -> bool:
-    return bool(_READ_CUE_RE.search(line) and _TRIGGER_CUE_RE.search(line))
+def _mask_targets(line: str) -> str:
+    """Blank out link targets so a cue word inside a path does not count."""
+    def blank(m: re.Match) -> str:
+        return m.group(0)[:2] + " " * (len(m.group(0)) - 3) + ")"
+    masked = _INLINE_LINK_RE.sub(blank, line)
+    return _HREF_RE.sub(lambda m: " " * len(m.group(0)), masked)
+
+
+def _explicit_before(line: str, position: int) -> bool:
+    """True when a read cue precedes `position` and a trigger precedes that cue."""
+    head = _mask_targets(line)[:position]
+    reads = [m.start() for m in _READ_CUE_RE.finditer(head)]
+    if not reads:
+        return False
+    return any(t.start() < reads[-1] for t in _TRIGGER_CUE_RE.finditer(head))
+
+
+def is_explicit_route(line: str, refs: dict[str, str] | None = None) -> bool:
+    """Trigger, then "read", then the link — in that order."""
+    spans = link_spans(line, refs)
+    if spans:
+        return _explicit_before(line, spans[0][0])
+    return _explicit_before(line, len(line))
 
 
 def resolve(source: Path, target: str) -> Path | None:
@@ -150,9 +220,11 @@ def route_table(source: Path) -> tuple[dict[Path, str], dict[Path, str]]:
     """Split the `.md` links in `source` into explicit routes and soft links.
 
     Returns `(explicit, soft)`, each mapping the resolved target to the
-    first logical line that mentions it. A doc that is routed explicitly
-    on one line and mentioned softly on another counts as routed; a doc
-    with only soft mentions is unreachable in practice.
+    first logical line that mentions it. Each link is judged on its own
+    position: a trigger and a read cue must both come before it. A doc
+    that is routed explicitly on one line and mentioned softly on another
+    counts as routed; a doc with only soft mentions is unreachable in
+    practice.
     """
     explicit: dict[Path, str] = {}
     soft: dict[Path, str] = {}
@@ -160,15 +232,14 @@ def route_table(source: Path) -> tuple[dict[Path, str], dict[Path, str]]:
         text = source.read_text()
     except OSError:
         return explicit, soft
+    refs = reference_definitions(text)
     for line in logical_lines(text):
-        targets = doc_links(line)
-        if not targets:
-            continue
-        bucket = explicit if is_explicit_route(line) else soft
-        for target in targets:
+        for position, target in link_spans(line, refs):
             resolved = resolve(source, target)
-            if resolved is not None:
-                bucket.setdefault(resolved, line)
+            if resolved is None:
+                continue
+            bucket = explicit if _explicit_before(line, position) else soft
+            bucket.setdefault(resolved, line)
     for doc in explicit:
         soft.pop(doc, None)
     return explicit, soft

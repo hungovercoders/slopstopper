@@ -446,7 +446,7 @@ def run(args: list[str] | None = None) -> int:
         return _skip(
             f"api.openapi.spec points at a YAML spec ({opts['spec']}) — this check reads JSON only.",
             [
-                "slopstopper-cli ships no third-party dependencies, so it can't parse YAML.",
+                "slopstopper-cli has no YAML parser (its one runtime dependency is lizard), so it can't read YAML.",
                 "Point it at the JSON form instead — most frameworks serve /openapi.json —",
                 "e.g. api.openapi.spec: https://api.example.com/openapi.json",
             ],

@@ -88,7 +88,6 @@ The key characteristics are:
 
 Key documentation files:
 - `AGENTS.md` (repo root) — Instructions for AI agents working in this repo
-- `docs/README.md` — Project overview and setup guide
 - `docs/contributing/README.md` — Contribution guidelines
 - `docs/README.md` — The docs map: one trigger-first route per doc
 
@@ -172,7 +171,7 @@ For each missing or incomplete documentation:
    - Test changes → `docs/reliability/`
    - Code quality changes → `docs/hygiene/`
    - Architecture changes → `docs/architecture/`
-   - New decisions → `docs/decisions/` (use DECISION_TEMPLATE.md)
+   - New decisions → a row in `docs/decisions/README.md` (supporting note via `task decisions:new SLUG=<name>`)
    - Setup/contribution changes → `docs/contributing/README.md`
 
 2. **Update the appropriate file(s)** using the edit tool:

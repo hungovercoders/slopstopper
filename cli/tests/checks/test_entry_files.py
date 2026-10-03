@@ -61,6 +61,7 @@ def test_route_table_separates_explicit_from_soft(isolated_cwd):
     p.write_text(
         "Before you change CI, read [ci](docs/ci.md) — what task ci runs.\n\n"
         "See [tasks](docs/tasks.md) for more.\n\n"
+        "| When you are… | Do this |\n| --- | --- |\n"
         "| adding a doc | Read [style](docs/style.md) first |\n"
     )
     explicit, soft = _routes.route_table(p)
@@ -100,6 +101,58 @@ def test_a_routing_table_header_is_the_trigger_for_its_rows(isolated_cwd):
     explicit, soft = _routes.route_table(p)
     assert {d.name for d in explicit} == {"README.md"}
     assert {d.name for d in soft} == {"release.md", "sast.md"}
+
+
+def test_cues_must_come_in_order_trigger_read_link():
+    assert _routes.is_explicit_route("Before you deploy, read [r](docs/r.md).")
+    assert not _routes.is_explicit_route("Read [r](docs/r.md) when an incident happens.")
+    assert not _routes.is_explicit_route("Read [r](docs/r.md) if you need details.")
+    assert not _routes.is_explicit_route("Follow the [style guide](docs/style.md) unless told otherwise.")
+    assert not _routes.is_explicit_route("| SAST | Read [sast](docs/sast.md) first |")
+
+
+def test_a_cue_word_inside_the_link_target_does_not_count():
+    assert not _routes.is_explicit_route("Read [w](docs/when.md).")
+    assert not _routes.is_explicit_route('<a href="docs/before-read.md">x</a>')
+
+
+def test_each_link_is_judged_at_its_own_position(isolated_cwd):
+    p = isolated_cwd / "AGENTS.md"
+    p.write_text("See [a](docs/a.md); then, before you ship, read [b](docs/b.md).\n")
+    explicit, soft = _routes.route_table(p)
+    assert {d.name for d in explicit} == {"b.md"}
+    assert {d.name for d in soft} == {"a.md"}
+
+
+def test_reference_style_and_html_links_are_links(isolated_cwd):
+    p = isolated_cwd / "AGENTS.md"
+    p.write_text(
+        "Before deployment, read [the runbook][deploy].\n\n"
+        "See [notes][]. \n\n"
+        'When you edit CI, read <a href="docs/ci.md">ci</a>.\n\n'
+        "[deploy]: docs/DEPLOY.md\n[notes]: docs/notes.md\n"
+    )
+    explicit, soft = _routes.route_table(p)
+    assert {d.name for d in explicit} == {"DEPLOY.md", "ci.md"}
+    assert {d.name for d in soft} == {"notes.md"}
+
+
+def test_tilde_fences_are_skipped_too():
+    assert _routes.logical_lines("Para one\n~~~\nsee [x](docs/x.md)\n~~~\nafter\n") == ["Para one", "after"]
+
+
+def test_only_the_first_row_of_a_table_can_be_its_header():
+    rows = _routes.logical_lines(
+        "| Command | Does |\n| --- | --- |\n| `task first` | bootstrap |\n| `task docs` | Read [d](docs/d.md) |\n"
+    )
+    assert rows == ["| Command | Does |", "| `task first` | bootstrap |", "| `task docs` | Read [d](docs/d.md) |"]
+    assert not _routes.is_explicit_route(rows[2])
+
+
+def test_a_flag_row_is_not_a_header_separator():
+    rows = _routes.logical_lines("| Flag | Does |\n| --- | --- |\n| --no-task | when you use it, read [ci](docs/ci.md) |\n")
+    assert rows[-1].startswith("| --no-task |")
+    assert _routes.is_explicit_route(rows[-1])
 
 
 def test_for_situation_counts_as_trigger_first():

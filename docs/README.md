@@ -1,7 +1,7 @@
 # Docs index
 
 The fallback routing table (a README so it renders in place when you
-browse `docs/`). [`AGENTS.md`](../AGENTS.md) carries what most tasks need
+browse `docs/`). `AGENTS.md` carries what most tasks need
 and routes the common cases directly; come here when your task is not
 covered there. Read only the doc whose trigger matches — each row says
 when, and each category README routes onward to its own detail.

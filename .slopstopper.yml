@@ -45,8 +45,15 @@ smoke:
 # that one is about a single document staying readable.
 hygiene:
   docs_size:
+    # Advisory totals, sized to this repo and moved only in a reviewed
+    # commit that says why. 0.15 moved the adopter guide and the change
+    # map out of README.md / AGENTS.md (the always-loaded files) into
+    # docs/ (opt-in, routed) and split the security + architecture
+    # READMEs under the 300-line budget, so docs/ grew by what the entry
+    # files lost. The structural budgets (entry-files tokens, docs-structure
+    # lines and depth) are the ones that never move.
     max_total_size_kb: 200
-    max_files: 40   # AGENTS.md-first favours many focused docs over few long ones
+    max_files: 35
   # Every piece of site and skill drift the repo review found lived in a
   # file the docs/-only scan never read. Scan those surfaces too.
   docs_accuracy:

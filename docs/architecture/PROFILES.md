@@ -12,8 +12,8 @@ workflows a repo of that shape shouldn't carry.
 | Profile | Shape | Drops |
 | ------- | ----- | ----- |
 | `ui` (default) | Serves HTML to a browser | Nothing — every check applies |
-| `api` | JSON/gRPC endpoints, no browser surface | The eight browser-and-SEO checks. Keeps the two API checks, CSP exceptions (APIs still set response headers) and DAST, via ZAP's OpenAPI mode |
-| `library` | Library, CLI or package; nothing deployed | The eight above, plus DAST, CSP exceptions and the two API checks — everything that needs a URL |
+| `api` | JSON/gRPC endpoints, no browser surface | The eight browser-and-SEO checks. Keeps the four API checks (api-health, api-latency, api-headers, OpenAPI drift), CSP exceptions (APIs still set response headers) and DAST, via ZAP's OpenAPI mode |
+| `library` | Library, CLI or package; nothing deployed | The eight above, plus DAST, CSP exceptions and the four API checks — everything that needs a URL |
 
 **DAST scans an API through ZAP's OpenAPI mode.** The default scan is ZAP's
 *baseline*, which spiders a site from a root URL — right for an HTML surface,

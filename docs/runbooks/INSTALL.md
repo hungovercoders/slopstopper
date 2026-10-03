@@ -118,8 +118,4 @@ Refresh only the Claude Code skills: `curl -fsSL https://raw.githubusercontent.c
 
 ## Releases and provenance
 
-Published to PyPI on every release tag. Each release is also attached to [GitHub Releases](https://github.com/hungovercoders/slopstopper/releases/latest) with a Sigstore build-provenance attestation — verify with `gh attestation verify <wheel> --owner hungovercoders`. The CLI ships with no third-party Python dependencies; every check invokes its tool via `subprocess` only. Credits and licences for every tool live in [`ATTRIBUTIONS.md`](../../ATTRIBUTIONS.md).
-
-## See it in action
-
-[slopstopper.dev](https://slopstopper.dev/) runs every check on every change. Browse [Features](https://slopstopper.dev/features.html) for each check's YAML and a mock report, or [Tools](https://slopstopper.dev/tools.html) for the technology stack.
+Published to PyPI on every release tag, each attached to [GitHub Releases](https://github.com/hungovercoders/slopstopper/releases/latest) with a Sigstore build-provenance attestation — verify with `gh attestation verify <wheel> --owner hungovercoders`. The CLI has one third-party Python dependency, `lizard` (for `hygiene:complexity`); every other tool runs via `subprocess`. Credits and licences live in [`ATTRIBUTIONS.md`](../../ATTRIBUTIONS.md).

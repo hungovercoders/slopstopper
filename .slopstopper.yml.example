@@ -244,8 +244,8 @@ api:
     # directory for the run and removed afterwards.
     #
     # DAST takes either form. `hygiene:openapi` reads JSON only —
-    # slopstopper-cli ships no third-party dependencies, so it can't
-    # parse YAML, and it skips with that guidance rather than failing.
+    # slopstopper-cli has no YAML parser, so it can't read YAML, and it
+    # skips with that guidance rather than failing.
     # Most frameworks serve the JSON form at /openapi.json.
     spec:
     # Pass the scanned URL as ZAP's -O host override, so a spec whose
