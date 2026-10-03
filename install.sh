@@ -919,12 +919,21 @@ success "$INSTALLED_WORKFLOWS workflow(s) installed, $REFRESHED_WORKFLOWS refres
 
 # Composite actions every ss-* workflow builds on (`uses: ./.github/actions/ss-*`).
 # Plumbing, not checks: always copied, never tracked in the marker, never
-# dropped by a profile. A stale copy is removed first so a renamed action
-# doesn't leave its old directory behind.
+# dropped by a profile. Each shipped action is replaced wholesale (so a file
+# removed from it upstream goes too). An action slopstopper stops shipping,
+# or renames, goes in OBSOLETE_ACTIONS so re-runs delete the old directory —
+# the same contract as OBSOLETE_SKILLS.
+OBSOLETE_ACTIONS=()
 ACTIONS_SRC="$SCRIPT_DIR/.github/actions"
 ACTIONS_DST="$TARGET_DIR/.github/actions"
 if [ -d "$ACTIONS_SRC" ]; then
   mkdir -p "$ACTIONS_DST"
+  for obsolete in ${OBSOLETE_ACTIONS[@]+"${OBSOLETE_ACTIONS[@]}"}; do
+    if [ -d "$ACTIONS_DST/$obsolete" ]; then
+      rm -rf "${ACTIONS_DST:?}/${obsolete:?}"
+      info "removed obsolete composite action .github/actions/$obsolete"
+    fi
+  done
   ACTIONS_INSTALLED=""
   for action_dir in "$ACTIONS_SRC"/ss-*/; do
     [ -d "$action_dir" ] || continue

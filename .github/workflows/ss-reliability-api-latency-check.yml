@@ -62,9 +62,11 @@ jobs:
 
       - name: Determine audit URL
         id: url
-        # CUSTOMISE FOR YOUR APP: urls.production / urls.preview in
-        # .slopstopper.yml. See .github/actions/ss-resolve-url for the
-        # event → URL table.
+        # CUSTOMISE FOR YOUR APP: point urls.preview (.slopstopper.yml) at the
+        # environment your PRs deploy to. Timings from a preview environment
+        # are noisier than production ones — derive budgets from what you
+        # actually observe there, or the check becomes noise. See
+        # .github/actions/ss-resolve-url for the event → URL table.
         uses: ./.github/actions/ss-resolve-url
         with:
           mode: skip

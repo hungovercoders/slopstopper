@@ -93,7 +93,12 @@ def test_every_step_output_reference_names_a_real_step(workflow):
 
 def test_resolve_url_declares_the_outputs_the_workflows_read():
     action = (ACTIONS_DIR / "ss-resolve-url" / "action.yml").read_text(encoding="utf-8")
-    declared = set(re.findall(r"^  ([a-z_]+):\n    description", action, re.M))
+    # Only the `outputs:` block: an input name read as an output evaluates
+    # empty just as silently as a typo would.
+    outputs_block = re.search(r"^outputs:\n((?:  .*\n|\n)+)", action, re.M)
+    assert outputs_block, "ss-resolve-url declares no outputs"
+    declared = set(re.findall(r"^  ([a-z_]+):\n    description", outputs_block.group(1), re.M))
+    assert declared == {"url", "skip", "use_local", "prod"}, declared
     used: set[str] = set()
     for workflow in BUILT_ON_ACTIONS:
         text = _text(workflow)
@@ -103,3 +108,18 @@ def test_resolve_url_declares_the_outputs_the_workflows_read():
         assert step_id, workflow
         used |= set(re.findall(rf"steps\.{re.escape(step_id.group(1))}\.outputs\.([a-z_]+)", text))
     assert used <= declared, f"workflows read outputs ss-resolve-url doesn't declare: {sorted(used - declared)}"
+
+
+@pytest.mark.parametrize("workflow", BUILT_ON_ACTIONS)
+def test_local_build_steps_follow_the_resolved_url(workflow):
+    """The event → local-build table lives in ss-resolve-url. A workflow that
+    gates its build/serve steps on `github.event_name` instead keeps a second
+    copy, which drifts: the serve step stops matching the URL being audited."""
+    text = _text(workflow)
+    if "ss-resolve-url" not in text:
+        return
+    hand_rolled = re.findall(
+        r"- name: ((?:Build|Start|Stop)[^\n]*)\n\s+if: [^\n]*github\.event_name == 'pull_request' \|\| github\.event_name == 'push'",
+        text,
+    )
+    assert not hand_rolled, f"{workflow}: gate {hand_rolled} on steps.<id>.outputs.use_local"

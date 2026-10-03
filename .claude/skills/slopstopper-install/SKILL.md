@@ -514,6 +514,7 @@ Adopter repos should hold exactly the **expected set** of slopstopper artefacts 
 - `.ss/scripts/` — pre-CLI artefact, scrubbed wholesale on every install.
 - Byte-equal copies of `.ss/playwright.config.js`, `.ss/lighthouserc.json`, `.ss/lighthouserc.prod.json`, `.ss/tests/` — these moved into the slopstopper-cli wheel; byte-identical adopter copies are removed (the wheel's version wins via the templates resolver). Customised copies survive.
 - Workflows the adopter explicitly disabled via `.slopstopper.yml` `workflows.disabled` — removed on every install.
+- `.github/actions/<name>/` directories listed in `install.sh`'s `OBSOLETE_ACTIONS` (empty today). The shipped composite actions (`ss-setup`, `ss-resolve-url`) are replaced wholesale on every run.
 
 **What you should sanity-check manually on refresh** (the installer can't auto-detect these without an explicit removal list):
 
@@ -522,7 +523,12 @@ Adopter repos should hold exactly the **expected set** of slopstopper artefacts 
 ls -d .claude/skills/slopstopper-*/ 2>/dev/null
 # Expected currently: slopstopper-install, slopstopper-triage. Anything else → flag for the user.
 
-# 2. Workflows: anything matching ss-*-check.yml that doesn't exist upstream is stale
+# 2. Composite actions: anything in .github/actions/ss-* other than the shipped set is stale
+ls -d .github/actions/ss-*/ 2>/dev/null
+# Expected currently: ss-setup, ss-resolve-url. Anything else → flag for the user (and, if it
+# was a slopstopper action that got renamed, add it to OBSOLETE_ACTIONS upstream).
+
+# 3. Workflows: anything matching ss-*-check.yml that doesn't exist upstream is stale
 diff \
   <(curl -s https://api.github.com/repos/hungovercoders/slopstopper/contents/.github/workflows | jq -r '.[].name' | grep '^ss-' | grep -vE '^ss-release\.yml$' | sort) \
   <(ls .github/workflows/ | grep '^ss-' | sort)

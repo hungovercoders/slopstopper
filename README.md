@@ -70,10 +70,11 @@ Everything SlopStopper owns lives under the `ss` namespace so it can't clash wit
 | ---- | ----------- |
 | `slopstopper-cli` (Python) | The product — every check runs through this. Pinned per-repo in `mise.toml` (`"pipx:slopstopper-cli"`) and installed via mise. |
 | `.github/workflows/ss-*.yml` | Security, hygiene, reliability and operational workflows |
+| `.github/actions/ss-*/` | Composite steps the workflows share (setup, URL resolution); replaced on refresh |
 | `Taskfile.ss.yml` | Thin `task ss:*` shims that call the CLI — convenient for the local dev loop |
 | `Taskfile.yml` | Created if missing (else: prints the include block to paste in) |
-| `.githooks/pre-push` | Runs `task ss:hygiene:test` pre-push (via `core.hooksPath`). Opt out with `--no-hooks`; skipped if you already run husky/lefthook/pre-commit |
-| `mise.toml` | Toolchain pin — `"pipx:slopstopper-cli"` + `task`; read locally + in CI (`jdx/mise-action`). Moves via `--upgrade-cli`/`--cli-version` |
+| `.githooks/pre-push` | Pre-push hygiene gate (`--no-hooks` opts out; defers to husky/lefthook/pre-commit) |
+| `mise.toml` | Toolchain pin (`slopstopper-cli`, `task`), read locally and in CI; moved by `--upgrade-cli`/`--cli-version` |
 | `.slopstopper.yml` | Config seed — profile, URLs, headers, thresholds, page lists (never overwritten) |
 | `.ss/reports/` | Where the CLI writes reports — `.gitignore`d |
 | `package.json` | Created (or `devDependencies` merged into an existing file) |

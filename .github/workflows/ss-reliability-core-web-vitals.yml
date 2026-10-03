@@ -55,28 +55,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build site
-        if: github.event_name == 'pull_request' || github.event_name == 'push'
-        run: |
-          if [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then
-            npm run build
-          else
-            echo "ℹ️  No build script — skipping."
-          fi
-
-      - name: Start local server
-        if: github.event_name == 'pull_request' || github.event_name == 'push'
-        run: |
-          slopstopper serve &
-          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
-          for i in $(seq 1 15); do
-            if curl -s http://localhost:8080 > /dev/null; then
-              echo "✅ Server is ready"
-              break
-            fi
-            sleep 1
-          done
-
       - name: Determine audit URL
         id: audit-url
         # CUSTOMISE FOR YOUR APP: urls.production / urls.preview in
@@ -89,6 +67,31 @@ jobs:
           deployment-url: ${{ github.event.deployment_status.target_url }}
           dispatch-fallback: production
           check: Core Web Vitals
+
+      # CUSTOMISE FOR YOUR APP: these two steps build and serve this
+      # repo's static site. Replace with your app's build/serve
+      # commands, or remove them and only audit deployed URLs.
+      - name: Build site
+        if: steps.audit-url.outputs.use_local == 'true'
+        run: |
+          if [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then
+            npm run build
+          else
+            echo "ℹ️  No build script — skipping."
+          fi
+
+      - name: Start local server
+        if: steps.audit-url.outputs.use_local == 'true'
+        run: |
+          slopstopper serve &
+          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 15); do
+            if curl -s http://localhost:8080 > /dev/null; then
+              echo "✅ Server is ready"
+              break
+            fi
+            sleep 1
+          done
 
       - name: Run Core Web Vitals audit
         id: cwv
@@ -106,7 +109,7 @@ jobs:
           fi
 
       - name: Stop local server
-        if: (github.event_name == 'pull_request' || github.event_name == 'push') && always()
+        if: steps.audit-url.outputs.use_local == 'true' && always()
         run: kill "$SERVER_PID" || true
 
       - name: Upload Lighthouse reports
