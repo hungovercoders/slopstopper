@@ -6,13 +6,14 @@ Operational procedures for the SlopStopper project — both the suite itself and
 
 This directory holds step-by-step runbooks for common operational tasks. As the project is a minimal static site template, operational procedures are currently minimal.
 
-## Runbooks
+## Routes
 
-| Runbook | What it covers |
-| ------- | -------------- |
-| [INSTALL_SKILLS.md](./INSTALL_SKILLS.md) | Install the SlopStopper Claude Code skill duo (`slopstopper-install`, `slopstopper-triage`) into a repo at project level (`<repo>/.claude/skills/`) so Claude Code can add, refresh, or triage SlopStopper there |
-| [UPGRADE_CLI.md](./UPGRADE_CLI.md) | Move the pinned `slopstopper-cli` version (`"pipx:slopstopper-cli"` in `mise.toml`) with `install.sh --upgrade-cli` / `--cli-version` (or `mise use`), and recover from a binary that drifted off the pin |
-| [RELEASE.md](./RELEASE.md) | Cut a `slopstopper-cli` release: CHANGELOG bump, version bump in `cli/pyproject.toml` + `__init__.py`, tag, GitHub Release via `ss-release.yml`, optional manual PyPI publish |
+| When you are…                                                              | Do this                                                                                                   |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| adopting slopstopper in a repo, or asking what the suite installs and needs | Read [INSTALL.md](./INSTALL.md) first — prerequisites, what lands, what each check needs, configure, update |
+| installing or refreshing the Claude Code skill duo in a repo               | Read [INSTALL_SKILLS.md](./INSTALL_SKILLS.md) — `install-skill.sh`, what lands under `<repo>/.claude/skills/`, uninstall |
+| moving the pinned `slopstopper-cli` version, or a binary drifted off the pin | Read [UPGRADE_CLI.md](./UPGRADE_CLI.md) — `install.sh --upgrade-cli` / `--cli-version`, `mise use`, recovery |
+| cutting a `slopstopper-cli` release                                        | Read [RELEASE.md](./RELEASE.md) — release-please, the tag, `ss-release.yml`, the manual fallback            |
 
 ## Adding Runbooks
 

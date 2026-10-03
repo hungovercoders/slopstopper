@@ -1,17 +1,28 @@
-"""Documentation structure validator.
+"""Documentation structure validator — every doc has an explicit route.
 
-Ports .ss/scripts/check-docs-structure.py + generate-docs-structure-md.py.
-Validates that the docs/ tree matches the governance model declared
-in docs/index.md (each category named in the index must exist with a
-README.md; nothing in docs/ should exist that the index doesn't sanction;
-every doc inside a category is linked from that category's README, so
-the index → category README → doc chain is unbroken).
+Validates the AGENTS.md-first model declared in docs/README.md: `AGENTS.md`
+carries what most tasks need and routes the rest; the docs map
+(`docs/README.md`) is the fallback routing table; a directory README is
+the map of a topic that split past its budget. A doc is *reachable* when
+some routing file — `AGENTS.md`, the map, or a `README.md` above it under
+`docs/` — links it on a line that names a trigger and says read. A doc
+nothing routes to is invisible to agents, so it fails the build; so does a
+soft link in the map, a route that runs more hops than an agent should
+pay, and a topic doc too long to read in one sitting.
 
 Configuration (.slopstopper.yml — optional):
 
     hygiene:
+      entry_files:
+        map_path: docs/README.md     # shared with hygiene:entry-files
       docs_structure:
-        require_indexed_docs: true   # the category README → doc rule
+        require_routed_docs: true    # every doc under docs/ has an explicit route
+        max_route_depth: 3           # AGENTS.md → map → directory README → doc
+        max_doc_lines: 300           # per topic doc (0 disables)
+
+The pre-0.15 `require_indexed_docs` knob is read as `require_routed_docs`
+with a note. A `docs/index.md` beside the map is reported — the map is a
+README so the repo UI renders it in place.
 
 Writes a JSON report (machine-readable, drives downstream tooling) and a
 markdown report (human-readable).
@@ -19,31 +30,33 @@ markdown report (human-readable).
 Exit codes:
   0 — clean
   1 — violations
-  2 — docs/ or docs/index.md missing (no map to check against), or
+  2 — docs/ or the map missing (no map to check against), or
       arguments were passed (this check takes none)
 """
 
 from __future__ import annotations
 
 import json
-import re
+from collections import deque
 from pathlib import Path
 
 from slopstopper import config, output
-from slopstopper.checks import _report
+from slopstopper.checks import _report, _routes
 from slopstopper.checks._contract import reject_extra_args
 
 DOCS_DIR = Path("docs")
-INDEX_PATH = DOCS_DIR / "index.md"
+AGENTS_FILE = Path("AGENTS.md")
+LEGACY_INDEX = DOCS_DIR / "index.md"
+DEFAULT_MAP_PATH = "docs/README.md"
+DEFAULT_MAX_ROUTE_DEPTH = 3
+DEFAULT_MAX_DOC_LINES = 300
 REPORT_DIR = Path(".ss/reports/docs")
 REPORT_JSON = REPORT_DIR / "docs-structure-report.json"
 REPORT_MD = REPORT_DIR / "docs-structure-report.md"
 
 # Consumed by `slopstopper emit hygiene:docs-structure --target {pr-comment,issue}`.
-# Strings are byte-for-byte identical to the discriminator / title / labels
-# the legacy actions/github-script@v7 block in
-# .github/workflows/ss-hygiene-docs-structure-check.yml used, so the same
-# bot comments/issues are matched after the workflow flip.
+# Unchanged across the routing rewrite so the same bot comments/issues
+# are matched.
 META = {
     "report_path": str(REPORT_MD),
     "comment_discriminator": "📋 Documentation Structure",
@@ -52,160 +65,264 @@ META = {
     "issue_followup": "🔔 Documentation structure issues detected again in commit",
 }
 
-# Files allowed at the top level of docs/ without being declared in
-# the categories table. Mirrors the bash check exactly.
-ALLOWED_TOP_FILES = {"index.md", "README.md", "AGENTS.md", "CONTRIBUTING.md"}
-
-_CATEGORY_RE = re.compile(r"\|\s*\[([a-z_]+)/\]\(([a-z_]+)/\)\s*\|")
+ROUTE_FORM = _routes.ROUTE_TEMPLATE  # one copy, in _routes
 
 
-def _extract_categories(index_text: str) -> list[str]:
-    matches = _CATEGORY_RE.findall(index_text)
-    return sorted({m[0] for m in matches})
+# ── configuration ────────────────────────────────────────────────
 
 
-def _check_expected_categories(docs_dir: Path, expected: list[str]) -> list[dict]:
-    violations: list[dict] = []
-    for category in expected:
-        category_path = docs_dir / category
-        if not category_path.exists():
-            violations.append({
-                "type": "missing_directory",
-                "path": f"docs/{category}/",
-                "message": f"Missing directory: docs/{category}/",
-            })
-        elif not (category_path / "README.md").exists():
-            violations.append({
-                "type": "missing_readme",
-                "path": f"docs/{category}/README.md",
-                "message": f"Missing README.md: docs/{category}/README.md",
-            })
-    return violations
+def _settings() -> dict:
+    legacy = config.get("hygiene.docs_structure.require_indexed_docs")
+    if legacy is not None:
+        output.warn(
+            "hygiene.docs_structure.require_indexed_docs is now require_routed_docs "
+            "(a doc must be *routed*, not merely linked) — reading it as that."
+        )
+    routed_default = config.get_bool("hygiene.docs_structure.require_indexed_docs", True)
+    return {
+        "map_path": config.get_str("hygiene.entry_files.map_path", DEFAULT_MAP_PATH),
+        "require_routed_docs": config.get_bool("hygiene.docs_structure.require_routed_docs", routed_default),
+        "max_route_depth": config.get_int("hygiene.docs_structure.max_route_depth", DEFAULT_MAX_ROUTE_DEPTH),
+        "max_doc_lines": config.get_int("hygiene.docs_structure.max_doc_lines", DEFAULT_MAX_DOC_LINES),
+    }
 
 
-def _check_unexpected_items(docs_dir: Path, expected: list[str]) -> list[dict]:
-    violations: list[dict] = []
-    expected_dirs = set(expected)
-
-    actual_files = {f.name for f in docs_dir.iterdir() if f.is_file()}
-    for filename in sorted(actual_files - ALLOWED_TOP_FILES):
-        violations.append({
-            "type": "unexpected_file",
-            "path": f"docs/{filename}",
-            "message": f"Unexpected file (not in index): docs/{filename}",
-        })
-
-    actual_dirs = sorted(d.name for d in docs_dir.iterdir() if d.is_dir())
-    for dirname in sorted(set(actual_dirs) - expected_dirs):
-        violations.append({
-            "type": "unexpected_directory",
-            "path": f"docs/{dirname}/",
-            "message": f"Unexpected directory (not in index): docs/{dirname}/",
-        })
-
-    return violations
+# ── the route graph ──────────────────────────────────────────────
 
 
-# Inline `](target)` / `](target "title")`, reference definitions
-# `[ref]: target`, and HTML `href="target"` — the three ways a README can
-# point at a sibling doc.
-_LINK_TARGET_RES = (
-    re.compile(r"\]\(\s*<?([^)\s>]+)>?(?:\s+(?:\"[^\"]*\"|'[^']*'))?\s*\)"),
-    re.compile(r"^\s*\[[^\]]+\]:\s*<?([^\s>]+)>?", re.M),
-    re.compile(r"""href\s*=\s*["']([^"']+)["']"""),
-)
+def _rel(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(Path.cwd().resolve()).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
-def _linked_files(readme: Path) -> set[Path]:
-    """Files a category README links to, resolved relative to it.
+def _is_routing_file(path: Path, docs_dir: Path, map_file: Path) -> bool:
+    """A README under docs/ may route the docs beside and below it."""
+    if path == map_file.resolve():
+        return True
+    return path.name == "README.md" and docs_dir.resolve() in path.parents
 
-    Resolved paths, not basenames: a link to a same-named file in another
-    category must not count as indexing this category's copy.
+
+def _may_route(source: Path, target: Path, docs_dir: Path, map_file: Path) -> bool:
+    """AGENTS.md and the map route anything; a directory README only its own subtree."""
+    if source == AGENTS_FILE.resolve() or source == map_file.resolve():
+        return True
+    return source.parent in target.parents
+
+
+def _walk_routes(docs_dir: Path, map_file: Path) -> tuple[dict[Path, dict], list[dict]]:
+    """BFS from AGENTS.md over explicit routes.
+
+    Returns `(reached, broken)`: every doc reached with its depth and the
+    file that routed it, plus routes whose target does not exist.
     """
-    out: set[Path] = set()
-    text = readme.read_text()
-    for pattern in _LINK_TARGET_RES:
-        for target in pattern.findall(text):
-            target = target.split("#", 1)[0].split("?", 1)[0].strip()
-            if not target or target.startswith(("http://", "https://", "mailto:")):
+    map_resolved = map_file.resolve()
+    reached: dict[Path, dict] = {}
+    broken: list[dict] = []
+    queue: deque[tuple[Path, int]] = deque()
+    if AGENTS_FILE.is_file():
+        queue.append((AGENTS_FILE.resolve(), 0))
+    # The map is depth 1 whether or not AGENTS.md routes it — that rule is
+    # hygiene:entry-files' to report, once.
+    reached[map_resolved] = {"depth": 1, "via": _rel(AGENTS_FILE)}
+    queue.append((map_resolved, 1))
+    while queue:
+        source, depth = queue.popleft()
+        explicit, _soft = _routes.route_table(source)
+        for target in sorted(explicit):
+            if not target.is_file():
+                broken.append({"source": _rel(source), "target": _rel(target)})
                 continue
-            out.add((readme.parent / target).resolve())
-    return out
+            if not _may_route(source, target, docs_dir, map_file) or target in reached:
+                continue
+            reached[target] = {"depth": depth + 1, "via": _rel(source)}
+            if _is_routing_file(target, docs_dir, map_file):
+                queue.append((target, depth + 1))
+    return reached, broken
 
 
-def _indexing_readmes(doc: Path, category_dir: Path) -> list[Path]:
-    """READMEs that may index `doc`: one per directory from its own up to the category."""
-    out: list[Path] = []
-    directory = doc.parent
-    while True:
-        readme = directory / "README.md"
-        if readme.is_file() and readme != doc:
-            out.append(readme)
-        if directory == category_dir or category_dir not in directory.parents:
-            break
-        directory = directory.parent
-    return out
+def _mentions(docs_dir: Path, map_file: Path) -> tuple[dict[Path, Path], dict[Path, Path]]:
+    """Where every routing file links each doc: `(explicit, soft)`, target → source.
 
-
-def _check_category_contents(docs_dir: Path, expected: list[str]) -> list[dict]:
-    """Every doc inside a category must be reachable from a README above it.
-
-    The map is a chain: docs/index.md lists categories, each category
-    README lists its docs. The first link was always enforced; the second
-    was not, so a file could sit in docs/<category>/ that no index anywhere
-    mentioned — and "docs/index.md is the single index of all project
-    documentation" was true one level deep.
-
-    Sub-directories count: docs/<category>/adr/0001.md is indexed by
-    docs/<category>/adr/README.md or docs/<category>/README.md. Turn the
-    rule off with `hygiene.docs_structure.require_indexed_docs: false`.
+    Used to explain an unrouted doc: linked softly (the usual near-miss),
+    routed from a README outside its subtree, or routed from a README that
+    is itself unreachable.
     """
-    if not config.get_bool("hygiene.docs_structure.require_indexed_docs", True):
+    explicit: dict[Path, Path] = {}
+    soft: dict[Path, Path] = {}
+    sources = [p for p in [AGENTS_FILE, map_file] if p.is_file()]
+    sources += [p for p in sorted(docs_dir.rglob("README.md")) if p.resolve() != map_file.resolve()]
+    for source in sources:
+        explicit_here, soft_here = _routes.route_table(source)
+        for target in explicit_here:
+            explicit.setdefault(target, source.resolve())
+        for target in soft_here:
+            soft.setdefault(target, source.resolve())
+    return explicit, soft
+
+
+# ── rules ────────────────────────────────────────────────────────
+
+
+def _why_unrouted(
+    resolved: Path, explicit: dict, soft: dict, reached: dict, docs_dir: Path, map_file: Path
+) -> str:
+    if resolved in explicit:
+        source = explicit[resolved]
+        if not _may_route(source, resolved, docs_dir, map_file):
+            return (
+                f"routed from {_rel(source)}, which is outside its subtree — a directory README "
+                "routes only the docs beside and below it, so that line is a cross-reference"
+            )
+        if source not in reached:
+            return f"routed from {_rel(source)}, but that file is not reachable itself (route it first)"
+    if resolved in soft:
+        return f"linked from {_rel(soft[resolved])} without a trigger or 'read'"
+    return "not linked from AGENTS.md, the map, or a README above it"
+
+
+def _route_home(doc: Path, docs_dir: Path, map_file: Path) -> str:
+    """The README that should carry the route to `doc`: the nearest README
+    above it (a directory README is routed by its parent's, not itself)."""
+    directory = doc.parent.parent if doc.name == "README.md" else doc.parent
+    while docs_dir.resolve() in directory.resolve().parents or directory.resolve() == docs_dir.resolve():
+        readme = directory / "README.md"
+        if readme.is_file() and readme.resolve() != doc.resolve():
+            return _rel(readme)
+        directory = directory.parent
+    return _rel(map_file)
+
+
+def _check_routed(
+    docs: list[Path], reached: dict, mentions: tuple[dict, dict], settings: dict,
+    docs_dir: Path, map_file: Path,
+) -> list[dict]:
+    if not settings["require_routed_docs"]:
+        return []
+    explicit, soft = mentions
+    violations: list[dict] = []
+    for doc in docs:
+        resolved = doc.resolve()
+        if resolved in reached:
+            continue
+        rel = _rel(doc)
+        where = _route_home(doc, docs_dir, map_file)
+        detail = _why_unrouted(resolved, explicit, soft, reached, docs_dir, map_file)
+        violations.append({
+            "type": "unrouted_doc",
+            "path": rel,
+            "message": f"Unrouted doc: {rel} — {detail}. Add a route to {where}: '{ROUTE_FORM}'",
+        })
+    return violations
+
+
+def _check_map_soft_routes(map_file: Path) -> list[dict]:
+    _explicit, soft = _routes.route_table(map_file)
+    return [
+        {
+            "type": "soft_route",
+            "path": _rel(map_file),
+            "message": _routes.soft_route_message(_rel(map_file), _rel(doc), line),
+        }
+        for doc, line in sorted(soft.items())
+    ]
+
+
+def _check_depth(reached: dict, settings: dict) -> list[dict]:
+    limit = settings["max_route_depth"]
+    return [
+        {
+            "type": "route_too_deep",
+            "path": _rel(doc),
+            "message": (
+                f"Route too deep: {_rel(doc)} is {info['depth']} hops from AGENTS.md "
+                f"(limit {limit}, via {info['via']}). Route it from the map or AGENTS.md directly, "
+                "or merge the README that only routes onward"
+            ),
+        }
+        for doc, info in sorted(reached.items())
+        if info["depth"] > limit
+    ]
+
+
+def _check_doc_lines(docs: list[Path], settings: dict) -> list[dict]:
+    limit = settings["max_doc_lines"]
+    if not limit:
         return []
     violations: list[dict] = []
-    links: dict[Path, set[Path]] = {}
-    for category in expected:
-        category_dir = docs_dir / category
-        readme = category_dir / "README.md"
-        if not readme.is_file():
-            continue  # reported by _check_expected_categories
-        for doc in sorted(category_dir.rglob("*.md")):
-            if doc == readme:
-                continue
-            indexers = _indexing_readmes(doc, category_dir)
-            if any(doc.resolve() in links.setdefault(r, _linked_files(r)) for r in indexers):
-                continue
-            rel = doc.relative_to(docs_dir).as_posix()
+    for doc in docs:
+        n = _routes.count_lines(_routes.read_markdown(doc))
+        if n > limit:
             violations.append({
-                "type": "unindexed_doc",
-                "path": f"docs/{rel}",
+                "type": "doc_over_lines",
+                "path": _rel(doc),
                 "message": (
-                    f"Unindexed doc: docs/{rel} is not linked from "
-                    f"docs/{category}/README.md or a README.md above it"
+                    f"Doc over budget: {_rel(doc)} is {n} lines (limit {limit}). "
+                    "Split it into focused docs and route each one"
                 ),
             })
     return violations
 
 
-def _format_expected_categories_section(categories: list[str]) -> str:
-    if not categories:
-        return (
-            "## Expected Categories\n\n"
-            "_No categories declared in `docs/index.md`. Add a categories table "
-            "(see slopstopper's docs/index.md for the format) to enforce structure._\n\n"
-        )
-    lines = [
-        "## Expected Categories",
-        "",
-        "The following categories are defined in `docs/index.md`:",
-        "",
-        "| Category | Required | Status |",
-        "|----------|----------|--------|",
+def _check_legacy_index(map_file: Path) -> list[dict]:
+    if map_file.resolve() == LEGACY_INDEX.resolve() or not LEGACY_INDEX.is_file():
+        return []
+    return [{
+        "type": "legacy_index",
+        "path": _rel(LEGACY_INDEX),
+        "message": (
+            f"Legacy map: {_rel(LEGACY_INDEX)} exists beside {_rel(map_file)}. Fold it into "
+            f"{_rel(map_file)} and delete it — the map is a README so the repo UI renders it in place"
+        ),
+    }]
+
+
+def _broken_violations(broken: list[dict]) -> list[dict]:
+    return [
+        {
+            "type": "broken_route",
+            "path": b["source"],
+            "message": f"Broken route: {b['source']} routes to {b['target']}, which does not exist",
+        }
+        for b in broken
     ]
-    for category in categories:
-        lines.append(f"| {category}/ | ✅ | Must exist with README.md |")
-    lines.append("")
-    return "\n".join(lines) + "\n"
+
+
+def _check_structure(docs_dir: Path, settings: dict) -> dict | None:
+    if not docs_dir.exists():
+        output.error("docs/ directory not found")
+        return None
+    map_file = Path(settings["map_path"])
+    if not map_file.is_file():
+        hint = f" (found {_rel(LEGACY_INDEX)} — rename it to {settings['map_path']})" if LEGACY_INDEX.is_file() else ""
+        output.error(f"{settings['map_path']} not found{hint}")
+        return None
+    docs = [p for p in sorted(docs_dir.rglob("*.md")) if p.resolve() != map_file.resolve()]
+    reached, broken = _walk_routes(docs_dir, map_file)
+    violations = _check_routed(docs, reached, _mentions(docs_dir, map_file), settings, docs_dir, map_file)
+    violations += _check_map_soft_routes(map_file)
+    violations += _check_depth(reached, settings)
+    violations += _check_doc_lines(docs, settings)
+    violations += _check_legacy_index(map_file)
+    violations += _broken_violations(broken)
+    routes = [
+        {"doc": _rel(doc), "depth": info["depth"], "via": info["via"]}
+        for doc, info in sorted(reached.items(), key=lambda kv: (kv[1]["depth"], _rel(kv[0])))
+    ]
+    return {"violations": violations, "routes": routes, "doc_count": len(docs)}
+
+
+# ── report ───────────────────────────────────────────────────────
+
+_SECTIONS = (
+    ("unrouted_doc", "### Unrouted Docs", f"*Add a trigger-first row to the README above it (or the map): `{ROUTE_FORM}`*"),
+    ("soft_route", "### Soft Routes in the Map", "*Reword as trigger → \"read\" → file → what it holds*"),
+    ("route_too_deep", "### Routes Too Deep", "*Route from the map or AGENTS.md directly; merge a README that only routes onward*"),
+    ("doc_over_lines", "### Docs Over the Line Budget", "*Split into focused docs, one concern each, and route each one*"),
+    ("legacy_index", "### Legacy Index", "*Fold `docs/index.md` into the map README and delete it*"),
+    ("broken_route", "### Broken Routes", "*Fix the path, or drop the route*"),
+)
 
 
 def _format_violations_content(violations: list[dict]) -> str:
@@ -213,147 +330,88 @@ def _format_violations_content(violations: list[dict]) -> str:
     by_type: dict[str, list[dict]] = {}
     for v in violations:
         by_type.setdefault(v.get("type", "unknown"), []).append(v)
-
-    sections = [
-        ("missing_directory", "### Missing Directories\n\n", None),
-        ("missing_readme", "### Missing README.md Files\n\n", None),
-        (
-            "unexpected_file",
-            "### Unexpected Files\n\n",
-            "  *Either add to `docs/index.md` or remove the file*\n",
-        ),
-        (
-            "unexpected_directory",
-            "### Unexpected Directories\n\n",
-            "  *Either add to `docs/index.md` or remove the directory*\n",
-        ),
-        (
-            "unindexed_doc",
-            "### Unindexed Docs\n\n",
-            "  *Link it from the category README (a Contents list is the convention) or remove it*\n",
-        ),
-    ]
-
-    for vtype, header, note in sections:
+    for vtype, header, note in _SECTIONS:
         if vtype not in by_type:
             continue
-        content += header
+        content += header + "\n\n"
         for v in by_type[vtype]:
             content += f"- {v['message']}\n"
-            if note:
-                content += note
-        content += "\n"
-
+        content += f"\n{note}\n\n"
     return content
+
+
+def _format_routes_section(routes: list[dict]) -> str:
+    if not routes:
+        return "## Routes\n\n_No doc is reachable from `AGENTS.md` yet._\n\n"
+    lines = ["## Routes", "", "Every doc an agent can reach, and how many hops it costs:", "",
+             "| Doc | Hops from AGENTS.md | Routed from |", "| --- | ------------------- | ----------- |"]
+    lines += [f"| `{r['doc']}` | {r['depth']} | `{r['via']}` |" for r in routes]
+    return "\n".join(lines) + "\n\n"
 
 
 def _build_md_report(data: dict, generated_at: str) -> str:
     violations = data.get("violations", [])
-    is_valid = data.get("valid", True)
     status_line = (
-        "✅ Documentation structure matches governance model"
-        if is_valid
+        "✅ Every doc has an explicit route"
+        if data.get("valid", True)
         else "❌ Documentation structure violations found"
     )
-
     report = (
-        f"# 📋 Documentation Structure Report\n"
-        f"\n"
-        f"**Generated:** {generated_at}\n"
-        f"\n"
-        f"## Status\n"
-        f"\n"
-        f"{status_line}\n"
-        f"\n"
-        f"## Governance Model\n"
-        f"\n"
-        f"The documentation structure is governed by [`docs/index.md`](../index.md). "
-        f"All documentation must align with the categories and structure defined there.\n"
-        f"\n"
-        f"**Key Principle:** The index is the **sole source of truth** for documentation structure.\n"
-        f"\n"
-        f"## Violations\n"
-        f"\n"
+        f"# 📋 Documentation Structure Report\n\n"
+        f"**Generated:** {generated_at}\n\n"
+        f"## Status\n\n{status_line}\n\n"
+        "## The model\n\n"
+        "`AGENTS.md` carries what most tasks need and routes the rest. The docs map is the "
+        "fallback routing table; a directory README is the map of a topic that split. A doc is "
+        "reachable only through an explicit route — a line that names its trigger and says read. "
+        "An unrouted doc is invisible to agents; a soft link is skipped.\n\n"
+        "## Violations\n\n"
     )
-
-    if violations:
-        report += _format_violations_content(violations)
-    else:
-        report += "✅ No violations found\n\n"
-
-    report += _format_expected_categories_section(data.get("expected_categories", []))
-
+    report += _format_violations_content(violations) if violations else "✅ No violations found\n\n"
+    report += _format_routes_section(data.get("routes", []))
     report += (
-        "## How to Fix\n"
-        "\n"
-        "1. **For missing directories or README.md files:**\n"
-        "   - Create the directory and add a README.md with its purpose\n"
-        "   - See existing README.md files for the format\n"
-        "\n"
-        "2. **For unexpected files:**\n"
-        "   - If they should be documented: Add an entry to `docs/index.md`\n"
-        "   - If they shouldn't exist: Delete them\n"
-        "\n"
-        "3. **For unexpected directories:**\n"
-        "   - If they should be part of governance: Add to the table in `docs/index.md`\n"
-        "   - If they shouldn't exist: Delete them\n"
-        "\n"
-        "4. **For unindexed docs:**\n"
-        "   - Link the file from its category's `README.md` — a `## Contents` list is the convention\n"
-        "   - The map is a chain (`docs/index.md` → category README → doc); every doc must be on it\n"
-        "\n"
-        "## More Information\n"
-        "\n"
-        "- See [`docs/index.md`](../index.md) for the governance model\n"
-        "- Each category README.md should document its purpose and contents\n"
-        "\n"
-        "---\n"
-        "\n"
-        "*Report generated by Documentation Structure Check*\n"
+        "## How to Fix\n\n"
+        f"1. **Unrouted doc:** add a row to the README above it, or to the map, in the form `{ROUTE_FORM}`. "
+        "The trigger first, then \"read\", then the file as a markdown link.\n"
+        "2. **Soft route:** the map links a doc without saying when to read it — reword the row.\n"
+        "3. **Route too deep:** route the doc from the map or `AGENTS.md` directly; a README that only "
+        "routes onward is a turn spent on nothing.\n"
+        "4. **Doc over the line budget:** split it by concern and route each part.\n"
+        "5. **Legacy index:** fold `docs/index.md` into the map README and delete it.\n\n"
+        "---\n\n*Report generated by Documentation Structure Check*\n"
     )
     return report
-
-
-def _check_structure(docs_dir: Path) -> tuple[list[dict], list[str]] | None:
-    if not docs_dir.exists():
-        output.error("docs/ directory not found")
-        return None
-    index_path = docs_dir / "index.md"
-    if not index_path.exists():
-        output.error("docs/index.md not found")
-        return None
-    expected = _extract_categories(index_path.read_text())
-    violations = _check_expected_categories(docs_dir, expected)
-    violations += _check_unexpected_items(docs_dir, expected)
-    violations += _check_category_contents(docs_dir, expected)
-    return violations, expected
 
 
 def run(args: list[str] | None = None) -> int:
     if args:
         return reject_extra_args("hygiene:docs-structure", args)
     output.running("Validating documentation structure…")
+    settings = _settings()
 
-    result = _check_structure(DOCS_DIR)
+    result = _check_structure(DOCS_DIR, settings)
     if result is None:
         return 2
-    violations, expected = result
+    violations = result["violations"]
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
-
     data = {
         "violations": violations,
         "valid": len(violations) == 0,
         "violation_count": len(violations),
-        "expected_categories": expected,
+        "doc_count": result["doc_count"],
+        "routes": result["routes"],
+        "map_path": settings["map_path"],
     }
     REPORT_JSON.write_text(json.dumps(data, indent=2))
     REPORT_MD.write_text(_build_md_report(data, _report.generated_at()))
 
     if violations:
         output.error(f"Found {len(violations)} structure violation(s)")
+        for v in violations:
+            output._emit(f"  - {v['message']}")
         output.footer(REPORT_DIR, [REPORT_MD.name])
         return 1
-    output.success("Documentation structure is valid")
+    output.success(f"Documentation structure is valid — {result['doc_count']} docs, every one routed")
     output.footer(REPORT_DIR, [REPORT_MD.name])
     return 0

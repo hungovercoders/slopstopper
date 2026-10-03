@@ -54,7 +54,7 @@ Three categories of write, in order of "how much trust to extend on re-run":
 - `.github/labeler.yml`, `.zap/rules.tsv`, `.markdownlint.json`
 - Root `Taskfile.yml` — only if absent; otherwise install.sh prints the `includes:` block to paste in
 - `package.json` — only if absent (otherwise see below)
-- Map Pattern entry files (`README.md`, `AGENTS.md`, `CLAUDE.md`, `docs/index.md`) — seeded from `cli/slopstopper/data/templates/entry-files/` when absent; never overwritten. If they exist but don't link the map, the `ss:hygiene:entry-files` check fails with a paste-ready snippet in its report — apply it manually rather than re-seeding
+- AGENTS.md-first entry files (`README.md`, `AGENTS.md`, `CLAUDE.md`, `docs/README.md`) — seeded from `cli/slopstopper/data/templates/entry-files/` when absent; never overwritten. If they exist but break a rule (budget, soft route, `CLAUDE.md` not the pure include, no route to the map), the `ss:hygiene:entry-files` check fails with a paste-ready fix in its report — apply it manually rather than re-seeding. A pre-0.15 `docs/index.md` is never touched; the installer warns and the check's report carries the rename
 
 **Conservatively additive on shared files — adopter content preserved:**
 

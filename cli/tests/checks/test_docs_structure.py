@@ -8,283 +8,310 @@ from pathlib import Path
 from slopstopper.checks import docs_structure
 
 
-def _seed_index(docs_dir: Path, categories: list[str]) -> None:
-    rows = "\n".join(f"| [{c}/]({c}/) | Description |" for c in categories)
-    docs_dir.mkdir(exist_ok=True)
-    (docs_dir / "index.md").write_text(
-        "# Docs map\n\n"
-        "| Category | Description |\n"
-        "| -------- | ----------- |\n"
-        f"{rows}\n"
+def _route(target: str, holds: str = "detail") -> str:
+    """A standalone explicit route (its own paragraph, so it never joins a table)."""
+    return f"\nBefore you do the {Path(target).stem} thing, read [{target}]({target}) — {holds}.\n"
+
+
+def test_rows_of_a_when_table_need_no_cue_word(isolated_cwd):
+    _seed_agents()
+    _seed_map("| fixing CI | Read [ci.md](ci.md) — what task ci runs |\n")
+    _doc("ci.md")
+    assert docs_structure.run() == 0
+
+
+def _seed_map(rows: str = "") -> Path:
+    docs = Path("docs")
+    docs.mkdir(exist_ok=True)
+    (docs / "README.md").write_text("# Docs index\n\n| When you are… | Do this |\n| - | - |\n" + rows)
+    return docs
+
+
+def _seed_agents(body: str = "") -> None:
+    Path("AGENTS.md").write_text(
+        "# Agents\n\n" + body +
+        "\nFor any task not covered above, read [docs/README.md](docs/README.md) — the routing table.\n"
     )
 
 
-def _seed_category(docs_dir: Path, name: str, with_readme: bool = True) -> Path:
-    cat = docs_dir / name
-    cat.mkdir(parents=True, exist_ok=True)
-    if with_readme:
-        (cat / "README.md").write_text(f"# {name}\n")
-    return cat
+def _doc(rel: str, body: str = "# Doc\n") -> Path:
+    p = Path("docs") / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(body)
+    return p
 
 
-def test_extract_categories_simple():
-    text = (
-        "| [hygiene/](hygiene/) | Quality checks |\n"
-        "| [security/](security/) | Security checks |\n"
-    )
-    assert docs_structure._extract_categories(text) == ["hygiene", "security"]
+def _violations() -> list[dict]:
+    return json.loads(docs_structure.REPORT_JSON.read_text())["violations"]
 
 
-def test_extract_categories_deduplicates_and_sorts():
-    text = (
-        "| [security/](security/) | A |\n"
-        "| [hygiene/](hygiene/) | B |\n"
-        "| [hygiene/](hygiene/) | C |\n"
-    )
-    assert docs_structure._extract_categories(text) == ["hygiene", "security"]
+def _types() -> list[str]:
+    return sorted(v["type"] for v in _violations())
 
 
-def test_extract_categories_ignores_non_matching_rows():
-    text = "| something | other |\n| [hygiene/](hygiene/) | A |\n"
-    assert docs_structure._extract_categories(text) == ["hygiene"]
+# ── settings ─────────────────────────────────────────────────────
 
 
-def test_check_expected_categories_clean(isolated_cwd):
-    docs = Path("docs")
-    docs.mkdir()
-    _seed_category(docs, "hygiene")
-    _seed_category(docs, "security")
-    assert docs_structure._check_expected_categories(docs, ["hygiene", "security"]) == []
+def test_settings_defaults(isolated_cwd):
+    s = docs_structure._settings()
+    assert s["map_path"] == "docs/README.md"
+    assert s["require_routed_docs"] is True
+    assert s["max_route_depth"] == 3
+    assert s["max_doc_lines"] == 300
 
 
-def test_check_expected_categories_missing_directory(isolated_cwd):
-    docs = Path("docs")
-    docs.mkdir()
-    _seed_category(docs, "hygiene")
-    violations = docs_structure._check_expected_categories(docs, ["hygiene", "security"])
-    assert len(violations) == 1
-    assert violations[0]["type"] == "missing_directory"
-    assert violations[0]["path"] == "docs/security/"
+def test_settings_share_the_map_path_with_entry_files(write_config):
+    write_config("hygiene:\n  entry_files:\n    map_path: docs/MAP.md\n")
+    assert docs_structure._settings()["map_path"] == "docs/MAP.md"
 
 
-def test_check_expected_categories_missing_readme(isolated_cwd):
-    docs = Path("docs")
-    docs.mkdir()
-    _seed_category(docs, "hygiene", with_readme=False)
-    violations = docs_structure._check_expected_categories(docs, ["hygiene"])
-    assert len(violations) == 1
-    assert violations[0]["type"] == "missing_readme"
+def test_legacy_require_indexed_docs_is_read_as_require_routed_docs(write_config, capsys):
+    write_config("hygiene:\n  docs_structure:\n    require_indexed_docs: false\n")
+    assert docs_structure._settings()["require_routed_docs"] is False
+    assert "require_routed_docs" in capsys.readouterr().out
 
 
-def test_check_unexpected_items_flags_unknown_file(isolated_cwd):
-    docs = Path("docs")
-    docs.mkdir()
-    (docs / "stray.md").write_text("hi")
-    violations = docs_structure._check_unexpected_items(docs, [])
-    assert any(v["type"] == "unexpected_file" and v["path"] == "docs/stray.md" for v in violations)
+# ── the happy path ───────────────────────────────────────────────
 
 
-def test_check_unexpected_items_ignores_allowed_top_files(isolated_cwd):
-    docs = Path("docs")
-    docs.mkdir()
-    for allowed in docs_structure.ALLOWED_TOP_FILES:
-        (docs / allowed).write_text(allowed)
-    violations = docs_structure._check_unexpected_items(docs, [])
-    assert violations == []
-
-
-def test_check_unexpected_items_flags_undocumented_dir(isolated_cwd):
-    docs = Path("docs")
-    docs.mkdir()
-    _seed_category(docs, "rogue")
-    violations = docs_structure._check_unexpected_items(docs, ["hygiene"])
-    assert any(v["type"] == "unexpected_directory" and v["path"] == "docs/rogue/" for v in violations)
-
-
-def test_format_expected_categories_section_empty():
-    out = docs_structure._format_expected_categories_section([])
-    assert "No categories declared" in out
-
-
-def test_format_expected_categories_section_renders_rows():
-    out = docs_structure._format_expected_categories_section(["hygiene", "security"])
-    assert "| hygiene/ |" in out
-    assert "| security/ |" in out
-    assert "Must exist with README.md" in out
-
-
-def test_format_violations_groups_by_type():
-    violations = [
-        {"type": "missing_directory", "path": "docs/x/", "message": "Missing directory: docs/x/"},
-        {"type": "unexpected_file", "path": "docs/y.md", "message": "Unexpected file (not in index): docs/y.md"},
-    ]
-    out = docs_structure._format_violations_content(violations)
-    assert "Found **2** violation(s)" in out
-    assert "### Missing Directories" in out
-    assert "### Unexpected Files" in out
-
-
-def test_build_md_report_status_lines():
-    data_clean = {"violations": [], "valid": True, "violation_count": 0, "expected_categories": ["hygiene"]}
-    md_clean = docs_structure._build_md_report(data_clean, "2026-06-12 00:00:00 UTC")
-    assert "✅ Documentation structure matches" in md_clean
-    assert "✅ No violations found" in md_clean
-
-    data_bad = {
-        "violations": [{"type": "missing_directory", "path": "docs/x/", "message": "Missing directory: docs/x/"}],
-        "valid": False,
-        "violation_count": 1,
-        "expected_categories": ["x"],
-    }
-    md_bad = docs_structure._build_md_report(data_bad, "2026-06-12 00:00:00 UTC")
-    assert "❌ Documentation structure violations found" in md_bad
-    assert "Missing directory: docs/x/" in md_bad
-
-
-def test_run_clean_returns_zero_and_writes_both_reports(isolated_cwd, capsys):
-    docs = Path("docs")
-    _seed_index(docs, ["hygiene"])
-    _seed_category(docs, "hygiene")
-    rc = docs_structure.run()
-    assert rc == 0
-    assert docs_structure.REPORT_JSON.exists()
-    assert docs_structure.REPORT_MD.exists()
+def test_run_clean_flat_docs_routed_from_the_map(isolated_cwd, capsys):
+    _seed_agents()
+    _seed_map(_route("ci.md") + _route("tasks.md"))
+    _doc("ci.md")
+    _doc("tasks.md")
+    assert docs_structure.run() == 0
     data = json.loads(docs_structure.REPORT_JSON.read_text())
     assert data["valid"] is True
-    assert data["violation_count"] == 0
-    assert data["expected_categories"] == ["hygiene"]
+    assert data["doc_count"] == 2
+    assert {r["doc"]: r["depth"] for r in data["routes"]} == {
+        "docs/README.md": 1, "docs/ci.md": 2, "docs/tasks.md": 2,
+    }
+    assert docs_structure.REPORT_MD.exists()
 
 
-def test_run_flags_missing_category_directory(isolated_cwd):
-    docs = Path("docs")
-    _seed_index(docs, ["hygiene", "security"])
-    _seed_category(docs, "hygiene")
-    rc = docs_structure.run()
-    assert rc == 1
-    data = json.loads(docs_structure.REPORT_JSON.read_text())
-    assert data["valid"] is False
-    assert any(v["type"] == "missing_directory" for v in data["violations"])
+def test_a_doc_routed_directly_from_agents_is_one_hop(isolated_cwd):
+    _seed_agents("Before you change CI, read [docs/ci.md](docs/ci.md) — what task ci runs.\n")
+    _seed_map()
+    _doc("ci.md")
+    assert docs_structure.run() == 0
+    routes = {r["doc"]: r for r in json.loads(docs_structure.REPORT_JSON.read_text())["routes"]}
+    assert routes["docs/ci.md"] == {"doc": "docs/ci.md", "depth": 1, "via": "AGENTS.md"}
+
+
+def test_a_directory_readme_routes_its_own_subtree(isolated_cwd):
+    _seed_agents()
+    _seed_map(_route("security/README.md", "the security checks"))
+    _doc("security/README.md", "# Security\n\n" + _route("DAST.md"))
+    _doc("security/DAST.md")
+    assert docs_structure.run() == 0
+    routes = {r["doc"]: r["depth"] for r in json.loads(docs_structure.REPORT_JSON.read_text())["routes"]}
+    assert routes["docs/security/DAST.md"] == 3
+
+
+def test_run_works_without_an_agents_file(isolated_cwd):
+    _seed_map(_route("ci.md"))
+    _doc("ci.md")
+    assert docs_structure.run() == 0
+
+
+# ── unrouted docs ────────────────────────────────────────────────
+
+
+def test_an_unlinked_doc_is_unrouted(isolated_cwd):
+    _seed_agents()
+    _seed_map()
+    _doc("ORPHAN.md")
+    assert docs_structure.run() == 1
+    [v] = _violations()
+    assert v["type"] == "unrouted_doc"
+    assert v["path"] == "docs/ORPHAN.md"
+    assert "not linked from AGENTS.md, the map, or a README above it" in v["message"]
+    assert "Add a route to docs/README.md" in v["message"]
+
+
+def test_a_softly_linked_doc_is_unrouted_and_says_so(isolated_cwd):
+    _seed_agents()
+    _seed_map(_route("hygiene/README.md"))
+    _doc("hygiene/README.md", "# Hygiene\n\n## Contents\n\n- [DETAIL.md](DETAIL.md) — more\n")
+    _doc("hygiene/DETAIL.md")
+    assert docs_structure.run() == 1
+    [v] = _violations()
+    assert v["type"] == "unrouted_doc"
+    assert "linked from docs/hygiene/README.md without a trigger or 'read'" in v["message"]
+    assert "Add a route to docs/hygiene/README.md" in v["message"]
+
+
+def test_a_directory_readme_cannot_route_a_doc_outside_its_subtree(isolated_cwd):
+    """A route in docs/hygiene/README.md to ../security/DAST.md is a cross-reference, not a route."""
+    _seed_agents()
+    _seed_map(_route("hygiene/README.md"))
+    _doc("hygiene/README.md", "# Hygiene\n\n" + _route("../security/DAST.md"))
+    _doc("security/DAST.md")
+    assert docs_structure.run() == 1
+    [v] = _violations()
+    assert v["path"] == "docs/security/DAST.md"
+    assert "routed from docs/hygiene/README.md, which is outside its subtree" in v["message"]
+    assert "Add a route to docs/README.md" in v["message"]  # docs/security/ has no README here, so the map
+
+
+def test_an_unrouted_directory_readme_leaves_its_docs_unrouted_too(isolated_cwd):
+    _seed_agents()
+    _seed_map()
+    _doc("security/README.md", "# Security\n\n" + _route("DAST.md"))
+    _doc("security/DAST.md")
+    assert docs_structure.run() == 1
+    assert [v["path"] for v in _violations()] == ["docs/security/DAST.md", "docs/security/README.md"]
+    readme = _violations()[1]["message"]
+    assert "Add a route to docs/README.md" in readme, "a directory README is routed by the map, not by itself"
+    dast = _violations()[0]["message"]
+    assert "routed from docs/security/README.md, but that file is not reachable itself" in dast
+
+
+def test_require_routed_docs_false_turns_the_rule_off(write_config):
+    write_config("hygiene:\n  docs_structure:\n    require_routed_docs: false\n")
+    _seed_agents()
+    _seed_map()
+    _doc("ORPHAN.md")
+    assert docs_structure.run() == 0
+
+
+def test_link_forms_a_route_may_use(isolated_cwd):
+    _seed_agents()
+    _seed_map(
+        '| a | Read [a](./A.md "Design notes") first |\n'
+        "| b | When you need b, read [b](B.md#section) |\n"
+    )
+    _doc("A.md")
+    _doc("B.md")
+    assert docs_structure.run() == 0
+
+
+# ── soft routes in the map, depth, line budget, legacy index, broken routes ──
+
+
+def test_a_soft_link_in_the_map_is_a_violation_even_when_the_doc_is_routed_elsewhere(isolated_cwd):
+    _seed_agents("Before you change CI, read [docs/ci.md](docs/ci.md) — what task ci runs.\n")
+    _seed_map("See also [ci](ci.md).\n")
+    _doc("ci.md")
+    assert docs_structure.run() == 1
+    assert _types() == ["soft_route"]
+    assert "soft route to docs/ci.md" in _violations()[0]["message"]
+
+
+def test_a_route_deeper_than_the_limit_fails(isolated_cwd):
+    _seed_agents()
+    _seed_map(_route("a/README.md"))
+    _doc("a/README.md", "# a\n\n" + _route("b/README.md"))
+    _doc("a/b/README.md", "# b\n\n" + _route("deep.md"))
+    _doc("a/b/deep.md")
+    assert docs_structure.run() == 1
+    [v] = _violations()
+    assert v["type"] == "route_too_deep"
+    assert v["path"] == "docs/a/b/deep.md"
+    assert "4 hops" in v["message"]
+
+
+def test_max_route_depth_is_a_knob(write_config):
+    write_config("hygiene:\n  docs_structure:\n    max_route_depth: 4\n")
+    _seed_agents()
+    _seed_map(_route("a/README.md"))
+    _doc("a/README.md", "# a\n\n" + _route("b/README.md"))
+    _doc("a/b/README.md", "# b\n\n" + _route("deep.md"))
+    _doc("a/b/deep.md")
+    assert docs_structure.run() == 0
+
+
+def test_a_non_utf8_doc_is_counted_not_crashed(isolated_cwd):
+    _seed_agents()
+    _seed_map(_route("latin1.md"))
+    Path("docs/latin1.md").write_bytes(b"# \xc4nderungen\n" + b"line\n" * 301)
+    assert docs_structure.run() == 1
+    assert _types() == ["doc_over_lines"]
+
+
+def test_a_topic_doc_over_the_line_budget_fails(isolated_cwd):
+    _seed_agents()
+    _seed_map(_route("long.md"))
+    _doc("long.md", "line\n" * 301)
+    assert docs_structure.run() == 1
+    [v] = _violations()
+    assert v["type"] == "doc_over_lines"
+    assert "301 lines (limit 300)" in v["message"]
+
+
+def test_the_map_itself_is_exempt_from_the_line_budget(isolated_cwd):
+    _seed_agents()
+    _seed_map("| x | Read [x](x.md) when x |\n" * 400)
+    _doc("x.md")
+    assert docs_structure.run() == 0
+
+
+def test_max_doc_lines_zero_disables_the_rule(write_config):
+    write_config("hygiene:\n  docs_structure:\n    max_doc_lines: 0\n")
+    _seed_agents()
+    _seed_map(_route("long.md"))
+    _doc("long.md", "line\n" * 500)
+    assert docs_structure.run() == 0
+
+
+def test_a_legacy_index_beside_the_map_is_reported(isolated_cwd):
+    _seed_agents()
+    _seed_map()
+    Path("docs/index.md").write_text("# old map\n")
+    assert docs_structure.run() == 1
+    types = _types()
+    assert "legacy_index" in types
+    assert "unrouted_doc" in types  # it is also just a doc nothing routes to
+
+
+def test_a_route_to_a_missing_file_is_broken(isolated_cwd):
+    _seed_agents()
+    _seed_map(_route("gone.md"))
+    assert docs_structure.run() == 1
+    [v] = _violations()
+    assert v["type"] == "broken_route"
+    assert "routes to docs/gone.md, which does not exist" in v["message"]
+
+
+# ── exit 2 ───────────────────────────────────────────────────────
 
 
 def test_run_returns_two_when_docs_dir_missing(isolated_cwd, capsys):
-    # No docs/ directory at all
-    rc = docs_structure.run()
-    assert rc == 2
+    assert docs_structure.run() == 2
     assert "docs/ directory not found" in capsys.readouterr().out
 
 
-def test_run_returns_two_when_index_missing(isolated_cwd, capsys):
+def test_run_returns_two_when_map_missing_and_names_a_legacy_index(isolated_cwd, capsys):
     Path("docs").mkdir()
-    rc = docs_structure.run()
-    assert rc == 2
-    assert "docs/index.md not found" in capsys.readouterr().out
+    Path("docs/index.md").write_text("# old\n")
+    assert docs_structure.run() == 2
+    out = capsys.readouterr().out
+    assert "docs/README.md not found" in out
+    assert "rename it to docs/README.md" in out
 
 
-# ── every doc in a category must be linked from its README ───────
-#
-# docs/index.md → category README → doc is a chain. The first link was
-# always enforced; the second was not, so "the single index of all
-# project documentation" was true one level deep.
+# ── report rendering ─────────────────────────────────────────────
 
 
-def test_check_category_contents_flags_an_unlinked_doc(isolated_cwd):
-    docs = Path("docs")
-    cat = _seed_category(docs, "hygiene")
-    (cat / "ORPHAN.md").write_text("# Nobody links here\n")
-    violations = docs_structure._check_category_contents(docs, ["hygiene"])
-    assert [v["type"] for v in violations] == ["unindexed_doc"]
-    assert violations[0]["path"] == "docs/hygiene/ORPHAN.md"
+def test_format_violations_groups_by_type():
+    out = docs_structure._format_violations_content([
+        {"type": "unrouted_doc", "path": "docs/x.md", "message": "Unrouted doc: docs/x.md"},
+        {"type": "doc_over_lines", "path": "docs/y.md", "message": "Doc over budget: docs/y.md"},
+    ])
+    assert "Found **2** violation(s)" in out
+    assert "### Unrouted Docs" in out
+    assert "### Docs Over the Line Budget" in out
 
 
-def test_check_category_contents_accepts_a_linked_doc(isolated_cwd):
-    docs = Path("docs")
-    cat = _seed_category(docs, "hygiene")
-    (cat / "README.md").write_text("# hygiene\n\n## Contents\n\n- [DETAIL.md](DETAIL.md) — more\n")
-    (cat / "DETAIL.md").write_text("# Detail\n")
-    assert docs_structure._check_category_contents(docs, ["hygiene"]) == []
-
-
-def test_check_category_contents_accepts_dot_slash_and_anchored_links(isolated_cwd):
-    docs = Path("docs")
-    cat = _seed_category(docs, "hygiene")
-    (cat / "README.md").write_text("[a](./A.md) and [b](B.md#section)\n")
-    (cat / "A.md").write_text("# A\n")
-    (cat / "B.md").write_text("# B\n")
-    assert docs_structure._check_category_contents(docs, ["hygiene"]) == []
-
-
-def test_check_category_contents_skips_a_category_with_no_readme(isolated_cwd):
-    """That case is reported as missing_readme, not as N unindexed docs."""
-    docs = Path("docs")
-    cat = _seed_category(docs, "hygiene", with_readme=False)
-    (cat / "X.md").write_text("# X\n")
-    assert docs_structure._check_category_contents(docs, ["hygiene"]) == []
-
-
-def test_run_fails_on_an_unindexed_doc(isolated_cwd):
-    docs = Path("docs")
-    _seed_index(docs, ["hygiene"])
-    cat = _seed_category(docs, "hygiene")
-    (cat / "ORPHAN.md").write_text("# Orphan\n")
-    assert docs_structure.run() == 1
-    md = docs_structure.REPORT_MD.read_text()
-    assert "Unindexed Docs" in md
-    assert "docs/hygiene/ORPHAN.md" in md
-
-
-# ── review follow-ups: link resolution in the unindexed-doc rule ──
-
-
-def test_check_category_contents_accepts_titled_reference_and_html_links(isolated_cwd):
-    docs = Path("docs")
-    cat = _seed_category(docs, "hygiene")
-    (cat / "README.md").write_text(
-        '- [a](A.md "Design notes")\n'
-        "- [b][bref]\n\n[bref]: B.md\n"
-        '- <a href="C.md">c</a>\n'
-    )
-    for name in ("A", "B", "C"):
-        (cat / f"{name}.md").write_text(f"# {name}\n")
-    assert docs_structure._check_category_contents(docs, ["hygiene"]) == []
-
-
-def test_check_category_contents_does_not_accept_a_same_named_file_elsewhere(isolated_cwd):
-    """A link to ../security/DAST.md must not index docs/hygiene/DAST.md."""
-    docs = Path("docs")
-    sec = _seed_category(docs, "security")
-    (sec / "DAST.md").write_text("# real\n")
-    cat = _seed_category(docs, "hygiene")
-    (cat / "README.md").write_text("[dast](../security/DAST.md)\n")
-    (cat / "DAST.md").write_text("# orphan copy\n")
-    violations = docs_structure._check_category_contents(docs, ["hygiene"])
-    assert [v["path"] for v in violations] == ["docs/hygiene/DAST.md"]
-
-
-# ── review follow-ups (round 2): sub-directories and the knob ──
-
-
-def test_check_category_contents_descends_into_subdirectories(isolated_cwd):
-    docs = Path("docs")
-    cat = _seed_category(docs, "decisions")
-    (cat / "adr").mkdir()
-    (cat / "adr" / "0001-foo.md").write_text("# ADR 1\n")
-    violations = docs_structure._check_category_contents(docs, ["decisions"])
-    assert [v["path"] for v in violations] == ["docs/decisions/adr/0001-foo.md"]
-
-
-def test_a_nested_readme_can_index_its_own_directory(isolated_cwd):
-    docs = Path("docs")
-    cat = _seed_category(docs, "decisions")
-    (cat / "README.md").write_text("[ADRs](adr/README.md)\n")
-    (cat / "adr").mkdir()
-    (cat / "adr" / "README.md").write_text("- [1](0001-foo.md)\n")
-    (cat / "adr" / "0001-foo.md").write_text("# ADR 1\n")
-    assert docs_structure._check_category_contents(docs, ["decisions"]) == []
-
-
-def test_require_indexed_docs_false_turns_the_rule_off(write_config):
-    write_config("hygiene:\n  docs_structure:\n    require_indexed_docs: false\n")
-    docs = Path("docs")
-    cat = _seed_category(docs, "hygiene")
-    (cat / "ORPHAN.md").write_text("# nobody links here\n")
-    assert docs_structure._check_category_contents(docs, ["hygiene"]) == []
+def test_build_md_report_status_lines_and_routes_table():
+    clean = {"violations": [], "valid": True, "violation_count": 0,
+             "routes": [{"doc": "docs/ci.md", "depth": 2, "via": "docs/README.md"}]}
+    md = docs_structure._build_md_report(clean, "2026-06-12 00:00:00 UTC")
+    assert "✅ Every doc has an explicit route" in md
+    assert "| `docs/ci.md` | 2 | `docs/README.md` |" in md
+    bad = {"violations": [{"type": "unrouted_doc", "path": "docs/x.md", "message": "Unrouted doc: docs/x.md"}],
+           "valid": False, "violation_count": 1, "routes": []}
+    md = docs_structure._build_md_report(bad, "t")
+    assert "❌ Documentation structure violations found" in md
+    assert "Unrouted doc: docs/x.md" in md
+    assert "No doc is reachable" in md

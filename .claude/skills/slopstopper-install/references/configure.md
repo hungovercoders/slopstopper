@@ -80,7 +80,7 @@ workflows:
 
 ### Optional: tune the hygiene thresholds
 
-Every hygiene check reads its own thresholds from `.slopstopper.yml`, falling back to a sensible default when unset. None are in the starter — add the ones you need. You don't need to touch these to get started — but if a check fires for a reason that's actually fine (e.g. your repo intentionally has 30 docs pages, or your `CLAUDE.md` is meaningfully longer than 1500 words for project reasons), tune the cap rather than dropping content. Don't tune to silence noise; tune to match a deliberate design decision.
+Every hygiene check reads its own thresholds from `.slopstopper.yml`, falling back to a sensible default when unset. None are in the starter — add the ones you need. You don't need to touch these to get started — but if a check fires for a reason that's actually fine (e.g. your repo intentionally has 30 docs pages, or a topic doc is a reference table that cannot split), tune the cap rather than dropping content. The entry-file budgets are the exception: an `AGENTS.md` past ~2,000 tokens is where agents start dropping rules, so route the overflow rather than raising it. Don't tune to silence noise; tune to match a deliberate design decision.
 
 ```yaml
 hygiene:
@@ -89,13 +89,19 @@ hygiene:
     max_file_size_kb: 20     # default — largest single doc
     max_files: 25            # default — total doc count
   entry_files:
-    max_words: 1500          # default — README.md, CLAUDE.md, AGENTS.md, etc.
+    max_tokens: 2000         # default — AGENTS.md (estimated tokens, chars/4)
+    readme_max_tokens: 600   # default — README.md, badges excluded
+    map_max_tokens: 1000     # default — docs/README.md, the map
+    require_explicit_routes: true   # default — every .md link in AGENTS.md says when to read it
+    require_claude_include: true    # default — CLAUDE.md is exactly `@AGENTS.md`
   complexity:
     max_ccn: 15              # default — CCN ceiling; a function above this fails
   docs_accuracy:
     extra_paths: []          # default — globs outside docs/ to scan too, e.g. [app/*.html, .claude/skills/**/*.md]
   docs_structure:
-    require_indexed_docs: true  # default — every doc must be linked from a README above it
+    require_routed_docs: true   # default — every doc has an explicit route from AGENTS.md, the map or a README above it
+    max_route_depth: 3          # default — AGENTS.md → map → directory README → doc
+    max_doc_lines: 300          # default — per topic doc; 0 disables
 security:
   sast:
     fail_on: error           # default — lowest Semgrep severity that fails (error | warning | info | none)

@@ -20,7 +20,8 @@ deployed with the same suite it advertises.
 
 - [GitHub repository](https://github.com/hungovercoders/slopstopper): source, install.sh and the slopstopper CLI
 - [README](https://github.com/hungovercoders/slopstopper/blob/main/README.md): install and usage
-- [Documentation map](https://github.com/hungovercoders/slopstopper/blob/main/docs/index.md): the full docs index
+- [Documentation map](https://github.com/hungovercoders/slopstopper/blob/main/docs/README.md): the routing table for every doc
+- [Agent guide](https://github.com/hungovercoders/slopstopper/blob/main/AGENTS.md): what most tasks in the repo need, within ~2k tokens
 
 ## For agents
 

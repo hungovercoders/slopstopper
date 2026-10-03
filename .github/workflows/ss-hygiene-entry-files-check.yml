@@ -1,7 +1,8 @@
 name: SlopStopper · Hygiene - Entry-File Budget Check
 
-# Enforces word-count budgets on root-level entry files (README.md,
-# AGENTS.md, CLAUDE.md). Triggers: PR, push to main. Emits a rolling
+# Enforces token budgets and explicit routes on the agent entry files
+# (README.md, AGENTS.md, CLAUDE.md) and the docs map (docs/README.md).
+# Triggers: PR, push to main. Emits a rolling
 # PR comment; workflow fails on over-budget — no separate main-branch
 # issue (exit code is the signal).
 # Docs: docs/hygiene/README.md.
@@ -12,6 +13,8 @@ on:
       - 'README.md'
       - 'AGENTS.md'
       - 'CLAUDE.md'
+      - 'docs/README.md'
+      - '.slopstopper.yml'
       - '.github/workflows/ss-hygiene-entry-files-check.yml'
   push:
     branches: [main]
@@ -19,6 +22,8 @@ on:
       - 'README.md'
       - 'AGENTS.md'
       - 'CLAUDE.md'
+      - 'docs/README.md'
+      - '.slopstopper.yml'
       - '.github/workflows/ss-hygiene-entry-files-check.yml'
   workflow_dispatch:
 

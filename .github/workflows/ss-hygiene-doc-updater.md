@@ -73,7 +73,7 @@ The key characteristics are:
 
 ## Documentation Structure
 
-The documentation index at `docs/index.md` is the **sole source of truth** for documentation structure. Categories include:
+`AGENTS.md` carries what most tasks need; `docs/README.md` is the map — the routing table every doc under `docs/` must be reachable from by an explicit "when you X, read Y" row. Categories include:
 
 | Category | Path | Purpose |
 |----------|------|---------|
@@ -87,10 +87,9 @@ The documentation index at `docs/index.md` is the **sole source of truth** for d
 | security | `docs/security/` | Security scanning and controls |
 
 Key documentation files:
-- `docs/AGENTS.md` — Instructions for AI agents working in this repo
-- `docs/README.md` — Project overview and setup guide
-- `docs/CONTRIBUTING.md` — Contribution guidelines
-- `docs/index.md` — Documentation index and governance model
+- `AGENTS.md` (repo root) — Instructions for AI agents working in this repo
+- `docs/contributing/README.md` — Contribution guidelines
+- `docs/README.md` — The docs map: one trigger-first route per doc
 
 ## Your Mission
 
@@ -138,12 +137,12 @@ Create a summary of changes that should be documented.
 Before making documentation changes, understand the project conventions:
 
 ```bash
-cat docs/index.md
-cat docs/AGENTS.md
+cat docs/README.md
+cat AGENTS.md
 ```
 
 Key documentation conventions:
-- The `docs/index.md` governance model must be respected — any new document must have a corresponding entry
+- Every new document needs an explicit route ("when you X, read Y") in `docs/README.md` or the README above it — `ss:hygiene:docs-structure` fails on an unrouted doc
 - Documentation categories map to Taskfile tasks and GitHub Actions workflow names
 - Use clear, concise technical writing
 - Include links to relevant files and workflows
@@ -167,13 +166,13 @@ find docs -name '*.md'
 For each missing or incomplete documentation:
 
 1. **Determine the correct file** based on the change type:
-   - Workflow/CI changes → `docs/AGENTS.md` (GitHub Actions section) or `docs/deployment/`
+   - Workflow/CI changes → `docs/deployment/` or `docs/hygiene/`
    - Security changes → `docs/security/`
    - Test changes → `docs/reliability/`
    - Code quality changes → `docs/hygiene/`
    - Architecture changes → `docs/architecture/`
    - New decisions → a row in `docs/decisions/README.md` (supporting note via `task decisions:new SLUG=<name>`)
-   - Setup/contribution changes → `docs/README.md` or `docs/CONTRIBUTING.md`
+   - Setup/contribution changes → `docs/contributing/README.md`
 
 2. **Update the appropriate file(s)** using the edit tool:
    - Add new sections for new features
@@ -224,7 +223,7 @@ This PR updates the documentation based on changes merged in the last week.
 ### Files Updated
 
 - Updated `docs/path/to/file.md` — description of update
-- Updated `docs/AGENTS.md` — description of update
+- Updated `AGENTS.md` — description of update
 
 ### Merged PRs Referenced
 
@@ -249,7 +248,7 @@ This PR updates the documentation based on changes merged in the last week.
 - **Be Selective**: Only document changes that affect users or developers (skip minor refactoring unless significant)
 - **Be Clear**: Write clear, concise documentation that helps users
 - **Link References**: Include links to relevant PRs, files, and issues where appropriate
-- **Respect Structure**: Follow the `docs/index.md` governance model — do not create new top-level docs without index entries
+- **Respect Structure**: every doc has an explicit route from `docs/README.md` (or the README above it) — do not create a doc without routing it
 - **Issue-Driven**: Proactively check open `documentation` issues — do not wait for them to be reported manually
 
 ## Important Notes
@@ -258,7 +257,7 @@ This PR updates the documentation based on changes merged in the last week.
 - You have access to GitHub tools to search and review code changes
 - You have access to bash commands to explore the project structure
 - The safe-outputs create-pull-request tool will automatically create a PR with your changes
-- Always read `docs/index.md` and `docs/AGENTS.md` before making changes
+- Always read `AGENTS.md` and `docs/README.md` before making changes
 - Focus on user-facing and developer-facing changes
 
 **Important**: If no action is needed after completing your analysis, you **MUST** call the `noop` safe-output tool with a brief explanation. Failing to call any safe-output tool is the most common cause of safe-output workflow failures.

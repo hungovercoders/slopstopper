@@ -61,7 +61,7 @@ Two directories, one per skill, written under the target repo root:
 <repo>/.claude/skills/slopstopper-triage/references/
 ```
 
-Each skill's map file (SKILL.md) is short (under 1,500 words — the same cap this repo puts on its own entry files) and links the `references/*.md` files that hold the full tables. Claude Code loads the map when the skill triggers and reads a reference only when the map points at it, so the skill costs one page of context until a step needs detail.
+Each skill's map file (SKILL.md) is short (about the ~2,000-token budget this repo puts on its own `AGENTS.md`) and links the `references/*.md` files that hold the full tables. Claude Code loads the map when the skill triggers and reads a reference only when the map points at it, so the skill costs one page of context until a step needs detail.
 
 Nothing outside `<repo>/.claude/skills/slopstopper-*/` is touched. Per skill, the script fetches the map, checks it looks like a Claude Code skill (frontmatter present), then fetches every reference it links — only linked files, so nothing else in the source tree ships. The result is copied next to the installed skill and then moved into place, so a failed download or copy leaves the installed copy as it was. A skill that fails is named at the end and the script exits non-zero; `install.sh` reports that as a warning and carries on.
 

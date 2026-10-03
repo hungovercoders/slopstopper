@@ -1,84 +1,94 @@
-# Agent instructions — SlopStopper
+# Agent guide — SlopStopper
 
-Open standard for agents, AI assistants and automation tools working in this
-repo. Conformant with [agents.md](https://agents.md).
+Open standard for agents, AI assistants and automation tools working in
+this repo (conformant with [agents.md](https://agents.md)). `CLAUDE.md` is
+`@AGENTS.md`. This file carries what most tasks need; the routes at the
+end say when to open anything else.
 
-> 🗺️ **Documentation map.** [`docs/index.md`](./docs/index.md) is the
-> single index of all project documentation. This file, [`CLAUDE.md`](./CLAUDE.md)
-> and [`README.md`](./README.md) are intentionally thin — they point at
-> the map rather than duplicating its content. When you need detail on
-> any topic — a check, a runbook, a workflow, a CSP exception — start
-> at [`docs/index.md`](./docs/index.md) and follow its links to the
-> category README that owns it. The
-> [`ss:hygiene:entry-files`](./docs/hygiene/README.md) check enforces a
-> <2k token cap on each entry file; the
-> [`ss:hygiene:docs-structure`](./docs/hygiene/README.md) check keeps
-> the map honest against the directory tree.
+## What this repo is
 
-> 🏗️ **Naming convention.** The categories in
-> [`docs/index.md`](./docs/index.md) drive naming across the project. Task
-> targets are defined as `category:action` (e.g. `hygiene:complexity`) and
-> invoked under the `ss` namespace (`task ss:hygiene:complexity`). GitHub
-> Actions use `ss-category-action-check.yml` (e.g.
-> `ss-hygiene-complexity-check.yml`).
->
-> **`task ss:<check>` is the canonical interface** — humans, agents AND CI all
-> go through it, so the suite shares one invocation surface with everything
-> else in the codebase. The underlying `slopstopper-cli` is the implementation
-> the shims call; it's not a parallel surface to promote. Adopters who'd
-> rather skip Task in their CI can install with `--no-task` and get workflows
-> that call the CLI directly — but the canonical contract is Task.
->
-> Underneath, **mise** owns tool *versions* (`mise.toml`, locally and in CI)
-> while Task owns *commands*; see [`docs/architecture/README.md`](./docs/architecture/README.md).
+Two things at once: **`slopstopper-cli`** under `cli/` (every check's
+logic, published to PyPI) plus the `ss-*.yml` workflows, `task ss:*` shims
+and `install.sh` adopters pull in; and **slopstopper.dev** under `app/`,
+a reference site built and deployed with the same suite it advertises.
+A change that affects adopters usually touches both layers and the docs.
 
-## What SlopStopper is
+## Ground rules
 
-Two things at once:
+1. **`task ss:<category>:<action>` is the canonical interface.** Humans,
+   agents and CI all go through it; `slopstopper run …` is the
+   implementation each shim calls. Run `task --list` before writing a
+   one-off command.
+2. **One definition of green.** `task ss:hygiene:test` (docs-size,
+   docs-structure, docs-accuracy, entry-files, CSP drift, complexity) is
+   what the pre-push hook and CI run. Run it before committing; run the
+   CLI tests when `cli/` changes.
+3. **Every check keeps the exit-code contract:** 0 ran clean, 1 ran and
+   failed, 2 could not run. CI gates on it directly.
+4. **Budgets are the feature.** When `entry-files` or `docs-structure`
+   fails, move content deeper into `docs/` and route it; those budgets
+   (tokens, lines, hops) never move. `docs-size`'s totals are advisory
+   and sized to the repo — change them only in a commit that says why.
+5. **Conventional Commits** (`feat:`, `fix:`, `docs:`, `chore:` …);
+   release-please cuts the CLI release from them. Third-party actions are
+   pinned to a commit SHA, never a tag.
+6. **This repo IS the CLI.** `mise.toml` pins no `slopstopper-cli`;
+   workflows install `cli/` editable and run HEAD. Adopters get a pin.
 
-1. **A portable suite** of GitHub Actions workflows, Task targets and
-   analysis scripts that consumers install into their own repos via
-   [`install.sh`](./install.sh).
-2. **A live reference site** under [`app/`](./app/) that markets the suite
-   and proves it works — built and deployed with the same suite it
-   advertises.
+## Commands
 
-Changes that affect both layers (e.g. adding a new quality check) must be
-reflected in the workflows AND the site copy (`app/features.html`,
-`app/tools.html`) AND `README.md`. The
-[`ss:hygiene:docs-accuracy`](./docs/hygiene/README.md) check catches drift
-between these.
+| Command                                  | Does                                                       |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| `task --list`                            | every runnable task                                        |
+| `task ss:hygiene:test`                   | the static hygiene suite (what the pre-push hook runs)     |
+| `task ss:security:scan`                  | SAST, secrets, dependency scan                             |
+| `task ss:reliability:<check> -- <url>`   | a browser check against a running site                     |
+| `task contributing:test`                 | the pytest suite for `slopstopper-cli` (`-- -k <expr>` filters) |
+| `task contributing:run` / `:test:site`   | serve `app/` on :8080 / Playwright smoke + a11y against it |
+| `task contributing:setup`                | npm deps, the CLI editable in `cli/.venv`, Chromium, the hook |
+| `slopstopper checks list` / `doctor`     | what exists / which external tools are missing             |
 
-## When making changes
+## Layout
 
-| Change | Affects |
-| ------ | ------- |
-| Visual / brand | `app/shared.css` (tokens), then individual pages if they use new components |
-| New quality check | Add workflow under `.github/workflows/ss-*.yml` (start from `.github/actions/ss-setup`; URL-driven → `ss-resolve-url`), add `task ss:<category>:<action>` target, add to `install.sh`'s `GENERIC_WORKFLOWS`, classify it in [`cli/slopstopper/data/profiles.json`](./cli/slopstopper/data/profiles.json) (does it apply to an API? a library?) and map it in `profiles.CHECK_WORKFLOWS`, add a label to `badges.py`'s `WORKFLOW_DISPLAY`, add its `name:` to `ss-pr-summary.yml`'s `workflow_run.workflows` (no globs — an omitted name never re-renders the summary), pass `--status` on its `emit --target pr-comment` line, add a `DOC_HEADINGS` row in `cli/tests/test_check_registration.py` plus `cli/tests/checks/test_<module>.py`, document it under `docs/<category>/`, surface on `app/features.html` and `app/tools.html`, mention in `README.md`, **add to the skill duo**: workflow inventory + Pass A/B example in [`slopstopper-install`](./.claude/skills/slopstopper-install/SKILL.md) (`.claude/skills/slopstopper-install/references/install.md`, `.claude/skills/slopstopper-install/references/verify.md`), reproduce row + gotcha row in [`slopstopper-triage`](./.claude/skills/slopstopper-triage/SKILL.md) (`.claude/skills/slopstopper-triage/references/reproduce.md`, `.claude/skills/slopstopper-triage/references/gotchas.md`) |
-| Renaming a `task ss:*` target or env var | `Taskfile.ss.yml`, `docs/<category>/README.md`, **both skills**: [`slopstopper-install`](./.claude/skills/slopstopper-install/SKILL.md) (`.claude/skills/slopstopper-install/references/verify.md` local-task commands + aggregates, `.claude/skills/slopstopper-install/references/refresh.md` "Re-apply customizations"), [`slopstopper-triage`](./.claude/skills/slopstopper-triage/SKILL.md) (`.claude/skills/slopstopper-triage/references/reproduce.md`) |
-| Editing `install.sh` (esp. `GENERIC_WORKFLOWS` or post-install stdout) | `install.sh` (the `REPO_URL` must always match this repo's actual location), [`slopstopper-install`](./.claude/skills/slopstopper-install/SKILL.md) `.claude/skills/slopstopper-install/references/install.md` ("what it writes" lists + Step 3 inventory) |
-| Changing the install/toolchain mechanism (mise vs pipx, `install.sh` prereqs, where the CLI pin lives) | The marketing + reference surfaces that describe how to install/upgrade — `app/index.html` (get-started), `app/tools.html`, `app/features.html` (workflow snippets), `cli/README.md` (PyPI front page), [`docs/architecture/README.md`](./docs/architecture/README.md) (toolchain section + layout), `README.md`, **both skills**. `ss:hygiene:docs-accuracy` does NOT police the app's install copy, so this row is the guard — keep these in lockstep by hand |
-| Editing a skill under `.claude/skills/slopstopper-*/` (map or `references/`) | [`install-skill.sh`](./install-skill.sh) (installs `SKILL.md` + the `references/` it links — an unlinked reference never ships; adding or renaming a skill means its `SKILLS` array), [`docs/runbooks/INSTALL_SKILLS.md`](./docs/runbooks/INSTALL_SKILLS.md), `README.md` "Using Claude Code?" section, `app/index.html` "Claude Code users" section, the other skill's "When to hand off" pointer |
-| Adding a new `slopstopper-*` skill | New `.claude/skills/<name>/SKILL.md`, [`install-skill.sh`](./install-skill.sh) `SKILLS` array, [`docs/runbooks/INSTALL_SKILLS.md`](./docs/runbooks/INSTALL_SKILLS.md) (trigger-table + What-lands + Uninstall), `README.md` link, `app/index.html` link, "When to hand off" pointers in each existing skill's closing section |
-| Removing or renaming a slopstopper-shipped artefact (skill, workflow, template) so adopter repos shouldn't carry it any more | Add to the relevant obsolete-list so re-runs auto-clean it: skills → `OBSOLETE_SKILLS` in [`install-skill.sh`](./install-skill.sh); workflows or `.ss/` files → similar list in [`install.sh`](./install.sh) plus the existing byte-equality scrub if it moved into the CLI wheel. Then add a row to [`slopstopper-install`](./.claude/skills/slopstopper-install/SKILL.md)'s "Clean up redundant artefacts" (`.claude/skills/slopstopper-install/references/refresh.md`) so the agent sanity-check covers it. The principle: adopter repos should hold only the expected set + their own customisations — anything else is noise to be flagged or auto-removed |
-| Editing `install-skill.sh` (the one skill installer — `install.sh` runs it against its own checkout) | [`docs/runbooks/INSTALL_SKILLS.md`](./docs/runbooks/INSTALL_SKILLS.md), `README.md` + `app/index.html` if the install command line changes |
-| Editing `.slopstopper.yml` schema (adding/renaming a key, changing a default) | [`.slopstopper.yml.example`](./.slopstopper.yml.example) (the schema reference), [`templates/slopstopper.yml.starter`](./templates/slopstopper.yml.starter) (the seed `install.sh` copies — its keys must stay a subset of the schema; a test checks), [`.slopstopper.yml`](./.slopstopper.yml) (slopstopper.dev's own config), both skills reference the schema, the script that consumes the new key, [`install.sh`](./install.sh) if the new key drives installer behaviour |
-| Adding or changing a project-shape profile (the `profile:` key) | [`cli/slopstopper/data/profiles.json`](./cli/slopstopper/data/profiles.json) is the **single source of truth** for profile → workflow sets — the CLI reads it via `slopstopper.profiles`, `install.sh` imports that same module from the source tree, so never add a second copy of the mapping. Then: [`.slopstopper.yml.example`](./.slopstopper.yml.example) (schema), [`templates/slopstopper.yml.starter`](./templates/slopstopper.yml.starter) (its `profile:` comment), [`docs/architecture/README.md`](./docs/architecture/README.md) (Project-shape profiles), `install.sh` `--help`, `README.md`, `app/features.html` + `app/tools.html`, **both skills**. A new workflow must also be classified into every profile that should drop it |
-| Adding a config-driven knob to a check (new `config.get("<x>")` call) | The check's module docstring (a Configuration block listing the keys it reads + defaults), [`.slopstopper.yml.example`](./.slopstopper.yml.example) (schema; the starter too only if most repos set it), [`slopstopper-install`](./.claude/skills/slopstopper-install/SKILL.md) (post-install "tunable knobs" pointer + Refresh-only "new knobs" section), [`slopstopper-triage`](./.claude/skills/slopstopper-triage/SKILL.md) (the "real / false-positive / threshold" branch should call out the config override) |
-| Changing the Map Pattern pointer rule (what `ss:hygiene:entry-files` enforces, the canonical pointer text, or the entry-file scaffold templates) | [`cli/slopstopper/checks/entry_files.py`](./cli/slopstopper/checks/entry_files.py) (rule + paste-ready snippet generators), [`cli/slopstopper/data/templates/entry-files/`](./cli/slopstopper/data/templates/entry-files/) (the four scaffold files — keep these aligned with this repo's own `README.md` / `AGENTS.md` / `CLAUDE.md` / `docs/index.md`, since they are the canonical examples), [`.slopstopper.yml.example`](./.slopstopper.yml.example) (`require_map_pointer` and `map_path` knobs), [`install.sh`](./install.sh) (`seed_template` calls for the four entry files), [`slopstopper-install`](./.claude/skills/slopstopper-install/SKILL.md) Step 1.6 + 1.9 + Step 3 inventory + Step 5 (Map Pattern setup) + Refresh-only knobs list, [`slopstopper-triage`](./.claude/skills/slopstopper-triage/SKILL.md) entry-files reproduce/gotcha rows |
-| Adding a new headers-source adapter | New module under [`cli/slopstopper/headers_adapters/`](./cli/slopstopper/headers_adapters/), register in `__init__.py`'s `ADAPTERS` dict, add to the `format:` documentation in [`.slopstopper.yml.example`](./.slopstopper.yml.example), mention in `slopstopper-install` Step 1.5 and `slopstopper-triage`'s gotcha table |
-| Editing a Playwright spec, `playwright.config.js`, or `lighthouserc{,.prod}.json` | **`cli/slopstopper/data/` is the only home** — adopter repos no longer carry these files by default; the CLI ships them inside the wheel and resolves `.ss/<filename>` first only if an adopter has explicitly overridden it. Edit under `cli/slopstopper/data/` and the change ships on the next `slopstopper-cli` release. |
-| New page | Add HTML + page-specific CSS in `app/`; link `app/shared.css` first; copy header/nav/footer; add to nav on the other pages; add to `tests/smoke.spec.ts` and `tests/accessibility.spec.ts` (under `cli/slopstopper/data/tests/`, per the row above) |
-| Headers / CSP | `worker/headers.json` (single source of truth — CSP changes are blast-radius, touch DAST tests too) |
-| Worker behaviour | `worker/index.ts` (path matching, redirects); `wrangler.jsonc` (assets binding, compatibility date) |
+```
+AGENTS.md            this file (CLAUDE.md is @AGENTS.md)
+docs/                topic docs — docs/README.md is the map; one concern per doc
+cli/slopstopper/     the CLI: checks/<check>.py, data/ (templates, specs), profiles.json
+cli/tests/           pytest; test_check_registration.py enforces every surface a check needs
+.github/workflows/   ss-*.yml, each `uses: ./.github/actions/ss-setup` then one task
+Taskfile.ss.yml      the `task ss:*` shims  ·  Taskfile.yml includes them under `ss`
+install.sh           adopter installer (seeds templates, pins the CLI via mise)
+.claude/skills/      slopstopper-install + slopstopper-triage, shipped to adopters
+app/  worker/        the site and the Cloudflare Worker that serves it (headers.json = CSP)
+.slopstopper.yml     this repo's config; .slopstopper.yml.example is the schema
+```
 
-The right-hand column flags the [skill duo](./.claude/skills/) wherever a change would drift either skill from reality — they name specific workflows, tasks and env vars, and silently rot if those change without them. Each skill's Step 10 (or equivalent closing section) carries the same instruction in the other direction.
+## Conventions most changes touch
 
-## Skills for agents
+- **Naming follows the docs categories:** task `hygiene:complexity`,
+  workflow `ss-hygiene-complexity-check.yml`, docs under `docs/hygiene/`.
+- **Checks are stdlib-only Python**, subprocess-invoke their tool, write
+  `.ss/reports/<check>/`, and carry a `Configuration` block in the module
+  docstring for every `config.get("…")` key they read.
+- **A new or renamed check is registered in ~12 places** (workflow,
+  shim, installer, profiles, badge label, PR summary, docs, tests, both
+  skills, site, README). The route below lists them; the registration
+  test fails on any you miss.
+- **Docs state the present; git holds the past.** No "previously we…"
+  sections; the commit message carries the story.
+- **Headers/CSP:** `worker/headers.json` is the single source of truth;
+  a CSP change is blast-radius (DAST tests, the exceptions doc).
 
-Skills under [`.claude/skills/`](./.claude/skills/) are committed and shipped with the repo (the `.gitignore` carves them out from local Claude Code state). They're the long-form playbooks an agent should follow when doing one of these jobs:
+## Routes — read before you act
 
-- [`slopstopper-install`](./.claude/skills/slopstopper-install/SKILL.md) — install into a repo for the first time OR refresh an existing install. Mode-detection branch checks for `.slopstopper.yml` + `.ss/.workflows-installed` and routes to first-install vs refresh sub-flows. Covers pre-flight, install command, post-install URL config, Map Pattern setup, badges, refresh-only customization re-apply and new-knob discovery, and a local-first verification loop.
-- [`slopstopper-triage`](./.claude/skills/slopstopper-triage/SKILL.md) — diagnose a failing slopstopper check: workflow → local task → report → finding category (real / false-positive / threshold) → fix location.
+| When you are…                                                              | Do this                                                                                   |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| changing anything that ships to adopters (a check, workflow, skill, config key, template, page) | Read [docs/contributing/CHANGE_MAP.md](./docs/contributing/CHANGE_MAP.md) before you start — every surface each kind of change must touch |
+| about to add a workflow, task, report path or external resource            | Read [docs/contributing/PITFALLS.md](./docs/contributing/PITFALLS.md) first — the gotchas that have bitten before |
+| fixing a failing docs or hygiene check                                      | Read [docs/hygiene/README.md](./docs/hygiene/README.md) — what each check enforces, its knobs, its report |
+| installing or refreshing slopstopper in another repo                        | Read [.claude/skills/slopstopper-install/SKILL.md](./.claude/skills/slopstopper-install/SKILL.md) — the install/refresh playbook |
+| diagnosing a failing slopstopper check in any repo                          | Read [.claude/skills/slopstopper-triage/SKILL.md](./.claude/skills/slopstopper-triage/SKILL.md) — workflow → task → report → fix |
+| doing any task not covered above                                            | Read [docs/README.md](./docs/README.md) before you start; do not guess a convention        |
 
-Installed at project level into adopter repos by [`install.sh`](./install.sh) (skill subset of the full installer) or refreshed standalone via [`install-skill.sh`](./install-skill.sh) — both write into `<repo>/.claude/skills/slopstopper-*/SKILL.md`. See [`docs/runbooks/INSTALL_SKILLS.md`](./docs/runbooks/INSTALL_SKILLS.md).
+`ss:hygiene:entry-files` keeps this file under ~2k tokens and every route
+above explicit; `ss:hygiene:docs-structure` keeps every doc routed.

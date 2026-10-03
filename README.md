@@ -1,182 +1,35 @@
 # SlopStopper
 
-**Portable code-quality suite — security, hygiene, reliability, accessibility, performance, operational automation.** Delivered as a Python CLI (`slopstopper-cli`) plus a small set of GitHub Actions workflows that drive it.
+**Portable code-quality suite — security, hygiene, reliability, accessibility, performance, operational automation.** A Python CLI (`slopstopper-cli`) plus the GitHub Actions workflows that drive it, all invoked through one `task ss:*` surface.
 
 ## Install
 
-The CLI alone (most use cases):
-
 ```bash
 pipx install slopstopper-cli
-slopstopper checks list             # see what's available
-slopstopper doctor                  # verify the external tools you'll need
-slopstopper run hygiene:docs-size   # run a check (writes .ss/reports/...)
+slopstopper checks list             # what's available
+slopstopper run hygiene:docs-size   # run one check (writes .ss/reports/...)
 ```
 
-> Published to PyPI on every release tag. Each release is also attached to [GitHub Releases](https://github.com/hungovercoders/slopstopper/releases/latest) with a Sigstore build-provenance attestation — verify with `gh attestation verify <wheel> --owner hungovercoders`.
-
-The full suite into a repo (CLI + GitHub Actions workflows + Taskfile shim + config seed):
+The full suite into a repo (CLI pinned via [mise](https://mise.jdx.dev), workflows, Taskfile shims, config seed, Claude Code skills). Idempotent — re-run to refresh:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 ```
 
-`install.sh` is idempotent — re-run to refresh workflows. It **pins** `slopstopper-cli` in `mise.toml` and installs it via [mise](https://mise.jdx.dev), so a breaking release only lands when you move the pin. See [Update](#update).
+Not a website? `--profile api` or `--profile library` installs only the checks that apply.
 
-Not a website? `--profile api` (or `library`) installs only the applicable checks — see [Profiles](./docs/architecture/README.md#project-shape-profiles).
+## Docs
 
-## Contents
-
-- [Prerequisites](#prerequisites)
-- [What gets installed](#what-gets-installed)
-- [What you get](#what-you-get)
-- [What each check needs](#what-each-check-needs)
-- [Same commands, both loops](#same-commands-both-loops)
-- [Configure](#configure)
-- [Update](#update)
-- [Contribute](#contribute)
-- [For agents (Claude, Copilot, Cursor)](#agents)
-- [Dogfooded here — slopstopper.dev](#dogfooded-here--slopstopperdev)
-- [Acknowledgements](#acknowledgements)
-- [License](#license)
-
-> 🗺️ **Documentation map:** [`docs/index.md`](./docs/index.md) is the single index of all project documentation. This README, [`AGENTS.md`](./AGENTS.md) and [`CLAUDE.md`](./CLAUDE.md) are deliberately thin entry points — all three defer to the map.
-
-## Prerequisites
-
-mise pins + installs `slopstopper-cli`; each check subprocess-invokes its own tool (`semgrep`, `gitleaks`, `trivy`, `docker`, `node`). `slopstopper doctor` reports what's missing.
-
-- **[mise](https://mise.jdx.dev)** — required; installs the pinned `slopstopper-cli` + `task`, activated per-directory (CI uses `jdx/mise-action`)
-- **Python 3.11+** — mise's pipx backend needs it on PATH
-
-Per-check tools (skip any check your profile drops):
-
-| Tool | Needed by | Install hint |
-| ---- | --------- | ------------ |
-| `node` 20+ | Reliability checks (Playwright + Lighthouse), `slopstopper serve` | [nodejs.org](https://nodejs.org/) |
-| `gh` | `slopstopper emit` (PR comments + issues from CI) | [cli.github.com](https://cli.github.com/) |
-| `semgrep` | `security:sast` | `pip install --user semgrep` |
-| `gitleaks` | `security:secrets` | `brew install gitleaks` |
-| `trivy` | `security:vulnerability:all` | `brew install aquasecurity/trivy/trivy` |
-| `docker` | `security:dast` | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |
-
-Optional: **bash + git** (if using `install.sh`), **Task v3.x** (for the `task ss:*` shim layer).
-
-## What gets installed
-
-Everything SlopStopper owns lives under the `ss` namespace so it can't clash with files you already have.
-
-| Item | Description |
-| ---- | ----------- |
-| `slopstopper-cli` (Python) | The product — every check runs through this. Pinned per-repo in `mise.toml` (`"pipx:slopstopper-cli"`) and installed via mise. |
-| `.github/workflows/ss-*.yml` | Security, hygiene, reliability and operational workflows |
-| `.github/actions/ss-*/` | Composite steps the workflows share (setup, URL resolution); replaced on refresh |
-| `Taskfile.ss.yml` | Thin `task ss:*` shims that call the CLI — convenient for the local dev loop |
-| `Taskfile.yml` | Created if missing (else: prints the include block to paste in) |
-| `.githooks/pre-push` | Pre-push hygiene gate (`--no-hooks` opts out; defers to husky/lefthook/pre-commit) |
-| `mise.toml` | Toolchain pin (`slopstopper-cli`, `task`), read locally and in CI; moved by `--upgrade-cli`/`--cli-version` |
-| `.slopstopper.yml` | Config starter — profile, URLs, headers, page lists (never overwritten) |
-| `.ss/reports/` | Where the CLI writes reports — `.gitignore`d |
-| `package.json` | Created (or `devDependencies` merged into an existing file) |
-
-Bundled Playwright specs, lighthouserc dev/prod, and the local-CI static server live inside the wheel — `slopstopper templates eject <name>` copies one into `.ss/` to customise.
-
-## What you get
-
-Five loops of feedback, all running on every PR and push to `main`:
-
-| Loop | What it does | Tools | Docs |
-| ---- | ------------ | ----- | ---- |
-| 🔒 **Security** | SAST, DAST, secrets detection, dependency CVEs, API header + CORS audit | Semgrep, OWASP ZAP, Gitleaks, Trivy | [Security →](./docs/security/README.md) |
-| 🧹 **Hygiene** | Complexity caps, doc structure/accuracy/size checks, OpenAPI drift, auto-labelled PRs | Lizard, stdlib Python | [Hygiene →](./docs/hygiene/README.md) |
-| ✅ **Reliability** | E2E + smoke tests, broken-link audits, accessibility (WCAG 2.1 AA), Core Web Vitals, SEO metatags, llms.txt, robots.txt, sitemap.xml, API health + latency | Playwright, axe-core, Lighthouse CI, stdlib Python | [Reliability →](./docs/reliability/README.md) |
-| 🤖 **Runbooks** | One rolling PR comment summarises every check; failed workflows auto-raise issues; an agentic doc updater opens weekly sync PRs | GitHub Actions, gh-aw | [Runbooks →](./docs/runbooks/README.md) |
-| 🚀 **Deployment** | Preview deploys per PR, automated production releases, automatic preview cleanup | Cloudflare Workers Builds (Git integration) | [Deployment →](./docs/deployment/README.md) |
-
-## What each check needs
-
-Three portability layers. Layer 1 runs on install; layers 2–3 need a little config:
-
-| Layer | Checks | What you provide |
-| ----- | ------ | ---------------- |
-| **1. Static analysis** (any code) | SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure/Accuracy/Size, Auto-label PRs, Workflow-failure tracker | Nothing — works out of the box |
-| **2. Deployed surface** (need a URL) | Smoke, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, llms.txt, robots.txt, sitemap.xml, DAST, Playwright, API Health/Latency/Headers, OpenAPI Drift | `urls.production` / `urls.preview` in `.slopstopper.yml` ([per-check env vars](./docs/reliability/README.md) also work) |
-| **3. Agentic doc-updater** | Weekly doc-sync PRs | `COPILOT_GITHUB_TOKEN` repo secret |
-
-Don't use a check? Delete its workflow or list it under `workflows.disabled` — re-runs respect both.
-
-Deploy is intentionally not a layer: connect your repo in the Cloudflare dash for production deploys, PR previews and preview cleanup. See [Deployment](./docs/deployment/README.md).
-
-## Same commands, both loops
-
-`task ss:<category>:<check>` is the canonical interface — humans, agents and CI all go through it, so the suite shares one invocation surface with the rest of your codebase. The shims call `slopstopper-cli` under the hood; pass `--no-task` to `install.sh` to skip Task and have workflows call the CLI directly.
-
-```bash
-task ss:hygiene:complexity                    # the canonical form
-task ss:reliability:accessibility -- http://localhost:8080
-task ss:security:sast                         # CI runs the same line
-slopstopper run hygiene:complexity            # underlying CLI if you skip Task
-```
-
-## Configure
-
-Most checks work out of the box. To wire up the full suite:
-
-**[`.slopstopper.yml`](./.slopstopper.yml.example)** at the repo root is the config file. `install.sh` seeds a starter (`profile`, URLs, page lists, `headers.source: null`) so the first PR is green; the link is the full schema. Survives reinstalls.
-
-**Repo secrets** (under Settings → Secrets and variables → Actions):
-
-- `COPILOT_GITHUB_TOKEN` — for the agentic doc-updater, a [gh-aw](https://github.github.com/gh-aw/) workflow. Setup: [`docs/hygiene/DOC_UPDATER.md`](./docs/hygiene/DOC_UPDATER.md).
-
-Deploy needs no secrets — Cloudflare Workers Builds connects via the GitHub App.
-
-**Thresholds** — complexity ceiling, doc size, entry-file budgets and the rest are keys in [`.slopstopper.yml.example`](./.slopstopper.yml.example). Lighthouse budgets ship inside the wheel; override via `.ss/`.
-
-## Update
-
-Refresh workflows + shims and reinstall the **pinned** `slopstopper-cli` (config + customisations survive):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
-```
-
-Move the pin when ready (rewrites `mise.toml`; commit so CI matches). See [docs/runbooks/UPGRADE_CLI.md](docs/runbooks/UPGRADE_CLI.md):
-
-```bash
-bash install.sh --upgrade-cli        # latest
-bash install.sh --cli-version X.Y.Z  # exact
-```
-
-## Contribute
-
-Contributions are welcome. The full contributor guide lives in [`docs/contributing/README.md`](./docs/contributing/README.md) — short version:
-
-- Branch from `main`, keep changes focused
-- Run `slopstopper checks list` to see what's available
-- Follow [Conventional Commits](https://www.conventionalcommits.org/)
-- Open a PR; let the SlopStopper checks do their job
-
-## Agents
-
-If an AI agent (Claude, Copilot, Cursor, etc.) is working on this repo, the canonical conventions live in [`AGENTS.md`](./AGENTS.md). [`CLAUDE.md`](./CLAUDE.md) imports `AGENTS.md` so Claude Code picks up the same instructions automatically.
-
-**Using Claude Code?** `install.sh` lands [`slopstopper-install`](./.claude/skills/slopstopper-install/SKILL.md) (install + refresh) and [`slopstopper-triage`](./.claude/skills/slopstopper-triage/SKILL.md) at `<repo>/.claude/skills/`, so every contributor gets them on clone. `--no-skills` opts out. Refresh:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash
-```
-
-Runbook: [`docs/runbooks/INSTALL_SKILLS.md`](./docs/runbooks/INSTALL_SKILLS.md).
-
----
+- Adopting it: prerequisites, what gets installed, what each check needs, configure, update → [`docs/runbooks/INSTALL.md`](./docs/runbooks/INSTALL.md)
+- Working in this repo: [`AGENTS.md`](./AGENTS.md) carries the conventions and commands; [`docs/README.md`](./docs/README.md) routes to everything else
+- Using Claude Code? `install.sh` lands two skills in `<repo>/.claude/skills/`: `slopstopper-install` and `slopstopper-triage`
 
 ## Dogfooded here — slopstopper.dev
 
-This repo hosts both **slopstopper-cli** (the product, under [`cli/`](./cli)) and **[slopstopper.dev](https://slopstopper.dev/)** — a live reference site that runs the same suite it advertises. The badges below are this repo's own CI: proof every check works in production, on every PR and push to `main`. Adopter pipelines will show their own badges in their own README — these are slopstopper.dev's.
+This repo hosts the CLI (under [`cli/`](./cli)) and [slopstopper.dev](https://slopstopper.dev/), a live reference site that runs the same suite it advertises. The badges are this repo's own CI, on every PR and push to `main`.
 
-### Pipeline status (slopstopper.dev's CI)
+### 🔒 Security
 
-#### 🔒 Security
 [![SAST](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-security-sast-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-security-sast-check.yml)
 [![DAST](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-security-dast-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-security-dast-check.yml)
 [![Secrets](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-security-secrets-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-security-secrets-check.yml)
@@ -184,7 +37,8 @@ This repo hosts both **slopstopper-cli** (the product, under [`cli/`](./cli)) an
 [![Dependency Review](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-security-vulnerability-new-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-security-vulnerability-new-check.yml)
 [![API Headers](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-security-api-headers-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-security-api-headers-check.yml)
 
-#### 🧹 Hygiene
+### 🧹 Hygiene
+
 [![Complexity](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-complexity-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-complexity-check.yml)
 [![Docs Accuracy](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-docs-accuracy-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-docs-accuracy-check.yml)
 [![Docs Size](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-docs-size-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-docs-size-check.yml)
@@ -192,7 +46,8 @@ This repo hosts both **slopstopper-cli** (the product, under [`cli/`](./cli)) an
 [![OpenAPI Drift](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-openapi-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-openapi-check.yml)
 [![Auto Label PRs](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-auto-label-pr.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-auto-label-pr.yml)
 
-#### ✅ Reliability
+### ✅ Reliability
+
 [![Smoke Tests](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-smoke-tests.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-smoke-tests.yml)
 [![Accessibility](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-accessibility-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-accessibility-check.yml)
 [![Core Web Vitals](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-core-web-vitals.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-core-web-vitals.yml)
@@ -204,23 +59,15 @@ This repo hosts both **slopstopper-cli** (the product, under [`cli/`](./cli)) an
 [![API Health](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-api-health-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-api-health-check.yml)
 [![API Latency](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-api-latency-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-api-latency-check.yml)
 
-#### 🤖 Operational
+### 🤖 Operational
+
 [![Doc Auto-Updater](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-doc-updater.lock.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-doc-updater.lock.yml)
 [![Failure Alerts](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-workflow-failure-issue.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-workflow-failure-issue.yml)
 
-#### 🚀 Deployment
+### 🚀 Deployment
+
 [![Site](https://img.shields.io/website?url=https%3A%2F%2Fslopstopper.dev&label=slopstopper.dev&up_message=up&down_message=down)](https://slopstopper.dev/)
-
-Deployed via [Cloudflare Workers Builds](https://developers.cloudflare.com/workers/ci-cd/) — every push to `main` deploys, every PR gets a preview URL as a commit check.
-
-### See it in action
-
-📍 [**slopstopper.dev**](https://slopstopper.dev/) — live reference site, runs every check in this README on every change. Browse [Features](https://slopstopper.dev/features.html) to see each check's YAML and a mock report, or [Tools](https://slopstopper.dev/tools.html) for the technology stack.
-
-## Acknowledgements
-
-slopstopper-cli has one third-party Python dependency, `lizard` (for `hygiene:complexity`); every other tool runs via `subprocess`. Full credit, licences and upstream links for every tool we drive live in [`ATTRIBUTIONS.md`](./ATTRIBUTIONS.md).
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT — see [LICENSE](./LICENSE). Tool credits and licences: [`ATTRIBUTIONS.md`](./ATTRIBUTIONS.md).

@@ -2,7 +2,19 @@
 
 ## Overview
 
-This directory contains documentation for SlopStopper's reliability checks: portable smoke tests, broken-link audits, accessibility audits (see [ACCESSIBILITY.md](ACCESSIBILITY.md)), Core Web Vitals via Lighthouse CI (see [CWV.md](CWV.md)), SEO/social-share metatags (see [SEO.md](SEO.md)), the llms.txt AI-discoverability map (see [LLMS_TXT.md](LLMS_TXT.md)), the robots.txt discoverability + de-index guard (see [ROBOTS_TXT.md](ROBOTS_TXT.md)) the sitemap.xml completeness + drift check (see [SITEMAP.md](SITEMAP.md)), the API health/readiness endpoint audit and the API latency + payload budget audit (both below). These checks are wired against any reachable URL.
+SlopStopper's reliability checks, wired against any reachable URL: portable smoke tests, broken-link audits, and the API health and latency audits (all below), plus six audits with their own guide — read the one whose trigger matches.
+
+## Routes
+
+| When you are…                                                        | Do this                                                                          |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| fixing an axe-core finding or tuning the WCAG audit                   | Read [ACCESSIBILITY.md](ACCESSIBILITY.md) — the audit, its thresholds and report  |
+| tuning Lighthouse budgets or debugging a Core Web Vitals failure       | Read [CWV.md](CWV.md) — Lighthouse CI configuration and the budget files          |
+| fixing a missing or wrong SEO / social-share metatag                   | Read [SEO.md](SEO.md) — what the metatag audit asserts                            |
+| adding or fixing the site's `llms.txt`                                 | Read [LLMS_TXT.md](LLMS_TXT.md) — the llmstxt.org shape the check asserts         |
+| changing `robots.txt`, or when the de-index guard fires                | Read [ROBOTS_TXT.md](ROBOTS_TXT.md) — discoverability rules and the guard         |
+| adding pages, or when the sitemap drift check fires                    | Read [SITEMAP.md](SITEMAP.md) — completeness + drift against the served site      |
+
 
 ## Configuration (env vars)
 
@@ -91,7 +103,7 @@ Report: `.ss/reports/api-health/api-health-report.{md,json}`.
 
 `ss-reliability-api-health-check.yml` audits `urls.preview` on pull requests and `urls.production` on pushes to main, schedules and Cloudflare deployment events. Unlike the browser checks it **never builds and serves the repo locally** — an API isn't a static bundle `slopstopper serve` can host, and guessing a start command would be worse than not guessing. With neither URL configured the PR run emits a notice and skips; the deployed-main and scheduled runs still cover the endpoint.
 
-The check ships under every [project-shape profile](../architecture/README.md#project-shape-profiles) except `library`, and stays inert until configured — so a UI repo with API routes gets it without having to opt in.
+The check ships under every [project-shape profile](../architecture/PROFILES.md) except `library`, and stays inert until configured — so a UI repo with API routes gets it without having to opt in.
 
 ## API Latency Check
 
@@ -152,7 +164,7 @@ Report: `.ss/reports/api-latency/api-latency-report.{md,json}`.
 
 One caveat specific to this check: **timings from a preview environment are not timings from production.** A cold-started preview deploy is slower and noisier. Either set budgets loose enough for it, or leave them unset on PRs and rely on the scheduled production run.
 
-Ships under every [project-shape profile](../architecture/README.md#project-shape-profiles) except `library`, and stays inert until configured.
+Ships under every [project-shape profile](../architecture/PROFILES.md) except `library`, and stays inert until configured.
 
 ## Broken Link Checks
 
@@ -250,21 +262,6 @@ SMOKE_TEST_URL=https://your-site.example.com \
 
 For assertions beyond "page returns 200 and loads cleanly" (e.g. specific element visibility), add your own specs under your repo's own `tests/` directory — those are picked up by a `playwright.config.js` you write in your repo root, not by SlopStopper's bundled config.
 
-### Best Practices
-
-1. **Keep tests fast** - Smoke tests should complete in under 2 minutes
-2. **Test critical paths only** - Focus on must-work functionality
-3. **Avoid test data dependencies** - Tests should work on any deployment
-4. **Set appropriate timeouts** - Allow for network latency in production
-5. **Monitor regularly** - Run on a schedule to catch degradation early
-
-### Monitoring Recommendations
-
-- **Frequency**: Run every 15-60 minutes depending on SLA requirements
-- **Alerting**: Configure GitHub Actions to notify on failures
-- **Retention**: Keep test results for at least 30 days
-- **Review**: Regularly review test coverage and update as site evolves
-
 ### Troubleshooting
 
 **Tests fail locally but pass in CI (or vice versa):**
@@ -281,9 +278,3 @@ For assertions beyond "page returns 200 and loads cleanly" (e.g. specific elemen
 - Add explicit waits (`await page.waitForLoadState('networkidle')`) in any custom specs you add
 - Increase the CI retry count by editing the ejected config in `.ss/` (see "Test configuration" above)
 - Check for timing-dependent assertions
-
-### Related documentation
-
-- [Playwright testing guide](https://playwright.dev/docs/intro)
-- [GitHub Actions documentation](https://docs.github.com/actions)
-- [Contributing guidelines](../contributing/README.md)
