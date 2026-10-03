@@ -32,7 +32,7 @@ Monitors overall documentation size and checks against configured thresholds:
 - **Individual file sizes:** max 20 KB
 - **Number of documentation files:** max 25
 
-Advisory: it always exits 0 and the report carries the verdict. Under AGENTS.md-first only `AGENTS.md` is always loaded and every other doc is opt-in behind a route, so the per-file cap is the one that protects a reader; the totals are a growth signal, sized to the repo, and moved only in a commit that says why. The report lands in `.ss/reports/docs/docs-size-report.md`.
+Advisory: it always exits 0 and the report carries the verdict. Under AGENTS.md-first only `AGENTS.md` is always loaded and every other doc is opt-in behind a route, so the per-file cap is the one that protects a reader; the totals are a growth signal, sized to the repo, and moved only in a commit that says why. Running it generates `.ss/reports/docs/docs-size-report.md`.
 
 ```bash
 task ss:hygiene:docs-size
