@@ -29,29 +29,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
+      - name: Set up slopstopper
+        # Python, the mise-pinned toolchain (task, node, slopstopper-cli) and,
+        # in the slopstopper repo only, the CLI from source. One local
+        # composite action; install.sh copies it in next to the workflows.
+        uses: ./.github/actions/ss-setup
 
       - name: Install Semgrep
         run: |
           pip install --upgrade pip
           pip install semgrep
-
-      - name: Set up slopstopper toolchain
-        # Installs the pinned slopstopper-cli + task from mise.toml and puts
-        # them on PATH for later steps. The pin lives in mise.toml ([tools]
-        # "pipx:slopstopper-cli"); mise resolves it per-repo, so CI and local
-        # runs share one version.
-        uses: jdx/mise-action@v2
-
-      - name: Install slopstopper-cli from source (slopstopper.dev only)
-        # In this repo the CLI runs from source (HEAD), so mise.toml carries
-        # no slopstopper-cli pin — install it editable here. Adopter repos
-        # skip this (no cli/ source) and use the mise-pinned wheel.
-        if: ${{ hashFiles('cli/pyproject.toml') != '' }}
-        run: pip install -e ./cli
 
       # The check itself is the gate: it exits 1 on blocking findings, so
       # this step's outcome IS the verdict. No separate detect / fail-job

@@ -1,0 +1,149 @@
+name: Resolve the URL a check audits
+description: >-
+  Turns the triggering event into the URL a URL-driven check should audit,
+  validated to http(s). Two modes: `local` for the browser checks, which
+  build and serve the repo on pull requests and pushes; `skip` for the API
+  checks, which audit a deployed environment or skip when none is configured.
+
+# Twelve workflows carried a copy of this logic, each with its own
+# `validate_url()`. The two shapes, exactly as those copies behaved:
+#
+#   mode skip (the API checks — audit a deployed environment or nothing)
+#     workflow_dispatch   → the `url` input
+#     deployment_status   → the deployment's target URL         (prod=true)
+#     pull_request        → urls.preview
+#     schedule / push     → urls.production                     (prod=true)
+#     … and when that comes out empty: a notice and skip=true. An API
+#     check with no URLs configured is inert, never red.
+#
+#   mode local (the browser checks — build and serve the repo itself)
+#     workflow_dispatch   → the `url` input; if blank, a local build — or,
+#                           with dispatch-fallback: production, urls.production
+#                           (an error if unset)
+#     deployment_status   → the deployment's target URL         (prod=true)
+#     schedule            → urls.production (an error if unset) (prod=true)
+#     pull_request / push → http://localhost:8080, use_local=true
+#
+# Every URL is validated to http(s); an invalid one fails the step. A
+# failing `slopstopper config get` fails the step too — a broken CLI is
+# never mistaken for an unset key.
+#
+# CUSTOMISE FOR YOUR APP: `urls.production` and `urls.preview` live in
+# .slopstopper.yml. Point `urls.preview` at the environment your PRs
+# deploy to and the API checks cover it; with neither set, the API checks
+# skip with a notice on every event.
+
+inputs:
+  mode:
+    description: "`local` (build and serve on PR/push) or `skip` (audit a deployed URL or skip)"
+    required: false
+    default: local
+  url:
+    description: The workflow_dispatch `url` input, if any
+    required: false
+    default: ''
+  deployment-url:
+    description: The deployment_status target URL, if any
+    required: false
+    default: ''
+  dispatch-fallback:
+    description: "Mode local only: where a blank dispatch goes — `local` or `production`"
+    required: false
+    default: local
+  check:
+    description: Human name of the check, for the skip notice
+    required: false
+    default: this check
+
+outputs:
+  url:
+    description: The URL to audit (empty when skip=true)
+    value: ${{ steps.resolve.outputs.url }}
+  skip:
+    description: "`true` when no URL could be resolved for this event (mode skip)"
+    value: ${{ steps.resolve.outputs.skip }}
+  use_local:
+    description: "`true` when the workflow should build and serve the repo itself (mode local)"
+    value: ${{ steps.resolve.outputs.use_local }}
+  prod:
+    description: "`true` for a deployment, or a scheduled / main-branch run against urls.production (CWV: the stricter Lighthouse config). A dispatch is never prod"
+    value: ${{ steps.resolve.outputs.prod }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve
+      id: resolve
+      shell: bash
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        MODE: ${{ inputs.mode }}
+        INPUT_URL: ${{ inputs.url }}
+        DEPLOYMENT_URL: ${{ inputs.deployment-url }}
+        DISPATCH_FALLBACK: ${{ inputs.dispatch-fallback }}
+        CHECK: ${{ inputs.check }}
+      run: |
+        set -eo pipefail
+        fail() { echo "::error::$1" >&2; exit 1; }
+        # Called directly (never inside `$(...)` or left of `||`), so a
+        # failure here ends the step rather than a subshell.
+        require_http() {
+          [[ "$1" =~ ^https?://[^[:space:][:cntrl:]]+$ ]] || fail "Invalid URL format: $1"
+        }
+        emit() { # url skip use_local prod
+          {
+            echo "url=$1"
+            echo "skip=$2"
+            echo "use_local=$3"
+            echo "prod=$4"
+          } >> "$GITHUB_OUTPUT"
+        }
+        audit() { require_http "$1"; emit "$1" false false "$2"; }
+        local_build() { emit "http://localhost:8080" false true false; }
+        # `slopstopper config get` prints "" for an unset key; a non-zero
+        # exit is a broken CLI or config, and stops the step here.
+        config_get() {
+          slopstopper config get "$1" || fail "slopstopper config get $1 failed — see the error above"
+        }
+
+        if [ "$MODE" = "skip" ]; then
+          prod=false
+          case "$EVENT_NAME" in
+            workflow_dispatch) candidate="$INPUT_URL" ;;
+            deployment_status) candidate="$DEPLOYMENT_URL"; prod=true ;;
+            pull_request)      candidate="$(config_get urls.preview)" ;;
+            *)                 candidate="$(config_get urls.production)"; prod=true ;;
+          esac
+          if [ -z "$candidate" ]; then
+            echo "::notice::No URL resolved for this event — set urls.preview / urls.production in .slopstopper.yml to enable ${CHECK} here."
+            emit "" true false false
+          else
+            audit "$candidate" "$prod"
+          fi
+          exit 0
+        fi
+
+        case "$EVENT_NAME" in
+          workflow_dispatch)
+            if [ -n "$INPUT_URL" ]; then
+              audit "$INPUT_URL" false
+            elif [ "$DISPATCH_FALLBACK" = "production" ]; then
+              production="$(config_get urls.production)"
+              [ -n "$production" ] || fail "No url input given and urls.production is unset in .slopstopper.yml"
+              audit "$production" false
+            else
+              local_build
+            fi
+            ;;
+          deployment_status)
+            audit "$DEPLOYMENT_URL" true
+            ;;
+          schedule)
+            production="$(config_get urls.production)"
+            [ -n "$production" ] || fail "Scheduled run requires urls.production in .slopstopper.yml"
+            audit "$production" true
+            ;;
+          *)
+            local_build
+            ;;
+        esac
