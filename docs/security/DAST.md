@@ -6,8 +6,8 @@ This template includes automated Dynamic Application Security Testing (DAST) usi
 
 ### Run Analysis Locally
 ```bash
-# Start the site first
-task contributing:run &
+# Serve the built site on :8080 (what CI does — or point at a deployed URL instead)
+slopstopper serve &
 # Run DAST scan against it
 task ss:security:dast -- http://localhost:8080
 ```
@@ -84,14 +84,10 @@ In `ss-security-dast-check.yml`, the CI workflow starts a local server and passe
 
 ### Change the Blocking Threshold
 
-To block only on High (not Medium), edit `ss-security-dast-check.yml`:
+The cutoff — Medium and High (riskcode ≥ 2) block — is fixed in `cli/slopstopper/dast_gate.py`; there is no workflow line or `.slopstopper.yml` knob for it. To stop a specific Medium alert blocking, scope it rather than the threshold:
 
-```python
-# Change this line:
-if int(alert.get('riskcode', 0)) >= 2:
-# To:
-if int(alert.get('riskcode', 0)) >= 3:
-```
+- Set its ZAP plugin to `IGNORE` in `.zap/rules.tsv`. The gate honours that list, so an ignored plugin doesn't count.
+- For a CSP finding caused by a third-party embed, document the path in [`CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md) (see below).
 
 ### Disable DAST Checking
 
@@ -108,8 +104,8 @@ rm .github/workflows/ss-security-dast-check.yml
 # Install Task (one-time)
 curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
 
-# Start the site
-task contributing:run &
+# Serve the built site on :8080
+slopstopper serve &
 
 # Run DAST scan (requires Docker)
 task ss:security:dast -- http://localhost:8080

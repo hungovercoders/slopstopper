@@ -15,9 +15,10 @@ is the map.
 | `security:api-headers` | stdlib Python | credentialed CORS wildcards, missing HSTS / `nosniff` | [API_HEADERS.md](API_HEADERS.md) |
 | `hygiene:csp-exceptions` | stdlib Python | drift between `worker/headers.json` and the exceptions doc | [CSP_EXCEPTIONS.md](CSP_EXCEPTIONS.md) |
 
-Every check follows the same shape: run it locally with
-`task ss:security:<check>`, read the report under `.ss/reports/<check>/`,
-get a PR comment on pull requests and a GitHub issue when a blocking
+Every check follows the same shape: run it locally with the `task`
+target named after it (`task ss:security:sast`,
+`task ss:hygiene:csp-exceptions`), read the report its page names under
+`.ss/reports/`, get a PR comment on pull requests and a GitHub issue when a blocking
 finding lands on `main`. Disable one by listing its workflow under
 `workflows.disabled` in `.slopstopper.yml` (or by choosing a
 [profile](../architecture/README.md) that drops it).

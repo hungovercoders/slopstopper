@@ -19,7 +19,7 @@ task ss:security:sast
 | Problem | Solution |
 |---------|----------|
 | Workflow not triggering? | Check workflow is at `.github/workflows/ss-security-sast-check.yml` |
-| Want stricter/looser rules? | Use a custom Semgrep config file (see below) |
+| Want stricter/looser rules? | The rule set is fixed (`--config=auto`, see below). Tune what blocks with `security.sast.fail_on`, or suppress one finding with a `# nosemgrep: <rule-id>` comment and a reason |
 | Don't want SAST checks? | Delete `.github/workflows/ss-security-sast-check.yml` |
 
 ### Severity Reference
