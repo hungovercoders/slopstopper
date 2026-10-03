@@ -7,7 +7,7 @@ Ports the bash security:dast flow:
         -v $PWD/.ss/reports/dast:/zap/wrk/:rw
         [-v $PWD/.zap:/zap/wrk/.zap:ro]
         ghcr.io/zaproxy/zaproxy:stable
-        zap-baseline.py -t <TARGET> -J dast-report.json -I
+        zap-baseline.py -t <TARGET> -z -notel -J dast-report.json -I
         [-c .zap/rules.tsv]
   + python3 .ss/scripts/generate-dast-md.py
   + python3 .ss/scripts/check-dast-alerts.py
@@ -15,6 +15,12 @@ Ports the bash security:dast flow:
 into one self-contained check. Takes a CLI arg (`--target URL`);
 plumbed through `slopstopper run security:dast -- --target
 https://example.com`.
+
+What leaves the machine: the scan sends requests to the target you name
+(that is the point). ZAP itself pulls its image from ghcr.io and updates
+its add-ons at start-up (downloads). ZAP's call-home telemetry — add-ons
+used and internal statistics, never the sites scanned or the findings —
+is switched off with `-notel`.
 
 Two scan modes, picked by whether an OpenAPI spec is configured:
 
@@ -253,7 +259,11 @@ def _zap_command(
     else:
         cmd += ["zap-baseline.py", "-t", target]
 
-    cmd += ["-J", "dast-report.json", "-I"]
+    # -notel: ZAP's call-home add-on sends telemetry (add-ons used, internal
+    # stats — never the sites scanned or what was found) unless told not to.
+    # Not -silent: that would also skip the add-on update that installs the
+    # beta passive-scan rules, and change what the scan finds.
+    cmd += ["-z", "-notel", "-J", "dast-report.json", "-I"]
     if rules_path.exists():
         cmd += ["-c", ".zap/rules.tsv"]
     return cmd

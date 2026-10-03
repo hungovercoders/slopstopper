@@ -38,7 +38,9 @@ task ss:reliability:cwv -- https://example.com --prod      # production budgets
 CWV_URL=http://localhost:8080 task ss:reliability:cwv
 ```
 
-Needs `node` (Lighthouse runs in headless Chrome via `npx lhci`). The check generates `cwv-report.md` under `.ss/reports/cwv/` — the threshold table with pass/fail per metric, plus a link to the full Lighthouse HTML report on Lighthouse's temporary public storage. Raw Lighthouse output lands in `.lighthouseci/` (gitignored; the workflow uploads it as an artifact).
+Needs `node` (Lighthouse runs in headless Chrome via `npx lhci`). The check generates `cwv-report.md` under `.ss/reports/cwv/` — the threshold table with pass/fail per metric. Raw Lighthouse output lands in `.lighthouseci/` (gitignored; the workflow uploads it as an artifact).
+
+Nothing is uploaded publicly by default. `reliability.cwv.public_report: true` in `.slopstopper.yml` uploads each report to Lighthouse CI's temporary public storage and adds a link to it in the report and PR comment. Anyone with that link can read the report — page content, screenshots, URLs — for a few days, so turn it on only for a public site. See [TOOLCHAIN.md](../architecture/TOOLCHAIN.md).
 
 ## Running in CI
 

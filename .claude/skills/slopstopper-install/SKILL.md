@@ -30,7 +30,7 @@ A portable suite of GitHub Actions plus the `slopstopper-cli` Python package tha
 
 | Step | What it is | Read |
 |---|---|---|
-| **1. Pre-flight** | Decide the project-shape profile (`ui` / `api` / `library`) first — the browser checks go red, not inert, on an API. Then twelve questions about the target: existing workflows, `docs/` shape, headers source, Node version, private-repo CI minutes, dirty tree. | `references/preflight.md` |
+| **1. Pre-flight** | Decide the project-shape profile (`ui` / `api` / `library`) first — the browser checks go red, not inert, on an API. Then thirteen questions about the target: existing workflows, `docs/` shape, headers source, Node version, private-repo CI minutes, dirty tree — and **whether it may send data to third parties** (SAST and public Lighthouse reports are opt-in; ask, don't assume). | `references/preflight.md` |
 | **2. Install** | The one command (`bash install.sh [--profile …]`, on a branch), what it writes and what it leaves alone, `--no-task` / `--no-hooks` / `--no-skills`. | `references/install.md` |
 | **3. What landed** | The file inventory to read back to the user: workflows per profile, `Taskfile.ss.yml`, `mise.toml` pin, the pre-push hook, these skills, the composite actions. | `references/install.md` |
 | **4. Configure** | `.slopstopper.yml`: profile, `urls.production` / `urls.preview`, page lists, the four API checks (they ship inert until `api.*` is set — this is the highest-value step on an API repo), hygiene thresholds, Node version. | `references/configure.md` |

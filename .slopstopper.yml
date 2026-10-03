@@ -52,5 +52,15 @@ hygiene:
   docs_accuracy:
     extra_paths: [app/*.html, .claude/skills/**/*.md]
 
+# slopstopper.dev is a public site with a public repo, so it opts in to
+# both data-sending choices (docs/architecture/TOOLCHAIN.md). The defaults
+# send nothing.
+security:
+  sast:
+    rules: auto            # Semgrep Registry rules — sends the repo URL + usage metrics
+reliability:
+  cwv:
+    public_report: true    # Lighthouse reports on public temporary storage, linked from PRs
+
 workflows:
   disabled: []

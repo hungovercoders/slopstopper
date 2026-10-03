@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from slopstopper.checks import _tools, cwv
 
 
@@ -373,3 +375,40 @@ def test_an_lhci_exit_one_without_a_fresh_result_is_could_not_run(monkeypatch, i
     monkeypatch.setattr(cwv, "_npx_available", lambda: True)
     monkeypatch.setattr(cwv, "_run_lhci", lambda cmd: (1, "Unable to launch Chrome"))
     assert cwv.run(["--url", "https://example.com"]) == 2
+
+
+# ── public report upload is opt-in ───────────────────────────────
+
+
+def test_the_bundled_configs_upload_nothing():
+    """`lhci autorun` uploads only when a config has an `upload` block.
+    temporary-public-storage makes every report readable by anyone with the
+    link, so the shipped configs must not carry one."""
+    data_dir = Path(cwv.__file__).parent.parent / "data"
+    for name in ("lighthouserc.json", "lighthouserc.prod.json"):
+        assert "upload" not in json.loads((data_dir / name).read_text())["ci"], name
+
+
+def test_build_cmd_uploads_only_when_asked():
+    assert not any("upload" in a for a in cwv._build_cmd("https://e.x", "c.json"))
+    assert "--upload.target=temporary-public-storage" in cwv._build_cmd("https://e.x", "c.json", True)
+
+
+@pytest.mark.parametrize("body,uploads", [
+    ("", False),
+    ("reliability:\n  cwv:\n    public_report: true\n", True),
+])
+def test_run_uploads_publicly_only_when_opted_in(monkeypatch, write_config, body, uploads):
+    write_config(body)
+    captured: dict = {}
+
+    def fake_run_lhci(cmd):
+        captured["cmd"] = cmd
+        Path(".lighthouseci").mkdir()
+        (Path(".lighthouseci") / "lhr-1.json").write_text(json.dumps(_sample_lhr()))
+        return 0, ""
+
+    monkeypatch.setattr(cwv, "_npx_available", lambda: True)
+    monkeypatch.setattr(cwv, "_run_lhci", fake_run_lhci)
+    assert cwv.run(["--url", "https://example.com"]) == 0
+    assert ("--upload.target=temporary-public-storage" in captured["cmd"]) is uploads

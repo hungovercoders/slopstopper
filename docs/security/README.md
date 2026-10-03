@@ -28,9 +28,10 @@ finding lands on `main`. Disable one by listing its workflow under
 Semgrep pattern-matches **your own source code** for dangerous calls,
 injection risks and hardcoded secrets. ERROR blocks; WARNING and INFO are
 reported; `security.sast.fail_on` moves that line. Narrow, documented
-`nosemgrep` suppressions beat disabling a rule. By default the rules come
-from the Semgrep Registry, which receives the repo URL and usage metrics;
-`security.sast.rules` runs local rules instead and sends nothing.
+`nosemgrep` suppressions beat disabling a rule. **Off until you opt in**:
+`security.sast.rules: auto` uses Semgrep Registry rules (Semgrep receives
+the repo URL and usage metrics); a list of local rule files sends nothing.
+What every tool sends: [TOOLCHAIN.md](../architecture/TOOLCHAIN.md).
 
 → [SAST.md](SAST.md): quick start, severity table, the suppression pattern
 and this repo's current suppressions.

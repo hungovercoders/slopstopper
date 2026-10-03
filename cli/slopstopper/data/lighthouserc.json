@@ -12,9 +12,6 @@
         "cumulative-layout-shift": ["error", { "maxNumericValue": 0.25 }],
         "first-contentful-paint": ["warn", { "maxNumericValue": 3000 }]
       }
-    },
-    "upload": {
-      "target": "temporary-public-storage"
     }
   }
 }

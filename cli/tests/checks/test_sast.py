@@ -166,6 +166,7 @@ def test_read_data_parses_payload(isolated_cwd):
 def test_run_returns_two_when_semgrep_missing(monkeypatch, isolated_cwd, capsys):
     """A missing tool is 'could not run', not 'the repo failed'."""
     monkeypatch.setattr(sast, "_semgrep_available", lambda: False)
+    monkeypatch.setattr(sast, "_rules", lambda: (sast.REGISTRY, None))
     rc = sast.run()
     assert rc == 2
     assert "semgrep is not installed" in capsys.readouterr().out
@@ -178,6 +179,8 @@ def test_run_clean_when_no_results(monkeypatch, isolated_cwd, capsys):
         return 0
 
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
+
+    monkeypatch.setattr(sast, "_rules", lambda: (sast.REGISTRY, None))
     monkeypatch.setattr(sast, "_run_semgrep", fake_semgrep)
     rc = sast.run()
     assert rc == 0
@@ -192,6 +195,8 @@ def _stub_semgrep(monkeypatch, *findings):
         return 0
 
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
+
+    monkeypatch.setattr(sast, "_rules", lambda: (sast.REGISTRY, None))
     monkeypatch.setattr(sast, "_run_semgrep", fake_semgrep)
 
 
@@ -250,6 +255,7 @@ def test_blocking_findings_ranks_severities():
 def test_run_returns_two_when_semgrep_writes_no_report(monkeypatch, isolated_cwd, capsys):
     """A crashed scan is 'could not run', never a clean pass."""
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
+    monkeypatch.setattr(sast, "_rules", lambda: (sast.REGISTRY, None))
     monkeypatch.setattr(sast, "_run_semgrep", lambda rules=None: 0)
     assert sast.run() == 2
     assert "did not complete" in capsys.readouterr().out
@@ -263,6 +269,8 @@ def test_run_returns_two_when_the_report_is_malformed(monkeypatch, isolated_cwd)
         return 0
 
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
+
+    monkeypatch.setattr(sast, "_rules", lambda: (sast.REGISTRY, None))
     monkeypatch.setattr(sast, "_run_semgrep", fake_semgrep)
     assert sast.run() == 2
 
@@ -305,6 +313,8 @@ def test_a_fatal_semgrep_exit_is_not_a_clean_pass(monkeypatch, isolated_cwd, cap
         return _Proc(7)
 
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
+
+    monkeypatch.setattr(sast, "_rules", lambda: (sast.REGISTRY, None))
     monkeypatch.setattr(sast.subprocess, "run", fake_subprocess_run)
     assert sast.run() == 2
     assert "did not complete" in capsys.readouterr().out
@@ -314,6 +324,7 @@ def test_a_previous_runs_sast_report_cannot_stand_in_for_this_one(monkeypatch, i
     sast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
     sast.REPORT_JSON.write_text(json.dumps({"results": [], "errors": []}))
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
+    monkeypatch.setattr(sast, "_rules", lambda: (sast.REGISTRY, None))
     monkeypatch.setattr(sast.subprocess, "run", lambda argv, **kw: _Proc(0))  # writes nothing
     assert sast.run() == 2
 
@@ -353,7 +364,22 @@ def semgrep_argv(monkeypatch):
     return calls
 
 
-def test_default_uses_the_registry(isolated_cwd, semgrep_argv, capsys):
+@pytest.mark.parametrize("body", ["", "security:\n  sast:\n    rules: []\n", "security:\n  sast:\n    fail_on: warning\n"])
+def test_sast_is_off_until_the_repo_opts_in(write_config, semgrep_argv, monkeypatch, capsys, body):
+    """Nothing is scanned or sent by default — sending data to semgrep.dev
+    is opt-in. The skip is a pass (exit 0), and it says how to opt in."""
+    write_config(body)
+    monkeypatch.setattr(sast, "_semgrep_available", lambda: False)  # not even needed
+    assert sast.run() == 0
+    assert semgrep_argv == []
+    md = sast.REPORT_MD.read_text()
+    assert "SKIPPED" in md and "SAST is off" in md
+    assert "rules: auto" in md and "Sends nothing" in md
+    assert "SAST is off" in capsys.readouterr().out
+
+
+def test_rules_auto_opts_in_to_the_registry(write_config, semgrep_argv, capsys):
+    write_config("security:\n  sast:\n    rules: auto\n")
     assert sast.run() == 0
     (cmd,) = semgrep_argv
     assert "--config=auto" in cmd
@@ -375,16 +401,6 @@ def test_local_rules_run_with_metrics_off(write_config, semgrep_argv, body):
     assert cmd[1:4] == ["--config=.semgrep/", "--config=extra.yml", "--metrics=off"]
     md = sast.REPORT_MD.read_text()
     assert "local: `.semgrep/`, `extra.yml`" in md and "nothing is sent" in md
-
-
-@pytest.mark.parametrize("body", [
-    "security:\n  sast:\n    rules: auto\n",
-    "security:\n  sast:\n    rules: []\n",
-])
-def test_auto_or_empty_rules_keep_the_default(write_config, semgrep_argv, body):
-    write_config(body)
-    assert sast.run() == 0
-    assert "--config=auto" in semgrep_argv[0]
 
 
 @pytest.mark.parametrize("entry", ["p/owasp-top-ten", "r/python.lang.x", "https://example.com/rules.yml", "auto"])

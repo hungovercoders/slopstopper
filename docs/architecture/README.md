@@ -118,6 +118,8 @@ See [`Taskfile.ss.yml`](../../Taskfile.ss.yml) for the shipped shim catalogue.
 
 ## Toolchain: mise + Task (why both)
 
+→ [TOOLCHAIN.md](TOOLCHAIN.md): every tool slopstopper runs — licence, where it's installed from, and what it sends off the machine. Nothing that identifies the repo leaves without an opt-in setting.
+
 SlopStopper deliberately uses **two** tools with non-overlapping jobs — the
 idiomatic mise+Task split, not redundancy:
 

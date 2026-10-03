@@ -23,6 +23,17 @@ Configuration: thresholds and the lhci config path live in the
 limits mirror that file so the rendered table matches what lhci
 actually enforced.
 
+Public report upload is opt-in. Lighthouse CI's `temporary-public-storage`
+target puts every report on Google Cloud Storage where anyone with the
+link can read it for a few days — page content, screenshots, URLs. The
+bundled configs carry no `upload` block, so `lhci autorun` uploads
+nothing and the result stays in `.lighthouseci/`. Opt in with:
+
+    reliability:
+      cwv:
+        public_report: true   # default false — adds a "Full Lighthouse
+                              # Report" link to the PR comment
+
 Exit codes:
   0 — lhci passed all thresholds
   1 — lhci audited the page and failed a threshold (report still written)
@@ -43,7 +54,7 @@ import sys
 import time
 from pathlib import Path
 
-from slopstopper import output, templates
+from slopstopper import config, output, templates
 from slopstopper.checks import _tools
 from slopstopper.checks._contract import runner_exit
 
@@ -107,12 +118,15 @@ def _resolve_url(parsed_url: str | None) -> str | None:
     return parsed_url or os.environ.get("CWV_URL")
 
 
-def _build_cmd(url: str, config_path: str) -> list[str]:
-    return [
+def _build_cmd(url: str, config_path: str, public_report: bool = False) -> list[str]:
+    cmd = [
         "npx", "lhci", "autorun",
         f"--collect.url={url}",
         f"--config={config_path}",
     ]
+    if public_report:
+        cmd.append("--upload.target=temporary-public-storage")
+    return cmd
 
 
 def _run_lhci(cmd: list[str]) -> tuple[int, str]:
@@ -273,7 +287,7 @@ def run(args: list[str] | None = None) -> int:
         return 2
 
     output.status("🚦", f"Running Core Web Vitals audit against: {url}")
-    cmd = _build_cmd(url, str(config_path))
+    cmd = _build_cmd(url, str(config_path), config.get_bool("reliability.cwv.public_report", False))
     started = time.time()
     rc, captured = _run_lhci(cmd)
     _write_report(url, captured, rc)

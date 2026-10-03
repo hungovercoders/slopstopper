@@ -343,6 +343,13 @@ reliability:
     # File locations (defaults shown).
     sitemap_path: /sitemap.xml
     llms_path: /llms.txt
+  cwv:
+    # Upload each Lighthouse report to Lighthouse CI's temporary public
+    # storage (Google Cloud Storage) and link it from the PR comment.
+    # Anyone with the link can read the report — page content,
+    # screenshots, URLs — for a few days, so it's opt-in. Off: the
+    # report stays in .lighthouseci/ and the CI artifact.
+    public_report: false
 
 # ── Security-check thresholds ────────────────────────────────────────
 security:
@@ -352,15 +359,17 @@ security:
     # what the workflow used to enforce in a separate step. `warning`
     # makes warnings block too; `none` reports without ever failing.
     fail_on: error
-    # Where the rules come from. Unset (the default) runs Semgrep's
-    # `--config=auto`, which logs in to the Semgrep Registry with this
-    # repo's URL and sends usage metrics (no source code, file names or
-    # findings — see https://semgrep.dev/docs/metrics). List local rule
-    # files or directories instead and the scan runs with
-    # `--metrics=off`: nothing is fetched and nothing is sent. Local
-    # paths only — a Registry name (p/…) or URL fails the check.
-    # rules:
-    #   - .semgrep/
+    # Where the rules come from. SAST is OFF until you choose, because
+    # one choice sends data to a third party (docs/architecture/TOOLCHAIN.md):
+    #   rules: auto        Semgrep's `--config=auto` — Registry rules for
+    #                      the languages it finds. SENDS this repo's URL and
+    #                      usage metrics to semgrep.dev (never source code,
+    #                      file names or findings; semgrep.dev/docs/metrics).
+    #   rules: [.semgrep/] local rule files or directories, run with
+    #                      `--metrics=off` — fetches and sends NOTHING.
+    # Unset: security:sast skips (passes) and says how to opt in. Local
+    # paths only in a list — a Registry name (p/…) or URL fails the check.
+    # rules: auto
 
 # ── Hygiene-check thresholds ─────────────────────────────────────────
 # Every hygiene check reads its own thresholds from here. Values shown

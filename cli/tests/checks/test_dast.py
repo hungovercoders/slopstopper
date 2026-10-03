@@ -411,3 +411,13 @@ def test_run_without_a_spec_stays_on_baseline(monkeypatch, isolated_cwd, write_c
     monkeypatch.setattr(dast, "_run_zap", fake_zap)
     assert dast.run(["--target", "https://example.com"]) == 0
     assert seen["spec"] is None
+
+
+@pytest.mark.parametrize("spec", [None, "https://api.example.com/openapi.json"])
+def test_zap_runs_without_telemetry(spec):
+    """ZAP's call-home sends telemetry unless started with -notel; the
+    packaged scans pass ZAP options through -z."""
+    cmd = dast._zap_command("https://example.com", spec=spec)
+    i = cmd.index("-z")
+    assert cmd[i + 1] == "-notel"
+    assert "-silent" not in cmd  # keeps the add-on update the beta rules need

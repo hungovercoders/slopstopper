@@ -1,8 +1,7 @@
 # .slopstopper.yml — slopstopper's per-repo config.
 #
-# This is the starter install.sh seeds: the handful of keys most repos
-# actually set. Every other knob has a sensible default and is documented,
-# with its default, in the schema reference:
+# The starter install.sh seeds: the keys most repos set. Every other knob
+# has a default, documented in the schema reference:
 #   https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example
 # Copy a block from there when you need it. Re-running install.sh never
 # overwrites this file.
@@ -45,6 +44,9 @@ smoke:
 # null skips the check.
 headers:
   source: null
+
+# Nothing here sends data off the runner. SAST (Semgrep) and public Lighthouse
+# reports are off until you opt in: security.sast.rules, reliability.cwv.public_report.
 
 # Serving an API? Copy the `api:` block from the schema reference above —
 # the four API checks ship inert until api.health.path / api.latency.paths /

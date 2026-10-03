@@ -44,10 +44,10 @@ Not a website? `--profile api` (or `library`) installs only the applicable check
 
 ## Prerequisites
 
-mise pins + installs `slopstopper-cli`; each check subprocess-invokes its own tool (`semgrep`, `gitleaks`, `trivy`, `docker`, `node`). `slopstopper doctor` reports what's missing.
+mise pins + installs `slopstopper-cli`; each check subprocess-invokes its own tool (`semgrep`, `gitleaks`, `trivy`, `docker`, `node`). `slopstopper doctor` lists gaps; [TOOLCHAIN.md](./docs/architecture/TOOLCHAIN.md) says what each sends.
 
-- **[mise](https://mise.jdx.dev)** — required; installs the pinned `slopstopper-cli` + `task`, activated per-directory (CI uses `jdx/mise-action`)
-- **Python 3.11+** — mise's pipx backend needs it on PATH
+- **[mise](https://mise.jdx.dev)** — required; installs pinned `slopstopper-cli` + `task`, per-directory (CI uses `jdx/mise-action`)
+- **Python 3.11+** — on PATH, for mise's pipx backend
 
 Per-check tools (skip any check your profile drops):
 
@@ -55,7 +55,7 @@ Per-check tools (skip any check your profile drops):
 | ---- | --------- | ------------ |
 | `node` 20+ | Reliability checks (Playwright + Lighthouse), `slopstopper serve` | [nodejs.org](https://nodejs.org/) |
 | `gh` | `slopstopper emit` (PR comments + issues from CI) | [cli.github.com](https://cli.github.com/) |
-| `semgrep` | `security:sast` | `pip install --user semgrep` |
+| `semgrep` | `security:sast` (opt-in) | `pip install --user semgrep` |
 | `gitleaks` | `security:secrets` | `brew install gitleaks` |
 | `trivy` | `security:vulnerability:all` | `brew install aquasecurity/trivy/trivy` |
 | `docker` | `security:dast` | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |
