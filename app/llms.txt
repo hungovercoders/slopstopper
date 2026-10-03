@@ -1,9 +1,9 @@
 # SlopStopper
 
-> A portable suite of GitHub Actions workflows, Task targets and analysis
-> scripts that stops AI-generated "slop" reaching production — security,
-> hygiene, reliability, operational and deployment checks that humans, agents
-> and CI all invoke through one `task ss:*` surface.
+> A Python CLI plus GitHub Actions workflows that run security, hygiene and
+> reliability checks on every PR. One command to install into any repo.
+> Stops AI-generated "slop" reaching production; humans, agents and CI all
+> invoke every check through one `task ss:*` surface.
 
 SlopStopper is two things at once: a portable quality suite you install into
 your own repo via `install.sh`, and a live reference site (this one) built and
@@ -12,7 +12,7 @@ deployed with the same suite it advertises.
 ## Site
 
 - [Home](https://slopstopper.dev/): what SlopStopper is and how to get started
-- [Features](https://slopstopper.dev/features.html): the five loops (security, hygiene, reliability, operational, deployment) and every check
+- [Features](https://slopstopper.dev/features.html): the five loops — security, hygiene, reliability and operational (installed), plus deployment (how this site ships, to copy) — and every check
 - [Tools](https://slopstopper.dev/tools.html): the underlying kit — Semgrep, OWASP ZAP, Trivy, Gitleaks, Playwright, axe-core, Lighthouse CI, GitHub Actions, Task
 - [Feedback](https://slopstopper.dev/feedback.html): report a bug or request a check
 

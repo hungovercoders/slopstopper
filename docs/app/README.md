@@ -4,7 +4,7 @@ What the site does and how its pages are organised.
 
 ## Overview
 
-SlopStopper is a static site promoting deterministic feedback for AI-driven development. It showcases the quality gates and tools available in this repo to keep a codebase healthy through high volumes of AI-assisted changes.
+slopstopper.dev is the reference install of SlopStopper: a Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo. The site is built and deployed with the same suite it describes, and its pages show the checks, the tools behind them, and how to adopt them.
 
 ## Brand & Design System
 

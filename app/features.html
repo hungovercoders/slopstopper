@@ -54,7 +54,7 @@
         <section class="hero">
             <span class="kicker">Practices &amp; feedback</span>
             <h1>Five loops, <span class="highlight">no slop.</span></h1>
-            <p>Every check below is a real GitHub Actions workflow that calls <code>slopstopper run &lt;category&gt;:&lt;check&gt;</code> from the <a href="https://github.com/hungovercoders/slopstopper/tree/main/cli" rel="noopener noreferrer">CLI package</a>. Same code path locally — install with the one-liner on <a href="index.html#get-started">Get Started</a> and run from your terminal.</p>
+            <p>Every security, hygiene and reliability check below is a real GitHub Actions workflow that calls <code>slopstopper run &lt;category&gt;:&lt;check&gt;</code> from the <a href="https://github.com/hungovercoders/slopstopper/tree/main/cli" rel="noopener noreferrer">CLI package</a>. Same code path locally — install with the one-liner on <a href="index.html#get-started">Get Started</a> and run from your terminal. Operational is the housekeeping around those checks; Deployment is how this site itself ships.</p>
         </section>
 
         <div class="card-grid">
@@ -545,6 +545,7 @@ safe-outputs:
             <div class="card" id="deployment">
                 <h2>🚀 Deployment</h2>
                 <p class="card-intro">Every push deploys, every PR gets a preview URL, every PR-close cleans up — Cloudflare Workers Builds, hooked directly into the repo. No deploy workflow, no secrets.</p>
+                <p class="card-intro"><strong>Not part of the install.</strong> <code>install.sh</code> ships no deploy step on purpose: this is slopstopper.dev's own setup, shown so you can copy it. Connect your repo in the Cloudflare dash (Workers &amp; Pages → Create → Connect to Git) and you get all three for free.</p>
                 <ul>
                     <li><strong>Production Deploy</strong> — Merges to main trigger an automatic release</li>
                     <li><strong>Preview Deploys</strong> — Every PR gets a unique preview URL as a commit check</li>
@@ -833,7 +834,7 @@ safe-outputs:
                     <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
                     <div class="loop-step">✅ Reliability<span class="step-sub">E2E · Smoke · A11y · CWV</span></div>
                     <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
-                    <div class="loop-step">🚀 Deploy<span class="step-sub">Preview URL</span></div>
+                    <div class="loop-step">🚀 Deploy<span class="step-sub">your host · preview URL</span></div>
                     <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
                     <div class="loop-step loop-step--feedback">💬 Feedback<span class="step-sub">to developer</span></div>
                 </div>
