@@ -19,7 +19,8 @@ task ss:security:sast
 | Problem | Solution |
 |---------|----------|
 | Workflow not triggering? | Check workflow is at `.github/workflows/ss-security-sast-check.yml` |
-| Want stricter/looser rules? | The rule set is fixed (`--config=auto`, see below). Tune what blocks with `security.sast.fail_on`, or suppress one finding with a `# nosemgrep: <rule-id>` comment and a reason |
+| Want stricter/looser rules? | Point `security.sast.rules` at your own rule files (see below). Tune what blocks with `security.sast.fail_on`, or suppress one finding with a `# nosemgrep: <rule-id>` comment and a reason |
+| Can't send data to semgrep.dev? | Set `security.sast.rules` to local rule files — the scan then runs with `--metrics=off` and sends nothing (see "Rule set") |
 | Don't want SAST checks? | Delete `.github/workflows/ss-security-sast-check.yml` |
 
 ### Severity Reference
@@ -54,7 +55,7 @@ What SAST checks: **your own source code** for security vulnerabilities and anti
 
 The SAST workflow:
 - ✅ Runs automatically on every PR to `main` and push to `main`
-- ✅ Analyses code using Semgrep's auto-configured rule set
+- ✅ Analyses code using Semgrep's auto-configured rule set, or your own local rules
 - ✅ Posts findings as PR comments
 - ✅ Creates GitHub issues when blocking findings land on `main` (a scan that couldn't run fails the job but opens no issue)
 - ✅ Fails PRs with blocking findings, and fails closed when Semgrep produces no readable report or exits with an error
@@ -72,7 +73,21 @@ The SAST workflow:
 
 ### Rule set
 
-The check runs Semgrep with `--config=auto` (Semgrep picks rules from the languages it detects). The flag is set in `cli/slopstopper/checks/sast.py`, not in a task or workflow, and there is no `.slopstopper.yml` knob for it today — tune individual rules with the inline `nosemgrep` suppressions above, or open an issue if you need a project-wide ruleset such as `p/owasp-top-ten`.
+By default the check runs Semgrep with `--config=auto`: Semgrep picks rules from the [Semgrep Registry](https://semgrep.dev/r) for the languages it detects.
+
+**What that sends.** Semgrep logs in to the Registry with the repository's URL to choose those rules, and because the rules come from the Registry it also sends usage metrics. Those are a random machine ID, the IP address, the CI provider, scan sizes and timings, hashed project / rule / config identifiers, and finding counts. Source code, file names, commit data and the findings themselves are never sent ([Semgrep's metrics policy](https://semgrep.dev/docs/metrics)). Semgrep refuses `--config=auto` with `--metrics=off`, so the default can't be made silent.
+
+**Local rules send nothing.** List rule files or directories under `security.sast.rules` and the check runs those instead, with `--metrics=off`:
+
+```yaml
+security:
+  sast:
+    rules:
+      - .semgrep/          # a directory of rule YAML files
+      - tools/sast.yml     # or single files
+```
+
+The setting takes local paths only. A Registry name (`p/owasp-top-ten`), a URL or a path that doesn't exist fails the check as "could not run" (exit 2) instead of quietly fetching. Every run's report names the rules it used. Where the rules come from is your choice: write your own, or copy in rules you have reviewed — check the licence of any rules you copy. A directory must hold only rule files; Semgrep rejects other YAML in it.
 
 ### Failure threshold
 

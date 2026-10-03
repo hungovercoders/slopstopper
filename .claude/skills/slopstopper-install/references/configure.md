@@ -99,7 +99,10 @@ hygiene:
 security:
   sast:
     fail_on: error           # default — lowest Semgrep severity that fails (error | warning | info | none)
+    # rules: [.semgrep/]     # default unset — Registry rules (sends repo URL + metrics); local paths send nothing
 ```
+
+Ask whether the repo may send data to semgrep.dev. The default `--config=auto` logs in to the Semgrep Registry with the repo URL and sends usage metrics (no code). If that's not allowed — common for employer or private repos — set `security.sast.rules` to local rule files; the scan then runs with `--metrics=off`.
 
 `hygiene.complexity.max_ccn` gates locally, in the pre-push hook, and in CI off one exit code (there is no separate CI-only threshold) — so `task ss:hygiene:complexity` reproduces the CI result exactly. Drop it to `10` for McCabe-strict.
 

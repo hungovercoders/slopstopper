@@ -352,6 +352,15 @@ security:
     # what the workflow used to enforce in a separate step. `warning`
     # makes warnings block too; `none` reports without ever failing.
     fail_on: error
+    # Where the rules come from. Unset (the default) runs Semgrep's
+    # `--config=auto`, which logs in to the Semgrep Registry with this
+    # repo's URL and sends usage metrics (no source code, file names or
+    # findings — see https://semgrep.dev/docs/metrics). List local rule
+    # files or directories instead and the scan runs with
+    # `--metrics=off`: nothing is fetched and nothing is sent. Local
+    # paths only — a Registry name (p/…) or URL fails the check.
+    # rules:
+    #   - .semgrep/
 
 # ── Hygiene-check thresholds ─────────────────────────────────────────
 # Every hygiene check reads its own thresholds from here. Values shown

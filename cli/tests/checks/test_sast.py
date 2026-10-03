@@ -172,7 +172,7 @@ def test_run_returns_two_when_semgrep_missing(monkeypatch, isolated_cwd, capsys)
 
 
 def test_run_clean_when_no_results(monkeypatch, isolated_cwd, capsys):
-    def fake_semgrep():
+    def fake_semgrep(rules=None):
         sast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         sast.REPORT_JSON.write_text(json.dumps({"results": [], "errors": []}))
         return 0
@@ -186,7 +186,7 @@ def test_run_clean_when_no_results(monkeypatch, isolated_cwd, capsys):
 
 
 def _stub_semgrep(monkeypatch, *findings):
-    def fake_semgrep():
+    def fake_semgrep(rules=None):
         sast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         sast.REPORT_JSON.write_text(json.dumps({"results": list(findings), "errors": []}))
         return 0
@@ -250,14 +250,14 @@ def test_blocking_findings_ranks_severities():
 def test_run_returns_two_when_semgrep_writes_no_report(monkeypatch, isolated_cwd, capsys):
     """A crashed scan is 'could not run', never a clean pass."""
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
-    monkeypatch.setattr(sast, "_run_semgrep", lambda: 0)
+    monkeypatch.setattr(sast, "_run_semgrep", lambda rules=None: 0)
     assert sast.run() == 2
     assert "did not complete" in capsys.readouterr().out
     assert "Scan did not complete" in sast.REPORT_MD.read_text()
 
 
 def test_run_returns_two_when_the_report_is_malformed(monkeypatch, isolated_cwd):
-    def fake_semgrep():
+    def fake_semgrep(rules=None):
         sast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         sast.REPORT_JSON.write_text('{"results": [')
         return 0
@@ -328,3 +328,76 @@ def test_a_finding_with_null_extra_neither_crashes_nor_passes():
     finding = {"check_id": "x", "path": "a.py", "extra": None}
     assert sast._blocking_findings([finding], "error") == [finding]  # fail closed
     assert "unknown" in sast._format_finding_row(finding)
+
+
+# ── where the rules come from (security.sast.rules) ─────────────
+#
+# --config=auto logs in to the Semgrep Registry with the repo URL and turns
+# metrics on; Semgrep refuses it with --metrics=off. Local rules are the
+# only way to run the scan without sending anything.
+
+
+@pytest.fixture
+def semgrep_argv(monkeypatch):
+    """Capture the command Semgrep would be run with."""
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, check=False):
+        calls.append(cmd)
+        sast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+        sast.REPORT_JSON.write_text(json.dumps({"results": [], "errors": []}))
+        return type("Done", (), {"returncode": 0})()
+
+    monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
+    monkeypatch.setattr(sast.subprocess, "run", fake_run)
+    return calls
+
+
+def test_default_uses_the_registry(isolated_cwd, semgrep_argv, capsys):
+    assert sast.run() == 0
+    (cmd,) = semgrep_argv
+    assert "--config=auto" in cmd
+    assert not any(a.startswith("--metrics") for a in cmd)
+    assert "sends the repository URL" in capsys.readouterr().out
+    assert "Semgrep Registry" in sast.REPORT_MD.read_text()
+
+
+@pytest.mark.parametrize("body", [
+    "security:\n  sast:\n    rules:\n      - .semgrep/\n      - extra.yml\n",
+    "security:\n  sast:\n    rules: .semgrep/, extra.yml\n",
+])
+def test_local_rules_run_with_metrics_off(write_config, semgrep_argv, body):
+    (write_config(body).parent / ".semgrep").mkdir()
+    (write_config(body).parent / "extra.yml").write_text("rules: []\n")
+    assert sast.run() == 0
+    (cmd,) = semgrep_argv
+    assert "--config=auto" not in cmd
+    assert cmd[1:4] == ["--config=.semgrep/", "--config=extra.yml", "--metrics=off"]
+    md = sast.REPORT_MD.read_text()
+    assert "local: `.semgrep/`, `extra.yml`" in md and "nothing is sent" in md
+
+
+@pytest.mark.parametrize("body", [
+    "security:\n  sast:\n    rules: auto\n",
+    "security:\n  sast:\n    rules: []\n",
+])
+def test_auto_or_empty_rules_keep_the_default(write_config, semgrep_argv, body):
+    write_config(body)
+    assert sast.run() == 0
+    assert "--config=auto" in semgrep_argv[0]
+
+
+@pytest.mark.parametrize("entry", ["p/owasp-top-ten", "r/python.lang.x", "https://example.com/rules.yml", "auto"])
+def test_a_remote_entry_is_refused_not_fetched(write_config, semgrep_argv, entry):
+    (write_config("x").parent / ".semgrep").mkdir()
+    write_config(f"security:\n  sast:\n    rules:\n      - .semgrep/\n      - {entry}\n")
+    assert sast.run() == 2
+    assert semgrep_argv == [], "semgrep must not run when the rules would be fetched"
+    assert "not a local path" in sast.REPORT_MD.read_text()
+
+
+def test_a_missing_rules_path_is_could_not_run(write_config, semgrep_argv):
+    write_config("security:\n  sast:\n    rules:\n      - .semgrep/\n")
+    assert sast.run() == 2
+    assert semgrep_argv == []
+    assert "does not exist" in sast.REPORT_MD.read_text()
