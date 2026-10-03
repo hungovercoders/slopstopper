@@ -836,3 +836,124 @@ def test_installed_skill_directories_follow_the_umask(tmp_path):
         target / ".claude/skills/slopstopper-install/references",
     ):
         assert stat.S_IMODE(path.stat().st_mode) == 0o755, path
+
+
+# ── the config seed is a starter, not the schema ─────────────────
+#
+# install.sh used to copy the whole .slopstopper.yml.example verbatim as
+# the adopter's config, when a typical repo touches about eight keys. The
+# seed is now templates/slopstopper.yml.starter; the example stays the
+# schema reference, linked from the starter.
+
+STARTER = REPO_ROOT / "templates" / "slopstopper.yml.starter"
+EXAMPLE = REPO_ROOT / ".slopstopper.yml.example"
+
+
+def _leaves(tree: dict, prefix: str = "") -> dict:
+    """Dotted path -> value for every leaf of a parsed config."""
+    out: dict = {}
+    for k, v in tree.items():
+        if isinstance(v, dict) and v:  # an empty mapping (`production:` with no value) is a leaf
+            out |= _leaves(v, f"{prefix}{k}.")
+        else:
+            out[f"{prefix}{k}"] = v
+    return out
+
+
+def _keys(tree: dict) -> set[str]:
+    """Every dotted key path, leaves and the mappings above them."""
+    paths = set(_leaves(tree))
+    return paths | {p.rsplit(".", n)[0] for p in paths for n in range(1, p.count(".") + 1)}
+
+
+def test_the_starter_is_short_and_parses():
+    from slopstopper import config
+
+    assert STARTER.is_file()
+    assert len(STARTER.read_text().splitlines()) <= 60, "the starter should stay under a screenful"
+    tree = config._load_yaml_subset(STARTER)
+    assert tree["profile"] == "ui"
+    assert "urls" in tree and "pages" in tree and "workflows" in tree
+
+
+def test_every_starter_key_exists_in_the_schema_reference():
+    """The starter is a subset of the schema, never a fork of it."""
+    from slopstopper import config
+
+    starter_keys = _keys(config._load_yaml_subset(STARTER))
+    example_keys = _keys(config._load_yaml_subset(EXAMPLE))
+    assert starter_keys <= example_keys, sorted(starter_keys - example_keys)
+
+
+def test_the_starter_seeds_the_schemas_defaults():
+    """A starter value that drifted from the schema default would pin every
+    fresh install to a stale explicit value that overrides the new default."""
+    from slopstopper import config
+
+    starter = _leaves(config._load_yaml_subset(STARTER))
+    example = _leaves(config._load_yaml_subset(EXAMPLE))
+    drifted = {k: (v, example[k]) for k, v in starter.items() if k in example and example[k] != v}
+    assert not drifted, drifted
+
+
+def test_first_install_seeds_the_starter_not_the_schema(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, args=["--no-hooks", "--no-skills"])
+    assert result.returncode == 0, result.stderr
+    seeded = (target / ".slopstopper.yml").read_text()
+    assert seeded == STARTER.read_text()
+    assert seeded != EXAMPLE.read_text()
+
+
+def test_a_rerun_leaves_the_config_byte_for_byte(tmp_path):
+    """The config is adopter-owned: a re-run doesn't rewrite it."""
+    target = _make_minimal_target(tmp_path)
+    cfg = target / ".slopstopper.yml"
+    assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
+    cfg.write_text(cfg.read_text() + "# a note the adopter added\n")
+    before = cfg.read_text()
+    assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
+    assert cfg.read_text() == before
+
+
+def test_install_records_the_source_commit(tmp_path):
+    """A refresh diffs upstream from this commit — see the install skill's
+    "Spot newly-shipped knobs"."""
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
+    head = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    assert (target / ".ss" / ".installed-from").read_text() == head + "\n"
+
+
+def test_a_source_without_git_removes_a_stale_marker(tmp_path):
+    """Installed from an unpacked archive, there is no commit to record. A
+    marker left from the previous install would name a commit these files
+    didn't come from, and the refresh diff would report no new knobs."""
+    src = tmp_path / "src"
+    tracked = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "ls-files", "-z"], capture_output=True, text=True, check=True
+    ).stdout.split("\0")
+    for rel in filter(None, tracked):
+        if (REPO_ROOT / rel).is_file():
+            (src / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(REPO_ROOT / rel, src / rel)
+    target = _make_minimal_target(tmp_path)
+    (target / ".ss").mkdir()
+    (target / ".ss" / ".installed-from").write_text("0" * 40 + "\n")
+    result = subprocess.run(
+        ["bash", str(src / "install.sh"), "--no-hooks", "--no-skills", str(target)],
+        capture_output=True, text=True, cwd=src, env={**os.environ, "SKIP_CLI_INSTALL": "1"},
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert not (target / ".ss" / ".installed-from").exists()
+
+
+def test_profile_flag_writes_into_the_seeded_starter(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, args=["--profile", "api", "--no-hooks", "--no-skills"])
+    assert result.returncode == 0, result.stderr
+    lines = (target / ".slopstopper.yml").read_text().splitlines()
+    assert lines.count("profile: api") == 1
+    assert "profile: ui" not in lines

@@ -75,7 +75,7 @@ Everything SlopStopper owns lives under the `ss` namespace so it can't clash wit
 | `Taskfile.yml` | Created if missing (else: prints the include block to paste in) |
 | `.githooks/pre-push` | Pre-push hygiene gate (`--no-hooks` opts out; defers to husky/lefthook/pre-commit) |
 | `mise.toml` | Toolchain pin (`slopstopper-cli`, `task`), read locally and in CI; moved by `--upgrade-cli`/`--cli-version` |
-| `.slopstopper.yml` | Config seed — profile, URLs, headers, thresholds, page lists (never overwritten) |
+| `.slopstopper.yml` | Config starter — profile, URLs, headers, page lists (never overwritten) |
 | `.ss/reports/` | Where the CLI writes reports — `.gitignore`d |
 | `package.json` | Created (or `devDependencies` merged into an existing file) |
 
@@ -122,7 +122,7 @@ slopstopper run hygiene:complexity            # underlying CLI if you skip Task
 
 Most checks work out of the box. To wire up the full suite:
 
-**[`.slopstopper.yml`](./.slopstopper.yml.example)** at the repo root is the canonical config carrier. `install.sh` seeds a starter file (`headers.source: null`, empty URLs) so the first PR is green; opt knobs in by editing it. Survives reinstalls.
+**[`.slopstopper.yml`](./.slopstopper.yml.example)** at the repo root is the config file. `install.sh` seeds a starter (`profile`, URLs, page lists, `headers.source: null`) so the first PR is green; the link is the full schema. Survives reinstalls.
 
 **Repo secrets** (under Settings → Secrets and variables → Actions):
 
