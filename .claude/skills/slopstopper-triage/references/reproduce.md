@@ -45,4 +45,4 @@ Two more reproduce caveats:
 
 If a reliability workflow's failure is about *which pages it audited* rather than what it found, the page-list comes from `slopstopper discover <check> --event=<event>` — run that directly to see the resolved set before reproducing the check itself.
 
-For `security:vulnerability:all`: if a finding shows up only on CI (or only locally), trivy DB freshness or binary version drift is the usual cause — see `docs/security/README.md` → "Local/CI Parity" before pursuing the finding as real.
+For `security:vulnerability:all`: if a finding shows up only on CI (or only locally), trivy DB freshness or binary version drift is the usual cause — see `docs/security/VULNERABILITY.md` → "Local/CI Parity" before pursuing the finding as real.
