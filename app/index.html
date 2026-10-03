@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SlopStopper — stop the slop</title>
-    <meta name="description" content="SlopStopper — a template for deterministic, automated quality feedback (security, hygiene, reliability, accessibility, performance) on any repo. Drop it in with one command.">
+    <meta name="description" content="SlopStopper — a Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.">
     <meta name="theme-color" content="#FBF5EC">
     <meta name="author" content="SlopStopper">
     <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity — <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
@@ -13,7 +13,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://slopstopper.dev/">
     <meta property="og:title" content="SlopStopper — stop the slop">
-    <meta property="og:description" content="Deterministic, automated feedback for AI-driven development. Catch slop before it ships.">
+    <meta property="og:description" content="A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -23,7 +23,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="SlopStopper — stop the slop">
-    <meta name="twitter:description" content="Deterministic, automated feedback for AI-driven development. Catch slop before it ships.">
+    <meta name="twitter:description" content="A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper — stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -72,6 +72,7 @@
             </div>
             <div class="bubble">Catch slop before it ships.</div>
             <h1>Stop the <span class="highlight">slop.</span></h1>
+            <p class="hero__what">A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.</p>
             <p>Deterministic, automated feedback for AI-driven development — keep your repo healthy while you ship fast.</p>
             <div class="cta-row">
                 <a href="#get-started" class="btn btn--primary">Get started →</a>
@@ -81,7 +82,7 @@
 
         <section class="about">
             <span class="kicker about__kicker">🪞 Dogfooded here</span>
-            <p>SlopStopper is a template and reference site demonstrating how to add deterministic, automated quality feedback to any repo. As AI-assisted development accelerates the pace of change, consistent automated checks keep code quality high without slowing teams down.</p>
+            <p>slopstopper.dev is the reference install: this site is built and deployed with the same CLI and workflows it describes. As AI-assisted development accelerates the pace of change, consistent automated checks keep code quality high without slowing teams down.</p>
             <p class="about__dogfood">Every check you see on Features runs on this repo too — pipeline-status badges on the <a href="https://github.com/hungovercoders/slopstopper#readme" rel="noopener noreferrer">README</a> are real.</p>
         </section>
 
@@ -154,7 +155,7 @@ bash install.sh --profile library    # library, CLI or package — nothing deplo
         <section class="section">
             <span class="kicker">What you get</span>
             <h2>Five loops of feedback.</h2>
-            <p class="lede">Every category below maps to real GitHub Actions workflows. Click through to see exactly what runs.</p>
+            <p class="lede">The first four are what <code>install.sh</code> puts in your repo as real GitHub Actions workflows — all of them with the <code>ui</code> profile; <code>api</code> and <code>library</code> drop the browser checks. The fifth is how slopstopper.dev itself ships — not installed, but here to copy. Click through to see exactly what runs.</p>
             <div class="card-grid">
                 <div class="card">
                     <h2>🔒 Security</h2>
@@ -178,8 +179,8 @@ bash install.sh --profile library    # library, CLI or package — nothing deplo
                 </div>
                 <div class="card">
                     <h2>🚀 Deployment</h2>
-                    <p>Preview deployments on every pull request plus automated production releases ensure fast, safe shipping.</p>
-                    <a href="features.html#deployment" class="card-link">View practices →</a>
+                    <p>How slopstopper.dev ships: Cloudflare Workers Builds deploys every push to <code>main</code>, gives every PR a preview URL and retires it on close. Nothing for <code>install.sh</code> to add — connect your repo in the Cloudflare dash and you get the same.</p>
+                    <a href="features.html#deployment" class="card-link">See how this site ships →</a>
                 </div>
             </div>
         </section>

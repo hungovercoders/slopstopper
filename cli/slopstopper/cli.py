@@ -78,7 +78,7 @@ DOCS_URL = "https://slopstopper.dev"
 
 
 BANNER = f"""\
-slopstopper {__version__}  ·  Portable code-quality suite
+slopstopper {__version__}  ·  security, hygiene and reliability checks on every PR
 
 Usage:  slopstopper <command> [options]
 
@@ -110,7 +110,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="slopstopper",
         description=(
-            "Portable code-quality suite — security, hygiene, reliability.\n\n"
+            "A Python CLI plus GitHub Actions workflows that run security, hygiene\n"
+            "and reliability checks on every PR. One command to install into any repo.\n\n"
             "Every check writes a report under .ss/reports/<category>/ and exits\n"
             "non-zero on failure. PR-comment / issue posting is decoupled via\n"
             "`slopstopper emit`. Templates (Playwright specs, lighthouserc,\n"

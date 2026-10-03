@@ -1,6 +1,6 @@
 # SlopStopper
 
-**Portable code-quality suite — security, hygiene, reliability, accessibility, performance, operational automation.** A Python CLI (`slopstopper-cli`) plus the GitHub Actions workflows that drive it, all invoked through one `task ss:*` surface.
+**A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.** The CLI is `slopstopper-cli`; humans, agents and CI invoke every check through one `task ss:*` surface.
 
 ## Install
 
@@ -65,6 +65,8 @@ This repo hosts the CLI (under [`cli/`](./cli)) and [slopstopper.dev](https://sl
 [![Failure Alerts](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-workflow-failure-issue.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-workflow-failure-issue.yml)
 
 ### 🚀 Deployment
+
+How slopstopper.dev ships (Cloudflare Workers Builds); not installed by `install.sh`. See [`docs/deployment/README.md`](./docs/deployment/README.md) to copy the setup.
 
 [![Site](https://img.shields.io/website?url=https%3A%2F%2Fslopstopper.dev&label=slopstopper.dev&up_message=up&down_message=down)](https://slopstopper.dev/)
 
