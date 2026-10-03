@@ -23,7 +23,8 @@ slopstopper/
 │                             #   (`uses: ./.github/actions/ss-setup`, then `task ss:…` / `slopstopper run …`)
 ├── .ss/                      # SlopStopper-owned (adopter side)
 │   ├── reports/              # CLI writes here (.gitignored)
-│   └── .workflows-installed  # Manifest of installed workflows (commit this)
+│   ├── .workflows-installed  # Manifest of installed workflows (commit this)
+│   └── .installed-from       # slopstopper commit the install came from (commit this)
 ├── cli/                      # slopstopper-cli — the Python package (PyPI); pinned via mise
 │   ├── slopstopper/cli.py    # argparse dispatcher + bare-invocation banner
 │   ├── slopstopper/output.py # Shared formatters + `--quiet` toggle

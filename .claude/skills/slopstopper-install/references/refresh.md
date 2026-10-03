@@ -46,13 +46,18 @@ Either flag wraps `mise use` to rewrite the `"pipx:slopstopper-cli"` entry in `m
 
 ### Spot newly-shipped knobs in `.slopstopper.yml.example`
 
-The `.slopstopper.yml.example` file in the slopstopper repo is the schema reference. Diff it against your repo's `.slopstopper.yml`:
+The `.slopstopper.yml.example` file in the slopstopper repo is the schema reference. Don't diff it against the repo's `.slopstopper.yml`: a config seeded from the starter deliberately carries only the keys the repo sets, so that diff lists every default as "missing". Diff the schema between the slopstopper commit the previous install came from and the one this refresh came from. The installer records it in `.ss/.installed-from`, and the old value is still in `HEAD` until you commit the refresh:
 
 ```bash
-diff <(curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/.slopstopper.yml.example) .slopstopper.yml
+raw=https://raw.githubusercontent.com/hungovercoders/slopstopper
+old="$(git show HEAD:.ss/.installed-from 2>/dev/null)"   # the previous install's commit
+new="$(cat .ss/.installed-from)"                          # this refresh's commit
+[ -n "$old" ] && diff <(curl -fsSL "$raw/$old/.slopstopper.yml.example") <(curl -fsSL "$raw/$new/.slopstopper.yml.example")
 ```
 
-Any keys present upstream but missing locally are new knobs you can opt into. Most ship with sensible defaults so no action is required — but the diff is the easiest way to know what changed.
+Lines added on the right are knobs shipped since the last install. This commit is what the workflows, `Taskfile.ss.yml` and installer came from, so an empty diff (or `old` = `new`) really does mean no new knobs. If `old` is empty, the previous install predates the marker: read the schema's history since the last refresh (`git log -1 --format=%cs -- .ss/.workflows-installed` gives the date) at https://github.com/hungovercoders/slopstopper/commits/main/.slopstopper.yml.example instead.
+
+A knob read by the CLI (rather than by a workflow or the installer) only takes effect once the `slopstopper-cli` pinned in `mise.toml` is a release that has it. If a new knob does nothing, check the changelog and move the pin with `install.sh --upgrade-cli`. Most knobs ship with sensible defaults, so no action is required. The link at the top of the repo's `.slopstopper.yml` is the schema to copy blocks from.
 
 Surfaces worth checking explicitly:
 

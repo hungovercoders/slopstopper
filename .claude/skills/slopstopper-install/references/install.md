@@ -42,7 +42,7 @@ Three categories of write, in order of "how much trust to extend on re-run":
 
 **Always overwritten — slopstopper-owned, safe to clobber:**
 
-- `Taskfile.ss.yml`, `.ss/.workflows-installed`, `.github/actions/ss-*/`
+- `Taskfile.ss.yml`, `.ss/.workflows-installed`, `.ss/.installed-from` (the slopstopper commit this install came from; the baseline for the refresh diff), `.github/actions/ss-*/`
 - Workflows under `.github/workflows/ss-*.yml` that are in `GENERIC_WORKFLOWS` and not listed in `.slopstopper.yml` `workflows.disabled`
 - `mise.toml` — the `"pipx:slopstopper-cli"` + `task` + `node` pins (written via `mise use`); `slopstopper-cli` itself is installed/activated by mise at the **pinned** version. A plain re-run never bumps the CLI; `node` is seeded (`= "20"`) only when the repo doesn't already declare one; `--upgrade-cli` / `--cli-version` move the CLI pin
 - `<repo>/.claude/skills/slopstopper-install/` and `<repo>/.claude/skills/slopstopper-triage/` — each `SKILL.md` plus `references/`, replaced as a whole (project level — opt out with `--no-skills`)
@@ -50,7 +50,7 @@ Three categories of write, in order of "how much trust to extend on re-run":
 
 **Seeded only if missing — adopter-owned, NEVER overwritten on re-run:**
 
-- `.slopstopper.yml` (config; once it exists `install.sh` never touches it — **except** stripping a legacy `cli_version` pin line (value migrated into `mise.toml` once) and a dead `node_version` key (just removed — node lives in `mise.toml`)). The CLI + node pins now live in `mise.toml`, which the installer writes on first install and rewrites only when you pass `--upgrade-cli` / `--cli-version`
+- `.slopstopper.yml` (config; a first install seeds a short starter from `templates/slopstopper.yml.starter` — `profile`, URLs, page lists, og-image path, `headers.source`, `workflows` — that links the full schema reference for every other key. Once it exists `install.sh` never touches it — **except** stripping a legacy `cli_version` pin line (value migrated into `mise.toml` once) and a dead `node_version` key (just removed — node lives in `mise.toml`)). The CLI + node pins now live in `mise.toml`, which the installer writes on first install and rewrites only when you pass `--upgrade-cli` / `--cli-version`
 - `.github/labeler.yml`, `.zap/rules.tsv`, `.markdownlint.json`
 - Root `Taskfile.yml` — only if absent; otherwise install.sh prints the `includes:` block to paste in
 - `package.json` — only if absent (otherwise see below)
@@ -93,6 +93,8 @@ Sanity-check the install dropped what you expect:
 - `Taskfile.yml` — created if missing (otherwise: needs manual `includes:` block per Step 1.1).
 - `.ss/.workflows-installed` — the **only** file the installer seeds into `.ss/`: the manifest of what it installed, which is how re-runs respect a deliberate deletion. The static server for the local loop is not a file in the repo any more — it ships inside the wheel as `slopstopper serve` (eject with `slopstopper templates eject server.js` only if you need to customise it).
 - `.ss/.workflows-installed` — manifest of installed workflows (tracks deletions on reinstall; commit this).
+- `.ss/.installed-from` — the slopstopper commit this install came from; a refresh diffs upstream against it (commit this).
+- `.slopstopper.yml` — on a first install, a short starter (the keys most repos set, each commented) with a link to the full schema reference for everything else. Existing configs are left as they are.
 - `.github/workflows/ss-*.yml` — the curated installer set, minus whatever the profile drops (24 checks on `ui`, 16 on `api`, 10 on `library`), plus `ss-pr-summary.yml`, `ss-workflow-failure-issue.yml` and the doc-updater under all three. Each workflow body is now ~8 lines: `uses: ./.github/actions/ss-setup` (Python + mise toolchain + CLI), `slopstopper run …`, `slopstopper emit … --target pr-comment|issue`.
 - `.github/actions/ss-setup/` and `.github/actions/ss-resolve-url/` — the composite steps those workflows call. Local actions: no publishing, no version pin, everything a workflow does is diffable in the adopter's own tree. `ss-resolve-url` is where the event → URL table lives (`urls.preview` on PRs for the API checks; the browser checks build and serve locally).
 - `ss-pr-summary.yml` — posts **one** rolling comment per PR summarising every check (`❌ SlopStopper — 2 of 24 checks failed`, failures in a table, the rest folded). The per-check workflows post compact comments — a verdict line, the failing items, the report folded away — and **delete their comment when they pass**, so a green PR carries only the summary. Tell the user this up front: the first green PR looking "empty" of bot comments is the intended behaviour, not a broken install.
