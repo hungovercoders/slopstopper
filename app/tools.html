@@ -201,7 +201,7 @@ return next;</code></pre></div>
   sast:
     name: Static Application Security Testing with Semgrep
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - run: pip install semgrep &amp;&amp; semgrep ci</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-sast-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
@@ -220,8 +220,10 @@ return next;</code></pre></div>
   dast:
     name: Dynamic Application Security Testing with OWASP ZAP
     steps:
-      - run: task start &amp;
-      - uses: zaproxy/action-baseline@v0.10.0</code></pre></div>
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: ./.github/actions/ss-setup
+      - run: slopstopper serve &amp;
+      - run: task ss:security:dast -- http://localhost:8080</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-dast-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
                 </details>
@@ -238,7 +240,7 @@ return next;</code></pre></div>
   dependencies:
     name: Scan Dependencies with Trivy
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - run: trivy fs --severity HIGH,CRITICAL .</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-vulnerability-all-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
@@ -256,9 +258,10 @@ return next;</code></pre></div>
   secrets:
     name: Detect Secrets with Gitleaks
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with: { fetch-depth: 0 }
-      - uses: gitleaks/gitleaks-action@v2</code></pre></div>
+      - uses: ./.github/actions/ss-setup
+      - run: task ss:security:secrets</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-secrets-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
                 </details>

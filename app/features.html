@@ -84,7 +84,7 @@ jobs:
     name: Static Application Security Testing with Semgrep
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
       - run: pip install semgrep
       - run: task ss:security:sast
@@ -105,7 +105,7 @@ jobs:
   dast:
     name: Dynamic Application Security Testing with OWASP ZAP
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
       - run: npm ci &amp;&amp; npm run build &amp;&amp; slopstopper serve &amp;
       - run: task ss:security:dast -- http://localhost:8080
@@ -126,7 +126,7 @@ jobs:
   secrets:
     name: Detect Secrets with Gitleaks
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with: { fetch-depth: 0 }
       - uses: ./.github/actions/ss-setup
       - run: curl -sL gitleaks/install.sh | bash
@@ -148,7 +148,7 @@ jobs:
   dependencies:
     name: Scan Dependencies with Trivy
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
       - run: brew install aquasecurity/trivy/trivy
       - run: task ss:security:vulnerability:all
@@ -188,7 +188,7 @@ jobs:
   complexity-check:
     name: Check Code Complexity with Lizard
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
       - run: pip install lizard
       - run: task ss:hygiene:complexity
@@ -229,7 +229,7 @@ on:
 jobs:
   check-csp-exceptions:
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
       - run: task ss:hygiene:csp-exceptions
       - if: github.event_name == 'pull_request'
@@ -251,7 +251,7 @@ on:
 jobs:
   label:
     steps:
-      - uses: actions/labeler@v5
+      - uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5
         with: { sync-labels: true }</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-auto-label-pr.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
                     </div>
@@ -303,7 +303,7 @@ on:
 jobs:
   smoke-test:
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
@@ -328,7 +328,7 @@ jobs:
   broken-links:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
@@ -352,7 +352,7 @@ jobs:
   a11y:
     name: Accessibility Audit (axe-core / WCAG 2.1 AA)
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
@@ -376,7 +376,7 @@ jobs:
   cwv:
     name: Core Web Vitals (Lighthouse CI)
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
       - run: npm ci &amp;&amp; npm run build
       - run: slopstopper serve &amp;
@@ -400,7 +400,7 @@ jobs:
   seo:
     name: SEO Metatag Audit (OpenGraph + Twitter Card + canonical)
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
@@ -425,7 +425,7 @@ jobs:
   llms-txt:
     name: llms.txt AI-discoverability audit
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
@@ -450,7 +450,7 @@ jobs:
   robots-txt:
     name: robots.txt discoverability audit
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;
@@ -475,7 +475,7 @@ jobs:
   sitemap:
     name: sitemap completeness audit
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
       - run: npm ci
       - run: npm run build &amp;&amp; slopstopper serve &amp;

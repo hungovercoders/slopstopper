@@ -52,6 +52,8 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
+      # The action and the CLI version it installs move together: Dependabot
+      # ignores github/gh-aw (see .github/dependabot.yml), so bump both by hand.
       - name: Install gh-aw extension
         uses: github/gh-aw/actions/setup-cli@9cbca3cd9be433a23a38e4da332635097fd40251 # v0.50.7
         with:

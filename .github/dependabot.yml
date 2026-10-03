@@ -4,19 +4,30 @@
 # release lands, updating both the SHA and the version comment.
 #
 # The gh-aw lock file (ss-hygiene-doc-updater.lock.yml) is generated and
-# carries its own pins; edit the .md source and recompile, never the lock.
+# carries its compiler's pins; edit the .md source and recompile, never the
+# lock — so Dependabot is kept out of it. github/gh-aw is ignored too: its
+# setup-cli action takes a `version:` input that must move with the pin,
+# which Dependabot can't do (copilot-setup-steps.yml bumps both by hand).
+#
+# Adopters don't need this file for the ss-* workflows and composite
+# actions: they are copied from here on every install.sh refresh, pins
+# included.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directories:
       - "/"
       - "/.github/actions/*"
+    exclude-paths:
+      - ".github/workflows/*.lock.yml"
+    ignore:
+      - dependency-name: "github/gh-aw*"
     schedule:
       interval: weekly
       day: monday
     groups:
       github-actions:
         patterns: ["*"]
-    labels: ["dependencies", "github-actions"]
+    labels: ["ci", "maintenance"]
     commit-message:
       prefix: "chore(ci)"
