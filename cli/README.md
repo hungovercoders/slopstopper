@@ -1,6 +1,6 @@
 # slopstopper-cli
 
-The SlopStopper quality suite, packaged as a Python CLI on PyPI.
+A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo. This package is the CLI.
 
 > **Status: Beta.** Every check in the [public catalogue](https://slopstopper.dev/features.html) runs through this package. The CI workflows under `.github/workflows/ss-*.yml` install the pinned `slopstopper-cli` via `jdx/mise-action` and call `slopstopper run <category>:<check>` — same code path you use locally.
 

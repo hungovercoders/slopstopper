@@ -544,8 +544,7 @@ safe-outputs:
             <!-- ─── Deployment ──────────────────────────────────── -->
             <div class="card" id="deployment">
                 <h2>🚀 Deployment</h2>
-                <p class="card-intro">Every push deploys, every PR gets a preview URL, every PR-close cleans up — Cloudflare Workers Builds, hooked directly into the repo. No deploy workflow, no secrets.</p>
-                <p class="card-intro"><strong>Not part of the install.</strong> <code>install.sh</code> ships no deploy step on purpose: this is slopstopper.dev's own setup, shown so you can copy it. Connect your repo in the Cloudflare dash (Workers &amp; Pages → Create → Connect to Git) and you get all three for free.</p>
+                <p class="card-intro">Every push deploys, every PR gets a preview URL, every PR-close cleans up — Cloudflare Workers Builds, hooked directly into the repo. No deploy workflow, no secrets, and <strong>nothing for <code>install.sh</code> to add</strong>: this is slopstopper.dev's own setup, shown so you can copy it by connecting your repo in the Cloudflare dash (Workers &amp; Pages → Create → Connect to Git).</p>
                 <ul>
                     <li><strong>Production Deploy</strong> — Merges to main trigger an automatic release</li>
                     <li><strong>Preview Deploys</strong> — Every PR gets a unique preview URL as a commit check</li>

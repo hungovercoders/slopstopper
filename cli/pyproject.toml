@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "slopstopper-cli"
 version = "0.15.0"
-description = "Portable code-quality suite — security, hygiene, reliability."
+description = "A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"

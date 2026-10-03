@@ -66,7 +66,7 @@ This repo hosts the CLI (under [`cli/`](./cli)) and [slopstopper.dev](https://sl
 
 ### 🚀 Deployment
 
-How this site ships (Cloudflare Workers Builds). `install.sh` adds no deploy step — see [`docs/deployment/README.md`](./docs/deployment/README.md) to copy the setup.
+How slopstopper.dev ships (Cloudflare Workers Builds); not installed by `install.sh`. See [`docs/deployment/README.md`](./docs/deployment/README.md) to copy the setup.
 
 [![Site](https://img.shields.io/website?url=https%3A%2F%2Fslopstopper.dev&label=slopstopper.dev&up_message=up&down_message=down)](https://slopstopper.dev/)
 

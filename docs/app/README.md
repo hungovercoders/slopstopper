@@ -37,6 +37,7 @@ or external font links.
 
 ## Content authoring rules
 
+- The one-sentence identity ("A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.") appears verbatim in the home hero, the home meta/OpenGraph/Twitter descriptions, the web manifest, `app/llms.txt`, `README.md`, `cli/README.md`, `cli/pyproject.toml` and the install skill. `cli/tests/test_site_identity.py` fails if any copy drifts — change them all, or change the constant in the test with them.
 - Each HTML page links `app/shared.css` first, then its page-specific CSS.
 - Header / nav / footer markup is duplicated across pages — there is
   no build step or SSI. Accept the duplication; if you change one,
