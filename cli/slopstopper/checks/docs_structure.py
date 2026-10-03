@@ -65,7 +65,7 @@ META = {
     "issue_followup": "🔔 Documentation structure issues detected again in commit",
 }
 
-ROUTE_FORM = "Before you <do X>, read <doc> — <what it holds>"
+ROUTE_FORM = _routes.ROUTE_TEMPLATE  # one copy, in _routes
 
 
 # ── configuration ────────────────────────────────────────────────
@@ -252,7 +252,7 @@ def _check_doc_lines(docs: list[Path], settings: dict) -> list[dict]:
         return []
     violations: list[dict] = []
     for doc in docs:
-        n = _routes.count_lines(doc.read_text())
+        n = _routes.count_lines(_routes.read_markdown(doc))
         if n > limit:
             violations.append({
                 "type": "doc_over_lines",

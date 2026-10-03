@@ -36,15 +36,18 @@ _REFERENCE_DEF_RE = re.compile(r"^\s*\[([^\]]+)\]:\s*<?(\S+?)>?(?:\s+(?:\"[^\"]*
 _HREF_RE = re.compile(r"""href\s*=\s*["']([^"']+)["']""")
 _BLOCK_START_RE = re.compile(r"^\s*(#|\||[-*+]\s|\d+[.)]\s|>)")
 _FENCE_RE = re.compile(r"^\s*(`{3,}|~{3,})")
-_TABLE_ROW_RE = re.compile(r"^\s*\|")
+_PIPED_ROW_RE = re.compile(r"^\s*\|")
 # A header separator is made of nothing but pipes, dashes, colons and spaces.
 _TABLE_RULE_RE = re.compile(r"^\s*\|?(?:\s*:?-+:?\s*\|)*\s*:?-+:?\s*\|?\s*$")
+_HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
+_NESTED_ITEM_RE = re.compile(r"^\s{2,}(?:[-*+]|\d+[.)])\s")
+_SENTENCE_END_RE = re.compile(r"[.!?](?=\s)")
 _READ_CUE_RE = re.compile(r"\b(read|open|load|follow)\b", re.I)
 # "For <situation>, read X" is trigger-first too; "read X for details" is not.
 _TRIGGER_CUE_RE = re.compile(
     r"\b(before|when|if|whenever|unless|first|any task)\b|^\W*for\b", re.I
 )
-_ROUTE_TEMPLATE = "Before you <do X>, read <doc> — <what it holds>"
+ROUTE_TEMPLATE = "Before you <do X>, read <doc> — <what it holds>"
 
 
 def estimate_tokens(text: str) -> int:
@@ -111,6 +114,27 @@ class _Joiner:
         self.current += " " + stripped  # type: ignore[operator]
 
 
+def _table_row_flags(lines: list[str]) -> list[bool]:
+    """Which source lines are table rows.
+
+    GFM allows a table without leading pipes (`a | b` / `--- | ---`), so a
+    leading `|` is not required: a run of lines containing a pipe whose
+    second line is the header rule is a table too.
+    """
+    flags = [bool(_PIPED_ROW_RE.match(line)) for line in lines]
+    i = 0
+    while i < len(lines) - 1:
+        if "|" in lines[i] and _TABLE_RULE_RE.match(lines[i + 1]) and "|" in lines[i + 1]:
+            j = i
+            while j < len(lines) and "|" in lines[j] and lines[j].strip():
+                flags[j] = True
+                j += 1
+            i = j
+        else:
+            i += 1
+    return flags
+
+
 def logical_lines(text: str) -> list[str]:
     """Paragraphs, bullets and table rows as single strings.
 
@@ -123,7 +147,9 @@ def logical_lines(text: str) -> list[str]:
     """
     joiner = _Joiner()
     fence: str | None = None
-    for line in text.splitlines():
+    lines = _HTML_COMMENT_RE.sub("", text).splitlines()  # a commented-out route is not a route
+    is_row = _table_row_flags(lines)
+    for line, row in zip(lines, is_row):
         stripped = line.strip()
         opener = _FENCE_RE.match(line)
         if opener and (fence is None or stripped.startswith(fence)):
@@ -135,8 +161,10 @@ def logical_lines(text: str) -> list[str]:
             continue  # a definition is a footnote, not a sentence
         elif not stripped:
             joiner.blank()
-        elif _TABLE_ROW_RE.match(line):
+        elif row:
             joiner.table_row(stripped)
+        elif joiner.current is not None and _NESTED_ITEM_RE.match(line):
+            joiner.continuation(stripped)  # a sub-bullet continues its parent's sentence
         elif joiner.current is None or _BLOCK_START_RE.match(line):
             joiner.block_start(stripped)
         else:
@@ -145,10 +173,16 @@ def logical_lines(text: str) -> list[str]:
     return joiner.out
 
 
+def read_markdown(path: Path) -> str:
+    """Read a doc as UTF-8, substituting undecodable bytes rather than crashing:
+    a Latin-1 stray in one file must not turn a finding into a traceback."""
+    return path.read_text(encoding="utf-8", errors="replace")
+
+
 def reference_definitions(text: str) -> dict[str, str]:
     """`[label]: target` definitions, keyed by lower-cased label."""
     refs: dict[str, str] = {}
-    for line in text.splitlines():
+    for line in _HTML_COMMENT_RE.sub("", text).splitlines():
         m = _REFERENCE_DEF_RE.match(line)
         if m:
             refs.setdefault(m.group(1).strip().lower(), m.group(2))
@@ -193,8 +227,17 @@ def _mask_targets(line: str) -> str:
 
 
 def _explicit_before(line: str, position: int) -> bool:
-    """True when a read cue precedes `position` and a trigger precedes that cue."""
+    """True when, within the sentence that holds the link, a read cue
+    precedes `position` and a trigger precedes that cue.
+
+    The window is one sentence, not the paragraph: a "see also" link in a
+    paragraph that happened to say "if" and "read" three sentences earlier
+    is still a soft link.
+    """
     head = _mask_targets(line)[:position]
+    ends = [m.end() for m in _SENTENCE_END_RE.finditer(head)]
+    if ends:
+        head = " " * ends[-1] + head[ends[-1]:]
     reads = [m.start() for m in _READ_CUE_RE.finditer(head)]
     if not reads:
         return False
@@ -229,7 +272,7 @@ def route_table(source: Path) -> tuple[dict[Path, str], dict[Path, str]]:
     explicit: dict[Path, str] = {}
     soft: dict[Path, str] = {}
     try:
-        text = source.read_text()
+        text = read_markdown(source)
     except OSError:
         return explicit, soft
     refs = reference_definitions(text)
@@ -248,7 +291,7 @@ def route_table(source: Path) -> tuple[dict[Path, str], dict[Path, str]]:
 def soft_route_message(source: str, target: str, line: str) -> str:
     return (
         f"{source}: soft route to {target}: \"{line[:70]}\". A route agents follow "
-        f"names its trigger and says read: '{_ROUTE_TEMPLATE}'."
+        f"names its trigger and says read: '{ROUTE_TEMPLATE}'."
     )
 
 

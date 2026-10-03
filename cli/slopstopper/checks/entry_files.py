@@ -113,7 +113,7 @@ def _budget_for(name: str, settings: dict) -> int:
 
 def _read(path: Path) -> str:
     try:
-        return path.read_text()
+        return _routes.read_markdown(path)
     except OSError:
         return ""
 
@@ -150,7 +150,14 @@ def _soft_routes(name: str, settings: dict) -> list[str]:
     if name != AGENTS_FILE or not settings["require_explicit_routes"]:
         return []
     _explicit, soft = _routes.route_table(Path(name))
-    return [f"{doc.name}: \"{line[:70]}\"" for doc, line in sorted(soft.items())]
+    return [f"{_rel(doc)}: \"{line[:70]}\"" for doc, line in sorted(soft.items())]
+
+
+def _rel(path: Path) -> str:
+    try:
+        return path.relative_to(Path.cwd().resolve()).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
 def _measure(name: str, settings: dict) -> dict | None:
@@ -239,16 +246,30 @@ def _map_file_snippet() -> str:
     )
 
 
-def _fix_over_budget(m: dict, map_path: str) -> str:
-    where = (
-        f"Move the content that serves the fewest tasks into a `docs/` topic doc and "
-        f"route it from `AGENTS.md` with a trigger-first line "
-        f"(`{_routes.route_snippet('docs/<topic>.md', 'what it holds')}`). "
-        f"Keep the rules most tasks need inline — a hop costs a tool turn on every task that takes it."
-        if m["file"] == AGENTS_FILE
-        else f"Keep it to orientation and a quick start; everything else lives under `docs/` "
+def _over_budget_advice(name: str, map_path: str) -> str:
+    if name == AGENTS_FILE:
+        return (
+            f"Move the content that serves the fewest tasks into a `docs/` topic doc and "
+            f"route it from `AGENTS.md` with a trigger-first line "
+            f"(`{_routes.route_snippet('docs/<topic>.md', 'what it holds')}`). "
+            f"Keep the rules most tasks need inline — a hop costs a tool turn on every task that takes it."
+        )
+    if name == CLAUDE_FILE:
+        return f"Make it exactly `{CLAUDE_INCLUDE}` and move anything real into `AGENTS.md`."
+    if name == map_path:
+        return (
+            "The map is a routing table, not a reference: keep one row per doc, trim each row to "
+            "the trigger and what the doc holds, and push a topic that has grown several rows down "
+            "into its own directory README that the map routes to once."
+        )
+    return (
+        f"Keep it to orientation and a quick start; everything else lives under `docs/` "
         f"and is reachable from [`{map_path}`](./{map_path})."
     )
+
+
+def _fix_over_budget(m: dict, map_path: str) -> str:
+    where = _over_budget_advice(m["file"], map_path)
     return f"### `{m['file']}` is over its token budget ({m['tokens']} > {m['budget']})\n\n{where}\n"
 
 

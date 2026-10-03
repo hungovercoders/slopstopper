@@ -155,6 +155,61 @@ def test_a_flag_row_is_not_a_header_separator():
     assert _routes.is_explicit_route(rows[-1])
 
 
+def test_a_pipeless_gfm_table_is_still_a_table(isolated_cwd):
+    p = isolated_cwd / "AGENTS.md"
+    p.write_text(
+        "When you are… | Do this\n--- | ---\n"
+        "fixing CI | Read [ci](docs/ci.md)\nother | see [z](docs/z.md)\n"
+    )
+    explicit, soft = _routes.route_table(p)
+    assert {d.name for d in explicit} == {"ci.md"}
+    assert {d.name for d in soft} == {"z.md"}
+
+
+def test_cues_are_scoped_to_the_sentence_that_holds_the_link():
+    para = (
+        "AGENTS.md first: the file carries what most tasks need. "
+        'The form is trigger → "read" → file. '
+        "Two checks keep it honest: [entry-files](hygiene/README.md) budgets it."
+    )
+    assert not _routes.is_explicit_route(para)
+    assert _routes.is_explicit_route("Agents skip soft links. Before you ship, read [x](docs/x.md).")
+
+
+def test_html_comments_are_not_routes():
+    assert _routes.logical_lines("<!-- Before you X, read [h](docs/h.md) -->\nlive text\n") == ["live text"]
+    assert _routes.logical_lines("a <!-- multi\nline --> b\n") == ["a  b"]
+
+
+def test_a_nested_bullet_continues_its_parent(isolated_cwd):
+    p = isolated_cwd / "AGENTS.md"
+    p.write_text("- When you change CI:\n  - read [ci](docs/ci.md)\n  - then run `task ci`\n")
+    explicit, soft = _routes.route_table(p)
+    assert {d.name for d in explicit} == {"ci.md"} and soft == {}
+
+
+def test_non_utf8_docs_do_not_crash(isolated_cwd):
+    p = isolated_cwd / "AGENTS.md"
+    p.write_bytes(b"Before you ship, read [x](docs/x.md) \xe4nderungen\n")
+    explicit, _soft = _routes.route_table(p)
+    assert {d.name for d in explicit} == {"x.md"}
+
+
+def test_soft_routes_are_labelled_by_path(isolated_cwd):
+    (isolated_cwd / "docs" / "a").mkdir(parents=True)
+    (isolated_cwd / "docs" / "b").mkdir()
+    (isolated_cwd / "AGENTS.md").write_text("See [a](docs/a/README.md) and [b](docs/b/README.md).\n")
+    labels = entry_files._soft_routes("AGENTS.md", entry_files._settings())
+    assert [l.split(":")[0] for l in labels] == ["docs/a/README.md", "docs/b/README.md"]
+
+
+def test_over_budget_advice_fits_the_file():
+    assert "@AGENTS.md" in entry_files._over_budget_advice("CLAUDE.md", "docs/README.md")
+    assert "routing table" in entry_files._over_budget_advice("docs/README.md", "docs/README.md")
+    assert "orientation" in entry_files._over_budget_advice("README.md", "docs/README.md")
+    assert "route it from `AGENTS.md`" in entry_files._over_budget_advice("AGENTS.md", "docs/README.md")
+
+
 def test_for_situation_counts_as_trigger_first():
     assert _routes.is_explicit_route("For incidents, read [r](RUNBOOK.md).")
     assert not _routes.is_explicit_route("Read [r](RUNBOOK.md) for details.")
@@ -300,7 +355,7 @@ def test_soft_routes_are_listed_for_agents_only(isolated_cwd):
     (isolated_cwd / "AGENTS.md").write_text(body)
     (isolated_cwd / "README.md").write_text(body)
     s = entry_files._settings()
-    assert entry_files._soft_routes("AGENTS.md", s) == ['ci.md: "See [ci](docs/ci.md)."']
+    assert entry_files._soft_routes("AGENTS.md", s) == ['docs/ci.md: "See [ci](docs/ci.md)."']
     assert entry_files._soft_routes("README.md", s) == []
 
 
@@ -419,7 +474,7 @@ def test_run_returns_one_on_a_soft_route_in_agents(isolated_cwd, capsys):
     assert entry_files.run() == 1
     agents = next(m for m in _payload()["measurements"] if m["file"] == "AGENTS.md")
     assert agents["pointer_ok"] is True
-    assert agents["soft_routes"] == ['ci.md: "See [ci](docs/ci.md)."']
+    assert agents["soft_routes"] == ['docs/ci.md: "See [ci](docs/ci.md)."']
 
 
 def test_run_returns_one_when_claude_is_not_a_pure_include(isolated_cwd, capsys):

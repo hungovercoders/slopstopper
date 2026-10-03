@@ -151,7 +151,7 @@ def test_a_directory_readme_cannot_route_a_doc_outside_its_subtree(isolated_cwd)
     [v] = _violations()
     assert v["path"] == "docs/security/DAST.md"
     assert "routed from docs/hygiene/README.md, which is outside its subtree" in v["message"]
-    assert "Add a route to docs/security/README.md" not in v["message"] or True
+    assert "Add a route to docs/README.md" in v["message"]  # docs/security/ has no README here, so the map
 
 
 def test_an_unrouted_directory_readme_leaves_its_docs_unrouted_too(isolated_cwd):
@@ -219,6 +219,14 @@ def test_max_route_depth_is_a_knob(write_config):
     _doc("a/b/README.md", "# b\n\n" + _route("deep.md"))
     _doc("a/b/deep.md")
     assert docs_structure.run() == 0
+
+
+def test_a_non_utf8_doc_is_counted_not_crashed(isolated_cwd):
+    _seed_agents()
+    _seed_map(_route("latin1.md"))
+    Path("docs/latin1.md").write_bytes(b"# \xc4nderungen\n" + b"line\n" * 301)
+    assert docs_structure.run() == 1
+    assert _types() == ["doc_over_lines"]
 
 
 def test_a_topic_doc_over_the_line_budget_fails(isolated_cwd):
