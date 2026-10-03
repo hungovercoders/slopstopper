@@ -55,7 +55,7 @@ Per-check tools (skip any check your profile drops):
 | ---- | --------- | ------------ |
 | `node` 20+ | Reliability checks (Playwright + Lighthouse), `slopstopper serve` | [nodejs.org](https://nodejs.org/) |
 | `gh` | `slopstopper emit` (PR comments + issues from CI) | [cli.github.com](https://cli.github.com/) |
-| `semgrep` | `security:sast` (opt-in) | `pip install --user semgrep` |
+| `semgrep` | `security:sast` | `pip install --user semgrep` |
 | `gitleaks` | `security:secrets` | `brew install gitleaks` |
 | `trivy` | `security:vulnerability:all` | `brew install aquasecurity/trivy/trivy` |
 | `docker` | `security:dast` | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |

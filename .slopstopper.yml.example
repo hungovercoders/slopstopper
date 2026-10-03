@@ -359,17 +359,18 @@ security:
     # what the workflow used to enforce in a separate step. `warning`
     # makes warnings block too; `none` reports without ever failing.
     fail_on: error
-    # Where the rules come from. SAST is OFF until you choose, because
-    # one choice sends data to a third party (docs/architecture/TOOLCHAIN.md):
-    #   rules: auto        Semgrep's `--config=auto` — Registry rules for
-    #                      the languages it finds. SENDS this repo's URL and
-    #                      usage metrics to semgrep.dev (never source code,
-    #                      file names or findings; semgrep.dev/docs/metrics).
-    #   rules: [.semgrep/] local rule files or directories, run with
-    #                      `--metrics=off` — fetches and sends NOTHING.
-    # Unset: security:sast skips (passes) and says how to opt in. Local
-    # paths only in a list — a Registry name (p/…) or URL fails the check.
-    # rules: auto
+    # Which rules to run. Default: Semgrep's `p/default` ruleset,
+    # downloaded at scan time (a download — nothing about the repo goes
+    # up). Accepts Registry rulesets (p/…), URLs and local rule files or
+    # directories (local only = no network at all), or `auto` — Semgrep
+    # picks rules per language by logging in to its Registry with this
+    # repo's URL, which needs send_metrics: true.
+    rules: p/default
+    # Send Semgrep's usage metrics (a machine ID, IP, scan sizes and
+    # timings, hashed project/rule IDs, finding counts — never source
+    # code, file names or findings; https://semgrep.dev/docs/metrics).
+    # Off by default: the scan runs with --metrics=off. Opt in with true.
+    send_metrics: false
 
 # ── Hygiene-check thresholds ─────────────────────────────────────────
 # Every hygiene check reads its own thresholds from here. Values shown

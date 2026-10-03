@@ -45,8 +45,8 @@ smoke:
 headers:
   source: null
 
-# Nothing here sends data off the runner. SAST (Semgrep) and public Lighthouse
-# reports are off until you opt in: security.sast.rules, reliability.cwv.public_report.
+# Nothing here sends data off the runner. Semgrep usage metrics and public
+# Lighthouse reports are opt-in: security.sast.send_metrics, reliability.cwv.public_report.
 
 # Serving an API? Copy the `api:` block from the schema reference above —
 # the four API checks ship inert until api.health.path / api.latency.paths /

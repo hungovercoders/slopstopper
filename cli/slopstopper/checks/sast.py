@@ -25,38 +25,42 @@ A scan that produced no readable report (Semgrep crashed, timed out
 fetching rules, or wrote nothing) is "could not run", not "no findings":
 the check exits 2 rather than passing a scan that never happened.
 
-Off until the repo chooses where the rules come from — because one of
-the choices sends data to a third party, and that has to be opt-in:
+On by default; sending Semgrep usage metrics is opt-in.
 
-- `security.sast.rules: auto` — Semgrep's `--config=auto`. Semgrep logs
-  in to its Registry with the repository's URL to pick rules, and because
-  rules come from the Registry it also sends usage metrics (a machine ID,
-  IP, scan sizes and timings, hashed project/rule identifiers, finding
-  counts — never source code, file names or findings;
-  https://semgrep.dev/docs/metrics). Semgrep refuses `--config=auto` with
-  `--metrics=off`, so this mode can't be made silent.
-- `security.sast.rules: [<paths>]` — local rule files or directories, run
-  with `--metrics=off`: nothing is fetched and nothing is sent. Local
-  paths only — a Registry name (`p/…`) or URL is refused, not fetched.
-- unset — the check skips (exit 0) and says how to opt in. Semgrep isn't
-  run, so nothing is sent.
+By default the check runs Semgrep's `p/default` ruleset with
+`--metrics=off`. The ruleset is downloaded from the Semgrep Registry at
+scan time — a download, nothing about the repo goes up. With metrics on,
+Semgrep also sends usage metrics (a machine ID, IP, scan sizes and
+timings, hashed project/rule identifiers, finding counts — never source
+code, file names or findings; https://semgrep.dev/docs/metrics). That
+only happens with `security.sast.send_metrics: true`.
+
+`security.sast.rules` picks the rules:
+
+- unset — `p/default`.
+- Registry rulesets (`p/owasp-top-ten`, …) — downloaded, metrics off.
+- local rule files or directories — no network at all.
+- `auto` — Semgrep picks rules for the languages it finds. It logs in to
+  the Registry with the repository URL and needs metrics on (Semgrep
+  refuses `--config=auto` with `--metrics=off`), so it is accepted only
+  with `send_metrics: true`.
 
 Configuration (.slopstopper.yml — optional):
 
     security:
       sast:
-        fail_on: error     # error (default) | warning | info | none
-        rules: auto        # default: unset — SAST is off
-                           # auto: Semgrep Registry (sends repo URL + usage metrics)
-                           # [.semgrep/, …]: local rules, sends nothing
+        fail_on: error       # error (default) | warning | info | none
+        rules: p/default     # default; or [p/…, .semgrep/, …], or auto
+        send_metrics: false  # default; true sends Semgrep usage metrics
+                             # (and is required for rules: auto)
 
 Exit codes:
-  0 — no findings at or above `security.sast.fail_on`, or SAST is off
-      (`security.sast.rules` unset)
+  0 — no findings at or above `security.sast.fail_on`
   1 — one or more findings at or above `security.sast.fail_on`
   2 — semgrep is not installed, exited with an error (a failed rules
       fetch, a bad config), wrote no readable report, `security.sast.rules`
-      names something that isn't a local path, or arguments were passed
+      names a path that doesn't exist or `auto` without `send_metrics: true`,
+      or arguments were passed
       (this check takes none)
 """
 
@@ -151,75 +155,51 @@ def _rank(finding: dict) -> int:
     return SEVERITY_RANK.get(severity, ERROR_RANK)
 
 
-# `security.sast.rules` takes local paths only. These are the shapes Semgrep
-# would resolve over the network instead: Registry rulesets (p/…), single
-# rules (r/…), snippets (s/…), and URLs.
+AUTO = "auto"
+DEFAULT_RULES = ["p/default"]
+
+# Shapes Semgrep resolves itself — Registry rulesets (p/…), single rules
+# (r/…), snippets (s/…) and URLs. Anything else must exist on disk.
 _REMOTE_CONFIG = re.compile(r"^(?:[prs]/|[a-z][a-z0-9+.-]*://)", re.I)
 
 
-REGISTRY = "auto"
+def _send_metrics() -> bool:
+    return config.get_bool("security.sast.send_metrics", False)
 
 
-def _rules() -> tuple[str | list[str] | None, str | None]:
-    """(rules, error).
+def _rules(send_metrics: bool) -> tuple[list[str] | None, str | None]:
+    """(rules, error) — the `--config` values to run.
 
-    rules is None when SAST is off (unset or empty — the check skips),
-    `REGISTRY` for Semgrep's `--config=auto`, or a list of local rule
-    paths. A list must name files or directories that exist; an entry
-    Semgrep would fetch (p/…, r/…, s/…, a URL, or `auto` mixed into a
-    list) is an error, not a silent fallback — the point of local rules is
-    that nothing leaves the machine.
+    Unset or empty is `p/default`. A list (or comma-separated string) may
+    mix Registry names, URLs and local paths; a local path must exist.
+    `auto` must stand alone and needs `send_metrics: true`.
     """
     raw = config.get("security.sast.rules")
-    if raw is None:
-        return None, None
-    items = raw if isinstance(raw, list) else str(raw).split(",")
-    entries = [str(e).strip() for e in items if str(e).strip()]
-    if not entries:
-        return None, None
-    if entries == [REGISTRY]:
-        return REGISTRY, None
-    for entry in entries:
-        if entry == REGISTRY or _REMOTE_CONFIG.match(entry):
+    items = [] if raw is None else (raw if isinstance(raw, list) else str(raw).split(","))
+    entries = [str(e).strip() for e in items if str(e).strip()] or list(DEFAULT_RULES)
+    if AUTO in entries:
+        if entries != [AUTO]:
+            return None, "security.sast.rules: `auto` lets Semgrep pick every rule, so it can't be combined with other entries."
+        if not send_metrics:
             return None, (
-                f"security.sast.rules: {entry!r} is not a local path. Use `rules: auto` on "
-                "its own to opt in to Semgrep's Registry (it sends the repository URL and "
-                "usage metrics), or list only rule files or directories in the repo."
+                "security.sast.rules: `auto` needs `security.sast.send_metrics: true` — Semgrep "
+                "refuses `--config=auto` with metrics off, because it logs in to the Registry with "
+                "the repository URL. Opt in to metrics, or name a ruleset instead (the default is p/default)."
             )
-        if not Path(entry).exists():
+        return entries, None
+    for entry in entries:
+        if not _REMOTE_CONFIG.match(entry) and not Path(entry).exists():
             return None, f"security.sast.rules: {entry!r} does not exist (paths are relative to the repo root)."
     return entries, None
 
 
-def _rules_label(rules: str | list[str]) -> str:
-    if rules == REGISTRY:
-        return (
-            "Semgrep Registry (`rules: auto` — sends the repository URL and usage "
-            "metrics to semgrep.dev)"
-        )
-    return "local: " + ", ".join(f"`{r}`" for r in rules) + " (`--metrics=off` — nothing is sent)"
-
-
-_OFF_REASON = "SAST is off — `security.sast.rules` is not set"
-_OFF_GUIDANCE = [
-    "Semgrep wasn't run, so nothing was scanned and nothing was sent. Choose where the rules come from in `.slopstopper.yml`:",
-    "",
-    "- `security.sast.rules: auto` — Semgrep's Registry rules for the languages it finds. "
-    "**Sends** the repository URL and usage metrics to semgrep.dev (never source code or findings).",
-    "- `security.sast.rules: [.semgrep/]` — your own rule files or directories, run with "
-    "`--metrics=off`. **Sends nothing.**",
-]
-
-
-def _skip_off() -> int:
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    REPORT_MD.write_text(
-        "# SAST Analysis Report\n\n" + "\n".join(_report.render_skip(_OFF_REASON, _OFF_GUIDANCE))
-    )
-    output.info(f"{_OFF_REASON} — skipping. `rules: auto` opts in to Semgrep's Registry "
-                "(sends the repo URL + usage metrics); a list of local rule files sends nothing.")
-    output.footer(REPORT_DIR, [REPORT_MD.name])
-    return 0
+def _rules_label(rules: list[str], send_metrics: bool) -> str:
+    names = ", ".join(f"`{r}`" for r in rules)
+    if send_metrics:
+        return f"{names} — usage metrics **on** (`send_metrics: true`): Semgrep receives usage metrics"
+    if any(_REMOTE_CONFIG.match(r) for r in rules):
+        return f"{names} — downloaded from the Semgrep Registry; usage metrics off (`--metrics=off`)"
+    return f"{names} — local rules, usage metrics off: nothing leaves the runner"
 
 
 # Semgrep's exit codes for a scan that completed: 0, or 1 when `--error`
@@ -229,23 +209,20 @@ def _skip_off() -> int:
 SEMGREP_COMPLETED = frozenset({0, 1})
 
 
-def _run_semgrep(rules: str | list[str] = REGISTRY) -> int:
+def _run_semgrep(rules: list[str] = DEFAULT_RULES, send_metrics: bool = False) -> int:
     """Run Semgrep and return its exit code.
 
-    `REGISTRY` runs `--config=auto`; a list of local paths runs those, with
-    metrics off. The previous run's report is removed first: a scan that
-    dies before writing must leave no report, not last run's.
+    Each rule source is a `--config`; metrics are `off` unless the repo
+    opted in. The previous run's report is removed first: a scan that dies
+    before writing must leave no report, not last run's.
     """
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     REPORT_JSON.unlink(missing_ok=True)
-    if rules == REGISTRY:
-        config_args = ["--config=auto"]
-    else:
-        config_args = [f"--config={r}" for r in rules] + ["--metrics=off"]
     return subprocess.run(
         [
             "semgrep",
-            *config_args,
+            *(f"--config={r}" for r in rules),
+            f"--metrics={'on' if send_metrics else 'off'}",
             "--json",
             f"--output={REPORT_JSON}",
             "--exclude=node_modules",
@@ -346,7 +323,9 @@ def _format_scan_errors_explanation(errors: list[dict]) -> str:
     return out
 
 
-def _build_md_report(data: dict, fail_on: str = DEFAULT_FAIL_ON, rules: str | list[str] = REGISTRY) -> str:
+def _build_md_report(
+    data: dict, fail_on: str = DEFAULT_FAIL_ON, rules: list[str] = DEFAULT_RULES, send_metrics: bool = False,
+) -> str:
     results = data.get("results", [])
     errors = data.get("errors", [])
     error_findings, warning_findings = _categorize_findings(results)
@@ -354,7 +333,7 @@ def _build_md_report(data: dict, fail_on: str = DEFAULT_FAIL_ON, rules: str | li
 
     md = "# SAST Analysis Report\n\n"
     md += f"**Generated**: {_report.generated_at()}\n\n"
-    md += f"**Rules**: {_rules_label(rules)}\n\n"
+    md += f"**Rules**: {_rules_label(rules, send_metrics)}\n\n"
     md += "## Summary\n\n"
 
     if errors:
@@ -396,18 +375,17 @@ def _build_md_report(data: dict, fail_on: str = DEFAULT_FAIL_ON, rules: str | li
 def run(args: list[str] | None = None) -> int:
     if args:
         return reject_extra_args("security:sast", args)
-    rules, rules_error = _rules()
+    send_metrics = _send_metrics()
+    rules, rules_error = _rules(send_metrics)
     if rules_error:
         return scan_incomplete(REPORT_DIR, REPORT_MD, "SAST Analysis Report", rules_error)
-    if rules is None:
-        return _skip_off()
     if not _semgrep_available():
         output.error(_INSTALL_HELP)
         return 2
 
     output.running("Running SAST analysis…")
-    output.info(f"Rules: {_rules_label(rules)}")
-    rc = _run_semgrep(rules)
+    output.info(f"Rules: {_rules_label(rules, send_metrics)}")
+    rc = _run_semgrep(rules, send_metrics)
     data = _read_data()
     if data is None or rc not in SEMGREP_COMPLETED:
         return scan_incomplete(
@@ -419,7 +397,7 @@ def run(args: list[str] | None = None) -> int:
         )
 
     fail_on = _fail_on()
-    REPORT_MD.write_text(_build_md_report(data, fail_on, rules))
+    REPORT_MD.write_text(_build_md_report(data, fail_on, rules, send_metrics))
 
     results = data.get("results", [])
     blocking = _blocking_findings(results, fail_on)

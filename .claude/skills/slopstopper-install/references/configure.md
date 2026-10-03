@@ -99,13 +99,14 @@ hygiene:
 security:
   sast:
     fail_on: error           # default — lowest Semgrep severity that fails (error | warning | info | none)
-    rules: auto              # default unset = SAST off. auto: Semgrep Registry (sends repo URL + metrics); [.semgrep/]: local, sends nothing
+    rules: p/default         # default — Registry rulesets (p/…), local rule files (offline), or auto (needs send_metrics)
+    send_metrics: false      # default — true opts in to Semgrep usage metrics
 reliability:
   cwv:
     public_report: false     # default — true uploads Lighthouse reports to public temporary storage
 ```
 
-Write the user's Step 1 Q13 answers here. **SAST is off until `security.sast.rules` is set** — if the user chose neither `auto` nor local rules, leave it unset and tell them the SAST check will report "SAST is off" and pass. Never set `auto` or `public_report: true` without the user saying yes: both send data off the runner (`docs/architecture/TOOLCHAIN.md`).
+Write the user's Step 1 Q13 answers here. SAST runs by default with Semgrep's metrics off. Never set `send_metrics: true`, `rules: auto` or `public_report: true` without the user saying yes: they send data off the runner (`docs/architecture/TOOLCHAIN.md`).
 
 `hygiene.complexity.max_ccn` gates locally, in the pre-push hook, and in CI off one exit code (there is no separate CI-only threshold) — so `task ss:hygiene:complexity` reproduces the CI result exactly. Drop it to `10` for McCabe-strict.
 

@@ -57,7 +57,8 @@ hygiene:
 # send nothing.
 security:
   sast:
-    rules: auto            # Semgrep Registry rules — sends the repo URL + usage metrics
+    send_metrics: true     # opt in to Semgrep usage metrics…
+    rules: auto            # …which `auto` (rules picked per language, via the repo URL) needs
 reliability:
   cwv:
     public_report: true    # Lighthouse reports on public temporary storage, linked from PRs

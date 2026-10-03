@@ -193,7 +193,7 @@ return next;</code></pre></div>
                 <h2>🔍 Semgrep</h2>
                 <span class="tool-license">LGPL-2.1</span>
                 <p>Fast static application security testing (SAST). Scans source code for vulnerability patterns and OWASP-style issues before code is merged.</p>
-                <p>Opt-in, because Semgrep's Registry rules send your repository URL and usage metrics to Semgrep (never source code). Set <code>security.sast.rules: auto</code> for Registry rules, or a list of your own rule files to run offline and send nothing.</p>
+                <p>Runs Semgrep's <code>p/default</code> ruleset with Semgrep's usage metrics off. Opt in to metrics with <code>security.sast.send_metrics: true</code> (needed for <code>rules: auto</code>), or point <code>security.sast.rules</code> at your own rule files to scan fully offline.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/README.md" rel="noopener noreferrer">Learn more about Security →</a>
                 <details class="details">
                     <summary>Workflow excerpt</summary>

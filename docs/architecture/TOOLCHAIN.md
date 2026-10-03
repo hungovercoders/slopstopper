@@ -9,9 +9,10 @@ open-source-licence check, an air-gapped CI.
 
 Out of the box, the only things that leave the runner are:
 
-- **Downloads** — the tools themselves, Trivy's vulnerability database,
-  ZAP's image and add-on updates, Playwright's browser. Requests go out;
-  nothing about the repo goes with them.
+- **Downloads** — the tools themselves, Semgrep's `p/default` ruleset,
+  Trivy's vulnerability database, ZAP's image and add-on updates,
+  Playwright's browser. Requests go out; nothing about the repo goes with
+  them.
 - **Requests to the URLs you configure** — the browser, API and DAST
   checks test the site you point them at. Broken-links follows
   same-origin links only.
@@ -24,13 +25,12 @@ Anything that would send information about the repo to another party is
 
 | Setting | Off (default) | On |
 | ------- | ------------- | -- |
-| `security.sast.rules` | `security:sast` skips — Semgrep isn't run | `auto`: Semgrep Registry rules; Semgrep receives the repo URL and usage metrics. A list of local rule files: runs those with `--metrics=off`, sends nothing |
+| `security.sast.send_metrics` | Semgrep runs with `--metrics=off` | Semgrep sends its usage metrics. Required for `security.sast.rules: auto`, where Semgrep picks rules by logging in to its Registry with the repo URL |
 | `reliability.cwv.public_report` | Lighthouse reports stay on the runner (`.lighthouseci/`, the CI artifact) | Each report is uploaded to Lighthouse CI's temporary public storage and linked from the PR comment |
 | `COPILOT_GITHUB_TOKEN` secret | The documentation-updater workflow stops at its secret check | The weekly doc updater runs: GitHub Copilot reads the repo's docs and recent changes and opens a PR |
 
 Where a tool phones home on its own (usage telemetry, update checks),
-slopstopper switches that off: Semgrep via `--metrics=off` on local rules,
-Trivy via `TRIVY_DISABLE_TELEMETRY` and `TRIVY_SKIP_VERSION_CHECK`, ZAP
+slopstopper switches that off: Semgrep via `--metrics=off`, Trivy via `TRIVY_DISABLE_TELEMETRY` and `TRIVY_SKIP_VERSION_CHECK`, ZAP
 via `-notel`.
 
 ## Every tool
@@ -40,7 +40,7 @@ via `-notel`.
 | slopstopper-cli | every check | MIT | PyPI (`pipx:slopstopper-cli` via mise) | Nothing. `install.sh` asks pypi.org for the latest version on first install |
 | mise | toolchain pins | MIT | mise.run / `jdx/mise-action` | Nothing from slopstopper's use |
 | Task | `task ss:*` shims | MIT | mise | Nothing |
-| Semgrep CE | `security:sast` | LGPL-2.1 | `pip install semgrep` | **Off** (see above) |
+| Semgrep CE | `security:sast` | LGPL-2.1 | `pip install semgrep` | Nothing — downloads its ruleset; usage metrics **off** (see above). Local rule files make it fully offline |
 | Gitleaks | `security:secrets` | MIT | GitHub release binary | Nothing — scans git history locally |
 | Trivy | `security:vulnerability:all` | Apache-2.0 | Aqua's apt repository | Nothing — downloads its vulnerability DB; telemetry and update check switched off |
 | GitHub dependency review | `ss-security-vulnerability-new-check.yml` | MIT (`actions/dependency-review-action`) | GitHub Action | GitHub's own dependency graph, via the GitHub API |
@@ -58,9 +58,13 @@ before relying on this table for a licence review.
 
 ## Semgrep, in detail
 
-`rules: auto` runs `semgrep --config=auto`. To pick rules, Semgrep logs
-in to its Registry with the repository's URL. Because the rules come
-from the Registry, it also sends [usage metrics](https://semgrep.dev/docs/metrics):
+By default the check runs Semgrep's `p/default` ruleset with
+`--metrics=off`. Semgrep downloads the ruleset from its Registry; with
+metrics off, nothing about the repo or the scan goes back. Local rule
+files (`security.sast.rules: [.semgrep/]`) need no network at all.
+
+With `security.sast.send_metrics: true`, Semgrep sends its
+[usage metrics](https://semgrep.dev/docs/metrics):
 
 - a random machine ID, the IP address and the CI provider;
 - scan sizes, timings and per-language parse rates;
@@ -68,9 +72,10 @@ from the Registry, it also sends [usage metrics](https://semgrep.dev/docs/metric
 - finding counts.
 
 Source code, file names, commit data and the findings themselves are never
-sent. Semgrep refuses `--config=auto` together with `--metrics=off`, so
-this mode can't be made silent — hence opt-in. A list of local rule files
-runs offline with `--metrics=off`. See [SAST.md](../security/SAST.md).
+sent. `rules: auto` — Semgrep picking rules per language — logs in to the
+Registry with the repository's URL and only works with metrics on
+(Semgrep refuses `--config=auto` with `--metrics=off`), so the check
+accepts it only alongside the opt-in. See [SAST.md](../security/SAST.md).
 
 ## Lighthouse CI, in detail
 
