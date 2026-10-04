@@ -214,3 +214,81 @@
         transform: none;
     }
 }
+
+/* ─── Real PR comments in "What feedback looks like" ────────── */
+.gh-comments {
+    display: grid;
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+}
+@media (min-width: 720px) {
+    .gh-comments {
+        grid-template-columns: 3fr 2fr;
+        align-items: start;
+    }
+}
+.gh-comment {
+    margin: 0;
+    background: #FFFFFF;
+    border: var(--border-thin);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-sticker);
+    overflow: hidden;
+}
+.gh-comment__head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: var(--peach-soft);
+    border-bottom: var(--border-thin);
+    font-size: 0.9rem;
+}
+.gh-comment__avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--ink);
+    flex: none;
+}
+.gh-comment__bot {
+    padding: 0 0.4rem;
+    border: 1px solid var(--ink-soft);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+}
+.gh-comment__body {
+    padding: 1rem 1.1rem 0.6rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+.gh-comment__body p,
+.gh-comment__body ul {
+    margin: 0 0 0.6rem;
+}
+.gh-comment__body ul {
+    padding-left: 1.25rem;
+}
+.gh-comment__title {
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+.gh-comment--fail .gh-comment__title {
+    font-size: 1rem;
+}
+.gh-comment__fold {
+    color: var(--ink-soft);
+}
+.gh-comment__sub {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+}
+.gh-comment figcaption {
+    padding: 0.6rem 1.1rem 0.9rem;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+}
+.reports-subhead {
+    margin-top: 0.5rem;
+}

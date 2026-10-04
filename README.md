@@ -16,7 +16,7 @@ The full suite into a repo (CLI pinned via [mise](https://mise.jdx.dev), workflo
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 ```
 
-Not a website? `--profile api` or `--profile library` installs only the checks that apply.
+Not a website? Pass a profile through the same one-liner — `curl -fsSL … | bash -s -- --profile api` (or `library`) — and only the checks that apply are installed.
 
 ## Docs
 
