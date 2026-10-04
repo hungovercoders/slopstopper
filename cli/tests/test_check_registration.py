@@ -149,6 +149,40 @@ def test_check_workflow_has_a_curated_badge_label(check):
     assert group == _category(check), f"{workflow} is badged under {group!r}, not {_category(check)!r}"
 
 
+LABELER = REPO_ROOT / ".github/labeler.yml"
+
+
+def _labeler_globs(label: str) -> list[str]:
+    """The quoted globs under one top-level label in .github/labeler.yml.
+
+    Line reader, same as the rest of this file: a top-level key is a line
+    with no indent ending in a colon; the block runs to the next one.
+    """
+    globs: list[str] = []
+    inside = False
+    for line in LABELER.read_text(encoding="utf-8").splitlines():
+        if re.match(r"^[A-Za-z0-9_-]+:\s*$", line):
+            inside = line.rstrip(":").strip() == label
+            continue
+        if inside:
+            globs += re.findall(r"'([^']+)'", line)
+    return globs
+
+
+@pytest.mark.parametrize("check", CHECKS)
+def test_check_module_is_in_labeler_yml(check):
+    """A PR that touches only the check's module must get the category label.
+
+    The workflow and docs globs in .github/labeler.yml match by category
+    prefix; the module filenames carry no category, so they are listed
+    by hand and nothing but this test notices a missing or renamed one.
+    """
+    path = f"cli/slopstopper/checks/{_module_name(check)}.py"
+    assert path in _labeler_globs(_category(check)), (
+        f"{check}: add '{path}' under the `{_category(check)}:` label in .github/labeler.yml"
+    )
+
+
 @pytest.mark.parametrize("check", CHECKS)
 def test_check_has_a_test_module(check):
     module = _module_name(check)
