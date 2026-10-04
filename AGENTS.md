@@ -71,8 +71,8 @@ app/  worker/        the site and the Cloudflare Worker that serves it (headers.
   `.ss/reports/<check>/`, and carry a `Configuration` block in the module
   docstring for every `config.get("…")` key they read.
 - **A new or renamed check is registered in ~12 places** (workflow,
-  shim, installer, profiles, badge label, PR summary, docs, tests, both
-  skills, site, README). The route below lists them; the registration
+  shim, installer, profiles, badge label, PR summary, docs, tests, labeler,
+  both skills, site, README). The route below lists them; the registration
   test fails on any you miss.
 - **Docs state the present; git holds the past.** No "previously we…"
   sections; the commit message carries the story.

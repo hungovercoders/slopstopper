@@ -2,17 +2,20 @@
 # Used by: .github/workflows/ss-hygiene-auto-label-pr.yml (actions/labeler v5)
 # Adopters get the generic templates/labeler.yml.example from install.sh.
 #
-# Every ss-* check carries its category in the workflow prefix, the docs
-# directory and the check module, so a PR that touches any of the three
-# gets the category label. When a check is added or renamed, add its paths
-# here (docs/contributing/CHANGE_MAP.md lists this file for that reason).
+# A PR touching a check's workflow, its docs directory or its check module
+# gets the category label. The workflow and docs globs match by prefix;
+# the check modules are listed by hand because their filenames carry no
+# category (sast.py, cwv.py). cli/tests/test_check_registration.py fails
+# when a registered check's module is missing from its category below, and
+# docs/contributing/CHANGE_MAP.md names this file for new and renamed checks.
 
 # ── Documentation ──
 docs:
   - changed-files:
     - any-glob-to-any-file:
       - 'docs/**'
-      - '**/*.md'
+      - '*.md'
+      - 'cli/README.md'
 
 # ── Security ──
 security:
@@ -43,10 +46,10 @@ reliability:
       - 'cli/slopstopper/checks/sitemap.py'
       - 'cli/slopstopper/checks/api_health.py'
       - 'cli/slopstopper/checks/api_latency.py'
-      - 'cli/slopstopper/checks/_playwright.py'
       - 'cli/slopstopper/data/tests/**'
       - 'cli/slopstopper/data/playwright.config.js'
       - 'cli/slopstopper/data/lighthouserc*.json'
+      - 'cli/slopstopper/data/server.js'
 
 # ── Hygiene ──
 hygiene:
@@ -54,6 +57,7 @@ hygiene:
     - any-glob-to-any-file:
       - '.github/workflows/ss-hygiene-*'
       - '.github/labeler.yml'
+      - 'templates/labeler.yml.example'
       - 'docs/hygiene/**'
       - 'cli/slopstopper/checks/complexity.py'
       - 'cli/slopstopper/checks/csp_exceptions.py'
@@ -62,8 +66,22 @@ hygiene:
       - 'cli/slopstopper/checks/docs_structure.py'
       - 'cli/slopstopper/checks/entry_files.py'
       - 'cli/slopstopper/checks/openapi.py'
-      - 'cli/slopstopper/checks/_routes.py'
       - 'cli/slopstopper/data/templates/entry-files/**'
+
+# ── Operational: the plumbing around the checks ──
+operational:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/ss-pr-summary.yml'
+      - '.github/workflows/ss-workflow-failure-issue.yml'
+      - '.github/workflows/ss-release.yml'
+      - '.github/workflows/ss-hygiene-doc-updater.md'
+      - '.github/workflows/ss-hygiene-doc-updater.lock.yml'
+      - 'cli/slopstopper/comment.py'
+      - 'cli/slopstopper/emit.py'
+      - 'docs/architecture/PR_FEEDBACK.md'
+      - 'docs/hygiene/DOC_UPDATER.md'
+      - 'docs/runbooks/RELEASE.md'
 
 # ── CLI package ──
 cli:
@@ -77,6 +95,7 @@ tests:
     - any-glob-to-any-file:
       - 'cli/tests/**'
       - 'cli/slopstopper/data/tests/**'
+      - '.github/workflows/ci-cli.yml'
 
 # ── Installer, task shims, toolchain pin ──
 installer:
@@ -88,6 +107,7 @@ installer:
       - 'Taskfile.yml'
       - 'Taskfile.ss.yml'
       - 'mise.toml'
+      - '.slopstopper.yml'
       - '.slopstopper.yml.example'
       - 'cli/slopstopper/data/profiles.json'
 
