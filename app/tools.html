@@ -244,6 +244,7 @@ return next;</code></pre></div>
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
+      - run: sudo apt-get install -y trivy   # from Aqua's apt repo
       - run: task ss:security:vulnerability:all   # trivy fs, HIGH+CRITICAL gate</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-vulnerability-all-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>

@@ -80,7 +80,7 @@ flowchart LR
 flowchart LR
     B[Browser]
     WORKER[Cloudflare Worker\nworker/index.ts]
-    ASSETS[Static Assets\napp/index.html, app/features.html, app/tools.html, CSS, compiled JS]
+    ASSETS[Static Assets\napp/index.html, app/features.html, app/tools.html, CSS, copy.js]
     HJSON[worker/headers.json\ncanonical header map]
     DEV[Local Node Server\nslopstopper serve]
 

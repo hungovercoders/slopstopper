@@ -150,7 +150,7 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: ./.github/actions/ss-setup
-      - run: brew install aquasecurity/trivy/trivy
+      - run: sudo apt-get install -y trivy   # from Aqua's apt repo
       - run: task ss:security:vulnerability:all
       - if: github.event_name == 'pull_request'
         run: slopstopper emit security:vulnerability:all --target pr-comment</code></pre></div>
@@ -204,7 +204,7 @@ jobs:
                         <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Documentation Accuracy Check
 on:
   schedule: [ { cron: '0 7 * * 1' } ]   # weekly
-  pull_request: { branches: [ main ] }  # no paths filter: a deleted
+  pull_request:                         # every PR, no paths filter: a deleted
   push:         { branches: [ main ] }  # file anywhere can break a link</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-accuracy-check.yml" rel="noopener noreferrer">View accuracy workflow →</a>
                         <br>
