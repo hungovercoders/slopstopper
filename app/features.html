@@ -602,8 +602,38 @@ safe-outputs:
                 </svg>
             </div>
             <span class="kicker">What feedback looks like</span>
-            <h2>Reports, not lectures.</h2>
-            <p class="lede">A mock-up of the kind of output you'll see on a PR. Concrete signal, not vibes.</p>
+            <h2>One comment, not nineteen.</h2>
+            <p class="lede">Every PR gets a single rolling summary comment, rendered from the run conclusions GitHub already holds. A failing check adds a compact comment of its own; a passing one deletes it. Below: the summary as posted on <a href="https://github.com/hungovercoders/slopstopper/pull/358" rel="noopener noreferrer">PR #358</a> of this repo, and the shape a failing check adds.</p>
+
+            <div class="gh-comments">
+                <figure class="gh-comment">
+                    <div class="gh-comment__head"><span class="gh-comment__avatar" aria-hidden="true"></span><strong>github-actions</strong> <span class="gh-comment__bot">bot</span> commented</div>
+                    <div class="gh-comment__body">
+                        <p class="gh-comment__title">✅ SlopStopper — all 23 checks passed</p>
+                        <p>🔒 Security — API Headers · DAST · Dependency CVEs · Dependency Review · SAST · Secrets</p>
+                        <p>🧹 Hygiene — Auto-label PRs · Complexity · Docs Accuracy · Docs Size · Docs Structure · Entry Files · OpenAPI Drift</p>
+                        <p>✅ Reliability — Accessibility · API Health · API Latency · Broken Links · Core Web Vitals · llms.txt · robots.txt · SEO · Sitemap · Smoke</p>
+                        <p class="gh-comment__sub">head <code>75d1b28</code> · updated 2026-10-04 14:50 UTC</p>
+                    </div>
+                    <figcaption>The summary comment on a green PR. It re-renders as each check finishes, so it never races them.</figcaption>
+                </figure>
+                <figure class="gh-comment gh-comment--fail">
+                    <div class="gh-comment__head"><span class="gh-comment__avatar" aria-hidden="true"></span><strong>github-actions</strong> <span class="gh-comment__bot">bot</span> commented</div>
+                    <div class="gh-comment__body">
+                        <p class="gh-comment__title">❌ SEO — 2 issues</p>
+                        <ul>
+                            <li>og:image is missing</li>
+                            <li>canonical points at another domain</li>
+                        </ul>
+                        <p class="gh-comment__fold">▸ Full report and evidence</p>
+                        <p class="gh-comment__sub">slopstopper · <code>reliability:seo</code> · head <code>abc1234</code> · run →</p>
+                    </div>
+                    <figcaption>What one failing check adds: a verdict line, the failing items, the report folded away. The format from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PR_FEEDBACK.md" rel="noopener noreferrer">the PR feedback design</a>.</figcaption>
+                </figure>
+            </div>
+
+            <h3 class="reports-subhead">Inside the fold</h3>
+            <p class="lede">Each failing comment folds the tool's full report. Illustrations of four of them:</p>
 
             <div class="reports-grid">
                 <!-- axe-core mock report -->
@@ -808,13 +838,15 @@ safe-outputs:
 
             <div class="loop-diagram">
                 <h3>Inner Loop — Local</h3>
-                <p class="loop-desc">The fast, local cycle a developer (or AI agent) runs before pushing. Completes in seconds to minutes.</p>
+                <p class="loop-desc">The fast, local cycle a developer (or AI agent) runs before pushing. Completes in seconds to minutes — and the pre-push hook <code>install.sh</code> wires runs the static hygiene checks before anything leaves the machine.</p>
                 <div class="loop-flow">
                     <div class="loop-step">✏️ Write Code<span class="step-sub">with AI</span></div>
                     <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
                     <div class="loop-step">🔨 Build &amp; Lint<span class="step-sub">locally</span></div>
                     <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
                     <div class="loop-step">🧪 Run Tests<span class="step-sub">locally</span></div>
+                    <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
+                    <div class="loop-step">🪝 Pre-push hook<span class="step-sub">task ss:hygiene:test</span></div>
                     <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
                     <div class="loop-step">📤 Commit &amp; Push<span class="step-sub">open PR</span></div>
                 </div>
