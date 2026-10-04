@@ -57,7 +57,7 @@
             <p>Every security, hygiene and reliability check below is a real GitHub Actions workflow that calls <code>slopstopper run &lt;category&gt;:&lt;check&gt;</code> from the <a href="https://github.com/hungovercoders/slopstopper/tree/main/cli" rel="noopener noreferrer">CLI package</a>. Same code path locally — install with the one-liner on <a href="index.html#get-started">Get Started</a> and run from your terminal. Operational is the housekeeping around those checks; Deployment is how this site itself ships.</p>
         </section>
 
-        <div class="card-grid">
+        <div class="card-grid loops-grid">
             <!-- ─── Security ─────────────────────────────────────── -->
             <div class="card" id="security">
                 <h2>🔒 Security</h2>
@@ -161,116 +161,6 @@ jobs:
                 </details>
             </div>
 
-            <!-- ─── Hygiene ──────────────────────────────────────── -->
-            <div class="card" id="hygiene">
-                <h2>🧹 Hygiene</h2>
-                <p class="card-intro">Keep the codebase auditable and the docs honest — complexity caps, structure / accuracy / size checks for docs, and auto-labelled PRs.</p>
-                <ul>
-                    <li><strong>Complexity</strong> — Lizard caps cyclomatic complexity per function (CCN ≤ 15 by default, tunable in <code>.slopstopper.yml</code>) across every language it parses</li>
-                    <li><strong>Doc Structure &amp; Entry Files</strong> — AGENTS.md-first: <code>AGENTS.md</code> carries what most tasks need under a ~2k-token budget, <code>CLAUDE.md</code> is exactly <code>@AGENTS.md</code>, and every doc under <code>docs/</code> has an explicit “before you X, read Y” route from it or the <code>docs/README.md</code> map</li>
-                    <li><strong>Doc Accuracy</strong> — Documentation reflects the actual code</li>
-                    <li><strong>Doc Size</strong> — Prevents documentation from going stale or unwieldy</li>
-                    <li><strong>CSP Exceptions Drift</strong> — Keeps <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> in sync so per-page CSP relaxations stay documented</li>
-                    <li><strong>OpenAPI Drift</strong> — Compares your committed spec against the one the live API serves, and probes every documented path that takes no parameters. The doc-accuracy check for an API: a spec that stopped describing reality</li>
-                    <li><strong>Auto-label PRs</strong> — PRs labelled from the paths changed</li>
-                    <li><strong>Local pre-push gate</strong> — a pre-push git hook runs the fast hygiene checks before every push, so the first CI run confirms rather than discovers</li>
-                </ul>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about Hygiene →</a>
-
-                <details class="details">
-                    <summary>Complexity (Lizard)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Code Complexity Check
-on:
-  pull_request: { branches: [ main ] }
-  push:         { branches: [ main ] }
-jobs:
-  complexity-check:
-    name: Check Code Complexity with Lizard
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: pip install lizard
-      - run: task ss:hygiene:complexity
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit hygiene:complexity --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-complexity-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>Doc Structure, Accuracy &amp; Entry Files</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Documentation Accuracy Check
-on:
-  schedule: [ { cron: '0 7 * * 1' } ]   # weekly
-  pull_request:                         # every PR, no paths filter: a deleted
-  push:         { branches: [ main ] }  # file anywhere can break a link</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-accuracy-check.yml" rel="noopener noreferrer">View accuracy workflow →</a>
-                        <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-structure-check.yml" rel="noopener noreferrer">View structure workflow →</a>
-                        <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-size-check.yml" rel="noopener noreferrer">View size-monitor workflow →</a>
-                        <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-entry-files-check.yml" rel="noopener noreferrer">View entry-files workflow →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>CSP Exceptions Drift</summary>
-                    <div class="details__body">
-                        <!-- sync this excerpt if the workflow's first job step changes -->
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - CSP Exceptions Drift Check
-on:
-  pull_request:
-    paths:
-      - 'worker/headers.json'
-      - 'docs/security/CSP_EXCEPTIONS.md'
-jobs:
-  check-csp-exceptions:
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: task ss:hygiene:csp-exceptions
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit hygiene:csp-exceptions --target pr-comment</code></pre></div>
-                        <p class="details__hint">Strict <code>default-src 'self'</code> CSP is the default. Per-path exceptions (e.g. Giscus on <code>/feedback.html</code>) must be documented in <code>CSP_EXCEPTIONS.md</code> with SRI hashes and a fallback. This check fails the build if <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> disagree.</p>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-csp-exceptions-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                        <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">View the exceptions doc →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>Auto-label PRs</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Auto Label PRs
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-jobs:
-  label:
-    steps:
-      - uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5
-        with: { sync-labels: true }</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-auto-label-pr.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>Local pre-push gate</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--sh"><pre><code># .githooks/pre-push (wired via core.hooksPath by install.sh)
-# Runs the fast static hygiene checks before every push.
-exec mise exec -- task ss:hygiene:test</code></pre></div>
-                        <p class="details__hint">Same <code>task ss:hygiene:test</code> that CI runs — one invocation surface across hook, local and CI. Only the static hygiene subset runs locally (seconds, no server); the server/browser checks stay in CI. <code>install.sh</code> won't override an existing <code>husky</code> / <code>lefthook</code> / <code>pre-commit</code> setup; opt out with <code>--no-hooks</code>, or bypass a single push with <code>git push --no-verify</code>.</p>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.githooks/pre-push" rel="noopener noreferrer">View the hook on GitHub →</a>
-                        <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/README.md" rel="noopener noreferrer">Inner-loop docs →</a>
-                    </div>
-                </details>
-            </div>
-
             <!-- ─── Reliability ─────────────────────────────────── -->
             <div class="card" id="reliability">
                 <h2>✅ Reliability</h2>
@@ -288,7 +178,6 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
                     <li><strong>API Health</strong> — Probes a JSON API's health/readiness endpoint and asserts its contract: status code, JSON content-type, and the body fields you declare. <code>{"status": "degraded"}</code> behind an HTTP 200 passes a reachability probe and fails here</li>
                     <li><strong>API Latency</strong> — Samples each endpoint several times and reports the median and slowest response plus the payload size. Core Web Vitals for something that renders nothing. Budgets gate on the median, so one slow sample from a shared runner doesn't fail your PR</li>
                 </ul>
-                <p class="card-intro">Every check in this loop except API Health and API Latency assumes HTML and a served site, so an API repo installs with <code>--profile api</code> and gets the API checks without the browser ones; a library repo (<code>--profile library</code>) gets neither — see <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PROFILES.md" rel="noopener noreferrer">project-shape profiles</a>. The security and hygiene loops apply to any code, whatever the profile — with one exception: <strong>OpenAPI Drift</strong> needs a live API, so <code>--profile library</code> drops that one too.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
 
                 <details class="details">
@@ -489,6 +378,116 @@ jobs:
                 </details>
             </div>
 
+            <!-- ─── Hygiene ──────────────────────────────────────── -->
+            <div class="card" id="hygiene">
+                <h2>🧹 Hygiene</h2>
+                <p class="card-intro">Keep the codebase auditable and the docs honest — complexity caps, structure / accuracy / size checks for docs, and auto-labelled PRs.</p>
+                <ul>
+                    <li><strong>Complexity</strong> — Lizard caps cyclomatic complexity per function (CCN ≤ 15 by default, tunable in <code>.slopstopper.yml</code>) across every language it parses</li>
+                    <li><strong>Doc Structure &amp; Entry Files</strong> — AGENTS.md-first: <code>AGENTS.md</code> carries what most tasks need under a ~2k-token budget, <code>CLAUDE.md</code> is exactly <code>@AGENTS.md</code>, and every doc under <code>docs/</code> has an explicit “before you X, read Y” route from it or the <code>docs/README.md</code> map</li>
+                    <li><strong>Doc Accuracy</strong> — Documentation reflects the actual code</li>
+                    <li><strong>Doc Size</strong> — Prevents documentation from going stale or unwieldy</li>
+                    <li><strong>CSP Exceptions Drift</strong> — Keeps <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> in sync so per-page CSP relaxations stay documented</li>
+                    <li><strong>OpenAPI Drift</strong> — Compares your committed spec against the one the live API serves, and probes every documented path that takes no parameters. The doc-accuracy check for an API: a spec that stopped describing reality</li>
+                    <li><strong>Auto-label PRs</strong> — PRs labelled from the paths changed</li>
+                    <li><strong>Local pre-push gate</strong> — a pre-push git hook runs the fast hygiene checks before every push, so the first CI run confirms rather than discovers</li>
+                </ul>
+                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about Hygiene →</a>
+
+                <details class="details">
+                    <summary>Complexity (Lizard)</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Code Complexity Check
+on:
+  pull_request: { branches: [ main ] }
+  push:         { branches: [ main ] }
+jobs:
+  complexity-check:
+    name: Check Code Complexity with Lizard
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: ./.github/actions/ss-setup
+      - run: pip install lizard
+      - run: task ss:hygiene:complexity
+      - if: github.event_name == 'pull_request'
+        run: slopstopper emit hygiene:complexity --target pr-comment</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-complexity-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>Doc Structure, Accuracy &amp; Entry Files</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Documentation Accuracy Check
+on:
+  schedule: [ { cron: '0 7 * * 1' } ]   # weekly
+  pull_request:                         # every PR, no paths filter: a deleted
+  push:         { branches: [ main ] }  # file anywhere can break a link</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-accuracy-check.yml" rel="noopener noreferrer">View accuracy workflow →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-structure-check.yml" rel="noopener noreferrer">View structure workflow →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-size-check.yml" rel="noopener noreferrer">View size-monitor workflow →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-entry-files-check.yml" rel="noopener noreferrer">View entry-files workflow →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>CSP Exceptions Drift</summary>
+                    <div class="details__body">
+                        <!-- sync this excerpt if the workflow's first job step changes -->
+                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - CSP Exceptions Drift Check
+on:
+  pull_request:
+    paths:
+      - 'worker/headers.json'
+      - 'docs/security/CSP_EXCEPTIONS.md'
+jobs:
+  check-csp-exceptions:
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: ./.github/actions/ss-setup
+      - run: task ss:hygiene:csp-exceptions
+      - if: github.event_name == 'pull_request'
+        run: slopstopper emit hygiene:csp-exceptions --target pr-comment</code></pre></div>
+                        <p class="details__hint">Strict <code>default-src 'self'</code> CSP is the default. Per-path exceptions (e.g. Giscus on <code>/feedback.html</code>) must be documented in <code>CSP_EXCEPTIONS.md</code> with SRI hashes and a fallback. This check fails the build if <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> disagree.</p>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-csp-exceptions-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">View the exceptions doc →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>Auto-label PRs</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Auto Label PRs
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  label:
+    steps:
+      - uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5
+        with: { sync-labels: true }</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-auto-label-pr.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>Local pre-push gate</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--sh"><pre><code># .githooks/pre-push (wired via core.hooksPath by install.sh)
+# Runs the fast static hygiene checks before every push.
+exec mise exec -- task ss:hygiene:test</code></pre></div>
+                        <p class="details__hint">Same <code>task ss:hygiene:test</code> that CI runs — one invocation surface across hook, local and CI. Only the static hygiene subset runs locally (seconds, no server); the server/browser checks stay in CI. <code>install.sh</code> won't override an existing <code>husky</code> / <code>lefthook</code> / <code>pre-commit</code> setup; opt out with <code>--no-hooks</code>, or bypass a single push with <code>git push --no-verify</code>.</p>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.githooks/pre-push" rel="noopener noreferrer">View the hook on GitHub →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/README.md" rel="noopener noreferrer">Inner-loop docs →</a>
+                    </div>
+                </details>
+            </div>
+
             <!-- ─── Operational ─────────────────────────────────── -->
             <div class="card" id="operational">
                 <h2>🤖 Operational</h2>
@@ -588,6 +587,12 @@ safe-outputs:
                 </details>
             </div>
         </div>
+
+        <section class="section">
+            <span class="kicker">Not a website?</span>
+            <h2>A profile picks the loops.</h2>
+            <p class="lede">Every reliability check except API Health and API Latency assumes HTML and a served site. <code>--profile api</code> drops those eight and keeps DAST and the four API checks; <code>--profile library</code> also drops everything else that needs a URL — DAST, API Headers, CSP Exceptions and OpenAPI Drift. Pick one on <a href="index.html#get-started">Get Started</a>; the full mapping is in <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PROFILES.md" rel="noopener noreferrer">project-shape profiles</a>.</p>
+        </section>
 
         <!-- ─── What feedback looks like ────────────────────────── -->
         <section class="section reports-section">

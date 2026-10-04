@@ -4,6 +4,29 @@
     margin-bottom: 0.4rem;
 }
 
+/* ─── The five loop cards ───────────────────────────────────
+ * Column flow, not a row grid: each card sizes to its content and the
+ * browser balances the two columns, so no card is pinned by id and no
+ * row stretches a short card next to a tall one. The markup order
+ * (Security, Reliability, Hygiene, Operational, Deployment) is also the
+ * visual order: column 1 top to bottom, then column 2. */
+.loops-grid {
+    display: block;
+    columns: 1;
+    column-gap: 1.5rem;
+}
+.loops-grid > .card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1.5rem;
+    min-width: 0;
+}
+@media (min-width: 720px) {
+    .loops-grid {
+        columns: 2;
+    }
+}
+
 .reports-section {
     position: relative;
 }
