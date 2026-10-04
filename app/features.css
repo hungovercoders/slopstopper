@@ -4,6 +4,25 @@
     margin-bottom: 0.4rem;
 }
 
+/* ─── The five loop cards ───────────────────────────────────
+ * Two columns from 720px up, cards sized to their content rather
+ * than stretched to the tallest in the row. Reliability, the tall
+ * one, takes the right column for two rows beside Security and
+ * Hygiene; Operational and Deployment share the last row. */
+.loops-grid {
+    align-items: start;
+}
+@media (min-width: 720px) {
+    .loops-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-auto-flow: dense;
+    }
+    .loops-grid > #reliability {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+    }
+}
+
 .reports-section {
     position: relative;
 }

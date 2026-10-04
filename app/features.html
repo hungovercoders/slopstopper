@@ -57,7 +57,7 @@
             <p>Every security, hygiene and reliability check below is a real GitHub Actions workflow that calls <code>slopstopper run &lt;category&gt;:&lt;check&gt;</code> from the <a href="https://github.com/hungovercoders/slopstopper/tree/main/cli" rel="noopener noreferrer">CLI package</a>. Same code path locally — install with the one-liner on <a href="index.html#get-started">Get Started</a> and run from your terminal. Operational is the housekeeping around those checks; Deployment is how this site itself ships.</p>
         </section>
 
-        <div class="card-grid">
+        <div class="card-grid loops-grid">
             <!-- ─── Security ─────────────────────────────────────── -->
             <div class="card" id="security">
                 <h2>🔒 Security</h2>
@@ -288,7 +288,6 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
                     <li><strong>API Health</strong> — Probes a JSON API's health/readiness endpoint and asserts its contract: status code, JSON content-type, and the body fields you declare. <code>{"status": "degraded"}</code> behind an HTTP 200 passes a reachability probe and fails here</li>
                     <li><strong>API Latency</strong> — Samples each endpoint several times and reports the median and slowest response plus the payload size. Core Web Vitals for something that renders nothing. Budgets gate on the median, so one slow sample from a shared runner doesn't fail your PR</li>
                 </ul>
-                <p class="card-intro">Every check in this loop except API Health and API Latency assumes HTML and a served site, so an API repo installs with <code>--profile api</code> and gets the API checks without the browser ones; a library repo (<code>--profile library</code>) gets neither — see <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PROFILES.md" rel="noopener noreferrer">project-shape profiles</a>. The security and hygiene loops apply to any code, whatever the profile — with one exception: <strong>OpenAPI Drift</strong> needs a live API, so <code>--profile library</code> drops that one too.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
 
                 <details class="details">
@@ -588,6 +587,12 @@ safe-outputs:
                 </details>
             </div>
         </div>
+
+        <section class="section profiles-note">
+            <span class="kicker">Not a website?</span>
+            <h2>A profile picks the loops.</h2>
+            <p class="lede">Every reliability check except API Health and API Latency assumes HTML and a served site, so an API repo installs with <code>--profile api</code> and gets the API checks without the browser ones; a library repo (<code>--profile library</code>) gets neither — see <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PROFILES.md" rel="noopener noreferrer">project-shape profiles</a>. The security and hygiene loops apply to any code, whatever the profile — with one exception: <strong>OpenAPI Drift</strong> needs a live API, so <code>--profile library</code> drops that one too.</p>
+        </section>
 
         <!-- ─── What feedback looks like ────────────────────────── -->
         <section class="section reports-section">
