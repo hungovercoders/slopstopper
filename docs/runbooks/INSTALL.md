@@ -48,7 +48,7 @@ Bundled Playwright specs, lighthouserc dev/prod, and the local-CI static server 
 
 ## What you get
 
-Five loops of feedback, all running on every PR and push to `main`:
+Five loops of feedback. The first four run on every PR and push to `main` — all of them with the `ui` profile; `api` and `library` drop the browser checks. Deployment is how slopstopper.dev itself ships and is not installed (see the end of this section):
 
 | Loop | What it does | Tools | Docs |
 | ---- | ------------ | ----- | ---- |
@@ -56,7 +56,7 @@ Five loops of feedback, all running on every PR and push to `main`:
 | 🧹 **Hygiene** | Complexity caps, docs structure/accuracy/size and entry-file checks, OpenAPI drift, auto-labelled PRs | Lizard, stdlib Python | [Hygiene →](../hygiene/README.md) |
 | ✅ **Reliability** | E2E + smoke tests, broken-link audits, accessibility (WCAG 2.1 AA), Core Web Vitals, SEO metatags, llms.txt, robots.txt, sitemap.xml, API health + latency | Playwright, axe-core, Lighthouse CI, stdlib Python | [Reliability →](../reliability/README.md) |
 | 🤖 **Runbooks** | One rolling PR comment summarises every check; failed workflows auto-raise issues; an agentic doc updater opens weekly sync PRs | GitHub Actions, gh-aw | [Runbooks →](./README.md) |
-| 🚀 **Deployment** | Preview deploys per PR, automated production releases, automatic preview cleanup | Cloudflare Workers Builds (Git integration) | [Deployment →](../deployment/README.md) |
+| 🚀 **Deployment** | How slopstopper.dev ships: preview deploys per PR, automated production releases, automatic preview cleanup — not installed by `install.sh` | Cloudflare Workers Builds (Git integration) | [Deployment →](../deployment/README.md) |
 
 ## What each check needs
 

@@ -15,3 +15,10 @@
         width: 100%;
     }
 }
+
+/* Hero: the one-line statement of what SlopStopper is sits above the tagline */
+.hero p.hero__what {
+    color: var(--ink);
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+}

@@ -1,7 +1,7 @@
 {
   "name": "SlopStopper",
   "short_name": "SlopStopper",
-  "description": "Deterministic, automated feedback for AI-driven development. Catch slop before it ships.",
+  "description": "A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo. Catch slop before it ships.",
   "start_url": "/",
   "scope": "/",
   "display": "browser",

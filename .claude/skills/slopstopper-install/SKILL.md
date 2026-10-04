@@ -24,7 +24,7 @@ ls .slopstopper.yml .ss/.workflows-installed 2>/dev/null
 
 ## What slopstopper is, in three lines
 
-A portable suite of GitHub Actions plus the `slopstopper-cli` Python package that owns every check's logic. Every workflow boils down to `slopstopper run <category>:<check>` (runs the check, writes `.ss/reports/`) and `slopstopper emit <category>:<check> --target {pr-comment,issue}` (posts the result). The install lands ~27 workflows, pins the CLI via **mise** (`mise.toml`), merges devDeps into `package.json`, seeds `.slopstopper.yml`, and creates a `Taskfile.yml` if the target has none. Don't run it blind.
+A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo. The `slopstopper-cli` Python package owns every check's logic. Every workflow boils down to `slopstopper run <category>:<check>` (runs the check, writes `.ss/reports/`) and `slopstopper emit <category>:<check> --target {pr-comment,issue}` (posts the result). The install lands ~27 workflows, pins the CLI via **mise** (`mise.toml`), merges devDeps into `package.json`, seeds `.slopstopper.yml`, and creates a `Taskfile.yml` if the target has none. Don't run it blind.
 
 ## The playbook
 
