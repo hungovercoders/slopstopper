@@ -32,8 +32,9 @@ built-in capability with a GHA workflow only adds maintenance.
 | [`worker/index.ts`](../../worker/index.ts) | The Worker. Fetches the asset via `env.ASSETS.fetch(request)`, then applies headers from `worker/headers.json`. Also redirects `/feedback` → `/feedback.html`. |
 | [`worker/headers.json`](../../worker/headers.json) | Canonical header map. Three entries: `/*` (strict default), `/og-image.png` (cross-origin CORP), `/feedback.html` (Giscus CSP relaxation). The Worker, `slopstopper serve` and the CSP-drift gate all read this. |
 
-The build command Workers Builds runs is `npm run build` (TypeScript
-compile of `src/` → `app/`). The pre-build asset render
+Workers Builds runs `npm run build`, which is a no-op echo: the site is
+static HTML and CSS under `app/`, and Wrangler bundles `worker/index.ts`
+itself at deploy time. The asset render
 (`task contributing:assets`, which renders SVG → PNG via Playwright)
 runs locally before commits — the PNG outputs are checked in.
 

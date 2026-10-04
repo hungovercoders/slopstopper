@@ -81,7 +81,7 @@ slopstopper serve                              # bundled static server</code></p
                 <h2>⚙️ GitHub Actions</h2>
                 <span class="tool-license">Platform</span>
                 <p>All checks run as GitHub Actions workflows triggered on every pull request and push to main. Each workflow body is ~8 lines: install the CLI, <code>slopstopper run …</code>, <code>slopstopper emit …</code>.</p>
-                <p><em>Which</em> workflows land is driven by the <code>profile:</code> key in <code>.slopstopper.yml</code> — <code>ui</code> installs all 27, <code>api</code> drops the eight browser-and-SEO checks, <code>library</code> also drops DAST, CSP exceptions and the four API checks (health, latency, headers and OpenAPI drift). Set it with <code>install.sh --profile api</code>, inspect it with <code>slopstopper profile show</code>, and take back any single check with <code>workflows.enabled</code>.</p>
+                <p><em>Which</em> workflows land is driven by the <code>profile:</code> key in <code>.slopstopper.yml</code> — <code>ui</code> installs all 27 workflows (the 24 checks plus the PR summary, failure alerts and doc updater), <code>api</code> drops the eight browser-and-SEO checks, <code>library</code> also drops DAST, CSP exceptions and the four API checks (health, latency, headers and OpenAPI drift). Set it with <code>install.sh --profile api</code>, inspect it with <code>slopstopper profile show</code>, and take back any single check with <code>workflows.enabled</code>.</p>
                 <p>Feedback lands as <strong>one rolling comment per PR</strong> — <code>❌ SlopStopper — 2 of 24 checks failed</code>, failures in a table, passes folded away — rendered from the run conclusions GitHub already recorded, so it can't race the checks. Each failing check adds a compact comment (verdict line, failing items, report folded); passing checks delete theirs, so a green PR carries only the summary.</p>
                 <details class="details">
                     <summary>See it in action</summary>
@@ -96,7 +96,7 @@ slopstopper serve                              # bundled static server</code></p
             <div class="card">
                 <h2>📋 Task</h2>
                 <span class="tool-license">MIT</span>
-                <p><code>task ss:*</code> is the canonical interface — humans, agents and CI all invoke checks through it. Adopters get one consistent invocation surface across the suite and the rest of their codebase. Re-run install.sh with <code>--no-task</code> to skip Task entirely; workflows will call <a href="https://taskfile.dev" rel="noopener noreferrer">the CLI</a> directly.</p>
+                <p><code>task ss:*</code> is the canonical interface — humans, agents and CI all invoke checks through it. Adopters get one consistent invocation surface across the suite and the rest of their codebase. Re-run install.sh with <code>--no-task</code> to skip <a href="https://taskfile.dev" rel="noopener noreferrer">Task</a> entirely; workflows will call the CLI directly.</p>
                 <details class="details">
                     <summary>Taskfile excerpt</summary>
                     <div class="details__body">
@@ -202,7 +202,9 @@ return next;</code></pre></div>
     name: Static Application Security Testing with Semgrep
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - run: pip install semgrep &amp;&amp; semgrep ci</code></pre></div>
+      - uses: ./.github/actions/ss-setup
+      - run: pip install semgrep
+      - run: task ss:security:sast</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-sast-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
                 </details>
@@ -241,7 +243,9 @@ return next;</code></pre></div>
     name: Scan Dependencies with Trivy
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - run: trivy fs --severity HIGH,CRITICAL .</code></pre></div>
+      - uses: ./.github/actions/ss-setup
+      - run: sudo apt-get install -y trivy   # from Aqua's apt repo
+      - run: task ss:security:vulnerability:all   # trivy fs, HIGH+CRITICAL gate</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-vulnerability-all-check.yml" rel="noopener noreferrer">View source →</a>
                     </div>
                 </details>

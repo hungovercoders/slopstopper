@@ -47,7 +47,7 @@ WORKFLOW_DISPLAY: dict[str, tuple[str, str]] = {
     "ss-hygiene-docs-size-check.yml": ("hygiene", "Docs Size"),
     "ss-hygiene-docs-structure-check.yml": ("hygiene", "Docs Structure"),
     "ss-hygiene-entry-files-check.yml": ("hygiene", "Entry Files"),
-    "ss-hygiene-auto-label-pr.yml": ("operational", "Auto-label PRs"),
+    "ss-hygiene-auto-label-pr.yml": ("hygiene", "Auto-label PRs"),
     "ss-hygiene-doc-updater.lock.yml": ("operational", "Doc Updater"),
     "ss-reliability-smoke-tests.yml": ("reliability", "Smoke"),
     "ss-reliability-accessibility-check.yml": ("reliability", "Accessibility"),

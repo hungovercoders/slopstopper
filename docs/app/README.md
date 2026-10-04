@@ -56,85 +56,58 @@ or external font links.
 
 ## Pages
 
-The site is a four-page static app with shared navigation. Each page has its own HTML and CSS file.
+Four static pages with shared navigation. Each page is one HTML file plus
+one page-specific CSS file; there is no build step and no framework.
 
-| Page | File | Title | Interactive Element |
-| ---- | ---- | ----- | ------------------- |
-| Home | `app/index.html` | SlopStopper | **Run Health Check** button; **Copy** button on the install curl block |
-| Features | `app/features.html` | Features | **Text input + Check** — confirms a feature is enabled |
-| Tools | `app/tools.html` | Tools | **Counter** — increment, decrement, and reset buttons |
-| Feedback | `app/feedback.html` | Feedback | GitHub Discussions comments via Giscus embed |
+| Page | File | Interactive element |
+| ---- | ---- | ------------------- |
+| Home | `app/index.html` | **Copy** buttons on the install code blocks (`app/copy.js`); `<details>` collapsibles |
+| Features | `app/features.html` | `<details>` workflow excerpt per check |
+| Tools | `app/tools.html` | `<details>` config or workflow excerpt per tool |
+| Feedback | `app/feedback.html` | GitHub Discussions comments via the Giscus embed |
 
-Every page includes a `<nav>` bar linking to all four pages.
+Every page includes the same `<nav>` linking to all four pages.
 
 ## File Map
 
 ```
-src/index.ts        ← Home TypeScript source (compiled → app/index.js)
-src/features.ts     ← Features TypeScript source (compiled → app/features.js)
-src/tools.ts        ← Tools TypeScript source (compiled → app/tools.js)
-
-app/index.html      ← Home page
-app/index.css       ← Home styles
-app/index.js        ← Compiled from src/index.ts (gitignored, built by tsc)
-
-app/features.html   ← Features page
-app/features.css    ← Features styles
-app/features.js     ← Compiled from src/features.ts (gitignored, built by tsc)
-
-app/tools.html      ← Tools page
-app/tools.css       ← Tools styles
-app/tools.js        ← Compiled from src/tools.ts (gitignored, built by tsc)
-
-app/feedback.html   ← Feedback page (Giscus comments embed)
-app/feedback.css    ← Feedback styles
-
-app/copy.js         ← Runtime copy-button script (hand-authored, NOT compiled
-                       from src/; opt-in via data-copyable on codeblocks)
+app/index.html      ← Home page            app/index.css      ← Home styles
+app/features.html   ← Features page        app/features.css   ← Features styles
+app/tools.html      ← Tools page           app/tools.css      ← Tools styles
+app/feedback.html   ← Feedback page        app/feedback.css   ← Feedback styles
+app/shared.css      ← Brand tokens, header/nav/footer, cards, code blocks
+app/copy.js         ← The only script: copy buttons, opt-in via data-copyable
+app/llms.txt, robots.txt, sitemap.xml, manifest.webmanifest, og-image.png,
+favicon.svg, apple-touch-icon.png
+                    ← Discoverability and share assets the reliability checks audit
 
 slopstopper serve   ← Local dev server (bundled in slopstopper-cli;
-                       auto-detects worker/headers.json + serves from app/)
+                       applies worker/headers.json, serves app/)
 wrangler.jsonc      ← Cloudflare Worker config: [assets] binding, compatibility date
 worker/index.ts     ← Worker entrypoint: fetches assets, applies headers
-worker/headers.json ← Canonical header map (CSP + COOP/COEP + …)
-tsconfig.json       ← TypeScript config: src/ → app/
+worker/headers.json ← Canonical header map (CSP, COOP/COEP, …)
 ```
 
 ## Build
 
-TypeScript source in `src/` is compiled to JavaScript in `app/` using:
-
-```bash
-npm run build
-```
-
-Cloudflare Workers Builds runs `npm run build` automatically before
-deploying the Worker.
+There is none. `npm run build` is a no-op echo kept because Cloudflare
+Workers Builds runs it before `wrangler deploy`; Wrangler bundles
+`worker/index.ts` itself. Edit the HTML and CSS under `app/` and they ship
+as-is.
 
 ## Interaction Details
 
-### Home — Run Health Check
+### Copy buttons
 
-Clicking the button sets the `#message` element's text to "✅ Repo is healthy!".
+`app/copy.js` adds a **Copy** button to every code block marked
+`data-copyable`. Clicking it writes the block's exact text to the
+clipboard; the label restores after 1.5 s. The illustrative YAML excerpts
+on Features and Tools are deliberately not copyable.
 
-The install `curl` block also has a **Copy** button (powered by `app/copy.js`).
-Clicking it writes the exact one-liner to the clipboard; the label restores
-after 1.5 s. Only codeblocks marked with `data-copyable` get a button — the
-illustrative YAML snippets on other pages are intentionally excluded.
+### Collapsibles
 
-### Features — Feature Check
-
-1. User types a feature name into the text input.
-2. Clicking **Check** displays "Feature '{name}' is enabled!".
-3. If the input is blank, it prompts "Please enter a feature name."
-
-### Tools — Counter
-
-- **+** increments the counter.
-- **−** decrements the counter.
-- **Reset** sets the counter back to 0.
-
-The counter value is held in a TypeScript variable and rendered into the `#counter` element.
+`<details>` elements carry the custom `+` / `−` marker from
+`app/shared.css` and need no script.
 
 ### Feedback — GitHub Discussions
 
