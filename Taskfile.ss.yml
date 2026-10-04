@@ -29,6 +29,21 @@ tasks:
     cmds:
       - slopstopper run reliability:smoke -- {{.CLI_ARGS}}
 
+  reliability:e2e:
+    desc: Walk user journeys (nav, anchors, disclosures, back) against a live URL
+    summary: |
+      Drive a browser through the portable end-to-end journeys any HTML
+      site offers: every primary-nav link from each start path, in-page
+      anchors, <details> toggles and the back button. Reads `pages.e2e`
+      and `e2e.max_links` from `.slopstopper.yml`.
+
+      Usage:
+        task ss:reliability:e2e -- https://your-site.example.com
+        task ss:reliability:e2e -- https://your-site.example.com --ci
+        E2E_TEST_URL=https://your-site.example.com task ss:reliability:e2e
+    cmds:
+      - slopstopper run reliability:e2e -- {{.CLI_ARGS}}
+
   reliability:cwv:
     desc: Run a Core Web Vitals (Lighthouse CI) audit
     summary: |

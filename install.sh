@@ -155,7 +155,7 @@ Env var equivalents:
 Profiles (--profile) tailor the suite to the repo's shape:
 
   ui       a site or app that serves HTML — every check applies (default)
-  api      JSON/gRPC endpoints, no browser surface — drops the eight
+  api      JSON/gRPC endpoints, no browser surface — drops the nine
            browser-and-SEO reliability checks, which assume HTML and a
            public web surface and would go red rather than no-op
   library  a library, CLI or package with no deployed surface — also drops
@@ -797,6 +797,7 @@ GENERIC_WORKFLOWS=(
   # Layer 2 — web-app dynamic (need a URL)
   "ss-security-dast-check.yml"
   "ss-reliability-smoke-tests.yml"
+  "ss-reliability-e2e-check.yml"
   "ss-reliability-accessibility-check.yml"
   "ss-reliability-broken-links-check.yml"
   "ss-reliability-core-web-vitals.yml"
@@ -1386,6 +1387,7 @@ add_dynamic_label() {
   fi
 }
 add_dynamic_label "ss-reliability-smoke-tests.yml"          "Smoke"
+add_dynamic_label "ss-reliability-e2e-check.yml"            "E2E"
 add_dynamic_label "ss-reliability-accessibility-check.yml"  "Accessibility"
 add_dynamic_label "ss-reliability-core-web-vitals.yml"      "Core Web Vitals"
 add_dynamic_label "ss-security-dast-check.yml"              "DAST"

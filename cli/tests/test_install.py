@@ -561,7 +561,7 @@ def test_profile_dropped_workflows_stay_out_of_the_marker(tmp_path):
 
 
 def test_switching_profile_removes_and_restores_workflows(tmp_path):
-    """ui → api removes the eight; api → ui brings them back."""
+    """ui → api removes the nine; api → ui brings them back."""
     target = _make_minimal_target(tmp_path)
     assert _run_install(target).returncode == 0
     full = _installed(target)

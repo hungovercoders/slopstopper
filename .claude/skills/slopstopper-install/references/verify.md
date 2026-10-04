@@ -62,6 +62,7 @@ The reliability and DAST shims assert behaviour on a running site. The fastest l
 npm run build                                            # target's own build
 slopstopper serve &                                      # bundled static server on :8080
 task ss:reliability:smoke         -- http://localhost:8080
+task ss:reliability:e2e           -- http://localhost:8080
 task ss:reliability:accessibility -- http://localhost:8080
 task ss:reliability:cwv           -- http://localhost:8080
 task ss:reliability:seo           -- http://localhost:8080

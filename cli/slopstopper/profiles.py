@@ -1,7 +1,7 @@
 """Project-shape profiles — presets over `workflows.disabled`.
 
-Not every check applies to every repo. The eight browser-and-SEO
-reliability checks (smoke, accessibility, Core Web Vitals, SEO, broken
+Not every check applies to every repo. The nine browser-and-SEO
+reliability checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken
 links, llms.txt, robots.txt, sitemap) assume HTML, a DOM and a public
 web surface. On an HTTP API they don't no-op — they build, serve and
 audit nothing, and go red. On a library there is nothing to serve at
@@ -180,6 +180,7 @@ CHECK_WORKFLOWS: dict[str, str] = {
     "reliability:seo": "ss-reliability-seo-check.yml",
     "reliability:sitemap": "ss-reliability-sitemap-check.yml",
     "reliability:smoke": "ss-reliability-smoke-tests.yml",
+    "reliability:e2e": "ss-reliability-e2e-check.yml",
     "security:api-headers": "ss-security-api-headers-check.yml",
     "security:dast": "ss-security-dast-check.yml",
     "security:sast": "ss-security-sast-check.yml",

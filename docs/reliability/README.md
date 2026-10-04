@@ -2,13 +2,14 @@
 
 ## Overview
 
-SlopStopper's reliability checks, wired against any reachable URL: portable smoke tests, broken-link audits, and the API health and latency audits (all below), plus six audits with their own guide — read the one whose trigger matches.
+SlopStopper's reliability checks, wired against any reachable URL: portable smoke tests, broken-link audits, and the API health and latency audits (all below), plus seven audits with their own guide — read the one whose trigger matches.
 
 ## Routes
 
 | When you are…                                                        | Do this                                                                          |
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | fixing an axe-core finding or tuning the WCAG audit                   | Read [ACCESSIBILITY.md](ACCESSIBILITY.md) — the audit, its thresholds and report  |
+| fixing a broken user journey, or adding journeys specific to your site | Read [E2E.md](E2E.md) — the nav, anchor, disclosure and back-button walk           |
 | tuning Lighthouse budgets or debugging a Core Web Vitals failure       | Read [CWV.md](CWV.md) — Lighthouse CI configuration and the budget files          |
 | fixing a missing or wrong SEO / social-share metatag                   | Read [SEO.md](SEO.md) — what the metatag audit asserts                            |
 | adding or fixing the site's `llms.txt`                                 | Read [LLMS_TXT.md](LLMS_TXT.md) — the llmstxt.org shape the check asserts         |
@@ -25,6 +26,9 @@ All reliability checks read their target URL and audit scope from environment va
 | `SMOKE_TEST_URL` | (none) | smoke |
 | `SMOKE_PAGES` | `/` | smoke — comma-separated paths, e.g. `/,/login,/pricing` |
 | `SMOKE_TIMEOUT` | `5000` | smoke — per-request ms |
+| `E2E_TEST_URL` | falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080` | e2e |
+| `E2E_PAGES` | `/` | e2e — comma-separated start paths for the journeys |
+| `E2E_MAX_LINKS` | `25` | e2e — primary-nav links followed per start path |
 | `BROKEN_LINKS_TEST_URL` | falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080` | broken links |
 | `BROKEN_LINKS_PAGES` | `/` | broken links — comma-separated crawl seed paths, e.g. `/,/features.html,/tools.html` |
 | `ACCESSIBILITY_TEST_URL` | falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080` | accessibility |

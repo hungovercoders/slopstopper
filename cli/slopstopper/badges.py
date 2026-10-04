@@ -50,6 +50,7 @@ WORKFLOW_DISPLAY: dict[str, tuple[str, str]] = {
     "ss-hygiene-auto-label-pr.yml": ("hygiene", "Auto-label PRs"),
     "ss-hygiene-doc-updater.lock.yml": ("operational", "Doc Updater"),
     "ss-reliability-smoke-tests.yml": ("reliability", "Smoke"),
+    "ss-reliability-e2e-check.yml": ("reliability", "E2E"),
     "ss-reliability-accessibility-check.yml": ("reliability", "Accessibility"),
     "ss-reliability-broken-links-check.yml": ("reliability", "Broken Links"),
     "ss-reliability-core-web-vitals.yml": ("reliability", "Core Web Vitals"),

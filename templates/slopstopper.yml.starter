@@ -32,6 +32,7 @@ urls:
 # derives these from your sitemap or the PR's diff instead.
 pages:
   smoke:         /
+  e2e:           /
   accessibility: /
   seo:           /
   broken_links:  /

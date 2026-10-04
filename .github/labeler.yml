@@ -37,6 +37,7 @@ reliability:
       - '.github/workflows/ss-reliability-*'
       - 'docs/reliability/**'
       - 'cli/slopstopper/checks/smoke.py'
+      - 'cli/slopstopper/checks/e2e.py'
       - 'cli/slopstopper/checks/accessibility.py'
       - 'cli/slopstopper/checks/broken_links.py'
       - 'cli/slopstopper/checks/cwv.py'

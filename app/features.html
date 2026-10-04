@@ -166,7 +166,7 @@ jobs:
                 <h2>✅ Reliability</h2>
                 <p class="card-intro">Catch broken pages, dead internal links, slow loads, accessibility regressions and broken social-share previews before users do — E2E, smoke, broken-link, axe-core WCAG 2.1 AA, Lighthouse CI and SEO/OpenGraph checks on every change.</p>
                 <ul>
-                    <li><strong>E2E Tests</strong> — Playwright covers navigation and critical user journeys</li>
+                    <li><strong>E2E Journeys</strong> — Playwright walks every primary-nav link, in-page anchor, disclosure and the back button from each start page; eject the spec for journeys specific to your site</li>
                     <li><strong>Smoke Tests</strong> — Lightweight checks after every deploy</li>
                     <li><strong>Broken-Link Checks</strong> — Crawls internal anchors from key pages and fails on 4xx/5xx destinations</li>
                     <li><strong>Accessibility</strong> — axe-core audits every page against WCAG 2.1 AA</li>
@@ -200,6 +200,29 @@ jobs:
       - if: github.event_name == 'pull_request'
         run: slopstopper emit reliability:smoke --target pr-comment</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-smoke-tests.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>E2E Journeys (Playwright)</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · E2E Check
+on:
+  pull_request: { branches: [ main ] }
+  push:         { branches: [ main ] }
+  deployment_status:           # after every deploy
+  schedule: [ { cron: '0 5 * * *' } ]   # daily
+jobs:
+  e2e:
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: ./.github/actions/ss-setup
+      - run: npm ci &amp;&amp; npx playwright install --with-deps chromium
+      - run: npm run build &amp;&amp; slopstopper serve &amp;
+      - run: task ss:reliability:e2e -- --ci
+      - if: github.event_name == 'pull_request'
+        run: slopstopper emit reliability:e2e --target pr-comment</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-e2e-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
                     </div>
                 </details>
 
@@ -591,7 +614,7 @@ safe-outputs:
         <section class="section">
             <span class="kicker">Not a website?</span>
             <h2>A profile picks the loops.</h2>
-            <p class="lede">Every reliability check except API Health and API Latency assumes HTML and a served site. <code>--profile api</code> drops those eight and keeps DAST and the four API checks; <code>--profile library</code> also drops everything else that needs a URL — DAST, API Headers, CSP Exceptions and OpenAPI Drift. Pick one on <a href="index.html#get-started">Get Started</a>; the full mapping is in <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PROFILES.md" rel="noopener noreferrer">project-shape profiles</a>.</p>
+            <p class="lede">Every reliability check except API Health and API Latency assumes HTML and a served site. <code>--profile api</code> drops those nine and keeps DAST and the four API checks; <code>--profile library</code> also drops everything else that needs a URL — DAST, API Headers, CSP Exceptions and OpenAPI Drift. Pick one on <a href="index.html#get-started">Get Started</a>; the full mapping is in <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PROFILES.md" rel="noopener noreferrer">project-shape profiles</a>.</p>
         </section>
 
         <!-- ─── What feedback looks like ────────────────────────── -->

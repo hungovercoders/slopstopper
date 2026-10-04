@@ -487,7 +487,7 @@ def _add_profile(sub) -> None:
         description=(
             "A profile is a named preset for `workflows.disabled`: it switches\n"
             "off the checks a repo of that shape has no use for. `profile: api`\n"
-            "drops the eight browser-and-SEO reliability checks, which assume\n"
+            "drops the nine browser-and-SEO reliability checks, which assume\n"
             "HTML and a public web surface and go red rather than no-op on an\n"
             "API. Set it in .slopstopper.yml; `workflows.enabled` takes an\n"
             "individual check back out of the profile's set.\n"
