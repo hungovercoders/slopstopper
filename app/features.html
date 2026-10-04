@@ -199,20 +199,20 @@ jobs:
                 </details>
 
                 <details class="details">
-                    <summary>Doc Structure &amp; Accuracy</summary>
+                    <summary>Doc Structure, Accuracy &amp; Entry Files</summary>
                     <div class="details__body">
                         <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Documentation Accuracy Check
 on:
   schedule: [ { cron: '0 7 * * 1' } ]   # weekly
-  pull_request:
-    paths: [ 'docs/**', '*.html', '*.js', '*.css' ]
-  push:
-    branches: [ main ]</code></pre></div>
+  pull_request: { branches: [ main ] }  # no paths filter: a deleted
+  push:         { branches: [ main ] }  # file anywhere can break a link</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-accuracy-check.yml" rel="noopener noreferrer">View accuracy workflow →</a>
                         <br>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-structure-check.yml" rel="noopener noreferrer">View structure workflow →</a>
                         <br>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-size-check.yml" rel="noopener noreferrer">View size-monitor workflow →</a>
+                        <br>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-entry-files-check.yml" rel="noopener noreferrer">View entry-files workflow →</a>
                     </div>
                 </details>
 
@@ -565,7 +565,7 @@ safe-outputs:
     "run_worker_first": true
   }
 }</code></pre></div>
-                        <p class="details__hint">Cloudflare Workers Builds reads this file from the repo on every push, runs <code>npm run build</code>, and deploys the Worker with the <code>app/</code> directory bound as static assets. No GitHub Action involved.</p>
+                        <p class="details__hint">Cloudflare Workers Builds reads this file from the repo on every push and deploys the Worker with the <code>app/</code> directory bound as static assets. There is no build step (<code>npm run build</code> is a no-op); Wrangler bundles <code>worker/index.ts</code> itself. No GitHub Action involved.</p>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/wrangler.jsonc" rel="noopener noreferrer">View wrangler.jsonc →</a>
                     </div>
                 </details>
