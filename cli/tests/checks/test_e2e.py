@@ -64,6 +64,15 @@ def test_build_env_reads_config_keys(write_config, monkeypatch):
     assert env["E2E_MAX_LINKS"] == "5"
 
 
+def test_build_env_falls_back_when_max_links_is_not_a_positive_int(write_config, monkeypatch, capsys):
+    monkeypatch.delenv("E2E_MAX_LINKS", raising=False)
+    for raw in ("e2e:\n  max_links: all\n", "e2e:\n  max_links:\n", "e2e:\n  max_links: 0\n"):
+        write_config(raw)
+        env = e2e._build_env("https://example.com", ci_mode=False)
+        assert env["E2E_MAX_LINKS"] == "25", raw
+    assert "not a positive integer" in capsys.readouterr().out
+
+
 def test_build_env_respects_caller_env_vars(monkeypatch):
     monkeypatch.setenv("E2E_PAGES", "/preset")
     monkeypatch.setenv("E2E_MAX_LINKS", "3")

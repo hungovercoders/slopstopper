@@ -6,14 +6,19 @@ import { test, expect, type Page } from '@playwright/test';
  * Smoke proves each page renders; this proves a visitor can get around.
  * From every start path it:
  *
- *   1. clicks each same-origin link in the primary <nav> and asserts the
- *      destination answers, shows a heading and still carries the nav;
+ *   1. clicks each same-origin link in the primary <nav> (the first <nav>
+ *      on the page) and asserts the destination answers, shows a heading
+ *      and still carries a nav;
  *   2. follows every in-page anchor (href="#…") to an element that exists;
- *   3. opens and closes every <details> disclosure;
+ *   3. toggles every visible <details> disclosure and back;
  *   4. presses the browser's back button and lands where it started.
  *
  * Each start path must itself answer (status < 400): a path listed in
- * E2E_PAGES that 404s is a failure, not a skip.
+ * E2E_PAGES that 404s is a failure, not a skip. Links the spec cannot
+ * follow in the same tab (hidden, target="_blank", download, non-HTML
+ * files) are left out rather than failed, and a destination is matched
+ * loosely (`/about.html`, `/about/` and `/about` are the same page) so a
+ * host that rewrites URLs still passes.
  *
  * Nothing here names a selector or a page of a specific site, so the spec
  * runs unchanged on any HTML site. A journey that is specific to yours
@@ -41,7 +46,33 @@ const startPaths = (process.env.E2E_PAGES ?? '/')
   .map((s) => s.trim())
   .filter(Boolean);
 
-const maxLinks = parseInt(process.env.E2E_MAX_LINKS || '25', 10);
+const DEFAULT_MAX_LINKS = 25;
+const parsedMax = parseInt(process.env.E2E_MAX_LINKS || '', 10);
+const maxLinks = Number.isFinite(parsedMax) && parsedMax > 0 ? parsedMax : DEFAULT_MAX_LINKS;
+
+/** Files a browser downloads or renders without a site shell — never a page to walk. */
+const NON_HTML = /\.(pdf|xml|txt|json|rss|atom|zip|gz|tar|csv|ics|png|jpe?g|gif|svg|webp|avif|ico|mp[34]|webm|woff2?|css|js|mjs)$/i;
+
+/** `/about.html`, `/about/` and `/about` are the same page; so are `/` and `/index.html`. */
+function normalisePath(pathname: string): string {
+  const stripped = pathname
+    .replace(/\/index\.html?$/i, '/')
+    .replace(/\.html?$/i, '')
+    .replace(/\/+$/, '');
+  return stripped || '/';
+}
+
+/** The page landed where `href` points, allowing for `.html` stripping, trailing slashes and a locale prefix. */
+function landedOn(page: Page, href: string): boolean {
+  const expected = normalisePath(new URL(href, page.url()).pathname);
+  const actual = normalisePath(new URL(page.url()).pathname);
+  return expected === '/' ? true : actual === expected || actual.endsWith(expected);
+}
+
+/** Quote a value for use inside a CSS attribute selector. */
+function cssString(value: string): string {
+  return `"${value.replace(/["\\]/g, '\\$&')}"`;
+}
 
 /** Load a start path and fail (not skip) if it doesn't answer: a wrong `pages.e2e` entry is a verdict. */
 async function openStart(page: Page, start: string): Promise<void> {
@@ -50,11 +81,25 @@ async function openStart(page: Page, start: string): Promise<void> {
   expect(response!.status(), `${start}: start page should answer 2xx/3xx, got ${response!.status()}`).toBeLessThan(400);
 }
 
-/** Same-origin, navigable hrefs from the page's primary <nav>, in document order, deduped. */
+/** A visible anchor in the primary <nav> with exactly this href. */
+function navLink(page: Page, href: string) {
+  return page.locator('nav').first().locator(`a[href=${cssString(href)}]`).filter({ visible: true }).first();
+}
+
+/**
+ * Same-origin, same-tab, visible page links from the primary <nav>, in document
+ * order, deduped by destination. Hidden links (a collapsed mobile menu, a hover
+ * dropdown), new-tab links, downloads and non-HTML files are left out: the spec
+ * can't follow them in place, and a site that has them is not broken.
+ */
 async function navTargets(page: Page): Promise<string[]> {
   const origin = new URL(page.url()).origin;
-  const hrefs = await page.locator('nav a[href]').evaluateAll((anchors) =>
-    anchors.map((a) => (a as HTMLAnchorElement).getAttribute('href') ?? ''),
+  const hrefs = await page.locator('nav').first().locator('a[href]').evaluateAll((anchors) =>
+    anchors.flatMap((el) => {
+      const a = el as HTMLAnchorElement;
+      if (a.target === '_blank' || a.hasAttribute('download') || !a.checkVisibility()) return [];
+      return [a.getAttribute('href') ?? ''];
+    }),
   );
   const seen = new Set<string>();
   const out: string[] = [];
@@ -66,8 +111,8 @@ async function navTargets(page: Page): Promise<string[]> {
     } catch {
       continue;
     }
-    if (url.origin !== origin) continue;
-    const key = url.pathname + url.search;
+    if (url.origin !== origin || NON_HTML.test(url.pathname)) continue;
+    const key = normalisePath(url.pathname) + url.search;
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(href);
@@ -86,20 +131,19 @@ test.describe('E2E Journeys', () => {
 
       await openStart(page, start);
       const targets = await navTargets(page);
-      test.skip(targets.length === 0, `${start}: no same-origin links inside a <nav>`);
+      test.skip(targets.length === 0, `${start}: no followable same-origin links inside a <nav>`);
 
       for (const href of targets) {
         await page.goto(start);
-        const link = page.locator(`nav a[href="${href}"]`).first();
+        const link = navLink(page, href);
         await expect(link, `${start}: nav link ${href} should be visible`).toBeVisible();
 
-        const expected = new URL(href, page.url());
-        await Promise.all([
-          page.waitForURL((u) => u.pathname === expected.pathname && u.search === expected.search),
-          link.click(),
-        ]);
+        // click() waits for a navigation it starts to commit; a link to the
+        // current page may not navigate at all, which is fine.
+        await link.click();
         await page.waitForLoadState('domcontentloaded');
 
+        expect(landedOn(page, href), `${href}: should land on that page, got ${page.url()}`).toBe(true);
         await expect(page.locator('h1').first(), `${href}: page should have a heading`).toBeVisible();
         expect(await page.locator('nav a[href]').count(), `${href}: primary navigation should still be present`)
           .toBeGreaterThan(0);
@@ -111,20 +155,30 @@ test.describe('E2E Journeys', () => {
 
     test(`${start}: in-page anchors resolve`, async ({ page }) => {
       await openStart(page, start);
-      const ids = await page.locator('a[href^="#"]').evaluateAll((anchors) =>
-        anchors
-          .map((a) => decodeURIComponent((a as HTMLAnchorElement).getAttribute('href') ?? '').slice(1))
-          .filter((id) => id.length > 0),
-      );
-      const unique = [...new Set(ids)];
-      test.skip(unique.length === 0, `${start}: no in-page anchors`);
+      // Resolved in-page: getElementById / getElementsByName need no selector
+      // escaping, and `#top` is the browser's own scroll-to-top, never an element.
+      const result = await page.evaluate(() => {
+        const ids = new Set<string>();
+        for (const a of Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]'))) {
+          const raw = (a.getAttribute('href') ?? '').slice(1);
+          if (!raw) continue;
+          let id = raw;
+          try {
+            id = decodeURIComponent(raw);
+          } catch {
+            /* keep the raw fragment; browsers fall back the same way */
+          }
+          if (id.toLowerCase() === 'top') continue;
+          ids.add(id);
+        }
+        const missing = [...ids].filter(
+          (id) => !document.getElementById(id) && document.getElementsByName(id).length === 0,
+        );
+        return { total: ids.size, missing };
+      });
+      test.skip(result.total === 0, `${start}: no in-page anchors`);
 
-      const missing: string[] = [];
-      for (const id of unique) {
-        const count = await page.locator(`[id="${id.replace(/"/g, '\\"')}"]`).count();
-        if (count === 0) missing.push(`#${id}`);
-      }
-      expect(missing, `${start}: in-page anchors with no target element: ${missing.join(', ')}`)
+      expect(result.missing, `${start}: in-page anchors with no target element: ${result.missing.map((id) => `#${id}`).join(', ')}`)
         .toHaveLength(0);
     });
 
@@ -134,32 +188,48 @@ test.describe('E2E Journeys', () => {
       const total = Math.min(await summaries.count(), maxLinks);
       test.skip(total === 0, `${start}: no <details> on the page`);
 
+      let toggled = 0;
       for (let i = 0; i < total; i++) {
         const summary = summaries.nth(i);
+        // A summary inside a closed parent <details> or a hidden menu can't be
+        // clicked by a visitor either: skip it rather than fail it.
+        if (!(await summary.isVisible())) continue;
         const details = summary.locator('xpath=..');
+        const wasOpen = await details.evaluate((d) => (d as HTMLDetailsElement).open);
+
         await summary.scrollIntoViewIfNeeded();
         await summary.click();
-        await expect(details, `${start}: <details> #${i + 1} should open on click`).toHaveAttribute('open', '');
+        if (wasOpen) {
+          await expect(details, `${start}: <details> #${i + 1} should close on click`).not.toHaveAttribute('open', '');
+        } else {
+          await expect(details, `${start}: <details> #${i + 1} should open on click`).toHaveAttribute('open', '');
+        }
         await summary.click();
-        await expect(details, `${start}: <details> #${i + 1} should close on second click`).not.toHaveAttribute('open', '');
+        if (wasOpen) {
+          await expect(details, `${start}: <details> #${i + 1} should reopen on second click`).toHaveAttribute('open', '');
+        } else {
+          await expect(details, `${start}: <details> #${i + 1} should close on second click`).not.toHaveAttribute('open', '');
+        }
+        toggled++;
       }
+      test.skip(toggled === 0, `${start}: no visible <details> on the page`);
     });
 
     test(`${start}: browser back returns to the start`, async ({ page }) => {
       await openStart(page, start);
+      const startPath = normalisePath(new URL(page.url()).pathname);
       const targets = await navTargets(page);
-      const away = targets.find((href) => new URL(href, page.url()).pathname !== new URL(page.url()).pathname);
+      const away = targets.find((href) => normalisePath(new URL(href, page.url()).pathname) !== startPath);
       test.skip(!away, `${start}: no nav link leads to another page`);
 
-      const startUrl = page.url();
-      const expected = new URL(away!, page.url());
-      await Promise.all([
-        page.waitForURL((u) => u.pathname === expected.pathname),
-        page.locator(`nav a[href="${away}"]`).first().click(),
-      ]);
+      await navLink(page, away!).click();
+      await page.waitForLoadState('domcontentloaded');
+      expect(landedOn(page, away!), `${away}: should land on that page, got ${page.url()}`).toBe(true);
+
       await page.goBack();
       await page.waitForLoadState('domcontentloaded');
-      expect(page.url(), `${start}: back button should return to the start page`).toBe(startUrl);
+      expect(normalisePath(new URL(page.url()).pathname), `${start}: back button should return to the start page`)
+        .toBe(startPath);
     });
   }
 });

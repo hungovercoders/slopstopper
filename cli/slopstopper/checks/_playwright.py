@@ -1,9 +1,9 @@
-"""What the three Playwright-backed checks share.
+"""What the four Playwright-backed checks share.
 
-smoke, accessibility and broken-links each drive a bundled Playwright
+smoke, e2e, accessibility and broken-links each drive a bundled Playwright
 spec against a URL and write a short pass/fail summary pointing at
 Playwright's own HTML report. The spec name and the wording differ; the
-plumbing was copied three times.
+plumbing was copied four times.
 
 The eject dance is the non-obvious part and is documented once, here:
 the bundled config and specs live inside the installed slopstopper-cli

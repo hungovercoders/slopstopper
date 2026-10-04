@@ -68,8 +68,12 @@ urls:
 
 pages:
   smoke:         /,/about,/pricing
+  e2e:           /,/pricing       # start paths for the user-journey walk
   accessibility: /,/about
   seo:           /
+
+e2e:
+  max_links: 25                 # primary-nav links followed from each start path
 
 smoke:
   og_image_path: /og-image.png  # set to '' if you use per-post share images

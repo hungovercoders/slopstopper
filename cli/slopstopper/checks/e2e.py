@@ -97,12 +97,28 @@ def _resolve_url(parsed_url: str | None) -> str | None:
     return parsed_url or os.environ.get("E2E_TEST_URL")
 
 
+DEFAULT_MAX_LINKS = 25
+
+
+def _max_links() -> int:
+    """`e2e.max_links` as a positive int; anything else falls back to the default."""
+    raw = config.get("e2e.max_links", DEFAULT_MAX_LINKS)
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        value = 0
+    if value <= 0:
+        output.warn(f"e2e.max_links={raw!r} is not a positive integer; using {DEFAULT_MAX_LINKS}")
+        return DEFAULT_MAX_LINKS
+    return value
+
+
 def _build_env(url: str, ci_mode: bool) -> dict[str, str]:
     env = dict(os.environ)
     env["PLAYWRIGHT_JSON_OUTPUT_NAME"] = str(Path.cwd() / PLAYWRIGHT_JSON)
     env["E2E_TEST_URL"] = url
     env.setdefault("E2E_PAGES", str(config.get("pages.e2e", "/")))
-    env.setdefault("E2E_MAX_LINKS", str(config.get("e2e.max_links", 25)))
+    env.setdefault("E2E_MAX_LINKS", str(_max_links()))
     if ci_mode:
         env["CI"] = "true"
     return env

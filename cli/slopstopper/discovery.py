@@ -6,7 +6,7 @@ upgraded yet; the reliability check ports under cli/slopstopper/checks/
 now import this module directly instead of subprocess-invoking it.
 
 Resolves "which paths should I audit?" for a given check (accessibility,
-SEO, broken-links, smoke) and CI event (pr, main, cron, local).
+SEO, broken-links, smoke, e2e) and CI event (pr, main, cron, local).
 
 Resolution order (first hit wins):
     1. Env-var override — if <CHECK>_PAGES is set, pass through.
@@ -38,11 +38,12 @@ from urllib.parse import urlparse
 from slopstopper import config
 
 
-CHECKS = ("smoke", "accessibility", "seo", "broken_links")
+CHECKS = ("smoke", "e2e", "accessibility", "seo", "broken_links")
 EVENTS = ("pr", "main", "cron", "local")
 
 ENV_VAR_BY_CHECK = {
     "smoke": "SMOKE_PAGES",
+    "e2e": "E2E_PAGES",
     "accessibility": "ACCESSIBILITY_PAGES",
     "seo": "SEO_PAGES",
     "broken_links": "BROKEN_LINKS_PAGES",

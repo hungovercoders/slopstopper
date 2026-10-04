@@ -7,13 +7,18 @@ around: it drives a browser through the journeys any HTML site offers,
 without knowing anything about yours. From every start path the bundled
 Playwright spec:
 
-1. **Walks the primary navigation.** Clicks each same-origin link inside a
-   `<nav>` and asserts the destination answers, shows an `<h1>` and still
-   carries the nav, with no JavaScript errors along the way.
+1. **Walks the primary navigation.** Clicks each same-origin link inside the
+   first `<nav>` on the page and asserts the destination answers, shows an
+   `<h1>` and still carries a nav, with no JavaScript errors along the way.
+   Links a visitor could not follow in the same tab are left out, not
+   failed: hidden ones (a collapsed mobile menu, a hover dropdown),
+   `target="_blank"`, downloads and non-HTML files. `/about.html`,
+   `/about/` and `/about` count as the same destination, so a host that
+   rewrites URLs still passes.
 2. **Follows in-page anchors.** Every `href="#…"` must point at an element
    that exists.
-3. **Toggles every disclosure.** Each `<details>` opens on click and
-   closes on the next.
+3. **Toggles every disclosure.** Each visible `<details>` flips on click
+   and flips back on the next, whichever state it started in.
 4. **Presses back.** After following a nav link, the browser's back button
    must land on the start page.
 
@@ -56,7 +61,7 @@ e2e:
 | Variable | Default | Description |
 |---|---|---|
 | `E2E_TEST_URL` | *(falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080`)* | Base URL to walk |
-| `E2E_PAGES` | `pages.e2e`, else `/` | Comma-separated start paths |
+| `E2E_PAGES` | `pages.e2e`, else `/` | Comma-separated start paths. In CI the workflow sets it from `slopstopper discover e2e`, so `reliability.coverage.*` (sitemap or changed files) applies here as to the other page-walking checks |
 | `E2E_MAX_LINKS` | `e2e.max_links`, else `25` | Nav links followed per start path; also caps the `<details>` toggled |
 
 Env vars win over `.slopstopper.yml`, so a one-off run can widen or narrow
@@ -117,19 +122,23 @@ assertion message says which link, anchor or disclosure:
 | Message | Usual cause |
 |---|---|
 | `start page should answer 2xx/3xx` | A `pages.e2e` entry (or `E2E_PAGES`) names a path the site doesn't serve |
-| `nav link … should be visible` | The link is in the DOM but hidden at desktop width, or behind a menu that needs opening. Add it to an ejected journey that opens the menu first |
+| `should land on that page, got …` | The link redirected somewhere else (an off-site hop, a login wall, a locale redirect that changes the path entirely) |
 | `page should have a heading` | The destination rendered without an `<h1>`, or an error page |
 | `primary navigation should still be present` | The destination is outside the site shell (a bare document, a redirect off-site) |
-| `in-page anchors with no target element` | A table-of-contents link to a heading that was renamed or removed |
+| `in-page anchors with no target element` | A table-of-contents link to a heading that was renamed or removed (`#top` and `<a name>` targets are accepted) |
 | `<details> … should open on click` | A script intercepts the click, or the summary is covered by another element |
 | `back button should return to the start page` | The nav link navigated with `location.replace`, or the destination redirected |
 
 ## Troubleshooting
 
-**Every journey is skipped:** the start page has no `<nav>` element with
-same-origin links. Either wrap your primary navigation in `<nav>` (good
-for accessibility too) or eject the spec and point `navTargets` at your
-menu's selector.
+**Every journey is skipped:** the first `<nav>` on the start page has no
+visible same-origin links, perhaps because the menu is collapsed behind a
+hamburger at desktop width. Either wrap your primary navigation in a
+visible `<nav>` (good for accessibility too) or eject the spec and open
+the menu in `navTargets` before collecting links.
+
+**`e2e.max_links` is ignored:** it must be a positive integer; anything
+else falls back to 25 with a warning in the check's output.
 
 **The walk is slow:** each nav link is a fresh page load from the start
 path. Lower `e2e.max_links`, or list fewer start paths in `pages.e2e`.

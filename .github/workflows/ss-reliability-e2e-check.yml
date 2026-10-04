@@ -2,7 +2,8 @@ name: SlopStopper · E2E Check
 
 # Walks user journeys with Playwright against the deployed site (or local
 # `slopstopper serve` for PR builds): clicks every primary-nav link from
-# each start path in pages.e2e, follows in-page anchors, toggles every
+# each start path (pages.e2e, or reliability.coverage.* via
+# `slopstopper discover e2e`), follows in-page anchors, toggles every
 # <details>, and checks the back button. Triggers: PR, push to main,
 # daily schedule, Cloudflare deployment events. Emits a rolling PR
 # comment and a main-branch tracking issue on failure; auto-closes the
@@ -24,6 +25,12 @@ on:
         required: false
         default: ''
         type: string
+      coverage_mode:
+        description: 'Force discovery mode (overrides .slopstopper.yml)'
+        required: false
+        default: ''
+        type: choice
+        options: ['', 'sitemap', 'changed']
 
 permissions:
   contents: read
@@ -86,6 +93,25 @@ jobs:
             fi
             sleep 1
           done
+
+      - name: Start paths to walk
+        if: steps.url.outputs.use_local == 'true'
+        # Maps the GH event → `slopstopper discover --event`: honours
+        # reliability.coverage.* (sitemap / changed files), else pages.e2e.
+        env:
+          DISPATCH_MODE: ${{ github.event.inputs.coverage_mode }}
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+        run: |
+          case "${{ github.event_name }}" in
+            pull_request|pull_request_target) EVENT=pr ;;
+            push)              EVENT=main ;;
+            schedule)          EVENT=cron ;;
+            deployment_status) EVENT=main ;;
+            workflow_dispatch) EVENT="${DISPATCH_MODE:-main}" ;;
+            *)                 EVENT=main ;;
+          esac
+          PAGES=$(slopstopper discover e2e --event="$EVENT")
+          echo "E2E_PAGES=$PAGES" >> "$GITHUB_ENV"
 
       - name: Walk the journeys
         id: e2e
