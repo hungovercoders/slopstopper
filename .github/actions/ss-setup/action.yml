@@ -23,7 +23,7 @@ runs:
   using: composite
   steps:
     - name: Set up Python
-      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
       with:
         python-version: ${{ inputs.python-version }}
 
@@ -32,7 +32,7 @@ runs:
       # from mise.toml and puts them on PATH for later steps. The pins live in
       # mise.toml ([tools]); mise resolves them per-repo, so CI and local runs
       # share one version.
-      uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+      uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
 
     - name: Install slopstopper-cli from source (slopstopper.dev only)
       # In the slopstopper repo the CLI runs from source (HEAD), so mise.toml
