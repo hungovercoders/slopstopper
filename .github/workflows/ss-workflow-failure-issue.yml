@@ -25,6 +25,7 @@ on:
       - "SlopStopper · SEO Metatag Check"
       - "SlopStopper · sitemap Check"
       - "SlopStopper · Reliability Smoke Tests"
+      - "SlopStopper · E2E Check"
       - "SlopStopper · API Headers Check"
       - "SlopStopper · DAST Analysis"
       - "SlopStopper · SAST Analysis"

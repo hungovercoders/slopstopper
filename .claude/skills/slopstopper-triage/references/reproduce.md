@@ -23,6 +23,7 @@
 | `ss-hygiene-openapi-check.yml` | `task ss:hygiene:openapi -- <URL>` | `slopstopper run hygiene:openapi <URL>` | ✓ (optional — only the probes need it) | – (never builds locally) | – |
 | `ss-hygiene-auto-label-pr.yml` | (CI-only — needs PR context) | – | – | – | – |
 | `ss-reliability-smoke-tests.yml` | `task ss:reliability:smoke -- <URL>` | `slopstopper run reliability:smoke <URL>` | ✓ | ✓ (if URL is local) | – |
+| `ss-reliability-e2e-check.yml` | `task ss:reliability:e2e -- <URL>` | `slopstopper run reliability:e2e <URL>` | ✓ | ✓ (if URL is local) | – |
 | `ss-reliability-accessibility-check.yml` | `task ss:reliability:accessibility -- <URL>` | `slopstopper run reliability:accessibility <URL>` | ✓ | ✓ | – |
 | `ss-reliability-core-web-vitals.yml` | `task ss:reliability:cwv -- <URL>` | `slopstopper run reliability:cwv <URL>` | ✓ | ✓ | – |
 | `ss-reliability-seo-check.yml` | `task ss:reliability:seo -- <URL>` | `slopstopper run reliability:seo <URL>` | ✓ | ✓ | – |

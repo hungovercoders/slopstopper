@@ -1,7 +1,7 @@
 # Project-shape profiles
 
-Not every check applies to every repo. The eight browser-and-SEO reliability
-checks (smoke, accessibility, Core Web Vitals, SEO, broken links, llms.txt,
+Not every check applies to every repo. The nine browser-and-SEO reliability
+checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt,
 robots.txt, sitemap) assume HTML, a DOM and a public web surface. On an HTTP API
 they don't quietly no-op — they build, serve and audit nothing, and go red. On a
 library there is nothing to serve at all.
@@ -12,8 +12,8 @@ workflows a repo of that shape shouldn't carry.
 | Profile | Shape | Drops |
 | ------- | ----- | ----- |
 | `ui` (default) | Serves HTML to a browser | Nothing — every check applies |
-| `api` | JSON/gRPC endpoints, no browser surface | The eight browser-and-SEO checks. Keeps the four API checks (api-health, api-latency, api-headers, OpenAPI drift), CSP exceptions (APIs still set response headers) and DAST, via ZAP's OpenAPI mode |
-| `library` | Library, CLI or package; nothing deployed | The eight above, plus DAST, CSP exceptions and the four API checks — everything that needs a URL |
+| `api` | JSON/gRPC endpoints, no browser surface | The nine browser-and-SEO checks. Keeps the four API checks (api-health, api-latency, api-headers, OpenAPI drift), CSP exceptions (APIs still set response headers) and DAST, via ZAP's OpenAPI mode |
+| `library` | Library, CLI or package; nothing deployed | The nine above, plus DAST, CSP exceptions and the four API checks — everything that needs a URL |
 
 **DAST scans an API through ZAP's OpenAPI mode.** The default scan is ZAP's
 *baseline*, which spiders a site from a root URL — right for an HTML surface,

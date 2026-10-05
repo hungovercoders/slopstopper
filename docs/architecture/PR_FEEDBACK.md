@@ -14,14 +14,14 @@ Feedback now arrives in two layers.
 renders a single rolling comment covering every check:
 
 ```
-## ❌ SlopStopper — 2 of 24 checks failed
+## ❌ SlopStopper — 2 of 25 checks failed
 
 | | Check | |
 |---|---|---|
 | ❌ | **Complexity** | logs → |
 | ❌ | **SEO**        | logs → |
 
-<details><summary>The other 22 checks</summary>…</details>
+<details><summary>The other 23 checks</summary>…</details>
 ```
 
 A green PR gets three lines and a group listing; a red one leads with
@@ -49,10 +49,10 @@ green PR the summary is the only thing there.
 **The summary reads GitHub, not the checks.** It is built from the
 workflow runs already recorded against the head commit
 (`GET /repos/{repo}/actions/runs?head_sha=…`), so it needs no
-coordination with the 24 check workflows and cannot race them into a
+coordination with the 25 check workflows and cannot race them into a
 half-written comment. The alternative — each check editing its own
 section of one shared comment — is a read-modify-write on a single
-resource from 24 concurrent jobs, where a lost update silently drops a
+resource from 25 concurrent jobs, where a lost update silently drops a
 check's status. Reading the runs makes the comment a pure function of
 state GitHub already holds, so every re-render converges on the truth
 regardless of what order the checks finish in.

@@ -136,9 +136,16 @@ urls:
 # Defaults to '/' for every check when unset.
 pages:
   smoke:         /
+  e2e:           /
   accessibility: /
   seo:           /
   broken_links:  /
+
+# ── E2E journey customizations ───────────────────────────────────────
+e2e:
+  # Primary-nav links followed from each start path in pages.e2e (also
+  # caps the <details> toggled per page).
+  max_links: 25
 
 # ── Smoke test customizations ────────────────────────────────────────
 smoke:

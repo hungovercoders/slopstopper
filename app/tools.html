@@ -81,8 +81,8 @@ slopstopper serve                              # bundled static server</code></p
                 <h2>⚙️ GitHub Actions</h2>
                 <span class="tool-license">Platform</span>
                 <p>All checks run as GitHub Actions workflows triggered on every pull request and push to main. Each workflow is a handful of steps: set up the toolchain, <code>slopstopper run …</code>, <code>slopstopper emit …</code>.</p>
-                <p><em>Which</em> workflows land is driven by the <code>profile:</code> key in <code>.slopstopper.yml</code> — <code>ui</code> installs all 27 workflows (the 24 checks plus the PR summary, failure alerts and doc updater), <code>api</code> drops the eight browser-and-SEO checks, <code>library</code> also drops DAST, CSP exceptions and the four API checks (health, latency, headers and OpenAPI drift). Set it with <code>install.sh --profile api</code>, inspect it with <code>slopstopper profile show</code>, and take back any single check with <code>workflows.enabled</code>.</p>
-                <p>Feedback lands as <strong>one rolling comment per PR</strong> — <code>❌ SlopStopper — 2 of 24 checks failed</code>, failures in a table, passes folded away — rendered from the run conclusions GitHub already recorded, so it can't race the checks. Each failing check adds a compact comment (verdict line, failing items, report folded); passing checks delete theirs, so a green PR carries only the summary.</p>
+                <p><em>Which</em> workflows land is driven by the <code>profile:</code> key in <code>.slopstopper.yml</code> — <code>ui</code> installs all 28 workflows (the 25 checks plus the PR summary, failure alerts and doc updater), <code>api</code> drops the nine browser-and-SEO checks, <code>library</code> also drops DAST, CSP exceptions and the four API checks (health, latency, headers and OpenAPI drift). Set it with <code>install.sh --profile api</code>, inspect it with <code>slopstopper profile show</code>, and take back any single check with <code>workflows.enabled</code>.</p>
+                <p>Feedback lands as <strong>one rolling comment per PR</strong> — <code>❌ SlopStopper — 2 of 25 checks failed</code>, failures in a table, passes folded away — rendered from the run conclusions GitHub already recorded, so it can't race the checks. Each failing check adds a compact comment (verdict line, failing items, report folded); passing checks delete theirs, so a green PR carries only the summary.</p>
                 <details class="details">
                     <summary>See it in action</summary>
                     <div class="details__body">
@@ -129,7 +129,7 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             <div class="card">
                 <h2>🎭 Playwright</h2>
                 <span class="tool-license">Apache-2.0</span>
-                <p>Portable smoke, broken-link and accessibility specs ship inside the slopstopper-cli wheel — adopters don't vendor them. Run <code>slopstopper templates eject playwright.config.js</code> to customise.</p>
+                <p>Portable smoke, E2E journey, broken-link and accessibility specs ship inside the slopstopper-cli wheel — adopters don't vendor them. Run <code>slopstopper templates eject playwright.config.js</code> to customise.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
                 <details class="details">
                     <summary>playwright.config.js (bundled)</summary>

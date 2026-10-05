@@ -9,7 +9,7 @@ import { defineConfig, devices } from '@playwright/test';
  *
  * No webServer block — the consumer (or task) is responsible for ensuring
  * the target URL is reachable before tests run. The base URL is taken from
- * one of: ACCESSIBILITY_TEST_URL, SMOKE_TEST_URL, BASE_URL, or
+ * one of: ACCESSIBILITY_TEST_URL, SMOKE_TEST_URL, E2E_TEST_URL, BASE_URL, or
  * http://localhost:8080 as a final fallback.
  */
 export default defineConfig({
@@ -24,6 +24,7 @@ export default defineConfig({
       process.env.BROKEN_LINKS_TEST_URL ||
       process.env.ACCESSIBILITY_TEST_URL ||
       process.env.SMOKE_TEST_URL ||
+      process.env.E2E_TEST_URL ||
       process.env.BASE_URL ||
       'http://localhost:8080',
     trace: 'on-first-retry',

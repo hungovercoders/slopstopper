@@ -64,6 +64,7 @@ DOC_HEADINGS: dict[str, str] = {
     "reliability:seo": "SEO",
     "reliability:sitemap": "sitemap",
     "reliability:smoke": "Smoke Tests",
+    "reliability:e2e": "E2E",
     "security:api-headers": "API Headers",
     "security:dast": "DAST",
     "security:sast": "SAST",
@@ -214,23 +215,23 @@ def test_check_is_documented_under_its_category(check):
 # PROSE_SITES below is that list, and the count test reads each file so a
 # stale number fails here rather than surviving in a playbook.
 
-EXPECTED_CHECKS = 24
-EXPECTED_INSTALLED_WORKFLOWS = 27  # every ss-*.yml except ss-release.yml
+EXPECTED_CHECKS = 25
+EXPECTED_INSTALLED_WORKFLOWS = 28  # every ss-*.yml except ss-release.yml
 
 # Files that quote the counts, and the numbers each may pair with the word
 # "check(s)" / "workflow(s)". A number outside the set is drift.
 # Every skill file is a site: the split into SKILL.md + references/ moved
 # count-bearing prose into files nobody would think to list by hand.
-_SKILL_COUNTS = {"checks": {24, 16, 10}, "workflows": {27}}
+_SKILL_COUNTS = {"checks": {25, 16, 10}, "workflows": {28}}
 PROSE_SITES = {
     **{
         str(p.relative_to(REPO_ROOT)): _SKILL_COUNTS
         for p in sorted((REPO_ROOT / ".claude/skills").glob("slopstopper-*/**/*.md"))
     },
-    "app/tools.html": {"checks": {24}, "workflows": {27}},
-    # 22: the worked example reads "2 of 24 checks failed … The other 22 checks".
-    "docs/architecture/PR_FEEDBACK.md": {"checks": {24, 22}, "workflows": {24}},
-    ".slopstopper.yml": {"checks": {24}, "workflows": set()},
+    "app/tools.html": {"checks": {25}, "workflows": {28}},
+    # 23: the worked example reads "2 of 25 checks failed … The other 23 checks".
+    "docs/architecture/PR_FEEDBACK.md": {"checks": {25, 23}, "workflows": {25}},
+    ".slopstopper.yml": {"checks": {25}, "workflows": set()},
 }
 # "24 checks", "27 new `ss-*.yml` workflows", "~21 GitHub Actions workflows" —
 # a number, at most one qualifier, then the noun. Nothing looser, or
@@ -275,7 +276,7 @@ def test_prose_quotes_the_current_counts(site):
 
 @pytest.mark.parametrize(
     "profile,expected",
-    [("ui", 24), ("api", 16), ("library", 10)],
+    [("ui", 25), ("api", 16), ("library", 10)],
 )
 def test_the_per_profile_check_count(profile, expected):
     """The install skill's shape table quotes these three numbers."""

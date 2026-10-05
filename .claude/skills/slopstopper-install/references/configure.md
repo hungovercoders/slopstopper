@@ -13,7 +13,7 @@ slopstopper profile show        # active profile + every workflow this repo does
 slopstopper profile detect      # what the repo's contents suggest (advisory)
 ```
 
-If these disagree, decide which is right and edit `profile:` in `.slopstopper.yml`, then **re-run `install.sh`** — the key drives the workflow set, but only the installer adds or removes the files. Switching is reversible in both directions: `ui → api` deletes the eight browser checks, `api → ui` restores them (profile-dropped workflows are deliberately kept out of `.ss/.workflows-installed`, so the deletion-respect rule doesn't suppress them forever).
+If these disagree, decide which is right and edit `profile:` in `.slopstopper.yml`, then **re-run `install.sh`** — the key drives the workflow set, but only the installer adds or removes the files. Switching is reversible in both directions: `ui → api` deletes the nine browser checks, `api → ui` restores them (profile-dropped workflows are deliberately kept out of `.ss/.workflows-installed`, so the deletion-respect rule doesn't suppress them forever).
 
 ### Configure the API checks (if the target serves an API)
 
@@ -68,8 +68,12 @@ urls:
 
 pages:
   smoke:         /,/about,/pricing
+  e2e:           /,/pricing       # start paths for the user-journey walk
   accessibility: /,/about
   seo:           /
+
+e2e:
+  max_links: 25                 # primary-nav links followed from each start path
 
 smoke:
   og_image_path: /og-image.png  # set to '' if you use per-post share images

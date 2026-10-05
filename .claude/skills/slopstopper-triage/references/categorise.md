@@ -45,6 +45,7 @@ Config-driven knobs (no file edit needed beyond `.slopstopper.yml`):
 | `hygiene:docs-accuracy` | `hygiene.docs_accuracy.extra_paths` | `[]` — only `docs/` + the root entry files are scanned |
 | `hygiene:docs-structure` | `hygiene.docs_structure.require_routed_docs` / `.max_route_depth` / `.max_doc_lines` | `true` — every doc has an explicit route / 3 / 300 |
 | `reliability:smoke` | `pages.smoke`, `smoke.og_image_path` | `/`, `/og-image.png` |
+| `reliability:e2e` | `pages.e2e`, `e2e.max_links` | `/`, `25` |
 | `reliability:{accessibility,seo,broken_links}` | `pages.<check>`, `reliability.coverage.<event>` | `/`, hand-list mode |
 | `hygiene:csp-exceptions` | `headers.source`, `headers.format` | unset (graceful skip) |
 

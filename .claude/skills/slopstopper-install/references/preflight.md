@@ -4,11 +4,11 @@
 
 ## Step 1 — Pre-flight: read the target repo before installing
 
-**First: what shape is this repo?** Ask before anything else, because it decides which checks are even relevant. The eight browser-and-SEO reliability checks (smoke, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume HTML, a DOM and a public web surface — on an HTTP API they don't no-op, they build and audit nothing and go **red**. Pick a profile up front:
+**First: what shape is this repo?** Ask before anything else, because it decides which checks are even relevant. The nine browser-and-SEO reliability checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume HTML, a DOM and a public web surface — on an HTTP API they don't no-op, they build and audit nothing and go **red**. Pick a profile up front:
 
 | Shape | Profile | Install with | Gets |
 | ----- | ------- | ------------ | ---- |
-| Serves HTML to a browser | `ui` (default) | `bash install.sh` | everything (24 checks) |
+| Serves HTML to a browser | `ui` (default) | `bash install.sh` | everything (25 checks) |
 | JSON/gRPC API, no browser surface | `api` | `bash install.sh --profile api` | 16 — static layer, the four API checks (`api-health`, `api-latency`, `api-headers`, `openapi`) and DAST via ZAP's OpenAPI mode; no browser checks |
 | Library, CLI or package, nothing deployed | `library` | `bash install.sh --profile library` | 10 — the static layer only |
 
@@ -32,7 +32,7 @@ Then, whatever the shape, learn enough about the target to predict where it'll b
    ```
    to the existing Taskfile.
 
-2. **Does the target already have GitHub Actions workflows?** Slopstopper adds up to 27 new `ss-*.yml` workflows — 24 checks (16 under `--profile api`, 10 under `--profile library`) plus three that ship under every profile: `ss-pr-summary.yml` (the single status comment), `ss-workflow-failure-issue.yml` (raises an issue when a check fails on main) and the doc-updater. They're all `ss-`-prefixed so they group in the Actions UI, but the user should know they're getting that many checks running on every PR.
+2. **Does the target already have GitHub Actions workflows?** Slopstopper adds up to 28 new `ss-*.yml` workflows — 25 checks (16 under `--profile api`, 10 under `--profile library`) plus three that ship under every profile: `ss-pr-summary.yml` (the single status comment), `ss-workflow-failure-issue.yml` (raises an issue when a check fails on main) and the doc-updater. They're all `ss-`-prefixed so they group in the Actions UI, but the user should know they're getting that many checks running on every PR.
 
 3. **What `engines.node` does the target need?** Node is pinned in `mise.toml` (`[tools] node`) — mise installs it locally and the workflows get the same version from that pin via `jdx/mise-action` (no `setup-node` step, no repo variable). `install.sh` seeds `node = "20"` on first install and leaves any existing node pin / `.node-version` / `.nvmrc` alone. If the target needs Node 22+ (Astro 6, recent Next, SvelteKit), run `mise use node@22`. One source of truth; survives `install.sh` re-runs.
 
@@ -52,6 +52,6 @@ Then, whatever the shape, learn enough about the target to predict where it'll b
 
 11. **Does the target already have a `.github/labeler.yml`?** Slopstopper ships the auto-label workflow (`ss-hygiene-auto-label-pr.yml`) but not the config — labels are repo-specific. Without one, the check errors with `The config file was not found`. Plan to ship a labeler config mapping the target's directory structure to labels.
 
-12. **Is the target a private repo?** Two things to flag, not one. First, some workflows post issues, comments, and PR labels — they need `issues: write`, `pull-requests: write` permissions, usually fine but check if the org restricts this. Second, and more important: **GitHub Actions minutes are free on public repos but billed on private ones.** The full suite runs 24 checks on every PR, and the scheduled reliability/smoke runs add recurring minutes on top of that — the heavier dynamic checks (Playwright, Lighthouse CI, ZAP-in-Docker) are the expensive ones. On a public repo this is a non-issue; on a private repo with a tight minutes budget, slopstopper may not be a good fit as-is. Call the cost out explicitly during pre-flight so the user decides with eyes open — and consider a partial adoption (Step 9) rather than the full suite.
+12. **Is the target a private repo?** Two things to flag, not one. First, some workflows post issues, comments, and PR labels — they need `issues: write`, `pull-requests: write` permissions, usually fine but check if the org restricts this. Second, and more important: **GitHub Actions minutes are free on public repos but billed on private ones.** The full suite runs 25 checks on every PR, and the scheduled reliability/smoke runs add recurring minutes on top of that — the heavier dynamic checks (Playwright, Lighthouse CI, ZAP-in-Docker) are the expensive ones. On a public repo this is a non-issue; on a private repo with a tight minutes budget, slopstopper may not be a good fit as-is. Call the cost out explicitly during pre-flight so the user decides with eyes open — and consider a partial adoption (Step 9) rather than the full suite.
 
 Report what you found to the user before running the installer. The Node-version question and the deploy-model question together drive the largest chunk of first-PR red checks — call them out specifically.

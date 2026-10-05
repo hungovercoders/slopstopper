@@ -57,6 +57,10 @@ TEMPLATES: dict[str, tuple[Path, Path]] = {
         PACKAGE_DATA_DIR / "tests" / "smoke.spec.ts",
         OVERRIDE_ROOT / "tests" / "smoke.spec.ts",
     ),
+    "tests/e2e.spec.ts": (
+        PACKAGE_DATA_DIR / "tests" / "e2e.spec.ts",
+        OVERRIDE_ROOT / "tests" / "e2e.spec.ts",
+    ),
     "tests/accessibility.spec.ts": (
         PACKAGE_DATA_DIR / "tests" / "accessibility.spec.ts",
         OVERRIDE_ROOT / "tests" / "accessibility.spec.ts",
