@@ -1,5 +1,62 @@
 /* features.html — page-specific styles */
 
+/* ─── Jump row under the hero ───────────────────────────────
+ * The page is long (five loop cards, then three more sections), so the
+ * hero ends with a row of pills to every section. Same pill as
+ * .live-links, centred under the hero copy. */
+.jump-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}
+.jump-row a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--paper);
+    border: var(--border-thin);
+    border-radius: var(--r-pill);
+    padding: 0.35rem 0.8rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--ink);
+}
+.jump-row a:hover {
+    background: var(--peach-soft);
+    color: var(--ink);
+}
+.jump-row a:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 2px;
+}
+.jump-top {
+    text-align: right;
+    margin-top: -0.5rem;
+}
+.jump-top a {
+    display: inline-flex;
+    align-items: center;
+    background: var(--paper);
+    border: var(--border-thin);
+    border-radius: var(--r-pill);
+    padding: 0.35rem 0.8rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--ink);
+}
+.jump-top a:hover {
+    background: var(--peach-soft);
+    color: var(--ink);
+}
+.jump-top a:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 2px;
+}
+
 .card-intro {
     margin-bottom: 0.4rem;
 }
