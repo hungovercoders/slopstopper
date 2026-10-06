@@ -6,9 +6,10 @@ import { test, expect, type Page } from '@playwright/test';
  * Smoke proves each page renders; this proves a visitor can get around.
  * From every start path it:
  *
- *   1. clicks each same-origin link in the primary <nav> (the first <nav>
- *      on the page) and asserts the destination answers, shows a heading
- *      and still carries a nav;
+ *   1. clicks each same-origin link in the primary navigation (the first
+ *      <nav> on the page, plus any other link in the <header> that holds
+ *      it, such as a call-to-action button) and asserts the destination
+ *      answers, shows a heading and still carries a nav;
  *   2. follows every in-page anchor (href="#…") to an element that exists;
  *   3. toggles every visible <details> disclosure and back;
  *   4. presses the browser's back button and lands where it started.
@@ -81,20 +82,29 @@ async function openStart(page: Page, start: string): Promise<void> {
   expect(response!.status(), `${start}: start page should answer 2xx/3xx, got ${response!.status()}`).toBeLessThan(400);
 }
 
-/** A visible anchor in the primary <nav> with exactly this href. */
+/** The primary navigation: the first <nav>, widened to the <header> that holds it. */
+function primaryNav(page: Page) {
+  // `:has()` keeps the scope to a header that actually contains a nav; a
+  // page whose nav sits outside any header falls back to the nav itself.
+  return page.locator('header:has(nav), nav').first();
+}
+
+/** A visible anchor in the primary navigation with exactly this href. */
 function navLink(page: Page, href: string) {
-  return page.locator('nav').first().locator(`a[href=${cssString(href)}]`).filter({ visible: true }).first();
+  return primaryNav(page).locator(`a[href=${cssString(href)}]`).filter({ visible: true }).first();
 }
 
 /**
- * Same-origin, same-tab, visible page links from the primary <nav>, in document
- * order, deduped by destination. Hidden links (a collapsed mobile menu, a hover
- * dropdown), new-tab links, downloads and non-HTML files are left out: the spec
- * can't follow them in place, and a site that has them is not broken.
+ * Same-origin, same-tab, visible page links from the primary navigation, in
+ * document order, deduped by destination (fragment included, so a header
+ * call-to-action that deep-links into the home page is walked as well as the
+ * Home link). Hidden links (a collapsed mobile menu, a hover dropdown),
+ * new-tab links, downloads and non-HTML files are left out: the spec can't
+ * follow them in place, and a site that has them is not broken.
  */
 async function navTargets(page: Page): Promise<string[]> {
   const origin = new URL(page.url()).origin;
-  const hrefs = await page.locator('nav').first().locator('a[href]').evaluateAll((anchors) =>
+  const hrefs = await primaryNav(page).locator('a[href]').evaluateAll((anchors) =>
     anchors.flatMap((el) => {
       const a = el as HTMLAnchorElement;
       if (a.target === '_blank' || a.hasAttribute('download') || !a.checkVisibility()) return [];
@@ -112,7 +122,7 @@ async function navTargets(page: Page): Promise<string[]> {
       continue;
     }
     if (url.origin !== origin || NON_HTML.test(url.pathname)) continue;
-    const key = normalisePath(url.pathname) + url.search;
+    const key = normalisePath(url.pathname) + url.search + url.hash;
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(href);

@@ -170,8 +170,9 @@
 }
 .bridge__list li code {
     display: block;
-    overflow-x: auto;
-    white-space: nowrap;
+    /* A command longer than its column wraps rather than scrolling: a
+     * scroll container here would need tabindex to be keyboard-reachable. */
+    overflow-wrap: anywhere;
     font-family: var(--font-mono);
     font-size: 0.86rem;
     background: var(--paper);

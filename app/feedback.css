@@ -39,9 +39,11 @@
 }
 
 /* Until giscus swaps its iframe into the container, say what the empty
-   box is for. `:empty` stops matching the moment the frame is inserted. */
+   box is for, in words that stay true if the script never loads (blocked
+   host, stale SRI pin); the "not loading?" link below covers that case.
+   `:empty` stops matching the moment the frame is inserted. */
 .comments-section .giscus:empty::before {
-    content: "Loading comments from GitHub Discussions…";
+    content: "Comments live on GitHub Discussions and appear here once loaded.";
     display: block;
     color: var(--ink-soft);
     font-size: 0.95rem;
