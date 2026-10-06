@@ -38,6 +38,15 @@
     min-height: 14rem; /* reserve space while iframe loads */
 }
 
+/* Until giscus swaps its iframe into the container, say what the empty
+   box is for. `:empty` stops matching the moment the frame is inserted. */
+.comments-section .giscus:empty::before {
+    content: "Loading comments from GitHub Discussions…";
+    display: block;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+}
+
 .comments-section .giscus-frame {
     width: 100%;
     border: none;

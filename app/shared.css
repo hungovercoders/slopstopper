@@ -1,6 +1,10 @@
 /* SlopStopper shared styles — indie playful rebrand */
 
 :root {
+    /* The site is cream by design and ships no dark theme; say so, so form
+     * controls and embedded frames don't flip dark on a dark OS. */
+    color-scheme: light;
+
     --cream: #FBF5EC;
     --peach: #FFD9B8;
     --peach-soft: #FFE9D4;
@@ -88,7 +92,6 @@ header {
     padding: 1rem 2rem;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     flex-wrap: wrap;
     gap: 1rem;
 }
@@ -121,6 +124,16 @@ nav {
     align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
+    margin-left: auto;
+}
+
+/* Install + GitHub: page actions, not navigation, so they sit in their
+ * own group after the <nav>. On a phone they share the title row and
+ * the nav links take a full row of their own underneath. */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 nav a {
@@ -141,26 +154,17 @@ nav a[aria-current="page"] {
 }
 
 /* GitHub button in header */
-.btn--gh {
+.header-actions .btn--gh {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    margin-left: 0.5rem;
 }
 
-/* Install CTA in header nav */
-.nav-cta {
+/* Install CTA in the header (the selector outranks `.btn`, which sets
+ * the same properties and is declared later) */
+.header-actions .nav-cta {
     padding: 0.45rem 0.9rem;
     font-size: 0.95rem;
-}
-
-/* Tighten nav on narrower viewports so all items stay on one row.
- * Mirrors the breakpoint used by the GitHub-button collapse rule (if present). */
-@media (max-width: 600px) {
-    .nav-cta {
-        padding: 0.35rem 0.65rem;
-        font-size: 0.85rem;
-    }
 }
 
 /* ─── Main ───────────────────────────────────────────────── */
@@ -762,20 +766,47 @@ footer a {
         padding: 0.75rem 1rem;
         gap: 0.5rem;
     }
+    /* Title row: title left, Install + GitHub right. Nav row: the four
+     * links, full width, each a 44px-tall tap target. */
+    .site-title {
+        order: 0;
+    }
+    .header-actions {
+        order: 1;
+        margin-left: auto;
+    }
     nav {
-        gap: 0.25rem;
+        order: 2;
+        flex-basis: 100%;
+        margin-left: 0;
+        gap: 0.2rem;
     }
     nav a {
-        padding: 0.4rem 0.7rem;
+        padding: 0.65rem 0.7rem;
         font-size: 0.95rem;
+        line-height: 1.6;
     }
-    .btn--gh {
-        padding: 0.5rem 0.6rem;
-        margin-left: 0;
+    .header-actions .nav-cta {
+        padding: 0.55rem 0.8rem;
+        font-size: 0.9rem;
+    }
+    .header-actions .btn--gh {
+        padding: 0.6rem 0.6rem;
         gap: 0;
     }
-    .btn--gh .btn__label {
+    .header-actions .btn--gh .btn__label {
         display: none;
+    }
+}
+
+/* ─── Touch: bigger copy buttons ─────────────────────────── */
+@media (pointer: coarse) {
+    .codeblock__copy {
+        padding: 0.65rem 0.9rem;
+        font-size: 0.85rem;
+    }
+    .codeblock[data-copyable] {
+        padding-right: 6rem;
     }
 }
 
