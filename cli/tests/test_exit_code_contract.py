@@ -37,33 +37,61 @@ def _module(check: str):
     return inspect.getmodule(REGISTRY[check])
 
 
-# The `_contract` helpers that can hand a check a 2 to return.
+# The shared helpers that can hand a check a 2 to return, when the check
+# returns their result: the `_contract` ones, and `_playwright.run_check`,
+# the whole flow of a Playwright-backed check (its own docstring declares
+# the contract those four checks keep).
 CONTRACT_HELPERS_RETURNING_TWO = frozenset(
-    {"reject_extra_args", "refuse_unsafe_url", "runner_exit", "scan_incomplete"}
+    {"reject_extra_args", "refuse_unsafe_url", "runner_exit", "scan_incomplete", "run_check"}
 )
+
+
+def _helper_call(node: ast.AST) -> bool:
+    if not isinstance(node, ast.Call):
+        return False
+    func = node.func
+    name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
+    return name in CONTRACT_HELPERS_RETURNING_TWO
+
+
+def _names_bound_to_helpers(tree: ast.AST) -> set[str]:
+    """Names assigned the result of a helper call, by `=` or `:=`."""
+    bound: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.NamedExpr) and _helper_call(node.value):
+            bound.add(node.target.id)
+        elif isinstance(node, ast.Assign) and _helper_call(node.value):
+            bound |= {t.id for t in node.targets if isinstance(t, ast.Name)}
+    return bound
+
+
+def _return_can_be_two(value: ast.AST, bound: set[str]) -> bool:
+    if _helper_call(value):
+        return True
+    if isinstance(value, ast.Constant):
+        return value.value == 2
+    if isinstance(value, ast.Name):
+        return value.id == "EXIT_CANNOT_RUN" or value.id in bound
+    return False
 
 
 def _returns_two(check: str) -> bool:
     """True if any function in the check's module can return 2.
 
-    A literal `return 2` / `return EXIT_CANNOT_RUN`, or a call to one of
-    the `_contract` helpers that yield 2 (whose result the check returns).
+    A literal `return 2` / `return EXIT_CANNOT_RUN`, a `return` of a call
+    to one of the helpers that yield 2, or a `return` of a name that was
+    bound to such a call (`if (rc := refuse_unsafe_url(...)) is not None:
+    return rc`). A helper that is called but whose result is dropped or
+    remapped does not count.
     """
     source = Path(inspect.getsourcefile(_module(check))).read_text(encoding="utf-8")
-    for node in ast.walk(ast.parse(source)):
-        if isinstance(node, ast.Call):
-            func = node.func
-            name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
-            if name in CONTRACT_HELPERS_RETURNING_TWO:
-                return True
-        if not isinstance(node, ast.Return) or node.value is None:
-            continue
-        value = node.value
-        if isinstance(value, ast.Constant) and value.value == 2:
-            return True
-        if isinstance(value, ast.Name) and value.id == "EXIT_CANNOT_RUN":
-            return True
-    return False
+    tree = ast.parse(source)
+    bound = _names_bound_to_helpers(tree)
+    return any(
+        _return_can_be_two(node.value, bound)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Return) and node.value is not None
+    )
 
 
 def test_a_crash_in_any_check_is_could_not_run(monkeypatch, isolated_cwd):
