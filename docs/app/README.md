@@ -62,11 +62,15 @@ one page-specific CSS file; there is no build step and no framework.
 | Page | File | Interactive element |
 | ---- | ---- | ------------------- |
 | Home | `app/index.html` | **Copy** buttons on the install code blocks (`app/copy.js`); `<details>` collapsibles |
-| Features | `app/features.html` | `<details>` workflow excerpt per check |
+| Features | `app/features.html` | `<details>` workflow excerpt per check; an "On this page" jump row under the hero and two Back-to-top pills |
 | Tools | `app/tools.html` | `<details>` config or workflow excerpt per tool |
 | Feedback | `app/feedback.html` | GitHub Discussions comments via the Giscus embed |
 
-Every page includes the same `<nav>` linking to all four pages.
+Every page includes the same `<nav aria-label="Main">` in its header linking
+to all four pages. Features carries a second `<nav aria-label="On this page">`
+for its jump row; the header rules in `app/shared.css` are scoped to
+`header nav` so it styles itself, and the distinct labels keep the two
+landmarks unique for the accessibility audit.
 
 ## File Map
 
