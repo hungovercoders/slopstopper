@@ -31,9 +31,13 @@ For any text on a light background, or white text on coloured
 backgrounds, use `--accent-deep`. axe-core catches violations at the
 strictest `minor` threshold — keep that gate green.
 
-Typography is system-only (no web fonts): `ui-rounded` cascading to
-`system-ui` for sans, `ui-monospace` for mono. Do not add `@font-face`
-or external font links.
+Typography is one self-hosted face: Nunito (SIL OFL 1.1, licence in
+`app/fonts/OFL.txt`) as a single variable WOFF2, latin subset, at
+`app/fonts/nunito-latin.woff2`. `app/shared.css` declares it with
+`@font-face` (`font-display: swap`, a `unicode-range` so glyphs outside
+the subset fall through to the system stack) and every page preloads it.
+Mono stays `ui-monospace` cascading to the system. It is same-origin, so
+the CSP needs no font-src exception; do not add external font links.
 
 ## Content authoring rules
 

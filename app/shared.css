@@ -1,5 +1,22 @@
 /* SlopStopper shared styles — indie playful rebrand */
 
+/* ─── Type ───────────────────────────────────────────────── */
+/* Nunito (SIL OFL 1.1, app/fonts/OFL.txt): one self-hosted variable
+ * file covering every weight the site uses, latin subset only, so each
+ * platform renders the same rounded face instead of macOS alone. The
+ * unicode-range lets glyphs outside the subset (→, emoji) fall through
+ * to the system stack; `swap` shows system text until the file lands,
+ * and each page preloads it so that window is short. Same-origin, so
+ * the CSP's default-src 'self' needs no font-src exception. */
+@font-face {
+    font-family: "Nunito";
+    font-style: normal;
+    font-weight: 200 1000;
+    font-display: swap;
+    src: url("fonts/nunito-latin.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
     /* The site is cream by design and ships no dark theme; say so, so form
      * controls and embedded frames don't flip dark on a dark OS. */
@@ -16,7 +33,7 @@
     --sun: #F5C24C;
     --paper: #FFFFFF;
 
-    --font-sans: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Quicksand", system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", sans-serif;
+    --font-sans: "Nunito", ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", sans-serif;
     --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
     --r-sm: 6px;
