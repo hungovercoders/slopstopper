@@ -56,10 +56,14 @@
         <section class="hero">
             <span class="kicker">Tools</span>
             <h1>The kit behind <span class="highlight">the loops.</span></h1>
-            <p>Every tool here drives one of the checks on the Features page. Open any card to see how it's wired in.</p>
+            <p>Every tool here drives one of the checks on the Features page, grouped by the loop it serves. Open any card to see how it's wired in.</p>
         </section>
 
-        <div class="card-grid">
+        <section class="section tool-group" id="the-suite">
+            <span class="kicker">The suite</span>
+            <h2>What every install carries.</h2>
+            <p class="lede">The CLI that owns every check, the workflows that run it, and the two shims that give humans, agents and CI one way to call it.</p>
+            <div class="tools-grid">
             <div class="card">
                 <h2>🐍 slopstopper-cli</h2>
                 <span class="tool-license">MIT</span>
@@ -128,26 +132,14 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
                 </details>
             </div>
 
-            <div class="card">
-                <h2>🎭 Playwright</h2>
-                <span class="tool-license">Apache-2.0</span>
-                <p>Portable smoke, E2E journey, broken-link and accessibility specs ship inside the slopstopper-cli wheel — adopters don't vendor them. Run <code>slopstopper templates eject playwright.config.js</code> to customise.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
-                <details class="details">
-                    <summary>playwright.config.js (bundled)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>export default defineConfig({
-  testDir: './tests',                 // points at the bundled spec dir
-  use: {
-    baseURL: process.env.SMOKE_TEST_URL || 'http://localhost:8080',
-  },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-});</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/data/playwright.config.js" rel="noopener noreferrer">View cli/slopstopper/data/playwright.config.js →</a>
-                    </div>
-                </details>
             </div>
+        </section>
 
+        <section class="section tool-group" id="security">
+            <span class="kicker">Security</span>
+            <h2>Block it before it merges.</h2>
+            <p class="lede">Static analysis, a dynamic scan of the running site, dependency CVEs and leaked credentials — the four tools behind the Security loop.</p>
+            <div class="tools-grid">
             <div class="card">
                 <h2>🔍 Semgrep</h2>
                 <span class="tool-license">LGPL-2.1</span>
@@ -230,20 +222,30 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
                 </details>
             </div>
 
+            </div>
+        </section>
+
+        <section class="section tool-group" id="reliability">
+            <span class="kicker">Reliability</span>
+            <h2>Prove every deploy works.</h2>
+            <p class="lede">A browser, an accessibility engine, a performance auditor and four stdlib-Python audits — the tools behind the Reliability loop.</p>
+            <div class="tools-grid">
             <div class="card">
-                <h2>🐛 Lizard</h2>
-                <span class="tool-license">MIT</span>
-                <p>Lizard enforces a cyclomatic-complexity ceiling so code stays auditable and maintainable. It ships as a dependency of <code>slopstopper-cli</code>, so there's nothing extra to install, and the gate runs identically locally, in the pre-push hook and in CI — one threshold, one exit code.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about Hygiene →</a>
+                <h2>🎭 Playwright</h2>
+                <span class="tool-license">Apache-2.0</span>
+                <p>Portable smoke, E2E journey, broken-link and accessibility specs ship inside the slopstopper-cli wheel — adopters don't vendor them. Run <code>slopstopper templates eject playwright.config.js</code> to customise.</p>
+                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
                 <details class="details">
-                    <summary>Workflow excerpt</summary>
+                    <summary>playwright.config.js (bundled)</summary>
                     <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>jobs:
-  complexity:
-    steps:
-      - uses: ./.github/actions/ss-setup
-      - run: task ss:hygiene:complexity   # fails above hygiene.complexity.max_ccn (15)</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-complexity-check.yml" rel="noopener noreferrer">View source →</a>
+                        <div class="codeblock codeblock--yaml"><pre><code>export default defineConfig({
+  testDir: './tests',                 // points at the bundled spec dir
+  use: {
+    baseURL: process.env.SMOKE_TEST_URL || 'http://localhost:8080',
+  },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+});</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/data/playwright.config.js" rel="noopener noreferrer">View cli/slopstopper/data/playwright.config.js →</a>
                     </div>
                 </details>
             </div>
@@ -382,6 +384,32 @@ on:
                 </details>
             </div>
 
+            </div>
+        </section>
+
+        <section class="section tool-group" id="hygiene">
+            <span class="kicker">Hygiene</span>
+            <h2>Keep the codebase auditable.</h2>
+            <p class="lede">A complexity gauge and a Markdown linter; the docs checks themselves are stdlib Python inside the CLI.</p>
+            <div class="tools-grid">
+            <div class="card">
+                <h2>🐛 Lizard</h2>
+                <span class="tool-license">MIT</span>
+                <p>Lizard enforces a cyclomatic-complexity ceiling so code stays auditable and maintainable. It ships as a dependency of <code>slopstopper-cli</code>, so there's nothing extra to install, and the gate runs identically locally, in the pre-push hook and in CI — one threshold, one exit code.</p>
+                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about Hygiene →</a>
+                <details class="details">
+                    <summary>Workflow excerpt</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>jobs:
+  complexity:
+    steps:
+      - uses: ./.github/actions/ss-setup
+      - run: task ss:hygiene:complexity   # fails above hygiene.complexity.max_ccn (15)</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-complexity-check.yml" rel="noopener noreferrer">View source →</a>
+                    </div>
+                </details>
+            </div>
+
             <div class="card">
                 <h2>📝 markdownlint</h2>
                 <span class="tool-license">MIT</span>
@@ -394,13 +422,15 @@ on:
                     </div>
                 </details>
             </div>
-        </div>
+
+            </div>
+        </section>
 
         <section class="section site-stack">
             <span class="kicker">How slopstopper.dev itself is built</span>
             <h2>Not part of the suite.</h2>
             <p class="lede">Two more pieces serve this reference site. Adopters need neither — your repo keeps its own language and host; the suite only needs Python and the per-check tools above.</p>
-            <div class="card-grid">
+            <div class="tools-grid">
             <div class="card">
                 <h2>🔷 TypeScript</h2>
                 <span class="tool-license">Apache-2.0</span>

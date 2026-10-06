@@ -4,8 +4,34 @@ main {
     max-width: 1100px;
 }
 
-.card-grid {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+/* ─── Tool cards: column flow, grouped by loop ──────────────
+ * Each card sizes to its content and the browser balances the columns,
+ * so a short card never stretches to match a tall neighbour (the same
+ * layout the Features loop cards use). */
+.tools-grid {
+    display: block;
+    columns: 1;
+    column-gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+.tools-grid > .card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1.5rem;
+    min-width: 0;
+}
+@media (min-width: 720px) {
+    .tools-grid {
+        columns: 2;
+    }
+}
+@media (min-width: 1000px) {
+    .tools-grid {
+        columns: 3;
+    }
+}
+.tool-group + .tool-group {
+    margin-top: 3rem;
 }
 
 .tool-license {
