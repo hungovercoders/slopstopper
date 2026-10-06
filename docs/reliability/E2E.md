@@ -8,8 +8,10 @@ without knowing anything about yours. From every start path the bundled
 Playwright spec:
 
 1. **Walks the primary navigation.** Clicks each same-origin link inside the
-   first `<nav>` on the page and asserts the destination answers, shows an
-   `<h1>` and still carries a nav, with no JavaScript errors along the way.
+   first `<nav>` on the page, plus any other link in the `<header>` that
+   holds it (a call-to-action button, say), and asserts the destination
+   answers, shows an `<h1>` and still carries a nav, with no JavaScript
+   errors along the way.
    Links a visitor could not follow in the same tab are left out, not
    failed: hidden ones (a collapsed mobile menu, a hover dropdown),
    `target="_blank"`, downloads and non-HTML files. `/about.html`,
@@ -131,9 +133,9 @@ assertion message says which link, anchor or disclosure:
 
 ## Troubleshooting
 
-**Every journey is skipped:** the first `<nav>` on the start page has no
-visible same-origin links, perhaps because the menu is collapsed behind a
-hamburger at desktop width. Either wrap your primary navigation in a
+**Every journey is skipped:** the start page's header has no visible
+same-origin links in its first `<nav>` or beside it, perhaps because the
+menu is collapsed behind a hamburger at desktop width. Either wrap your primary navigation in a
 visible `<nav>` (good for accessibility too) or eject the spec and open
 the menu in `navTargets` before collecting links.
 

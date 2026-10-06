@@ -141,7 +141,9 @@
 }
 .bridge__grid {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    /* minmax(0, …): a plain 1fr track can't shrink below its longest
+     * command, which pushed the page wider than a tablet viewport. */
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     gap: 1.5rem;
     align-items: center;
     margin-bottom: 1rem;
@@ -168,6 +170,9 @@
 }
 .bridge__list li code {
     display: block;
+    /* A command longer than its column wraps rather than scrolling: a
+     * scroll container here would need tabindex to be keyboard-reachable. */
+    overflow-wrap: anywhere;
     font-family: var(--font-mono);
     font-size: 0.86rem;
     background: var(--paper);
@@ -216,7 +221,7 @@
     display: block;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 860px) {
     .bridge__grid {
         grid-template-columns: 1fr;
     }
