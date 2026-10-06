@@ -194,6 +194,13 @@ main {
 .highlight {
     background-image: linear-gradient(180deg, transparent 60%, var(--sun) 60%, var(--sun) 88%, transparent 88%);
     padding: 0 0.15em;
+    /* The stripe is one gesture under one phrase: keep the phrase on one
+     * line so it moves down as a unit rather than stranding a word above
+     * the break. Headlines are written so the phrase fits at 390px. If a
+     * phrase is ever forced to wrap, each line gets its own full stripe. */
+    white-space: nowrap;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
 }
 
 .kicker {
