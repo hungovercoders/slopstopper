@@ -1,4 +1,9 @@
-"""Tests for the reliability:e2e check (Playwright wrapper)."""
+"""Tests for the reliability:e2e check (Playwright wrapper).
+
+The flow itself is `_playwright.run_check`, covered in test_shared_helpers;
+these pin what e2e contributes: its Check, the env its spec reads
+(start paths and the link cap, with validation), and the emit strings.
+"""
 
 from __future__ import annotations
 
@@ -9,39 +14,11 @@ from slopstopper.checks import _tools, e2e
 from tests._fakes import playwright_failed
 
 
-# ── helpers ──────────────────────────────────────────────────────
-
-
-def test_parse_args_defaults():
-    parsed = e2e._parse_args(None)
-    assert parsed.url is None
-    assert parsed.ci is False
-
-
-def test_parse_args_explicit_url_and_ci():
-    parsed = e2e._parse_args(["--url", "https://example.com", "--ci"])
-    assert parsed.url == "https://example.com"
-    assert parsed.ci is True
-
-
-def test_parse_args_positional_url():
-    parsed = e2e._parse_args(["http://localhost:8080"])
-    assert parsed.url_positional == "http://localhost:8080"
-
-
-def test_resolve_url_prefers_flag(monkeypatch):
-    monkeypatch.setenv("E2E_TEST_URL", "https://from-env")
-    assert e2e._resolve_url("https://from-flag") == "https://from-flag"
-
-
-def test_resolve_url_falls_back_to_env(monkeypatch):
-    monkeypatch.setenv("E2E_TEST_URL", "https://from-env")
-    assert e2e._resolve_url(None) == "https://from-env"
-
-
-def test_resolve_url_returns_none_when_neither_set(monkeypatch):
-    monkeypatch.delenv("E2E_TEST_URL", raising=False)
-    assert e2e._resolve_url(None) is None
+def test_check_describes_the_e2e_spec():
+    assert e2e.CHECK.spec_name == "e2e"
+    assert e2e.CHECK.url_env == "E2E_TEST_URL"
+    assert e2e.CHECK.url_fallbacks == ()
+    assert e2e.CHECK.report_md.name == "e2e-report.md"
 
 
 def test_build_env_threads_url_and_config_defaults(isolated_cwd, monkeypatch):
@@ -86,116 +63,78 @@ def test_build_env_sets_ci_when_ci_mode():
     assert env["CI"] == "true"
 
 
-def test_build_cmd_default_reporter():
-    cmd = e2e._build_cmd(ci_mode=False)
-    assert cmd[0] == "npx"
-    assert "playwright" in cmd
-    assert "--reporter=list,json" in cmd
-    assert any("e2e.spec.ts" in arg for arg in cmd)
+# ── run(): the shared flow, driven through this check ────────────
 
 
-def test_build_cmd_ci_uses_list_html_reporter():
-    cmd = e2e._build_cmd(ci_mode=True)
-    assert "--reporter=list,html,json" in cmd
+def _stub_playwright(monkeypatch, rc=0):
+    captured: dict = {}
 
+    def fake_run(cmd, env, check):
+        captured["cmd"] = cmd
+        captured["env"] = env
+        if rc == 1:
+            return playwright_failed(cmd, env, check)
+        return subprocess.CompletedProcess(cmd, rc)
 
-# ── subprocess / runtime ─────────────────────────────────────────
-
-
-def test_npx_available_via_which(monkeypatch):
-    monkeypatch.setattr(_tools.shutil, "which", lambda _: "/usr/bin/npx")
-    assert e2e._npx_available() is True
-    monkeypatch.setattr(_tools.shutil, "which", lambda _: None)
-    assert e2e._npx_available() is False
+    monkeypatch.setattr(_tools, "npx_available", lambda: True)
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    return captured
 
 
 def test_run_returns_two_when_npx_missing(monkeypatch, isolated_cwd, capsys):
-    monkeypatch.setattr(e2e, "_npx_available", lambda: False)
+    monkeypatch.setattr(_tools, "npx_available", lambda: False)
     assert e2e.run() == 2
     assert "npx is not available" in capsys.readouterr().out
 
 
 def test_run_returns_two_when_url_missing(monkeypatch, isolated_cwd, capsys):
-    monkeypatch.setattr(e2e, "_npx_available", lambda: True)
+    monkeypatch.setattr(_tools, "npx_available", lambda: True)
     monkeypatch.delenv("E2E_TEST_URL", raising=False)
     assert e2e.run([]) == 2
     assert "e2e target URL is required" in capsys.readouterr().out
 
 
-def test_run_invokes_playwright_with_expected_args(monkeypatch, isolated_cwd):
-    captured: dict = {}
-
-    def fake_run(cmd, env, check):
-        captured["cmd"] = cmd
-        captured["env"] = env
-        return subprocess.CompletedProcess(cmd, 0)
-
-    monkeypatch.setattr(e2e, "_npx_available", lambda: True)
-    monkeypatch.setattr(subprocess, "run", fake_run)
-
+def test_run_invokes_playwright_with_the_e2e_spec_and_env(monkeypatch, isolated_cwd):
+    captured = _stub_playwright(monkeypatch)
     assert e2e.run(["--url", "https://example.com"]) == 0
     assert captured["cmd"][:2] == ["npx", "playwright"]
     assert "--reporter=list,json" in captured["cmd"]
+    assert any("e2e.spec.ts" in arg for arg in captured["cmd"])
     assert captured["env"]["E2E_TEST_URL"] == "https://example.com"
+    assert captured["env"]["E2E_MAX_LINKS"] == "25"
 
 
 def test_run_ci_mode_threads_html_reporter_and_ci_env(monkeypatch, isolated_cwd):
-    captured: dict = {}
-
-    def fake_run(cmd, env, check):
-        captured["cmd"] = cmd
-        captured["env"] = env
-        return subprocess.CompletedProcess(cmd, 0)
-
-    monkeypatch.setattr(e2e, "_npx_available", lambda: True)
-    monkeypatch.setattr(subprocess, "run", fake_run)
-
+    captured = _stub_playwright(monkeypatch)
     assert e2e.run(["https://example.com", "--ci"]) == 0
     assert "--reporter=list,html,json" in captured["cmd"]
     assert captured["env"]["CI"] == "true"
 
 
-def test_run_propagates_playwright_failure(monkeypatch, isolated_cwd):
-    monkeypatch.setattr(e2e, "_npx_available", lambda: True)
-    monkeypatch.setattr(subprocess, "run", playwright_failed)
+def test_run_propagates_playwright_failure_and_writes_the_report(monkeypatch, isolated_cwd):
+    _stub_playwright(monkeypatch, rc=1)
     assert e2e.run(["--url", "https://example.com"]) == 1
+    body = e2e.CHECK.report_md.read_text()
+    assert body.startswith("## 🧭 E2E Journey Results")
+    assert "FAILED" in body and "playwright-report" in body
 
 
 def test_run_returns_two_when_playwright_never_ran(monkeypatch, isolated_cwd):
     """Exit 1 with no JSON report means the suite did not reach a verdict."""
-    monkeypatch.setattr(e2e, "_npx_available", lambda: True)
-    monkeypatch.setattr(
-        subprocess, "run",
-        lambda cmd, env, check: subprocess.CompletedProcess(cmd, 1),
-    )
+    monkeypatch.setattr(_tools, "npx_available", lambda: True)
+    monkeypatch.setattr(subprocess, "run", lambda cmd, env, check: subprocess.CompletedProcess(cmd, 1))
     assert e2e.run(["--url", "https://example.com"]) == 2
 
 
-# ── report writing ────────────────────────────────────────────────
-
-
 def test_run_writes_report_on_pass(monkeypatch, isolated_cwd):
-    monkeypatch.setattr(e2e, "_npx_available", lambda: True)
-    monkeypatch.setattr(
-        subprocess, "run",
-        lambda cmd, env, check: subprocess.CompletedProcess(cmd, 0),
-    )
+    _stub_playwright(monkeypatch)
     assert e2e.run(["--url", "https://example.com"]) == 0
-    body = e2e.REPORT_MD.read_text()
-    assert "PASSED" in body
-    assert "https://example.com" in body
-
-
-def test_run_writes_report_on_failure_with_playwright_link(monkeypatch, isolated_cwd):
-    monkeypatch.setattr(e2e, "_npx_available", lambda: True)
-    monkeypatch.setattr(subprocess, "run", playwright_failed)
-    assert e2e.run(["--url", "https://example.com"]) == 1
-    body = e2e.REPORT_MD.read_text()
-    assert "FAILED" in body
-    assert "playwright-report" in body
+    body = e2e.CHECK.report_md.read_text()
+    assert "PASSED" in body and "https://example.com" in body
 
 
 def test_meta_carries_the_emit_contract():
-    assert e2e.META["report_path"] == str(e2e.REPORT_MD)
-    assert e2e.META["comment_discriminator"].startswith("## ")
+    assert e2e.META["report_path"] == str(e2e.CHECK.report_md)
+    assert e2e.META["comment_discriminator"] == "## 🧭 E2E Journey Results"
+    assert "e2e-failure" in e2e.META["issue_labels"]
     assert "reliability" in e2e.META["issue_labels"]

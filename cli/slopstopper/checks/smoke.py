@@ -39,10 +39,8 @@ Exit codes:
 
 from __future__ import annotations
 
-import os
-
 from slopstopper import config
-from slopstopper.checks import _playwright, _tools
+from slopstopper.checks import _playwright
 
 CHECK = _playwright.Check(
     name="smoke",
@@ -57,32 +55,18 @@ CHECK = _playwright.Check(
     banner="Running smoke tests against: {url}",
     verb="smoke-test",
 )
-SPEC_NAME = CHECK.spec_name
-REPORT_DIR = _playwright.REPORT_DIR
-PLAYWRIGHT_JSON = CHECK.playwright_json
-REPORT_MD = CHECK.report_md
 
 # Consumed by `slopstopper emit reliability:smoke --target {pr-comment,issue}`.
 # Issue title + label match the strings the legacy workflow used in raw
 # `gh issue create` so existing open issues continue to dedup post-migration.
 META = {
-    "report_path": str(REPORT_MD),
+    "report_path": str(CHECK.report_md),
     "comment_discriminator": CHECK.title,
     "issue_title": "❌ Smoke Tests Failing",
     "issue_labels": ["smoke-test-failure", "reliability"],
     "issue_followup": "🔔 Smoke tests failing again in commit",
     "issue_close_comment": "✅ Smoke tests are now passing on `main`. Closing automatically.",
 }
-
-_npx_available = _tools.npx_available
-
-
-def _parse_args(args: list[str] | None):
-    return _playwright.parse_args(CHECK, args)
-
-
-def _resolve_url(parsed_url: str | None) -> str | None:
-    return _playwright.resolve_url(CHECK, parsed_url)
 
 
 def _build_env(url: str, ci_mode: bool) -> dict[str, str]:
@@ -92,9 +76,5 @@ def _build_env(url: str, ci_mode: bool) -> dict[str, str]:
     return env
 
 
-def _build_cmd(ci_mode: bool) -> list[str]:
-    return _playwright.build_cmd(SPEC_NAME, ci_mode)
-
-
 def run(args: list[str] | None = None) -> int:
-    return _playwright.run_check(CHECK, args, npx_available=_npx_available, build_env=_build_env)
+    return _playwright.run_check(CHECK, args, build_env=_build_env)

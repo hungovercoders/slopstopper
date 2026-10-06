@@ -50,7 +50,7 @@ Exit codes:
 from __future__ import annotations
 
 from slopstopper import config, output
-from slopstopper.checks import _playwright, _tools
+from slopstopper.checks import _playwright
 
 CHECK = _playwright.Check(
     name="e2e",
@@ -66,14 +66,10 @@ CHECK = _playwright.Check(
     banner="Walking user journeys against: {url}",
     verb="walk",
 )
-SPEC_NAME = CHECK.spec_name
-REPORT_DIR = _playwright.REPORT_DIR
-PLAYWRIGHT_JSON = CHECK.playwright_json
-REPORT_MD = CHECK.report_md
 
 # Consumed by `slopstopper emit reliability:e2e --target {pr-comment,issue}`.
 META = {
-    "report_path": str(REPORT_MD),
+    "report_path": str(CHECK.report_md),
     "comment_discriminator": CHECK.title,
     "issue_title": "🧭 E2E Journeys Failing on Main Branch",
     "issue_labels": ["e2e-failure", "reliability"],
@@ -82,16 +78,6 @@ META = {
 }
 
 DEFAULT_MAX_LINKS = 25
-
-_npx_available = _tools.npx_available
-
-
-def _parse_args(args: list[str] | None):
-    return _playwright.parse_args(CHECK, args)
-
-
-def _resolve_url(parsed_url: str | None) -> str | None:
-    return _playwright.resolve_url(CHECK, parsed_url)
 
 
 def _max_links() -> int:
@@ -114,9 +100,5 @@ def _build_env(url: str, ci_mode: bool) -> dict[str, str]:
     return env
 
 
-def _build_cmd(ci_mode: bool) -> list[str]:
-    return _playwright.build_cmd(SPEC_NAME, ci_mode)
-
-
 def run(args: list[str] | None = None) -> int:
-    return _playwright.run_check(CHECK, args, npx_available=_npx_available, build_env=_build_env)
+    return _playwright.run_check(CHECK, args, build_env=_build_env)

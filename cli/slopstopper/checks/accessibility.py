@@ -45,8 +45,8 @@ Exit codes:
 
 from __future__ import annotations
 
-from slopstopper import discovery  # noqa: F401 — tests patch `accessibility.discovery.discover`
-from slopstopper.checks import _playwright, _tools
+from slopstopper import discovery
+from slopstopper.checks import _playwright
 
 CHECK = _playwright.Check(
     name="accessibility",
@@ -61,16 +61,12 @@ CHECK = _playwright.Check(
     banner="Running accessibility audit against: {url}",
     banner_icon="♿",
 )
-SPEC_NAME = CHECK.spec_name
-REPORT_DIR = _playwright.REPORT_DIR
-PLAYWRIGHT_JSON = CHECK.playwright_json
-REPORT_MD = CHECK.report_md
 
 # Consumed by `slopstopper emit reliability:accessibility --target {pr-comment,issue}`.
 # Issue title + label match the strings the legacy workflow used in raw
 # `gh issue create` so existing open issues continue to dedup post-migration.
 META = {
-    "report_path": str(REPORT_MD),
+    "report_path": str(CHECK.report_md),
     "comment_discriminator": CHECK.title,
     "issue_title": "♿ Accessibility Violations Detected on Main Branch",
     "issue_labels": ["accessibility", "reliability"],
@@ -78,34 +74,15 @@ META = {
     "issue_close_comment": "✅ Accessibility audit is now passing on `main`. Closing automatically.",
 }
 
-_npx_available = _tools.npx_available
-
-
-def _parse_args(args: list[str] | None):
-    return _playwright.parse_args(CHECK, args)
-
-
-def _resolve_url(parsed_url: str | None) -> str | None:
-    return _playwright.resolve_url(CHECK, parsed_url)
-
-
-def _discover_pages() -> str | None:
-    """Resolve pages.accessibility (or reliability.coverage.*) for the spec."""
-    return _playwright.discover_pages("accessibility")
-
 
 def _build_env(url: str, ci_mode: bool) -> dict[str, str]:
     env = _playwright.base_env(CHECK, url, ci_mode)
     if "ACCESSIBILITY_PAGES" not in env:
-        pages = _discover_pages()
+        pages = discovery.pages_csv("accessibility")
         if pages is not None:
             env["ACCESSIBILITY_PAGES"] = pages
     return env
 
 
-def _build_cmd(ci_mode: bool) -> list[str]:
-    return _playwright.build_cmd(SPEC_NAME, ci_mode)
-
-
 def run(args: list[str] | None = None) -> int:
-    return _playwright.run_check(CHECK, args, npx_available=_npx_available, build_env=_build_env)
+    return _playwright.run_check(CHECK, args, build_env=_build_env)

@@ -434,11 +434,7 @@ def _resolve_url(parsed_url: str | None) -> str | None:
 
 
 def _discover_pages() -> str | None:
-    try:
-        paths = discovery.discover("seo", "local")
-    except Exception:
-        return None
-    return ",".join(paths) if paths else None
+    return discovery.pages_csv("seo")
 
 
 def _resolve_pages(parsed_pages: str | None) -> list[str]:

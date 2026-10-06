@@ -6,6 +6,7 @@ Playwright's own HTML report. Only the spec name, the env vars the spec
 reads and the wording differ, so the plumbing lives here once:
 `run_check` is the whole flow, and each check module contributes a
 `Check` description plus its `_build_env` (the config keys its spec reads).
+That pair is a module's entire production surface.
 
 The eject dance is the non-obvious part and is documented once, here:
 the bundled config and specs live inside the installed slopstopper-cli
@@ -32,8 +33,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional
 
-from slopstopper import discovery, output, templates
-from slopstopper.checks import _report
+from slopstopper import output, templates
+from slopstopper.checks import _report, _tools
 from slopstopper.checks._contract import playwright_ran, runner_exit
 
 REPORT_DIR = Path(".ss/reports/reliability")
@@ -102,17 +103,6 @@ def resolve_url(check: Check, parsed_url: str | None) -> str | None:
     return None
 
 
-def discover_pages(check_key: str) -> str | None:
-    """`pages.<check_key>` (or `reliability.coverage.*`) via the in-CLI
-    discovery module, comma-joined for the spec. None on internal failure
-    so the spec falls back to its built-in default."""
-    try:
-        paths = discovery.discover(check_key, "local")
-    except Exception:
-        return None
-    return ",".join(paths) if paths else None
-
-
 def base_env(check: Check, url: str, ci_mode: bool) -> dict[str, str]:
     """The caller's environment plus what every spec needs: where to write
     the JSON report, the base URL, and CI=true in CI mode. A check's own
@@ -175,15 +165,14 @@ def run_check(
     check: Check,
     args: list[str] | None,
     *,
-    npx_available: Callable[[], bool],
     build_env: Callable[[str, bool], dict[str, str]],
 ) -> int:
     """The whole flow of a Playwright-backed check, from args to exit code.
 
-    `npx_available` and `build_env` are passed in rather than imported so
-    each check module keeps its own patchable names (its tests stub them).
+    `build_env` is the one thing that varies: the config keys each spec
+    reads, layered over `base_env`.
     """
-    if not npx_available():
+    if not _tools.npx_available():
         output.error("npx is not available — install Node.js to run Playwright tests")
         return 2
 
@@ -196,6 +185,11 @@ def run_check(
         output._emit(f"  {check.url_env}=https://your-site slopstopper run {check.check_id}")
         return 2
 
+    message = check.banner.format(url=url)
+    if check.banner_icon:
+        output.status(check.banner_icon, message)
+    else:
+        output.running(message)
     ensure_assets_ejected(check.spec_name)
     spec = templates.playwright_spec(check.spec_name)
     if not spec.exists():
@@ -203,11 +197,6 @@ def run_check(
         output._emit("   The spec is bundled inside slopstopper-cli; reinstall to repair.")
         return 2
 
-    message = check.banner.format(url=url)
-    if check.banner_icon:
-        output.status(check.banner_icon, message)
-    else:
-        output.running(message)
     env = build_env(url, parsed.ci)
     cmd = build_cmd(check.spec_name, parsed.ci)
     REPORT_DIR.mkdir(parents=True, exist_ok=True)

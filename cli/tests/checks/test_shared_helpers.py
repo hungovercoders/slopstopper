@@ -279,8 +279,12 @@ _FAKE_CHECK = _playwright.Check(
 )
 
 
-def _run_fake(args, monkeypatch, *, npx=True, rc=0, extra_env=None):
-    """Drive run_check with a stubbed Playwright that exits `rc`."""
+def _run_fake(args, monkeypatch, *, npx=True, rc=0, report=True):
+    """Drive run_check with a stubbed Playwright that exits `rc`.
+
+    `report=False` leaves no JSON report behind, which is what a suite
+    that never started looks like.
+    """
     import subprocess
 
     captured: dict = {}
@@ -288,19 +292,16 @@ def _run_fake(args, monkeypatch, *, npx=True, rc=0, extra_env=None):
     def fake_run(cmd, env, check):
         captured["cmd"] = cmd
         captured["env"] = env
-        if rc == 1:
+        if rc == 1 and report:
             from tests._fakes import playwright_failed
             return playwright_failed(cmd, env, check)
         return subprocess.CompletedProcess(cmd, rc)
 
+    monkeypatch.setattr(_tools, "npx_available", lambda: npx)
     monkeypatch.setattr(subprocess, "run", fake_run)
-
-    def build_env(url, ci_mode):
-        env = _playwright.base_env(_FAKE_CHECK, url, ci_mode)
-        env.update(extra_env or {})
-        return env
-
-    code = _playwright.run_check(_FAKE_CHECK, args, npx_available=lambda: npx, build_env=build_env)
+    code = _playwright.run_check(
+        _FAKE_CHECK, args, build_env=lambda url, ci: _playwright.base_env(_FAKE_CHECK, url, ci),
+    )
     return code, captured
 
 
@@ -334,20 +335,10 @@ def test_base_env_sets_json_path_url_and_ci_only_in_ci_mode(isolated_cwd, monkey
     assert _playwright.base_env(_FAKE_CHECK, "https://x", ci_mode=True)["CI"] == "true"
 
 
-def test_discover_pages_joins_paths_and_swallows_failures(monkeypatch, isolated_cwd):
-    monkeypatch.setattr(_playwright.discovery, "discover", lambda check, event: ["/", "/blog"])
-    assert _playwright.discover_pages("smoke") == "/,/blog"
-
-    def boom(check, event):
-        raise RuntimeError("boom")
-
-    monkeypatch.setattr(_playwright.discovery, "discover", boom)
-    assert _playwright.discover_pages("smoke") is None
-
-
 def test_run_check_returns_two_when_npx_missing(monkeypatch, isolated_cwd, capsys):
-    code, _ = _run_fake(["--url", "https://x"], monkeypatch, npx=False)
+    code, captured = _run_fake(["--url", "https://x"], monkeypatch, npx=False)
     assert code == 2
+    assert "cmd" not in captured
     assert "npx is not available" in capsys.readouterr().out
 
 
@@ -370,34 +361,36 @@ def test_run_check_returns_two_when_the_spec_is_missing(monkeypatch, isolated_cw
     assert "fake spec not found" in capsys.readouterr().out
 
 
-def test_run_check_runs_playwright_writes_the_summary_and_maps_exit_codes(monkeypatch, isolated_cwd, capsys):
+def test_run_check_prints_the_banner_with_its_icon_before_anything_else(monkeypatch, isolated_cwd, capsys):
+    _run_fake(["https://x"], monkeypatch)
+    out = capsys.readouterr().out
+    assert "🧪 Faking against: https://x" in out
+    plain = _playwright.Check(**{**_FAKE_CHECK.__dict__, "banner_icon": None})
+    monkeypatch.setattr(_tools, "npx_available", lambda: True)
+    _playwright.run_check(plain, ["https://x"], build_env=lambda url, ci: _playwright.base_env(plain, url, ci))
+    out = capsys.readouterr().out
+    assert "Faking against: https://x" in out and "🧪" not in out
+
+
+def test_run_check_runs_playwright_writes_the_summary_and_maps_exit_codes(monkeypatch, isolated_cwd):
     code, captured = _run_fake(["https://x", "--ci"], monkeypatch, rc=0)
     assert code == 0
     assert captured["cmd"][:3] == ["npx", "playwright", "test"]
     assert "--reporter=list,html,json" in captured["cmd"]
     assert captured["env"]["FAKE_TEST_URL"] == "https://x"
     assert captured["env"]["CI"] == "true"
-    assert "🧪" in capsys.readouterr().out and "Faking against: https://x" in capsys.readouterr().out or True
     body = _FAKE_CHECK.report_md.read_text()
     assert body.startswith("## Fake Results") and "PASSED" in body
 
     code, _ = _run_fake(["https://x"], monkeypatch, rc=1)
     assert code == 1, "a suite that ran and failed is a verdict"
-    assert "FAILED" in _FAKE_CHECK.report_md.read_text()
-    assert "it broke" in _FAKE_CHECK.report_md.read_text()
+    body = _FAKE_CHECK.report_md.read_text()
+    assert "FAILED" in body and "it broke" in body
 
     code, _ = _run_fake(["https://x"], monkeypatch, rc=2)
     assert code == 2, "any other Playwright exit is could-not-run"
 
 
 def test_run_check_treats_exit_one_without_a_report_as_not_run(monkeypatch, isolated_cwd):
-    import subprocess
-
-    monkeypatch.setattr(subprocess, "run", lambda cmd, env, check: subprocess.CompletedProcess(cmd, 1))
-    code = _playwright.run_check(
-        _FAKE_CHECK, ["https://x"],
-        npx_available=lambda: True,
-        build_env=lambda url, ci: _playwright.base_env(_FAKE_CHECK, url, ci),
-    )
+    code, _ = _run_fake(["https://x"], monkeypatch, rc=1, report=False)
     assert code == 2
-

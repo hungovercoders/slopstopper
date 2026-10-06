@@ -198,3 +198,27 @@ def test_expand_url_template_substitutes_named_groups():
 
 def test_dedupe_preserves_order():
     assert discovery._dedupe(["/", "/a", "/", "/b", "/a"]) == ["/", "/a", "/b"]
+
+
+# ── pages_csv: what the specs' <CHECK>_PAGES env var is built from ───
+
+
+def test_pages_csv_joins_discovered_paths(monkeypatch, isolated_cwd):
+    monkeypatch.setattr(discovery, "discover", lambda check, event: ["/", "/blog"])
+    assert discovery.pages_csv("smoke") == "/,/blog"
+
+
+def test_pages_csv_is_none_when_nothing_is_found_or_discovery_raises(monkeypatch, isolated_cwd):
+    monkeypatch.setattr(discovery, "discover", lambda check, event: [])
+    assert discovery.pages_csv("smoke") is None
+
+    def boom(check, event):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(discovery, "discover", boom)
+    assert discovery.pages_csv("smoke") is None
+
+
+def test_pages_csv_defaults_to_root_when_unconfigured(isolated_cwd):
+    assert discovery.pages_csv("smoke") == "/"
+

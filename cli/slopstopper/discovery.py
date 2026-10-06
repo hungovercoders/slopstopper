@@ -352,6 +352,19 @@ def _from_pages_list(check: str) -> Optional[list[str]]:
     return None
 
 
+def pages_csv(check: str, event: str = "local") -> Optional[str]:
+    """`discover(...)` comma-joined for a spec's `<CHECK>_PAGES` env var.
+
+    None when discovery raises or finds nothing, so the spec falls back
+    to its built-in default rather than the check dying on a config error.
+    """
+    try:
+        paths = discover(check, event)
+    except Exception:
+        return None
+    return ",".join(paths) if paths else None
+
+
 def discover(check: str, event: str = "local") -> list[str]:
     env_paths = _from_env(check)
     if env_paths:
