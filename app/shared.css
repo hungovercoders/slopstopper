@@ -123,18 +123,20 @@ header {
  * own group after the <nav>. Below 860px (where title + nav + actions
  * stop fitting on one row) the actions share the title row and the nav
  * links take a full row of their own underneath. */
-nav,
+header nav,
 .header-actions {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
-nav {
+header nav {
     flex-wrap: wrap;
     margin-left: auto;
 }
 
-nav a {
+/* Scoped to the header: a page may carry a second <nav> (the Features
+ * jump row) that styles itself. */
+header nav a {
     color: var(--ink);
     text-decoration: none;
     padding: 0.45rem 0.9rem;
@@ -142,11 +144,11 @@ nav a {
     font-weight: 600;
     transition: background 0.15s;
 }
-nav a:hover {
+header nav a:hover {
     background: var(--peach);
     color: var(--ink);
 }
-nav a[aria-current="page"] {
+header nav a[aria-current="page"] {
     background: var(--ink);
     color: var(--cream);
 }
@@ -800,13 +802,13 @@ footer a {
     .header-actions .btn {
         min-height: 2.8rem;
     }
-    nav {
+    header nav {
         order: 2;
         flex-basis: 100%;
         margin-left: 0;
         gap: 0.2rem;
     }
-    nav a {
+    header nav a {
         padding: 0.65rem 0.7rem;
         font-size: 0.95rem;
         line-height: 1.6;
@@ -835,11 +837,11 @@ footer a {
     .site-title {
         font-size: 1.25rem;
     }
-    nav {
+    header nav {
         gap: 0;
         justify-content: space-between;
     }
-    nav a {
+    header nav a {
         padding: 0.65rem 0.4rem;
         font-size: 0.9rem;
     }

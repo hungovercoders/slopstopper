@@ -1,9 +1,10 @@
 /* features.html — page-specific styles */
 
-/* ─── Jump row under the hero ───────────────────────────────
+/* ─── Jump row under the hero, Back-to-top pills ───────────
  * The page is long (five loop cards, then three more sections), so the
- * hero ends with a row of pills to every section. Same pill as
- * .live-links, centred under the hero copy. */
+ * hero ends with a row of pills to every section, and a Back-to-top pill
+ * follows the loop cards and the last section. One pill definition for
+ * both; slightly larger than .live-links so it reads as navigation. */
 .jump-row {
     display: flex;
     flex-wrap: wrap;
@@ -11,31 +12,11 @@
     gap: 0.5rem;
     margin-top: 1.5rem;
 }
-.jump-row a {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    background: var(--paper);
-    border: var(--border-thin);
-    border-radius: var(--r-pill);
-    padding: 0.35rem 0.8rem;
-    font-size: 0.9rem;
-    font-weight: 700;
-    text-decoration: none;
-    color: var(--ink);
-}
-.jump-row a:hover {
-    background: var(--peach-soft);
-    color: var(--ink);
-}
-.jump-row a:focus-visible {
-    outline: 3px solid var(--ink);
-    outline-offset: 2px;
-}
 .jump-top {
     text-align: right;
-    margin-top: -0.5rem;
+    margin: 1rem 0 0;
 }
+.jump-row a,
 .jump-top a {
     display: inline-flex;
     align-items: center;
@@ -48,10 +29,12 @@
     text-decoration: none;
     color: var(--ink);
 }
+.jump-row a:hover,
 .jump-top a:hover {
     background: var(--peach-soft);
     color: var(--ink);
 }
+.jump-row a:focus-visible,
 .jump-top a:focus-visible {
     outline: 3px solid var(--ink);
     outline-offset: 2px;
