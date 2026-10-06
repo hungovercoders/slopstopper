@@ -4,6 +4,19 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.16.0](https://github.com/hungovercoders/slopstopper/compare/v0.15.0...v0.16.0) (2026-10-05)
+
+
+### Features
+
+* **reliability:** add reliability:e2e, portable user-journey check ([#362](https://github.com/hungovercoders/slopstopper/issues/362)) ([dafdb3c](https://github.com/hungovercoders/slopstopper/commit/dafdb3c20dff9fe33964ef8d34047a814666433e)), closes [#355](https://github.com/hungovercoders/slopstopper/issues/355) [#349](https://github.com/hungovercoders/slopstopper/issues/349)
+
+
+### Bug Fixes
+
+* **ci:** rewrite this repo's labeler.yml for the ss- prefix and the CLI layout ([#358](https://github.com/hungovercoders/slopstopper/issues/358)) ([b0754d6](https://github.com/hungovercoders/slopstopper/commit/b0754d61bce679922eaba46448019d68b23fa702))
+* **site:** lay the five loop cards out in two columns ([#361](https://github.com/hungovercoders/slopstopper/issues/361)) ([800f3d7](https://github.com/hungovercoders/slopstopper/commit/800f3d709c88887e3b58b241f406bd74809358d1))
+
 ## [0.15.0](https://github.com/hungovercoders/slopstopper/compare/v0.14.0...v0.15.0) (2026-10-03)
 
 
