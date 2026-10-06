@@ -100,19 +100,28 @@ slopstopper checks list
 slopstopper doctor
 slopstopper run hygiene:docs-size            # underlying CLI; same code as task ss:hygiene:docs-size</code></pre>
             </div>
-            <p class="install-subnote">An unpinned install from PyPI that needs only Python; <code>slopstopper doctor</code> lists the per-check tools you still need. For a repo you'll keep, use the pinned suite install below.</p>
+            <p class="install-subnote">This path is unpinned, comes from PyPI and needs only Python; <code>slopstopper doctor</code> lists the per-check tools you still need. For a repo you'll keep, use the pinned suite install below.</p>
             <details class="details">
                 <summary>More about the standalone CLI</summary>
                 <div class="details__body">
-                    <p>Published to PyPI on every release tag; <code>pipx upgrade slopstopper-cli</code> pulls the latest. The <a href="https://github.com/hungovercoders/slopstopper/releases/latest">latest GitHub Release</a> also carries a Sigstore build-provenance attestation — verify with <code>gh attestation verify &lt;wheel&gt; --owner hungovercoders</code>.</p>
-                    <p>Per-check tools (<code>node</code>, <code>semgrep</code>, <code>gitleaks</code>, <code>trivy</code>, <code>docker</code>; Lizard ships with the CLI) install per the checks you actually use. Local and CI should run the <em>same</em> version, which is what the pinned suite install below guarantees.</p>
+                    <p>Published to PyPI on every release tag, so <code>pipx upgrade slopstopper-cli</code> pulls the latest, and every <a href="https://github.com/hungovercoders/slopstopper/releases/latest">GitHub Release</a> carries a Sigstore build-provenance attestation. Per-check tools (<code>node</code>, <code>semgrep</code>, <code>gitleaks</code>, <code>trivy</code>, <code>docker</code>; Lizard ships with the CLI) install per the checks you actually use.</p>
+                    <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/runbooks/INSTALL.md" rel="noopener noreferrer">How to verify a release and what each check needs →</a>
                 </div>
             </details>
             <h3 class="install-heading">Full suite into a repo (pinned)</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install full suite" data-copyable>
                 <pre><code>curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash</code></pre>
             </div>
-            <p class="install-subnote">Requires <a href="https://mise.jdx.dev" rel="noopener noreferrer">mise</a>, which pins <code>slopstopper-cli</code> + <code>task</code> per directory so local and CI run the same version.</p>
+            <p class="install-subnote">Requires <a href="https://mise.jdx.dev" rel="noopener noreferrer">mise</a>, which installs and pins <code>slopstopper-cli</code> + <code>task</code> per directory, so local and CI run the same version.</p>
+            <details class="details">
+                <summary>What does the installer do?</summary>
+                <div class="details__body">
+                    <p>The installer pins <code>slopstopper-cli</code> + <code>task</code> in <code>mise.toml</code> and installs them via <strong>mise</strong> (required), then seeds your repo with the <code>.github/workflows/ss-*.yml</code> CI checks and the <code>.github/actions/ss-*</code> composite steps they share (toolchain setup via <code>jdx/mise-action</code>, URL resolution), a thin <code>Taskfile.ss.yml</code> of <code>task ss:*</code> shims that call the CLI, and a <code>.slopstopper.yml</code> starter config. Idempotent — re-run any time to refresh; move the pin with <code>install.sh --upgrade-cli</code> / <code>--cli-version</code>.</p>
+                    <p>It also wires a <strong>pre-push git hook</strong> (<code>.githooks/pre-push</code>, via <code>core.hooksPath</code>) that runs the fast hygiene checks (<code>task ss:hygiene:test</code>) before every push, so the first CI run confirms rather than discovers. It won't touch an existing <code>husky</code> / <code>lefthook</code> / <code>pre-commit</code> setup; opt out with <code>--no-hooks</code>, or bypass a single push with <code>git push --no-verify</code>.</p>
+                    <p>Bundled Playwright specs, lighthouserc, and the local-CI static server (<code>slopstopper serve</code>) live inside the wheel. Run <code>slopstopper templates eject &lt;name&gt;</code> to customise any of them.</p>
+                    <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/install.sh" rel="noopener noreferrer">View install.sh on GitHub →</a>
+                </div>
+            </details>
             <h3 class="install-heading">Not a website? Pick a profile</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install with a project-shape profile" data-copyable>
                 <pre><code># JSON/gRPC endpoints, no browser surface
@@ -125,13 +134,10 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
             </div>
             <p class="install-subnote">The nine browser-and-SEO checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume a served site, so a <strong>profile</strong> installs only the checks that fit your repo's shape. <code>slopstopper profile detect</code> suggests one.</p>
             <details class="details">
-                <summary>What does the installer do, and what does each profile keep?</summary>
+                <summary>What does each profile keep?</summary>
                 <div class="details__body">
-                    <p>The installer pins <code>slopstopper-cli</code> + <code>task</code> in <code>mise.toml</code> and installs them via <strong>mise</strong> (required), then seeds your repo with the <code>.github/workflows/ss-*.yml</code> CI checks and the <code>.github/actions/ss-*</code> composite steps they share (toolchain setup via <code>jdx/mise-action</code>, URL resolution), a thin <code>Taskfile.ss.yml</code> of <code>task ss:*</code> shims that call the CLI, and a <code>.slopstopper.yml</code> starter config. Idempotent — re-run any time to refresh; move the pin with <code>install.sh --upgrade-cli</code> / <code>--cli-version</code>.</p>
-                    <p>It also wires a <strong>pre-push git hook</strong> (<code>.githooks/pre-push</code>, via <code>core.hooksPath</code>) that runs the fast hygiene checks (<code>task ss:hygiene:test</code>) before every push, so the first CI run confirms rather than discovers. It won't touch an existing <code>husky</code> / <code>lefthook</code> / <code>pre-commit</code> setup; opt out with <code>--no-hooks</code>, or bypass a single push with <code>git push --no-verify</code>.</p>
-                    <p>Bundled Playwright specs, lighthouserc, and the local-CI static server (<code>slopstopper serve</code>) live inside the wheel. Run <code>slopstopper templates eject &lt;name&gt;</code> to customise any of them.</p>
-                    <p><strong>Profiles.</strong> On an API the browser checks don't quietly pass, they go red, so <code>--profile api</code> drops them and keeps DAST and the whole static-analysis layer; <code>--profile library</code> keeps the static layer only. The choice is written as <code>profile:</code> in <code>.slopstopper.yml</code> so it survives re-runs, switching is reversible either way, and <code>workflows.enabled</code> takes back any single check. <code>slopstopper profile list</code> prints the full mapping.</p>
-                    <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/install.sh" rel="noopener noreferrer">View install.sh on GitHub →</a>
+                    <p>On an API the browser checks don't quietly pass, they go red, so <code>--profile api</code> drops them and keeps the four API checks (health, latency, headers, OpenAPI drift), CSP exceptions, DAST and the whole static-analysis layer; <code>--profile library</code> keeps the static layer only. The choice is written as <code>profile:</code> in <code>.slopstopper.yml</code> so it survives re-runs, switching is reversible either way, and <code>workflows.enabled</code> takes back any single check. <code>slopstopper profile list</code> prints the full mapping.</p>
+                    <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PROFILES.md" rel="noopener noreferrer">Project-shape profiles, in full →</a>
                 </div>
             </details>
             <div class="steps">
@@ -145,7 +151,7 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
                 </div>
                 <div class="step">
                     <h3>Open a PR</h3>
-                    <p>Push to a branch: one rolling summary comment shows every check's verdict, a failing check adds its detail and a passing one stays quiet. Stop slop at the door.</p>
+                    <p>Push to a branch. One rolling comment shows every check's verdict; failures add detail, passes stay quiet.</p>
                 </div>
             </div>
             <p class="docs-pointer">Want the deep dive? <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/README.md" rel="noopener noreferrer">Browse the docs →</a></p>
@@ -171,7 +177,7 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
         <section class="section">
             <span class="kicker">What you get</span>
             <h2>Five loops of feedback.</h2>
-            <p class="lede">The first four are what <code>install.sh</code> puts in your repo as real GitHub Actions workflows (all of them with the <code>ui</code> profile; <code>api</code> and <code>library</code> drop the browser checks), and the fifth is how slopstopper.dev itself ships — not installed, but here to copy. Click through to see exactly what runs.</p>
+            <p class="lede">The first four are what <code>install.sh</code> puts in your repo as real GitHub Actions workflows; the fifth is how slopstopper.dev itself ships, not installed but here to copy. Click through to see exactly what runs.</p>
             <div class="card-grid">
                 <div class="card">
                     <h3>🔒 Security</h3>
