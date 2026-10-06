@@ -282,7 +282,35 @@ main {
     box-shadow: 5px 5px 0 var(--ink);
 }
 
-.card h2 {
+/* Column flow instead of a row grid: each card sizes to its content and
+ * the browser balances the columns, so no card is stretched to match a
+ * tall neighbour. Markup order is the visual order, column 1 top to
+ * bottom, then column 2. The trade-off: a column flow re-balances when a
+ * card changes height, so opening a <details> inside a card can move
+ * cards between columns. */
+.card-grid--flow {
+    display: block;
+    columns: 1;
+    column-gap: 1.5rem;
+}
+.card-grid--flow > .card {
+    break-inside: avoid;
+    margin-bottom: 1.5rem;
+    min-width: 0;
+}
+@media (min-width: 720px) {
+    .card-grid--flow {
+        columns: 2;
+    }
+}
+@media (min-width: 1000px) {
+    .card-grid--flow-3 {
+        columns: 3;
+    }
+}
+
+.card h2,
+.card h3 {
     font-size: 1.2rem;
     font-weight: 800;
     margin-bottom: 0.6rem;
@@ -657,7 +685,9 @@ footer a {
 .section {
     margin-top: 4rem;
 }
-.section h2 {
+/* The section's own heading only: a card inside the section keeps its
+ * card-sized heading (this used to cascade onto every card in a section). */
+.section > h2 {
     font-size: clamp(1.5rem, 3vw, 2rem);
     font-weight: 800;
     margin-bottom: 0.5rem;

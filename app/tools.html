@@ -56,35 +56,35 @@
         <section class="hero">
             <span class="kicker">Tools</span>
             <h1>The kit behind <span class="highlight">the loops.</span></h1>
-            <p>Every tool here drives one of the checks on the Features page, grouped by the loop it serves. Open any card to see how it's wired in.</p>
+            <p>Every tool here drives one of the checks on the Features page, grouped by the loop each serves after the pieces every install carries. The Operational loop runs on those pieces; Deployment is this site's own, at the bottom. Open any card to see how it's wired in.</p>
         </section>
 
         <section class="section tool-group" id="the-suite">
             <span class="kicker">The suite</span>
             <h2>What every install carries.</h2>
-            <p class="lede">The CLI that owns every check, the workflows that run it, and the two shims that give humans, agents and CI one way to call it.</p>
-            <div class="tools-grid">
-            <div class="card">
-                <h2>🐍 slopstopper-cli</h2>
-                <span class="tool-license">MIT</span>
-                <p>The Python package every check, report and PR comment goes through. Quick standalone try: <code>pipx install slopstopper-cli</code>; in an adopting repo it's pinned in <code>mise.toml</code> and installed via <a href="https://mise.jdx.dev" rel="noopener noreferrer">mise</a>. See the <a href="https://github.com/hungovercoders/slopstopper/releases/latest">latest release</a> for changelog and signed artifacts.</p>
-                <details class="details">
-                    <summary>CLI surface</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--sh"><pre><code>slopstopper checks list                       # see what's available
-slopstopper doctor                            # verify external tools
-slopstopper run hygiene:docs-size             # run a check (writes .ss/reports/...)
-slopstopper emit hygiene:docs-size --target pr-comment
-slopstopper templates eject playwright.config.js
-slopstopper serve                              # bundled static server</code></pre></div>
-                        <p class="details__hint">Bare <code>slopstopper</code> prints a command grid + Quick-start block. Every subcommand has examples in <code>--help</code>.</p>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/tree/main/cli" rel="noopener noreferrer">View slopstopper-cli on GitHub →</a>
-                    </div>
-                </details>
+            <p class="lede">The CLI that owns every check, the workflows that run it, the <code>task ss:*</code> shim that gives humans, agents and CI one way to call it, and the pre-push hook that runs the fast checks before code leaves the machine.</p>
+            <div class="card-grid card-grid--flow card-grid--flow-3">
+                <div class="card">
+                    <h3>🐍 slopstopper-cli</h3>
+                    <span class="tool-license">MIT</span>
+                    <p>The Python package every check, report and PR comment goes through. Quick standalone try: <code>pipx install slopstopper-cli</code>; in an adopting repo it's pinned in <code>mise.toml</code> and installed via <a href="https://mise.jdx.dev" rel="noopener noreferrer">mise</a>. See the <a href="https://github.com/hungovercoders/slopstopper/releases/latest">latest release</a> for changelog and signed artifacts.</p>
+                    <details class="details">
+                        <summary>CLI surface</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--sh"><pre><code>slopstopper checks list                       # see what's available
+    slopstopper doctor                            # verify external tools
+    slopstopper run hygiene:docs-size             # run a check (writes .ss/reports/...)
+    slopstopper emit hygiene:docs-size --target pr-comment
+    slopstopper templates eject playwright.config.js
+    slopstopper serve                              # bundled static server</code></pre></div>
+                            <p class="details__hint">Bare <code>slopstopper</code> prints a command grid + Quick-start block. Every subcommand has examples in <code>--help</code>.</p>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/tree/main/cli" rel="noopener noreferrer">View slopstopper-cli on GitHub →</a>
+                        </div>
+                    </details>
             </div>
 
             <div class="card">
-                <h2>⚙️ GitHub Actions</h2>
+                <h3>⚙️ GitHub Actions</h3>
                 <span class="tool-license">Platform</span>
                 <p>All checks run as GitHub Actions workflows triggered on every pull request and push to main. Each workflow is a handful of steps: set up the toolchain, <code>slopstopper run …</code>, <code>slopstopper emit …</code>.</p>
                 <p><em>Which</em> workflows land is driven by the <code>profile:</code> key in <code>.slopstopper.yml</code> — <code>ui</code> installs all 28 workflows (the 25 checks plus the PR summary, failure alerts and doc updater), <code>api</code> drops the nine browser-and-SEO checks, <code>library</code> also drops DAST, CSP exceptions and the four API checks (health, latency, headers and OpenAPI drift). Set it with <code>install.sh --profile api</code>, inspect it with <code>slopstopper profile show</code>, and take back any single check with <code>workflows.enabled</code>.</p>
@@ -100,7 +100,7 @@ slopstopper serve                              # bundled static server</code></p
             </div>
 
             <div class="card">
-                <h2>📋 Task</h2>
+                <h3>📋 Task</h3>
                 <span class="tool-license">MIT</span>
                 <p><code>task ss:*</code> is the canonical interface — humans, agents and CI all invoke checks through it. Adopters get one consistent invocation surface across the suite and the rest of their codebase. Re-run install.sh with <code>--no-task</code> to skip <a href="https://taskfile.dev" rel="noopener noreferrer">Task</a> entirely; workflows will call the CLI directly.</p>
                 <details class="details">
@@ -118,7 +118,7 @@ slopstopper serve                              # bundled static server</code></p
             </div>
 
             <div class="card">
-                <h2>🪝 Git hooks</h2>
+                <h3>🪝 Git hooks</h3>
                 <span class="tool-license">GPL-2.0</span>
                 <p><code>install.sh</code> wires a <strong>pre-push</strong> hook via <code>core.hooksPath</code> that runs the fast hygiene checks (<code>task ss:hygiene:test</code>) before every push — so the first CI run confirms rather than discovers. Only the static hygiene subset runs locally; the server/browser checks stay in CI. It won't override an existing <code>husky</code> / <code>lefthook</code> / <code>pre-commit</code> setup — re-run <code>install.sh --no-hooks</code> to skip it, or bypass a single push with <code>git push --no-verify</code>.</p>
                 <details class="details">
@@ -139,30 +139,30 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             <span class="kicker">Security</span>
             <h2>Block it before it merges.</h2>
             <p class="lede">Static analysis, a dynamic scan of the running site, dependency CVEs and leaked credentials — the four tools behind the Security loop.</p>
-            <div class="tools-grid">
-            <div class="card">
-                <h2>🔍 Semgrep</h2>
-                <span class="tool-license">LGPL-2.1</span>
-                <p>Fast static application security testing (SAST). Scans source code for vulnerability patterns and OWASP-style issues before code is merged.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/README.md" rel="noopener noreferrer">Learn more about Security →</a>
-                <details class="details">
-                    <summary>Workflow excerpt</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>jobs:
-  sast:
-    name: Static Application Security Testing with Semgrep
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: pip install semgrep
-      - run: task ss:security:sast</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-sast-check.yml" rel="noopener noreferrer">View source →</a>
-                    </div>
-                </details>
+            <div class="card-grid card-grid--flow card-grid--flow-3">
+                <div class="card">
+                    <h3>🔍 Semgrep</h3>
+                    <span class="tool-license">LGPL-2.1</span>
+                    <p>Fast static application security testing (SAST). Scans source code for vulnerability patterns and OWASP-style issues before code is merged.</p>
+                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/README.md" rel="noopener noreferrer">Learn more about Security →</a>
+                    <details class="details">
+                        <summary>Workflow excerpt</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>jobs:
+      sast:
+        name: Static Application Security Testing with Semgrep
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: pip install semgrep
+          - run: task ss:security:sast</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-sast-check.yml" rel="noopener noreferrer">View source →</a>
+                        </div>
+                    </details>
             </div>
 
             <div class="card">
-                <h2>🕷️ OWASP ZAP</h2>
+                <h3>🕷️ OWASP ZAP</h3>
                 <span class="tool-license">Apache-2.0</span>
                 <p>Dynamic application security testing (DAST). Probes a running deployment for common web vulnerabilities such as XSS, injection and insecure headers.</p>
                 <p>Two modes: the <strong>baseline</strong> scan spiders an HTML site, and the <strong>API</strong> scan reads an OpenAPI spec and exercises the operations it declares — the only mode that finds anything on a JSON API, since there are no links to crawl. Point <code>api.openapi.spec</code> at your spec to switch.</p>
@@ -183,7 +183,7 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             </div>
 
             <div class="card">
-                <h2>🛡️ Trivy</h2>
+                <h3>🛡️ Trivy</h3>
                 <span class="tool-license">Apache-2.0</span>
                 <p>Scans project dependencies for known CVEs on every pull request and push, with severity-based gating to prevent vulnerable packages from reaching production.</p>
                 <details class="details">
@@ -203,7 +203,7 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             </div>
 
             <div class="card">
-                <h2>🔑 Gitleaks</h2>
+                <h3>🔑 Gitleaks</h3>
                 <span class="tool-license">MIT</span>
                 <p>Inspects every commit for accidentally committed credentials, tokens and other secrets, blocking pull requests when high-confidence matches are found.</p>
                 <details class="details">
@@ -229,29 +229,29 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             <span class="kicker">Reliability</span>
             <h2>Prove every deploy works.</h2>
             <p class="lede">A browser, an accessibility engine, a performance auditor and four stdlib-Python audits — the tools behind the Reliability loop.</p>
-            <div class="tools-grid">
-            <div class="card">
-                <h2>🎭 Playwright</h2>
-                <span class="tool-license">Apache-2.0</span>
-                <p>Portable smoke, E2E journey, broken-link and accessibility specs ship inside the slopstopper-cli wheel — adopters don't vendor them. Run <code>slopstopper templates eject playwright.config.js</code> to customise.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
-                <details class="details">
-                    <summary>playwright.config.js (bundled)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>export default defineConfig({
-  testDir: './tests',                 // points at the bundled spec dir
-  use: {
-    baseURL: process.env.SMOKE_TEST_URL || 'http://localhost:8080',
-  },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-});</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/data/playwright.config.js" rel="noopener noreferrer">View cli/slopstopper/data/playwright.config.js →</a>
-                    </div>
-                </details>
+            <div class="card-grid card-grid--flow card-grid--flow-3">
+                <div class="card">
+                    <h3>🎭 Playwright</h3>
+                    <span class="tool-license">Apache-2.0</span>
+                    <p>Portable smoke, E2E journey, broken-link and accessibility specs ship inside the slopstopper-cli wheel — adopters don't vendor them. Run <code>slopstopper templates eject playwright.config.js</code> to customise.</p>
+                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
+                    <details class="details">
+                        <summary>playwright.config.js (bundled)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>export default defineConfig({
+      testDir: './tests',                 // points at the bundled spec dir
+      use: {
+        baseURL: process.env.SMOKE_TEST_URL || 'http://localhost:8080',
+      },
+      projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+    });</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/data/playwright.config.js" rel="noopener noreferrer">View cli/slopstopper/data/playwright.config.js →</a>
+                        </div>
+                    </details>
             </div>
 
             <div class="card">
-                <h2>♿ axe-core</h2>
+                <h3>♿ axe-core</h3>
                 <span class="tool-license">MPL-2.0</span>
                 <p>Industry-standard accessibility engine, run via Playwright on every page to flag WCAG 2.1 AA violations on PRs, after deploys and on a daily schedule.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/ACCESSIBILITY.md" rel="noopener noreferrer">Learn more about Accessibility →</a>
@@ -272,7 +272,7 @@ on:
             </div>
 
             <div class="card">
-                <h2>⚡ Lighthouse CI</h2>
+                <h3>⚡ Lighthouse CI</h3>
                 <span class="tool-license">Apache-2.0</span>
                 <p>Measures Core Web Vitals (LCP, INP, CLS) plus performance, accessibility, best-practice and SEO category scores on every PR and nightly against production.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
@@ -300,7 +300,7 @@ on:
             </div>
 
             <div class="card">
-                <h2>🔎 SEO Metatag Check</h2>
+                <h3>🔎 SEO Metatag Check</h3>
                 <span class="tool-license">MIT</span>
                 <p>Fetches each page and asserts the full set of social-share + indexer metadata: <code>&lt;title&gt;</code>, meta description, canonical, viewport, OpenGraph (og:title/description/type/url/image) and Twitter Card (twitter:card/title/description/image). HEAD-fetches <code>og:image</code> to confirm it is reachable. Stdlib Python — no new dependencies.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/SEO.md" rel="noopener noreferrer">Learn more about SEO check config →</a>
@@ -321,7 +321,7 @@ on:
             </div>
 
             <div class="card">
-                <h2>📄 llms.txt Check</h2>
+                <h3>📄 llms.txt Check</h3>
                 <span class="tool-license">MIT</span>
                 <p>Audits your site's <code>/llms.txt</code> — the <a href="https://llmstxt.org/" rel="noopener noreferrer">llmstxt.org</a> convention, a curated markdown map that lets AI assistants read your key content without parsing HTML. Asserts an H1 title, a summary blockquote and markdown links to key content, and can HEAD-verify every link resolves. Stdlib Python — no new dependencies.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/LLMS_TXT.md" rel="noopener noreferrer">Learn more about llms.txt check config →</a>
@@ -342,7 +342,7 @@ on:
             </div>
 
             <div class="card">
-                <h2>🤖 robots.txt Check</h2>
+                <h3>🤖 robots.txt Check</h3>
                 <span class="tool-license">MIT</span>
                 <p>Audits your site's <code>/robots.txt</code> for the two failures Lighthouse buries. Its headline job is the de-index guard: a stray <code>Disallow: /</code> under <code>User-agent: *</code> silently removes the whole site from search. Also requires a <code>Sitemap:</code> pointer, treats an <code>Llms:</code> pointer as advisory, and can HEAD-verify the referenced URLs resolve. Stdlib Python — no new dependencies.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/ROBOTS_TXT.md" rel="noopener noreferrer">Learn more about robots.txt check config →</a>
@@ -363,7 +363,7 @@ on:
             </div>
 
             <div class="card">
-                <h2>🗺️ sitemap Check</h2>
+                <h3>🗺️ sitemap Check</h3>
                 <span class="tool-license">MIT</span>
                 <p>Crawls your site from <code>/</code> and cross-checks the served <code>sitemap.xml</code> against the pages it actually reaches. A reachable page missing from the sitemap, or a <code>&lt;loc&gt;</code> that 404s, hard-fails — that's drift. <code>llms.txt</code> gaps are advisory. Flat and nested (sitemap-index) shapes both pass. When it fails it recommends generating the file from your routes so it can't drift. Stdlib Python — no new dependencies.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/SITEMAP.md" rel="noopener noreferrer">Learn more about sitemap check config →</a>
@@ -391,27 +391,27 @@ on:
             <span class="kicker">Hygiene</span>
             <h2>Keep the codebase auditable.</h2>
             <p class="lede">A complexity gauge and a Markdown linter; the docs checks themselves are stdlib Python inside the CLI.</p>
-            <div class="tools-grid">
-            <div class="card">
-                <h2>🐛 Lizard</h2>
-                <span class="tool-license">MIT</span>
-                <p>Lizard enforces a cyclomatic-complexity ceiling so code stays auditable and maintainable. It ships as a dependency of <code>slopstopper-cli</code>, so there's nothing extra to install, and the gate runs identically locally, in the pre-push hook and in CI — one threshold, one exit code.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about Hygiene →</a>
-                <details class="details">
-                    <summary>Workflow excerpt</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>jobs:
-  complexity:
-    steps:
-      - uses: ./.github/actions/ss-setup
-      - run: task ss:hygiene:complexity   # fails above hygiene.complexity.max_ccn (15)</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-complexity-check.yml" rel="noopener noreferrer">View source →</a>
-                    </div>
-                </details>
+            <div class="card-grid card-grid--flow card-grid--flow-3">
+                <div class="card">
+                    <h3>🐛 Lizard</h3>
+                    <span class="tool-license">MIT</span>
+                    <p>Lizard enforces a cyclomatic-complexity ceiling so code stays auditable and maintainable. It ships as a dependency of <code>slopstopper-cli</code>, so there's nothing extra to install, and the gate runs identically locally, in the pre-push hook and in CI — one threshold, one exit code.</p>
+                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about Hygiene →</a>
+                    <details class="details">
+                        <summary>Workflow excerpt</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>jobs:
+      complexity:
+        steps:
+          - uses: ./.github/actions/ss-setup
+          - run: task ss:hygiene:complexity   # fails above hygiene.complexity.max_ccn (15)</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-complexity-check.yml" rel="noopener noreferrer">View source →</a>
+                        </div>
+                    </details>
             </div>
 
             <div class="card">
-                <h2>📝 markdownlint</h2>
+                <h3>📝 markdownlint</h3>
                 <span class="tool-license">MIT</span>
                 <p>Seeded, not enforced. <code>install.sh</code> merges <code>markdownlint-cli</code> into your devDependencies and drops a starter <code>.markdownlint.json</code>, ready to wire into your own lint script or pre-commit. The suite's own hygiene checks are about documentation <em>structure, accuracy and size</em> — markdown style is left to you, because every repo's house style differs.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about the hygiene checks →</a>
@@ -430,27 +430,27 @@ on:
             <span class="kicker">How slopstopper.dev itself is built</span>
             <h2>Not part of the suite.</h2>
             <p class="lede">Two more pieces serve this reference site. Adopters need neither — your repo keeps its own language and host; the suite only needs Python and the per-check tools above.</p>
-            <div class="tools-grid">
-            <div class="card">
-                <h2>🔷 TypeScript</h2>
-                <span class="tool-license">Apache-2.0</span>
-                <p>The Cloudflare Worker that serves the site and applies its security headers is TypeScript, bundled by Wrangler at deploy time. It reads the same <code>worker/headers.json</code> the local dev server and the CSP-drift check read, so there is one header policy with three consumers.</p>
-                <details class="details">
-                    <summary>worker/index.ts excerpt</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>const response = await env.ASSETS.fetch(assetRequest);
-const next = new Response(response.body, response);
-for (const [name, value] of Object.entries(headersForPath(url.pathname))) {
-  next.headers.set(name, value);
-}
-return next;</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/worker/index.ts" rel="noopener noreferrer">View worker/index.ts →</a>
-                    </div>
-                </details>
+            <div class="card-grid card-grid--flow card-grid--flow-3">
+                <div class="card">
+                    <h3>🔷 TypeScript</h3>
+                    <span class="tool-license">Apache-2.0</span>
+                    <p>The Cloudflare Worker that serves the site and applies its security headers is TypeScript, bundled by Wrangler at deploy time. It reads the same <code>worker/headers.json</code> the local dev server and the CSP-drift check read, so there is one header policy with three consumers.</p>
+                    <details class="details">
+                        <summary>worker/index.ts excerpt</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>const response = await env.ASSETS.fetch(assetRequest);
+    const next = new Response(response.body, response);
+    for (const [name, value] of Object.entries(headersForPath(url.pathname))) {
+      next.headers.set(name, value);
+    }
+    return next;</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/worker/index.ts" rel="noopener noreferrer">View worker/index.ts →</a>
+                        </div>
+                    </details>
             </div>
 
             <div class="card">
-                <h2>🟧 Cloudflare</h2>
+                <h3>🟧 Cloudflare</h3>
                 <span class="tool-license">Platform</span>
                 <p>Static site served by Cloudflare Workers with the <code>[assets]</code> binding. Workers Builds watches the repo: pushes deploy to prod, PRs get preview URLs, closing a PR cleans up — no GitHub Actions needed.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/deployment/README.md" rel="noopener noreferrer">Learn more about Deployment →</a>
