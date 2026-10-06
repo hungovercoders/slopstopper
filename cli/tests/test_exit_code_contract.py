@@ -37,9 +37,11 @@ def _module(check: str):
     return inspect.getmodule(REGISTRY[check])
 
 
-# The `_contract` helpers that can hand a check a 2 to return.
+# The shared helpers that can hand a check a 2 to return: the `_contract`
+# ones, and `_playwright.run_check`, the whole flow of a Playwright-backed
+# check (its own docstring declares the contract those four checks keep).
 CONTRACT_HELPERS_RETURNING_TWO = frozenset(
-    {"reject_extra_args", "refuse_unsafe_url", "runner_exit", "scan_incomplete"}
+    {"reject_extra_args", "refuse_unsafe_url", "runner_exit", "scan_incomplete", "run_check"}
 )
 
 

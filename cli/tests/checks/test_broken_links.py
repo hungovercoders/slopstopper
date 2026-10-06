@@ -143,7 +143,7 @@ def test_run_invokes_playwright(monkeypatch, isolated_cwd):
 
     monkeypatch.setattr(broken_links, "_npx_available", lambda: True)
     monkeypatch.setattr(broken_links, "_discover_pages", lambda: None)
-    monkeypatch.setattr(broken_links.subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "run", fake_run)
 
     rc = broken_links.run(["--url", "https://example.com"])
     assert rc == 0
@@ -162,7 +162,7 @@ def test_run_ci_mode_threads_html_reporter(monkeypatch, isolated_cwd):
 
     monkeypatch.setattr(broken_links, "_npx_available", lambda: True)
     monkeypatch.setattr(broken_links, "_discover_pages", lambda: None)
-    monkeypatch.setattr(broken_links.subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "run", fake_run)
 
     rc = broken_links.run(["--url", "https://example.com", "--ci"])
     assert rc == 0
@@ -174,7 +174,7 @@ def test_run_propagates_playwright_failure(monkeypatch, isolated_cwd):
     monkeypatch.setattr(broken_links, "_npx_available", lambda: True)
     monkeypatch.setattr(broken_links, "_discover_pages", lambda: None)
     monkeypatch.setattr(
-        broken_links.subprocess, "run",
+        subprocess, "run",
         playwright_failed,
     )
 
@@ -189,7 +189,7 @@ def test_run_writes_report_on_pass(monkeypatch, isolated_cwd):
     monkeypatch.setattr(broken_links, "_npx_available", lambda: True)
     monkeypatch.setattr(broken_links, "_discover_pages", lambda: None)
     monkeypatch.setattr(
-        broken_links.subprocess, "run",
+        subprocess, "run",
         lambda cmd, env, check: subprocess.CompletedProcess(cmd, 0),
     )
     rc = broken_links.run(["--url", "https://example.com"])
@@ -203,7 +203,7 @@ def test_run_writes_report_on_failure(monkeypatch, isolated_cwd):
     monkeypatch.setattr(broken_links, "_npx_available", lambda: True)
     monkeypatch.setattr(broken_links, "_discover_pages", lambda: None)
     monkeypatch.setattr(
-        broken_links.subprocess, "run",
+        subprocess, "run",
         playwright_failed,
     )
     rc = broken_links.run(["--url", "https://example.com"])

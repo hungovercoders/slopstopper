@@ -131,7 +131,7 @@ def test_run_invokes_playwright_with_expected_args(monkeypatch, isolated_cwd):
         return subprocess.CompletedProcess(cmd, 0)
 
     monkeypatch.setattr(e2e, "_npx_available", lambda: True)
-    monkeypatch.setattr(e2e.subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "run", fake_run)
 
     assert e2e.run(["--url", "https://example.com"]) == 0
     assert captured["cmd"][:2] == ["npx", "playwright"]
@@ -148,7 +148,7 @@ def test_run_ci_mode_threads_html_reporter_and_ci_env(monkeypatch, isolated_cwd)
         return subprocess.CompletedProcess(cmd, 0)
 
     monkeypatch.setattr(e2e, "_npx_available", lambda: True)
-    monkeypatch.setattr(e2e.subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "run", fake_run)
 
     assert e2e.run(["https://example.com", "--ci"]) == 0
     assert "--reporter=list,html,json" in captured["cmd"]
@@ -157,7 +157,7 @@ def test_run_ci_mode_threads_html_reporter_and_ci_env(monkeypatch, isolated_cwd)
 
 def test_run_propagates_playwright_failure(monkeypatch, isolated_cwd):
     monkeypatch.setattr(e2e, "_npx_available", lambda: True)
-    monkeypatch.setattr(e2e.subprocess, "run", playwright_failed)
+    monkeypatch.setattr(subprocess, "run", playwright_failed)
     assert e2e.run(["--url", "https://example.com"]) == 1
 
 
@@ -165,7 +165,7 @@ def test_run_returns_two_when_playwright_never_ran(monkeypatch, isolated_cwd):
     """Exit 1 with no JSON report means the suite did not reach a verdict."""
     monkeypatch.setattr(e2e, "_npx_available", lambda: True)
     monkeypatch.setattr(
-        e2e.subprocess, "run",
+        subprocess, "run",
         lambda cmd, env, check: subprocess.CompletedProcess(cmd, 1),
     )
     assert e2e.run(["--url", "https://example.com"]) == 2
@@ -177,7 +177,7 @@ def test_run_returns_two_when_playwright_never_ran(monkeypatch, isolated_cwd):
 def test_run_writes_report_on_pass(monkeypatch, isolated_cwd):
     monkeypatch.setattr(e2e, "_npx_available", lambda: True)
     monkeypatch.setattr(
-        e2e.subprocess, "run",
+        subprocess, "run",
         lambda cmd, env, check: subprocess.CompletedProcess(cmd, 0),
     )
     assert e2e.run(["--url", "https://example.com"]) == 0
@@ -188,7 +188,7 @@ def test_run_writes_report_on_pass(monkeypatch, isolated_cwd):
 
 def test_run_writes_report_on_failure_with_playwright_link(monkeypatch, isolated_cwd):
     monkeypatch.setattr(e2e, "_npx_available", lambda: True)
-    monkeypatch.setattr(e2e.subprocess, "run", playwright_failed)
+    monkeypatch.setattr(subprocess, "run", playwright_failed)
     assert e2e.run(["--url", "https://example.com"]) == 1
     body = e2e.REPORT_MD.read_text()
     assert "FAILED" in body

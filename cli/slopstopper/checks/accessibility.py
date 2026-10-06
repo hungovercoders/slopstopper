@@ -45,131 +45,67 @@ Exit codes:
 
 from __future__ import annotations
 
-import argparse
-import os
-import subprocess
-from pathlib import Path
-
-from slopstopper import discovery, output, templates
+from slopstopper import discovery  # noqa: F401 — tests patch `accessibility.discovery.discover`
 from slopstopper.checks import _playwright, _tools
-from slopstopper.checks._contract import playwright_ran, runner_exit
 
-SPEC_NAME = "accessibility"
-REPORT_DIR = Path(".ss/reports/reliability")
-# Playwright's JSON reporter output: whether the tests ran at all (see
-# `_contract.playwright_ran`) — its exit code alone can't say.
-PLAYWRIGHT_JSON = REPORT_DIR / "accessibility-results.json"
-REPORT_MD = REPORT_DIR / "accessibility-report.md"
+CHECK = _playwright.Check(
+    name="accessibility",
+    spec_name="accessibility",
+    url_env="ACCESSIBILITY_TEST_URL",
+    url_fallbacks=("SMOKE_TEST_URL",),
+    title="## ♿ Accessibility Audit Results",
+    failure_hint=(
+        "Accessibility violations detected. Investigate the failing assertions in the "
+        "[Playwright HTML report](playwright-report/index.html) (uploaded as an artifact in CI)."
+    ),
+    banner="Running accessibility audit against: {url}",
+    banner_icon="♿",
+)
+SPEC_NAME = CHECK.spec_name
+REPORT_DIR = _playwright.REPORT_DIR
+PLAYWRIGHT_JSON = CHECK.playwright_json
+REPORT_MD = CHECK.report_md
 
 # Consumed by `slopstopper emit reliability:accessibility --target {pr-comment,issue}`.
 # Issue title + label match the strings the legacy workflow used in raw
 # `gh issue create` so existing open issues continue to dedup post-migration.
 META = {
     "report_path": str(REPORT_MD),
-    "comment_discriminator": "## ♿ Accessibility Audit Results",
+    "comment_discriminator": CHECK.title,
     "issue_title": "♿ Accessibility Violations Detected on Main Branch",
     "issue_labels": ["accessibility", "reliability"],
     "issue_followup": "🔔 Accessibility violations recurred in commit",
     "issue_close_comment": "✅ Accessibility audit is now passing on `main`. Closing automatically.",
 }
 
-
-def _parse_args(args: list[str] | None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(
-        prog="slopstopper run reliability:accessibility", add_help=False
-    )
-    p.add_argument(
-        "url_positional",
-        nargs="?",
-        default=None,
-        help="Site URL to audit (alternative to --url; e.g. http://localhost:8080)",
-    )
-    p.add_argument("--url", default=None, help="Site URL to audit")
-    p.add_argument("--ci", action="store_true", help="CI mode: html reporter, CI=true")
-    p.add_argument("--help", "-h", action="help")
-    return p.parse_args(args or [])
-
-
 _npx_available = _tools.npx_available
 
 
+def _parse_args(args: list[str] | None):
+    return _playwright.parse_args(CHECK, args)
+
+
 def _resolve_url(parsed_url: str | None) -> str | None:
-    return (
-        parsed_url
-        or os.environ.get("ACCESSIBILITY_TEST_URL")
-        or os.environ.get("SMOKE_TEST_URL")
-    )
+    return _playwright.resolve_url(CHECK, parsed_url)
 
 
 def _discover_pages() -> str | None:
-    """Resolve pages.accessibility from .slopstopper.yml via the in-CLI
-    discovery module. Returns None on internal failure so the spec falls
-    back to its built-in default.
-    """
-    try:
-        paths = discovery.discover("accessibility", "local")
-    except Exception:
-        return None
-    return ",".join(paths) if paths else None
+    """Resolve pages.accessibility (or reliability.coverage.*) for the spec."""
+    return _playwright.discover_pages("accessibility")
 
 
 def _build_env(url: str, ci_mode: bool) -> dict[str, str]:
-    env = dict(os.environ)
-    env["PLAYWRIGHT_JSON_OUTPUT_NAME"] = str(Path.cwd() / PLAYWRIGHT_JSON)
-    env["ACCESSIBILITY_TEST_URL"] = url
+    env = _playwright.base_env(CHECK, url, ci_mode)
     if "ACCESSIBILITY_PAGES" not in env:
         pages = _discover_pages()
         if pages is not None:
             env["ACCESSIBILITY_PAGES"] = pages
-    if ci_mode:
-        env["CI"] = "true"
     return env
-
-
-def _ensure_playwright_assets_ejected() -> None:
-    _playwright.ensure_assets_ejected(SPEC_NAME)
 
 
 def _build_cmd(ci_mode: bool) -> list[str]:
     return _playwright.build_cmd(SPEC_NAME, ci_mode)
 
 
-def _write_report(exit_code: int, url: str) -> None:
-    _playwright.write_summary(
-        REPORT_DIR, REPORT_MD, '## ♿ Accessibility Audit Results', exit_code, url,
-        'Accessibility violations detected. Investigate the failing assertions in the [Playwright HTML report](playwright-report/index.html) (uploaded as an artifact in CI).',
-    )
-
-
 def run(args: list[str] | None = None) -> int:
-    if not _npx_available():
-        output.error("npx is not available — install Node.js to run Playwright tests")
-        return 2
-
-    parsed = _parse_args(args)
-    url = _resolve_url(parsed.url_positional or parsed.url)
-    if not url:
-        output.error("accessibility target URL is required")
-        output._emit("Usage:")
-        output._emit("  slopstopper run reliability:accessibility -- --url https://your-site.example.com")
-        output._emit("  ACCESSIBILITY_TEST_URL=https://your-site slopstopper run reliability:accessibility")
-        return 2
-
-    _ensure_playwright_assets_ejected()
-    spec = templates.playwright_spec(SPEC_NAME)
-    if not spec.exists():
-        output.error(f"Accessibility spec not found at {spec}")
-        output._emit("   The spec is bundled inside slopstopper-cli; reinstall to repair.")
-        return 2
-
-    output.status("♿", f"Running accessibility audit against: {url}")
-    env = _build_env(url, parsed.ci)
-    cmd = _build_cmd(parsed.ci)
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    PLAYWRIGHT_JSON.unlink(missing_ok=True)
-    result = subprocess.run(cmd, env=env, check=False)
-    _write_report(result.returncode, url)
-    # Playwright's own exit code is kept in the report. It exits 1 both when
-    # tests failed (a verdict on the site) and when they never ran (bad
-    # config, no browser): the JSON report tells the two apart.
-    return runner_exit(result.returncode, ran=playwright_ran(PLAYWRIGHT_JSON))
+    return _playwright.run_check(CHECK, args, npx_available=_npx_available, build_env=_build_env)

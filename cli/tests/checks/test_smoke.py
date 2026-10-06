@@ -131,7 +131,7 @@ def test_run_invokes_playwright_with_expected_args(monkeypatch, isolated_cwd):
         return subprocess.CompletedProcess(cmd, 0)
 
     monkeypatch.setattr(smoke, "_npx_available", lambda: True)
-    monkeypatch.setattr(smoke.subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "run", fake_run)
 
     rc = smoke.run(["--url", "https://example.com"])
     assert rc == 0
@@ -149,7 +149,7 @@ def test_run_ci_mode_threads_html_reporter_and_ci_env(monkeypatch, isolated_cwd)
         return subprocess.CompletedProcess(cmd, 0)
 
     monkeypatch.setattr(smoke, "_npx_available", lambda: True)
-    monkeypatch.setattr(smoke.subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "run", fake_run)
 
     rc = smoke.run(["--url", "https://example.com", "--ci"])
     assert rc == 0
@@ -160,7 +160,7 @@ def test_run_ci_mode_threads_html_reporter_and_ci_env(monkeypatch, isolated_cwd)
 def test_run_propagates_playwright_failure(monkeypatch, isolated_cwd):
     monkeypatch.setattr(smoke, "_npx_available", lambda: True)
     monkeypatch.setattr(
-        smoke.subprocess, "run",
+        subprocess, "run",
         playwright_failed,
     )
 
@@ -174,7 +174,7 @@ def test_run_propagates_playwright_failure(monkeypatch, isolated_cwd):
 def test_run_writes_report_on_pass(monkeypatch, isolated_cwd):
     monkeypatch.setattr(smoke, "_npx_available", lambda: True)
     monkeypatch.setattr(
-        smoke.subprocess, "run",
+        subprocess, "run",
         lambda cmd, env, check: subprocess.CompletedProcess(cmd, 0),
     )
     rc = smoke.run(["--url", "https://example.com"])
@@ -188,7 +188,7 @@ def test_run_writes_report_on_pass(monkeypatch, isolated_cwd):
 def test_run_writes_report_on_failure_with_playwright_link(monkeypatch, isolated_cwd):
     monkeypatch.setattr(smoke, "_npx_available", lambda: True)
     monkeypatch.setattr(
-        smoke.subprocess, "run",
+        subprocess, "run",
         playwright_failed,
     )
     rc = smoke.run(["--url", "https://example.com"])
