@@ -26,7 +26,7 @@ def _seed(root: Path) -> None:
 
 def test_the_scaffold_set_is_exactly_the_four_files():
     found = sorted(p.relative_to(TEMPLATES).as_posix() for p in TEMPLATES.rglob("*") if p.is_file())
-    assert found == sorted(SCAFFOLDS), "install.sh seeds these four by name — keep the set in step"
+    assert found == sorted(SCAFFOLDS), "install.sh seeds these four by name, so keep the set in step"
 
 
 def test_scaffolds_pass_entry_files(isolated_cwd, capsys):

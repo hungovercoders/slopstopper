@@ -3,7 +3,7 @@
 Crawls a live site from `/` and cross-checks the served discovery files
 against the pages it actually reaches. Where `reliability:llms-txt` and
 `reliability:robots-txt` assert those files *exist and are well-formed*,
-this check asserts they are *complete and current* — a black-box
+this check asserts they are *complete and current*. It is a black-box
 assertion that the served `sitemap.xml` mirrors the reachable site,
 **independent of how the file is produced** (hand-authored or generated).
 
@@ -15,13 +15,13 @@ incompleteness bug; a `<loc>` that 404s is stale drift. Both hard-fail.
 Why the check still matters when a site generates these files at build
 time: dynamic generation *prevents* drift, but the generator can still
 have bugs (a collection left out of the iterator, an over-aggressive
-`draft` filter). Prevention + independent detection are complementary —
+`draft` filter). Prevention and independent detection are complementary,
 so the remediation advice recommends generating the file from the route
 inventory rather than hand-patching the missing `<loc>`.
 
 Both a flat `<urlset>` and a nested `<sitemapindex>` → child sitemaps
 (`sitemap-0.xml`, …) are supported transparently; neither shape is
-flagged. A flat sitemap is spec-valid — the index is the *optional*
+flagged. A flat sitemap is spec-valid, because the index is only the *optional*
 scale-out mechanism past the 50k-URL / 50MB limit.
 
 CLI surface:
@@ -101,7 +101,7 @@ def _fetch(url: str) -> tuple[int, str, str]:
 
 
 def _head_ok(url: str) -> tuple[bool, str]:
-    """Return (ok, detail) for a link target — reachable and non-4xx/5xx."""
+    """Return (ok, detail) for a link target; ok means reachable and not 4xx/5xx."""
     return _http.head_ok(url, USER_AGENT, label=_LABEL)
 
 
@@ -142,7 +142,7 @@ def _rebase(base: str, loc: str) -> str:
     """Rebase a sitemap/llms `<loc>` onto the test origin.
 
     Sitemaps carry absolute production URLs even when served from a local
-    build, so audit them against the origin under test — never HEAD prod
+    build, so audit them against the origin under test. Never HEAD prod
     from a localhost run.
     """
     return urllib.parse.urljoin(base.rstrip("/") + "/", urllib.parse.urlparse(loc).path.lstrip("/"))
@@ -204,8 +204,8 @@ def _crawl(base: str, max_pages: int, ignore_paths: list[str]) -> tuple[set[str]
     """BFS from `/`, following same-origin `<a href>` links.
 
     Returns (set of normalised HTML page paths, whether max_pages was hit).
-    Only server-rendered links are seen — a JS-rendered SPA under-crawls;
-    point the check at built static output for those.
+    Only server-rendered links are seen, so a JS-rendered SPA under-crawls.
+    Point the check at built static output for those.
     """
     queue: list[str] = [urllib.parse.urljoin(base.rstrip("/") + "/", "")]
     visited: set[str] = set()
@@ -261,7 +261,7 @@ def _parse_sitemap_xml(body: str) -> tuple[ET.Element | None, str | None]:
 def _collect_sitemap(base: str, sitemap_url: str, seen: set[str]) -> tuple[set[str], str | None]:
     """Fetch + parse a sitemap, recursing into index files over HTTP.
 
-    Returns (set of normalised paths, error) — error is a string on an
+    Returns (set of normalised paths, error). The error is a string on an
     unreachable / invalid sitemap (a hard-fail), else None. Child sitemap
     URLs are rebased onto the test origin.
     """
@@ -293,7 +293,7 @@ def _collect_sitemap(base: str, sitemap_url: str, seen: set[str]) -> tuple[set[s
 def _llms_paths(base: str, llms_path: str) -> tuple[set[str] | None, str | None]:
     """Return (set of normalised link paths, error).
 
-    A missing / unreachable llms.txt yields (None, note) — the `llms-txt`
+    A missing / unreachable llms.txt yields (None, note). The `llms-txt`
     check owns its existence, so here it's advisory only.
 
     Links are compared by path, not origin: llms.txt commonly points at its
@@ -306,9 +306,9 @@ def _llms_paths(base: str, llms_path: str) -> tuple[set[str] | None, str | None]
     try:
         status, _ctype, body = _fetch(url)
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError) as e:
-        return None, f"llms.txt not reachable ({type(e).__name__}) — skipping llms cross-check"
+        return None, f"llms.txt not reachable ({type(e).__name__}), so skipping llms cross-check"
     if status != 200:
-        return None, f"llms.txt returned HTTP {status} — skipping llms cross-check"
+        return None, f"llms.txt returned HTTP {status}, so skipping llms cross-check"
 
     paths: set[str] = set()
     for link in _extract_links(body):
@@ -457,16 +457,16 @@ def _build_markdown_report(result: dict) -> str:
     lines.append("## How to Fix")
     lines.append("")
     lines.append(
-        "- **The durable fix — generate, don't hand-edit.** Missing and stale entries "
+        "- **The durable fix is to generate the file, not hand-edit it.** Missing and stale entries "
         "mean your sitemap has drifted from your routes. Rather than hand-patching each "
         "`<loc>`, generate `sitemap.xml` (and `llms.txt`) from your route inventory at "
-        "build time — a framework sitemap integration (e.g. `@astrojs/sitemap`) or a "
+        "build time, using a framework sitemap integration (e.g. `@astrojs/sitemap`) or a "
         "build-time endpoint that iterates your content. A generated file can't drift. "
         "See [docs/reliability/SITEMAP.md](../../../docs/reliability/SITEMAP.md)."
     )
     lines.append(
-        "- **Reachable page missing from sitemap** → add it (or, better, regenerate — see "
-        "above). This is the incompleteness the check guards against."
+        "- **Reachable page missing from sitemap** → add it (or, better, regenerate it as "
+        "described above). This is the incompleteness the check guards against."
     )
     lines.append(
         "- **Stale sitemap entry (unreachable)** → the `<loc>` 404s; remove the deleted "

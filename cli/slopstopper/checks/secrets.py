@@ -6,21 +6,21 @@ Ports the bash security:secrets flow into one self-contained check:
   + gitleaks detect --source=. --redact --report-format=json --report-path=...
   + python3 .ss/scripts/generate-secrets-md.py
 
-Subprocess-invokes `gitleaks` — the same licensing-boundary pattern as
-complexity (lizard). Adopters install gitleaks themselves (MIT). The
+It subprocess-invokes `gitleaks`, following the same licensing-boundary
+pattern as complexity (lizard). Adopters install gitleaks themselves (MIT). The
 slopstopper-cli wheel ships zero gitleaks code.
 
 The JSON report never holds a credential on disk. Gitleaks' native output
 carries the captured value verbatim (`Secret`), the source text around it
 (`Match`, `Line`) and the commit message (`Message`), which can quote the
 same value. Both reports are uploaded as CI artifacts, which anyone with
-read access to the repo can download for the retention window — so a
+read access to the repo can download for the retention window, so a
 check whose job is to contain a leak would otherwise widen its audience.
 Two layers, so no window exists in which an unredacted file sits on disk:
 
   1. gitleaks runs with `--redact`, so `Secret` / `Match` are written as
-     "REDACTED" by the scanner itself — nothing to clean up if the check
-     is killed between the scan and the rewrite.
+     "REDACTED" by the scanner itself, so there is nothing to clean up if
+     the check is killed between the scan and the rewrite.
   2. `_read_findings` is the report's only read site: it strips the
      credential-bearing keys (plus `Author` / `Email`, PII with no use in
      a report) and rewrites the file before returning, so no caller in
@@ -28,7 +28,7 @@ Two layers, so no window exists in which an unredacted file sits on disk:
 
 A report that cannot be read or parsed is scrubbed and replaced by one
 sentinel finding, and the check exits 1: gitleaks ran and wrote
-something, which may have been a secret, so it is treated as one — a
+something, which may have been a secret, so it is treated as one and a
 tracking issue is opened rather than the run shrugged off. No report at
 all means gitleaks never got as far as writing one (not a git repo, a bad
 ref, killed): that is exit 2. The previous run's report is removed before
@@ -37,9 +37,9 @@ every scan, so it can never stand in for this one.
 Exit codes:
   0: no secrets detected
   1: one or more secrets detected, or gitleaks' report could not be read
-      (counted as a finding — see above). The check itself is the gate
+      (counted as a finding, as described above). The check itself is the gate
   2: gitleaks is not installed, arguments were passed (this check takes
-      none), or gitleaks wrote no report — the scan did not run
+      none), or gitleaks wrote no report, so the scan did not run
 """
 
 from __future__ import annotations
@@ -99,7 +99,7 @@ def _run_gitleaks() -> None:
             "gitleaks", "detect",
             "--source=.",
             # Scrub `Secret` / `Match` in the report file itself, not just
-            # the logs — the first of the two redaction layers.
+            # the logs. This is the first of the two redaction layers.
             "--redact",
             "--report-format=json",
             f"--report-path={REPORT_JSON}",
@@ -146,15 +146,15 @@ def _report_is_unreadable(findings: list[dict]) -> bool:
 
 
 def _read_findings() -> list[dict] | None:
-    """The report's findings, redacted — and the report on disk rewritten.
+    """The report's findings, redacted, with the report on disk rewritten.
 
     This is the only place the JSON is read, so every caller gets redacted
     findings and the file is scrubbed before this returns. A report that
-    cannot be read (`OSError`) or parsed (`ValueError` — which covers both
+    cannot be read (`OSError`) or parsed (`ValueError`, which covers both
     `JSONDecodeError` and `UnicodeDecodeError`) or is not a list becomes
     the single `UNREADABLE_REPORT_FINDING`: it is still counted as a
     finding, and its bytes never survive. None means gitleaks wrote no
-    report at all — the scan did not run.
+    report at all, meaning the scan did not run.
     """
     if not REPORT_JSON.exists():
         return None
@@ -176,7 +176,7 @@ def _write_redacted_json(findings: list[dict]) -> None:
     Only ever called for a file gitleaks produced. If the rewrite itself
     fails, the file is removed instead: a report that cannot be scrubbed
     must not be left for the artifact upload. If even that fails, the
-    error propagates — the check must not report success over an
+    error propagates, because the check must not report success over an
     unredacted file.
     """
     if not REPORT_JSON.exists():
@@ -208,7 +208,7 @@ def _build_md_report(findings: list[dict]) -> str:
     if total == 0:
         md += "## ✅ Secrets Status\n\nNo secrets detected.\n\n"
     else:
-        md += f"> ⚠️ **{total} secret(s) detected** — revoke and remove immediately.\n\n"
+        md += f"> ⚠️ **{total} secret(s) detected.** Revoke and remove them immediately.\n\n"
         md += "| Rule | Location | Commit | Description |\n"
         md += "|------|----------|--------|-------------|\n"
         for finding in findings:
@@ -240,21 +240,21 @@ def run(args: list[str] | None = None) -> int:
     if findings is None:
         return scan_incomplete(
             REPORT_DIR, REPORT_MD, "Secrets Detection Report",
-            f"gitleaks wrote no report at `{REPORT_JSON}` — often not a git repository, "
-            "a shallow clone missing the history it was asked to scan, or a killed "
-            "process. The scan is treated as not run, not as clean.",
+            f"gitleaks wrote no report at `{REPORT_JSON}`. This usually means the directory is "
+            "not a git repository, the clone is too shallow for the history it was asked "
+            "to scan, or the process was killed. The scan is treated as not run, not as clean.",
         )
     REPORT_MD.write_text(_build_md_report(findings))
 
     if _report_is_unreadable(findings):
         output.error(
-            "gitleaks' report could not be read or parsed — it was scrubbed and "
-            "counted as a finding; re-run the scan to see what it holds"
+            "gitleaks' report could not be read or parsed, so it was scrubbed and "
+            "counted as a finding. Re-run the scan to see what it holds"
         )
         output.footer(REPORT_DIR, [REPORT_MD.name])
         return 1
     if findings:
-        output.warn(f"Found {len(findings)} secret(s) — revoke and remove immediately")
+        output.warn(f"Found {len(findings)} secret(s). Revoke and remove them immediately")
     else:
         output.success("No secrets detected")
     output.footer(REPORT_DIR, [REPORT_MD.name])

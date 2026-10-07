@@ -2,7 +2,7 @@
 //
 // Serves static assets from the [assets] binding and applies the per-path
 // security headers defined in worker/headers.json. That JSON is the single
-// source of truth — server.js (local dev) and check-csp-exceptions.py
+// source of truth: server.js (local dev) and check-csp-exceptions.py
 // (drift gate) read the same file.
 
 import headersConfig from "./headers.json";

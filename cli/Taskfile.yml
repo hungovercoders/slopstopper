@@ -1,7 +1,7 @@
 version: '3'
 
 # Tasks for the slopstopper-cli Python package.
-# Internal — this Taskfile is NOT part of the distributed slopstopper
+# Internal: this Taskfile is NOT part of the distributed slopstopper
 # suite and is not seeded into adopter repos. CI (`.github/workflows/ci-cli.yml`)
 # and local development must both call the targets here so versions and
 # tooling stay in sync across contexts.

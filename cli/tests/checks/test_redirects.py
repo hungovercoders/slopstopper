@@ -1,6 +1,6 @@
 """Every URL check, pointed at a target that redirects off http(s).
 
-The redirect is refused (see `_http._GuardedRedirects`) — but refusing it
+The redirect is refused (see `_http._GuardedRedirects`), but refusing it
 is a fact about the target, reported like any other status. It must not
 abort the check: no exit 2 ("could not run"), and a report is written, so
 the PR comment and the main-branch issue still see the finding.

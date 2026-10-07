@@ -41,7 +41,7 @@ classifiers = [
 dependencies = [
   # `lizard` is invoked at runtime by hygiene:complexity via subprocess
   # (`python -m lizard` against sys.executable). When slopstopper-cli is
-  # installed via pipx, sys.executable resolves to the pipx venv — which
+  # installed via pipx, sys.executable resolves to the pipx venv, which
   # is where lizard must live too, otherwise `python -m lizard` fails
   # even though `brew install lizard` (a different `lz4` tool) is on PATH.
   # Promoting lizard from a test extra to a runtime dependency means
@@ -67,7 +67,7 @@ Acknowledgements = "https://github.com/hungovercoders/slopstopper/blob/main/ATTR
 
 [tool.hatch.build.targets.wheel]
 # `packages = ["slopstopper"]` includes the slopstopper/ tree (Python +
-# data files) automatically — no `force-include` needed; that block
+# data files) automatically, so no `force-include` is needed; that block
 # caused a double-include error when building the wheel under hatchling.
 packages = ["slopstopper"]
 

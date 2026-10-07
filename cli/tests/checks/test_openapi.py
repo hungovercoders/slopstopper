@@ -3,7 +3,7 @@
 The behaviour worth pinning: a YAML spec skips rather than failing (the
 CLI has no YAML parser and saying so is more useful than going red), the
 committed-vs-served comparison is on operation sets rather than document
-equality, and parameterised paths are never probed — a 404 from
+equality, and parameterised paths are never probed, because a 404 from
 `/users/{id}` could mean a missing route or merely a missing record, and
 reporting both as failures would train people to ignore the check.
 """
@@ -79,7 +79,7 @@ def test_options_come_from_config(write_config):
 
 
 def test_spec_key_is_shared_with_dast(write_config):
-    """One spec key, two checks — dast.py reads the same api.openapi.spec."""
+    """One spec key, two checks: dast.py reads the same api.openapi.spec."""
     from slopstopper.checks import dast
 
     write_config("api:\n  openapi:\n    spec: openapi.json\n")
@@ -118,7 +118,7 @@ def test_a_yaml_spec_skips_rather_than_failing(write_config, capsys, spec):
 
 
 def test_a_missing_spec_file_is_could_not_run(write_config, capsys):
-    """Nothing to compare is exit 2 — the same as DAST for the same config."""
+    """Nothing to compare is exit 2, as it is for DAST with the same config."""
     write_config("api:\n  openapi:\n    spec: nowhere.json\n")
     assert openapi.run(["https://api.example.com"]) == 2
     assert "spec file not found" in capsys.readouterr().out
@@ -195,7 +195,7 @@ def test_a_matching_served_spec_passes(monkeypatch):
 
 
 def test_operation_comparison_ignores_ordering(monkeypatch):
-    """Sets, not sequences — a reordered spec is not drift."""
+    """Operations compare as sets, not sequences, so a reordered spec is not drift."""
     reordered = _spec(
         {
             "/users/{id}": {"get": {}},
@@ -297,7 +297,7 @@ def test_a_404_on_a_documented_path_fails(monkeypatch):
 
 
 def test_a_405_is_not_a_failure(monkeypatch):
-    """A 405 proves the route exists — the check only sends GET."""
+    """A 405 proves the route exists, because the check only sends GET."""
     monkeypatch.setattr(openapi, "_probe_status", lambda url: 405)
     result = openapi._audit("https://api.example.com", SPEC, _opts())
     assert result["status"] == "pass"

@@ -1,15 +1,15 @@
 """Guard: every check workflow appears in both `workflow_run` trigger lists.
 
 Two workflows react to the others finishing, and GitHub does not support
-globs in `workflow_run.workflows` — each name must be spelled out:
+globs in `workflow_run.workflows`, so each name must be spelled out:
 
 - `ss-pr-summary.yml` re-renders the single rolling PR comment. A
   workflow left out still runs and still posts its own comment, but the
   summary silently stops re-rendering after it, so the headline count
   goes stale without anything going red.
 - `ss-workflow-failure-issue.yml` raises a tracking issue when a check
-  fails on main. A workflow left out can fail on main and nobody hears —
-  the product's "nothing fails silently" promise, broken in its own repo.
+  fails on main. A workflow left out can fail on main and nobody hears,
+  which breaks the product's "nothing fails silently" promise in its own repo.
   When this test was added the list was eleven checks stale and named a
   workflow that no longer existed.
 

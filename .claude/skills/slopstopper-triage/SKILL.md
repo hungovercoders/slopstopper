@@ -31,11 +31,11 @@ If the user only gave you the workflow URL or a failing CI badge, click through 
 
 ### Fastest route: read the PR summary comment
 
-Every PR carries one rolling comment headed `SlopStopper — N of M checks failed`, with the failures in a table linking straight to their logs, and the passing checks folded below. Start there: it names the failing checks and nothing else, so you don't have to scan the Actions tab or 20 comment cards.
+Every PR carries one rolling comment headed `SlopStopper: N of M checks failed`, with the failures in a table linking straight to their logs, and the passing checks folded below. Start there: it names the failing checks and nothing else, so you don't have to scan the Actions tab or 20 comment cards.
 
 Each failing check also posts its own compact comment, with a verdict line, the failing items, and the full report folded into a `<details>`. Open that fold before pulling the artifact: it is the same report, already on the page.
 
-A `⚠️` verdict is neither. The advisory checks (`hygiene:docs-size`) report findings while deliberately exiting 0, so they post `⚠️ … — has alerts` and keep the comment. The job is green and the summary shows ✅, because the alert is a nudge rather than a gate.
+A `⚠️` verdict is neither. The advisory checks (`hygiene:docs-size`) report findings while deliberately exiting 0, so they post `⚠️ …: has alerts` and keep the comment. The job is green and the summary shows ✅, because the alert is a nudge rather than a gate.
 
 **A green PR has no per-check comments at all.** Passing checks delete theirs (`emit --on-pass=delete`), so the summary is the only comment. An absent comment means "passed", not "didn't run". The summary's own table is what distinguishes those.
 

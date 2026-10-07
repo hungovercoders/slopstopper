@@ -10,7 +10,7 @@ Adapter contract:
         '''Return [{"for": str, "csp": str | None}, ...] for each rule.'''
 
 Path is the file the adopter named in `.slopstopper.yml` `headers.source`.
-Adapters do not validate the file's existence — the caller checks first.
+Adapters do not validate the file's existence; the caller checks first.
 
 Built-in adapters live as submodules here. The plan-doc convention for
 adopter-supplied custom adapters is to drop a Python module under
@@ -45,7 +45,7 @@ def detect_format(path: Path) -> str:
 def parse(path: Path, format_name: str) -> list[dict]:
     """Dispatch to the named adapter.
 
-    Raises KeyError if `format_name` is unknown — caller should validate
+    Raises KeyError if `format_name` is unknown. The caller should validate
     against ADAPTERS.keys() and report a friendly error.
     """
     if format_name == "auto":

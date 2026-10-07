@@ -1,6 +1,6 @@
 # mise toolchain for slopstopper.dev.
 #
-# This repo IS slopstopper-cli, so it pins NO "pipx:slopstopper-cli" here —
+# This repo IS slopstopper-cli, so it pins NO "pipx:slopstopper-cli" here;
 # the workflows install the CLI editable (`pip install -e ./cli`) and run HEAD.
 # Adopter repos get a "pipx:slopstopper-cli" pin written here by install.sh;
 # that pin is the single source of truth both local runs and CI (jdx/mise-action)
@@ -8,7 +8,7 @@
 #
 # `node` is pinned here too: it's a tool version, so it lives in mise (not
 # .slopstopper.yml). mise installs it per-directory locally, and CI gets it from
-# the same pin via jdx/mise-action — no separate setup-node step or repo variable.
+# the same pin via jdx/mise-action, with no separate setup-node step or repo variable.
 [tools]
 "task" = "3"
 "node" = "20"

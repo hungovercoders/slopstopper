@@ -1,7 +1,7 @@
 name: CI · slopstopper-cli
 
 # Internal CI for the slopstopper-cli Python package under cli/.
-# Not part of the distributed slopstopper suite — this workflow is
+# Not part of the distributed slopstopper suite: this workflow is
 # slopstopper.dev-internal and is NOT seeded into adopter repos by
 # install.sh. Adopters never receive cli/, so they never need to run
 # its tests.
@@ -50,7 +50,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Set up toolchain (task)
-        # Installs the mise-pinned `task` (mise.toml [tools]) — same
+        # Installs the mise-pinned `task` (mise.toml [tools]), the same
         # version locally and in CI. Replaces a `curl | sh` bootstrap.
         uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
       - name: Run CLI tests

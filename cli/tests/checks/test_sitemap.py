@@ -373,7 +373,7 @@ def _pass_result() -> dict:
 def test_build_markdown_report_pass():
     md = sitemap._build_markdown_report(_pass_result())
     assert "✅ PASS" in md
-    assert "generate, don't hand-edit" in md
+    assert "generate the file, not hand-edit it" in md
 
 
 def test_build_markdown_report_fail_lists_issues():

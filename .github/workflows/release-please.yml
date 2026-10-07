@@ -42,7 +42,7 @@ jobs:
       #     workflows silently skipped (anti-recursion). App-authored PRs
       #     are exempt, so PR CI runs automatically with no approval click.
       #   * Tags pushed by GITHUB_TOKEN don't fire other tag-triggered
-      #     workflows (same anti-recursion rule). App-pushed tags do —
+      #     workflows (same anti-recursion rule). App-pushed tags do,
       #     so the v* tag this workflow creates auto-fires ss-release.yml.
       - name: Mint App token
         id: app-token

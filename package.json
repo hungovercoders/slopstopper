@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "SlopStopper – deterministic feedback for AI-driven development",
   "scripts": {
-    "build": "echo 'Static site — no build step. Cloudflare Workers ships app/ as-is.'",
+    "build": "echo 'Static site, no build step. Cloudflare Workers ships app/ as-is.'",
     "start": "slopstopper serve",
     "test": "slopstopper run reliability:smoke",
     "test:accessibility": "slopstopper run reliability:accessibility",

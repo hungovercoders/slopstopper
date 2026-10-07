@@ -201,7 +201,7 @@ def test_audit_check_links_notes_dead_link(monkeypatch):
     monkeypatch.setattr(robots_txt, "_fetch", lambda url: (200, "text/plain", VALID_BODY))
     monkeypatch.setattr(robots_txt, "_head_ok", lambda url: (False, "HTTP 404"))
     result = robots_txt._audit("https://example.com", "/robots.txt", check_links=True, require_llms=False, allow_disallow_all=False)
-    # dead links are advisory — still passes
+    # dead links are advisory, so it still passes
     assert result["status"] == "pass"
     assert any("not reachable" in n for n in result["notes"])
 
@@ -228,7 +228,7 @@ def test_build_markdown_report_fail():
     result = {
         "url": "https://example.com/robots.txt",
         "status": "fail",
-        "issues": ["`User-agent: *` has a blanket `Disallow: /` — this de-indexes the entire site"],
+        "issues": ["`User-agent: *` has a blanket `Disallow: /`, which de-indexes the entire site"],
         "notes": [],
         "sitemap_count": 0,
         "llms_count": 0,

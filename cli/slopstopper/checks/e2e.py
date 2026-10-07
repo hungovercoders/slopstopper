@@ -23,7 +23,7 @@ names a selector or a page of this site, so it runs unchanged on any
 HTML site. Journeys that are specific to one site go in an ejected copy
 (`slopstopper templates eject tests/e2e.spec.ts`).
 
-Subprocess-invokes `npx playwright` — Playwright is Apache-2.0; the
+Subprocess-invokes `npx playwright`. Playwright is Apache-2.0, and the
 slopstopper-cli wheel ships zero Playwright code. The spec and the
 Playwright config are bundled in the wheel; adopters can override by
 writing same-named files under .ss/ (see slopstopper.templates).

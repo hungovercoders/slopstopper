@@ -13,7 +13,7 @@ Implements the reliability:smoke flow:
                       <resolved smoke spec>
                       --reporter=list[,html]
 
-Subprocess-invokes `npx playwright` — Playwright is Apache-2.0; the
+Subprocess-invokes `npx playwright`. Playwright is Apache-2.0, and the
 slopstopper-cli wheel ships zero Playwright code. The test specs and
 Playwright config are bundled in the wheel; adopters can override by
 writing same-named files under .ss/ (see slopstopper.templates).

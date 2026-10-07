@@ -3,7 +3,7 @@
     uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
 A tag can be moved; a commit cannot. The review found zero hand-written
-workflows pinned — including `pypa/gh-action-pypi-publish@release/v1`, a
+workflows pinned, including `pypa/gh-action-pypi-publish@release/v1`, a
 mutable *branch*, on the job that publishes to PyPI with `id-token:
 write`. A security-tooling product that ships SAST and secrets scanning
 into other people's repos should not itself run whatever a moved tag
@@ -26,7 +26,7 @@ WORKFLOWS_DIR = REPO_ROOT / ".github/workflows"
 ACTIONS_DIR = REPO_ROOT / ".github/actions"
 
 # `uses:` as a block key or inside a flow mapping (`- {uses: x@v1}`), with any
-# trailing whitespace or a CR line ending — a line the pattern misses is a
+# trailing whitespace or a CR line ending. A line the pattern misses is a
 # line the guard never checks.
 USES_RE = re.compile(r"^[ \t]*-?[ \t]*\{?[ \t]*uses:[ \t]*([^\s#,}]+)[^\S\n]*(#[^\r\n]*)?", re.M)
 PINNED_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$")
@@ -35,7 +35,7 @@ VERSION_COMMENT_RE = re.compile(r"^#\s*v?\d")
 
 
 def _files() -> list[Path]:
-    """Every workflow and composite action GitHub would run — both extensions.
+    """Every workflow and composite action GitHub would run, in both extensions.
     The gh-aw lock file is generated and carries its compiler's pins."""
     workflows = [
         p for ext in ("yml", "yaml") for p in sorted(WORKFLOWS_DIR.glob(f"*.{ext}"))
@@ -67,7 +67,7 @@ def test_every_third_party_action_is_pinned_to_a_commit(path):
     for ref, _comment in _uses(path):
         if not PINNED_RE.match(ref):
             floating.append(ref)
-    assert not floating, f"{path.name} uses floating refs: {floating} — pin to a commit SHA"
+    assert not floating, f"{path.name} uses floating refs: {floating}. Pin to a commit SHA"
 
 
 @pytest.mark.parametrize("path", _files(), ids=lambda p: p.name)

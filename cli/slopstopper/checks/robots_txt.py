@@ -3,8 +3,8 @@
 Fetches `/robots.txt` from a live URL and asserts it is present, reachable
 and does not silently sabotage discoverability. The headline assertion is
 the *de-index guard*: a stray `Disallow: /` under `User-agent: *` (often
-leaked from a staging config) removes an entire public site from search —
-the single highest-blast-radius line a site can ship. Complements
+leaked from a staging config) removes an entire public site from search,
+which makes it the highest-blast-radius line a site can ship. Complements
 `reliability:seo` (what human crawlers read) and `reliability:llms-txt`
 (what AI assistants read); together the three form the discovery-file
 triangle.
@@ -79,7 +79,7 @@ def _fetch(url: str) -> tuple[int, str, str]:
 
 
 def _head_ok(url: str) -> tuple[bool, str]:
-    """Return (ok, detail) for a link target — reachable and non-4xx/5xx."""
+    """Return (ok, detail) for a link target; ok means reachable and not 4xx/5xx."""
     return _http.head_ok(url, USER_AGENT, label=_LABEL)
 
 
@@ -107,7 +107,7 @@ def _blocks_all_crawlers(body: str) -> bool:
 
     Groups start with one or more `User-agent` lines and run until the next
     group. A `Disallow: /` (path exactly `/`) in the wildcard group removes
-    the whole site from compliant crawlers — the de-index footgun.
+    the whole site from compliant crawlers, which is the de-index footgun.
     """
     agents: list[str] = []
     star_group = False
@@ -153,7 +153,7 @@ def _validate_body(
         issues.append("robots.txt is empty")
 
     if _blocks_all_crawlers(body):
-        msg = "`User-agent: *` has a blanket `Disallow: /` — this de-indexes the entire site"
+        msg = "`User-agent: *` has a blanket `Disallow: /`, which de-indexes the entire site"
         if allow_disallow_all:
             notes.append(msg + " (allowed by allow_disallow_all)")
         else:
@@ -161,7 +161,7 @@ def _validate_body(
 
     sitemaps = _global_directive(body, "Sitemap")
     if not sitemaps:
-        issues.append("No `Sitemap:` directive — crawlers can't discover your URL inventory")
+        issues.append("No `Sitemap:` directive, so crawlers can't discover your URL inventory")
 
     llms = _global_directive(body, "Llms")
     if not llms:

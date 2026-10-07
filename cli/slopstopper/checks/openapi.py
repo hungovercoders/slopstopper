@@ -2,8 +2,8 @@
 
 The API-shaped analogue of `hygiene:docs-accuracy`. That check catches a
 doc that references a file which moved; this one catches a spec that has
-stopped describing the API it documents. Both are the same failure —
-documentation that quietly became fiction — on different surfaces.
+stopped describing the API it documents. Both catch the same failure on
+different surfaces: documentation that quietly became fiction.
 
 Two directions, because those are the two this can answer honestly
 without introspecting the app's routes:
@@ -25,8 +25,8 @@ probed: a 404 from one may mean "route missing" or merely "no such id",
 and the check cannot tell those apart. Reporting both as failures would
 train people to ignore it.
 
-Detecting *undocumented* routes — the other half of drift — is out of
-scope. It needs framework-specific route introspection (FastAPI, Express
+Detecting *undocumented* routes is the other half of drift, and it is out
+of scope. It needs framework-specific route introspection (FastAPI, Express
 and Spring each expose their routing differently), which is a different
 and much larger check.
 
@@ -47,7 +47,7 @@ Configuration (.slopstopper.yml, all optional):
 
     api:
       openapi:
-        spec:           # file or URL — shared with security:dast
+        spec:           # file or URL; security:dast reads it too
         served_spec:    # URL the live API serves its spec at
         probe_paths: true
         ignore_paths: []
@@ -58,10 +58,10 @@ Exit codes:
   0: spec and API agree, or nothing configured / the spec is YAML
       (graceful skip)
   1: drift detected, or the committed spec is not valid JSON / not an
-      OpenAPI document — a verdict about the repo
-  2: the spec could not be loaded (file missing, URL unreachable,
-      refused or unsafe) or the target URL has an unsafe scheme — the
-      check could not run, the same as DAST for the same config
+      OpenAPI document (a verdict about the repo)
+  2: the check could not run because the spec could not be loaded (file
+      missing, URL unreachable, refused or unsafe) or the target URL has
+      an unsafe scheme. DAST exits the same way for the same config
 """
 
 from __future__ import annotations
@@ -151,7 +151,7 @@ def _load_spec_text(spec: str) -> tuple[str | None, str | None]:
 
 
 def _parse_spec(text: str, label: str) -> tuple[dict | None, str | None]:
-    """(document, error). JSON only — see the module docstring."""
+    """(document, error). JSON only; the module docstring says why."""
     try:
         document = json.loads(text)
     except ValueError as e:
@@ -166,7 +166,7 @@ def _validate_shape(document: dict, label: str) -> list[str]:
     issues = []
     if not any(key in document for key in VERSION_KEYS):
         issues.append(
-            f"{label} has no `openapi` or `swagger` version key — is it really a spec?"
+            f"{label} has no `openapi` or `swagger` version key, so it may not be a spec"
         )
     paths = document.get("paths")
     if not isinstance(paths, dict) or not paths:
@@ -200,8 +200,8 @@ def _compare_operations(committed: set[str], served: set[str], issues: list[str]
 
     for operation in missing_from_committed:
         issues.append(
-            f"`{operation}` is served but missing from the committed spec — "
-            "the committed artifact is stale"
+            f"`{operation}` is served but missing from the committed spec, "
+            "so the committed artifact is stale"
         )
     for operation in missing_from_served:
         issues.append(
@@ -217,7 +217,7 @@ def _compare_operations(committed: set[str], served: set[str], issues: list[str]
 
 
 def _parameterless_paths(document: dict, ignore_paths: list[str]) -> tuple[list[str], list[str]]:
-    """(probeable, skipped) — a path with `{param}` can't be probed honestly."""
+    """(probeable, skipped). A path with `{param}` can't be probed honestly."""
     probeable, skipped = [], []
     for path in (document.get("paths") or {}):
         path = str(path)
@@ -237,7 +237,7 @@ def _probe_paths(url: str, paths: list[str], issues: list[str]) -> list[dict]:
         if status is None:
             issues.append(f"`{path}` is documented but the request never landed")
         elif status == 404:
-            issues.append(f"`{path}` is documented but the API returns 404 — the route is gone")
+            issues.append(f"`{path}` is documented but the API returns 404, so the route is gone")
         elif status >= 500:
             issues.append(f"`{path}` is documented but the API returns HTTP {status}")
         results.append({"path": path, "status": status, "ok": ok})
@@ -251,7 +251,7 @@ def _audit_served_spec(served_spec: str, committed: set[str], opts: dict, issues
     """Load the served spec and diff its operations against the committed set."""
     text, error = _load_spec_text(served_spec)
     if error:
-        issues.append(f"served spec unreadable — {error}")
+        issues.append(f"served spec unreadable: {error}")
         return {}
     document, error = _parse_spec(text, "the served spec")
     if error:
@@ -274,7 +274,7 @@ def _audit(url: str | None, document: dict, opts: dict) -> dict:
         drift = _audit_served_spec(opts["served_spec"], committed, opts, issues)
     elif not _spec_is_url(opts["spec"]):
         notes.append(
-            "no `api.openapi.served_spec` set — the committed spec isn't being compared "
+            "no `api.openapi.served_spec` set, so the committed spec isn't being compared "
             "against what the API actually serves, which is the drift most worth catching"
         )
 
@@ -282,11 +282,11 @@ def _audit(url: str | None, document: dict, opts: dict) -> dict:
     if opts["probe_paths"] and url and probeable:
         probes = _probe_paths(url, probeable, issues)
     elif opts["probe_paths"] and not url:
-        notes.append("no URL supplied — documented paths were not probed for reachability")
+        notes.append("no URL supplied, so documented paths were not probed for reachability")
 
     if skipped:
         notes.append(
-            f"{len(skipped)} path(s) take parameters and were not probed — a 404 from one "
+            f"{len(skipped)} path(s) take parameters and were not probed, because a 404 from one "
             "could mean a missing route or merely a missing record, and this check can't "
             "tell those apart"
         )
@@ -404,14 +404,14 @@ def _resolve_options(parsed: argparse.Namespace) -> dict:
 
 
 def _skip(reason: str, guidance: list[str]) -> int:
-    """Graceful skip — an unconfigured check is not a failing check."""
+    """Graceful skip, because an unconfigured check is not a failing check."""
     output.info(reason)
     for line in guidance:
         output._emit(f"   {line}")
     _write_reports(
         {"status": "skipped", "skip_reason": reason, "skip_guidance": guidance, "issues": []}
     )
-    output.success("Nothing to audit — skipping (exit 0).")
+    output.success("Nothing to audit, so skipping (exit 0).")
     return 0
 
 
@@ -438,16 +438,16 @@ def run(args: list[str] | None = None) -> int:
 
     if not opts["spec"]:
         return _skip(
-            "No api.openapi.spec configured in .slopstopper.yml — nothing to compare.",
+            "No api.openapi.spec configured in .slopstopper.yml, so there is nothing to compare.",
             ["Set it to your spec's URL or a JSON file in the repo to enable this check."],
         )
 
     if _looks_like_yaml(opts["spec"]):
         return _skip(
-            f"api.openapi.spec points at a YAML spec ({opts['spec']}) — this check reads JSON only.",
+            f"api.openapi.spec points at a YAML spec ({opts['spec']}), but this check reads JSON only.",
             [
                 "slopstopper-cli has no YAML parser (its one runtime dependency is lizard), so it can't read YAML.",
-                "Point it at the JSON form instead — most frameworks serve /openapi.json —",
+                "Point it at the JSON form instead, which most frameworks serve at /openapi.json.",
                 "e.g. api.openapi.spec: https://api.example.com/openapi.json",
             ],
         )
@@ -463,7 +463,7 @@ def run(args: list[str] | None = None) -> int:
     url = parsed.url_positional or parsed.url
     if url and (rc := refuse_unsafe_url(url, _LABEL)) is not None:
         return rc
-    output.status("📘", f"OpenAPI drift audit — spec: {opts['spec']}")
+    output.status("📘", f"OpenAPI drift audit (spec: {opts['spec']})")
     output.separator()
 
     result = _audit(url, document, opts)

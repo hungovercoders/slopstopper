@@ -127,7 +127,7 @@ def test_run_clean_path_when_no_findings(monkeypatch, isolated_cwd, capsys):
 
 def test_run_with_findings_returns_one(monkeypatch, isolated_cwd, capsys):
     """The check is the gate. It used to return 0 with the verdict living
-    in a Python heredoc inside the workflow, where no test could reach it —
+    in a Python heredoc inside the workflow, where no test could reach it,
     so `slopstopper run security:secrets` exited 0 on a live credential."""
     def fake_gitleaks():
         secrets.REPORT_DIR.mkdir(parents=True, exist_ok=True)
@@ -153,7 +153,7 @@ def test_run_with_findings_returns_one(monkeypatch, isolated_cwd, capsys):
 # A well-formed fake GitHub PAT. The real gitleaks binary must flag it inside
 # the temp repo the end-to-end test builds, so it has to look real; the
 # `github-pat` rule is a plain regex that is stable across gitleaks 8.21–8.30
-# (the AWS rule is not — 8.30 stopped flagging a bare AKIA… id). GitHub's own
+# (the AWS rule is not, because 8.30 stopped flagging a bare AKIA… id). GitHub's own
 # push protection checksums PATs, so a random one is never mistaken for live.
 # Defined exactly once, on a line gitleaks is told to skip, because the
 # secrets workflow scans every branch's history and would otherwise fail
@@ -213,7 +213,7 @@ def test_run_rewrites_the_json_on_disk_without_secret_values(monkeypatch, isolat
     assert PLANTED_KEY not in on_disk
     assert '"Secret"' not in on_disk
     assert '"Match"' not in on_disk
-    # The workflow gate counts list length — the shape must survive.
+    # The workflow gate counts list length, so the shape must survive.
     assert len(json.loads(on_disk)) == 1
     assert PLANTED_KEY not in secrets.REPORT_MD.read_text()
 
@@ -222,7 +222,7 @@ def test_run_scrubs_a_malformed_report_and_fails_closed(monkeypatch, isolated_cw
     """An unparseable report may hold a secret, and must not read as "none".
 
     The workflow gate counts list entries, so the scrubbed file carries one
-    sentinel finding and the check exits 1 — a truncated report that did
+    sentinel finding and the check exits 1. A truncated report that did
     contain findings can never turn a PR green.
     """
 
@@ -242,7 +242,7 @@ def test_run_scrubs_a_malformed_report_and_fails_closed(monkeypatch, isolated_cw
 
 
 def test_run_scrubs_a_report_that_is_not_utf8_and_fails_closed(monkeypatch, isolated_cwd):
-    """UnicodeDecodeError is a ValueError, not a JSONDecodeError — it must
+    """UnicodeDecodeError is a ValueError, not a JSONDecodeError, but it must
     still land in the scrub-and-fail path rather than a traceback that
     leaves the raw file behind for the artifact upload."""
 
@@ -258,7 +258,7 @@ def test_run_scrubs_a_report_that_is_not_utf8_and_fails_closed(monkeypatch, isol
 
 def test_run_removes_a_report_it_cannot_rewrite(monkeypatch, isolated_cwd):
     """If the scrub itself fails the raw file is unlinked and the error
-    propagates — never a green exit over an unredacted report."""
+    propagates. There is never a green exit over an unredacted report."""
 
     class Unwritable(type(secrets.REPORT_JSON)):
         def write_text(self, *a, **k):

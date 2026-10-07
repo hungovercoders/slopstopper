@@ -5,7 +5,7 @@
 #
 # The gh-aw lock file (ss-hygiene-doc-updater.lock.yml) is generated and
 # carries its compiler's pins; edit the .md source and recompile, never the
-# lock — so Dependabot is kept out of it. github/gh-aw is ignored too: its
+# lock, so Dependabot is kept out of it. github/gh-aw is ignored too: its
 # setup-cli action takes a `version:` input that must move with the pin,
 # which Dependabot can't do (copilot-setup-steps.yml bumps both by hand).
 #

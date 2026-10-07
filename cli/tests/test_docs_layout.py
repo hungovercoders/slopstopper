@@ -9,7 +9,7 @@
 - A category README is a map, not a dumping ground: exactly one H1, with
   per-check detail extracted into sibling files. That every sibling is
   routed from a README is ``ss:hygiene:docs-structure``'s rule, which
-  resolves link paths — not repeated here.
+  resolves link paths, so it is not repeated here.
 """
 
 from __future__ import annotations
@@ -68,8 +68,8 @@ def test_category_readme_is_a_map_with_one_h1(category):
     text = _FENCE.sub("", readme.read_text(encoding="utf-8"))  # `# comment` in bash blocks is not a heading
     h1s = len(_H1.findall(text))
     allowed = _EXTRA_H1_ALLOWED.get(category, 1)
-    assert h1s, f"{readme.relative_to(REPO_ROOT)} has no H1 — a category README opens with its title"
+    assert h1s, f"{readme.relative_to(REPO_ROOT)} has no H1, but a category README opens with its title"
     assert h1s <= allowed, (
-        f"{readme.relative_to(REPO_ROOT)} has {h1s} H1s — per-check detail "
+        f"{readme.relative_to(REPO_ROOT)} has {h1s} H1s, but per-check detail "
         f"belongs in a sibling docs/{category}/<CHECK>.md that the README routes"
     )

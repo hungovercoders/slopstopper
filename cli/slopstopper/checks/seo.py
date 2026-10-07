@@ -6,9 +6,9 @@ upgraded; the CLI no longer subprocesses to it.
 
 Fetches one or more pages and asserts the presence of the metadata that
 social-share crawlers (Slack, Twitter/X, LinkedIn, Discord, Facebook)
-and SEO indexers rely on. Complements `reliability:cwv` — Lighthouse's
-SEO category covers core SEO but does not flag missing OpenGraph or
-Twitter tags.
+and SEO indexers rely on. It complements `reliability:cwv`, because
+Lighthouse's SEO category covers core SEO but does not flag missing
+OpenGraph or Twitter tags.
 
 CLI surface:
   slopstopper run reliability:seo -- --url URL [--pages /,/blog]
@@ -179,11 +179,11 @@ def _validate_core_tags(tags: dict[str, str], issues: list[str], notes: list[str
     if not title:
         issues.append("Missing <title>")
     elif len(title) > 70:
-        notes.append(f"<title> is {len(title)} chars — consider ≤ 60")
+        notes.append(f"<title> is {len(title)} chars, longer than the suggested 60")
     if not description:
         issues.append("Missing <meta name=\"description\">")
     elif len(description) > 160:
-        notes.append(f"meta description is {len(description)} chars — consider ≤ 160")
+        notes.append(f"meta description is {len(description)} chars, longer than the suggested 160")
     if not tags["viewport"]:
         issues.append("Missing <meta name=\"viewport\">")
     if not tags["canonical"]:
@@ -326,7 +326,7 @@ def _append_tags(lines: list[str], tags: dict[str, str]) -> None:
 
 def _append_image_check(lines: list[str], image_check: dict) -> None:
     icon = "✅" if image_check["ok"] else "❌"
-    lines.append(f"**og:image fetch:** {icon} `{image_check['url']}` — {image_check['detail']}")
+    lines.append(f"**og:image fetch:** {icon} `{image_check['url']}` ({image_check['detail']})")
     if image_check.get("original_url"):
         lines.append(
             f"  _(origin rewritten from `{image_check['original_url']}` via `SEO_OG_IMAGE_BASE`)_"
@@ -391,7 +391,7 @@ def _write_reports(results: list[dict], base: str) -> None:
 def _print_results(results: list[dict]) -> None:
     for r in results:
         icon = {"pass": "✅", "fail": "❌", "error": "💥"}.get(r["status"], "•")
-        suffix = "" if r["status"] == "pass" else f" — {len(r['issues'])} issue(s)"
+        suffix = "" if r["status"] == "pass" else f": {len(r['issues'])} issue(s)"
         output._emit(f"  {icon} {r['url']}{suffix}")
         for issue in r["issues"]:
             output._emit(f"      - {issue}")
