@@ -5,11 +5,11 @@ things out of a markdown file: how many tokens it costs an agent to load,
 which docs it links, and whether each link is a *route* an agent will
 actually follow. One copy, so the two checks agree on what a route is.
 
-A route is a logical line (paragraph, bullet or table row — fenced code
-is skipped) that links a `.md` file with, in this order, a trigger, then
+A route is a logical line (a paragraph, bullet or table row outside
+fenced code) that links a `.md` file with, in this order, a trigger, then
 "read", then the link:
 
-    Before you change CI, read docs/ci.md — it defines what `task ci` runs.
+    Before you change CI, read docs/ci.md for what `task ci` runs.
     | When you are…  | Do this                                   |
     | adding a check | Read [hygiene/README.md](hygiene/README.md) |
 
@@ -24,8 +24,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-# Tokens are estimated as chars/4 — coarse, but stable, dependency-free
-# and far closer to what a tokenizer charges for link-heavy markdown
+# Tokens are estimated as chars/4. That is coarse, but stable,
+# dependency-free and far closer to what a tokenizer charges for link-heavy markdown
 # than a word count is (a 1,400-word AGENTS.md full of tables and links
 # costs ~3,200 tokens, not ~2,000).
 _BADGE_LINE_RE = re.compile(r"^\s*(?:\[?!\[[^\]]*\]\([^)]*\)\]?(?:\([^)]*\))?\s*)+$")
@@ -139,8 +139,8 @@ def logical_lines(text: str) -> list[str]:
     """Paragraphs, bullets and table rows as single strings.
 
     Wrapped prose is joined so a route split over two source lines still
-    reads as one; fenced code blocks (``` or ~~~) are skipped — a link
-    inside a code sample is an example, not a route. A data row of a
+    reads as one. Fenced code blocks (``` or ~~~) are skipped, because a
+    link inside a code sample is an example, not a route. A data row of a
     table whose header's first cell is a trigger ("When you are…") comes
     back with that header prefixed, so the row reads as the trigger-first
     sentence it is.
@@ -245,7 +245,7 @@ def _explicit_before(line: str, position: int) -> bool:
 
 
 def is_explicit_route(line: str, refs: dict[str, str] | None = None) -> bool:
-    """Trigger, then "read", then the link — in that order."""
+    """True when the line has a trigger, then "read", then the link, in that order."""
     spans = link_spans(line, refs)
     if spans:
         return _explicit_before(line, spans[0][0])

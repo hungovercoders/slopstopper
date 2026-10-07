@@ -31,12 +31,12 @@ def reject_extra_args(check_name: str, args: list[str]) -> int:
     Nine checks are configured entirely through `.slopstopper.yml` and
     have no flags. They used to drop whatever the CLI forwarded, so
     `slopstopper run hygiene:complexity -- --max-ccn 5` ran with the
-    config default and reported nothing — the user believed a setting
+    config default and reported nothing, so the user believed a setting
     was in effect that never was.
     """
     output.error(
         f"{check_name} takes no arguments (got: {' '.join(args)}). "
-        "It is configured through .slopstopper.yml — see the check's docstring "
+        "It is configured through .slopstopper.yml. See the check's docstring "
         "or `slopstopper checks describe` for the keys it reads."
     )
     return EXIT_MISCONFIGURED
@@ -58,8 +58,9 @@ def runner_exit(returncode: int, *, ran: bool = True) -> int:
     """Map a test runner's exit code (Playwright, lhci) onto the contract.
 
     0 is a pass. 1 is a verdict only when the runner actually ran its
-    tests or audits (`ran`) — both tools also exit 1 when the browser
-    fails to launch or collection aborts, and that is "could not run".
+    tests or audits (`ran`), because both tools also exit 1 when the
+    browser fails to launch or collection aborts, and that is "could not
+    run".
     Anything else (a missing binary, a crash, a signal) is 2.
     """
     if returncode == 0:
@@ -69,8 +70,8 @@ def runner_exit(returncode: int, *, ran: bool = True) -> int:
     return EXIT_CANNOT_RUN
 
 
-# Playwright fails every test with this when the browser never started —
-# an environment fault, not a verdict on the site.
+# Playwright fails every test with this when the browser never started,
+# which is an environment fault, not a verdict on the site.
 _BROWSER_LAUNCH_ERROR = "browserType.launch"
 
 
@@ -92,9 +93,9 @@ def _failure_messages(suite: dict) -> list[str]:
 def playwright_ran(json_report: Path) -> bool:
     """Whether Playwright's JSON report shows the tests ran to a verdict.
 
-    False when there is no report, a global error (bad config, no tests
-    found — Playwright exits 1 for those too), nothing executed, or every
-    failure is the browser failing to launch.
+    False when there is no report, a global error (a bad config or no
+    tests found, which also make Playwright exit 1), nothing executed, or
+    every failure is the browser failing to launch.
     """
     try:
         data = json.loads(json_report.read_text())
@@ -113,10 +114,10 @@ def scan_incomplete(report_dir: Path, report_md: Path, title: str, detail: str) 
     """Record a scan that produced nothing usable, and return 2.
 
     The markdown report says so explicitly, so the artifact and the PR
-    comment read "did not complete" — never a clean pass.
+    comment read "did not complete" rather than a clean pass.
     """
     report_dir.mkdir(parents=True, exist_ok=True)
     report_md.write_text(f"# {title}\n\n## ❌ Scan did not complete\n\n{detail}\n")
-    output.error(f"{title}: the scan did not complete — treated as not run, not as clean")
+    output.error(f"{title}: the scan did not complete, so it counts as not run rather than clean")
     output.footer(report_dir, [report_md.name])
     return EXIT_CANNOT_RUN

@@ -4,22 +4,22 @@ Ports .ss/scripts/check-docs-accuracy.py + generate-docs-accuracy-md.py.
 Scans docs/**/*.md plus the four repo-root entry files (README.md,
 AGENTS.md, CLAUDE.md, CONTRIBUTING.md) for four kinds of drift:
 
-  - broken_link        — markdown link target missing on disk
-  - stale_task_ref     — `task <namespace:name>` doesn't match Taskfile
-  - stale_workflow_ref — .github/workflows/<file> doesn't exist
-  - stale_file_ref     — backtick-quoted filepath not found on disk
+  - broken_link:        markdown link target missing on disk
+  - stale_task_ref:     `task <namespace:name>` doesn't match Taskfile
+  - stale_workflow_ref: .github/workflows/<file> doesn't exist
+  - stale_file_ref:     backtick-quoted filepath not found on disk
 
 Optionally scans more files, with only the checks that are precise for
 them: `stale_task_ref` and `stale_workflow_ref` for markdown, and for
-both markdown and HTML a fifth kind —
+both markdown and HTML a fifth kind:
 
-  - broken_repo_link   — a `github.com/<this repo>/blob|tree/<ref>/<path>`
-                         link whose path does not exist. For the default
-                         or current branch that means the working tree
-                         (what the branch holds once this change lands);
-                         for a tag, SHA or other branch git knows, the
-                         path at that ref; a ref this checkout can't
-                         resolve is not checked rather than guessed at
+  - broken_repo_link:   a `github.com/<this repo>/blob|tree/<ref>/<path>`
+                        link whose path does not exist. For the default
+                        or current branch that means the working tree
+                        (what the branch holds once this change lands);
+                        for a tag, SHA or other branch git knows, the
+                        path at that ref; a ref this checkout can't
+                        resolve is not checked rather than guessed at
 
 That is how a marketing page quoting a script that was deleted two
 releases ago gets caught, which the docs/-only scan never could. The
@@ -65,7 +65,7 @@ REPORT_MD = REPORT_DIR / "docs-accuracy-report.md"
 # so the same bot comment is reused after the workflow flip. Issue title,
 # labels, and follow-up string are byte-identical to the legacy block. The
 # close behaviour is also driven by emit (`--on-pass=close`) since PR 1 of
-# the issue-emission unification — close_comment matches the legacy YAML
+# the issue-emission unification, and close_comment matches the legacy YAML
 # message so adopters see the same friendly recovery line.
 META = {
     "report_path": str(REPORT_MD),
@@ -156,7 +156,7 @@ def _check_broken_links(md_path: Path) -> list[dict]:
                 "type": "broken_link",
                 "file": str(md_path),
                 "line": _line_of(content, m.start()),
-                "message": f"Broken link: [{display}]({target}) — target does not exist",
+                "message": f"Broken link: [{display}]({target}) points to a path that does not exist",
             })
     return issues
 
@@ -255,13 +255,13 @@ def _glob_extra_pattern(pattern: object, root: Path) -> list[Path]:
     if not _is_repo_relative_glob(text):
         output.warn(
             f"hygiene.docs_accuracy.extra_paths entry {pattern!r} is not a "
-            "repo-relative glob — ignored"
+            "repo-relative glob, so it is ignored"
         )
         return []
     try:
         hits = sorted(Path(".").glob(text))
     except (ValueError, NotImplementedError) as exc:
-        output.warn(f"hygiene.docs_accuracy.extra_paths entry {pattern!r} is invalid ({exc}) — ignored")
+        output.warn(f"hygiene.docs_accuracy.extra_paths entry {pattern!r} is invalid ({exc}), so it is ignored")
         return []
     hits = [h for h in hits if h.is_file() and h.resolve().is_relative_to(root)]
     if not hits:
@@ -275,8 +275,8 @@ def _collect_extra_targets(primary_targets: list[Path] | None = None) -> list[Pa
     Files the primary scan already covers (`docs/**` and the root entry
     files) are left out, so an overlapping glob like `**/*.md` never
     double-counts an issue. An entry that is empty, absolute, climbs out
-    of the repo with `..`, or matches nothing warns and is skipped —
-    matching the config.py contract that a bad value never surfaces as a
+    of the repo with `..`, or matches nothing warns and is skipped. That
+    matches the config.py contract that a bad value never surfaces as a
     traceback or as a silent pass.
     """
     primary = set(primary_targets if primary_targets is not None else _collect_targets())
@@ -291,8 +291,8 @@ def _collect_extra_targets(primary_targets: list[Path] | None = None) -> list[Pa
     return out
 
 
-# `https://github.com/<owner>/<repo>/blob|tree/<ref>/<path>` — the shape
-# every "View source →" link on a site takes. Only links into *this* repo
+# Matches `https://github.com/<owner>/<repo>/blob|tree/<ref>/<path>`, the
+# shape every "View source →" link on a site takes. Only links into *this* repo
 # are checked; anyone else's paths are not ours to verify.
 _REPO_LINK_RE = re.compile(
     r"""https://github\.com/([^/"'\s]+)/([^/"'\s]+)/(?:blob|tree)/([^"'`\s#?)<>]+)"""
@@ -317,7 +317,7 @@ def _working_tree_refs() -> set[str]:
     """Refs whose links are checked against the working tree.
 
     A link to `blob/main/...` is a claim about what main will hold once
-    this change lands — which is the working tree, not main's current
+    this change lands, which is the working tree, not main's current
     commit. Same for the branch being worked on.
     """
     cwd = str(Path.cwd())
@@ -338,8 +338,8 @@ def _repo_link_resolves(ref_and_path: str) -> bool | None:
     """Whether `<ref>/<path>` from a blob/tree URL points at something real.
 
     True / False when it can tell; None when the ref is one this checkout
-    can't resolve (the link is then not checked — guessing produced both
-    false passes and false failures).
+    can't resolve (the link is then not checked, because guessing
+    produced both false passes and false failures).
 
     A ref can contain slashes (`feat/x`), so the ref/path boundary is
     ambiguous from the URL alone. It is never resolved by "does any
@@ -402,8 +402,8 @@ def _collect_extra_issues(
     Files outside docs/ get only the checks whose references name a real
     target in *this* repo: `task ss:…`, `.github/workflows/…`, and links
     into this repo on github.com. They deliberately do not get the
-    relative-link or backtick-path checks — a skill or a marketing page
-    describes an adopter's tree, so `vercel.json` or `[category/](category/)`
+    relative-link or backtick-path checks, because a skill or a marketing
+    page describes an adopter's tree, so `vercel.json` or `[category/](category/)`
     in it is an example, not a claim about this checkout, and flagging
     those would train people to ignore the check.
     """
@@ -414,7 +414,7 @@ def _collect_extra_issues(
         sample = ", ".join(str(p) for p in skipped[:3]) + (" …" if len(skipped) > 3 else "")
         output.warn(
             f"{len(skipped)} file(s) matched hygiene.docs_accuracy.extra_paths but only "
-            f".md and .html are scanned — skipped: {sample}"
+            f".md and .html are scanned. Skipped: {sample}"
         )
     issues: list[dict] = []
     for path in files:
@@ -427,7 +427,7 @@ def _collect_extra_issues(
     if not owner or not repo:
         output.warn(
             "could not detect this repo's owner/name (no $GITHUB_REPOSITORY, no github.com "
-            f"remote) — links into this repo in {len(files)} extra file(s) were not checked"
+            f"remote), so links into this repo in {len(files)} extra file(s) were not checked"
         )
         return issues
     for path in files:
@@ -457,7 +457,7 @@ def _build_md_report(data: dict, generated_at: str) -> str:
         "",
     ]
     if is_clean:
-        lines.append("✅ All documentation accuracy checks passed — no stale references detected.")
+        lines.append("✅ All documentation accuracy checks passed. No stale references detected.")
     else:
         lines.append(f"⚠️ Found **{len(issues)}** accuracy issue(s) that may need attention.")
 
@@ -515,7 +515,7 @@ def run(args: list[str] | None = None) -> int:
     if issues:
         output.warn(f"Found {len(issues)} accuracy issue(s)")
         for issue in issues:
-            output._emit(f"  {issue['file']}:{issue['line']} — {issue['message']}")
+            output._emit(f"  {issue['file']}:{issue['line']}: {issue['message']}")
         output.footer(REPORT_DIR, [REPORT_MD.name])
         return 1
     output.success("Documentation accuracy checks passed")

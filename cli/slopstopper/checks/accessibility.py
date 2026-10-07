@@ -14,8 +14,8 @@ Ports the bash reliability:accessibility flow:
                       --reporter=list[,html]
 
 Subprocess-invokes `npx playwright`. Playwright is Apache-2.0, axe-core
-is MPL-2.0; the slopstopper-cli wheel ships zero code from either —
-both bind in via the adopter's node_modules. Page discovery uses the
+is MPL-2.0. The slopstopper-cli wheel ships zero code from either,
+because both bind in via the adopter's node_modules. Page discovery uses the
 in-CLI slopstopper.discovery module.
 
 Falls back to SMOKE_TEST_URL when ACCESSIBILITY_TEST_URL is unset,

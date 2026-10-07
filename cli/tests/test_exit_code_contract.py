@@ -4,7 +4,7 @@
     1: ran, the repo failed it
     2: could not run: missing tool, missing input, bad argument
 
-The contract is the CLI's API — workflows gate on it, `emit --status`
+The contract is the CLI's API: workflows gate on it, `emit --status`
 derives pass/fail from it, and adopters script against it. It used to be
 documented per check and honoured unevenly: one check returned 2 for
 findings, two returned 0 unconditionally with the real verdict in a
@@ -12,7 +12,7 @@ Python heredoc inside YAML, and nine silently dropped any arguments
 they were given.
 
 Two things are checked here. Every check module's docstring declares an
-`Exit codes:` block naming 0 and 1, and names 2 if — and only if — the
+`Exit codes:` block naming 0 and 1, and names 2 exactly when the
 module can return it (found by walking the AST, so a comment can't fake
 it). And the checks that take no arguments reject them with 2 rather
 than running as if nothing was said.

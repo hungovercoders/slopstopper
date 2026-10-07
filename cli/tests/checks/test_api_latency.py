@@ -3,8 +3,8 @@
 The behaviour worth pinning: warmup samples are discarded rather than
 averaged in, budgets gate on the median rather than the maximum (so one
 slow sample from a shared runner doesn't fail a PR), and reachability
-fails with no budget configured at all — a timing taken from a 500 is
-not a latency measurement.
+fails with no budget configured at all, because a timing taken from a
+500 is not a latency measurement.
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ def _stub_fetch(monkeypatch, timings, status=200, size=100):
     """Replace _fetch with one that walks `timings`, recording every call.
 
     Returns the call log so a test can assert on how many requests were
-    made — the warmup contract is about request count, not just numbers.
+    made. The warmup contract is about request count, not just numbers.
     """
     calls: list[str] = []
     remaining = list(timings)
@@ -121,7 +121,7 @@ def test_malformed_samples_falls_back_to_default(write_config):
 
 
 def test_warmup_zero_from_a_flag_is_honoured(write_config):
-    """`--warmup 0` is falsy — it must not silently fall back to the default."""
+    """`--warmup 0` is falsy, but it must not silently fall back to the default."""
     write_config("api:\n  latency:\n    paths: [/h]\n")
     opts = api_latency._resolve_options(api_latency._parse_args(["--warmup", "0"]))
     assert opts["warmup"] == 0
@@ -148,7 +148,7 @@ def test_run_requires_a_url_once_configured(write_config, monkeypatch, capsys):
 
 
 def test_warmup_requests_are_discarded_from_the_statistics(monkeypatch):
-    """The warmup number must not reach the median — it is the cold start."""
+    """The warmup number is the cold start, so it must not reach the median."""
     calls = _stub_fetch(monkeypatch, [5000.0, 10.0, 10.0, 10.0])
     sample = api_latency._sample_path("https://api.example.com/health", samples=3, warmup=1)
     assert len(calls) == 4  # 1 warmup + 3 measured
@@ -200,7 +200,7 @@ def test_one_slow_outlier_does_not_fail_a_median_budget(monkeypatch):
 
 
 def test_the_same_outlier_does_fail_a_slowest_budget(monkeypatch):
-    """`slowest_ms` is the opt-in tail ceiling — noisier by construction."""
+    """`slowest_ms` is the opt-in tail ceiling, which is noisier by construction."""
     _stub_fetch(monkeypatch, [10.0, 10.0, 900.0])
     result = api_latency._audit(
         "https://api.example.com", _opts(samples=3, warmup=0, slowest_ms=100)

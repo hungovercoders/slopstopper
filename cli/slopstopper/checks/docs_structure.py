@@ -1,11 +1,11 @@
-"""Documentation structure validator — every doc has an explicit route.
+"""Documentation structure validator. Every doc must have an explicit route.
 
 Validates the AGENTS.md-first model declared in docs/README.md: `AGENTS.md`
 carries what most tasks need and routes the rest; the docs map
 (`docs/README.md`) is the fallback routing table; a directory README is
 the map of a topic that split past its budget. A doc is *reachable* when
-some routing file — `AGENTS.md`, the map, or a `README.md` above it under
-`docs/` — links it on a line that names a trigger and says read. A doc
+some routing file (`AGENTS.md`, the map, or a `README.md` above it under
+`docs/`) links it on a line that names a trigger and says read. A doc
 nothing routes to is invisible to agents, so it fails the build; so does a
 soft link in the map, a route that runs more hops than an agent should
 pay, and a topic doc too long to read in one sitting.
@@ -21,8 +21,8 @@ Configuration (.slopstopper.yml, optional):
         max_doc_lines: 300           # per topic doc (0 disables)
 
 The pre-0.15 `require_indexed_docs` knob is read as `require_routed_docs`
-with a note. A `docs/index.md` beside the map is reported — the map is a
-README so the repo UI renders it in place.
+with a note. A `docs/index.md` beside the map is reported. The map is a
+README so that the repo UI renders it in place.
 
 Writes a JSON report (machine-readable, drives downstream tooling) and a
 markdown report (human-readable).
@@ -76,7 +76,7 @@ def _settings() -> dict:
     if legacy is not None:
         output.warn(
             "hygiene.docs_structure.require_indexed_docs is now require_routed_docs "
-            "(a doc must be *routed*, not merely linked) — reading it as that."
+            "(a doc must be *routed*, not merely linked), so it is read as that."
         )
     routed_default = config.get_bool("hygiene.docs_structure.require_indexed_docs", True)
     return {
@@ -123,7 +123,7 @@ def _walk_routes(docs_dir: Path, map_file: Path) -> tuple[dict[Path, dict], list
     queue: deque[tuple[Path, int]] = deque()
     if AGENTS_FILE.is_file():
         queue.append((AGENTS_FILE.resolve(), 0))
-    # The map is depth 1 whether or not AGENTS.md routes it — that rule is
+    # The map is depth 1 whether or not AGENTS.md routes it. That rule is
     # hygiene:entry-files' to report, once.
     reached[map_resolved] = {"depth": 1, "via": _rel(AGENTS_FILE)}
     queue.append((map_resolved, 1))
@@ -172,7 +172,7 @@ def _why_unrouted(
         source = explicit[resolved]
         if not _may_route(source, resolved, docs_dir, map_file):
             return (
-                f"routed from {_rel(source)}, which is outside its subtree — a directory README "
+                f"routed from {_rel(source)}, which is outside its subtree. A directory README "
                 "routes only the docs beside and below it, so that line is a cross-reference"
             )
         if source not in reached:
@@ -212,7 +212,7 @@ def _check_routed(
         violations.append({
             "type": "unrouted_doc",
             "path": rel,
-            "message": f"Unrouted doc: {rel} — {detail}. Add a route to {where}: '{ROUTE_FORM}'",
+            "message": f"Unrouted doc: {rel} is {detail}. Add a route to {where}: '{ROUTE_FORM}'",
         })
     return violations
 
@@ -273,7 +273,7 @@ def _check_legacy_index(map_file: Path) -> list[dict]:
         "path": _rel(LEGACY_INDEX),
         "message": (
             f"Legacy map: {_rel(LEGACY_INDEX)} exists beside {_rel(map_file)}. Fold it into "
-            f"{_rel(map_file)} and delete it — the map is a README so the repo UI renders it in place"
+            f"{_rel(map_file)} and delete it. The map is a README so that the repo UI renders it in place"
         ),
     }]
 
@@ -295,7 +295,7 @@ def _check_structure(docs_dir: Path, settings: dict) -> dict | None:
         return None
     map_file = Path(settings["map_path"])
     if not map_file.is_file():
-        hint = f" (found {_rel(LEGACY_INDEX)} — rename it to {settings['map_path']})" if LEGACY_INDEX.is_file() else ""
+        hint = f" ({_rel(LEGACY_INDEX)} exists, so rename it to {settings['map_path']})" if LEGACY_INDEX.is_file() else ""
         output.error(f"{settings['map_path']} not found{hint}")
         return None
     docs = [p for p in sorted(docs_dir.rglob("*.md")) if p.resolve() != map_file.resolve()]
@@ -363,7 +363,7 @@ def _build_md_report(data: dict, generated_at: str) -> str:
         "## The model\n\n"
         "`AGENTS.md` carries what most tasks need and routes the rest. The docs map is the "
         "fallback routing table; a directory README is the map of a topic that split. A doc is "
-        "reachable only through an explicit route — a line that names its trigger and says read. "
+        "reachable only through an explicit route, which is a line that names its trigger and says read. "
         "An unrouted doc is invisible to agents; a soft link is skipped.\n\n"
         "## Violations\n\n"
     )
@@ -373,7 +373,7 @@ def _build_md_report(data: dict, generated_at: str) -> str:
         "## How to Fix\n\n"
         f"1. **Unrouted doc:** add a row to the README above it, or to the map, in the form `{ROUTE_FORM}`. "
         "The trigger first, then \"read\", then the file as a markdown link.\n"
-        "2. **Soft route:** the map links a doc without saying when to read it — reword the row.\n"
+        "2. **Soft route:** the map links a doc without saying when to read it. Reword the row.\n"
         "3. **Route too deep:** route the doc from the map or `AGENTS.md` directly; a README that only "
         "routes onward is a turn spent on nothing.\n"
         "4. **Doc over the line budget:** split it by concern and route each part.\n"
@@ -412,6 +412,6 @@ def run(args: list[str] | None = None) -> int:
             output._emit(f"  - {v['message']}")
         output.footer(REPORT_DIR, [REPORT_MD.name])
         return 1
-    output.success(f"Documentation structure is valid — {result['doc_count']} docs, every one routed")
+    output.success(f"Documentation structure is valid: all {result['doc_count']} docs are routed")
     output.footer(REPORT_DIR, [REPORT_MD.name])
     return 0

@@ -18,7 +18,7 @@ ceiling, opt-in.
 
 Budgets are opt-in throughout: with none set the check reports timings
 as notes and exits 0, exactly like `api.health.max_response_ms`. What is
-*not* optional is reachability — an endpoint that errors or answers
+*not* optional is reachability. An endpoint that errors or answers
 non-2xx fails whether or not a budget is configured, because timing a
 connection error is meaningless.
 
@@ -94,7 +94,7 @@ _LABEL = "API latency check"
 def _fetch(url: str) -> tuple[int, int, float]:
     """GET the URL once. Returns (status, body_bytes, elapsed_ms).
 
-    A 4xx/5xx is unwrapped rather than raised — the status is reported
+    A 4xx/5xx is unwrapped rather than raised. The status is reported
     against the sample, because a timing taken from an error response is
     not a latency measurement worth keeping.
     """
@@ -182,7 +182,7 @@ def _check_budgets(sample: dict, opts: dict, issues: list[str], notes: list[str]
     if not (median_budget or slowest_budget or bytes_budget):
         notes.append(
             f"`{target}` median {sample['median_ms']}ms, slowest {sample['slowest_ms']}ms, "
-            f"{sample['bytes']} bytes — no budget set, so nothing is enforced"
+            f"{sample['bytes']} bytes (no budget set, so nothing is enforced)"
         )
 
 
@@ -209,8 +209,8 @@ def _audit_path(url: str, path: str, opts: dict) -> dict:
     if bad:
         # Reachability is the floor: a 500 that answers in 3ms is not fast.
         issues.append(
-            f"`{target}` answered HTTP {', '.join(str(s) for s in bad)} — "
-            "a timing from an error response isn't a latency measurement"
+            f"`{target}` answered HTTP {', '.join(str(s) for s in bad)}. "
+            "A timing from an error response isn't a latency measurement"
         )
     else:
         _check_budgets(sample, opts, issues, notes, target)
@@ -371,10 +371,10 @@ def _resolve_options(parsed: argparse.Namespace) -> dict:
 
 
 def _skip(reason: str) -> int:
-    """Graceful skip — an unconfigured check is not a failing check."""
+    """Skip gracefully, because an unconfigured check is not a failing check."""
     output.info(reason)
     _write_reports({"url": None, "status": "skipped", "paths": [], "samples": 0, "warmup": 0})
-    output.success("Nothing to sample — skipping (exit 0).")
+    output.success("Nothing to sample, so skipping (exit 0).")
     return 0
 
 
@@ -384,7 +384,7 @@ def run(args: list[str] | None = None) -> int:
 
     if not opts["paths"]:
         return _skip(
-            "No api.latency.paths configured in .slopstopper.yml — nothing to sample. "
+            "No api.latency.paths configured in .slopstopper.yml, so there is nothing to sample. "
             "List the endpoints whose response time you care about to enable this check."
         )
 

@@ -1,7 +1,7 @@
 """Tests for the security:api-headers check.
 
 The assertions that matter are the CORS ones, and specifically which
-findings are hard failures versus advisory notes — a check that fails on
+findings are hard failures versus advisory notes. A check that fails on
 advice becomes noise, and one that only advises on a credentialed
 wildcard isn't doing its job.
 """
@@ -136,7 +136,7 @@ def test_wildcard_with_credentials_always_fails(monkeypatch):
         "https://api.example.com", "", "/health", _opts(allow_wildcard_cors=True)
     )
     assert result["status"] == "fail"
-    assert any("browsers reject this pair" in i for i in result["issues"])
+    assert any("Browsers reject this pair" in i for i in result["issues"])
 
 
 def test_bare_wildcard_fails_by_default(monkeypatch):

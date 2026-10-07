@@ -2,7 +2,7 @@
 
 Ports the bash hygiene:complexity flow:
 
-  .ss/scripts/check-tool   (in Taskfile.ss.yml — installs lizard)
+  .ss/scripts/check-tool   (the Taskfile.ss.yml step that installs lizard)
   + python3 -m lizard . ... --csv > complexity-report.csv
   + .ss/scripts/generate-complexity-md.py
 
@@ -19,7 +19,7 @@ group, which is what CI does).
 
 The check owns its own pass/fail: any function whose cyclomatic
 complexity exceeds `max_ccn` fails it. This is the single source of
-truth — `task ss:hygiene:complexity`, the pre-push hook and CI all
+truth: `task ss:hygiene:complexity`, the pre-push hook and CI all
 inherit this exit code, so behaviour is identical everywhere.
 
 Configuration (.slopstopper.yml, all optional):
@@ -52,8 +52,8 @@ REPORT_CSV = REPORT_DIR / "complexity-report.csv"
 REPORT_MD = REPORT_DIR / "complexity-report.md"
 
 # Consumed by `slopstopper emit hygiene:complexity --target {pr-comment,issue}`.
-# The comment_discriminator is the H1 of the generated report — pre-flip the
-# JS prepended its own "## 📊 Code Complexity Analysis" heading, but the
+# The comment_discriminator is the H1 of the generated report. Before the
+# flip the JS prepended its own "## 📊 Code Complexity Analysis" heading, but the
 # report itself starts with "# Code Complexity Analysis Report", so the
 # substring "Code Complexity Analysis" matches the same comment after the
 # flip. Issue strings are byte-for-byte identical to the legacy block.
@@ -82,7 +82,7 @@ _LIZARD_INSTALL_HELP = (
     "Install with:\n"
     "  pip3 install --user lizard\n"
     "  python3 -m pip install --user lizard\n"
-    "Note: do NOT install via 'brew install lizard' — that's lz4's lizard,\n"
+    "Note: do NOT install via 'brew install lizard'. That is lz4's lizard,\n"
     "a completely different tool that will shadow the Python package."
 )
 
@@ -238,7 +238,7 @@ def run(args: list[str] | None = None) -> int:
     high_count = sum(1 for r in rows if r[1] > max_ccn)
     output.footer(REPORT_DIR, [REPORT_MD.name, REPORT_CSV.name])
     if high_count:
-        output.error(f"{high_count} function(s) exceed CCN {max_ccn} — refactor before merge.")
+        output.error(f"{high_count} function(s) exceed CCN {max_ccn}. Refactor them before merging.")
         return 1
     output.success(f"No high-complexity functions found (all CCN ≤ {max_ccn}).")
     return 0

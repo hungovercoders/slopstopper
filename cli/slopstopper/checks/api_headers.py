@@ -4,7 +4,7 @@ The API-shaped analogue of `hygiene:csp-exceptions`. That check guards
 the headers a browser reads on an HTML surface, with CSP at the centre.
 A JSON API has a different header contract: CSP is largely irrelevant
 (there is no document to restrict), while CORS becomes the control that
-decides who can read the response — and a permissive CORS policy on a
+decides who can read the response. A permissive CORS policy on a
 credentialed API is a cross-origin data leak, not a style violation.
 
 What it probes, per configured path:
@@ -13,7 +13,7 @@ What it probes, per configured path:
     - `Access-Control-Allow-Origin: *` together with
       `Access-Control-Allow-Credentials: true`. Browsers reject this
       pair, so it's usually a misconfigured allowlist rather than a
-      working policy — and it means the intended policy was never
+      working policy. It also means the intended policy was never
       actually enforced. Always a hard failure.
     - A wildcard origin on its own. Fine for a genuinely public
       read-only API, so it fails only unless `allow_wildcard_cors`.
@@ -22,11 +22,11 @@ What it probes, per configured path:
       `Access-Control-Allow-Origin` alongside credentials, any site can
       read authenticated responses. Hard failure with credentials,
       advisory without.
-    - `Vary: Origin` missing when the origin is echoed — a shared cache
+    - `Vary: Origin` missing when the origin is echoed, so a shared cache
       can serve one origin's allowance to another. Advisory.
     - When `allowed_origins` is configured, each is sent as an `Origin`
-      and must be allowed — catching an allowlist that silently stopped
-      matching.
+      and must be allowed. This catches an allowlist that silently
+      stopped matching.
 
   Transport + content
     - `Strict-Transport-Security` on https origins (`require_hsts`).
@@ -91,8 +91,8 @@ USER_AGENT = "SlopStopper-ApiHeaders-Check/1.0"
 # RFC 2606 precisely so it can never resolve to a real host.
 PROBE_ORIGIN = "https://slopstopper-cors-probe.invalid"
 
-# Headers that name the implementation and its version. Advisory —
-# fingerprinting aid, not a vulnerability in itself.
+# Headers that name the implementation and its version. Advisory, because
+# they are a fingerprinting aid, not a vulnerability in themselves.
 FINGERPRINT_HEADERS = ("X-Powered-By", "X-AspNet-Version", "X-AspNetMvc-Version")
 
 # Consumed by `slopstopper emit security:api-headers --target pr-comment`.
@@ -143,7 +143,7 @@ def _check_wildcard_cors(headers: dict, allow_wildcard: bool, issues: list[str],
     if credentials:
         issues.append(
             "`Access-Control-Allow-Origin: *` is sent with "
-            "`Access-Control-Allow-Credentials: true` — browsers reject this pair, so the "
+            "`Access-Control-Allow-Credentials: true`. Browsers reject this pair, so the "
             "policy you intended is not being enforced. Echo a specific allowed origin instead"
         )
     elif not allow_wildcard:
@@ -171,7 +171,7 @@ def _check_reflected_origin(url: str, issues: list[str], notes: list[str]) -> di
     if credentials:
         issues.append(
             f"the server reflects any Origin it is sent (probed with `{PROBE_ORIGIN}`) and "
-            "allows credentials — any site can read authenticated responses from this endpoint. "
+            "allows credentials, so any site can read authenticated responses from this endpoint. "
             "Validate Origin against an allowlist"
         )
     else:
@@ -182,7 +182,7 @@ def _check_reflected_origin(url: str, issues: list[str], notes: list[str]) -> di
 
     if not _header(headers, "Vary"):
         notes.append(
-            "`Vary: Origin` is missing while the origin is echoed — a shared cache can serve "
+            "`Vary: Origin` is missing while the origin is echoed, so a shared cache can serve "
             "one origin's allowance to another"
         )
     return {"reflected": True, "credentials": credentials}
@@ -218,7 +218,7 @@ def _check_transport_headers(url: str, headers: dict, opts: dict, issues: list[s
 
     if opts["require_hsts"]:
         if not is_https:
-            notes.append("HSTS not asserted — the target is http, where the header has no effect")
+            notes.append("HSTS not asserted because the target is http, where the header has no effect")
         elif not _header(headers, "Strict-Transport-Security"):
             issues.append(
                 "`Strict-Transport-Security` is missing. Add it (e.g. "
@@ -227,18 +227,18 @@ def _check_transport_headers(url: str, headers: dict, opts: dict, issues: list[s
 
     if opts["require_nosniff"] and _header(headers, "X-Content-Type-Options").strip().lower() != "nosniff":
         issues.append(
-            "`X-Content-Type-Options: nosniff` is missing — a JSON response that a browser "
+            "`X-Content-Type-Options: nosniff` is missing. A JSON response that a browser "
             "sniffs as HTML is an XSS vector. Or set api.headers.require_nosniff: false"
         )
 
     for name in FINGERPRINT_HEADERS:
         value = _header(headers, name)
         if value:
-            notes.append(f"`{name}: {value}` names your stack and version — consider removing it")
+            notes.append(f"`{name}: {value}` names your stack and version, so consider removing it")
 
     server = _header(headers, "Server")
     if server and any(ch.isdigit() for ch in server):
-        notes.append(f"`Server: {server}` includes a version — consider trimming it to the product name")
+        notes.append(f"`Server: {server}` includes a version, so consider trimming it to the product name")
 
 
 # ── audit ────────────────────────────────────────────────────────
@@ -439,10 +439,10 @@ def _resolve_options(parsed: argparse.Namespace) -> dict:
 
 
 def _skip(reason: str) -> int:
-    """Graceful skip — an unconfigured check is not a failing check."""
+    """Skip gracefully, because an unconfigured check is not a failing check."""
     output.info(reason)
     _write_reports({"url": None, "status": "skipped", "paths": [], "probe_origin": PROBE_ORIGIN})
-    output.success("Nothing to audit — skipping (exit 0).")
+    output.success("Nothing to audit, so skipping (exit 0).")
     return 0
 
 
@@ -452,7 +452,7 @@ def run(args: list[str] | None = None) -> int:
 
     if not opts["paths"]:
         return _skip(
-            "No api.headers.paths configured in .slopstopper.yml — nothing to probe. "
+            "No api.headers.paths configured in .slopstopper.yml, so there is nothing to probe. "
             "List your API endpoints (e.g. [/health, /v1/items]) to enable this check."
         )
 

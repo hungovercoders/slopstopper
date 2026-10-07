@@ -31,7 +31,7 @@ def test_require_safe_url_allows_http_and_https(url):
 
 
 def test_open_url_guards_before_opening(monkeypatch):
-    """The guard must run before anything is opened — that is the whole point."""
+    """The guard must run before anything is opened, or it guards nothing."""
     called = []
     monkeypatch.setattr(_http, "_send", lambda req, timeout, label: called.append(req))
     with pytest.raises(ValueError):
@@ -133,7 +133,7 @@ def test_generated_at_is_one_format():
 
 
 def test_render_findings_emits_the_bullet_syntax_comment_py_reads():
-    """comment.extract_failures reads `^\\s*-\\s*❌\\s*(.+?)$` — keep the shape."""
+    """comment.extract_failures reads `^\\s*-\\s*❌\\s*(.+?)$`, so keep the shape."""
     import re
 
     lines = _report.render_findings("Issues", _report.FAIL_ICON, ["a broke", "b broke"])
@@ -148,7 +148,7 @@ def test_render_findings_is_empty_when_nothing_to_render():
 
 def test_render_skip_shape():
     assert _report.render_skip("no paths configured.", ["Set them:", "```yaml", "x: y", "```"]) == [
-        "**Overall:** ⏭️ SKIPPED — no paths configured.",
+        "**Overall:** ⏭️ SKIPPED: no paths configured.",
         "",
         "Set them:",
         "```yaml",

@@ -2,8 +2,8 @@
 
 Ports .ss/scripts/check-docs-size.sh + generate-docs-size-report.py into
 one self-contained check. Writes .ss/reports/docs/docs-size-report.md
-and prints a coloured summary to stdout. Exits 0 always — alerts are
-reported, not enforced.
+and prints a coloured summary to stdout. It always exits 0, because
+alerts are reported, not enforced.
 
 Configuration (.slopstopper.yml, all keys optional):
 

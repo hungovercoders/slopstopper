@@ -65,8 +65,8 @@ class Check:
 
     @property
     def playwright_json(self) -> Path:
-        # Playwright's JSON reporter output: whether the tests ran at all (see
-        # `_contract.playwright_ran`) — its exit code alone can't say.
+        # Playwright's JSON reporter output says whether the tests ran at all
+        # (see `_contract.playwright_ran`), which its exit code alone can't say.
         return REPORT_DIR / f"{self.spec_name}-results.json"
 
     @property
@@ -173,7 +173,7 @@ def run_check(
     reads, layered over `base_env`.
     """
     if not _tools.npx_available():
-        output.error("npx is not available — install Node.js to run Playwright tests")
+        output.error("npx is not available. Install Node.js to run Playwright tests.")
         return 2
 
     parsed = parse_args(check, args)
