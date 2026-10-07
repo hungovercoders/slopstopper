@@ -174,7 +174,7 @@ def test_eject_leaves_existing_override_alone(isolated_cwd):
     dest, was_new = templates.eject("lighthouserc.json")
     assert was_new is False
     assert dest == Path(".ss/lighthouserc.json")
-    # Content unchanged — adopter customisation is preserved.
+    # Content is unchanged, so the adopter's customisation is preserved.
     assert override.read_text() == "{ \"custom\": true }"
 
 

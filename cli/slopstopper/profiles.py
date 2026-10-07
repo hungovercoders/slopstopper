@@ -1,9 +1,9 @@
-"""Project-shape profiles — presets over `workflows.disabled`.
+"""Project-shape profiles: presets over `workflows.disabled`.
 
 Not every check applies to every repo. The nine browser-and-SEO
 reliability checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken
 links, llms.txt, robots.txt, sitemap) assume HTML, a DOM and a public
-web surface. On an HTTP API they don't no-op — they build, serve and
+web surface. On an HTTP API they don't no-op. They build, serve and
 audit nothing, and go red. On a library there is nothing to serve at
 all.
 
@@ -14,8 +14,8 @@ shape should not carry:
     profile: api
 
 The mapping lives in `data/profiles.json` so `install.sh` can read the
-same file with python3 and delete the same workflows at install time —
-one source of truth, two readers.
+same file with python3 and delete the same workflows at install time,
+so there is one source of truth with two readers.
 
 Profiles only ever SUBTRACT, and explicit config always wins:
 
@@ -43,7 +43,7 @@ from slopstopper import config
 
 PROFILES_PATH = Path(__file__).resolve().parent / "data" / "profiles.json"
 
-# Fallback used only if the package data file is unreadable — a broken
+# Fallback used only if the package data file is unreadable. A broken
 # install should behave like `ui` (disable nothing) rather than silently
 # switching checks off.
 _FALLBACK = {"default": "ui", "profiles": {"ui": {"summary": "", "detail": "", "disables": []}}}
@@ -102,8 +102,8 @@ def expand(name: str) -> list[str] | None:
 def active_name() -> str:
     """The repo's profile from .slopstopper.yml, or the default if unset.
 
-    An unrecognised name resolves to the default rather than raising —
-    a typo should not quietly disable a different set of checks. The
+    An unrecognised name resolves to the default rather than raising,
+    because a typo should not quietly disable a different set of checks. The
     caller-facing warning lives in `validate()`.
     """
     raw = config.get("profile")
@@ -120,8 +120,8 @@ def validate() -> str | None:
     if describe(name):
         return None
     return (
-        f"unknown profile {name!r} in .slopstopper.yml — "
-        f"expected one of: {', '.join(names())}. Falling back to {default_name()!r}."
+        f"unknown profile {name!r} in .slopstopper.yml. "
+        f"Expected one of: {', '.join(names())}. Falling back to {default_name()!r}."
     )
 
 
@@ -209,8 +209,8 @@ def check_is_disabled(check_name: str, disabled: set[str] | None = None) -> bool
 # `install.sh` and the install skill use this to SUGGEST a profile. It
 # never picks one: a curl-piped install is non-interactive, and a wrong
 # silent pick (checks quietly off) is worse than the default superset
-# (checks visibly red). When signals conflict, UI wins — the superset
-# errs toward running a check rather than skipping it.
+# (checks visibly red). When signals conflict, UI wins, because the
+# superset errs toward running a check rather than skipping it.
 
 _UI_MARKERS = (
     "astro.config.*",
@@ -258,8 +258,8 @@ _MANIFESTS = (
 )
 
 # Dependency names that give the repo's shape away. Matched as substrings
-# against the raw manifest text — crude, but a manifest is small and this
-# only feeds a suggestion.
+# against the raw manifest text. That is crude, but a manifest is small
+# and this only feeds a suggestion.
 _UI_DEPS = (
     "astro",
     '"next"',
@@ -352,4 +352,4 @@ def detect(root: Path | None = None) -> tuple[str, str]:
     if manifests:
         return "library", f"found {manifests[0][0]} but no web or API surface"
 
-    return default_name(), "no clear signal — defaulting to the full check set"
+    return default_name(), "no clear signal, so defaulting to the full check set"

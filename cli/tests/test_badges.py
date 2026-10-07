@@ -1,4 +1,4 @@
-"""Tests for slopstopper.badges — README badges block generator."""
+"""Tests for slopstopper.badges, the README badges block generator."""
 
 from __future__ import annotations
 

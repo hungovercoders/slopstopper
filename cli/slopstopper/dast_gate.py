@@ -18,7 +18,7 @@ What still blocks (intentional):
 - Any non-CSP alert on a documented exception path (XSS, missing
   other headers, CSRF, etc.)
 - High (riskcode 3) alerts everywhere, even CSP ones on exception
-  paths — `Refresh policy` and approval still don't make a high-risk
+  paths, because `Refresh policy` and approval still don't make a high-risk
   finding acceptable.
 
 Outputs:
@@ -166,7 +166,7 @@ def classify_alerts(
             instances = alert.get("instances") or [{"uri": alert.get("url", "")}]
             for inst in instances:
                 # Rule-level IGNORE in .zap/rules.tsv: swallow
-                # regardless of path or alert class — the consumer has
+                # regardless of path or alert class, because the consumer has
                 # explicitly accepted this finding type for the whole
                 # site.
                 if pid in ignored_pluginids:
@@ -210,7 +210,7 @@ def swallowed_preamble_md(swallowed: list[dict]) -> str:
     """Render the "🛡 Documented CSP exceptions" preamble block.
 
     Same shape as the pre-flip JS produced. Empty string when no
-    findings were swallowed — keeps the report MD clean on the happy
+    findings were swallowed, which keeps the report MD clean on the happy
     path.
     """
     if not swallowed:
@@ -223,7 +223,7 @@ def swallowed_preamble_md(swallowed: list[dict]) -> str:
     ]
     for s in swallowed:
         lines.append(
-            f"- **{s['path']}** — pluginid `{s['pluginid']}`, "
+            f"- **{s['path']}**: pluginid `{s['pluginid']}`, "
             f"riskcode {s['riskcode']}, _{s['alert']}_"
         )
     lines += [

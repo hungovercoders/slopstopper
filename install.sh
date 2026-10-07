@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — installs the SlopStopper tooling into a target repository.
+# install.sh: installs the SlopStopper tooling into a target repository.
 #
 # Usage (from inside this repo):
 #   ./install.sh [TARGET_DIR]
@@ -27,9 +27,9 @@
 #   .github/actions/ss-*/       # composite steps the workflows share (refreshed every run)
 #   .ss/.installed-from         # slopstopper commit this install came from (commit this)
 #   .ss/reports/                # SlopStopper-owned scan/report output dirs
-#                               # (every CLI-managed file — Playwright specs,
-#                               # Playwright config, lighthouserc dev/prod,
-#                               # server.js — lives in the slopstopper-cli
+#                               # (the Playwright specs and config,
+#                               # lighthouserc dev/prod and server.js are
+#                               # CLI-managed and live in the slopstopper-cli
 #                               # wheel. To customise, `slopstopper templates
 #                               # eject <name>` writes the file into .ss/ and
 #                               # the CLI's templates resolver prefers it.)
@@ -41,13 +41,13 @@
 #                               #   already run husky/lefthook/pre-commit)
 #
 # Workflow set ships in three conceptual layers:
-#   1. Static analysis  — work on any code (SAST, Secrets, Trivy, complexity, doc checks)
-#   2. Web-app dynamic  — need a URL (Smoke, Accessibility, CWV, DAST, SEO, Broken Links)
-#   3. Agentic updater  — needs COPILOT_GITHUB_TOKEN (gh-aw doc-updater)
-# Deploy is intentionally not a layer: connect your repo in the Cloudflare
+#   1. Static analysis: works on any code (SAST, Secrets, Trivy, complexity, doc checks)
+#   2. Web-app dynamic: needs a URL (Smoke, Accessibility, CWV, DAST, SEO, Broken Links)
+#   3. Agentic updater: needs COPILOT_GITHUB_TOKEN (gh-aw doc-updater)
+# Deploy is intentionally not a layer. Connect your repo in the Cloudflare
 # dash (Workers & Pages → Create → Connect to Git) and you get production
-# deploys, PR previews and preview cleanup for free — no workflow needed.
-# Don't use one of the layers? Delete its workflows from .github/workflows/.
+# deploys, PR previews and preview cleanup for free, without a workflow.
+# If you don't use one of the layers, delete its workflows from .github/workflows/.
 # Re-running this installer will respect that deletion (it tracks what it
 # installed in .ss/.workflows-installed).
 
@@ -57,8 +57,9 @@ REPO_URL="https://github.com/hungovercoders/slopstopper.git"
 
 # ── argument parsing ─────────────────────────────────────────────────────────
 #
-# Default mode ships Task-flavour workflows (every check is `task ss:<name>` —
-# the canonical interface for humans, agents and CI alike). Adopters who'd
+# Default mode ships Task-flavour workflows. Every check runs as
+# `task ss:<name>`, which is the canonical interface for humans, agents and
+# CI alike. Adopters who'd
 # rather skip Task in CI pass `--no-task` (or set SLOPSTOPPER_NO_TASK=1) and
 # the workflows are post-processed at install time to call slopstopper-cli
 # directly. See docs/architecture/ for the design rationale.
@@ -78,12 +79,12 @@ if [ -n "${SLOPSTOPPER_NO_HOOKS:-}" ]; then
   INSTALL_HOOKS=false
 fi
 
-# Project-shape profile. A profile is a preset for `workflows.disabled` —
-# it switches off the checks a repo of that shape has no use for (an API
+# Project-shape profile. A profile is a preset for `workflows.disabled`
+# that switches off the checks a repo of that shape has no use for (an API
 # has no Core Web Vitals; a library has no URL at all). The flag writes
 # `profile:` into .slopstopper.yml so the choice survives re-runs and shows
-# up in a diff, then the workflow set follows from the config — the same
-# reasoning as workflows.disabled below. Empty = leave the config alone
+# up in a diff, then the workflow set follows from the config, for the same
+# reason as workflows.disabled below. Empty = leave the config alone
 # (an unset `profile:` means `ui`, i.e. today's full suite).
 PROFILE_FLAG="${SLOPSTOPPER_PROFILE:-}"
 
@@ -135,7 +136,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     --help|-h)
       cat <<'USAGE'
-install.sh — install the SlopStopper quality suite into a target repo.
+install.sh: install the SlopStopper quality suite into a target repo.
 
 Usage:
   bash install.sh [TARGET_DIR]                 # Task-driven workflows (default)
@@ -154,12 +155,12 @@ Env var equivalents:
 
 Profiles (--profile) tailor the suite to the repo's shape:
 
-  ui       a site or app that serves HTML — every check applies (default)
-  api      JSON/gRPC endpoints, no browser surface — drops the nine
+  ui       a site or app that serves HTML. Every check applies (default).
+  api      JSON/gRPC endpoints with no browser surface. Drops the nine
            browser-and-SEO reliability checks, which assume HTML and a
-           public web surface and would go red rather than no-op
-  library  a library, CLI or package with no deployed surface — also drops
-           DAST and CSP exceptions
+           public web surface and would go red rather than no-op.
+  library  a library, CLI or package with no deployed surface. Also drops
+           DAST and CSP exceptions.
 
 The flag writes `profile:` into .slopstopper.yml, so the choice survives
 re-runs and is visible in review; the workflow set is derived from that key
@@ -177,7 +178,7 @@ The slopstopper-cli version is pinned per-repo in mise.toml ([tools]
 so the active version follows the repo. A plain run installs that pinned version
 and never moves it, so a breaking upstream release can't reach you unannounced.
 First install pins to the latest published version; --upgrade-cli / --cli-version
-move the pin later (both wrap `mise use`). mise is required — see
+move the pin later (both wrap `mise use`). mise is required. Install it from
 https://mise.jdx.dev. A legacy .slopstopper.yml cli_version pin is migrated into
 mise.toml automatically on the next run.
 
@@ -191,7 +192,7 @@ The installer also wires a pre-push git hook (.githooks/pre-push, via
 core.hooksPath) that runs the fast static hygiene checks (task ss:hygiene:test)
 before every push, so the first CI run confirms rather than discovers. It won't
 touch an existing hook manager (husky / lefthook / pre-commit) or a custom
-core.hooksPath — in that case it drops the hook file in and prints how to opt in.
+core.hooksPath. In that case it drops the hook file in and prints how to opt in.
 Pass --no-hooks to skip. Bypass a single push with 'git push --no-verify'.
 USAGE
       exit 0
@@ -216,7 +217,7 @@ error()   { echo "  ❌ $*" >&2; exit 1; }
 sep() { echo "────────────────────────────────────────────────────────────"; }
 
 # Latest slopstopper-cli version published on PyPI. Empty string on any
-# failure (offline, no curl, malformed JSON) — callers treat empty as
+# failure (offline, no curl, malformed JSON). Callers treat empty as
 # "unknown" and fall back to best-effort behaviour rather than blocking.
 latest_pypi_version() {
   # Test seam (used by cli/tests/test_install.py alongside SKIP_CLI_INSTALL):
@@ -242,7 +243,7 @@ version_lt() {
   [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$1" ]
 }
 
-# Path to the target's mise config — the canonical pin lives here now. Prefer
+# Path to the target's mise config, which holds the canonical pin. Prefer
 # an existing file (so we never create a second config alongside an adopter's),
 # else default to mise.toml. mise reads any of these names.
 mise_config_path() {
@@ -287,8 +288,8 @@ strip_legacy_cli_version() {
 
 # Migration cleanup: remove the dead node_version key (and its preceding comment
 # block, if present) from .slopstopper.yml. The key was never read (CI used the
-# SLOPSTOPPER_NODE_VERSION repo variable); node lives in mise.toml ([tools] node)
-# now, so the key is simply removed — there's no value worth migrating.
+# SLOPSTOPPER_NODE_VERSION repo variable) and node lives in mise.toml ([tools]
+# node), so the key is removed outright with no value to migrate.
 strip_legacy_node_version() {
   local cfg="$1"
   [ -f "$cfg" ] || return 0
@@ -302,8 +303,8 @@ strip_legacy_node_version() {
   ' "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
 }
 
-# Set a [tools] entry in a mise config, portable across BSD/GNU and offline
-# (no mise binary needed — used by the SKIP_CLI_INSTALL test seam). Real
+# Set a [tools] entry in a mise config, portable across BSD/GNU and offline.
+# It needs no mise binary, which the SKIP_CLI_INSTALL test seam relies on. Real
 # installs go through `mise use` instead, which also installs the tool.
 # Creates the file and [tools] section if absent; replaces the entry if present.
 write_mise_tool() {
@@ -326,12 +327,12 @@ write_mise_tool() {
 
 # Default Node version slopstopper seeds into a fresh adopter mise config. Node is
 # a tool version, so it belongs in mise (not .slopstopper.yml); the ss-*.yml
-# workflows get it from this pin via jdx/mise-action — no setup-node step.
+# workflows get it from this pin via jdx/mise-action, so they need no setup-node step.
 DEFAULT_NODE_VERSION="20"
 
-# True if the target already declares a Node version somewhere mise (and the
-# workflows) honour — a `node` [tools] entry in the mise config, or a
-# .node-version / .nvmrc file. We seed our own node pin only when none of these
+# True if the target already declares a Node version in a place mise (and the
+# workflows) honour, which means a `node` [tools] entry in the mise config or
+# a .node-version / .nvmrc file. We seed our own node pin only when none of these
 # exist, so a re-run never clobbers an adopter's existing Node setup.
 target_has_node_pin() {
   local mcfg="$1"
@@ -361,7 +362,7 @@ preflight() {
 
   command -v git     >/dev/null 2>&1 || missing_hard+=("git")
   command -v python3 >/dev/null 2>&1 || missing_hard+=("python3 (slopstopper-cli is a Python package): https://www.python.org/downloads/")
-  # mise is the canonical toolchain manager now — it installs the pinned
+  # mise is the canonical toolchain manager. It installs the pinned
   # slopstopper-cli (and task) from mise.toml and activates them per-directory,
   # so the version follows the repo instead of a single global binary. Skip the
   # hard requirement under the SKIP_CLI_INSTALL test seam (no real install).
@@ -369,7 +370,7 @@ preflight() {
     command -v mise >/dev/null 2>&1 || missing_hard+=("mise (installs the pinned slopstopper-cli + task): https://mise.jdx.dev")
   fi
   command -v node    >/dev/null 2>&1 || missing_soft+=("node (Playwright, Lighthouse CI, markdownlint, TypeScript): https://nodejs.org/")
-  command -v docker  >/dev/null 2>&1 || info "Docker not found — only needed for DAST. Skipping check."
+  command -v docker  >/dev/null 2>&1 || info "Docker not found. Only DAST needs it, so the install carries on."
 
   if [ "${#missing_hard[@]}" -gt 0 ]; then
     for tool in "${missing_hard[@]}"; do
@@ -379,7 +380,7 @@ preflight() {
   fi
 
   if [ "${#missing_soft[@]}" -gt 0 ]; then
-    warn "The following tools aren't installed — you'll need them to run the checks SlopStopper installs:"
+    warn "The following tools aren't installed. You'll need them to run the checks SlopStopper installs:"
     for tool in "${missing_soft[@]}"; do
       echo "      • $tool"
     done
@@ -396,7 +397,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)" || tr
 
 # Resolve the absolute target so we can compare against SCRIPT_DIR. If they
 # are the same directory, the user is running install.sh from inside an
-# adopter repo and we MUST clone — otherwise the cp Taskfile.ss.yml step
+# adopter repo and we MUST clone. Otherwise the cp Taskfile.ss.yml step
 # would copy the existing Taskfile.ss.yml to itself, never picking up
 # upstream changes. Using Taskfile.ss.yml as the slopstopper-source marker
 # (the previous behaviour) failed exactly this case because the adopter has
@@ -437,7 +438,7 @@ fi
 [ -d "$TARGET_DIR" ] || error "Target directory does not exist: $TARGET_DIR"
 
 sep
-echo "  🛠  SlopStopper — installing tooling"
+echo "  🛠  SlopStopper: installing tooling"
 echo "  Source : $SCRIPT_DIR"
 echo "  Target : $TARGET_DIR"
 sep
@@ -502,7 +503,7 @@ for name in sorted(profiles.effective_disabled()):
 }
 
 # Advisory shape detection: prints "<profile>\t<reason>". Never applied
-# automatically — a curl-piped install is non-interactive, and silently
+# automatically, because a curl-piped install is non-interactive and silently
 # switching checks off is worse than the default superset going red.
 profile_detect() {
   ss_profiles_py '
@@ -512,8 +513,8 @@ print(name + "\t" + reason)
 '
 }
 
-# Write `profile: <name>` into the target .slopstopper.yml — replacing an
-# existing top-level key in place, or appending a documented block if the
+# Write `profile: <name>` into the target .slopstopper.yml. It replaces an
+# existing top-level key in place, or appends a documented block if the
 # file predates the key. Comment-preserving line edit, same spirit as the
 # legacy cli_version migration above.
 write_profile_key() {
@@ -558,18 +559,18 @@ fi
 
 # ── install files ─────────────────────────────────────────────────────────────
 
-# 1. Taskfile.ss.yml — always refreshed (SlopStopper-owned, safe to overwrite).
+# 1. Taskfile.ss.yml: always refreshed (SlopStopper-owned, safe to overwrite).
 cp "$SCRIPT_DIR/Taskfile.ss.yml" "$TARGET_DIR/Taskfile.ss.yml"
 success "Taskfile.ss.yml installed (refreshed)"
 
-# 2. Root Taskfile.yml — only create if missing.
+# 2. Root Taskfile.yml: only create it if missing.
 # If the consumer already has one, print clear instructions instead of editing it.
 if [ -f "$TARGET_DIR/Taskfile.yml" ]; then
   if grep -qE "^[[:space:]]+ss:[[:space:]]*$" "$TARGET_DIR/Taskfile.yml" 2>/dev/null \
      || grep -q "Taskfile.ss.yml" "$TARGET_DIR/Taskfile.yml" 2>/dev/null; then
-    info "Taskfile.yml already references Taskfile.ss.yml — no changes needed"
+    info "Taskfile.yml already references Taskfile.ss.yml, so no changes are needed"
   else
-    warn "Taskfile.yml already exists — leaving it alone."
+    warn "Taskfile.yml already exists, so leaving it alone."
     echo ""
     echo "  Add the following block to your existing Taskfile.yml so the"
     echo "  SlopStopper tasks become available as 'task ss:<name>':"
@@ -581,7 +582,7 @@ if [ -f "$TARGET_DIR/Taskfile.yml" ]; then
   fi
 else
   # Write a minimal root Taskfile inline rather than copying slopstopper's
-  # own — slopstopper's root file carries `contributing:*` + `decisions:*`
+  # own, because slopstopper's root file carries `contributing:*` + `decisions:*`
   # tasks that are scoped to working on slopstopper itself, not the suite
   # being shipped to adopters.
   cat > "$TARGET_DIR/Taskfile.yml" <<'YAML'
@@ -594,26 +595,26 @@ YAML
   success "Taskfile.yml installed"
 fi
 
-# 3. slopstopper-cli — pinned and installed via mise. The canonical pin lives
+# 3. slopstopper-cli: pinned and installed via mise. The canonical pin lives
 #    in the target's mise.toml ([tools] "pipx:slopstopper-cli"). mise installs
 #    it (and `task`) and activates them per-directory, so the active version
-#    follows the repo — no single global binary to drift between repos. A
+#    follows the repo and no single global binary drifts between repos. A
 #    breaking upstream release never lands until you move the pin
 #    (--upgrade-cli / --cli-version, both wrappers over `mise use`).
 #
 # If an `.ss/` overlay (specs, playwright config, lighthouse config) is
 # already present in the target, the CLI's templates module prefers
-# those files over the package data — same shape as the workflows.
+# those files over the package data, in the same shape as the workflows.
 #
-# .slopstopper.yml is seeded from templates/slopstopper.yml.starter — the
-# handful of keys most repos set, with a pointer to the full schema
+# .slopstopper.yml is seeded from templates/slopstopper.yml.starter, which
+# holds the handful of keys most repos set and a pointer to the full schema
 # reference (.slopstopper.yml.example) for everything else. The schema
 # reference used to be copied verbatim, so an adopter's first config was
 # the whole schema rather than the few keys they set. A legacy cli_version
 # is migrated into mise.toml and stripped below.
 if [ ! -f "$TARGET_DIR/.slopstopper.yml" ] && [ -f "$SCRIPT_DIR/templates/slopstopper.yml.starter" ]; then
   cp "$SCRIPT_DIR/templates/slopstopper.yml.starter" "$TARGET_DIR/.slopstopper.yml"
-  success ".slopstopper.yml: seeded $TARGET_DIR/.slopstopper.yml (a starter — every other key: https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example)"
+  success ".slopstopper.yml: seeded $TARGET_DIR/.slopstopper.yml as a starter. Every other key is in https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example"
 fi
 
 # Apply --profile / SLOPSTOPPER_PROFILE by writing the key into the
@@ -626,7 +627,7 @@ if [ -n "$PROFILE_FLAG" ]; then
     unchanged) info ".slopstopper.yml: profile already '$PROFILE_FLAG'" ;;
     replaced)  success ".slopstopper.yml: profile set to '$PROFILE_FLAG'" ;;
     appended)  success ".slopstopper.yml: profile '$PROFILE_FLAG' added" ;;
-    *)         warn ".slopstopper.yml: no config file in target — profile '$PROFILE_FLAG' not written" ;;
+    *)         warn ".slopstopper.yml: no config file in target, so profile '$PROFILE_FLAG' was not written" ;;
   esac
 fi
 
@@ -662,7 +663,7 @@ sync_mise_cli() {
 
   # Migrate off the old mechanism: drop the now-defunct cli_version key (its
   # value, if any, was already folded into `pinned` by resolve_pinned_version)
-  # and the dead node_version key (never read — node lives in mise.toml now).
+  # and the dead node_version key (nothing ever read it; node lives in mise.toml).
   strip_legacy_cli_version "$cfg"
   strip_legacy_node_version "$cfg"
 
@@ -678,8 +679,8 @@ sync_mise_cli() {
     return 0
   fi
 
-  # `mise use` edits mise.toml AND installs the tool in one idempotent step —
-  # it handles a moved pin (upgrade or downgrade) deterministically. Pin `task`
+  # `mise use` edits mise.toml AND installs the tool in one idempotent step,
+  # and it handles a moved pin (upgrade or downgrade) deterministically. Pin `task`
   # too so mise provides the canonical interface (no separate setup-task). Seed
   # `node` only when the adopter hasn't already declared one (mise.toml /
   # .node-version / .nvmrc), so we never override their build's Node version.
@@ -690,7 +691,7 @@ sync_mise_cli() {
     mise use --path "$mcfg" "pipx:slopstopper-cli@$pinned" "task@3" $node_arg >/dev/null \
       || error "mise use failed. Check the version exists on PyPI and your network, then retry."
   else
-    warn "Could not determine a slopstopper-cli version (offline?). Pinning task only — set the CLI pin later with 'install.sh --upgrade-cli'."
+    warn "Could not determine a slopstopper-cli version (offline?). Only task is pinned. Set the CLI pin later with 'install.sh --upgrade-cli'."
     mise use --path "$mcfg" "task@3" $node_arg >/dev/null || true
   fi
 
@@ -705,7 +706,7 @@ sync_mise_cli() {
   post_version="$(mise_active_cli_version)"
 
   # The active version must match the pin we asked for. A mismatch means the
-  # pinned version doesn't exist on PyPI or a mirror served stale data — fail
+  # pinned version doesn't exist on PyPI or a mirror served stale data, so fail
   # loudly rather than limp on the wrong version.
   if [ -n "$pinned" ] && [ -n "$post_version" ] && [ "$post_version" != "$pinned" ]; then
     error "Asked for slopstopper-cli@$pinned but $post_version is active. Verify the version exists on PyPI, then run 'mise install' in $TARGET_DIR."
@@ -713,8 +714,8 @@ sync_mise_cli() {
 
   success "slopstopper-cli installed ($post_version, pinned in $(basename "$mcfg"))"
 
-  # Stash facts for the completion banner. LATEST is informational now — a
-  # pin behind latest is a deliberate choice, not a fault.
+  # Stash facts for the completion banner. LATEST is informational only,
+  # because a pin behind latest is a deliberate choice, not a fault.
   SLOPSTOPPER_CLI_VERSION="$post_version"
   SLOPSTOPPER_CLI_LATEST="$(latest_pypi_version)"
   SLOPSTOPPER_CLI_PREVIOUS="$pre_version"
@@ -722,7 +723,7 @@ sync_mise_cli() {
 
 sync_mise_cli
 
-# 4. .ss/ overlay — nothing is seeded by default. Every CLI-managed
+# 4. .ss/ overlay: nothing is seeded by default. Every CLI-managed
 #    file (Playwright specs, Playwright config, lighthouserc dev/prod,
 #    server.js) lives inside slopstopper-cli and is resolved at runtime
 #    via .ss/ override → package-data fallback. Adopters who want to
@@ -730,8 +731,8 @@ sync_mise_cli
 #    the bundled version into .ss/<name>.
 mkdir -p "$TARGET_DIR/.ss"
 
-# Clean up any legacy .ss/scripts/ left over from pre-CLI installs —
-# every script previously copied into adopter repos is now bundled in
+# Clean up any legacy .ss/scripts/ left over from pre-CLI installs.
+# Every script previously copied into adopter repos is now bundled in
 # slopstopper-cli (or was a slopstopper.dev-internal helper that didn't
 # belong in adopter repos).
 if [ -d "$TARGET_DIR/.ss/scripts" ]; then
@@ -740,8 +741,8 @@ if [ -d "$TARGET_DIR/.ss/scripts" ]; then
 fi
 
 # Clean up legacy byte-equal template copies from pre-lift installs.
-# If an adopter has customised any of these, leave the file alone — the
-# CLI's templates resolver will keep using the .ss/ override.
+# If an adopter has customised any of these, leave the file alone, because
+# the CLI's templates resolver keeps using the .ss/ override.
 # Detection: compare bytes against the package data shipped in the wheel
 # the adopter just installed.
 DATA_DIR="$(python3 -c 'import slopstopper, pathlib; print(pathlib.Path(slopstopper.__file__).resolve().parent / "data")' 2>/dev/null || true)"
@@ -767,7 +768,7 @@ if [ -n "$DATA_DIR" ] && [ -d "$DATA_DIR" ]; then
   fi
 fi
 
-# 4. .github/workflows/ — install ss- prefixed generic workflows.
+# 4. .github/workflows/: install the ss- prefixed generic workflows.
 WORKFLOWS_SRC="$SCRIPT_DIR/.github/workflows"
 WORKFLOWS_DST="$TARGET_DIR/.github/workflows"
 mkdir -p "$WORKFLOWS_DST"
@@ -777,10 +778,10 @@ mkdir -p "$WORKFLOWS_DST"
 # re-running the installer will respect that deletion (tracked via
 # .ss/.workflows-installed).
 #
-# copilot-setup-steps.yml is platform-fixed and not included here — install
+# copilot-setup-steps.yml is platform-fixed and not included here. Install
 # it manually if you use GitHub Copilot's setup-steps feature.
 GENERIC_WORKFLOWS=(
-  # Layer 1 — static analysis (works on any code)
+  # Layer 1: static analysis (works on any code)
   "ss-hygiene-complexity-check.yml"
   "ss-hygiene-csp-exceptions-check.yml"
   "ss-hygiene-docs-accuracy-check.yml"
@@ -794,7 +795,7 @@ GENERIC_WORKFLOWS=(
   "ss-security-vulnerability-new-check.yml"
   "ss-workflow-failure-issue.yml"
   "ss-pr-summary.yml"
-  # Layer 2 — web-app dynamic (need a URL)
+  # Layer 2: web-app dynamic (needs a URL)
   "ss-security-dast-check.yml"
   "ss-reliability-smoke-tests.yml"
   "ss-reliability-e2e-check.yml"
@@ -811,7 +812,7 @@ GENERIC_WORKFLOWS=(
   # The one hygiene check that needs a URL: drift means the spec measured
   # against the thing it documents, so it lives in layer 2 with the rest.
   "ss-hygiene-openapi-check.yml"
-  # Layer 3 — agentic doc-updater (needs ANTHROPIC_API_KEY)
+  # Layer 3: agentic doc-updater (needs ANTHROPIC_API_KEY)
   # NB: gh-aw workflows ship as a .md source + .lock.yml compiled artifact.
   "ss-hygiene-doc-updater.md"
   "ss-hygiene-doc-updater.lock.yml"
@@ -827,18 +828,18 @@ MARKER_FILE="$TARGET_DIR/.ss/.workflows-installed"
 PROFILE_ACTIVE="$(profile_active)" || true
 DISABLED_WORKFLOWS="$(profile_effective_disabled)" || true
 
-# Degrade safely — and never silently. If the profiles module couldn't be
+# Degrade safely and never silently. If the profiles module couldn't be
 # resolved (no python3, unreadable cli/ tree), an empty name must not look
-# like "this repo carries fewer checks" — but the full `ui` set must not
-# land in a repo whose config explicitly opted out of it either. So: a
-# non-default `profile:` aborts here (no workflows have been written yet);
-# the default warns and continues.
+# like "this repo carries fewer checks". The full `ui` set must not land in
+# a repo whose config explicitly opted out of it either. So a non-default
+# `profile:` aborts here, before any workflow has been written, and the
+# default warns and continues.
 if [ -z "$PROFILE_ACTIVE" ]; then
   CONFIGURED_PROFILE="$(sed -n "s/^profile:[[:space:]]*[\"']\{0,1\}\([A-Za-z0-9_-]*\).*/\1/p" "$TARGET_DIR/.slopstopper.yml" 2>/dev/null | head -n 1)"
   if [ -n "$CONFIGURED_PROFILE" ] && [ "$CONFIGURED_PROFILE" != "ui" ]; then
-    error "could not resolve the workflow set for profile '$CONFIGURED_PROFILE' (python3 or the slopstopper.profiles module is unavailable). Refusing to install the full 'ui' set into a repo that opted out of it — fix the toolchain and re-run; no workflows were written."
+    error "could not resolve the workflow set for profile '$CONFIGURED_PROFILE' (python3 or the slopstopper.profiles module is unavailable). Refusing to install the full 'ui' set into a repo that opted out of it. No workflows were written. Fix the toolchain and re-run."
   fi
-  warn "profile lookup failed (python3 or slopstopper.profiles unavailable) — defaulting to 'ui', so every check installs. Re-run once the toolchain works if that is not what you want."
+  warn "profile lookup failed (python3 or slopstopper.profiles unavailable), so defaulting to 'ui' and installing every check. Re-run once the toolchain works if that is not what you want."
   PROFILE_ACTIVE="ui"
 fi
 
@@ -861,7 +862,7 @@ was_previously_installed() {
 # yielding a silent zero-workflows install. A real user would not delete
 # every workflow; treat this as a stale marker and re-install fresh.
 #
-# Use `find` rather than `ls` for the count — `ls path/glob*` returns
+# Use `find` rather than `ls` for the count, because `ls path/glob*` returns
 # non-zero when the glob has no matches, which combines with `set -e -o
 # pipefail` to abort the script. `find` returns 0 even on no matches.
 IGNORE_STALE_MARKER=0
@@ -871,7 +872,7 @@ if [ -f "$MARKER_FILE" ]; then
   [ -z "$marker_count" ] && marker_count=0
   if [ "$on_disk_count" = "0" ] && [ "$marker_count" -gt 0 ]; then
     IGNORE_STALE_MARKER=1
-    warn "Stale .ss/.workflows-installed detected ($marker_count entries, 0 workflows on disk) — treating as a fresh install and re-adding all workflows. If you genuinely deleted every workflow, set workflows.disabled in .slopstopper.yml instead so the choice survives re-runs."
+    warn "Stale .ss/.workflows-installed detected ($marker_count entries, 0 workflows on disk), so treating this as a fresh install and re-adding all workflows. If you genuinely deleted every workflow, set workflows.disabled in .slopstopper.yml instead so the choice survives re-runs."
   fi
 fi
 
@@ -926,8 +927,8 @@ success "$INSTALLED_WORKFLOWS workflow(s) installed, $REFRESHED_WORKFLOWS refres
 # Plumbing, not checks: always copied, never tracked in the marker, never
 # dropped by a profile. Each shipped action is replaced wholesale (so a file
 # removed from it upstream goes too). An action slopstopper stops shipping,
-# or renames, goes in OBSOLETE_ACTIONS so re-runs delete the old directory —
-# the same contract as install-skill.sh's OBSOLETE_SKILLS.
+# or renames, goes in OBSOLETE_ACTIONS so re-runs delete the old directory.
+# This is the same contract as install-skill.sh's OBSOLETE_SKILLS.
 OBSOLETE_ACTIONS=()
 ACTIONS_SRC="$SCRIPT_DIR/.github/actions"
 ACTIONS_DST="$TARGET_DIR/.github/actions"
@@ -957,8 +958,8 @@ fi
 
 # Post-process workflows for --no-task mode: rewrite `task ss:<X> -- args` into
 # `slopstopper run <X> args`. The CLI accepts the same bare-positional URL
-# adopters' shims pass through, so the resulting workflows are functionally
-# identical — just without any `task ss:*` invocation. The toolchain step
+# adopters' shims pass through, so the resulting workflows do the same job
+# without any `task ss:*` invocation. The toolchain step
 # (jdx/mise-action) is unchanged: it still installs the pinned slopstopper-cli
 # from mise.toml (mise also installs `task`, which simply goes unused here).
 #
@@ -974,7 +975,7 @@ from pathlib import Path
 workflows_dst = Path(sys.argv[1])
 
 # Order matters: handle the `-- ` separator form first, then bare invocations.
-# Shim names match CLI check names one-to-one — no alias mapping needed.
+# Shim names match CLI check names one-to-one, so no alias mapping is needed.
 # `task -x` (pass the command's exit code through instead of Task's 201)
 # is matched too; the CLI returns the check's own code natively.
 invoke_with_args = re.compile(r"task (?:-x )?ss:([a-z][a-z0-9_:-]+) -- ")
@@ -1039,8 +1040,8 @@ elif [ ! -f "$PKG" ]; then
 fi
 
 # 6. Seed adopter-default templates. seed_template() copies <src> to <dst>
-# only if <dst> does not exist; never overwrites. The whole point is to
-# remove the cliff between "install lands" and "first PR is green" — these
+# only if <dst> does not exist; never overwrites. The point is to remove
+# the cliff between "install lands" and "first PR is green". These
 # defaults handle the common cases (no config file, no auto-label config,
 # no headers, no .zap suppressions, no gitignore entries) so an adopter's
 # first CI run isn't a discovery pass.
@@ -1050,10 +1051,10 @@ seed_template() {
   local src="$2"
   local dst="$3"
   if [ ! -f "$src" ]; then
-    return 0  # template missing from source (e.g. running an old install.sh against a new repo) — skip silently
+    return 0  # template missing from source (e.g. an old install.sh run against a new repo), so skip silently
   fi
   if [ -f "$dst" ]; then
-    info "$label: $dst already exists — leaving it alone"
+    info "$label: $dst already exists, so leaving it alone"
     return 0
   fi
   mkdir -p "$(dirname "$dst")"
@@ -1061,16 +1062,16 @@ seed_template() {
   success "$label: seeded $dst"
 }
 
-# .slopstopper.yml — the adopter's config (seeded from the starter template) is
-# seeded earlier, just before sync_mise_cli, so any legacy cli_version pin can
-# be read for migration into mise.toml.
+# The adopter's config, .slopstopper.yml, comes from the starter template and
+# is seeded earlier, just before sync_mise_cli, so any legacy cli_version pin
+# can be read for migration into mise.toml.
 
-# .github/labeler.yml — config for ss-hygiene-auto-label-pr.yml
+# .github/labeler.yml: config for ss-hygiene-auto-label-pr.yml
 seed_template ".github/labeler.yml" \
   "$SCRIPT_DIR/templates/labeler.yml.example" \
   "$TARGET_DIR/.github/labeler.yml"
 
-# public/_headers — Cloudflare/Netlify static-asset header baseline (commented out)
+# public/_headers: Cloudflare/Netlify static-asset header baseline (commented out)
 #
 # Idempotent append-with-markers (same pattern as the .gitignore block
 # below). Adopters often arrive with a public/_headers that holds only
@@ -1078,10 +1079,10 @@ seed_template ".github/labeler.yml" \
 # baseline forever. Instead: detect our begin-marker; append the block
 # bracketed by markers if it isn't there yet; leave existing content
 # untouched. The block ships fully commented so adopters opt in by
-# uncommenting — same default safety as the fresh-install case.
+# uncommenting, which keeps the same default safety as the fresh-install case.
 seed_headers_block() {
   if [ ! -d "$TARGET_DIR/public" ]; then
-    info "public/_headers: no public/ directory in target — skipping (add one and re-run if you want the baseline)"
+    info "public/_headers: no public/ directory in target, so skipping. Add one and re-run if you want the baseline."
     return 0
   fi
   local dst="$TARGET_DIR/public/_headers"
@@ -1090,7 +1091,7 @@ seed_headers_block() {
     return 0
   fi
   if [ -f "$dst" ] && grep -Fq "# slopstopper security headers begin" "$dst" 2>/dev/null; then
-    info "public/_headers: slopstopper security headers block already present — leaving it alone"
+    info "public/_headers: slopstopper security headers block already present, so leaving it alone"
     return 0
   fi
   mkdir -p "$(dirname "$dst")"
@@ -1106,12 +1107,12 @@ seed_headers_block() {
 
 seed_headers_block
 
-# .zap/rules.tsv — ZAP rule overrides (entries commented; uncomment what applies)
+# .zap/rules.tsv: ZAP rule overrides (entries commented; uncomment what applies)
 seed_template ".zap/rules.tsv" \
   "$SCRIPT_DIR/templates/zap-rules.tsv.example" \
   "$TARGET_DIR/.zap/rules.tsv"
 
-# .markdownlint.json — defaults that let real docs pass (MD013 off, etc.).
+# .markdownlint.json: defaults that let real docs pass (MD013 off, etc.).
 # Adopters invoke markdownlint directly (`npx markdownlint "docs/**/*.md"`);
 # markdownlint auto-discovers the closest config upward, so seeding at repo
 # root works whether they call it from root or from docs/.
@@ -1119,12 +1120,12 @@ seed_template ".markdownlint.json" \
   "$SCRIPT_DIR/templates/markdownlint.json.example" \
   "$TARGET_DIR/.markdownlint.json"
 
-# AGENTS.md-first entry-file scaffolds — README.md, AGENTS.md, CLAUDE.md, docs/README.md.
+# The AGENTS.md-first entry-file scaffolds (README.md, AGENTS.md, CLAUDE.md, docs/README.md).
 # Templates ship inside the slopstopper-cli wheel under data/templates/entry-files/
 # AND in the repo's cli/slopstopper/data/templates/entry-files/ so install.sh can
 # resolve them whether running from a clone or from a fresh curl-piped checkout.
-# Each file is seeded only when absent — adopters who already have entry files
-# keep them untouched. The ss:hygiene:entry-files check enforces the budgets,
+# Each file is seeded only when absent, so adopters who already have entry
+# files keep them untouched. The ss:hygiene:entry-files check enforces the budgets,
 # the pure `@AGENTS.md` include and the explicit-route rule, and emits a
 # paste-ready snippet for any file that exists but breaks one; this seed
 # handles only the missing-file case.
@@ -1140,24 +1141,24 @@ seed_template "CLAUDE.md" \
   "$TARGET_DIR/CLAUDE.md"
 if [ -f "$TARGET_DIR/docs/index.md" ] && [ ! -f "$TARGET_DIR/docs/README.md" ]; then
   # A pre-0.15 install seeded docs/index.md as the map. The map is a README
-  # now (the repo UI renders it in place) and its rows are explicit routes;
-  # the rename is the adopter's commit, not the installer's — the check's
+  # now (the repo UI renders it in place) and its rows are explicit routes.
+  # The rename is the adopter's commit, not the installer's, and the check's
   # report walks through it.
-  warn "docs/index.md is the pre-0.15 map; the map is docs/README.md now — \`git mv docs/index.md docs/README.md\` and rewrite its rows as routes (task ss:hygiene:entry-files explains)"
+  warn "docs/index.md is the pre-0.15 map and the map is docs/README.md now. Run \`git mv docs/index.md docs/README.md\` and rewrite its rows as routes (task ss:hygiene:entry-files explains how)."
 else
   seed_template "docs/README.md" \
     "$ENTRY_FILES_TEMPLATES_DIR/docs/README.md" \
     "$TARGET_DIR/docs/README.md"
 fi
 
-# .gitignore — append the slopstopper block if not already present.
+# .gitignore: append the slopstopper block if not already present.
 # Idempotent re-append: the block is bracketed with markers so re-runs
 # detect the existing block and skip rather than duplicate.
 GI="$TARGET_DIR/.gitignore"
 GI_BLOCK_SRC="$SCRIPT_DIR/templates/gitignore.block"
 if [ -f "$GI_BLOCK_SRC" ]; then
   if [ -f "$GI" ] && grep -Fq "# slopstopper begin" "$GI" 2>/dev/null; then
-    info ".gitignore: slopstopper block already present — leaving it alone"
+    info ".gitignore: slopstopper block already present, so leaving it alone"
   else
     [ -f "$GI" ] && [ -s "$GI" ] && printf '\n' >> "$GI"
     cat "$GI_BLOCK_SRC" >> "$GI"
@@ -1167,11 +1168,11 @@ fi
 
 # 7. Sweep the rest of the disabled set. The workflow loop above already
 # skipped (and cleaned up) every disabled workflow in GENERIC_WORKFLOWS;
-# this catches names that aren't in that list — a workflow from an older
-# slopstopper release, or one the adopter added and then listed. Driven by
+# this catches names that aren't in that list, such as a workflow from an
+# older slopstopper release or one the adopter added and then listed. Driven by
 # the same resolved set ($DISABLED_WORKFLOWS = (profile − workflows.enabled)
 # ∪ workflows.disabled), so config drives deletions rather than "delete the
-# file and trust the marker" — both work, but config-driven is easier to
+# file and trust the marker". Both work, but config-driven is easier to
 # audit and survives clone-and-rebuild.
 if [ -n "$DISABLED_WORKFLOWS" ]; then
   DISABLED_COUNT=0
@@ -1197,8 +1198,8 @@ fi
 #
 # install-skill.sh is the one implementation (skill list, obsolete-skill
 # cleanup, staging, validation). It runs here against the checkout this
-# script is running from — the same tree the workflows and templates were
-# copied from — so the skills always match them and no network is needed.
+# script is running from, which is the tree the workflows and templates were
+# copied from, so the skills always match them and no network is needed.
 # A skill failure is non-fatal for the suite install: the rest is in place,
 # and install-skill.sh can be re-run on its own.
 
@@ -1229,14 +1230,14 @@ install_claude_skills
 # Taskfile.ss.yml); it lives in `.githooks/` (tracked, reviewable) and git is
 # pointed at it via `core.hooksPath`.
 #
-# Respectful wiring: we set core.hooksPath ONLY when it's safe — the adopter
-# hasn't already set a custom hooksPath and isn't running another hook manager
+# Respectful wiring: we set core.hooksPath ONLY when it's safe, meaning the
+# adopter hasn't already set a custom hooksPath and isn't running another hook manager
 # (husky / lefthook / pre-commit). Otherwise we still drop the hook file in but
 # leave their git config alone and print a one-line manual opt-in, so we never
 # hijack an existing setup. Disable the whole step with --no-hooks.
 
-# True if the target already manages git hooks some other way — a non-default
-# core.hooksPath, or a husky / lefthook / pre-commit config. We only auto-wire
+# True if the target already manages git hooks some other way, through a
+# non-default core.hooksPath or a husky / lefthook / pre-commit config. We only auto-wire
 # core.hooksPath when none of these exist, mirroring target_has_node_pin's
 # "never clobber the adopter's setup" stance.
 target_has_hook_manager() {
@@ -1259,13 +1260,13 @@ install_git_hook() {
 
   local src="$SCRIPT_DIR/.githooks/pre-push"
   if [ ! -f "$src" ]; then
-    return 0  # running an old checkout without the hook — nothing to install
+    return 0  # an old checkout without the hook has nothing to install
   fi
 
   # Not a git repo → nothing to hook into. Not fatal; the rest of the install
   # is still useful.
   if ! git -C "$TARGET_DIR" rev-parse --git-dir >/dev/null 2>&1; then
-    info "Target is not a git repository — skipping pre-push hook."
+    info "Target is not a git repository, so skipping the pre-push hook."
     return 0
   fi
 
@@ -1275,7 +1276,7 @@ install_git_hook() {
 
   if target_has_hook_manager; then
     success "pre-push hook written to .githooks/pre-push (refreshed)"
-    warn "You already manage git hooks — leaving core.hooksPath alone."
+    warn "You already manage git hooks, so leaving core.hooksPath alone."
     info "To enable the slopstopper gate, either run:"
     info "    git config core.hooksPath .githooks"
     info "  or add 'task ss:hygiene:test' to your existing hook manager."
@@ -1290,8 +1291,8 @@ install_git_hook
 
 # ── record the source commit ─────────────────────────────────────────────────
 #
-# Written last, once every step above has succeeded: everything installed —
-# workflows, actions, Taskfile.ss.yml, skills, the config schema those read —
+# Written last, once every step above has succeeded. Everything installed
+# (workflows, actions, Taskfile.ss.yml, skills, the config schema those read)
 # is this commit's, so a refresh can diff upstream between the committed
 # value and the new one (the slopstopper-install skill's "Spot newly-shipped
 # knobs"). A source that isn't a git checkout has no commit to record, so
@@ -1314,15 +1315,15 @@ echo ""
 echo "  🎉 Installation complete!"
 echo ""
 # Surface the pinned version under the banner. Being behind latest is a
-# deliberate choice now (the pin), so it's an informational nudge — not an
-# alarm — with the one command that moves it.
+# deliberate choice now (the pin), so it's an informational nudge rather
+# than an alarm, and it names the one command that moves it.
 ss_installed="${SLOPSTOPPER_CLI_VERSION:-}"
 ss_latest="${SLOPSTOPPER_CLI_LATEST:-}"
 ss_previous="${SLOPSTOPPER_CLI_PREVIOUS:-}"
 if [ -n "$ss_installed" ]; then
   if [ -n "$ss_latest" ] && version_lt "$ss_installed" "$ss_latest"; then
     echo "  📦 slopstopper-cli $ss_installed (pinned in mise.toml)"
-    info "PyPI latest is $ss_latest — run 'install.sh --upgrade-cli' when you're ready to move the pin."
+    info "PyPI latest is $ss_latest. Run 'install.sh --upgrade-cli' when you're ready to move the pin."
   elif [ -n "$ss_latest" ]; then
     echo "  📦 slopstopper-cli $ss_installed (pinned, latest on PyPI)"
   else
@@ -1338,14 +1339,15 @@ if [ -n "$ss_installed" ]; then
 fi
 echo "  ── SlopStopper status for this repo ──────────────────────────────"
 echo ""
-echo "  🧭 Profile: $PROFILE_ACTIVE — $(profile_summary)"
+echo "  🧭 Profile: $PROFILE_ACTIVE"
+echo "       $(profile_summary)"
 if [ "$PROFILE_SKIPPED" -gt 0 ]; then
   echo "       $PROFILE_SKIPPED check(s) left out as not applying to this shape."
   echo "       'slopstopper profile show' lists them; workflows.enabled keeps one."
 fi
 echo ""
-# Shape suggestion — advisory only, and skipped when the run set the profile
-# explicitly. Never applied automatically: a curl-piped install is
+# The shape suggestion is advisory only, and skipped when the run set the
+# profile explicitly. Never applied automatically: a curl-piped install is
 # non-interactive, and silently switching checks off is worse than the
 # default superset going visibly red.
 if [ -z "$PROFILE_FLAG" ]; then
@@ -1359,11 +1361,11 @@ if [ -z "$PROFILE_FLAG" ]; then
     echo ""
     echo "       profile: $DETECTED_NAME"
     echo ""
-    echo "     Nothing was changed for you — see 'slopstopper profile list'."
+    echo "     Nothing was changed for you. See 'slopstopper profile list'."
     echo ""
   fi
 fi
-echo "  ✅ Active now (no config needed — work on any code):"
+echo "  ✅ Active now on any code, with no config needed:"
 echo "       SAST · Secrets · Dependency CVEs · Dependency Review"
 echo "       Complexity · Doc Structure · Doc Accuracy · Doc Size"
 echo "       Auto-label PRs · Workflow-failure tracker"
@@ -1415,7 +1417,7 @@ if [ -n "$DYNAMIC_LABELS" ]; then
   echo "     mise use node@22"
   echo ""
 else
-  echo "  ⏸ URL-driven checks: none installed — profile '$PROFILE_ACTIVE' has no"
+  echo "  ⏸ URL-driven checks: none installed. Profile '$PROFILE_ACTIVE' has no"
   echo "       served surface to audit, so nothing here needs a URL."
   echo "       Take one back with workflows.enabled in .slopstopper.yml."
   echo ""
@@ -1433,8 +1435,8 @@ echo "       Pushes deploy to prod, PRs get preview URLs, closing a PR"
 echo "       cleans up the preview. No GitHub secrets required."
 echo "       See docs/deployment/README.md for the full cutover steps."
 echo ""
-echo "  Don't use the doc-updater? Just delete its workflows from"
-echo "  .github/workflows/ — re-running this installer won't bring them"
+echo "  If you don't use the doc-updater, delete its workflows from"
+echo "  .github/workflows/. Re-running this installer won't bring them"
 echo "  back (tracked via .ss/.workflows-installed)."
 echo ""
 sep
@@ -1442,9 +1444,9 @@ echo ""
 if [ "$USE_TASK" = "true" ]; then
   echo "  Canonical invocation: task ss:<check>"
   echo ""
-  echo "    Workflows are Task-driven by default — task ss:<check> is the"
-  echo "    canonical interface for humans, agents and CI alike, so the"
-  echo "    suite sits naturally alongside any other task build / task"
+  echo "    Workflows are Task-driven by default. They call task ss:<check>,"
+  echo "    which is the canonical interface for humans, agents and CI alike,"
+  echo "    so the suite sits naturally alongside any other task build / task"
   echo "    deploy tasks in your codebase. The workflows install Task"
   echo "    themselves; locally, install it via:"
   echo ""
@@ -1461,7 +1463,7 @@ if [ "$USE_TASK" = "true" ]; then
   echo "    2. npm install"
   echo "    3. task --list"
   echo "    4. slopstopper badges          # generate README status badges (paste into README.md)"
-  echo "    5. Open a PR — every check runs automatically."
+  echo "    5. Open a PR and every check runs automatically."
 else
   echo "  Installed in --no-task mode."
   echo ""
@@ -1473,7 +1475,7 @@ else
   echo "    1. npm install"
   echo "    2. slopstopper checks list      # see every check shipped"
   echo "    3. slopstopper badges           # generate README status badges (paste into README.md)"
-  echo "    4. Open a PR — every check runs automatically."
+  echo "    4. Open a PR and every check runs automatically."
 fi
 echo ""
 sep

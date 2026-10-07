@@ -1,12 +1,12 @@
 """PR-comment bodies: compact per-check verdicts and the aggregate summary.
 
-Reports are written as standalone documents — an H1, an overall verdict,
-per-item sections, a folded evidence table, a "How to Fix" section. That
-is the right shape for a file you open deliberately, and the wrong shape
-for nineteen of them stacked on a pull request: on an all-passing run the
-suite used to post ~390 lines of markdown across 19 comment cards, so the
-one thing a reviewer wants — did anything fail — was the hardest thing to
-find.
+Reports are written as standalone documents with an H1, an overall
+verdict, per-item sections, a folded evidence table and a "How to Fix"
+section. That is the right shape for a file you open deliberately, and the
+wrong shape for nineteen of them stacked on a pull request: on an
+all-passing run the suite used to post ~390 lines of markdown across 19
+comment cards, so whether anything failed, the one thing a reviewer wants
+to know, was the hardest thing to find.
 
 This module renders what actually goes in a comment:
 
@@ -141,14 +141,14 @@ def _headline(status: str, label: str, failures: list[str]) -> str:
     "look at this" without claiming the check failed.
     """
     if status == "pass":
-        return f"### ✅ {label} — passed"
+        return f"### ✅ {label}: passed"
     icon, noun = ("⚠️", "alert") if status == "warn" else ("❌", "issue")
     count = len(failures)
     if count == 1:
-        return f"### {icon} {label} — 1 {noun}"
+        return f"### {icon} {label}: 1 {noun}"
     if count > 1:
-        return f"### {icon} {label} — {count} {noun}s"
-    return f"### {icon} {label} — {'has alerts' if status == 'warn' else 'failed'}"
+        return f"### {icon} {label}: {count} {noun}s"
+    return f"### {icon} {label}: {'has alerts' if status == 'warn' else 'failed'}"
 
 
 def build_body(
@@ -162,8 +162,8 @@ def build_body(
     """Render the PR comment for one check.
 
     `status` is the check's own exit status as the workflow saw it
-    ('pass' / 'fail') — deliberately not inferred from the report text,
-    which varies per check and, for the advisory checks, says
+    ('pass' / 'fail'). It is deliberately not inferred from the report
+    text, which varies per check and, for the advisory checks, says
     "THRESHOLDS EXCEEDED" on a run that exits 0.
     """
     label = display_name(check_name)
@@ -198,7 +198,7 @@ def build_body(
 
 
 def _newest_run_per_workflow(runs: list[dict]) -> list[dict]:
-    """One run per workflow file — the newest, so re-runs supersede."""
+    """The newest run per workflow file, so re-runs supersede older ones."""
     newest: dict[str, dict] = {}
     for run in runs:
         path = str(run.get("path") or "")
@@ -243,19 +243,19 @@ def _summary_heading(counts: dict[str, int], total: int) -> str:
         # The noun agrees with the total, not the failure count:
         # "1 of 3 checks failed", "1 of 1 check failed".
         word = "check" if total == 1 else "checks"
-        return f"## ❌ SlopStopper — {counts['failed']} of {total} {word} failed"
+        return f"## ❌ SlopStopper: {counts['failed']} of {total} {word} failed"
     if counts["running"]:
-        return f"## ⏳ SlopStopper — {counts['running']} of {total} still running"
+        return f"## ⏳ SlopStopper: {counts['running']} of {total} still running"
     if total == 0:
-        return "## SlopStopper — no check runs found for this commit"
+        return "## SlopStopper: no check runs found for this commit"
     if counts["other"] and not counts["passed"]:
-        return f"## ⚪ SlopStopper — no checks ran ({counts['other']} skipped or cancelled)"
+        return f"## ⚪ SlopStopper: no checks ran ({counts['other']} skipped or cancelled)"
     if counts["other"]:
         return (
-            f"## ✅ SlopStopper — {counts['passed']} passed, "
+            f"## ✅ SlopStopper: {counts['passed']} passed, "
             f"{counts['other']} skipped or cancelled"
         )
-    return f"## ✅ SlopStopper — all {total} checks passed"
+    return f"## ✅ SlopStopper: all {total} checks passed"
 
 
 def _failure_table(rows: list[tuple[str, str, dict]]) -> list[str]:
@@ -278,7 +278,7 @@ def _group_lines(grouped: dict[str, list[tuple[str, str, dict]]], with_icons: bo
             items = " · ".join(f"{icon} {label}" for icon, label, _ in rows)
         else:
             items = " · ".join(label for _, label, _ in rows)
-        lines.append(f"{GROUP_LABELS[group]} — {items}")
+        lines.append(f"{GROUP_LABELS[group]}: {items}")
         lines.append("")
     return lines
 

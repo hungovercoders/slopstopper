@@ -5,19 +5,19 @@ during the CLI pivot. Slopstopper deliberately avoids a PyYAML dependency
 so the CLI's dependency surface stays minimal (lizard is the one runtime
 dep, for the complexity check). The subset is enough for the
 .slopstopper.yml shape: scalars, nested mappings, sequences of scalars,
-inline lists, and `null`/empty values. Not supported — and warned about
-on stderr when seen — are tab indentation, inline maps, folded/literal
-block scalars, anchors and quoted keys.
+inline lists, and `null`/empty values. Tab indentation, inline maps,
+folded/literal block scalars, anchors and quoted keys are not supported,
+and the parser warns on stderr when it sees one.
 
 Values are never coerced: numbers and booleans come back as the strings
 the file spelled. Use get_int / get_bool / get_str rather than wrapping
-get() in int() or bool() — `bool("false")` is True. A value that is set
+get() in int() or bool(), because `bool("false")` is True. A value that is set
 but unusable (`max_ccn: fifteen`) falls back to the default AND warns on
 stderr, for the same reason an unparsed line does: an override the
 adopter thinks applied must never vanish silently.
 
 If the file doesn't exist or a key is absent, get() returns the supplied
-default. Errors during parsing are non-fatal — they fall back to defaults
+default. Errors during parsing are non-fatal. They fall back to defaults
 and warn on stderr.
 """
 
@@ -74,7 +74,7 @@ def _strip_comment(line: str) -> str:
     """Drop a trailing `# comment`, YAML-style.
 
     A `#` starts a comment only at the beginning of the line or after
-    whitespace — the same rule real YAML applies. Without that rule an
+    whitespace, which is the same rule real YAML applies. Without that rule an
     unquoted `url: https://example.com/#anchor` silently lost its
     fragment and became a different, valid-looking URL. Quoted scalars
     are skipped over, so `title: "a # b"` keeps its `#`.
@@ -107,9 +107,9 @@ def _handle_list_item(parent: object, item: re.Match, stack: list) -> None:
     """Append a parsed list item (an `_LIST_ITEM_RE` match) to the parent.
 
     If the parent is an empty dict opened by `key:` with no value, this is
-    actually a block list — retroactively convert it to a list under the
-    grandparent (so the dict→list ambiguity inherent to YAML is resolved
-    on the first list item encountered).
+    actually a block list. Retroactively convert it to a list under the
+    grandparent, so the dict→list ambiguity inherent to YAML is resolved
+    on the first list item encountered.
     """
     value = _parse_scalar(item.group(1))
     if isinstance(parent, list):
@@ -145,7 +145,7 @@ def _load_yaml_subset(path: Path) -> dict:
     try:
         raw = path.read_text()
     except OSError as e:
-        print(f"⚠  slopstopper.config: could not read {path} ({e}) — using defaults", file=sys.stderr)
+        print(f"⚠  slopstopper.config: could not read {path} ({e}), so using defaults", file=sys.stderr)
         return {}
 
     root: dict = {}
@@ -163,8 +163,8 @@ def _load_yaml_subset(path: Path) -> dict:
         if parent is None:
             return root
         if indent == 0 and body in _DOCUMENT_MARKERS:
-            # `---` / `...` are valid, common and carry nothing — not
-            # something to warn about.
+            # `---` / `...` are valid, common and carry nothing, so there
+            # is nothing to warn about.
             continue
         item = _LIST_ITEM_RE.match(body)
         kv = None if item else _KV_RE.match(body)
@@ -186,7 +186,7 @@ def _load_yaml_subset(path: Path) -> dict:
 def _warn_unparsed(path: Path, lineno: int, raw_line: str) -> None:
     hint = ""
     if raw_line.startswith("\t"):
-        hint = " (tab indentation — use spaces)"
+        hint = " (it uses tab indentation, so switch to spaces)"
     print(
         f"⚠  slopstopper.config: {path}:{lineno} is outside the supported YAML subset"
         f"{hint} and was ignored: {raw_line.strip()!r}",
@@ -246,7 +246,7 @@ _FALSE_WORDS = frozenset({"false", "no", "0", "off"})
 
 def _warn_unusable(path: str, raw: object, kind: str, default: object) -> None:
     print(
-        f"⚠  slopstopper.config: {path} is set to {raw!r}, which is not {kind} — "
+        f"⚠  slopstopper.config: {path} is set to {raw!r}, which is not {kind}, so "
         f"using the default ({default!r})",
         file=sys.stderr,
     )
@@ -259,7 +259,7 @@ def get_int(path: str, default: int | None = None) -> int | None:
     """Integer at `path`, or `default` when unset.
 
     A value that is set but not an integer (`max_ccn: fifteen`, or a bare
-    `true`) also yields `default` — and warns on stderr, so the override
+    `true`) also yields `default`. It warns on stderr too, so the override
     the adopter wrote doesn't silently turn into the default.
     """
     raw = get(path, _UNSET)

@@ -1,6 +1,6 @@
 """Integration tests for install.sh.
 
-install.sh is bash, not Python — but it's CLI-adjacent (the entry point
+install.sh is bash, not Python, but it's CLI-adjacent (the entry point
 adopters run) and these tests exercise install.sh in a subprocess
 against a throwaway target dir so the deletion-tracking, pipx-version
 and security-headers fixes don't regress.
@@ -40,7 +40,7 @@ def _run_install(
     """Run install.sh against the given target dir. Returns the completed process.
 
     Always sets SKIP_CLI_INSTALL=1 so tests don't install from PyPI via mise
-    on every invocation — these tests exercise the bash-side behaviour
+    on every invocation. These tests exercise the bash-side behaviour
     (workflow tracking, headers seeding, mise.toml pinning), not the CLI
     install itself. Extra flags (e.g. ["--upgrade-cli"]) go before the
     target via `args`.
@@ -118,7 +118,7 @@ def test_plain_refresh_leaves_pin_untouched(tmp_path):
     assert first.returncode == 0, f"{first.stdout}\n{first.stderr}"
     assert _read_pin(target) == "0.5.0"
 
-    # Re-run with a NEWER latest available — the pin must still hold.
+    # Re-run with a NEWER latest available. The pin must still hold.
     second = _run_install(target, env_extra={"SLOPSTOPPER_FORCE_LATEST": "2.0.0"})
     assert second.returncode == 0, f"{second.stdout}\n{second.stderr}"
     assert _read_pin(target) == "0.5.0"
@@ -182,7 +182,7 @@ def test_existing_mise_tools_are_preserved(tmp_path):
 
 
 def test_node_is_seeded_when_absent(tmp_path):
-    """A fresh install seeds a default node pin in mise.toml — node is a tool
+    """A fresh install seeds a default node pin in mise.toml. Node is a tool
     version, so it lives in mise (read by CI via jdx/mise-action), not
     .slopstopper.yml."""
     target = _make_minimal_target(tmp_path)
@@ -203,8 +203,8 @@ def test_existing_node_pin_is_not_overridden(tmp_path):
 
 
 def test_node_version_file_suppresses_mise_node_seed(tmp_path):
-    """An existing .node-version means the adopter manages node themselves —
-    install must not also seed a node pin into mise.toml."""
+    """An existing .node-version means the adopter manages node themselves,
+    so install must not also seed a node pin into mise.toml."""
     target = _make_minimal_target(tmp_path)
     (target / ".node-version").write_text("18\n")
     result = _run_install(target, args=["--cli-version", "9.9.9"])
@@ -214,7 +214,7 @@ def test_node_version_file_suppresses_mise_node_seed(tmp_path):
 
 def test_legacy_node_version_is_stripped(tmp_path):
     """A dead node_version in .slopstopper.yml (and its comment block) is removed
-    on refresh — it was never read; node lives in mise.toml now."""
+    on refresh. Nothing ever read it, and node lives in mise.toml."""
     target = _make_minimal_target(tmp_path)
     cfg = target / ".slopstopper.yml"
     cfg.write_text(
@@ -231,7 +231,7 @@ def test_legacy_node_version_is_stripped(tmp_path):
     assert "node_version" not in text                # dead key stripped
     assert "# ── Node version pin" not in text        # comment block stripped too
     assert "source: public/_headers" in text          # other keys preserved
-    # Not migrated — the freshly-seeded mise pin is the default, not the old value.
+    # Not migrated: the freshly-seeded mise pin is the default, not the old value.
     assert '"node" = "20"' in (target / "mise.toml").read_text()
 
 
@@ -310,7 +310,7 @@ def test_stale_marker_with_zero_workflows_on_disk_is_ignored(tmp_path):
 
 def test_genuine_user_deletion_is_still_respected(tmp_path):
     """If some workflows are on disk and others are in the marker but missing,
-    respect the deletion — that's a real user choice."""
+    respect the deletion, because that's a real user choice."""
     target = _make_minimal_target(tmp_path)
 
     # Run install once to populate the marker + workflows.
@@ -336,7 +336,7 @@ def test_genuine_user_deletion_is_still_respected(tmp_path):
 
 
 def test_seeds_headers_block_when_public_headers_missing(tmp_path):
-    """Fresh adopter, no public/_headers — seeded with the slopstopper block."""
+    """A fresh adopter with no public/_headers gets it seeded with the slopstopper block."""
     target = _make_minimal_target(tmp_path)
 
     result = _run_install(target)
@@ -348,7 +348,7 @@ def test_seeds_headers_block_when_public_headers_missing(tmp_path):
 
 
 def test_appends_headers_block_to_existing_cache_only_headers(tmp_path):
-    """Adopter has public/_headers with only cache rules — slopstopper appends without losing them."""
+    """When public/_headers holds only cache rules, slopstopper appends without losing them."""
     target = _make_minimal_target(tmp_path)
     existing = (
         "/*.html\n"
@@ -404,7 +404,7 @@ def _hooks_path(target: Path) -> str | None:
 
 
 def test_installs_pre_push_hook_and_wires_hookspath(tmp_path):
-    """Fresh adopter with no existing hook setup — the hook file lands,
+    """On a fresh adopter with no existing hook setup, the hook file lands,
     is executable, and core.hooksPath is wired to .githooks."""
     target = _make_minimal_target(tmp_path)
 
@@ -575,7 +575,7 @@ def test_switching_profile_removes_and_restores_workflows(tmp_path):
 
 
 def test_plain_rerun_honours_the_stored_profile(tmp_path):
-    """The config is the source of truth, not the flag — a bare re-run
+    """The config is the source of truth, not the flag, so a bare re-run
     must not resurrect the workflows the stored profile drops."""
     target = _make_minimal_target(tmp_path)
     assert _run_install(target, args=["--profile", "api"]).returncode == 0
@@ -640,7 +640,7 @@ def test_no_profile_flag_leaves_an_existing_install_unchanged(tmp_path):
 
 
 # When the profiles module cannot be resolved at all (no python3, or an
-# unreadable cli/ tree — simulated here by breaking the interpreter), the
+# unreadable cli/ tree, simulated here by breaking the interpreter), the
 # installer must not quietly hand a repo the full `ui` workflow set it
 # explicitly opted out of. PYTHONHOME pointing nowhere makes every
 # `python3 -c …` in install.sh fail the way a missing interpreter would.
@@ -669,7 +669,7 @@ def test_unresolvable_profile_warns_and_installs_everything_for_the_default(tmp_
 
 def test_no_task_leaves_no_task_invocation_in_any_workflow(tmp_path):
     """`task -x ss:…` (exit-code passthrough) must be rewritten as well as
-    `task ss:…` — otherwise --no-task installs still need Task."""
+    `task ss:…`, or --no-task installs still need Task."""
     target = _make_minimal_target(tmp_path)
     result = _run_install(target, args=["--no-task", "--no-hooks", "--no-skills"])
     assert result.returncode == 0, result.stderr
@@ -706,7 +706,7 @@ def test_composite_actions_land_under_every_profile(tmp_path, profile):
 
 def test_composite_actions_are_refreshed_not_respected_as_deletions(tmp_path):
     """Deleting a workflow is a choice the installer respects; deleting the
-    plumbing every workflow needs is not — it comes back."""
+    plumbing every workflow needs is not, so it comes back."""
     target = _make_minimal_target(tmp_path)
     assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
     action = target / ".github/actions/ss-setup/action.yml"
@@ -720,8 +720,8 @@ def test_composite_actions_are_refreshed_not_respected_as_deletions(tmp_path):
 
 
 def test_skills_install_from_the_local_checkout_with_their_references(tmp_path):
-    """Run from a checkout, install.sh copies each skill directory — no
-    network — and every references/*.md the SKILL.md links comes with it."""
+    """Run from a checkout, install.sh copies each skill directory without
+    the network, and every references/*.md the SKILL.md links comes with it."""
     target = _make_minimal_target(tmp_path)
     result = _run_install(target, args=["--no-hooks"])
     assert result.returncode == 0, result.stderr
@@ -785,7 +785,7 @@ def _run_install_skill(target, src, umask=None):
 
 def test_install_skill_sh_ships_only_the_files_the_map_links(tmp_path):
     """An editor swap file or an unlinked draft in the source tree never
-    reaches an adopter — install.sh runs from a working checkout."""
+    reaches an adopter, even though install.sh runs from a working checkout."""
     src = _skill_source(tmp_path)
     (src / ".claude/skills/slopstopper-install/references/wip.md").write_text("# draft\n")
     (src / ".claude/skills/slopstopper-install/.DS_Store").write_text("junk")
@@ -917,8 +917,8 @@ def test_a_rerun_leaves_the_config_byte_for_byte(tmp_path):
 
 
 def test_install_records_the_source_commit(tmp_path):
-    """A refresh diffs upstream from this commit — see the install skill's
-    "Spot newly-shipped knobs"."""
+    """A refresh diffs upstream from this commit, as the install skill's
+    "Spot newly-shipped knobs" step describes."""
     target = _make_minimal_target(tmp_path)
     assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
     head = subprocess.run(

@@ -31,14 +31,14 @@ Subcommands:
                                     `slopstopper serve &` gives bash the
                                     right PID for kill.
   checks list [--category <cat>] [--json]
-                                    Walk the registry — show every check's
+                                    Walk the registry and show every check's
                                     name + one-line description. Useful for
                                     discoverability before running.
   doctor                            Verify install state: which external
                                     tools are present (node, gh, lizard,
                                     semgrep, gitleaks, trivy, docker).
   profile list | show | expand <n> | detect
-                                    Inspect project-shape profiles — the
+                                    Inspect project-shape profiles. Each is a
                                     `profile:` preset that switches off the
                                     checks a UI / API / library repo has no
                                     use for. `show` reports the active one,
@@ -222,8 +222,8 @@ def _add_emit(sub) -> None:
         help=(
             "The check's own outcome, as the workflow saw it (default: fail). "
             "'warn' is for the advisory checks that report findings while exiting 0. "
-            "Drives the comment's verdict line instead of parsing the report — "
-            "pass `--status ${{ steps.<id>.outcome == 'success' && 'pass' || 'fail' }}`"
+            "Drives the comment's verdict line instead of parsing the report. "
+            "Pass `--status ${{ steps.<id>.outcome == 'success' && 'pass' || 'fail' }}`"
         ),
     )
     p.add_argument(
@@ -331,7 +331,7 @@ def _add_templates(sub) -> None:
         description=(
             "Bundled templates (Playwright specs, lighthouserc dev/prod, server.js,\n"
             "playwright.config.js) live inside the slopstopper-cli wheel. To\n"
-            "customise, eject a template — `eject` copies it into `.ss/<name>`\n"
+            "customise a template, eject it. `eject` copies it into `.ss/<name>`\n"
             "and the CLI's resolver prefers the override.\n"
         ),
     )
@@ -410,7 +410,7 @@ def _add_serve(sub) -> None:
         help="Run the bundled static server",
         description=(
             "Run the bundled static server. Auto-detects SERVE_ROOT\n"
-            "(dist/client, dist, build, out, public, app — first match wins) and\n"
+            "(the first match of dist/client, dist, build, out, public, app) and\n"
             "optionally applies headers from worker/headers.json if present.\n\n"
             "Replaces the slopstopper process via execvp(node), so a backgrounded\n"
             "`slopstopper serve &` gives bash the right PID via `$!` for later kill.\n"
@@ -516,8 +516,8 @@ def _add_profile(sub) -> None:
         "expand",
         help="Print the workflow filenames a named profile disables (one per line)",
         description=(
-            "Print the raw workflow list for a profile, one filename per line —\n"
-            "the form install.sh consumes. Exits 2 on an unknown profile name.\n"
+            "Print the raw workflow list for a profile, one filename per line,\n"
+            "which is the form install.sh consumes. Exits 2 on an unknown profile name.\n"
         ),
         epilog="Example:\n  slopstopper profile expand api\n",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -525,7 +525,7 @@ def _add_profile(sub) -> None:
     ex.add_argument("name", help=f"Profile name ({' | '.join(profiles.names())})")
     sub2.add_parser(
         "detect",
-        help="Suggest a profile from the repo's contents (advisory — changes nothing)",
+        help="Suggest a profile from the repo's contents without changing anything",
         description=(
             "Sniff the working directory for web / API / library markers and print\n"
             "the profile that fits, with the evidence. Advisory only: it never\n"
@@ -562,8 +562,8 @@ _DISPATCHERS = {
 def main(argv: list[str] | None = None) -> int:
     """Parse argv and dispatch.
 
-    Bare `slopstopper` (no subcommand) prints the banner and exits 0 —
-    no error, just a friendly landing page for first-time users.
+    Bare `slopstopper` (no subcommand) prints the banner and exits 0.
+    It is not an error, just a friendly landing page for first-time users.
     """
     parser = _build_parser()
 
@@ -595,13 +595,15 @@ def _dispatch_run(check_name: str, check_args: list[str]) -> int:
         return 2
     try:
         rc = REGISTRY[check_name](check_args)
-    except Exception:  # noqa: BLE001 — any crash is "could not run"
-        # Python's default for an uncaught exception is exit 1, which the
-        # contract (and every workflow gate) reads as "the repo failed the
-        # check". A crash in the check is not a verdict on the repo.
+    except Exception:  # noqa: BLE001
+        # Any crash means "could not run". Python's default for an uncaught
+        # exception is exit 1, which the contract (and every workflow gate)
+        # reads as "the repo failed the check". A crash in the check is not
+        # a verdict on the repo.
         traceback.print_exc()
         print(
-            f"❌ {check_name} crashed — exit 2 (could not run), not a verdict on the repo",
+            f"❌ {check_name} crashed, so it exits 2 (could not run). "
+            "That is not a verdict on the repo.",
             file=sys.stderr,
         )
         rc = 2
@@ -662,18 +664,18 @@ def _dispatch_serve() -> int:
     """Replace the current process with `node <bundled or ejected server.js>`.
 
     Using execvp (not subprocess) means a backgrounded `slopstopper serve
-    &` in bash gets the right PID via `$!` — bash sees node, and
+    &` in bash gets the right PID via `$!`. Bash sees node, so
     `kill $SERVER_PID` actually stops the listener.
     """
     if not shutil.which("node"):
-        print("❌ node is not available — install Node.js to run the local server", file=sys.stderr)
+        print("❌ node is not available. Install Node.js to run the local server.", file=sys.stderr)
         return 1
     server_path = templates.template_path(templates.SERVER_JS_NAME)
     if not server_path.exists():
         print(f"❌ Bundled server.js not found at {server_path}", file=sys.stderr)
         return 1
     os.execvp("node", ["node", str(server_path)])
-    return 1  # unreachable — execvp doesn't return on success
+    return 1  # unreachable, because execvp doesn't return on success
 
 
 def _dispatch_templates(action: str, name: str | None) -> int:
@@ -705,7 +707,7 @@ def _dispatch_templates(action: str, name: str | None) -> int:
         if was_new:
             print(f"✅ ejected to {dest}")
         else:
-            print(f"ℹ️  {dest} already exists — left in place (will keep overriding the bundle)")
+            print(f"ℹ️  {dest} already exists, so it was left in place and keeps overriding the bundle")
         return 0
     print(f"❌ unknown templates action: {action}", file=sys.stderr)
     return 2
@@ -743,7 +745,7 @@ def _dispatch_emit(
     meta = getattr(module, "META", None)
     if not meta:
         print(
-            f"❌ {check_name} has no META — emit is not yet wired up for this check",
+            f"❌ {check_name} has no META, so emit is not wired up for this check yet",
             file=sys.stderr,
         )
         return 2
@@ -778,8 +780,8 @@ def _dispatch_checks_list(category: str | None, as_json: bool) -> int:
         keys = [k for k in keys if k.split(":")[0] == category]
 
     # A check whose workflow this repo's profile switches off is still
-    # listed — it's in the registry and `slopstopper run` will happily
-    # run it locally — but marked, so the list reflects what CI does.
+    # listed, because it's in the registry and `slopstopper run` will run
+    # it locally. It is marked so the list reflects what CI does.
     disabled = _disabled_workflows()
     entries = [
         {
@@ -809,7 +811,7 @@ def _dispatch_checks_list(category: str | None, as_json: bool) -> int:
         print("")
         print(
             f"  ⏸ = no workflow in this repo (profile: {profiles.active_name()} "
-            "/ workflows.disabled) — still runnable locally via `slopstopper run`."
+            "/ workflows.disabled). It still runs locally via `slopstopper run`."
         )
     return 0
 
@@ -822,15 +824,15 @@ def _dispatch_checks_list(category: str | None, as_json: bool) -> int:
 # CLI itself (gh for emit, node for several reliability checks).
 #
 # Note on lizard: it used to appear here as an external binary, which
-# was misleading — `brew install lizard` ships lz4's lizard (different
+# was misleading. `brew install lizard` ships lz4's lizard (a different
 # tool), and the real Python lizard had to be `pipx inject`ed into
 # the slopstopper-cli venv before hygiene:complexity worked. lizard
 # is now a runtime dependency of slopstopper-cli (see pyproject.toml),
 # so it's always in the venv that `python -m lizard` resolves against.
 # Doctor no longer needs to check for it.
 _DOCTOR_TOOLS: list[tuple[str, str | None, str]] = [
-    ("node", None, "Install Node.js (https://nodejs.org/) — required by Playwright, Lighthouse, server"),
-    ("gh", None, "Install GitHub CLI (https://cli.github.com/) — required by `slopstopper emit`"),
+    ("node", None, "Install Node.js (https://nodejs.org/), which Playwright, Lighthouse and the server need"),
+    ("gh", None, "Install GitHub CLI (https://cli.github.com/), which `slopstopper emit` needs"),
     ("semgrep", "security:sast", "pip install --user semgrep  or  brew install semgrep"),
     ("gitleaks", "security:secrets", "brew install gitleaks  or  apt-get install gitleaks"),
     ("trivy", "security:vulnerability:all", "brew install aquasecurity/trivy/trivy  or  see https://trivy.dev"),
@@ -854,7 +856,7 @@ def _disabled_workflows() -> set[str]:
     """Workflow filenames this repo doesn't carry.
 
     The `profile:` preset unioned with `workflows.disabled` and minus
-    `workflows.enabled` — see slopstopper.profiles.
+    `workflows.enabled`. See slopstopper.profiles.
     """
     return profiles.effective_disabled()
 
@@ -866,7 +868,7 @@ def _check_is_disabled(check_name: str, disabled: set[str]) -> bool:
 
 def _dispatch_doctor() -> int:
     """Verify external tools are installed; exit 1 if a required one is missing."""
-    output.status("🩺", "slopstopper doctor — checking external tools")
+    output.status("🩺", "slopstopper doctor: checking external tools")
     output.separator()
 
     disabled = _disabled_workflows()
@@ -876,22 +878,22 @@ def _dispatch_doctor() -> int:
         path = shutil.which(tool)
         if path:
             version = _tool_version(tool)
-            extra = f" — {version}" if version else ""
+            extra = f" ({version})" if version else ""
             output.success(f"{tool:<10} found at {path}{extra}")
             continue
 
         # Missing.
         if needed_by and _check_is_disabled(needed_by, disabled):
             output.info(
-                f"{tool:<10} not installed (only needed by {needed_by}, which this "
-                f"repo doesn't carry — profile: {profiles.active_name()} / "
-                f"workflows.disabled — skipping)"
+                f"{tool:<10} not installed, but only {needed_by} needs it and this "
+                f"repo doesn't carry that check (profile: {profiles.active_name()} / "
+                f"workflows.disabled), so skipping"
             )
             continue
 
         # Required and not disabled.
         scope = needed_by if needed_by else "the CLI itself"
-        output.error(f"{tool:<10} not installed — needed by {scope}")
+        output.error(f"{tool:<10} not installed but needed by {scope}")
         output._emit(f"             {hint}")
         missing_required += 1
 
@@ -899,7 +901,7 @@ def _dispatch_doctor() -> int:
     if missing_required == 0:
         output.success("All required tools available.")
         return 0
-    output.error(f"{missing_required} required tool(s) missing — see hints above.")
+    output.error(f"{missing_required} required tool(s) missing. See the hints above.")
     return 1
 
 
@@ -919,7 +921,7 @@ def _print_profile_list() -> int:
             output._emit(f"      {detail}")
         disables = entry.get("disables", [])
         if not disables:
-            output._emit("      disables: nothing — every check applies")
+            output._emit("      disables: nothing, so every check applies")
         else:
             output._emit(f"      disables {len(disables)} workflow(s):")
             for workflow in disables:
@@ -940,11 +942,11 @@ def _print_profile_show() -> int:
     entry = profiles.describe(name) or {}
     configured = str(config.get("profile") or "").strip()
     if not configured:
-        origin = "default — `profile:` is unset"
+        origin = "default, because `profile:` is unset"
     elif profiles.describe(configured):
         origin = "from .slopstopper.yml"
     else:
-        origin = f"default — {configured!r} in .slopstopper.yml is not a known profile"
+        origin = f"default, because {configured!r} in .slopstopper.yml is not a known profile"
 
     output._emit(f"  Profile: {name}  ({origin})")
     output._emit(f"      {entry.get('summary', '')}")
@@ -952,7 +954,7 @@ def _print_profile_show() -> int:
 
     disabled = sorted(profiles.effective_disabled())
     if not disabled:
-        output._emit("  Disabled workflows: none — this repo carries the full suite.")
+        output._emit("  Disabled workflows: none. This repo carries the full suite.")
         return 0
 
     from_profile = set(profiles.expand(name) or [])
@@ -971,11 +973,11 @@ def _print_profile_show() -> int:
 
 
 def _print_profile_expand(name: str | None) -> int:
-    """Raw workflow list for a named profile — the form install.sh consumes."""
+    """Raw workflow list for a named profile, in the form install.sh consumes."""
     workflows = profiles.expand(name or "")
     if workflows is None:
         output.error(
-            f"unknown profile {name!r} — expected one of: {', '.join(profiles.names())}"
+            f"unknown profile {name!r}. Expected one of: {', '.join(profiles.names())}"
         )
         return 2
     for workflow in workflows:
@@ -989,7 +991,7 @@ def _print_profile_detect() -> int:
     active = profiles.active_name()
     output._emit(f"  Suggested profile: {suggested}  ({reason})")
     if suggested == active:
-        output._emit(f"  Active profile:    {active} — already a match, nothing to do.")
+        output._emit(f"  Active profile:    {active} (already a match, nothing to do).")
         return 0
     output._emit(f"  Active profile:    {active}")
     output._emit("")

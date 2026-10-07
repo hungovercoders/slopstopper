@@ -72,7 +72,7 @@ def test_local_event_skips_coverage_modes(isolated_cwd, write_config):
         "reliability:\n  coverage:\n    pr: /coverage-only\n"
         "pages:\n  smoke: /from-pages\n"
     )
-    # event=local must NOT consult reliability.coverage.* — only pages.*
+    # event=local must NOT consult reliability.coverage.*, only pages.*
     assert discovery.discover("smoke", "local") == ["/from-pages"]
 
 
@@ -126,7 +126,7 @@ def test_sitemap_strips_to_path_component():
 
 def test_map_file_to_urls_with_astro_blog_md():
     # Astro rules intentionally double-match blog content (specific + generic
-    # collection rule) — upstream _dedupe collapses these. We just confirm
+    # collection rule), and upstream _dedupe collapses these. We just confirm
     # the URL is produced.
     urls = discovery._map_file_to_urls("src/content/blog/hello.md", discovery.ASTRO_RULES)
     assert "/blog/hello/" in urls
@@ -155,7 +155,7 @@ def test_map_file_to_urls_unmapped_returns_empty():
 
 
 def test_detect_framework_default_to_astro(isolated_cwd):
-    # No framework config files — defaults to Astro rules
+    # With no framework config files it defaults to the Astro rules.
     assert discovery._detect_framework_rules() == discovery.ASTRO_RULES
 
 

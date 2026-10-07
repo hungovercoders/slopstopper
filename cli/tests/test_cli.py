@@ -331,7 +331,7 @@ def test_serve_execs_node_with_resolved_server_js(monkeypatch, isolated_cwd):
     def fake_execvp(file, args):
         captured["file"] = file
         captured["args"] = args
-        # execvp doesn't return on success — to make the test path return,
+        # execvp doesn't return on success. To make the test path return,
         # we just don't raise. _dispatch_serve will fall through to its
         # "unreachable" return 1.
 
@@ -553,7 +553,7 @@ def test_quiet_default_is_off(isolated_cwd, capsys, monkeypatch):
 
 
 def test_a_crashing_check_exits_two_not_one(isolated_cwd, capsys, monkeypatch):
-    """An uncaught exception defaults to exit 1 — "the repo failed". A crash
+    """An uncaught exception defaults to exit 1, "the repo failed". A crash
     in the check is "could not run", so no tracking issue gets opened."""
 
     def fake_run(_args):

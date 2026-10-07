@@ -9,7 +9,7 @@ Resolves "which paths should I audit?" for a given check (accessibility,
 SEO, broken-links, smoke, e2e) and CI event (pr, main, cron, local).
 
 Resolution order (first hit wins):
-    1. Env-var override — if <CHECK>_PAGES is set, pass through.
+    1. Env-var override: if <CHECK>_PAGES is set, pass it through.
     2. reliability.coverage.<event> in .slopstopper.yml:
          - "sitemap" → parse dist/client/sitemap-index.xml (or sibling
            fallbacks), return every <loc> URL's path.
@@ -17,10 +17,10 @@ Resolution order (first hit wins):
            changed source file to its output URL via framework-specific
            rules (Astro / Next / SvelteKit auto-detected).
          - "<path,path>" → comma-separated explicit list.
-    3. pages.<check> in .slopstopper.yml — existing hand-list behaviour.
+    3. pages.<check> in .slopstopper.yml: the existing hand-list behaviour.
     4. Default → "/".
 
-Stdlib only — keeps the no-deps invariant.
+Stdlib only, to keep the no-deps invariant.
 """
 
 from __future__ import annotations
@@ -107,7 +107,7 @@ def _detect_framework_rules() -> tuple[tuple[str, str], ...]:
 
 
 def log(msg: str) -> None:
-    """Stderr log — never pollutes the stdout payload the caller consumes."""
+    """Log to stderr so nothing pollutes the stdout payload the caller consumes."""
     print(msg, file=sys.stderr)
 
 
@@ -133,7 +133,7 @@ def _extract_paths_from_sitemap_xml(path: Path, seen: set[Path]) -> list[str]:
     """Read a sitemap XML file; recurse into sitemap-index files.
 
     The sitemap is local trusted build output produced by the adopter's
-    own build process — never adversary-controlled. Stdlib ElementTree's
+    own build process, so it is never adversary-controlled. Stdlib ElementTree's
     default parser since Python 3.7.1 does not resolve external entities,
     so XXE is moot. Defusedxml is avoided to keep the no-deps invariant.
     """
