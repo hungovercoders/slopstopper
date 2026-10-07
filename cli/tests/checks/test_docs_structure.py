@@ -10,12 +10,12 @@ from slopstopper.checks import docs_structure
 
 def _route(target: str, holds: str = "detail") -> str:
     """A standalone explicit route (its own paragraph, so it never joins a table)."""
-    return f"\nBefore you do the {Path(target).stem} thing, read [{target}]({target}) — {holds}.\n"
+    return f"\nBefore you do the {Path(target).stem} thing, read [{target}]({target}) for {holds}.\n"
 
 
 def test_rows_of_a_when_table_need_no_cue_word(isolated_cwd):
     _seed_agents()
-    _seed_map("| fixing CI | Read [ci.md](ci.md) — what task ci runs |\n")
+    _seed_map("| fixing CI | Read [ci.md](ci.md) for what task ci runs |\n")
     _doc("ci.md")
     assert docs_structure.run() == 0
 
@@ -30,7 +30,7 @@ def _seed_map(rows: str = "") -> Path:
 def _seed_agents(body: str = "") -> None:
     Path("AGENTS.md").write_text(
         "# Agents\n\n" + body +
-        "\nFor any task not covered above, read [docs/README.md](docs/README.md) — the routing table.\n"
+        "\nFor any task not covered above, read [docs/README.md](docs/README.md) for the routing table.\n"
     )
 
 
@@ -90,7 +90,7 @@ def test_run_clean_flat_docs_routed_from_the_map(isolated_cwd, capsys):
 
 
 def test_a_doc_routed_directly_from_agents_is_one_hop(isolated_cwd):
-    _seed_agents("Before you change CI, read [docs/ci.md](docs/ci.md) — what task ci runs.\n")
+    _seed_agents("Before you change CI, read [docs/ci.md](docs/ci.md) for what task ci runs.\n")
     _seed_map()
     _doc("ci.md")
     assert docs_structure.run() == 0
@@ -132,7 +132,7 @@ def test_an_unlinked_doc_is_unrouted(isolated_cwd):
 def test_a_softly_linked_doc_is_unrouted_and_says_so(isolated_cwd):
     _seed_agents()
     _seed_map(_route("hygiene/README.md"))
-    _doc("hygiene/README.md", "# Hygiene\n\n## Contents\n\n- [DETAIL.md](DETAIL.md) — more\n")
+    _doc("hygiene/README.md", "# Hygiene\n\n## Contents\n\n- [DETAIL.md](DETAIL.md): more detail\n")
     _doc("hygiene/DETAIL.md")
     assert docs_structure.run() == 1
     [v] = _violations()
@@ -190,7 +190,7 @@ def test_link_forms_a_route_may_use(isolated_cwd):
 
 
 def test_a_soft_link_in_the_map_is_a_violation_even_when_the_doc_is_routed_elsewhere(isolated_cwd):
-    _seed_agents("Before you change CI, read [docs/ci.md](docs/ci.md) — what task ci runs.\n")
+    _seed_agents("Before you change CI, read [docs/ci.md](docs/ci.md) for what task ci runs.\n")
     _seed_map("See also [ci](ci.md).\n")
     _doc("ci.md")
     assert docs_structure.run() == 1

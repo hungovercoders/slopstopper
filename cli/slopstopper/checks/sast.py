@@ -7,8 +7,8 @@ Ports the bash security:sast flow:
             --exclude=.git .
   + python3 .ss/scripts/generate-sast-md.py
 
-into one self-contained check. Subprocess-invokes semgrep — same
-licensing-boundary pattern as complexity (lizard) and secrets
+into one self-contained check. It subprocess-invokes semgrep, following the
+same licensing-boundary pattern as complexity (lizard) and secrets
 (gitleaks). The boundary matters MORE here: Semgrep OSS is LGPL-2.1,
 not MIT/Apache. `import semgrep` would drag LGPL contagion into the
 slopstopper-cli MIT contract. Subprocess invocation keeps it on the
@@ -18,23 +18,23 @@ The verdict lives here, not in the workflow. Semgrep reports findings
 at ERROR, WARNING and INFO severity (newer registry rules also use
 CRITICAL / HIGH / MEDIUM / LOW, which rank alongside them);
 `security.sast.fail_on` names the lowest severity that fails the check.
-A severity this module doesn't recognise ranks as ERROR — an unknown
-label must not quietly fall below the gate.
+A severity this module doesn't recognise ranks as ERROR, because an
+unknown label must not quietly fall below the gate.
 
 A scan that produced no readable report (Semgrep crashed, timed out
 fetching rules, or wrote nothing) is "could not run", not "no findings":
 the check exits 2 rather than passing a scan that never happened.
 
-Configuration (.slopstopper.yml — optional):
+Configuration (.slopstopper.yml, optional):
 
     security:
       sast:
         fail_on: error     # error (default) | warning | info | none
 
 Exit codes:
-  0 — no findings at or above `security.sast.fail_on`
-  1 — one or more findings at or above `security.sast.fail_on`
-  2 — semgrep is not installed, exited with an error (a failed rules
+  0: no findings at or above `security.sast.fail_on`
+  1: one or more findings at or above `security.sast.fail_on`
+  2: semgrep is not installed, exited with an error (a failed rules
       fetch, a bad config), wrote no readable report, or arguments were
       passed (this check takes none)
 """
@@ -105,8 +105,8 @@ def _fail_on() -> str:
     if raw in FAIL_ON_CHOICES:
         return raw
     output.warn(
-        f"security.sast.fail_on: {raw!r} is not one of {', '.join(FAIL_ON_CHOICES)} — "
-        f"using {DEFAULT_FAIL_ON!r}"
+        f"security.sast.fail_on: {raw!r} is not one of {', '.join(FAIL_ON_CHOICES)}. "
+        f"Using {DEFAULT_FAIL_ON!r} instead."
     )
     return DEFAULT_FAIL_ON
 
@@ -123,15 +123,15 @@ def _blocking_findings(results: list[dict], fail_on: str) -> list[dict]:
 
 
 def _rank(finding: dict) -> int:
-    """A finding's rank. A severity Semgrep has never emitted (or none at
-    all — a malformed finding) ranks as ERROR: fail closed, not open."""
+    """A finding's rank. A severity Semgrep has never emitted, or a
+    missing one on a malformed finding, ranks as ERROR: fail closed, not open."""
     severity = str((finding.get("extra") or {}).get("severity", "")).upper()
     return SEVERITY_RANK.get(severity, ERROR_RANK)
 
 
 # Semgrep's exit codes for a scan that completed: 0, or 1 when `--error`
-# is in effect and there are findings. Anything else — 2 (fatal), 7
-# (missing config), a rules-registry fetch that failed — is a scan that
+# is in effect and there are findings. Anything else, such as 2 (fatal), 7
+# (missing config) or a failed rules-registry fetch, is a scan that
 # did not run, even if Semgrep still wrote a JSON with `"results": []`.
 SEMGREP_COMPLETED = frozenset({0, 1})
 
@@ -161,7 +161,7 @@ def _run_semgrep() -> int:
 def _read_data() -> dict | None:
     """Semgrep's JSON report, or None when there is no usable report.
 
-    None means the scan could not run — the caller exits 2. Returning an
+    None means the scan could not run, and the caller exits 2. Returning an
     empty result set here would turn a crashed scan into a clean pass.
     """
     if not REPORT_JSON.exists():
@@ -237,7 +237,7 @@ def _format_scan_errors_explanation(errors: list[dict]) -> str:
         out += "\n"
         out += "**Why**: Semgrep's YAML analyzer attempts to parse embedded bash scripts in `run:` blocks. "
         out += "The bash code contains special characters and operators (pipes, redirects) that don't parse as valid YAML syntax.\n\n"
-        out += "**Is this safe to ignore?** ✅ **Yes.** These are only debug/logging scripts—not production code. "
+        out += "**Is this safe to ignore?** ✅ **Yes.** These are only debug/logging scripts, not production code. "
         out += "The bash syntax is valid and the workflows execute correctly. The SAST scan itself completed successfully with valid results.\n\n"
     else:
         out += f"Semgrep reported {len(errors)} error(s) during scanning:\n\n"
@@ -275,9 +275,9 @@ def _build_md_report(data: dict, fail_on: str = DEFAULT_FAIL_ON) -> str:
 
     md += "## Guidelines\n\n"
     if fail_on == "none":
-        md += "- **Blocking**: nothing — `security.sast.fail_on: none` reports findings without failing\n"
+        md += "- **Blocking**: nothing, because `security.sast.fail_on: none` reports findings without failing\n"
     else:
-        md += f"- **Blocking**: findings at or above `fail_on: {fail_on}` fail the check — fix them or suppress narrowly with a `# why`\n"
+        md += f"- **Blocking**: findings at or above `fail_on: {fail_on}` fail the check. Fix them or suppress them narrowly with a `# why`\n"
         md += "- **Below the threshold**: reported for review; they don't fail the check\n"
     md += "- Run `task sast` locally to reproduce findings\n\n"
     md += "## Limitations\n\n"
@@ -309,7 +309,7 @@ def run(args: list[str] | None = None) -> int:
             REPORT_DIR, REPORT_MD, "SAST Analysis Report",
             f"Semgrep exited {rc} and "
             + ("wrote no readable report" if data is None else "reported a fatal error")
-            + f" (`{REPORT_JSON}`). The scan is treated as not run — not as clean. "
+            + f" (`{REPORT_JSON}`). The scan is treated as not run, not as clean. "
             "Re-run it and check Semgrep's output above.",
         )
 
@@ -324,9 +324,9 @@ def run(args: list[str] | None = None) -> int:
             f"Found {len(results)} finding(s): {len(errors)} error(s), {len(warnings)} warning(s)"
         )
         if blocking:
-            output.error(f"{len(blocking)} finding(s) at or above `fail_on: {fail_on}` — failing")
+            output.error(f"{len(blocking)} finding(s) at or above `fail_on: {fail_on}`, so the check fails")
         else:
-            output.info(f"none at or above `fail_on: {fail_on}` — not failing")
+            output.info(f"none at or above `fail_on: {fail_on}`, so the check does not fail")
     else:
         output.success("No findings detected")
     output.footer(REPORT_DIR, [REPORT_MD.name])

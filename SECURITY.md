@@ -29,7 +29,7 @@ What to include:
 ## What to expect
 
 - **Acknowledgement** within 5 working days.
-- **Triage update** within 10 working days — confirming whether it's
+- **Triage update** within 10 working days, confirming whether it's
   in scope, an estimated severity, and a fix timeline.
 - **Coordinated disclosure** once a fix has shipped to `main`. We will
   credit you in the advisory unless you ask us not to.
@@ -38,7 +38,7 @@ What to include:
 
 In scope:
 
-- The **slopstopper-cli** Python package under `cli/slopstopper/` —
+- The **slopstopper-cli** Python package under `cli/slopstopper/`:
   every check, the emit/discovery/templates/serve subcommands, and
   the bundled `data/` (Playwright specs, lighthouserc, server.js).
 - The **GitHub Actions workflows** under `.github/workflows/ss-*.yml`
@@ -52,14 +52,14 @@ Out of scope:
 
 - Vulnerabilities in upstream tools (Semgrep, Trivy, ZAP, Gitleaks,
   Lizard, axe-core, Lighthouse). Please report those upstream.
-- Findings produced by the suite running against adopter code — those
+- Findings produced by the suite running against adopter code. Those
   belong to the adopter.
 - Denial of service against `slopstopper.dev` (the demo site).
 
 ## Related docs
 
-- [`docs/security/README.md`](./docs/security/README.md) — overview of
+- [`docs/security/README.md`](./docs/security/README.md): an overview of
   what each security check does and how to extend it.
-- [`docs/security/CSP_EXCEPTIONS.md`](./docs/security/CSP_EXCEPTIONS.md) —
+- [`docs/security/CSP_EXCEPTIONS.md`](./docs/security/CSP_EXCEPTIONS.md):
   the scoped CSP exception pattern used by the demo site, and the
   pattern adopters should copy.

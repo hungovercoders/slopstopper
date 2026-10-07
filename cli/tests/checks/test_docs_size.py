@@ -94,7 +94,7 @@ def test_compute_alerts_oversized_file_listed_by_basename():
 
 
 def test_compute_alerts_oversized_threshold_is_strictly_greater():
-    """Bash's `find -size +20k` matches strictly > 20*1024 bytes — match that."""
+    """Match Bash's `find -size +20k`, which matches strictly > 20*1024 bytes."""
     stats = {"total_size_kb": 50, "file_count": 1}
     thresholds = {"max_total_size_kb": 150, "max_file_size_kb": 20, "max_files": 25}
     exact = [(Path("docs/exact.md"), 20 * 1024)]

@@ -1,4 +1,4 @@
-# .slopstopper.yml — slopstopper.dev's own config.
+# .slopstopper.yml: slopstopper.dev's own config.
 #
 # See .slopstopper.yml.example for the fully-annotated schema reference,
 # and docs/architecture/README.md for how the headers source feeds into
@@ -6,13 +6,13 @@
 
 # The CLI version is pinned in mise.toml (adopter repos pin
 # "pipx:slopstopper-cli" there). This repo IS slopstopper-cli, so mise.toml
-# pins only `task` — the workflows install the CLI editable
+# pins only `task`, and the workflows install the CLI editable
 # (`pip install -e ./cli`) and run HEAD. See .slopstopper.yml.example.
-# The Node version is pinned in mise.toml ([tools] node) — a tool version, so
+# The Node version is pinned in mise.toml ([tools] node). It's a tool version, so
 # it lives in mise, not here.
 
 # slopstopper.dev is a web UI, so every check applies. `ui` is also the
-# default when the key is unset — it's spelled out here because this repo
+# default when the key is unset; it's spelled out here because this repo
 # is the reference install. See .slopstopper.yml.example for api/library.
 profile: ui
 
@@ -23,7 +23,7 @@ headers:
   source: worker/headers.json
   format: json
 
-# slopstopper.dev URLs — used by scheduled smoke + DAST + CWV.
+# slopstopper.dev URLs, used by scheduled smoke + DAST + CWV.
 urls:
   production: https://slopstopper.dev
   preview:
@@ -40,7 +40,7 @@ smoke:
 
 # The docs-size defaults (150 KB total / 25 files) were set when the suite
 # had noticeably fewer checks. Every check legitimately costs a section in
-# its category README, so this repo — which documents all 25 — sits above
+# its category README, so this repo, which documents all 25, sits above
 # them. The advisory is still useful as a growth signal, so the ceiling is
 # raised rather than removed; the per-file 20 KB cap is untouched, because
 # that one is about a single document staying readable.

@@ -28,7 +28,7 @@ jobs:
 
       - name: Install Semgrep
         # SAST runs semgrep via subprocess. Installed via pip to match
-        # ss-security-sast-check.yml — semgrep isn't pinned via mise anywhere.
+        # ss-security-sast-check.yml, because semgrep isn't pinned via mise anywhere.
         run: |
           pip install --upgrade pip
           pip install semgrep
@@ -41,7 +41,7 @@ jobs:
 
       - name: Install slopstopper-cli from source
         # This repo runs the CLI from source (HEAD), so mise.toml carries no
-        # slopstopper-cli pin — install it editable here. This also brings
+        # slopstopper-cli pin, so install it editable here. This also brings
         # `lizard` (a CLI runtime dependency) used by hygiene:complexity, so the
         # `task ss:*` shims work in the Copilot environment.
         run: pip install -e ./cli

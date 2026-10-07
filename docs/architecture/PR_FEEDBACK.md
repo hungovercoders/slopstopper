@@ -15,7 +15,7 @@ Feedback now arrives in two layers.
 renders a single rolling comment covering every check:
 
 ```
-## ❌ SlopStopper — 2 of 25 checks failed
+## ❌ SlopStopper: 2 of 25 checks failed
 
 | | Check | |
 |---|---|---|
@@ -33,7 +33,7 @@ pr-comment` no longer posts the report. It posts a verdict line, the
 failing items, and the report folded into a `<details>`:
 
 ```
-### ❌ SEO — 2 issues
+### ❌ SEO: 2 issues
 
 - og:image is missing
 - canonical points at another domain
@@ -76,7 +76,7 @@ failures. The default is `fail`, so a miswired workflow over-reports
 rather than silently greenwashing.
 
 There is a third value, `warn`, for exactly the advisory case: it renders
-`### ⚠️ Docs Size — has alerts` and keeps the comment, so the per-check
+`### ⚠️ Docs Size: has alerts` and keeps the comment, so the per-check
 comment doesn't contradict the ✅ that check's green job gets in the
 summary table. `--on-pass=delete` only fires on `pass`.
 

@@ -1,4 +1,4 @@
-"""Tests for slopstopper.emit — PR comment + issue emission via gh CLI."""
+"""Tests for slopstopper.emit: PR comment + issue emission via gh CLI."""
 
 from __future__ import annotations
 
@@ -336,8 +336,8 @@ def test_emit_issue_omits_marker_when_check_name_none(monkeypatch, isolated_cwd)
 
 
 def test_emit_issue_marker_idempotent_on_update(monkeypatch, isolated_cwd):
-    """Re-emitting on a re-failure regenerates the footer fresh from the report —
-    the marker appears exactly once, never duplicated."""
+    """Re-emitting on a re-failure regenerates the footer fresh from the report,
+    so the marker appears exactly once and is never duplicated."""
     Path("report.md").write_text("body content")
     monkeypatch.setattr(emit, "_gh_available", lambda: True)
     monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: 42)
@@ -352,7 +352,7 @@ def test_emit_issue_marker_idempotent_on_update(monkeypatch, isolated_cwd):
     monkeypatch.setattr(emit, "_update_issue_body", fake_update)
     monkeypatch.setattr(emit, "_comment_issue", lambda n, b: 0)
 
-    # Emit twice — the second call must not produce a body with two markers.
+    # Emit twice. The second call must not produce a body with two markers.
     for _ in range(2):
         emit.emit_issue(
             Path("report.md"),
@@ -412,7 +412,7 @@ def test_close_issue_fails_when_gh_missing(monkeypatch, capsys):
 
 def test_close_issue_searches_with_augmented_labels(monkeypatch):
     """The close path must search with the same slopstopper-augmented labels
-    that emit_issue used to create the issue — otherwise a post-PR-2 issue
+    that emit_issue used to create the issue. Otherwise a post-PR-2 issue
     would never be closed."""
     monkeypatch.setattr(emit, "_gh_available", lambda: True)
     captured: dict = {}
@@ -647,7 +647,7 @@ def test_pass_without_on_pass_still_posts_a_one_line_comment(monkeypatch, isolat
 
     assert emit.emit_pr_comment(report, "SEO", check_name="reliability:seo", status="pass") == 0
     body = (isolated_cwd / "r.comment.md").read_text()
-    assert body.startswith("### ✅ SEO — passed")
+    assert body.startswith("### ✅ SEO: passed")
 
 
 def test_delete_on_pass_does_not_need_the_report_to_exist(monkeypatch, isolated_cwd):
@@ -775,7 +775,7 @@ def test_summary_upserts_one_comment(monkeypatch, isolated_cwd, tmp_path):
     )
     assert emit.emit_pr_summary() == 0
     body = Path(".ss/reports/pr-summary.md").read_text()
-    assert body.startswith("## ❌ SlopStopper — 1 of 1 check failed")
+    assert body.startswith("## ❌ SlopStopper: 1 of 1 check failed")
     assert "**SAST**" in body
     assert any("pr" in c and "comment" in c for c in calls)
 

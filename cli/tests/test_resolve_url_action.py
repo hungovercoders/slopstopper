@@ -86,7 +86,7 @@ LOCAL = "http://localhost:8080"
         ("pull_request", {}, {"url": "", "skip": "true"}),
         ("push", {"production": PROD}, {"url": PROD, "skip": "false", "prod": "true"}),
         ("push", {}, {"skip": "true"}),
-        # A scheduled run with nothing configured skips — it never goes red.
+        # A scheduled run with nothing configured skips; it never goes red.
         ("schedule", {}, {"skip": "true"}),
         ("schedule", {"production": PROD}, {"url": PROD, "prod": "true"}),
         # A blank manual run skips; it does not quietly probe production.

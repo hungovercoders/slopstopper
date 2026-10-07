@@ -10,7 +10,7 @@ from slopstopper.checks import _routes, entry_files
 
 MAP_ROUTE = (
     "For any task not covered above, read [`docs/README.md`](./docs/README.md) "
-    "— the routing table for every doc in this repo.\n"
+    "which is the routing table for every doc in this repo.\n"
 )
 SOFT_MAP_LINK = "See [`docs/README.md`](./docs/README.md) for the docs.\n"
 
@@ -59,7 +59,7 @@ def test_estimate_tokens_keeps_a_badge_beside_prose():
 def test_route_table_separates_explicit_from_soft(isolated_cwd):
     p = isolated_cwd / "AGENTS.md"
     p.write_text(
-        "Before you change CI, read [ci](docs/ci.md) — what task ci runs.\n\n"
+        "Before you change CI, read [ci](docs/ci.md) for what task ci runs.\n\n"
         "See [tasks](docs/tasks.md) for more.\n\n"
         "| When you are… | Do this |\n| --- | --- |\n"
         "| adding a doc | Read [style](docs/style.md) first |\n"

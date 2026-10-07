@@ -2,7 +2,7 @@
 
 The behaviour worth pinning: the graceful skip when unconfigured (an
 unconfigured check must not fail a PR), and the body assertions, which
-are the reason this exists rather than pointing smoke at /health — a
+are the reason this exists rather than pointing smoke at /health. A
 `{"status": "degraded"}` body returned with HTTP 200 satisfies every
 reachability probe and must fail here.
 """
@@ -113,8 +113,8 @@ def test_malformed_expect_status_falls_back_to_default(write_config):
 
 
 def test_run_skips_with_exit_zero_when_unconfigured(write_config, capsys):
-    """An unconfigured check is not a failing check — same contract as
-    hygiene:csp-exceptions with headers.source: null."""
+    """An unconfigured check is not a failing check. This is the same
+    contract as hygiene:csp-exceptions with headers.source: null."""
     write_config("urls:\n  production: https://api.example.com\n")
     assert api_health.run(["https://api.example.com"]) == 0
     out = capsys.readouterr().out

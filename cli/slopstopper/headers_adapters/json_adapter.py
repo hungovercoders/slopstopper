@@ -1,6 +1,6 @@
 """JSON header-source adapter.
 
-Parses `[{"for": "/path", "values": {"Header-Name": "value"}}, ...]` —
+Parses `[{"for": "/path", "values": {"Header-Name": "value"}}, ...]`,
 the format slopstopper.dev uses in worker/headers.json. A Cloudflare
 Worker reads the same file and applies headers per request.
 """

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="SlopStopper — stop the slop. Deterministic feedback for AI-driven development.">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
   <defs>
     <style>
       .sans { font-family: ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, -apple-system, sans-serif; }
@@ -19,7 +19,7 @@
     <rect width="1060" height="450" rx="32" fill="#FFE9D4" stroke="#2A2118" stroke-width="6"/>
   </g>
 
-  <!-- Stoppy mascot (left) — 1.6x scale of source -->
+  <!-- Stoppy mascot (left), 1.6x scale of source -->
   <g transform="translate(120, 160) scale(1.6)">
     <ellipse cx="120" cy="225" rx="70" ry="6" fill="rgba(42,33,24,0.18)"/>
     <path d="M40 130 C40 75, 80 50, 120 50 C160 50, 200 75, 200 130 C200 180, 165 210, 120 210 C75 210, 40 180, 40 130 Z"

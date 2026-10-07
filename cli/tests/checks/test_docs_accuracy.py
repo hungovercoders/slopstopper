@@ -75,7 +75,7 @@ def test_check_broken_links_resolves_relative(isolated_cwd):
 
 def test_check_task_references_flags_unknown(isolated_cwd):
     md = isolated_cwd / "docs" / "x.md"
-    # Regex requires whitespace (or BOL) before "task" — backtick adjacency
+    # Regex requires whitespace (or BOL) before "task". Backtick adjacency
     # is deliberately not matched to avoid false-positives on inline code.
     _write(md, "Run task ss:nonexistent:check to verify.\n")
     issues = docs_accuracy._check_task_references(md, {"ss:hygiene:lint"})
@@ -315,7 +315,7 @@ def test_extra_paths_bad_patterns_warn_and_are_skipped(write_config, capsys):
 
 
 def test_extra_paths_never_double_count_the_primary_scan(write_config):
-    """`**/*.md` overlaps docs/ and the root entry files — those stay primary-only."""
+    """`**/*.md` overlaps docs/ and the root entry files, which stay primary-only."""
     _write(Path("docs/hygiene/README.md"), "# h\n")
     _write(Path("README.md"), "# root\n")
     _write(Path("packages/a/README.md"), "# a\n")

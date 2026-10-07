@@ -1,7 +1,7 @@
 # Third-party attributions
 
 `slopstopper-cli` is MIT-licensed (see [`LICENSE`](./LICENSE)). Its only
-bundled runtime dependency is **Lizard** (MIT) — declared in
+bundled runtime dependency is **Lizard** (MIT), declared in
 `cli/pyproject.toml` so pip/pipx installs it into the same environment, where
 its own package metadata carries its licence notice. slopstopper-cli does not
 bundle or statically link any other third-party code: every remaining tool

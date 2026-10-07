@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# install-skill.sh — install/refresh the SlopStopper Claude Code skills
+# install-skill.sh: install/refresh the SlopStopper Claude Code skills
 # into the target repo.
 #
 # The companion to install.sh: install.sh installs the whole quality suite
 # into a repo; this script just covers the skill subset, so you can refresh
 # just the playbooks without touching workflows, the Taskfile or the CLI.
 #
-# Skills are installed at *project level* — into the adopter repo's
-# ./.claude/skills/ directory — so every contributor that clones the repo
+# Skills are installed at *project level*, into the adopter repo's
+# ./.claude/skills/ directory, so every contributor that clones the repo
 # gets them automatically (Claude Code auto-discovers project-level skills
 # the same way it does user-level ones). Commit the resulting files
 # alongside the workflows.
@@ -34,15 +34,15 @@
 #     `slopstopper-update/` directory in the target is removed.
 #   - This script no longer writes to ~/.claude/skills/. If a previous
 #     version installed copies there, they'll shadow the project-level ones
-#     when Claude Code merges skill paths — remove them manually with:
+#     when Claude Code merges skill paths. Remove them manually with:
 #       rm -rf ~/.claude/skills/slopstopper-install \
 #              ~/.claude/skills/slopstopper-update \
 #              ~/.claude/skills/slopstopper-triage
 #
 # What this affects:
 #   Nothing outside <target>/.claude/skills/slopstopper-*/. Re-running
-#   replaces each skill directory only if the upstream content differs —
-#   safe to refresh on a schedule.
+#   replaces each skill directory only if the upstream content differs,
+#   so it is safe to refresh on a schedule.
 
 set -euo pipefail
 
@@ -85,7 +85,7 @@ fi
 
 if [ -z "${SLOPSTOPPER_SKILLS_QUIET:-}" ]; then
   sep
-  echo "  🧠  SlopStopper — installing the Claude Code skills (project level)"
+  echo "  🧠  SlopStopper: installing the Claude Code skills (project level)"
   echo "  Source : ${REPO_RAW}/.claude/skills/<skill>/  (SKILL.md + references/)"
   echo "  Target : ${TARGET_DIR}/.claude/skills/<skill>/"
   sep
@@ -108,7 +108,7 @@ fetch() {
 # A skill is a directory: SKILL.md plus the references/*.md files it links
 # (the long tables live there and are read on demand, so the skill costs one
 # page of context until a step needs detail). Fetch SKILL.md, validate it,
-# then fetch every references/<name>.md it mentions — only linked files, so
+# then fetch every references/<name>.md it mentions. Only linked files, so
 # a stray draft or editor file in the source tree never ships.
 #
 # The result is staged under a directory made with mkdir (so it carries the
@@ -149,7 +149,7 @@ install_skill_dir() {
   mkdir -p "${SKILLS_DST}" || return 1
   if ! cp -R "${stage}" "${incoming}"; then
     rm -rf "${incoming}"
-    warn "${skill}: could not copy into ${SKILLS_DST} — left the installed copy as it was"
+    warn "${skill}: could not copy into ${SKILLS_DST}, so the installed copy was left as it was"
     return 1
   fi
   if [ "${had_it}" = true ]; then
@@ -191,7 +191,7 @@ done
 # machine, they likely have stale copies of the same skills at user level
 # (~/.claude/skills/slopstopper-*). Those will shadow the project-level
 # copies when Claude Code merges skill paths. We don't delete user-level
-# state on someone's behalf — but we point at it so they can clean up
+# state on someone's behalf, but we point at it so they can clean up
 # explicitly.
 if [ -d "${HOME}/.claude/skills/slopstopper-install" ] \
   || [ -d "${HOME}/.claude/skills/slopstopper-update" ] \

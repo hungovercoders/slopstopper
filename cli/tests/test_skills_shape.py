@@ -2,8 +2,8 @@
 
 The repo caps its own agent entry files at 1,500 words because "agent
 files crowd the context window of every agent conversation". The two
-skills it ships into adopter repos had reached 10,061 and 7,128 words —
-6.7× and 4.8× that cap — loaded whole on every trigger. They are now a
+skills it ships into adopter repos had reached 10,061 and 7,128 words,
+6.7× and 4.8× that cap, loaded whole on every trigger. They are now a
 short SKILL.md that maps the playbook, plus references/*.md read only
 when a step needs them. This keeps it that way.
 """
@@ -62,7 +62,7 @@ def test_every_reference_is_linked_from_skill_md_and_exists(skill):
         f"{skill}: SKILL.md mentions {sorted(mentioned - on_disk)} that don't exist; "
         f"references on disk not mentioned: {sorted(on_disk - mentioned)}"
     )
-    assert on_disk, f"{skill} has no references/ — the split is the point"
+    assert on_disk, f"{skill} has no references/, and the split is the point"
 
 
 @pytest.mark.parametrize("skill", SKILLS)

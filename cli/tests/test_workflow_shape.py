@@ -3,13 +3,13 @@
 Before `.github/actions/ss-setup` and `ss-resolve-url` existed, the same
 three toolchain steps were copied into 24 workflows and the same
 `validate_url()` shell function into 12, with four mutually incompatible
-`if:` dialects on the emit step growing around them. Copies drift — that
+`if:` dialects on the emit step growing around them. Copies drift, and that
 is how two workflows ended up never deleting their PR comment.
 
 These tests keep the plumbing in one place: no ss-* workflow may inline
 what the actions provide, every local `uses:` must resolve, and every
 `steps.<id>.outputs` reference must name a step that exists (a renamed
-step id fails silently in Actions — the expression just evaluates empty).
+step id fails silently in Actions, where the expression just evaluates empty).
 """
 
 from __future__ import annotations
@@ -57,14 +57,14 @@ def test_workflow_sets_up_through_the_composite_action(workflow):
     assert "uses: ./.github/actions/ss-setup" in text, f"{workflow} does not use ss-setup"
     for inlined in ("jdx/mise-action", "actions/setup-python", "pip install -e ./cli"):
         assert inlined not in text, (
-            f"{workflow} inlines `{inlined}` — that step lives in .github/actions/ss-setup"
+            f"{workflow} inlines `{inlined}`, but that step lives in .github/actions/ss-setup"
         )
 
 
 @pytest.mark.parametrize("workflow", BUILT_ON_ACTIONS)
 def test_workflow_does_not_inline_url_resolution(workflow):
     assert "validate_url()" not in _text(workflow), (
-        f"{workflow} defines validate_url() — URL resolution lives in .github/actions/ss-resolve-url"
+        f"{workflow} defines validate_url(), but URL resolution lives in .github/actions/ss-resolve-url"
     )
 
 

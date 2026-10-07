@@ -1,8 +1,8 @@
 """Report scaffolding shared by every check.
 
 Each check writes a markdown report that `slopstopper emit` turns into a
-PR comment or an issue, and `comment.py` reads that markdown back with a
-regex — `^\\s*-\\s*❌\\s*(.+?)$` — to list the failing items. That means the
+PR comment or an issue, and `comment.py` reads that markdown back with the
+regex `^\\s*-\\s*❌\\s*(.+?)$` to list the failing items. That means the
 PR bot's output silently depends on every check emitting the same bullet
 syntax. Seventeen modules used to hand-roll it; this is where the
 contract lives, so a new check gets it right by construction.
@@ -27,8 +27,9 @@ NOTE_ICON = "⚠️ "
 
 def generated_at(precision: str = "seconds") -> str:
     """The one timestamp format: UTC, suffixed. Reports use seconds; the
-    rolling PR comment uses `precision="minutes"` — it is a freshness
-    marker that re-renders on every check, where seconds are noise."""
+    rolling PR comment uses `precision="minutes"` because it is a
+    freshness marker that re-renders on every check, where seconds are
+    noise."""
     fmt = "%Y-%m-%d %H:%M:%S UTC" if precision == "seconds" else "%Y-%m-%d %H:%M UTC"
     return datetime.now(timezone.utc).strftime(fmt)
 
@@ -55,7 +56,7 @@ def render_notes(findings: list[str]) -> list[str]:
 
 def render_skip(reason: str, guidance: list[str]) -> list[str]:
     """The graceful-skip block: an unconfigured check is not a failing check."""
-    lines = [f"**Overall:** ⏭️ SKIPPED — {reason}", ""]
+    lines = [f"**Overall:** ⏭️ SKIPPED: {reason}", ""]
     lines.extend(guidance)
     lines.append("")
     return lines

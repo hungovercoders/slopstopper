@@ -14,12 +14,12 @@ SAMPLE_CSV_LOW = (
     '5,2,42,1,7,"foo@10-14@./src/a.py","./src/a.py","foo","foo( x )",10,14\n'
     '8,3,80,2,12,"bar@20-31@./src/a.py","./src/a.py","bar","bar( x, y )",20,31\n'
 )
-# A function at CCN 16 — over the default max_ccn of 15.
+# A function at CCN 16, over the default max_ccn of 15.
 SAMPLE_CSV_OVER = (
     SAMPLE_CSV_LOW
     + '40,16,300,1,55,"complicated@40-94@./src/b.py","./src/b.py","complicated","complicated( x )",40,94\n'
 )
-# A function at CCN 12 — under the default 15, but over a stricter max_ccn of 10.
+# A function at CCN 12: under the default 15, but over a stricter max_ccn of 10.
 SAMPLE_CSV_MID = (
     SAMPLE_CSV_LOW
     + '30,12,220,1,40,"midfn@40-79@./src/c.py","./src/c.py","midfn","midfn( x )",40,79\n'
@@ -55,7 +55,7 @@ def test_parse_csv_rows_skips_header_rows():
 
 
 def test_parse_csv_rows_handles_missing_file_column():
-    # Older fixtures may omit column 6 — fall back to location's @-segment.
+    # Older fixtures may omit column 6, so fall back to location's @-segment.
     csv_no_file_col = '5,2,42,1,7,"foo@10-14@./src/a.py"\n'
     rows = complexity._parse_csv_rows(csv_no_file_col)
     assert rows[0][6] == "./src/a.py"

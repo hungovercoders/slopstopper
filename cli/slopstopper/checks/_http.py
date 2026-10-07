@@ -11,10 +11,11 @@ The guard is the point. `urllib.request.urlopen` happily handles
 `file:///etc/passwd` would be read by a checker and, on some paths,
 echoed into a report. Every request a check makes goes through
 `open_url`, which refuses anything but http/https before opening it
-(ValueError — a bad input) and again on every redirect: urllib follows a
-`302 Location: ftp://…` on its own, so a guard on the first URL alone is
-not a guard. A refused redirect is an HTTPError — a fact about the target,
-reported like any other status — never an abort.
+(raising ValueError, since that is a bad input) and again on every
+redirect: urllib follows a `302 Location: ftp://…` on its own, so a guard
+on the first URL alone is not a guard. A refused redirect is an HTTPError.
+That is a fact about the target, reported like any other status and never
+an abort.
 
 Checks keep a module-level `_fetch` / `_head_ok` name that delegates
 here, so tests can monkeypatch the check they are testing without
@@ -34,7 +35,7 @@ DEFAULT_TIMEOUT = 15
 
 
 def is_http_url(url: str) -> bool:
-    """True for an http/https URL — the one scheme test every check shares."""
+    """True for an http/https URL. This is the one scheme test every check shares."""
     return urllib.parse.urlparse(url).scheme.lower() in ALLOWED_SCHEMES
 
 
@@ -54,8 +55,8 @@ class _GuardedRedirects(urllib.request.HTTPRedirectHandler):
     """Follow redirects only to http/https. urllib's default handler also
     follows `ftp://`, which would walk straight past the first-hop guard.
 
-    A refused redirect raises `HTTPError` carrying the 3xx response — the
-    same thing urllib raises for a `file://` redirect — so every caller's
+    A refused redirect raises `HTTPError` carrying the 3xx response, which
+    is what urllib raises for a `file://` redirect too, so every caller's
     existing HTTPError handling reports it as data about the target ("the
     endpoint answered 302 to somewhere we won't follow"), and the caller
     that handles the error owns closing the response.
@@ -85,8 +86,9 @@ def _opener(label: str) -> urllib.request.OpenerDirector:
 
 def _send(req: urllib.request.Request, timeout: int, label: str) -> Any:
     """Open an already-guarded request, re-guarding every redirect hop."""
+    # The scheme is guarded on the first hop and on every redirect.
     # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-    return _opener(label).open(req, timeout=timeout)  # nosec B310 — scheme guarded, redirects too
+    return _opener(label).open(req, timeout=timeout)  # nosec B310
 
 
 def open_url(
@@ -126,7 +128,7 @@ def fetch_text(
 def head_ok(
     url: str, user_agent: str, *, timeout: int = DEFAULT_TIMEOUT, label: str = "slopstopper"
 ) -> tuple[bool, str]:
-    """HEAD the URL. Returns (ok, detail) — reachable and not 4xx/5xx."""
+    """HEAD the URL. Returns (ok, detail), where ok means reachable and not 4xx/5xx."""
     try:
         with open_url(url, user_agent, method="HEAD", timeout=timeout, label=label) as resp:
             if resp.status >= 400:

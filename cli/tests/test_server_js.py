@@ -1,6 +1,6 @@
 """Tests for the bundled `server.js` header parsers.
 
-The server is JavaScript, not Python — these tests invoke `node` in a
+The server is JavaScript, not Python, so these tests invoke `node` in a
 subprocess to load `server.js` as a module, then exercise its exported
 parsers against fixtures. Skipped (rather than failed) when `node` is
 not on PATH, since slopstopper-cli's Python tests must run cleanly in
@@ -43,7 +43,7 @@ def _run_node_assert(fixture_path: Path, parser_name: str) -> list[dict]:
 
 
 if shutil.which("node") is None:
-    pytest.skip("node not on PATH — server.js parser tests require node", allow_module_level=True)
+    pytest.skip("node not on PATH; server.js parser tests require node", allow_module_level=True)
 
 
 # ── parseCloudflareHeaders ───────────────────────────────────────
@@ -92,7 +92,7 @@ def test_skips_blocks_without_path_pattern(tmp_path):
     fixture = tmp_path / "_headers"
     fixture.write_text(
         "# slopstopper security headers begin\n"
-        "# (intentionally commented-out block — install ships it disabled by default)\n"
+        "# (intentionally commented-out block; install ships it disabled by default)\n"
         "\n"
         "/*\n"
         "  X-Frame-Options: DENY\n"

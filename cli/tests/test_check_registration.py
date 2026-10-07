@@ -1,7 +1,7 @@
 """Guard: every check in the registry is wired into every surface it needs.
 
 AGENTS.md's "New quality check" row lists the places a check has to be
-registered — workflow, Taskfile shim, installer, profile map, badge
+registered: workflow, Taskfile shim, installer, profile map, badge
 label, both `workflow_run` trigger lists, docs, tests. It is a prose
 checklist in a table cell, and nothing enforced it: when the two API
 checks in #333 landed they touched 24 files against a 13-item list, and
@@ -198,7 +198,7 @@ def test_check_is_documented_under_its_category(check):
     headings = _headings_under(_category(check))
     assert any(phrase in h.lower() for h in headings), (
         f"{check} has no heading containing {DOC_HEADINGS[check]!r} in any "
-        f"docs/{_category(check)}/*.md — a check with a badge and a workflow but no "
+        f"docs/{_category(check)}/*.md, because a check with a badge and a workflow but no "
         "documentation is exactly what this test exists to catch"
     )
 
@@ -211,7 +211,7 @@ def test_check_is_documented_under_its_category(check):
 # (the summary itself, the failure tracker, the doc updater, the
 # release workflow) is plumbing.
 #
-# When these numbers change, the prose that quotes them has to follow —
+# When these numbers change, the prose that quotes them has to follow.
 # PROSE_SITES below is that list, and the count test reads each file so a
 # stale number fails here rather than surviving in a playbook.
 
@@ -233,7 +233,7 @@ PROSE_SITES = {
     "docs/architecture/PR_FEEDBACK.md": {"checks": {25, 23}, "workflows": {25}},
     ".slopstopper.yml": {"checks": {25}, "workflows": set()},
 }
-# "24 checks", "27 new `ss-*.yml` workflows", "~21 GitHub Actions workflows" —
+# "24 checks", "27 new `ss-*.yml` workflows", "~21 GitHub Actions workflows":
 # a number, at most one qualifier, then the noun. Nothing looser, or
 # "2 of 24 checks" reads as a stale 2.
 _COUNT_RE = re.compile(
@@ -259,7 +259,7 @@ def test_the_check_count_is_the_one_quoted_in_the_docs():
 
 def test_every_skill_file_is_a_prose_site():
     skill_sites = [s for s in PROSE_SITES if s.startswith(".claude/skills/")]
-    assert len(skill_sites) >= 10, "the skills glob matched almost nothing — did .claude/skills move?"
+    assert len(skill_sites) >= 10, "the skills glob matched almost nothing. Did .claude/skills move?"
 
 
 @pytest.mark.parametrize("site", sorted(PROSE_SITES))

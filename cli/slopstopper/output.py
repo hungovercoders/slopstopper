@@ -22,7 +22,7 @@ from typing import Iterable
 
 # Toggled by `cli.main()` when `--quiet` is passed. Module-global so
 # `cli.py` can flip it once and every check picks it up via the
-# formatters below — no need to thread a parameter through every
+# formatters below, with no need to thread a parameter through every
 # subprocess wrapper.
 QUIET = False
 
@@ -41,7 +41,7 @@ def set_quiet(quiet: bool) -> None:
 def _emit(line: str = "", *, force: bool = False, stream=None) -> None:
     """Write a single line to stdout (or the override stream).
 
-    `force=True` bypasses the quiet flag — use for genuine errors that
+    `force=True` bypasses the quiet flag. Use it for genuine errors that
     should land even with `--quiet`.
     """
     if QUIET and not force:
@@ -66,7 +66,7 @@ def section(title: str, emoji: str = "") -> None:
 
 
 def status(emoji: str, message: str, *, force: bool = False) -> None:
-    """Print a status line — pass/fail/warn/info. `<emoji> <message>`.
+    """Print a pass/fail/warn/info status line as `<emoji> <message>`.
 
     `force=True` keeps the line under `--quiet` (use for terminal errors).
     """
@@ -89,7 +89,7 @@ def warn(message: str) -> None:
 
 
 def error(message: str) -> None:
-    """Hard failure — always emitted (even with `--quiet`).
+    """Print a hard failure. It is always emitted, even with `--quiet`.
 
     Stays on stdout (not stderr) to preserve compatibility with existing
     checks and tests that asserted on `capsys.readouterr().out`. The

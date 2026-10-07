@@ -175,7 +175,7 @@ def test_audit_check_links_notes_dead_link(monkeypatch):
     monkeypatch.setattr(llms_txt, "_fetch", lambda url: (200, "text/plain", VALID_BODY))
     monkeypatch.setattr(llms_txt, "_head_ok", lambda url: (False, "HTTP 404"))
     result = llms_txt._audit("https://example.com", "/llms.txt", check_links=True, require_summary=False)
-    # dead links are advisory by default — still passes
+    # dead links are advisory by default, so it still passes
     assert result["status"] == "pass"
     assert any("not reachable" in n for n in result["notes"])
 

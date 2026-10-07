@@ -84,27 +84,27 @@ def test_extract_failures_empty_for_a_report_without_the_convention():
 def test_pass_body_is_two_visible_lines():
     body = comment.build_body("reliability:seo", PASSING_REPORT, status="pass")
     visible = body.split("<details>")[0].strip().splitlines()
-    assert visible == ["### ✅ SEO — passed"]
+    assert visible == ["### ✅ SEO: passed"]
 
 
 def test_fail_body_leads_with_the_count_and_lists_failures():
     body = comment.build_body("reliability:seo", FAILING_REPORT, status="fail")
     head = body.split("<details>")[0]
-    assert head.startswith("### ❌ SEO — 2 issues")
+    assert head.startswith("### ❌ SEO: 2 issues")
     assert "- og:image is missing" in head
 
 
 def test_fail_body_singular_for_one_issue():
     report = "# R\n- ❌ the one thing\n"
     body = comment.build_body("hygiene:complexity", report, status="fail")
-    assert "— 1 issue" in body
+    assert ": 1 issue" in body
     assert "1 issues" not in body
 
 
 def test_fail_body_without_extractable_failures_still_says_failed():
     """Checks that don't use the bullet convention must not render as passing."""
     body = comment.build_body("security:sast", "# SAST\n\nSome prose report.", status="fail")
-    assert body.split("<details>")[0].strip() == "### ❌ SAST — failed"
+    assert body.split("<details>")[0].strip() == "### ❌ SAST: failed"
 
 
 def test_warn_status_does_not_claim_a_failure():
@@ -112,14 +112,14 @@ def test_warn_status_does_not_claim_a_failure():
     would contradict the ✅ its green job gets in the summary table."""
     body = comment.build_body("hygiene:docs-size", "# Docs\n\n⚠️  27 files exceeds 25\n", status="warn")
     head = body.split("<details>")[0].strip()
-    assert head == "### ⚠️ Docs Size — has alerts"
+    assert head == "### ⚠️ Docs Size: has alerts"
     assert "❌" not in head
     assert "passed" not in head
 
 
 def test_warn_counts_bullets_as_alerts():
     body = comment.build_body("hygiene:docs-size", "# D\n- ❌ a\n- ❌ b\n", status="warn")
-    assert "⚠️ Docs Size — 2 alerts" in body
+    assert "⚠️ Docs Size: 2 alerts" in body
 
 
 def test_long_failure_lists_are_truncated():
@@ -167,9 +167,9 @@ def test_body_omits_the_run_link_when_not_in_actions():
 def test_summary_all_green_lists_grouped_names():
     runs = [_run("ss-security-sast-check.yml"), _run("ss-reliability-seo-check.yml")]
     out = comment.build_summary(runs, head_sha="abc1234def")
-    assert out.startswith("## ✅ SlopStopper — all 2 checks passed")
-    assert "🔒 Security — SAST" in out
-    assert "✅ Reliability — SEO" in out
+    assert out.startswith("## ✅ SlopStopper: all 2 checks passed")
+    assert "🔒 Security: SAST" in out
+    assert "✅ Reliability: SEO" in out
     assert comment.SUMMARY_MARKER in out
 
 
@@ -180,7 +180,7 @@ def test_summary_leads_with_failures():
         _run("ss-hygiene-complexity-check.yml", conclusion="failure"),
     ]
     out = comment.build_summary(runs, head_sha="abc1234def")
-    assert out.startswith("## ❌ SlopStopper — 2 of 3 checks failed")
+    assert out.startswith("## ❌ SlopStopper: 2 of 3 checks failed")
     head = out.split("<details>")[0]
     assert "**SEO**" in head and "**Complexity**" in head
     assert "SAST" not in head, "passing checks belong behind the fold"
@@ -206,7 +206,7 @@ def test_summary_reports_in_progress_rather_than_claiming_a_pass():
         _run("ss-reliability-seo-check.yml", conclusion=None, status="in_progress"),
     ]
     out = comment.build_summary(runs)
-    assert out.startswith("## ⏳ SlopStopper — 1 of 2 still running")
+    assert out.startswith("## ⏳ SlopStopper: 1 of 2 still running")
     assert "⏳ SEO" in out
 
 
@@ -242,7 +242,7 @@ def test_summary_keeps_only_the_newest_run_per_workflow():
         _run("ss-reliability-seo-check.yml", conclusion="success", created="2026-09-17T12:00:00Z"),
     ]
     out = comment.build_summary(runs)
-    assert out.startswith("## ✅ SlopStopper — all 1 checks passed")
+    assert out.startswith("## ✅ SlopStopper: all 1 checks passed")
 
 
 def test_summary_handles_no_runs():

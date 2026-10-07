@@ -9,7 +9,7 @@ parses, and whatever fields the repo says that body must carry.
 Why a dedicated check rather than pointing smoke at `/health`: smoke
 asserts DOM-shaped things (a `<title>`, a stylesheet link, a shareable
 og-image) that a JSON endpoint will never satisfy, and a health
-endpoint has assertions of its own — `{"status": "degraded"}` returned
+endpoint has assertions of its own. `{"status": "degraded"}` returned
 with HTTP 200 is a pass to a reachability probe and a failure to
 anything that reads the body.
 
@@ -24,7 +24,7 @@ CLI surface:
 
 Stdlib-only (urllib). Writes .ss/reports/api-health/api-health-report.{md,json}.
 
-Configuration (.slopstopper.yml — all optional):
+Configuration (.slopstopper.yml, all optional):
 
     api:
       base_path: ''             # prefix the API is served under, e.g. /api/v1
@@ -44,9 +44,9 @@ Env-var equivalents the CLI also honours (precedence: flag > env > config):
 See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
-  0 — endpoint healthy, or no endpoint configured (graceful skip)
-  1 — failures detected
-  2 — the URL is missing, or its scheme is not http/https
+  0: endpoint healthy, or no endpoint configured (graceful skip)
+  1: failures detected
+  2: the URL is missing, or its scheme is not http/https
 """
 
 from __future__ import annotations
@@ -86,7 +86,7 @@ _LABEL = "API health check"
 def _fetch(url: str) -> tuple[int, str, str, float]:
     """GET the URL. Returns (status, content_type, body, elapsed_ms).
 
-    A 4xx/5xx is data, not an exception — the check reports the status it
+    A 4xx/5xx is data, not an exception. The check reports the status it
     got against the status it expected, so HTTPError is unwrapped rather
     than propagated.
     """
@@ -175,7 +175,7 @@ def _check_body(
         _check_fields(parsed, opts["require_fields"], opts["expect_fields"], issues)
     elif not isinstance(parsed, dict):
         notes.append(
-            f"response body is a JSON {type(parsed).__name__}, not an object — "
+            f"response body is a JSON {type(parsed).__name__}, not an object, and "
             "api.health.require_fields / expect_fields can only assert on an object"
         )
     return parsed
@@ -365,10 +365,10 @@ def _resolve_options(parsed: argparse.Namespace) -> dict:
 
 
 def _skip(reason: str) -> int:
-    """Graceful skip — an unconfigured check is not a failing check."""
+    """Skip gracefully, because an unconfigured check is not a failing check."""
     output.info(reason)
     _write_reports({"url": None, "status": "skipped", "issues": [], "notes": [reason]})
-    output.success("Nothing to audit — skipping (exit 0).")
+    output.success("Nothing to audit, so skipping (exit 0).")
     return 0
 
 
@@ -378,7 +378,7 @@ def run(args: list[str] | None = None) -> int:
 
     if not opts["path"]:
         return _skip(
-            "No api.health.path configured in .slopstopper.yml — nothing to probe. "
+            "No api.health.path configured in .slopstopper.yml, so there is nothing to probe. "
             "Set it to your health/readiness endpoint (e.g. /health) to enable this check."
         )
 

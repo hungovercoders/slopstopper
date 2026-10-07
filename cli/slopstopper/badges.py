@@ -192,7 +192,7 @@ def generate(
     """Generate the markdown badges block for the installed workflows.
 
     Raises ValueError when owner/repo can't be detected or no workflows
-    are installed — both are user-facing errors the CLI surfaces to stderr.
+    are installed. Both are user-facing errors the CLI surfaces to stderr.
     """
     owner, repo = _resolve_owner_repo(owner, repo)
     workflows = _list_installed_workflows()

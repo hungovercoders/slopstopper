@@ -8,10 +8,10 @@ Enforces the rules declared in docs/README.md ("AGENTS.md first"):
      start dropping rules; the overflow routes to `docs/`.
   2. `README.md` is human orientation plus a quick start, under its own
      (smaller) budget. Pipeline badges are not counted.
-  3. `CLAUDE.md` is exactly `@AGENTS.md` — one agent entry point, nothing
-     to drift.
-  4. Every `.md` link in `AGENTS.md` is an explicit route — a trigger,
-     then "read", then the file — and one of them points at the docs
+  3. `CLAUDE.md` is exactly `@AGENTS.md`, so there is one agent entry
+     point and nothing to drift.
+  4. Every `.md` link in `AGENTS.md` is an explicit route made of a
+     trigger, then "read", then the file. One of them points at the docs
      map (`docs/README.md`), which must exist and stay under its own
      budget so the fallback hop stays cheap.
   5. `README.md` links the map, so humans find the docs too.
@@ -23,7 +23,7 @@ Writes a markdown report and a JSON report under .ss/reports/entry-files/.
 The markdown report includes a paste-ready snippet for each violation so
 adopters can remediate in one copy/paste.
 
-Configuration (.slopstopper.yml — optional):
+Configuration (.slopstopper.yml, optional):
 
     hygiene:
       entry_files:
@@ -36,12 +36,12 @@ Configuration (.slopstopper.yml — optional):
         require_claude_include: true   # CLAUDE.md is exactly `@AGENTS.md`
 
 See .slopstopper.yml.example for the canonical schema. The pre-0.15
-`max_words` knob is ignored (with a note) — budgets are tokens now.
+`max_words` knob is ignored with a note, because budgets are tokens now.
 
 Exit codes:
-  0 — every entry file within budget AND every rule satisfied
-  1 — at least one budget OR rule violation
-  2 — required entry files missing, or arguments were passed (this
+  0: every entry file within budget AND every rule satisfied
+  1: at least one budget OR rule violation
+  2: required entry files missing, or arguments were passed (this
       check takes none)
 """
 
@@ -84,7 +84,7 @@ META = {
 def _settings() -> dict:
     if config.get("hygiene.entry_files.max_words") is not None:
         output.warn(
-            "hygiene.entry_files.max_words is no longer read — budgets are "
+            "hygiene.entry_files.max_words is no longer read because budgets are "
             "estimated tokens now (hygiene.entry_files.max_tokens / readme_max_tokens)."
         )
     return {
@@ -146,7 +146,7 @@ def _pointer_violation(name: str, settings: dict) -> str | None:
 
 
 def _soft_routes(name: str, settings: dict) -> list[str]:
-    """Soft `.md` links in AGENTS.md — every link there must be a route."""
+    """Soft `.md` links in AGENTS.md. Every link there must be a route."""
     if name != AGENTS_FILE or not settings["require_explicit_routes"]:
         return []
     _explicit, soft = _routes.route_table(Path(name))
@@ -221,7 +221,7 @@ def _md_row(m: dict) -> str:
     if m["file"] in ENTRY_FILES:
         rules_status = "✅ ok" if m["pointer_ok"] and not m["soft_routes"] else "❌ see below"
     else:
-        rules_status = "—"
+        rules_status = "n/a"
     return (
         f"| `{m['file']}` | {m['tokens']} | {m['lines']} | {m['budget']} | "
         f"{size_status} | {m['headroom']:+d} | {rules_status} |"
@@ -252,7 +252,7 @@ def _over_budget_advice(name: str, map_path: str) -> str:
             f"Move the content that serves the fewest tasks into a `docs/` topic doc and "
             f"route it from `AGENTS.md` with a trigger-first line "
             f"(`{_routes.route_snippet('docs/<topic>.md', 'what it holds')}`). "
-            f"Keep the rules most tasks need inline — a hop costs a tool turn on every task that takes it."
+            f"Keep the rules most tasks need inline, because a hop costs a tool turn on every task that takes it."
         )
     if name == CLAUDE_FILE:
         return f"Make it exactly `{CLAUDE_INCLUDE}` and move anything real into `AGENTS.md`."
@@ -308,13 +308,13 @@ def _fix_map_missing(map_path: str) -> str:
     if Path(LEGACY_MAP_PATH).exists() and map_path != LEGACY_MAP_PATH:
         rename = (
             f"`{LEGACY_MAP_PATH}` exists: rename it (`git mv {LEGACY_MAP_PATH} {map_path}`) "
-            "and rewrite its rows as explicit routes — the repo UI renders a README in place "
+            "and rewrite its rows as explicit routes. The repo UI renders a README in place "
             "when someone browses `docs/`, which an `index.md` never gets.\n\n"
         )
     return (
         f"### `{map_path}` does not exist\n\n"
         f"{rename}"
-        f"AGENTS.md-first needs a docs map at `{map_path}` — the fallback routing table "
+        f"AGENTS.md-first needs a docs map at `{map_path}` to act as the fallback routing table "
         "for tasks `AGENTS.md` does not anticipate. Create it with at minimum:\n\n"
         f"```markdown\n{_map_file_snippet()}```\n\n"
         "`task ss:hygiene:docs-structure` then checks that every doc under `docs/` is "

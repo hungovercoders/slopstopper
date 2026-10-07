@@ -14,9 +14,9 @@ See .slopstopper.yml.example for the canonical schema and supported
 adapters.
 
 Exit codes mirror the bash:
-  0 — source and doc agree (or no source configured — graceful skip)
-  1 — drift detected (details in report)
-  2 — required input files missing, unknown adapter format, or arguments
+  0: source and doc agree, or no source is configured (a graceful skip)
+  1: drift detected (details in report)
+  2: required input files missing, unknown adapter format, or arguments
       were passed (this check takes none)
 """
 
@@ -116,7 +116,7 @@ def _handle_doc_line(out: dict, state: dict, line: str) -> None:
         _flush_doc_entry(out, state)
         path = heading.group(1)
         # /* is the site-wide CSP baseline, not a per-path exception. The
-        # headers side filters it out too — keep the doc parser symmetric.
+        # headers side filters it out too, so the doc parser does the same.
         if path == "/*":
             state["path"] = None
             state["current"] = None
@@ -162,13 +162,13 @@ def _sri_issues(path: str, sri: str) -> list[dict]:
         return [{
             "severity": "warn",
             "path": path,
-            "message": f"`{path}` Loader SRI is a placeholder ({sri}) — refresh before this exception ships",
+            "message": f"`{path}` Loader SRI is a placeholder ({sri}). Refresh it before this exception ships",
         }]
     if not sri:
         return [{
             "severity": "warn",
             "path": path,
-            "message": f"`{path}` has no Loader SRI — acceptable if the third party does not support SRI; document why in the entry",
+            "message": f"`{path}` has no Loader SRI. That is acceptable if the third party does not support SRI, but document why in the entry",
         }]
     return []
 
@@ -232,7 +232,7 @@ def _md_issue_section(title: str, severity: str, issues: list[dict]) -> list[str
     if not bucket:
         return []
     lines = [title, ""]
-    lines.extend(f"- **{i['path']}** — {i['message']}" for i in bucket)
+    lines.extend(f"- **{i['path']}**: {i['message']}" for i in bucket)
     lines.append("")
     return lines
 
@@ -296,10 +296,10 @@ def run(args: list[str] | None = None) -> int:
         return reject_extra_args("hygiene:csp-exceptions", args)
     source_path, format_name, skip_reason = _resolve_source()
     if source_path is None:
-        output.info(f"CSP exceptions check: {skip_reason} — skipping.")
+        output.info(f"CSP exceptions check: {skip_reason}, so skipping.")
         return 0
     if skip_reason:
-        output.info(f"CSP exceptions check: {skip_reason} — skipping.")
+        output.info(f"CSP exceptions check: {skip_reason}, so skipping.")
         return 0
     if format_name not in {*headers_adapters.ADAPTERS.keys(), "auto"}:
         output.error(
@@ -328,5 +328,5 @@ def run(args: list[str] | None = None) -> int:
         output.error("Drift detected. See .ss/reports/csp/csp-exceptions-report.md for full details.")
         return 1
     if issues:
-        output.warn("Warnings only — passing.")
+        output.warn("Warnings only, so passing.")
     return 0

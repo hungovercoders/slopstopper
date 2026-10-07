@@ -1,13 +1,13 @@
 # Root Taskfile for slopstopper itself.
 #
 # Two task surfaces live here:
-#   1. `task ss:*` — the adopter-facing quality suite, included from
+#   1. `task ss:*`: the adopter-facing quality suite, included from
 #      ./Taskfile.ss.yml. This is what gets shipped to adopter repos
 #      by install.sh.
-#   2. `task contributing:*` and `task decisions:*` — slopstopper-internal
+#   2. `task contributing:*` and `task decisions:*`: slopstopper-internal
 #      tooling for working on the site/CLI/governance. These are NOT
-#      shipped to adopters. Every target here does real work in THIS repo
-#      — nothing degrades to an "ℹ️ nothing to do" echo.
+#      shipped to adopters. Every target here does real work in THIS repo;
+#      nothing degrades to an "ℹ️ nothing to do" echo.
 #
 # See `task --list-all` for the full surface.
 
@@ -17,8 +17,8 @@ includes:
   ss:
     taskfile: ./Taskfile.ss.yml
   # The CLI package's own Taskfile (pytest loop). Included as internal so
-  # `contributing:test` can delegate to it without a second public namespace
-  # — invoke it directly with `task -t cli/Taskfile.yml test` if you prefer.
+  # `contributing:test` can delegate to it without a second public namespace.
+  # Invoke it directly with `task -t cli/Taskfile.yml test` if you prefer.
   cli:
     taskfile: ./cli/Taskfile.yml
     dir: ./cli
@@ -36,7 +36,7 @@ vars:
   SLOPSTOPPER: '{{.ROOT_DIR}}/cli/.venv/bin/slopstopper'
 
 tasks:
-  # ───────────── Contributing — slopstopper's own dev loop ─────────────
+  # ───────────── Contributing: slopstopper's own dev loop ─────────────
 
   contributing:setup:
     desc: Install npm deps, the CLI (editable, in cli/.venv), Playwright's Chromium, and the pre-push hook
@@ -58,7 +58,7 @@ tasks:
       - node scripts/render-static-assets.js
 
   contributing:lint:
-    desc: markdownlint over docs/ and CONTRIBUTING.md (advisory — not a CI gate)
+    desc: markdownlint over docs/ and CONTRIBUTING.md (advisory, not a CI gate)
     cmds:
       - npx markdownlint 'docs/**/*.md' CONTRIBUTING.md {{.CLI_ARGS}}
 
@@ -69,18 +69,18 @@ tasks:
       - PORT={{.PORT}} "{{.SLOPSTOPPER}}" serve
 
   contributing:test:
-    desc: Run the CLI's pytest suite (cli/tests) — pass `-- -k <expr>` to filter
+    desc: Run the CLI's pytest suite (cli/tests); pass `-- -k <expr>` to filter
     cmds:
       - task: cli:test
 
   contributing:test:site:
-    desc: Browser checks (smoke + accessibility) against SITE_URL (default the contributing:run server) — `-- --ci` passes through
+    desc: Browser checks (smoke + accessibility) against SITE_URL (default the contributing:run server); `-- --ci` passes through
     deps: [cli:install]
     cmds:
       - '"{{.SLOPSTOPPER}}" run reliability:smoke -- --url {{.SITE_URL}} {{.CLI_ARGS}}'
       - '"{{.SLOPSTOPPER}}" run reliability:accessibility -- --url {{.SITE_URL}} {{.CLI_ARGS}}'
 
-  # ───────────── Decisions — slopstopper's ADR governance ─────────────
+  # ───────────── Decisions: slopstopper's ADR governance ─────────────
   #
   # docs/decisions/README.md is the single decisions file: it carries the
   # log table AND the note template inline. Supporting notes are optional
@@ -139,10 +139,10 @@ tasks:
         awk '/^# Decision Template/{p=1; print; next} p && /^Use this template/{getline; next} p' docs/decisions/README.md \
           | sed -e "1s/.*/# Decision: $slug/" -e 's/^- Date: YYYY-MM-DD/- Date: {{.DATE}}/' > "$tmp"
         if ! grep -q '^## Metadata' "$tmp"; then
-          echo "❌ No '# Decision Template' section in docs/decisions/README.md — run task decisions:validate"
+          echo "❌ No '# Decision Template' section in docs/decisions/README.md. Run task decisions:validate"
           exit 1
         fi
         mv "$tmp" "$target"
         echo "✅ Created $target"
-        echo "   Now add a row to the log table in docs/decisions/README.md that links it in the Notes column —"
+        echo "   Now add a row to the log table in docs/decisions/README.md that links it in the Notes column,"
         echo "   ss:hygiene:docs-structure fails a note nothing links to."

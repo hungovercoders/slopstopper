@@ -1,4 +1,4 @@
-# Auto-labeling rules for PRs based on changed files — this repo's own.
+# Auto-labeling rules for PRs based on changed files (this repo's own).
 # Used by: .github/workflows/ss-hygiene-auto-label-pr.yml (actions/labeler v5)
 # Adopters get the generic templates/labeler.yml.example from install.sh.
 #

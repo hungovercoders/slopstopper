@@ -1,10 +1,10 @@
 """Guard: every check honours the exit-code contract in `slopstopper.checks`.
 
-    0 — ran, nothing to fail on (including a graceful skip)
-    1 — ran, the repo failed it
-    2 — could not run: missing tool, missing input, bad argument
+    0: ran, nothing to fail on (including a graceful skip)
+    1: ran, the repo failed it
+    2: could not run: missing tool, missing input, bad argument
 
-The contract is the CLI's API — workflows gate on it, `emit --status`
+The contract is the CLI's API: workflows gate on it, `emit --status`
 derives pass/fail from it, and adopters script against it. It used to be
 documented per check and honoured unevenly: one check returned 2 for
 findings, two returned 0 unconditionally with the real verdict in a
@@ -12,7 +12,7 @@ Python heredoc inside YAML, and nine silently dropped any arguments
 they were given.
 
 Two things are checked here. Every check module's docstring declares an
-`Exit codes:` block naming 0 and 1, and names 2 if — and only if — the
+`Exit codes:` block naming 0 and 1, and names 2 exactly when the
 module can return it (found by walking the AST, so a comment can't fake
 it). And the checks that take no arguments reject them with 2 rather
 than running as if nothing was said.
@@ -115,15 +115,15 @@ def _exit_codes_block(check: str) -> str:
 @pytest.mark.parametrize("check", CHECKS)
 def test_docstring_declares_zero_and_one(check):
     block = _exit_codes_block(check)
-    assert re.search(r"^\s+0 —", block, re.M), f"{check}: `Exit codes:` block does not name 0"
-    assert re.search(r"^\s+1 —", block, re.M) or "always" in block, (
+    assert re.search(r"^\s+0:", block, re.M), f"{check}: `Exit codes:` block does not name 0"
+    assert re.search(r"^\s+1:", block, re.M) or "always" in block, (
         f"{check}: `Exit codes:` block does not name 1 (or say the check is advisory)"
     )
 
 
 @pytest.mark.parametrize("check", CHECKS)
 def test_docstring_names_two_iff_the_code_can_return_it(check):
-    declared = bool(re.search(r"^\s+2 —", _exit_codes_block(check), re.M))
+    declared = bool(re.search(r"^\s+2:", _exit_codes_block(check), re.M))
     possible = _returns_two(check)
     assert declared == possible, (
         f"{check}: docstring {'names' if declared else 'omits'} exit 2 but the code "

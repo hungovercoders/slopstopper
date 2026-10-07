@@ -14,7 +14,7 @@ from slopstopper.checks import _tools, cwv
 def test_parse_args_defaults():
     parsed = cwv._parse_args(None)
     assert parsed.url is None
-    # config defaults to None — resolution happens in run() via templates
+    # config defaults to None because resolution happens in run() via templates
     assert parsed.config is None
 
 

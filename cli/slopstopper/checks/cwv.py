@@ -8,14 +8,14 @@ Implements the reliability:cwv flow:
 
   npx lhci autorun --collect.url="$CWV_URL" --config=<resolved lhci config>
 
-Subprocess-invokes `npx lhci` — Lighthouse CI is Apache-2.0; the
+Subprocess-invokes `npx lhci`. Lighthouse CI is Apache-2.0, and the
 slopstopper-cli wheel ships zero Lighthouse code.
 
 After lhci finishes, cwv.py reads the latest `.lighthouseci/lhr-*.json`,
 extracts the four headline metrics (Performance, LCP, TBT, CLS) plus
 FCP, and writes `.ss/reports/cwv/cwv-report.md` with the threshold
-table. emit.py then handles PR-comment / issue from that report — same
-shape as every other check.
+table. emit.py then builds the PR comment or issue from that report,
+the same way it does for every other check.
 
 Configuration: thresholds and the lhci config path live in the
 `.ss/lighthouserc.json` override (or the package-data fallback under
@@ -24,9 +24,9 @@ limits mirror that file so the rendered table matches what lhci
 actually enforced.
 
 Exit codes:
-  0 — lhci passed all thresholds
-  1 — lhci audited the page and failed a threshold (report still written)
-  2 — npx (Node.js) not available, the URL is missing, the Lighthouse
+  0: lhci passed all thresholds
+  1: lhci audited the page and failed a threshold (report still written)
+  2: npx (Node.js) not available, the URL is missing, the Lighthouse
       config does not exist, or lhci didn't run to a verdict: any exit
       other than 0/1, or an exit 1 with no Lighthouse result written this
       run (Chrome failed to launch, collection aborted)
@@ -51,7 +51,7 @@ REPORT_DIR = Path(".ss/reports/cwv")
 REPORT_MD = REPORT_DIR / "cwv-report.md"
 LHCI_DIR = Path(".lighthouseci")
 
-# Threshold table — kept in lockstep with `.ss/lighthouserc.json`'s
+# The threshold table is kept in lockstep with `.ss/lighthouserc.json`'s
 # `assertions` block so the rendered table reflects what lhci actually
 # enforced. If you tune the lhci config, mirror the change here.
 THRESHOLDS = {
@@ -253,7 +253,7 @@ def _write_report(url: str, output: str, lhci_exit: int) -> None:
 
 def run(args: list[str] | None = None) -> int:
     if not _npx_available():
-        output.error("npx is not available — install Node.js to run Lighthouse CI")
+        output.error("npx is not available. Install Node.js to run Lighthouse CI.")
         return 2
 
     parsed = _parse_args(args)

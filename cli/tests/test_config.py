@@ -100,7 +100,7 @@ def test_get_int_does_not_treat_a_boolean_as_one(write_config):
 
 
 def test_get_bool_understands_quoted_and_word_spellings(write_config):
-    """`bool("false")` is True — the footgun every hand-rolled bool() had."""
+    """`bool("false")` is True, the footgun every hand-rolled bool() had."""
     write_config(
         "a: \"false\"\nb: 'no'\nc: off\nd: 0\ne: yes\nf: TRUE\ng: 1\nh: maybe\n"
     )
@@ -169,7 +169,7 @@ def test_supported_shapes_produce_no_warning(write_config, capsys):
 
 
 def test_the_shipped_example_config_parses_without_warnings(isolated_cwd, capsys):
-    """`.slopstopper.yml.example` is the schema reference — it must be in-subset."""
+    """`.slopstopper.yml.example` is the schema reference, so it must be in-subset."""
     from pathlib import Path
 
     example = Path(__file__).resolve().parents[2] / ".slopstopper.yml.example"

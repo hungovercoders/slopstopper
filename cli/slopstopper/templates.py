@@ -3,7 +3,7 @@
 The CLI ships Playwright specs, the Playwright config and the Lighthouse
 CI config as package data under cli/slopstopper/data/. Adopters can
 still override any of these by writing the same-named file under .ss/
-in their repo — the resolver looks at the override path first and falls
+in their repo. The resolver looks at the override path first and falls
 back to the package-data copy.
 
 This means adopters who want defaults don't have to vendor those files
@@ -96,8 +96,8 @@ def eject(name: str) -> tuple[Path, bool]:
     """Copy the bundled template into `.ss/<name>`.
 
     Returns (destination_path, was_new). was_new is False if a
-    `.ss/<name>` was already there — we don't overwrite an existing
-    override since the adopter may have customised it.
+    `.ss/<name>` was already there. We don't overwrite an existing
+    override, because the adopter may have customised it.
 
     Raises KeyError if the name isn't in the inventory.
     """
@@ -112,7 +112,7 @@ def eject(name: str) -> tuple[Path, bool]:
 def ensure_ejected(name: str) -> tuple[Path, bool]:
     """Auto-eject `<name>` if no override exists.
 
-    Returns (destination_path, was_new) — same shape as `eject()`.
+    Returns (destination_path, was_new), the same shape as `eject()`.
 
     Used by the reliability checks before they invoke `npx playwright`:
     Playwright resolves `@playwright/test` from the directory of its

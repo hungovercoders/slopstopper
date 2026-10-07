@@ -241,7 +241,7 @@ def test_run_with_only_low_or_info(monkeypatch, isolated_cwd, capsys):
     rc = dast.run(["--target", "https://example.com"])
     assert rc == 0
     out = capsys.readouterr().out
-    assert "Found 2 alert(s) — none high/medium" in out
+    assert "Found 2 alert(s), but none are high/medium" in out
 
 
 # ── scan-mode selection (ZAP API scan) ───────────────────────────

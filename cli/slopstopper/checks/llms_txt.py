@@ -3,9 +3,9 @@
 Fetches `/llms.txt` from a live URL and asserts it is a well-formed
 `llms.txt` map per the llmstxt.org convention: an H1 title, an optional
 summary blockquote, and one or more markdown link sections that point
-agents/LLMs at a site's key content. Complements `reliability:seo` —
-SEO covers what human-facing crawlers read, this covers the surface an
-AI assistant reads.
+agents/LLMs at a site's key content. It complements `reliability:seo`,
+which covers what human-facing crawlers read, while this covers the
+surface an AI assistant reads.
 
 `llms.txt` is an *unratified* convention, so the hard-fail bar is
 deliberately low (reachable, non-empty, has an H1, has at least one
@@ -19,7 +19,7 @@ CLI surface:
 
 Stdlib-only (urllib). Writes .ss/reports/llms-txt/llms-txt-report.{md,json}.
 
-Configuration (.slopstopper.yml — all optional):
+Configuration (.slopstopper.yml, all optional):
 
     reliability:
       llms_txt:
@@ -33,9 +33,9 @@ Env-var equivalents the CLI also honours (precedence: flag > env > config):
 See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
-  0 — llms.txt present and well-formed
-  1 — failures detected
-  2 — the URL is missing, or its scheme is not http/https
+  0: llms.txt present and well-formed
+  1: failures detected
+  2: the URL is missing, or its scheme is not http/https
 """
 
 from __future__ import annotations
@@ -81,7 +81,7 @@ def _fetch(url: str) -> tuple[int, str, str]:
 
 
 def _head_ok(url: str) -> tuple[bool, str]:
-    """Return (ok, detail) for a link target — reachable and non-4xx/5xx."""
+    """Return (ok, detail) for a link target; ok means reachable and not 4xx/5xx."""
     return _http.head_ok(url, USER_AGENT, label=_LABEL)
 
 
@@ -151,7 +151,7 @@ def _validate_body(
 
     links = _extract_links(body)
     if not links:
-        issues.append("No markdown links found — llms.txt should link to key content")
+        issues.append("No markdown links found. llms.txt should link to key content")
     if not _has_summary(body):
         msg = "Missing `> summary` blockquote after the H1 (recommended by the spec)"
         (issues if require_summary else notes).append(msg)

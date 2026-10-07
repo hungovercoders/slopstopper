@@ -17,7 +17,7 @@ Thanks for considering a contribution. The full contributor guide lives at:
   `<type>(<scope>): <description>` (types: `feat`, `fix`, `docs`, `style`,
   `test`, `chore`, `refactor`)
 - Run `task --list` to see check tasks before pushing
-- The Taskfile is the single source of truth — `task <name>` runs the same
+- The Taskfile is the single source of truth: `task <name>` runs the same
   thing locally that CI runs
 - Open a pull request; the SlopStopper checks will report back
 
@@ -34,7 +34,7 @@ task ss:security:sast                    # Semgrep
 The fast hygiene subset (`task ss:hygiene:test`) also runs automatically as a
 **pre-push hook** once you've run `task contributing:setup` (it points
 `core.hooksPath` at [`.githooks/`](./.githooks)). That gate catches the cheap,
-deterministic issues before they reach CI — the checks above still cover the
+deterministic issues before they reach CI, and the checks above still cover the
 server/browser layers the hook deliberately skips. Bypass a single push with
 `git push --no-verify`.
 

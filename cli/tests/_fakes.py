@@ -32,7 +32,7 @@ def playwright_failed(cmd, env, check):
 class Redirector(http.server.BaseHTTPRequestHandler):
     """Answers every GET/HEAD with `302 Location: <server.target>`."""
 
-    def do_GET(self):  # noqa: N802 — the stdlib's name
+    def do_GET(self):  # noqa: N802  (the stdlib's name)
         self.send_response(302)
         self.send_header("Location", self.server.target)
         self.send_header("Content-Length", "0")

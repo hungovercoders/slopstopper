@@ -2,7 +2,7 @@
 
 Centralises the find-or-create logic that lives, today, as duplicated
 `actions/github-script@v7` blocks in every `ss-*-check.yml` workflow.
-The plan called this out as the load-bearing simplification — once the
+The plan called this out as the load-bearing simplification. Once the
 emit logic lives here, workflows shrink from ~50 lines of YAML +
 embedded JS to a single shell line:
 
@@ -12,7 +12,7 @@ embedded JS to a single shell line:
   - run: slopstopper emit hygiene:docs-size --target issue
     if: github.event_name == 'push' && steps.check.outcome == 'failure'
 
-Subprocess-invokes the `gh` CLI — already on every GitHub Actions
+Subprocess-invokes the `gh` CLI, which is already on every GitHub Actions
 runner and already authed via $GITHUB_TOKEN. Same licensing-boundary
 pattern as the other external tools (gitleaks, trivy, semgrep, zap):
 slopstopper-cli wheel ships zero gh code.
@@ -34,7 +34,7 @@ Bodies also gain a hidden HTML-comment marker `<!-- slopstopper:check=<name> -->
 in the footer for machine-readable dedup (used by
 `ss-workflow-failure-issue.yml`'s deduplication).
 
-PR-comment update path: `gh api PATCH .../issues/comments/{id}` —
+PR-comment update path: `gh api PATCH .../issues/comments/{id}`, because
 `gh` doesn't have a direct edit-comment command.
 Issue path: `gh issue list | gh issue {create,edit,comment,close}`.
 
@@ -99,7 +99,7 @@ def _head_sha() -> str | None:
     """The PR head commit, not the synthetic merge commit.
 
     On a `pull_request` event $GITHUB_SHA is the merge commit, which is
-    not a SHA a reviewer can find in the branch — so prefer the payload's
+    not a SHA a reviewer can find in the branch, so prefer the payload's
     head sha and fall back to the env var for push/workflow_run.
     """
     event = _event_payload()
@@ -151,10 +151,10 @@ def _find_existing_pr_comment(
 ) -> int | None:
     """Id of the bot comment for this check, or None.
 
-    Matches the hidden marker first — exact, and stable even if the
-    report's headings change — then falls back to the discriminator
-    substring so comments posted before markers existed are still found
-    and updated rather than duplicated.
+    Matches the hidden marker first, because it is exact and stays stable
+    even if the report's headings change. It then falls back to the
+    discriminator substring so comments posted before markers existed are
+    still found and updated rather than duplicated.
     """
     for needle in ([marker] if marker else []) + [discriminator]:
         for entry in comments:
@@ -201,7 +201,7 @@ def _pr_context() -> tuple[str, int] | None:
         print("❌ $GITHUB_REPOSITORY is not set", file=sys.stderr)
         return None
     if pr is None:
-        print("❌ No PR detected from the event payload — skipping PR comment", file=sys.stderr)
+        print("❌ No PR detected from the event payload, so skipping the PR comment", file=sys.stderr)
         return None
     return repo, pr
 
@@ -210,9 +210,9 @@ def _resolve_pass_action(repo: str, pr: int, discriminator: str, marker: str) ->
     """--on-pass=delete: drop the stale comment, leave nothing behind."""
     existing = _find_existing_pr_comment(_list_pr_comments(repo, pr), discriminator, marker)
     if existing is None:
-        print("✅ Check passed and no prior comment to clean up — nothing to post")
+        print("✅ Check passed and there is no prior comment to clean up, so nothing to post")
         return 0
-    print(f"🧹 Check passed — deleting stale PR comment {existing}")
+    print(f"🧹 Check passed, so deleting stale PR comment {existing}")
     return _delete_pr_comment(repo, existing)
 
 
@@ -226,15 +226,15 @@ def emit_pr_comment(
 ) -> int:
     """Upsert the compact PR comment for one check.
 
-    The body is rendered by `comment.build_body` — a verdict line, the
-    failing items, and the full report folded away — rather than being
-    the whole report verbatim. `status` comes from the workflow (the
+    `comment.build_body` renders the body as a verdict line, the failing
+    items and the full report folded away, rather than as the whole
+    report verbatim. `status` comes from the workflow (the
     check's own step outcome); with `on_pass='delete'` a passing check
     removes its comment instead of posting one, so a green PR ends up
     carrying only the aggregate summary.
     """
     if not _gh_available():
-        print("❌ gh CLI is not available — needed for --target pr-comment", file=sys.stderr)
+        print("❌ gh CLI is not available, and --target pr-comment needs it", file=sys.stderr)
         return 1
 
     context = _pr_context()
@@ -293,7 +293,7 @@ def _summary_pr_context() -> tuple[str, int, str | None] | None:
                 pr = number
     if pr is None:
         print(
-            "ℹ️  No pull request associated with this event — nothing to summarise",
+            "ℹ️  No pull request associated with this event, so nothing to summarise",
             file=sys.stderr,
         )
         return None
@@ -335,7 +335,7 @@ def emit_pr_summary() -> int:
     cannot race them into a half-written comment.
     """
     if not _gh_available():
-        print("❌ gh CLI is not available — needed for the PR summary", file=sys.stderr)
+        print("❌ gh CLI is not available, and the PR summary needs it", file=sys.stderr)
         return 1
 
     context = _summary_pr_context()
@@ -371,7 +371,7 @@ _BRAND_LABEL = "slopstopper"
 def _augment_labels(labels: list[str]) -> list[str]:
     """Prepend the slopstopper brand label if not already present.
 
-    Idempotent — safe to call repeatedly. Single insertion point so every
+    Idempotent, so it is safe to call repeatedly. Single insertion point so every
     open/close path uses the same label set for dedup.
     """
     if _BRAND_LABEL in labels:
@@ -439,7 +439,7 @@ def emit_issue(
     marker. Labels are augmented with the `slopstopper` brand label.
     """
     if not _gh_available():
-        print("❌ gh CLI is not available — needed for --target issue", file=sys.stderr)
+        print("❌ gh CLI is not available, and --target issue needs it", file=sys.stderr)
         return 1
     if not report_path.exists():
         print(f"❌ Report not found at {report_path}", file=sys.stderr)
@@ -486,7 +486,7 @@ def _close_issue(labels: list[str], close_comment: str) -> int:
     so a check only ever closes the issue it would have re-opened.
     """
     if not _gh_available():
-        print("❌ gh CLI is not available — needed for --on-pass=close", file=sys.stderr)
+        print("❌ gh CLI is not available, and --on-pass=close needs it", file=sys.stderr)
         return 1
     labels = _augment_labels(labels)
     existing = _find_existing_issue(labels)
@@ -503,9 +503,9 @@ def _close_issue(labels: list[str], close_comment: str) -> int:
 # ── the last run's exit code ─────────────────────────────────────
 #
 # `slopstopper run` records each check's exit code here, and `emit
-# --target issue` reads it back. Exit 2 is "could not run" — never a
-# finding — so it must neither open a tracking issue nor close one as
-# clean. Recording it in the CLI puts that rule in one place instead of in
+# --target issue` reads it back. Exit 2 means "could not run", which is
+# never a finding, so it must neither open a tracking issue nor close one
+# as clean. Recording it in the CLI puts that rule in one place instead of in
 # every workflow's `if:` (the run and emit steps share a job workspace).
 
 LAST_EXIT_DIR = Path(".ss/reports/.last-exit")
@@ -548,7 +548,7 @@ def emit(
     meta is the check's META dict (see module docstring). check_name is
     the `category:name` identifier used in the issue body's brand marker.
     on_pass='close' (only valid with target='issue') flips the issue
-    branch from open/update to comment-and-close — the post-success
+    branch from open/update to comment-and-close. It is the post-success
     twin of the post-failure open path.
     """
     report_path = Path(meta["report_path"])
@@ -563,7 +563,7 @@ def emit(
     if target == "issue":
         if check_name and last_exit(check_name) == 2:
             print(
-                f"· {check_name} could not run (exit 2) — not a finding, so no issue "
+                f"· {check_name} could not run (exit 2). That is not a finding, so no issue "
                 "is opened, updated or closed. See the run step's output."
             )
             return 0
