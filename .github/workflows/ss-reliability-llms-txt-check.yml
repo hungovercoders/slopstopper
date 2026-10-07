@@ -4,8 +4,8 @@ name: SlopStopper · llms.txt Check
 # (llmstxt.org convention): an H1 title, an optional `> summary`
 # blockquote and one or more markdown links. Triggers: PR, push to main,
 # daily schedule, Cloudflare deployment events. Emits a rolling PR
-# comment; workflow fails on a missing/malformed file — no separate
-# main-branch issue (exit code is the signal).
+# comment. The workflow fails on a missing or malformed file. There is no
+# separate main-branch issue because the exit code is the signal.
 # Docs: docs/reliability/LLMS_TXT.md.
 
 on:
@@ -89,7 +89,7 @@ jobs:
         id: audit
         # Links inside llms.txt point at the production domain / GitHub, so
         # HEAD-verifying them from a localhost build tests reachability of
-        # the real targets — keep it on. Schedule / deployment_status runs
+        # the real targets, so keep it on. Schedule / deployment_status runs
         # audit the deployed URL directly.
         run: task ss:reliability:llms-txt -- ${{ steps.url.outputs.url }} --check-links
 

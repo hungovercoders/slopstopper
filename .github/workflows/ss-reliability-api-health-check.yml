@@ -5,8 +5,8 @@ name: SlopStopper · API Health Check
 # parses, and whatever fields `api.health.require_fields` /
 # `expect_fields` declare. The API-shaped analogue of the smoke check.
 # Triggers: PR, push to main, daily schedule, Cloudflare deployment
-# events. Emits a rolling PR comment; workflow fails on a broken
-# contract — no separate main-branch issue (exit code is the signal).
+# events. Emits a rolling PR comment. The workflow fails on a broken contract.
+# There is no separate main-branch issue because the exit code is the signal.
 # Docs: docs/reliability/README.md.
 #
 # Unlike the browser checks, this workflow never tries to build and serve
@@ -59,7 +59,7 @@ jobs:
         id: url
         # CUSTOMISE FOR YOUR APP: point urls.preview (.slopstopper.yml) at the
         # environment your PRs deploy to. With no preview environment the PR
-        # run skips rather than failing — the deployed-main and scheduled
+        # run skips rather than failing. The deployed-main and scheduled
         # runs still cover the endpoint. See .github/actions/ss-resolve-url.
         uses: ./.github/actions/ss-resolve-url
         with:

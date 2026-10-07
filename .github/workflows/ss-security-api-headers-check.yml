@@ -2,12 +2,12 @@ name: SlopStopper · API Headers Check
 
 # Audits the response headers and CORS policy of each endpoint in
 # `api.headers.paths`: a wildcard origin sent with credentials, an
-# arbitrary Origin reflected back, a missing HSTS or nosniff header. The
-# API-shaped analogue of the CSP-exceptions check — on a JSON API, CORS
-# is the header that decides who can read the response.
+# arbitrary Origin reflected back, a missing HSTS or nosniff header. It is
+# the API-shaped analogue of the CSP-exceptions check, because on a JSON API
+# CORS is the header that decides who can read the response.
 # Triggers: PR, push to main, daily schedule, Cloudflare deployment
-# events. Emits a rolling PR comment; workflow fails on a permissive
-# policy — no separate main-branch issue (exit code is the signal).
+# events. Emits a rolling PR comment. The workflow fails on a permissive policy.
+# There is no separate main-branch issue because the exit code is the signal.
 # Docs: docs/security/README.md.
 #
 # Unlike the browser checks, this workflow never tries to build and serve
@@ -64,7 +64,7 @@ jobs:
         id: url
         # CUSTOMISE FOR YOUR APP: point urls.preview (.slopstopper.yml) at the
         # environment your PRs deploy to. With no preview environment the PR
-        # run skips rather than failing — the deployed-main and scheduled
+        # run skips rather than failing. The deployed-main and scheduled
         # runs still cover the endpoint. See .github/actions/ss-resolve-url.
         uses: ./.github/actions/ss-resolve-url
         with:

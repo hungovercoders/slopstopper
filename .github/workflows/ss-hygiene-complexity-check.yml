@@ -42,10 +42,10 @@ jobs:
       - name: Run complexity analysis
         id: check
         # The check owns the gate: `task ss:hygiene:complexity` exits non-zero
-        # when a function exceeds `hygiene.complexity.max_ccn` (default 15) —
-        # the same result you get locally and in the pre-push hook. We only
-        # continue-on-error so the report/comment/issue steps still run; the
-        # final step re-raises the failure.
+        # when a function exceeds `hygiene.complexity.max_ccn` (default 15).
+        # You get the same result locally and in the pre-push hook. We only
+        # continue-on-error so the report, comment and issue steps still run,
+        # and the final step re-raises the failure.
         continue-on-error: true
         run: task ss:hygiene:complexity
 

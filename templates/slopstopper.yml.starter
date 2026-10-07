@@ -1,4 +1,4 @@
-# .slopstopper.yml — slopstopper's per-repo config.
+# .slopstopper.yml: slopstopper's per-repo config.
 #
 # This is the starter install.sh seeds: the handful of keys most repos
 # actually set. Every other knob has a sensible default and is documented,
@@ -11,9 +11,9 @@
 # from (put it in place of `main` to see that version). A knob the CLI reads
 # takes effect once the slopstopper-cli pinned in mise.toml has it.
 
-# What shape is this repo? ui (default: a site or app that serves HTML),
-# api (JSON/gRPC endpoints, no browser surface — drops the eight browser
-# checks) or library (nothing deployed — drops everything that needs a URL).
+# This repo's shape. ui (the default) is a site or app that serves HTML.
+# api has JSON/gRPC endpoints and no browser surface, so it drops the nine
+# browser checks. library deploys nothing and drops every URL-driven check.
 # `install.sh --profile api` writes this for you; re-run install.sh after
 # changing it so the workflow set follows.
 profile: ui
@@ -47,9 +47,9 @@ smoke:
 headers:
   source: null
 
-# Serving an API? Copy the `api:` block from the schema reference above —
-# the four API checks ship inert until api.health.path / api.latency.paths /
-# api.headers.paths / api.openapi.spec are set.
+# If you serve an API, copy the `api:` block from the schema reference
+# above. The four API checks ship inert until api.health.path /
+# api.latency.paths / api.headers.paths / api.openapi.spec are set.
 
 # Any check you don't want, by workflow filename. A profile drops whole
 # sets; this is for one-offs. `enabled` takes a single check back from a

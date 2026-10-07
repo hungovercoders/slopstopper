@@ -47,7 +47,7 @@ _READ_CUE_RE = re.compile(r"\b(read|open|load|follow)\b", re.I)
 _TRIGGER_CUE_RE = re.compile(
     r"\b(before|when|if|whenever|unless|first|any task)\b|^\W*for\b", re.I
 )
-ROUTE_TEMPLATE = "Before you <do X>, read <doc> — <what it holds>"
+ROUTE_TEMPLATE = "Before you <do X>, read <doc> for <what it holds>"
 
 
 def estimate_tokens(text: str) -> int:
@@ -297,4 +297,4 @@ def soft_route_message(source: str, target: str, line: str) -> str:
 
 def route_snippet(target: str, holds: str) -> str:
     """A paste-ready explicit route to `target`."""
-    return f"Before you <do X>, read [`{target}`](./{target}) — {holds}."
+    return f"Before you <do X>, read [`{target}`](./{target}) for {holds}."

@@ -77,7 +77,7 @@ jobs:
           if [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then
             npm run build
           else
-            echo "ℹ️  No build script — skipping."
+            echo "ℹ️  Skipping the build because there is no build script."
           fi
 
       - name: Start local server

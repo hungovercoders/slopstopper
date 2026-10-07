@@ -4,8 +4,8 @@ name: SlopStopper · SEO Metatag Check
 # Twitter Card metatags on the deployed site (and HEAD-fetches
 # og:image to confirm reachability). Triggers: PR, push to main,
 # daily schedule, Cloudflare deployment events. Emits a rolling PR
-# comment; workflow fails on missing/invalid tags — no separate
-# main-branch issue (exit code is the signal).
+# comment. The workflow fails on missing or invalid tags. There is no
+# separate main-branch issue because the exit code is the signal.
 # Docs: docs/reliability/SEO.md.
 
 on:

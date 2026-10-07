@@ -3,11 +3,11 @@ name: SlopStopper · OpenAPI Drift Check
 # Compares the committed OpenAPI spec against the API it documents: the
 # operation set the live deployment publishes (`api.openapi.served_spec`)
 # and the reachability of every documented path that takes no parameters.
-# The API-shaped analogue of the docs-accuracy check — same failure, a
-# document that quietly became fiction, on a different surface.
+# It is the API-shaped analogue of the docs-accuracy check. It catches the
+# same failure, a document that quietly became fiction, on another surface.
 # Triggers: PR, push to main, daily schedule, Cloudflare deployment
-# events. Emits a rolling PR comment; workflow fails on drift — no
-# separate main-branch issue (exit code is the signal).
+# events. Emits a rolling PR comment. The workflow fails on drift. There is
+# no separate main-branch issue because the exit code is the signal.
 # Docs: docs/hygiene/README.md.
 #
 # The only hygiene check that needs a URL. It still skips gracefully
@@ -57,8 +57,8 @@ jobs:
       - name: Determine audit URL
         id: url
         # CUSTOMISE FOR YOUR APP: point urls.preview (.slopstopper.yml) at the
-        # environment your PRs deploy to. With no URL resolved for an event
-        # the run skips with a notice — the committed-vs-served comparison
+        # environment your PRs deploy to. The run skips with a notice when no
+        # URL resolves for an event, because the committed-vs-served check
         # needs `api.openapi.served_spec` and a URL to probe documented paths.
         # See .github/actions/ss-resolve-url for the event → URL table.
         uses: ./.github/actions/ss-resolve-url

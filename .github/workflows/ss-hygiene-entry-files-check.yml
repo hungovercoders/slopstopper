@@ -2,9 +2,9 @@ name: SlopStopper · Hygiene - Entry-File Budget Check
 
 # Enforces token budgets and explicit routes on the agent entry files
 # (README.md, AGENTS.md, CLAUDE.md) and the docs map (docs/README.md).
-# Triggers: PR, push to main. Emits a rolling
-# PR comment; workflow fails on over-budget — no separate main-branch
-# issue (exit code is the signal).
+# Triggers: PR, push to main. Emits a rolling PR comment. The workflow
+# fails when a file is over budget. There is no separate main-branch
+# issue because the exit code is the signal.
 # Docs: docs/hygiene/README.md.
 
 on:

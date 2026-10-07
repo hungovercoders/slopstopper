@@ -242,7 +242,7 @@ def _map_file_snippet() -> str:
         "covered there. Read only the doc whose trigger matches.\n\n"
         "| When you are… | Do this |\n"
         "| ------------- | ------- |\n"
-        "| doing <some kind of task> | Read [<topic>.md](<topic>.md) first — <what it holds> |\n"
+        "| doing <some kind of task> | Read [<topic>.md](<topic>.md) first for <what it holds> |\n"
     )
 
 

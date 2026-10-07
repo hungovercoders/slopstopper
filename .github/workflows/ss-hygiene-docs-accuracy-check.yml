@@ -13,8 +13,8 @@ on:
     - cron: '0 7 * * 1'
 
   # No paths filter on purpose. `broken_repo_link` depends on files
-  # anywhere in the tree — a PR that deletes a script a page links to
-  # must run this check — and the check is static: seconds, no network.
+  # anywhere in the tree, so a PR that deletes a script a page links to
+  # must run this check. It is static, so it takes seconds and no network.
   pull_request:
   push:
     branches:
@@ -54,7 +54,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit hygiene:docs-accuracy --target pr-comment --status ${{ steps.check.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete
 
-      - name: Emit issue (push / schedule / dispatch — when issues found)
+      - name: Emit issue on push, schedule or dispatch (if issues found)
         if: >-
           (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
           && steps.check.outcome == 'failure'

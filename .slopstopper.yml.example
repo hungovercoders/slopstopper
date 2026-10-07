@@ -1,13 +1,13 @@
-# .slopstopper.yml — repo-level config for slopstopper.
+# .slopstopper.yml: repo-level config for slopstopper.
 #
 # This file is the schema reference: the canonical inventory of every key
 # slopstopper checks and workflows read, each with its default. Adopters
 # and agents link to it and copy blocks from it.
 #
 # It is NOT what install.sh seeds. A fresh install gets
-# templates/slopstopper.yml.starter — the handful of keys most repos set,
-# pointing back here for the rest. Existing .slopstopper.yml files are
-# never overwritten; re-running install.sh is safe.
+# templates/slopstopper.yml.starter, which holds the handful of keys most
+# repos set and points back here for the rest. Existing .slopstopper.yml
+# files are never overwritten, so re-running install.sh is safe.
 #
 # Nothing reads this file: slopstopper only ever reads .slopstopper.yml.
 # Each default below is the value used when that key is unset there.
@@ -24,7 +24,7 @@
 #   - Secrets (use GitHub Actions secrets)
 #   - Anything platform-specific that's already a Cloudflare/Vercel/Netlify
 #     native config (e.g. wrangler.jsonc, vercel.json, netlify.toml)
-#   - Tool versions (the Node runtime, the slopstopper-cli, task) — those live
+#   - Tool versions (the Node runtime, the slopstopper-cli, task). They live
 #     in mise.toml ([tools]), the single source of truth both local runs and CI
 #     read. See the slopstopper-cli pin note below.
 
@@ -37,25 +37,25 @@
 #            applies. This is the default when `profile:` is unset, so an
 #            existing install is unaffected by this key arriving.
 #   api      JSON/gRPC endpoints with no browser-rendered surface. Drops
-#            the eight browser-and-SEO reliability checks (smoke,
+#            the nine browser-and-SEO reliability checks (smoke, E2E,
 #            accessibility, Core Web Vitals, SEO, broken links, llms.txt,
-#            robots.txt, sitemap) — they assume HTML and a public web
-#            surface, so on an API they fail rather than no-op. Keeps the
-#            four API checks (api-health, api-latency, api-headers and
-#            openapi drift — see the `api:` block below), DAST (which
+#            robots.txt, sitemap), because they assume HTML and a public
+#            web surface and so fail on an API rather than no-op. Keeps
+#            the four API checks (api-health, api-latency, api-headers and
+#            openapi drift, set in the `api:` block below), DAST (which
 #            scans an API via ZAP's OpenAPI mode once you set
 #            api.openapi.spec, and skips until you do) and CSP exceptions
 #            (APIs still set response headers; that check stays inert
-#            until you set headers.source above).
+#            until you set headers.source below).
 #   library  A library, CLI or package with no deployed surface at all.
-#            Drops everything that needs a URL: the eight above, DAST, CSP
+#            Drops everything that needs a URL: the nine above, DAST, CSP
 #            exceptions and the four API checks, leaving the
-#            static-analysis layer. That includes hygiene:openapi — the
-#            one hygiene check that needs a live API, since drift means
+#            static-analysis layer. hygiene:openapi goes too, because it
+#            is the one hygiene check that needs a live API. Drift means
 #            the spec measured against the thing it documents.
 #
 # The `ui` default keeps the API checks, which stay inert until you
-# configure them — a UI repo with API routes (Next.js handlers, Astro
+# configure them. A UI repo with API routes (Next.js handlers, Astro
 # endpoints) should get them without having to find workflows.enabled.
 #
 # A profile only ever subtracts. `workflows.disabled` adds to its set and
@@ -75,8 +75,8 @@ profile: ui
 # The CLI version is NOT pinned here. It lives in mise.toml ([tools]
 # "pipx:slopstopper-cli"), the single source of truth that both local runs
 # and CI (via jdx/mise-action) read. mise installs it and activates it
-# per-directory, so the active version follows the repo — no global binary to
-# drift between repos. install.sh manages the pin:
+# per-directory, so the active version follows the repo and there is no
+# global binary to drift between repos. install.sh manages the pin:
 #   install.sh                    # honour the pin in mise.toml (never bumps)
 #   install.sh --upgrade-cli      # bump to the latest on PyPI
 #   install.sh --cli-version X.Y.Z  # pin to an exact version
@@ -84,7 +84,7 @@ profile: ui
 # next install.
 
 # ── Node version pin ─────────────────────────────────────────────────
-# The Node version is NOT pinned here — it's a tool version, so it lives in
+# The Node version is NOT pinned here. It's a tool version, so it lives in
 # mise.toml ([tools] node), the single source of truth both local runs and CI
 # (via jdx/mise-action) read. install.sh seeds `node = "20"` there on first
 # install (and leaves any existing node pin / .nvmrc / .node-version alone). To
@@ -128,10 +128,10 @@ urls:
   preview:
 
 # ── Pages to audit on each dynamic check ─────────────────────────────
-# Hand-list of paths each reliability check audits. Simple and predictable,
-# but goes stale every time a new page or content type lands. For larger
-# sites, prefer the `reliability.coverage.*` block below — it derives the
-# list from your sitemap or git diff automatically.
+# Hand-list of paths each reliability check audits. It is simple and
+# predictable, but it goes stale every time a new page or content type
+# lands. For larger sites, prefer the `reliability.coverage.*` block below,
+# which derives the list from your sitemap or git diff automatically.
 #
 # Defaults to '/' for every check when unset.
 pages:
@@ -157,14 +157,14 @@ smoke:
 # ── API checks (api-health, api-headers) ─────────────────────────────
 # The API-shaped half of the suite. Both checks skip gracefully (exit 0)
 # when their entry key below is unset, the same contract as
-# `headers.source: null` above — an unconfigured check is not a failing
+# `headers.source: null` above. An unconfigured check is not a failing
 # check, so your first PR is green before you've configured anything.
 #
 # Both audit a live origin, resolved the same way as the other dynamic
 # checks: urls.preview on PRs, urls.production on main and schedules.
 # Unlike the browser checks they never try to build and serve the repo
-# locally — an API isn't a static bundle, and guessing a start command
-# would be worse than not guessing.
+# locally, because an API isn't a static bundle and guessing a start
+# command would be worse than not guessing.
 api:
   # Path prefix the API is served under, joined onto the resolved URL
   # before the paths below. e.g. base_path: /api/v1 turns `/health` into
@@ -185,7 +185,7 @@ api:
     # an endpoint that deliberately returns plain text.
     require_json: true
     # Dot-paths that must be present in the body, e.g. [status, deps.db].
-    # List indices aren't supported — a body that deep isn't this check's job.
+    # List indices aren't supported. A body that deep isn't this check's job.
     require_fields: []
     # Dot-path → exact expected value. Compared as strings.
     expect_fields:
@@ -206,8 +206,8 @@ api:
   # percentile. Budgets gate on the median, because one slow sample from
   # a shared CI runner moves the maximum and not the middle.
   #
-  # Every budget below is opt-in — unset, the timings are reported as
-  # notes and nothing is enforced. Reachability is not opt-in: an
+  # Every budget below is opt-in. With none set, the timings are reported
+  # as notes and nothing is enforced. Reachability is not opt-in, and an
   # endpoint that errors or answers non-2xx fails either way, because
   # timing a connection error is not a measurement.
   latency:
@@ -223,8 +223,8 @@ api:
     # Fail if the median sample exceeds this. The flake-resistant knob,
     # and the one to reach for first.
     median_ms:
-    # Fail if ANY sample exceeds this. An explicit tail ceiling for
-    # anyone who wants one — noisier than the median by construction.
+    # Fail if ANY sample exceeds this. It is an explicit tail ceiling for
+    # anyone who wants one, and noisier than the median by construction.
     slowest_ms:
     # Fail if the response body exceeds this many bytes. Usually catches
     # an endpoint that stopped paginating or started embedding a
@@ -235,44 +235,44 @@ api:
 
   # ── security:dast (API scan mode) + hygiene:openapi ────────────────
   # ZAP's default baseline scan spiders a site from a root URL, which
-  # finds nothing on a JSON API — there are no links to crawl. Point this
-  # at an OpenAPI spec and security:dast switches to ZAP's API scan,
-  # which exercises the operations the spec declares instead.
+  # finds nothing on a JSON API because there are no links to crawl.
+  # Point this at an OpenAPI spec and security:dast switches to ZAP's API
+  # scan, which exercises the operations the spec declares instead.
   #
   # Unset (default) → the baseline scan, unchanged. On an `api` profile
   # with no spec the DAST workflow skips rather than scanning nothing.
   #
-  # `hygiene:openapi` reads the same `spec` key and asks the other
-  # question: has the spec stopped describing the API it documents? Same
-  # failure as a stale doc, different surface.
+  # `hygiene:openapi` reads the same `spec` key and asks whether the spec
+  # has stopped describing the API it documents. That is the same failure
+  # as a stale doc, on a different surface.
   openapi:
     # URL or repo-relative file, e.g. https://api.example.com/openapi.json
     # or openapi.yaml. A local file is staged into ZAP's mounted report
     # directory for the run and removed afterwards.
     #
-    # DAST takes either form. `hygiene:openapi` reads JSON only —
-    # slopstopper-cli has no YAML parser, so it can't read YAML, and it
-    # skips with that guidance rather than failing.
+    # DAST takes either form. `hygiene:openapi` reads JSON only, because
+    # slopstopper-cli has no YAML parser, and it skips a YAML spec with
+    # that guidance rather than failing.
     # Most frameworks serve the JSON form at /openapi.json.
     spec:
     # Pass the scanned URL as ZAP's -O host override, so a spec whose
     # `servers` block names production can be scanned against a preview
     # environment. Set false if your spec already names the right host.
-    # DAST only — hygiene:openapi ignores this.
+    # Only DAST uses this. hygiene:openapi ignores it.
     host_override: true
     # hygiene:openapi only, from here down.
     #
     # URL the live API publishes its own spec at. Set this and the check
     # compares the committed spec's operation set against the deployed
-    # one — the headline drift signal, and the one with no false
-    # positives: no probing, no guessing. Unset → only the reachability
-    # probes below run, and the check says so.
+    # one. That is the headline drift signal, and it has no false
+    # positives because nothing is probed or guessed. Unset → only the
+    # reachability probes below run, and the check says so.
     served_spec:
     # Probe every documented path that takes no parameters. A 404 or 5xx
     # means the spec describes a route that isn't there; a 405 proves the
     # route exists and passes. Paths with parameters (/users/{id}) are
-    # never probed — a 404 from one could mean "route missing" or merely
-    # "no such record", and this check can't tell those apart.
+    # never probed, because a 404 from one could mean "route missing" or
+    # merely "no such record", and this check can't tell those apart.
     probe_paths: true
     # Globs excluded from both the probing and the comparison. For routes
     # that are deliberately undeployed, or that differ per environment.
@@ -280,8 +280,8 @@ api:
 
   # ── security:api-headers ───────────────────────────────────────────
   # Audits response headers and CORS policy. On an HTML surface CSP is the
-  # header that matters (see hygiene:csp-exceptions); on a JSON API it's
-  # CORS — a permissive policy on a credentialed endpoint is a
+  # header that matters (see hygiene:csp-exceptions). On a JSON API it's
+  # CORS, because a permissive policy on a credentialed endpoint is a
   # cross-origin data leak, not a style violation.
   headers:
     # Endpoints to probe. Empty (default) → the check skips. List the ones
@@ -290,13 +290,13 @@ api:
     # Demand `Strict-Transport-Security`. Not asserted on http targets,
     # where the header has no effect.
     require_hsts: true
-    # Demand `X-Content-Type-Options: nosniff` — a JSON response a browser
-    # sniffs as HTML is an XSS vector.
+    # Demand `X-Content-Type-Options: nosniff`, because a JSON response a
+    # browser sniffs as HTML is an XSS vector.
     require_nosniff: true
     # Permit `Access-Control-Allow-Origin: *`. Correct for a genuinely
     # public read-only API; a leak on anything credentialed. A wildcard
     # sent *with* `Access-Control-Allow-Credentials: true` always fails
-    # regardless of this knob — browsers reject that pair, so the policy
+    # regardless of this knob. Browsers reject that pair, so the policy
     # you intended was never being enforced.
     allow_wildcard_cors: false
     # Origins that must still be allowed when sent as an `Origin` header.
@@ -305,11 +305,11 @@ api:
     allowed_origins: []
 
 # ── llms.txt AI-discoverability check ────────────────────────────────
-# `reliability:llms-txt` audits /llms.txt (the llmstxt.org convention — a
-# curated markdown map that lets AI assistants read your key content
-# without parsing HTML). The hard-fail bar is deliberately low: reachable,
-# non-empty, has an H1, has at least one link. These knobs escalate the
-# advisory spec-niceties to hard failures.
+# `reliability:llms-txt` audits /llms.txt, the llmstxt.org convention for
+# a curated markdown map that lets AI assistants read your key content
+# without parsing HTML. The hard-fail bar is deliberately low, so the file
+# only has to be reachable and non-empty with an H1 and at least one link.
+# These knobs escalate the advisory spec-niceties to hard failures.
 reliability:
   llms_txt:
     # HEAD-verify every link inside llms.txt resolves (non-4xx/5xx).
@@ -364,7 +364,7 @@ security:
 # Every hygiene check reads its own thresholds from here. Values shown
 # are the defaults used when a key is unset. Tune when a check fails for
 # a reason that's actually fine (e.g. you intentionally have 30 docs
-# pages, and `max_files: 25` is the wrong shape for you — not your docs).
+# pages, and the problem is `max_files: 25` rather than your docs).
 # Don't tune to silence noise; tune to match a deliberate design decision.
 hygiene:
   docs_size:
@@ -379,11 +379,11 @@ hygiene:
     # AGENTS.md-first: AGENTS.md is loaded into every agent conversation,
     # so it carries what most tasks need within a token budget and routes
     # the rest to docs/. Budgets are estimated tokens (chars/4; badge-only
-    # lines don't count). ~2000 tokens is roughly 40–60 rules — about
-    # where models start dropping some. The pre-0.15 `max_words` knob is
-    # ignored with a note.
+    # lines don't count). ~2000 tokens is roughly 40–60 rules, which is
+    # about where models start dropping some. The pre-0.15 `max_words`
+    # knob is ignored with a note.
     max_tokens: 2000           # AGENTS.md
-    readme_max_tokens: 600     # README.md — orientation + quick start
+    readme_max_tokens: 600     # README.md: orientation + quick start
     map_max_tokens: 1000       # the docs map (the fallback routing hop)
     # Path to the docs map, relative to the repo root. A README (not an
     # index.md) so the repo UI renders it in place when docs/ is browsed;
@@ -393,19 +393,19 @@ hygiene:
     # any task not covered above, read docs/README.md"); the map must
     # exist. The report emits a paste-ready snippet for each violation.
     require_map_pointer: true
-    # Every `.md` link in AGENTS.md must be an explicit route — a line
-    # that names its trigger and says read ("Before you change CI, read
-    # docs/ci.md"). Agents skip "see docs/ci.md"; they follow a stated
+    # Every `.md` link in AGENTS.md must be an explicit route, meaning a
+    # line that names its trigger and says read ("Before you change CI,
+    # read docs/ci.md"). Agents skip "see docs/ci.md" but follow a stated
     # trigger. False accepts soft links (and a soft link to the map).
     require_explicit_routes: true
-    # CLAUDE.md must be exactly `@AGENTS.md` — one agent entry point with
-    # nothing to drift. False accepts any content.
+    # CLAUDE.md must be exactly `@AGENTS.md`, so there is one agent entry
+    # point with nothing to drift. False accepts any content.
     require_claude_include: true
   complexity:
     # Cyclomatic complexity (CCN) ceiling. Any function above this fails
-    # the check — locally, in the pre-push hook, and in CI (one gate, one
-    # exit code). 15 is Lizard's own default warning line; drop to 10 for
-    # McCabe's classic "review" bound if you want to run stricter.
+    # the check locally, in the pre-push hook and in CI, which all share
+    # one gate and one exit code. 15 is Lizard's own default warning line;
+    # drop to 10 for McCabe's classic "review" bound to be stricter.
     max_ccn: 15
   # ── hygiene:docs-accuracy ───────────────────────────────────────────
   docs_accuracy:
@@ -414,16 +414,16 @@ hygiene:
     # file describing an adopter's tree rather than this one: `task ss:…`
     # and `.github/workflows/…` references must exist (markdown), and
     # every github.com/<this repo>/blob|tree/<ref>/<path> link must point
-    # at a path that exists (markdown and HTML) — how a marketing page
-    # quoting a script deleted two releases ago gets caught.
+    # at a path that exists (markdown and HTML). That is how a marketing
+    # page quoting a script deleted two releases ago gets caught.
     #
     # slopstopper.dev scans its own site and the Claude Code skills it
     # ships; a typical adopter leaves this empty.
     extra_paths: []
   # ── hygiene:docs-structure ──────────────────────────────────────────
   docs_structure:
-    # Every doc under docs/ must have an explicit route — a trigger-first
-    # "read" line — from AGENTS.md, the map (hygiene.entry_files.map_path)
+    # Every doc under docs/ must be explicitly routed by a trigger-first
+    # "read" line in AGENTS.md, the map (hygiene.entry_files.map_path)
     # or a README.md above it. A doc nothing routes to is invisible to
     # agents. False reports only soft routes in the map, depth, line
     # budgets and a legacy docs/index.md. (Pre-0.15 `require_indexed_docs`
@@ -431,7 +431,7 @@ hygiene:
     require_routed_docs: true
     # Most hops a route may take: AGENTS.md → map → directory README →
     # doc is 3. A README that only routes onward is a turn spent on
-    # nothing — merge it rather than raising this.
+    # nothing, so merge it rather than raising this.
     max_route_depth: 3
     # Line budget per topic doc (the map is exempt). Past this an agent
     # burns context on detail it may not need; split by concern and
@@ -454,8 +454,8 @@ hygiene:
 #
 # When the resolved set is empty (no sitemap, no matched changed files,
 # git history missing), discovery falls through gracefully: changed →
-# sitemap → pages.<check> → "/". Better to over-test than to silently
-# no-op a quality gate.
+# sitemap → pages.<check> → "/". It is better to over-test than to
+# silently no-op a quality gate.
 #
 # Unset = fall back to pages.<check>.
 #
@@ -482,8 +482,8 @@ hygiene:
 #
 # `enabled` is the escape hatch for the `profile:` preset above: a
 # workflow listed there is installed even if the profile drops it. Use it
-# when your repo is mostly one shape but wants one check back — an API
-# that also serves a docs site and wants broken-links, say. It has no
+# when your repo is mostly one shape but wants one check back, such as an
+# API that also serves a docs site and wants broken-links. It has no
 # effect on a workflow you also list under `disabled` (an explicit
 # disable wins) and none on `ui`, which drops nothing.
 #

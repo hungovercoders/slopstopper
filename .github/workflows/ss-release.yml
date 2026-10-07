@@ -65,7 +65,7 @@ jobs:
           echo "__init__.py:   $INIT_VER"
           echo "tag (without v): $VERSION"
           if [ "$PYPROJECT_VER" != "$VERSION" ] || [ "$INIT_VER" != "$VERSION" ]; then
-            echo "::error::Version mismatch — bump cli/pyproject.toml and cli/slopstopper/__init__.py to match the tag before releasing."
+            echo "::error::Version mismatch. Bump cli/pyproject.toml and cli/slopstopper/__init__.py to match the tag before releasing."
             exit 1
           fi
 
@@ -90,8 +90,8 @@ jobs:
       #
       #   gh attestation verify <wheel> --owner hungovercoders
       #
-      # No keys to manage, no token rotation — the OIDC token is scoped
-      # to this workflow run.
+      # The OIDC token is scoped to this workflow run, so there are no
+      # keys to manage and no tokens to rotate.
       - name: Generate build provenance attestation
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
@@ -129,7 +129,7 @@ jobs:
         run: |
           # Skip if a release already exists for this tag (idempotent re-runs).
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "ℹ️  Release $TAG already exists — uploading any missing artifacts only."
+            echo "ℹ️  Release $TAG already exists, so this run only uploads missing artifacts."
             gh release upload "$TAG" cli/dist/* --clobber
           else
             gh release create "$TAG" cli/dist/* \
@@ -139,8 +139,8 @@ jobs:
 
       # Publish to PyPI via OIDC Trusted Publisher. Uses the same
       # id-token: write permission as the Sigstore attestation step;
-      # PyPI exchanges the OIDC token for a short-lived upload token —
-      # no API token managed here. `skip-existing: true` makes the step
+      # PyPI exchanges the OIDC token for a short-lived upload token, so
+      # no API token is managed here. `skip-existing: true` makes the step
       # idempotent: re-running the workflow against an already-published
       # version succeeds rather than failing.
       #

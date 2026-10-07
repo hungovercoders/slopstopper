@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# slopstopper pre-push hook — runs the fast static hygiene checks before a push
-# so the first CI run confirms rather than discovers. Bypass a single push with
+# slopstopper pre-push hook. It runs the fast static hygiene checks before a
+# push so the first CI run confirms rather than discovers. Bypass a single push with
 # `git push --no-verify`. slopstopper-owned; refreshed on every install re-run.
 #
 # Only the hygiene checks run here: they are static (file-read only), take
@@ -9,7 +9,7 @@
 # `task ss:hygiene:test` so the hook, local runs and CI share one surface.
 #
 # Git hooks don't source your shell profile, so mise may not be activated in
-# this process — go through `mise exec` to resolve the pinned task/CLI.
+# this process; go through `mise exec` to resolve the pinned task/CLI.
 set -euo pipefail
 
 if command -v mise >/dev/null 2>&1; then
@@ -17,6 +17,6 @@ if command -v mise >/dev/null 2>&1; then
 elif command -v task >/dev/null 2>&1; then
   exec task ss:hygiene:test
 else
-  echo "slopstopper pre-push: mise/task not found — skipping hygiene checks." >&2
+  echo "slopstopper pre-push: mise/task not found, skipping hygiene checks." >&2
   echo "  Install mise (https://mise.jdx.dev) to enable the local gate." >&2
 fi

@@ -1,4 +1,4 @@
-# .zap/rules.tsv — seeded by slopstopper install.sh.
+# .zap/rules.tsv: seeded by slopstopper install.sh.
 #
 # OWASP ZAP rule overrides for the DAST scan. Two common false positives
 # for content-heavy sites ship commented-out below. Uncomment ONLY the
