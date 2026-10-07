@@ -31,8 +31,8 @@ fails every journey for that path.
 
 The spec names no selector or page of this site, so it runs unchanged on
 any adopter's site. Journeys specific to yours (log in, add to basket,
-submit a form) belong in an ejected copy — see
-[Adding your own journeys](#adding-your-own-journeys).
+submit a form) belong in an ejected copy, as
+[Adding your own journeys](#adding-your-own-journeys) describes.
 
 ## Quick Start
 
@@ -99,7 +99,7 @@ slopstopper templates eject tests/e2e.spec.ts
 ```
 
 ```ts
-// .ss/tests/e2e.spec.ts — appended to the bundled journeys
+// .ss/tests/e2e.spec.ts, appended to the bundled journeys
 test('pricing → checkout', async ({ page }) => {
   await page.goto('/pricing');
   await page.getByRole('link', { name: 'Start free trial' }).click();
@@ -152,6 +152,6 @@ and that the Playwright browsers are installed
 
 ## Related Documentation
 
-- [Reliability README](README.md) — the env-var contract shared by every reliability check
-- [Accessibility](ACCESSIBILITY.md) — the other page-walking Playwright check
-- [Playwright locators](https://playwright.dev/docs/locators) — for writing your own journeys
+- [Reliability README](README.md), the env-var contract shared by every reliability check
+- [Accessibility](ACCESSIBILITY.md), the other page-walking Playwright check
+- [Playwright locators](https://playwright.dev/docs/locators), for writing your own journeys

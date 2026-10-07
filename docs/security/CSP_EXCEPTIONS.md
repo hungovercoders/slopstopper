@@ -24,9 +24,9 @@ unhelpful. The honest answer is a pattern:
    applies the matching headers on every response. The rest of the site
    stays strict, so XSS or supply-chain issues stay contained.
 3. **Pin external scripts with SRI** wherever the host supports it. SRI
-   locks the relaxation to one exact bundle hash — a compromise of the
-   third-party CDN can't ship new JavaScript to your visitors. The
-   tradeoff: when the third-party releases a new version, your SRI hash
+   locks the relaxation to one exact bundle hash, so a compromise of the
+   third-party CDN can't ship new JavaScript to your visitors. The cost
+   is that when the third-party releases a new version, your SRI hash
    stops matching and the widget silently breaks until you refresh it.
    Make sure there's a fallback link on the page so the page stays
    useful in that window.
@@ -35,7 +35,7 @@ unhelpful. The honest answer is a pattern:
    hash. The hygiene check verifies that what's in `worker/headers.json`
    matches what's documented here.
 5. **Let DAST keep flagging the relaxed pages.** A scanner flagging a
-   documented exception is correct behaviour — that's how you find
+   documented exception is correct behaviour, because that's how you find
    *un*documented relaxations later. The DAST workflow on this repo
    consults this file via [the DAST gate module](../../cli/slopstopper/dast_gate.py):
    ZAP CSP findings whose URL path is listed under `## Exceptions`
@@ -63,7 +63,7 @@ by these fields:
 | `**Data leaving site:**` | What visitor data the third-party will receive (IP, UA, GitHub identity, page URL, etc.) |
 | `**Refresh policy:**` | When and how to update the SRI hash |
 
-The check parser is literal — keep the field labels exactly as above.
+The check parser is literal, so keep the field labels exactly as above.
 
 ## Computing an SRI hash
 
@@ -88,13 +88,13 @@ Re-run when the widget breaks after a third-party release.
 - **Data leaving site:**
   - For passive viewers: visitor IP, User-Agent and referrer go to `giscus.app` when the iframe is fetched
   - For commenters: GitHub identity (login, avatar URL) goes to `giscus.app` and back to `github.com` when posting
-  - No analytics or telemetry from us — Giscus is the only third-party
+  - No analytics or telemetry from us, since Giscus is the only third-party
 - **Refresh policy:**
   - The SRI hash above must be refreshed when Giscus publishes a new release of their loader script. Refresh procedure:
     1. Recompute the hash with the `curl … openssl` command above
     2. Update the `integrity=` attribute in `app/feedback.html`
     3. Update the `**Loader SRI:**` line above to match
-    4. Open a PR — the `ss:hygiene:csp-exceptions` check will green-light when both sides match
+    4. Open a PR, and the `ss:hygiene:csp-exceptions` check will green-light when both sides match
   - The COOP/COEP overrides on this path (`same-origin-allow-popups` / `unsafe-none`) are also part of this exception, so the GitHub OAuth popup can communicate back during sign-in
 - **Fallback if Giscus is unavailable or SRI mismatch:** The page renders a static link to the Feedback discussion category (`https://github.com/hungovercoders/slopstopper/discussions/categories/feedback`) so visitors can still reach the same destination
 
@@ -114,7 +114,7 @@ Re-run when the widget breaks after a third-party release.
    replacement directives**, not just additions
 3. Add an entry to this file mirroring the schema above
 4. Install `ss-hygiene-csp-exceptions-check.yml` via the SlopStopper
-   installer — the check enforces drift between `worker/headers.json`
+   installer so its check enforces drift between `worker/headers.json`
    and this file
 5. Keep DAST in your pipeline. The SlopStopper DAST gate
    (`cli/slopstopper/dast_gate.py`) already consults this file:
@@ -123,5 +123,5 @@ Re-run when the widget breaks after a third-party release.
    still fail DAST, as does any non-CSP finding or any High-severity
    finding (even CSP, even on a documented path)
 6. If your repo has no third-party widgets, you can ignore this file
-   entirely — the DAST gate handles its absence as "no exceptions" and
+   entirely, because the DAST gate handles its absence as "no exceptions" and
    blocks all riskcode ≥ 2 findings normally

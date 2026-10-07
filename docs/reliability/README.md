@@ -2,66 +2,66 @@
 
 ## Overview
 
-SlopStopper's reliability checks, wired against any reachable URL: portable smoke tests, broken-link audits, and the API health and latency audits (all below), plus seven audits with their own guide — read the one whose trigger matches.
+SlopStopper's reliability checks, wired against any reachable URL: portable smoke tests, broken-link audits, and the API health and latency audits (all below), plus seven audits with their own guide. Read the one whose trigger matches.
 
 ## Routes
 
 | When you are…                                                        | Do this                                                                          |
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| fixing an axe-core finding or tuning the WCAG audit                   | Read [ACCESSIBILITY.md](ACCESSIBILITY.md) — the audit, its thresholds and report  |
-| fixing a broken user journey, or adding journeys specific to your site | Read [E2E.md](E2E.md) — the nav, anchor, disclosure and back-button walk           |
-| tuning Lighthouse budgets or debugging a Core Web Vitals failure       | Read [CWV.md](CWV.md) — Lighthouse CI configuration and the budget files          |
-| fixing a missing or wrong SEO / social-share metatag                   | Read [SEO.md](SEO.md) — what the metatag audit asserts                            |
-| adding or fixing the site's `llms.txt`                                 | Read [LLMS_TXT.md](LLMS_TXT.md) — the llmstxt.org shape the check asserts         |
-| changing `robots.txt`, or when the de-index guard fires                | Read [ROBOTS_TXT.md](ROBOTS_TXT.md) — discoverability rules and the guard         |
-| adding pages, or when the sitemap drift check fires                    | Read [SITEMAP.md](SITEMAP.md) — completeness + drift against the served site      |
+| fixing an axe-core finding or tuning the WCAG audit                   | Read [ACCESSIBILITY.md](ACCESSIBILITY.md), the audit, its thresholds and report   |
+| fixing a broken user journey, or adding journeys specific to your site | Read [E2E.md](E2E.md), the nav, anchor, disclosure and back-button walk            |
+| tuning Lighthouse budgets or debugging a Core Web Vitals failure       | Read [CWV.md](CWV.md), Lighthouse CI configuration and the budget files           |
+| fixing a missing or wrong SEO / social-share metatag                   | Read [SEO.md](SEO.md), what the metatag audit asserts                             |
+| adding or fixing the site's `llms.txt`                                 | Read [LLMS_TXT.md](LLMS_TXT.md), the llmstxt.org shape the check asserts          |
+| changing `robots.txt`, or when the de-index guard fires                | Read [ROBOTS_TXT.md](ROBOTS_TXT.md), discoverability rules and the guard          |
+| adding pages, or when the sitemap drift check fires                    | Read [SITEMAP.md](SITEMAP.md), completeness + drift against the served site       |
 
 
 ## Configuration (env vars)
 
-All reliability checks read their target URL and audit scope from environment variables — no code changes needed.
+All reliability checks read their target URL and audit scope from environment variables, so no code change is needed.
 
 | Variable | Default | Used by |
 |---|---|---|
 | `SMOKE_TEST_URL` | (none) | smoke |
-| `SMOKE_PAGES` | `/` | smoke — comma-separated paths, e.g. `/,/login,/pricing` |
-| `SMOKE_TIMEOUT` | `5000` | smoke — per-request ms |
+| `SMOKE_PAGES` | `/` | smoke (comma-separated paths, e.g. `/,/login,/pricing`) |
+| `SMOKE_TIMEOUT` | `5000` | smoke (per-request ms) |
 | `E2E_TEST_URL` | falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080` | e2e |
-| `E2E_PAGES` | `/` | e2e — comma-separated start paths for the journeys |
-| `E2E_MAX_LINKS` | `25` | e2e — primary-nav links followed per start path |
+| `E2E_PAGES` | `/` | e2e (comma-separated start paths for the journeys) |
+| `E2E_MAX_LINKS` | `25` | e2e (primary-nav links followed per start path) |
 | `BROKEN_LINKS_TEST_URL` | falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080` | broken links |
-| `BROKEN_LINKS_PAGES` | `/` | broken links — comma-separated crawl seed paths, e.g. `/,/features.html,/tools.html` |
+| `BROKEN_LINKS_PAGES` | `/` | broken links (comma-separated crawl seed paths, e.g. `/,/features.html,/tools.html`) |
 | `ACCESSIBILITY_TEST_URL` | falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080` | accessibility |
-| `ACCESSIBILITY_PAGES` | `/` | accessibility — comma-separated paths |
-| `ACCESSIBILITY_IMPACT` | `serious` | accessibility — min `critical`/`serious`/`moderate`/`minor` |
-| `ACCESSIBILITY_THRESHOLD` | `0` | accessibility — max violations before failing |
-| `CWV_URL` | (none) | Core Web Vitals — URL to audit (see [CWV.md](CWV.md)) |
-| `SEO_TEST_URL` | (none) | SEO metatag check — base URL to audit |
-| `SEO_PAGES` | `/` | SEO metatag check — comma-separated paths, e.g. `/,/features.html` |
-| `SEO_REQUIRE_OG_IMAGE` | `1` | SEO metatag check — set `0` to skip og:image presence check |
-| `SEO_VERIFY_OG_IMAGE` | `1` | SEO metatag check — set `0` to skip HEAD-fetching og:image |
-| `LLMS_TXT_TEST_URL` | (none) | llms.txt check — base URL to audit |
-| `LLMS_TXT_PATH` | `/llms.txt` | llms.txt check — path to the file |
-| `ROBOTS_TXT_TEST_URL` | (none) | robots.txt check — base URL to audit |
-| `ROBOTS_TXT_PATH` | `/robots.txt` | robots.txt check — path to the file |
-| `SITEMAP_TEST_URL` | (none) | sitemap check — base URL to crawl + audit |
-| `SITEMAP_PATH` | `/sitemap.xml` | sitemap check — path to the sitemap |
-| `API_HEALTH_TEST_URL` | (none) | API health check — base URL of the API |
-| `API_HEALTH_PATH` | (none — unset skips the check) | API health check — path to the health endpoint |
-| `API_LATENCY_TEST_URL` | (none) | API latency check — base URL of the API |
-| `API_LATENCY_PATHS` | (none — unset skips the check) | API latency check — comma-separated paths to sample |
+| `ACCESSIBILITY_PAGES` | `/` | accessibility (comma-separated paths) |
+| `ACCESSIBILITY_IMPACT` | `serious` | accessibility (min `critical`/`serious`/`moderate`/`minor`) |
+| `ACCESSIBILITY_THRESHOLD` | `0` | accessibility (max violations before failing) |
+| `CWV_URL` | (none) | Core Web Vitals (URL to audit, see [CWV.md](CWV.md)) |
+| `SEO_TEST_URL` | (none) | SEO metatag check (base URL to audit) |
+| `SEO_PAGES` | `/` | SEO metatag check (comma-separated paths, e.g. `/,/features.html`) |
+| `SEO_REQUIRE_OG_IMAGE` | `1` | SEO metatag check (set `0` to skip og:image presence check) |
+| `SEO_VERIFY_OG_IMAGE` | `1` | SEO metatag check (set `0` to skip HEAD-fetching og:image) |
+| `LLMS_TXT_TEST_URL` | (none) | llms.txt check (base URL to audit) |
+| `LLMS_TXT_PATH` | `/llms.txt` | llms.txt check (path to the file) |
+| `ROBOTS_TXT_TEST_URL` | (none) | robots.txt check (base URL to audit) |
+| `ROBOTS_TXT_PATH` | `/robots.txt` | robots.txt check (path to the file) |
+| `SITEMAP_TEST_URL` | (none) | sitemap check (base URL to crawl + audit) |
+| `SITEMAP_PATH` | `/sitemap.xml` | sitemap check (path to the sitemap) |
+| `API_HEALTH_TEST_URL` | (none) | API health check (base URL of the API) |
+| `API_HEALTH_PATH` | (none; unset skips the check) | API health check (path to the health endpoint) |
+| `API_LATENCY_TEST_URL` | (none) | API latency check (base URL of the API) |
+| `API_LATENCY_PATHS` | (none; unset skips the check) | API latency check (comma-separated paths to sample) |
 
 ## API Health Check
 
 The API-shaped analogue of the smoke test. Smoke drives a browser over HTML pages; this probes the one endpoint an API is expected to expose for exactly this purpose, and asserts the contract around it.
 
-**Why not just point smoke at `/health`:** smoke asserts DOM-shaped things — a `<title>`, a linked stylesheet, a shareable og-image — that a JSON endpoint will never satisfy. And a health endpoint has assertions of its own. `{"status": "degraded"}` returned with HTTP 200 is a **pass** to any reachability probe and a **failure** here, which is the whole reason a health endpoint returns a body at all.
+**Why not just point smoke at `/health`:** smoke asserts DOM-shaped things that a JSON endpoint will never satisfy, such as a `<title>`, a linked stylesheet and a shareable og-image. A health endpoint also has assertions of its own. `{"status": "degraded"}` returned with HTTP 200 is a **pass** to any reachability probe and a **failure** here, which is the whole reason a health endpoint returns a body at all.
 
 ### What it checks
 
 | Assertion | Hard fail? | Knob |
 |---|---|---|
-| Endpoint reachable | yes | — |
+| Endpoint reachable | yes | none |
 | Status code matches | yes | `api.health.expect_status` (default 200) |
 | JSON content-type (`application/json`, `+json` suffixes) | yes | `api.health.require_json` |
 | Body parses as JSON and is non-empty | yes | `api.health.require_json` |
@@ -85,7 +85,7 @@ api:
     max_response_ms:     # unset → timing reported, never enforced
 ```
 
-With `api.health.path` unset the check exits 0 with a note — the same contract as [`hygiene:csp-exceptions`](../security/README.md#csp-exceptions) with `headers.source: null`. An unconfigured check is not a failing check, so a fresh install's first PR is green.
+With `api.health.path` unset the check exits 0 with a note, which is the same contract as [`hygiene:csp-exceptions`](../security/README.md#csp-exceptions) with `headers.source: null`. An unconfigured check is not a failing check, so a fresh install's first PR is green.
 
 ### Running locally
 
@@ -105,22 +105,22 @@ Report: `.ss/reports/api-health/api-health-report.{md,json}`.
 
 ### Running in CI
 
-`ss-reliability-api-health-check.yml` audits `urls.preview` on pull requests and `urls.production` on pushes to main, schedules and Cloudflare deployment events. Unlike the browser checks it **never builds and serves the repo locally** — an API isn't a static bundle `slopstopper serve` can host, and guessing a start command would be worse than not guessing. With neither URL configured the PR run emits a notice and skips; the deployed-main and scheduled runs still cover the endpoint.
+`ss-reliability-api-health-check.yml` audits `urls.preview` on pull requests and `urls.production` on pushes to main, schedules and Cloudflare deployment events. Unlike the browser checks it **never builds and serves the repo locally**, because an API isn't a static bundle `slopstopper serve` can host, and guessing a start command would be worse than not guessing. With neither URL configured the PR run emits a notice and skips; the deployed-main and scheduled runs still cover the endpoint.
 
-The check ships under every [project-shape profile](../architecture/PROFILES.md) except `library`, and stays inert until configured — so a UI repo with API routes gets it without having to opt in.
+The check ships under every [project-shape profile](../architecture/PROFILES.md) except `library`, and stays inert until configured, so a UI repo with API routes gets it without having to opt in.
 
 ## API Latency Check
 
 The API-shaped analogue of Core Web Vitals. There is no rendering on a JSON API, so the equivalent question is narrower and more answerable: how long does the endpoint take to answer, and how much does it send back. Each configured path is sampled several times; the check reports the **median**, the **slowest** sample and the response size.
 
-**Why not p95:** five samples cannot support a 95th percentile, and calling `max()` a percentile would dress up one noisy reading as statistics. Budgets gate on the **median**, which is flake-resistant — one slow sample from a shared CI runner moves the maximum and not the middle. `slowest_ms` is an opt-in tail ceiling for anyone who wants one.
+**Why not p95:** five samples cannot support a 95th percentile, and calling `max()` a percentile would dress up one noisy reading as statistics. Budgets gate on the **median**, which resists flakes because one slow sample from a shared CI runner moves the maximum and not the middle. `slowest_ms` is an opt-in tail ceiling for anyone who wants one.
 
 ### What it checks
 
 | Assertion | Hard fail? | Knob |
 |---|---|---|
-| Every sample completes | yes | — |
-| Status is 2xx/3xx | yes | — |
+| Every sample completes | yes | none |
+| Status is 2xx/3xx | yes | none |
 | Median response time | only with a budget set | `api.latency.median_ms` |
 | Slowest sample | only with a budget set | `api.latency.slowest_ms` |
 | Response size | only with a budget set | `api.latency.max_bytes` |
@@ -164,7 +164,7 @@ Report: `.ss/reports/api-latency/api-latency-report.{md,json}`.
 
 ### Running in CI
 
-`ss-reliability-api-latency-check.yml` resolves its URL exactly as the API health workflow does — `urls.preview` on pull requests, `urls.production` on main, schedules and deployment events — and never builds or serves the repo locally.
+`ss-reliability-api-latency-check.yml` resolves its URL exactly as the API health workflow does (`urls.preview` on pull requests, `urls.production` on main, schedules and deployment events) and never builds or serves the repo locally.
 
 One caveat specific to this check: **timings from a preview environment are not timings from production.** A cold-started preview deploy is slower and noisier. Either set budgets loose enough for it, or leave them unset on PRs and rely on the scheduled production run.
 
@@ -222,18 +222,18 @@ task ss:reliability:smoke -- https://your-site.example.com --ci
 SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke
 ```
 
-`task ss:reliability:smoke` shells through to `slopstopper run reliability:smoke`, which launches the bundled Playwright spec via the config baked into the `slopstopper-cli` wheel — see [`cli/slopstopper/data/playwright.config.js`](../../cli/slopstopper/data/playwright.config.js) and [`cli/slopstopper/data/tests/smoke.spec.ts`](../../cli/slopstopper/data/tests/smoke.spec.ts). Adopters don't vendor those files; the CLI owns them. To customise, run `slopstopper templates eject playwright.config.js` to drop an editable copy into `.ss/`; the CLI picks `.ss/<filename>` up automatically.
+`task ss:reliability:smoke` shells through to `slopstopper run reliability:smoke`, which launches the bundled Playwright spec via the config baked into the `slopstopper-cli` wheel. The config is [`cli/slopstopper/data/playwright.config.js`](../../cli/slopstopper/data/playwright.config.js) and the spec is [`cli/slopstopper/data/tests/smoke.spec.ts`](../../cli/slopstopper/data/tests/smoke.spec.ts). Adopters don't vendor those files; the CLI owns them. To customise, run `slopstopper templates eject playwright.config.js` to drop an editable copy into `.ss/`; the CLI picks `.ss/<filename>` up automatically.
 
 ### Running in CI
 
-The installer copies a ready-to-run workflow at [`.github/workflows/ss-reliability-smoke-tests.yml`](../../.github/workflows/ss-reliability-smoke-tests.yml) — that's the canonical shape. It runs on PRs, pushes to `main`, an hourly schedule, Cloudflare deployment events, and `workflow_dispatch`; on failure it opens (or updates) a tracking issue, and on recovery it closes it. The job calls:
+The canonical shape is the ready-to-run workflow the installer copies to [`.github/workflows/ss-reliability-smoke-tests.yml`](../../.github/workflows/ss-reliability-smoke-tests.yml). It runs on PRs, pushes to `main`, an hourly schedule, Cloudflare deployment events, and `workflow_dispatch`; on failure it opens (or updates) a tracking issue, and on recovery it closes it. The job calls:
 
 ```yaml
 - name: Run smoke tests
   run: task ss:reliability:smoke -- ${{ steps.url.outputs.url }} --ci
 ```
 
-— same Task command you ran locally, with the positional URL resolved from the trigger context.
+That is the same Task command you ran locally, with the positional URL resolved from the trigger context.
 
 ### What the Smoke Tests Check
 
@@ -246,7 +246,7 @@ The installer copies a ready-to-run workflow at [`.github/workflows/ss-reliabili
 
 ### Test configuration
 
-The portable spec is configured via [`cli/slopstopper/data/playwright.config.js`](../../cli/slopstopper/data/playwright.config.js) — bundled in the `slopstopper-cli` wheel. `testDir: './tests'` resolves to the bundled spec directory so SlopStopper's specs never collide with your own `tests/` directory. To customise, eject an editable copy into your repo's `.ss/` directory:
+The portable spec is configured via [`cli/slopstopper/data/playwright.config.js`](../../cli/slopstopper/data/playwright.config.js), which is bundled in the `slopstopper-cli` wheel. `testDir: './tests'` resolves to the bundled spec directory so SlopStopper's specs never collide with your own `tests/` directory. To customise, eject an editable copy into your repo's `.ss/` directory:
 
 ```bash
 slopstopper templates eject playwright.config.js
@@ -256,7 +256,7 @@ The CLI's template resolver prefers `.ss/<filename>` over the bundled version, s
 
 ### Adding pages to the smoke check
 
-The portable smoke spec at [`cli/slopstopper/data/tests/smoke.spec.ts`](../../cli/slopstopper/data/tests/smoke.spec.ts) iterates over `SMOKE_PAGES`. To add coverage, set the env var — no code changes needed:
+The portable smoke spec at [`cli/slopstopper/data/tests/smoke.spec.ts`](../../cli/slopstopper/data/tests/smoke.spec.ts) iterates over `SMOKE_PAGES`. Adding coverage is an env var, not a code change:
 
 ```bash
 SMOKE_TEST_URL=https://your-site.example.com \
@@ -264,7 +264,7 @@ SMOKE_TEST_URL=https://your-site.example.com \
   task ss:reliability:smoke
 ```
 
-For assertions beyond "page returns 200 and loads cleanly" (e.g. specific element visibility), add your own specs under your repo's own `tests/` directory — those are picked up by a `playwright.config.js` you write in your repo root, not by SlopStopper's bundled config.
+For assertions beyond "page returns 200 and loads cleanly" (e.g. specific element visibility), add your own specs under your repo's own `tests/` directory. A `playwright.config.js` you write in your repo root picks those up; SlopStopper's bundled config does not.
 
 ### Troubleshooting
 

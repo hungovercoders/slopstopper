@@ -31,7 +31,7 @@ Running log of significant decisions for this project.
 
 | Date | Decision | Status | Rationale | Notes |
 | ---- | -------- | ------ | --------- | ----- |
-| TBD | Initialize decisions framework | accepted | Establish a lightweight, format-agnostic decision log as the source of truth for significant decisions. | — |
+| TBD | Initialize decisions framework | accepted | Establish a lightweight, format-agnostic decision log as the source of truth for significant decisions. | none |
 
 ## Status Values
 

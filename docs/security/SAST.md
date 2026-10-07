@@ -1,4 +1,4 @@
-# SAST — Static Application Security Testing
+# Static Application Security Testing (SAST)
 
 This template includes automated Static Application Security Testing (SAST) using **Semgrep** to detect security bugs and anti-patterns in your own source code. This guide explains how to customise and use this feature.
 
@@ -34,8 +34,8 @@ task ss:security:sast
 
 Some Semgrep rules are too broad for known-safe patterns. Rather than disable rules globally (which would hurt adopters whose code legitimately needs them), we use narrow inline annotations with a rationale at the call site:
 
-- `# nosemgrep: <full-rule-id>` for Python — placed on the affected statement, with a brief comment explaining why the pattern is safe here
-- `<!-- nosemgrep: <full-rule-id> --><rationale>` for HTML — placed on the line directly above the affected element
+- `# nosemgrep: <full-rule-id>` for Python, placed on the affected statement with a brief comment explaining why the pattern is safe here
+- `<!-- nosemgrep: <full-rule-id> --><rationale>` for HTML, placed on the line directly above the affected element
 
 Both are visible in code review and act as documentation; nothing is silently disabled. Current suppressions in this repo:
 
@@ -44,7 +44,7 @@ Both are visible in code review and act as documentation; nothing is silently di
 | `python.lang.security.audit.dynamic-urllib-use-detected` | `cli/slopstopper/checks/seo.py` (`_fetch` + `_head_ok`) | URL originates from `SEO_TEST_URL` env var (operator-supplied) and `_require_safe_url()` is called before every `urlopen()` to reject any scheme other than `http`/`https`. So `file://`/`ftp://` reads are impossible by construction. |
 | `html.security.audit.missing-integrity` | `<link rel="canonical">` in `app/index.html`, `app/features.html`, `app/tools.html`, `app/feedback.html` | Canonical links declare URL identity for search engines. They load no subresource, so Subresource Integrity is structurally inapplicable. The rule fires on any `<link>` without `integrity=` regardless of whether the tag loads anything. |
 
-**For adopters:** when SlopStopper flags noise in your code, prefer this narrow-suppression-with-rationale pattern over disabling a rule globally — it keeps the rule active for real findings while you accept the false positive at the exact site that needs it.
+**For adopters:** when SlopStopper flags noise in your code, prefer this narrow-suppression-with-rationale pattern over disabling a rule globally, because it keeps the rule active for real findings while you accept the false positive at the exact site that needs it.
 
 ---
 
@@ -72,11 +72,11 @@ The SAST workflow:
 
 ### Rule set
 
-The check runs Semgrep with `--config=auto` (Semgrep picks rules from the languages it detects). The flag is set in `cli/slopstopper/checks/sast.py`, not in a task or workflow, and there is no `.slopstopper.yml` knob for it today — tune individual rules with the inline `nosemgrep` suppressions above, or open an issue if you need a project-wide ruleset such as `p/owasp-top-ten`.
+The check runs Semgrep with `--config=auto` (Semgrep picks rules from the languages it detects). The flag is set in `cli/slopstopper/checks/sast.py`, not in a task or workflow, and there is no `.slopstopper.yml` knob for it today. Tune individual rules with the inline `nosemgrep` suppressions above, or open an issue if you need a project-wide ruleset such as `p/owasp-top-ten`.
 
 ### Failure threshold
 
-Semgrep reports findings at ERROR, WARNING and INFO severity. By default only ERROR fails the check; the rest are reported. `security.sast.fail_on` in `.slopstopper.yml` moves the line — `warning` makes warnings block too, `none` reports without ever failing. The check's exit code is the verdict; the workflow no longer re-counts findings in a separate step.
+Semgrep reports findings at ERROR, WARNING and INFO severity. By default only ERROR fails the check; the rest are reported. `security.sast.fail_on` in `.slopstopper.yml` moves the line. Set it to `warning` and warnings block too; set it to `none` and the check reports without ever failing. The check's exit code is the verdict; the workflow no longer re-counts findings in a separate step.
 
 ```yaml
 security:

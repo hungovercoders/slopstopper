@@ -2,18 +2,18 @@
 
 Security scanning and controls for this project: what each `security:*` check
 looks at, how it blocks, and where to tune it. One file per check; this page
-is the map — read only the doc whose trigger matches.
+is the map, so read only the doc whose trigger matches.
 
 ## Routes
 
 | When you are…                                                        | Do this                                                                 |
 | -------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| tuning what SAST blocks, or suppressing a Semgrep finding            | Read [SAST.md](SAST.md) — quick start, severity table, `security.sast.fail_on`, the suppression pattern and this repo's suppressions |
-| configuring or debugging the OWASP ZAP scan (baseline or OpenAPI mode) | Read [DAST.md](DAST.md) — local commands, CI wiring, risk levels, the CSP-exception gate, `api.openapi.spec` |
-| fixing a Trivy CVE finding, or when local and CI disagree on one      | Read [VULNERABILITY.md](VULNERABILITY.md) — the Trivy scan, the licence gate, local/CI parity (DB cache, binary version) |
-| handling a Gitleaks finding or allowlisting a false positive          | Read [SECRETS.md](SECRETS.md) — quick start, the allowlist format, what to do the moment a real secret is detected |
-| adding a third-party script, widget or any external resource to a page | Read [CSP_EXCEPTIONS.md](CSP_EXCEPTIONS.md) first — the strict-default + per-path exception pattern and the live list |
-| auditing CORS, HSTS or `nosniff` on a JSON API                        | Read [API_HEADERS.md](API_HEADERS.md) — the findings, the hard-fail split, knobs and commands |
+| tuning what SAST blocks, or suppressing a Semgrep finding            | Read [SAST.md](SAST.md) for the quick start, severity table, `security.sast.fail_on`, the suppression pattern and this repo's suppressions |
+| configuring or debugging the OWASP ZAP scan (baseline or OpenAPI mode) | Read [DAST.md](DAST.md) for local commands, CI wiring, risk levels, the CSP-exception gate and `api.openapi.spec` |
+| fixing a Trivy CVE finding, or when local and CI disagree on one      | Read [VULNERABILITY.md](VULNERABILITY.md) for the Trivy scan, the licence gate and local/CI parity (DB cache, binary version) |
+| handling a Gitleaks finding or allowlisting a false positive          | Read [SECRETS.md](SECRETS.md) for the quick start, the allowlist format and what to do the moment a real secret is detected |
+| adding a third-party script, widget or any external resource to a page | Read [CSP_EXCEPTIONS.md](CSP_EXCEPTIONS.md) first for the strict-default + per-path exception pattern and the live list |
+| auditing CORS, HSTS or `nosniff` on a JSON API                        | Read [API_HEADERS.md](API_HEADERS.md) for the findings, the hard-fail split, knobs and commands |
 
 | Check | Tool | Blocks on |
 | ----- | ---- | --------- |
@@ -33,19 +33,19 @@ blocking finding lands on `main`. Disable one by listing its workflow under
 [profile](../architecture/PROFILES.md) that drops it). `task ss:security:scan`
 runs SAST, secrets and the dependency scan in sequence.
 
-## SAST — Static Application Security Testing
+## Static Application Security Testing (SAST)
 
 Semgrep pattern-matches **your own source code** for dangerous calls,
 injection risks and hardcoded secrets. ERROR blocks; WARNING and INFO are
 reported; `security.sast.fail_on` moves that line. Narrow, documented
 `nosemgrep` suppressions beat disabling a rule.
 
-## DAST — Dynamic Application Security Testing
+## Dynamic Application Security Testing (DAST)
 
-OWASP ZAP scans the running app for common web vulnerabilities. Two modes: the
-**baseline** scan spiders an HTML site, and the **API** scan reads an OpenAPI
-spec and exercises its operations — the only mode that finds anything on a
-JSON API.
+OWASP ZAP scans the running app for common web vulnerabilities. It has two
+modes. The **baseline** scan spiders an HTML site, and the **API** scan reads
+an OpenAPI spec and exercises its operations. Only the API scan finds
+anything on a JSON API.
 
 ## Dependency Vulnerability Scanning
 
@@ -74,6 +74,6 @@ Sentry, Intercom or any analytics tag.
 
 ## API Headers & CORS
 
-On a JSON API, CORS — not CSP — decides who may read a response.
+On a JSON API, CORS rather than CSP decides who may read a response.
 `security:api-headers` audits that policy, plus HSTS and `nosniff`, and
 splits findings into hard failures and advisory notes.

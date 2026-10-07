@@ -175,7 +175,7 @@ Update `ACCESSIBILITY_THRESHOLD` in the workflow `workflow_dispatch` default and
 
 **Tests fail locally but pass in CI (or vice versa):**
 - Ensure `ACCESSIBILITY_TEST_URL` (or the positional URL) points to the correct target
-- Verify the URL is actually reachable (`curl -I "$URL"`) — start your dev server first if you're auditing a local build
+- Verify the URL is actually reachable (`curl -I "$URL"`), starting your dev server first if you're auditing a local build
 - The CI workflow installs the Playwright browsers via `npx playwright install --with-deps chromium`; locally, run the same command once before your first invocation
 
 **False positives:**
@@ -184,7 +184,7 @@ Update `ACCESSIBILITY_THRESHOLD` in the workflow `workflow_dispatch` default and
 
 **Tests timeout:**
 - Check the target URL is reachable
-- Increase the Playwright timeout by ejecting the bundled config — run `slopstopper templates eject playwright.config.js` and edit the copy that lands in your `.ss/` directory
+- Increase the Playwright timeout by running `slopstopper templates eject playwright.config.js` and editing the ejected copy that lands in your `.ss/` directory
 
 ## Related Documentation
 

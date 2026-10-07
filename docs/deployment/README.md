@@ -9,7 +9,7 @@ files in [`app/`](../../app/) via the `[assets]` binding and applies the
 per-path security headers defined in
 [`worker/headers.json`](../../worker/headers.json). **Cloudflare Workers
 Builds** (Cloudflare's Git integration) handles the build and deploy on
-every push and PR — there is **no** deploy workflow in this repo.
+every push and PR, so there is **no** deploy workflow in this repo.
 
 ## Lifecycle
 
@@ -21,8 +21,8 @@ every push and PR — there is **no** deploy workflow in this repo.
 | Close PR | Cloudflare retires the preview version automatically. | Cloudflare dash → Versions |
 
 No GitHub Action ships deploys. No `NETLIFY_AUTH_TOKEN`-shaped secret
-lives in repo settings. This is intentional — duplicating Cloudflare's
-built-in capability with a GHA workflow only adds maintenance.
+lives in repo settings. This is intentional, because duplicating
+Cloudflare's built-in capability with a GHA workflow only adds maintenance.
 
 ## Configuration
 
@@ -36,22 +36,22 @@ Workers Builds runs `npm run build`, which is a no-op echo: the site is
 static HTML and CSS under `app/`, and Wrangler bundles `worker/index.ts`
 itself at deploy time. The asset render
 (`task contributing:assets`, which renders SVG → PNG via Playwright)
-runs locally before commits — the PNG outputs are checked in.
+runs locally before commits, and the PNG outputs are checked in.
 
 ## Visibility
 
-- **README badge — per deploy.** shields.io renders a badge off the
+- **Per-deploy README badge.** shields.io renders a badge off the
   GitHub Deployments API:
   `https://img.shields.io/github/deployments/hungovercoders/slopstopper/Production`.
   Cloudflare's GitHub App writes a deployment event for every push.
-- **README badge — live health.** The existing
+- **Live-health README badge.** The existing
   [`ss-reliability-smoke-tests.yml`](../../.github/workflows/ss-reliability-smoke-tests.yml)
-  workflow runs hourly and on every `deployment_status` event, exposes
-  its GitHub Actions status badge. That tells you "is the live site
-  behaving right now."
+  workflow runs hourly and on every `deployment_status` event, and its
+  GitHub Actions status badge tells you whether the live site is
+  behaving right now.
 - **Per-PR check.** Cloudflare's GitHub App writes a Workers Builds
-  check on each PR commit with the preview URL — same shape as a
-  Netlify preview deploy check.
+  check on each PR commit with the preview URL. It has the same shape
+  as a Netlify preview deploy check.
 - **Auto-issue on failure.** `ss-reliability-smoke-tests.yml` already
   opens (and closes) an issue labelled `smoke-test-failure` when the
   scheduled run fails on production.
@@ -80,8 +80,8 @@ runs locally before commits — the PNG outputs are checked in.
 
 ## Adopters
 
-You don't get a deploy workflow from `install.sh` — connect your
-repo in the Cloudflare dash and you're done. If you prefer a
+`install.sh` adds no deploy workflow. Connect your repo in the
+Cloudflare dash and you're done. If you prefer a
 different host, delete `wrangler.jsonc` and `worker/` and wire up
 your own deploy. The header map in `worker/headers.json` is the only
 file the suite's CSP-drift gate cares about; everything else is

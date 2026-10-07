@@ -1,13 +1,13 @@
-# Step 10 — When to hand off, and maintaining this skill
+# Step 10: When to hand off, and maintaining this skill
 
 > Part of the `slopstopper-install` skill. `SKILL.md` says when to read this; it is not loaded until then.
 
-## Step 10 — When to hand off + maintaining this skill
+## Step 10: When to hand off + maintaining this skill
 
 This skill is one of two in the slopstopper skill set:
 
-- **`slopstopper-install`** (this one) — first-time install OR refresh of an existing install. The mode-detection branch at the top of the skill routes you to the right subset of steps.
-- **`slopstopper-triage`** — diagnose a failing slopstopper check, end-to-end: workflow → local task → report → finding category → fix location.
+- **`slopstopper-install`** (this one), for a first-time install OR refresh of an existing install. The mode-detection branch at the top of the skill routes you to the right subset of steps.
+- **`slopstopper-triage`**, to diagnose a failing slopstopper check end-to-end: workflow → local task → report → finding category → fix location.
 
 Hand off to `slopstopper-triage` mid-install whenever a check fails during Step 7's local loop, or during a refresh when a previously-green check goes red.
 
@@ -17,7 +17,7 @@ This skill names specific files, env vars, workflow IDs, the `GENERIC_WORKFLOWS`
 
 Triggers that require revisiting this skill:
 
-- A workflow is added, removed, or renamed under `slopstopper/.github/workflows/ss-*.yml` → update the workflow count in the intro, Step 1.2, and Step 3; add/remove the matching local-CLI row in Step 7's Pass A or Pass B; add/remove the badge example in Step 6. Also classify it into the profiles: whether it applies to an API or a library decides which `disables` lists in `cli/slopstopper/data/profiles.json` it belongs to, and the per-profile counts quoted in Step 1.2, Step 3 and Pass B move with it. (The per-check failure entry lives in `slopstopper-triage` — update there too.)
+- A workflow is added, removed, or renamed under `slopstopper/.github/workflows/ss-*.yml` → update the workflow count in the intro, Step 1.2, and Step 3; add/remove the matching local-CLI row in Step 7's Pass A or Pass B; add/remove the badge example in Step 6. Also classify it into the profiles: whether it applies to an API or a library decides which `disables` lists in `cli/slopstopper/data/profiles.json` it belongs to, and the per-profile counts quoted in Step 1.2, Step 3 and Pass B move with it. (The per-check failure entry lives in `slopstopper-triage`, so update there too.)
 - A check workflow is added or renamed → its `name:` must also land in `ss-pr-summary.yml`'s `workflow_run.workflows` list, or the PR summary silently stops re-rendering when that check finishes. Check this whenever the workflow inventory in Step 3 changes.
 - A profile is added, or a profile's `disables` list changes in `cli/slopstopper/data/profiles.json` → update the shape table in Step 1's pre-flight framing, the per-profile workflow counts (Step 1.2, Step 2, Step 3), the Pass B callout in Step 7, and the `profile:` bullet in the Refresh-only knobs list.
 - A new key lands under `api:` in `.slopstopper.yml.example` → update Step 4's "Configure the API checks" block, which is the only place this skill spells that schema out.
@@ -32,4 +32,4 @@ Triggers that require revisiting this skill:
 
 The companion to this is `AGENTS.md` in the slopstopper repo: its "When making changes" table flags the skill as a follow-on target whenever a change of the above kind ships. If you're updating slopstopper itself and that table isn't pointing readers back here, fix that first.
 
-The skills are installed at project level by `install-skill.sh` — run standalone to refresh, or by `install.sh` against its own checkout. It iterates its `SKILLS` array (`slopstopper-install`, `slopstopper-triage`) and installs each `<repo>/.claude/skills/<skill>/` directory: `SKILL.md` (validated to start with frontmatter) plus every `references/*.md` it links. A reference file the map doesn't link is never installed. If you rename a skill, add a third, change the frontmatter contract, or otherwise change the shape of what gets fetched, update that array (and `OBSOLETE_SKILLS` for a removed name) AND `docs/runbooks/INSTALL_SKILLS.md` in the same change.
+The skills are installed at project level by `install-skill.sh` (run standalone to refresh) or by `install.sh` against its own checkout. It iterates its `SKILLS` array (`slopstopper-install`, `slopstopper-triage`) and installs each `<repo>/.claude/skills/<skill>/` directory: `SKILL.md` (validated to start with frontmatter) plus every `references/*.md` it links. A reference file the map doesn't link is never installed. If you rename a skill, add a third, change the frontmatter contract, or otherwise change the shape of what gets fetched, update that array (and `OBSOLETE_SKILLS` for a removed name) AND `docs/runbooks/INSTALL_SKILLS.md` in the same change.

@@ -1,8 +1,8 @@
 # Install the SlopStopper Claude Code skills
 
-The companion to [`install.sh`](../../install.sh). Where `install.sh` drops the whole quality suite into a repo, [`install-skill.sh`](../../install-skill.sh) targets just the Claude Code skill subset — useful for refreshing the playbooks without re-running the full installer.
+The companion to [`install.sh`](../../install.sh). Where `install.sh` drops the whole quality suite into a repo, [`install-skill.sh`](../../install-skill.sh) targets just the Claude Code skill subset, which is useful for refreshing the playbooks without re-running the full installer.
 
-Both scripts write skills at **project level** — into the adopter repo's `.claude/skills/` directory — so every contributor that clones the repo gets them automatically. Claude Code auto-discovers project-level skills the same way it does user-level ones.
+Both scripts write skills at **project level**. They land in the adopter repo's `.claude/skills/` directory, so every contributor that clones the repo gets them automatically. Claude Code auto-discovers project-level skills the same way it does user-level ones.
 
 After install, Claude Code auto-picks the right skill for any SlopStopper-related prompt:
 
@@ -11,13 +11,13 @@ After install, Claude Code auto-picks the right skill for any SlopStopper-relate
 | [`slopstopper-install`](../../.claude/skills/slopstopper-install/SKILL.md) | "add slopstopper to this repo", "install the slopstopper quality suite", "refresh slopstopper", "upgrade slopstopper", "pull in new slopstopper checks" |
 | [`slopstopper-triage`](../../.claude/skills/slopstopper-triage/SKILL.md) | "fix this failing slopstopper check", "the complexity check is failing", "diagnose this DAST alert" |
 
-`slopstopper-install` covers both first install and refresh — its mode-detection branch checks for `.slopstopper.yml` + `.ss/.workflows-installed` and routes to the right subset of steps. There's no separate `slopstopper-update` skill; the previous version was folded into `slopstopper-install` because install.sh is idempotent and the two flows shared 80% of their steps.
+`slopstopper-install` covers both first install and refresh. Its mode-detection branch checks for `.slopstopper.yml` + `.ss/.workflows-installed` and routes to the right subset of steps. There's no separate `slopstopper-update` skill; the previous version was folded into `slopstopper-install` because install.sh is idempotent and the two flows shared 80% of their steps.
 
 ## What you need
 
-- **Claude Code** — [claude.com/claude-code](https://claude.com/claude-code). Skills land at project level regardless of whether Claude Code is installed on the machine running the install; any contributor who has Claude Code will pick them up when they open the repo.
-- **curl** — `install-skill.sh` fetches each skill file from this repo. `install.sh` runs the same script against its own checkout and needs no network for this step.
-- **Write access to the target repo** — the scripts create `.claude/skills/` under the repo root.
+- **Claude Code**, from [claude.com/claude-code](https://claude.com/claude-code). Skills land at project level regardless of whether Claude Code is installed on the machine running the install; any contributor who has Claude Code will pick them up when they open the repo.
+- **curl**, because `install-skill.sh` fetches each skill file from this repo. `install.sh` runs the same script against its own checkout and needs no network for this step.
+- **Write access to the target repo**, since the scripts create `.claude/skills/` under the repo root.
 
 ## Install
 
@@ -55,15 +55,15 @@ bash install-skill.sh /path/to/repo
 Two directories, one per skill, written under the target repo root:
 
 ```
-<repo>/.claude/skills/slopstopper-install/SKILL.md      # the playbook map — loaded on trigger
-<repo>/.claude/skills/slopstopper-install/references/   # the long sections — read when a step needs them
+<repo>/.claude/skills/slopstopper-install/SKILL.md      # the playbook map, loaded on trigger
+<repo>/.claude/skills/slopstopper-install/references/   # the long sections, read when a step needs them
 <repo>/.claude/skills/slopstopper-triage/SKILL.md
 <repo>/.claude/skills/slopstopper-triage/references/
 ```
 
 Each skill's map file (SKILL.md) is short (about the ~2,000-token budget this repo puts on its own `AGENTS.md`) and links the `references/*.md` files that hold the full tables. Claude Code loads the map when the skill triggers and reads a reference only when the map points at it, so the skill costs one page of context until a step needs detail.
 
-Nothing outside `<repo>/.claude/skills/slopstopper-*/` is touched. Per skill, the script fetches the map, checks it looks like a Claude Code skill (frontmatter present), then fetches every reference it links — only linked files, so nothing else in the source tree ships. The result is copied next to the installed skill and then moved into place, so a failed download or copy leaves the installed copy as it was. A skill that fails is named at the end and the script exits non-zero; `install.sh` reports that as a warning and carries on.
+Nothing outside `<repo>/.claude/skills/slopstopper-*/` is touched. Per skill, the script fetches the map, checks it looks like a Claude Code skill (frontmatter present), then fetches every reference it links. Only linked files come across, so nothing else in the source tree ships. The result is copied next to the installed skill and then moved into place, so a failed download or copy leaves the installed copy as it was. A skill that fails is named at the end and the script exits non-zero; `install.sh` reports that as a warning and carries on.
 
 `install-skill.sh` is the only implementation: `install.sh` runs it against the checkout `install.sh` itself is running from (`SLOPSTOPPER_REPO_RAW=file://…`), so the skills always match the workflows and templates installed beside them.
 
@@ -71,13 +71,13 @@ Nothing outside `<repo>/.claude/skills/slopstopper-*/` is touched. Per skill, th
 
 ## Why project level (and what happened to user level)
 
-A previous version of this script wrote skills to `~/.claude/skills/slopstopper-*`. That made the skills available globally on the installer's machine — but only on the installer's machine. Every other contributor cloning the repo would need to run the install themselves to get the playbooks. Asymmetric with how the workflows landed (project-level, committed, shared on clone), and a frequent source of "the suite is set up but Claude doesn't know about it" confusion.
+A previous version of this script wrote skills to `~/.claude/skills/slopstopper-*`. That made the skills available globally, but only on the installer's machine. Every other contributor cloning the repo would need to run the install themselves to get the playbooks. That was asymmetric with how the workflows landed (project-level, committed, shared on clone), and a frequent source of "the suite is set up but Claude doesn't know about it" confusion.
 
-The new model treats skills like every other slopstopper artefact: shipped into the repo, committed, shared by every contributor on git clone. Two scripts, one destination — no more user/project drift.
+The new model treats skills like every other slopstopper artefact: shipped into the repo, committed, shared by every contributor on git clone. Two scripts write to one destination, so there is no more user/project drift.
 
 ## What happened to `slopstopper-update`
 
-The previous skill set was a trio: `slopstopper-install`, `slopstopper-update`, `slopstopper-triage`. The install and update skills overlapped heavily — install.sh is idempotent, the local-verify loop was identical, the "what just landed / what changed" inventory was the same surface. The genuinely-update-only content (re-applying customizations, diffing upstream for new knobs, spotting newly-shipped checks) has been folded into `slopstopper-install` as a "Refresh-only" section that the mode-detection branch routes to when `.slopstopper.yml` already exists. One skill, two flows, no churn maintaining two near-identical playbooks.
+The previous skill set was a trio: `slopstopper-install`, `slopstopper-update`, `slopstopper-triage`. The install and update skills overlapped heavily, because install.sh is idempotent, the local-verify loop was identical and the "what just landed / what changed" inventory was the same surface. The genuinely-update-only content (re-applying customizations, diffing upstream for new knobs, spotting newly-shipped checks) has been folded into `slopstopper-install` as a "Refresh-only" section that the mode-detection branch routes to when `.slopstopper.yml` already exists. One skill now carries both flows, so nobody has to keep two near-identical playbooks in step.
 
 The old `slopstopper-update` directory is auto-removed on every install or refresh (it's listed in `install-skill.sh`'s `OBSOLETE_SKILLS` array alongside the older single-skill `install-slopstopper` name).
 
@@ -91,7 +91,7 @@ rm -rf ~/.claude/skills/slopstopper-install \
        ~/.claude/skills/slopstopper-triage
 ```
 
-`install-skill.sh` (and so `install.sh`) detects this scenario and prints a one-line warning suggesting the cleanup. It doesn't execute the `rm` — deleting another contributor's user-level state without consent isn't something an installer should do silently — but it tells you exactly which command to run.
+`install-skill.sh` (and so `install.sh`) detects this scenario and prints a one-line warning suggesting the cleanup. It doesn't execute the `rm`, because an installer should not silently delete another contributor's user-level state, but it tells you exactly which command to run.
 
 ## How the skills get used
 
@@ -104,7 +104,7 @@ Per-invocation context stays small because Claude only loads the one skill that 
 
 ## Refresh
 
-Re-run either script any time. Each compares the staged directory against what's installed and only replaces it if content differs — as a whole, so a reference file from an older skill layout does not linger.
+Re-run either script any time. Each compares the staged directory against what's installed and only replaces it if content differs. It replaces the whole directory, so a reference file from an older skill layout does not linger.
 
 ## Uninstall
 

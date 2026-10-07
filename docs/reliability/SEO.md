@@ -2,10 +2,10 @@
 
 SlopStopper ships two complementary SEO-flavoured checks:
 
-1. **Lighthouse SEO category** — runs as part of `ss:reliability:cwv`, gated at score ≥ 0.9 (see [`cli/slopstopper/data/lighthouserc.json`](../../cli/slopstopper/data/lighthouserc.json)). Covers core SEO basics: meta description, `viewport`, `lang`, canonical, robots, indexability, link-text quality.
-2. **SEO metatag check** — `ss:reliability:seo`, implemented in [`cli/slopstopper/checks/seo.py`](../../cli/slopstopper/checks/seo.py). Validates the social-share tags Lighthouse does **not** flag (OpenGraph + Twitter Card) plus reachability of the OG image.
+1. **Lighthouse SEO category** runs as part of `ss:reliability:cwv`, gated at score ≥ 0.9 (see [`cli/slopstopper/data/lighthouserc.json`](../../cli/slopstopper/data/lighthouserc.json)). It covers the SEO basics of meta description, `viewport`, `lang`, canonical, robots, indexability and link-text quality.
+2. **SEO metatag check** is `ss:reliability:seo`, implemented in [`cli/slopstopper/checks/seo.py`](../../cli/slopstopper/checks/seo.py). It validates the social-share tags Lighthouse does **not** flag (OpenGraph + Twitter Card) plus reachability of the OG image.
 
-The metatag check is intentionally Python stdlib only — no new dependencies on top of Python 3.
+The metatag check is intentionally Python stdlib only, so it adds no dependencies on top of Python 3.
 
 ## What gets validated
 
@@ -21,7 +21,7 @@ For each page in `SEO_PAGES`, the script asserts the following are present and n
 **OpenGraph**
 
 - `og:title`, `og:description`, `og:type`, `og:url`
-- `og:image` (optional — disable via `SEO_REQUIRE_OG_IMAGE=0`)
+- `og:image` (skip it with `SEO_REQUIRE_OG_IMAGE=0`)
 - If `og:image` is present and `SEO_VERIFY_OG_IMAGE` is not `0`, the script HEAD-fetches the URL and asserts a 200 response with an `image/*` content type.
 
 **Twitter Card**
@@ -63,7 +63,7 @@ Generated reports are written to:
 
 ## Why this exists
 
-Lighthouse's SEO category passes a site with no OpenGraph or Twitter Card metadata as long as the basics (description, viewport, canonical) are present. But the moment that site gets shared in Slack, Twitter/X, LinkedIn or Discord, the preview is empty — no image, no title, no description. That's the gap this check closes. It's also what tools like [metatags.io](https://metatags.io/) verify by eye; this check makes the same verification deterministic and CI-gated.
+Lighthouse's SEO category passes a site with no OpenGraph or Twitter Card metadata as long as the basics (description, viewport, canonical) are present. But the moment that site gets shared in Slack, Twitter/X, LinkedIn or Discord, the preview is empty, with no image, no title and no description. This check closes that gap. It's also what tools like [metatags.io](https://metatags.io/) verify by eye; this check makes the same verification deterministic and CI-gated.
 
 ## CI integration
 

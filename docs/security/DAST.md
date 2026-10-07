@@ -1,4 +1,4 @@
-# DAST — Dynamic Application Security Testing
+# Dynamic Application Security Testing (DAST)
 
 This template includes automated Dynamic Application Security Testing (DAST) using **OWASP ZAP** to detect runtime security issues by scanning your running site. This guide explains how to customise and use this feature.
 
@@ -6,7 +6,7 @@ This template includes automated Dynamic Application Security Testing (DAST) usi
 
 ### Run Analysis Locally
 ```bash
-# Serve the built site on :8080 (what CI does — or point at a deployed URL instead)
+# Serve the built site on :8080 as CI does, or point at a deployed URL instead
 slopstopper serve &
 # Run DAST scan against it
 task ss:security:dast -- http://localhost:8080
@@ -23,7 +23,7 @@ task ss:security:dast -- http://localhost:8080
 | Problem | Solution |
 |---------|----------|
 | Workflow not triggering? | Check workflow is at `.github/workflows/ss-security-dast-check.yml` |
-| ZAP not available? | The workflow uses Docker to run ZAP — no installation needed in CI |
+| ZAP not available? | The workflow uses Docker to run ZAP, so no installation is needed in CI |
 | Don't want DAST checks? | Delete `.github/workflows/ss-security-dast-check.yml` |
 | All my PRs fail DAST because I had to embed GTM / Intercom / etc.? | Document the CSP relaxation in [`CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md). The gate will swallow CSP-class findings on documented paths. See "DAST + CSP exceptions" below. |
 
@@ -31,7 +31,7 @@ task ss:security:dast -- http://localhost:8080
 
 | Risk Level | riskcode | Status | Action |
 |------------|----------|--------|--------|
-| High | 3 | 🔴 Blocking | Must be fixed before merge — blocks even on documented exception paths |
+| High | 3 | 🔴 Blocking | Must be fixed before merge, and blocks even on documented exception paths |
 | Medium | 2 | 🟡 Blocking by default | Blocks unless the finding is a CSP issue on a path documented in `CSP_EXCEPTIONS.md` |
 | Low | 1 | 🔵 Non-blocking | Review when time allows |
 | Informational | 0 | ℹ️ Non-blocking | Awareness only |
@@ -40,17 +40,17 @@ task ss:security:dast -- http://localhost:8080
 
 The DAST gate in this template (driven by [`cli/slopstopper/dast_gate.py`](../../cli/slopstopper/dast_gate.py)) consults [`docs/security/CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md) on every run:
 
-- **No `CSP_EXCEPTIONS.md` file?** Gate behaves exactly like a vanilla riskcode ≥ 2 cutoff — nothing changes for you. Adopters with no third-party scripts can ignore this section entirely.
-- **You added a third-party widget (GTM, Sentry, Intercom, Giscus…)?** Add a per-path entry to `worker/headers.json` for the affected path, *and* document it under `## Exceptions` in `CSP_EXCEPTIONS.md` using the schema in that file. Once it's documented, ZAP's CSP findings on that exact path stop blocking the build. They still appear in the PR comment under a separate "🛡 Documented CSP exceptions" section so they stay visible in review.
-- **What still blocks even with an exception?** Any non-CSP finding (XSS, missing other headers, CSRF, etc.) on the same path; any finding at all on a non-documented path; any High-severity (riskcode 3) finding anywhere — including CSP High on a documented path. The exception only relaxes the *Medium-CSP-on-this-path* case; the rest of DAST coverage is unchanged.
+- **With no `CSP_EXCEPTIONS.md` file**, the gate behaves exactly like a vanilla riskcode ≥ 2 cutoff, so nothing changes for you. Adopters with no third-party scripts can ignore this section entirely.
+- **If you add a third-party widget (GTM, Sentry, Intercom, Giscus…)**, add a per-path entry to `worker/headers.json` for the affected path, *and* document it under `## Exceptions` in `CSP_EXCEPTIONS.md` using the schema in that file. Once it's documented, ZAP's CSP findings on that exact path stop blocking the build. They still appear in the PR comment under a separate "🛡 Documented CSP exceptions" section so they stay visible in review.
+- **An exception does not unblock anything else.** Any non-CSP finding (XSS, missing other headers, CSRF, etc.) on the same path still blocks, as does any finding at all on a non-documented path and any High-severity (riskcode 3) finding anywhere, including CSP High on a documented path. The exception only relaxes the *Medium-CSP-on-this-path* case; the rest of DAST coverage is unchanged.
 
-The companion check `ss:hygiene:csp-exceptions` (workflow `ss-hygiene-csp-exceptions-check.yml`) keeps `worker/headers.json` and `CSP_EXCEPTIONS.md` in sync — if either side drifts, the build fails before DAST even runs.
+The companion check `ss:hygiene:csp-exceptions` (workflow `ss-hygiene-csp-exceptions-check.yml`) keeps `worker/headers.json` and `CSP_EXCEPTIONS.md` in sync. If either side drifts, the build fails before DAST even runs.
 
 ---
 
 ## Overview
 
-What DAST checks: **your running application** for HTTP-level security vulnerabilities — missing security headers, injection vectors, exposed sensitive endpoints, and other issues that only appear at runtime.
+What DAST checks: **your running application** for HTTP-level security vulnerabilities such as missing security headers, injection vectors, exposed sensitive endpoints, and other issues that only appear at runtime.
 
 The DAST workflow:
 - ✅ Starts a local http-server for the static site
@@ -66,8 +66,8 @@ The DAST workflow:
 | `.github/workflows/ss-security-dast-check.yml` | GitHub Actions workflow |
 | `Taskfile.ss.yml` (`dast` task) | Local task runner shim → `slopstopper run security:dast` |
 | `cli/slopstopper/checks/dast.py` | Check implementation (subprocess-invokes Docker + OWASP ZAP, renders MD report) |
-| `cli/slopstopper/dast_gate.py` | Pass/fail gate — filters documented CSP exceptions from the blocker count |
-| `docs/security/CSP_EXCEPTIONS.md` | Single source of truth for per-path CSP relaxations (optional — gate handles absence) |
+| `cli/slopstopper/dast_gate.py` | Pass/fail gate that filters documented CSP exceptions from the blocker count |
+| `docs/security/CSP_EXCEPTIONS.md` | Single source of truth for per-path CSP relaxations (optional, as the gate handles absence) |
 | `.gitignore` | Excludes `.ss/reports/dast/` |
 
 ## Key Configuration Points
@@ -84,7 +84,7 @@ In `ss-security-dast-check.yml`, the CI workflow starts a local server and passe
 
 ### Change the Blocking Threshold
 
-The cutoff — Medium and High (riskcode ≥ 2) block — is fixed in `cli/slopstopper/dast_gate.py`; there is no workflow line or `.slopstopper.yml` knob for it. To stop a specific Medium alert blocking, scope it rather than the threshold:
+Medium and High (riskcode ≥ 2) block, and that cutoff is fixed in `cli/slopstopper/dast_gate.py`; there is no workflow line or `.slopstopper.yml` knob for it. To stop a specific Medium alert blocking, scope it rather than the threshold:
 
 - Set its ZAP plugin to `IGNORE` in `.zap/rules.tsv`. The gate honours that list, so an ignored plugin doesn't count.
 - For a CSP finding caused by a third-party embed, document the path in [`CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md) (see below).
@@ -125,7 +125,7 @@ Reports are saved to `.ss/reports/dast/`.
 
 The default scan above is ZAP's **baseline**, which spiders the site from the
 URL you pass. That is right for an HTML surface and useless against a JSON
-API — there are no links to crawl, so the scan reports next to nothing.
+API. With no links to crawl, the scan reports next to nothing.
 
 Point the check at an OpenAPI spec and it switches to ZAP's **API scan**,
 which reads the spec and exercises the operations it declares:
@@ -157,12 +157,12 @@ whatever environment you are actually testing. Set it to `false` if your spec
 already names the right host.
 
 **A local spec file** is staged into ZAP's mounted report directory for the
-run and removed afterwards — the container only sees `/zap/wrk/`, so a
-repo-relative path can't be handed to it directly.
+run and removed afterwards, because the container only sees `/zap/wrk/`
+and a repo-relative path can't be handed to it directly.
 
 **Unconfigured is not failing.** With no spec the check keeps its baseline
 behaviour, and on an `api`-profile repo the workflow skips rather than
-scanning nothing — the same contract as `reliability:api-health` and
+scanning nothing, which is the same contract as `reliability:api-health` and
 `security:api-headers`. So an `api` repo carries the DAST workflow but gets
 no dynamic scanning until a spec is set; that is the one step to take if you
 want API security coverage.

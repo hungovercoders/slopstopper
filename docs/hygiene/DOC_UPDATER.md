@@ -10,7 +10,7 @@ with the GitHub Copilot CLI engine.
 | File | Purpose |
 | ---- | ------- |
 | [`.github/workflows/ss-hygiene-doc-updater.md`](../../.github/workflows/ss-hygiene-doc-updater.md) | Human-authored source. Frontmatter + prompt body. **This is what you edit.** |
-| [`.github/workflows/ss-hygiene-doc-updater.lock.yml`](../../.github/workflows/ss-hygiene-doc-updater.lock.yml) | Compiled artifact gh-aw runtime executes. Generated — do not hand-edit. |
+| [`.github/workflows/ss-hygiene-doc-updater.lock.yml`](../../.github/workflows/ss-hygiene-doc-updater.lock.yml) | Compiled artifact the gh-aw runtime executes. It is generated, so do not hand-edit it. |
 | [`.github/aw/actions-lock.json`](../../.github/aw/actions-lock.json) | gh-aw companion lockfile that pins SHAs for the GitHub Actions referenced in compiled workflows. |
 
 ## What it does
@@ -51,8 +51,8 @@ opens an *issue* labelled `documentation, automation, agentic-workflows`
 with a `Click here to create the pull request` link. You then have to
 manually open the PR from the link.
 
-Enabling the setting is preferable — the agent's intended output is a
-PR, and the issue-fallback workflow adds manual steps every week.
+Enabling the setting is preferable, because the agent's intended output
+is a PR and the issue-fallback workflow adds manual steps every week.
 
 ## What it produces
 
@@ -67,7 +67,7 @@ PR, and the issue-fallback workflow adds manual steps every week.
 
 The `.md` source is authoritative. After editing it you **must** recompile
 the `.lock.yml`, otherwise the scheduled run will execute the old
-behaviour (or fail outright — see the next section).
+behaviour (or fail outright, as the next section describes).
 
 ```bash
 # One-time: install the gh-aw extension
@@ -83,7 +83,7 @@ git commit -m "chore(workflows): recompile doc-updater after prompt edit"
 ```
 
 The compiler also updates `.github/aw/actions-lock.json` if it picks up
-newer action versions — commit both files together.
+newer action versions, so commit both files together.
 
 ## Troubleshooting
 
@@ -99,7 +99,7 @@ Fix: recompile per the section above. This is exactly what
 ### Workflow runs successfully but no PR appears
 
 You're missing the workflow-permissions setting above. Look in the issue
-list for one labelled `documentation, automation` — the agent put the
+list for one labelled `documentation, automation`. The agent put the
 patch and a manual-open link there.
 
 ### `COPILOT_GITHUB_TOKEN` rotated, runs failing auth

@@ -10,21 +10,21 @@ slopstopper checks list             # what's available
 slopstopper run hygiene:docs-size   # run one check (writes .ss/reports/...)
 ```
 
-The full suite into a repo (CLI pinned via [mise](https://mise.jdx.dev), workflows, Taskfile shims, config seed, Claude Code skills). Idempotent — re-run to refresh:
+The installer puts the full suite into a repo (CLI pinned via [mise](https://mise.jdx.dev), workflows, Taskfile shims, config seed, Claude Code skills). It is idempotent, so re-run it any time to refresh:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 ```
 
-Not a website? Pass a profile through the same one-liner — `curl -fsSL … | bash -s -- --profile api` (or `library`) — and only the checks that apply are installed.
+If the repo is an API or a library rather than a website, pass a profile through the same one-liner: `curl -fsSL … | bash -s -- --profile api` (or `library`). Only the checks that apply are then installed.
 
 ## Docs
 
 - Adopting it: prerequisites, what gets installed, what each check needs, configure, update → [`docs/runbooks/INSTALL.md`](./docs/runbooks/INSTALL.md)
 - Working in this repo: [`AGENTS.md`](./AGENTS.md) carries the conventions and commands; [`docs/README.md`](./docs/README.md) routes to everything else
-- Using Claude Code? `install.sh` lands two skills in `<repo>/.claude/skills/`: `slopstopper-install` and `slopstopper-triage`
+- For Claude Code, `install.sh` lands two skills in `<repo>/.claude/skills/`: `slopstopper-install` and `slopstopper-triage`
 
-## Dogfooded here — slopstopper.dev
+## Dogfooded here on slopstopper.dev
 
 This repo hosts the CLI (under [`cli/`](./cli)) and [slopstopper.dev](https://slopstopper.dev/), a live reference site that runs the same suite it advertises. The badges are this repo's own CI, on every PR and push to `main`.
 
@@ -69,10 +69,10 @@ This repo hosts the CLI (under [`cli/`](./cli)) and [slopstopper.dev](https://sl
 
 ### 🚀 Deployment
 
-How slopstopper.dev ships (Cloudflare Workers Builds); not installed by `install.sh`. See [`docs/deployment/README.md`](./docs/deployment/README.md) to copy the setup.
+slopstopper.dev ships through Cloudflare Workers Builds, which `install.sh` does not set up. See [`docs/deployment/README.md`](./docs/deployment/README.md) to copy the setup.
 
 [![Site](https://img.shields.io/website?url=https%3A%2F%2Fslopstopper.dev&label=slopstopper.dev&up_message=up&down_message=down)](https://slopstopper.dev/)
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). Tool credits and licences: [`ATTRIBUTIONS.md`](./ATTRIBUTIONS.md).
+MIT; the full text is in [LICENSE](./LICENSE). Tool credits and licences are in [`ATTRIBUTIONS.md`](./ATTRIBUTIONS.md).

@@ -20,7 +20,7 @@ Brand tokens live in [`app/shared.css`](../../app/shared.css) on `:root`:
 --peach-soft: #FFE9D4;
 --ink: #2A2118;          /* primary text */
 --ink-soft: #6B5B47;     /* secondary text */
---accent: #E8512B;       /* tomato — for decorative shapes only */
+--accent: #E8512B;       /* tomato, decorative shapes only */
 --accent-deep: #B33A1A;  /* tomato for text-on-light or text-on-accent */
 --mint: #2E8B6F;         /* "pass" indicator */
 --sun: #F5C24C;          /* "warning" + highlighter underline */
@@ -29,7 +29,7 @@ Brand tokens live in [`app/shared.css`](../../app/shared.css) on `:root`:
 **Contrast rule:** `--accent` (`#E8512B`) is below 4.5:1 against white.
 For any text on a light background, or white text on coloured
 backgrounds, use `--accent-deep`. axe-core catches violations at the
-strictest `minor` threshold — keep that gate green.
+strictest `minor` threshold, so keep that gate green.
 
 Typography is one self-hosted face: Nunito (SIL OFL 1.1, licence in
 `app/fonts/OFL.txt`) as a single variable WOFF2, latin subset, at
@@ -41,11 +41,11 @@ the CSP needs no font-src exception; do not add external font links.
 
 ## Content authoring rules
 
-- The one-sentence identity ("A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.") appears verbatim in the home hero, the home meta/OpenGraph/Twitter descriptions, the web manifest, `app/llms.txt`, `README.md`, `cli/README.md`, `cli/pyproject.toml` and the install skill. `cli/tests/test_site_identity.py` fails if any copy drifts — change them all, or change the constant in the test with them.
+- The one-sentence identity ("A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.") appears verbatim in the home hero, the home meta/OpenGraph/Twitter descriptions, the web manifest, `app/llms.txt`, `README.md`, `cli/README.md`, `cli/pyproject.toml` and the install skill. `cli/tests/test_site_identity.py` fails if any copy drifts, so change them all, or change the constant in the test with them.
 - Each HTML page links `app/shared.css` first, then its page-specific CSS.
-- Header / nav / footer markup is duplicated across pages — there is
-  no build step or SSI. Accept the duplication; if you change one,
-  change all four.
+- Header / nav / footer markup is duplicated across pages because
+  there is no build step or SSI. Accept the duplication; if you change
+  one, change all four.
 - Every external link uses `rel="noopener noreferrer"`. Avoid
   `target="_blank"` for predictable screen-reader behaviour.
 - `aria-current="page"` marks the active nav link.
@@ -117,7 +117,7 @@ on Features and Tools are deliberately not copyable.
 `<details>` elements carry the custom `+` / `−` marker from
 `app/shared.css` and need no script.
 
-### Feedback — GitHub Discussions
+### Feedback via GitHub Discussions
 
 The page embeds [Giscus](https://giscus.app/) to surface GitHub Discussions
 comments directly on the page. The embed requires a per-path CSP relaxation
