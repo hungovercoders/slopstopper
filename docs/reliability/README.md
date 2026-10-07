@@ -271,7 +271,7 @@ For assertions beyond "page returns 200 and loads cleanly" (e.g. specific elemen
 **Tests fail locally but pass in CI (or vice versa):**
 - Check `SMOKE_TEST_URL` (or the positional URL) points where you expect
 - Verify the target URL is reachable from your network
-- The CI workflow installs the Playwright browsers via `npx playwright install --with-deps chromium`; locally, run the same command once before your first invocation (or let the spec install on demand)
+- The CI workflow installs the Playwright browsers via `npx playwright install --with-deps chromium`, giving each attempt five minutes and retrying a stall once so a hung download fails the job instead of holding it for hours; locally, run the same command once before your first invocation (or let the spec install on demand)
 
 **Tests timeout:**
 - Check the site is responding (try `curl`/`wget`)
