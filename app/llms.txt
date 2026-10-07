@@ -12,8 +12,8 @@ deployed with the same suite it advertises.
 ## Site
 
 - [Home](https://slopstopper.dev/): what SlopStopper is and how to get started
-- [Features](https://slopstopper.dev/features.html): the five loops — security, hygiene, reliability and operational (installed), plus deployment (how this site ships, to copy) — and every check
-- [Tools](https://slopstopper.dev/tools.html): the underlying kit — Semgrep, OWASP ZAP, Trivy, Gitleaks, Playwright, axe-core, Lighthouse CI, GitHub Actions, Task
+- [Features](https://slopstopper.dev/features.html): the five loops (security, hygiene, reliability and operational are installed; deployment shows how this site ships, to copy) and every check
+- [Tools](https://slopstopper.dev/tools.html): the underlying kit: Semgrep, OWASP ZAP, Trivy, Gitleaks, Playwright, axe-core, Lighthouse CI, GitHub Actions, Task
 - [Feedback](https://slopstopper.dev/feedback.html): report a bug or request a check
 
 ## Source

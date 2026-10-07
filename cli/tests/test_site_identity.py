@@ -49,7 +49,7 @@ def test_meta_description_starts_with_identity() -> None:
     match = re.search(r'<meta name="description" content="([^"]*)"', html)
     assert match, "home page has no meta description"
     lowered = IDENTITY[0].lower() + IDENTITY[1:]
-    assert match.group(1) == f"SlopStopper \u2014 {lowered}"
+    assert match.group(1) == f"SlopStopper: {lowered}"
     assert len(match.group(1)) <= 160
 
 
