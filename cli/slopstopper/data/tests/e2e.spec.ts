@@ -27,9 +27,9 @@ import { test, expect, type Page } from '@playwright/test';
  * `slopstopper templates eject tests/e2e.spec.ts`, then edit `.ss/tests/e2e.spec.ts`.
  *
  * Configuration:
- *   E2E_TEST_URL   — base URL (falls back to SMOKE_TEST_URL / BASE_URL / localhost:8080)
- *   E2E_PAGES      — comma-separated start paths, default '/'
- *   E2E_MAX_LINKS  — nav links followed per start path, default 25
+ *   E2E_TEST_URL   base URL (falls back to SMOKE_TEST_URL / BASE_URL / localhost:8080)
+ *   E2E_PAGES      comma-separated start paths, default '/'
+ *   E2E_MAX_LINKS  nav links followed per start path, default 25
  *
  * Usage:
  *   task ss:reliability:e2e -- https://your-site.example.com
@@ -51,7 +51,7 @@ const DEFAULT_MAX_LINKS = 25;
 const parsedMax = parseInt(process.env.E2E_MAX_LINKS || '', 10);
 const maxLinks = Number.isFinite(parsedMax) && parsedMax > 0 ? parsedMax : DEFAULT_MAX_LINKS;
 
-/** Files a browser downloads or renders without a site shell — never a page to walk. */
+/** Files a browser downloads or renders without a site shell, so never a page to walk. */
 const NON_HTML = /\.(pdf|xml|txt|json|rss|atom|zip|gz|tar|csv|ics|png|jpe?g|gif|svg|webp|avif|ico|mp[34]|webm|woff2?|css|js|mjs)$/i;
 
 /** `/about.html`, `/about/` and `/about` are the same page; so are `/` and `/index.html`. */

@@ -4,8 +4,8 @@ name: SlopStopper · robots.txt Check
 # `Disallow: /` (the de-index footgun) and at least one `Sitemap:` pointer.
 # An `Llms:` pointer and the text/plain content-type are advisory. Triggers:
 # PR, push to main, daily schedule, Cloudflare deployment events. Emits a
-# rolling PR comment; workflow fails on a missing/broken file — no separate
-# main-branch issue (exit code is the signal).
+# rolling PR comment. The workflow fails on a missing or broken file. There
+# is no separate main-branch issue because the exit code is the signal.
 # Docs: docs/reliability/ROBOTS_TXT.md.
 
 on:
@@ -89,7 +89,7 @@ jobs:
         id: audit
         # The Sitemap:/Llms: URLs inside robots.txt point at the production
         # domain, so HEAD-verifying them from a localhost build tests
-        # reachability of the real targets — keep it on. Schedule /
+        # reachability of the real targets and is worth keeping on. Schedule /
         # deployment_status runs audit the deployed URL directly.
         run: task ss:reliability:robots-txt -- ${{ steps.url.outputs.url }} --check-links
 

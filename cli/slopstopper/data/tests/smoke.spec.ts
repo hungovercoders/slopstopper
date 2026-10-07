@@ -4,16 +4,16 @@ import { test, expect } from '@playwright/test';
  * Portable smoke tests for any web app.
  *
  * Checks each page returns 200, loads without console errors, and responds
- * within an acceptable time. No site-specific assertions (title, selectors)
- * — accessibility audits cover content correctness; this just proves the
- * pages are reachable and don't crash.
+ * within an acceptable time. It makes no site-specific assertions (title,
+ * selectors) because the accessibility audit covers content; this just
+ * proves the pages are reachable and don't crash.
  *
  * Configuration:
- *   SMOKE_TEST_URL  — base URL to hit (required when running outside a repo
+ *   SMOKE_TEST_URL  base URL to hit (required when running outside a repo
  *                     with its own webServer config)
- *   SMOKE_PAGES     — comma-separated list of paths to check, default '/'
+ *   SMOKE_PAGES     comma-separated list of paths to check, default '/'
  *                     e.g. '/,/about,/pricing'
- *   SMOKE_TIMEOUT   — per-request timeout in ms, default 5000
+ *   SMOKE_TIMEOUT   per-request timeout in ms, default 5000
  *
  * Usage:
  *   SMOKE_TEST_URL=https://your-site task ss:reliability:smoke
@@ -63,7 +63,7 @@ test.describe('Smoke Tests', () => {
 
   // Opt-in via SMOKE_OG_IMAGE_PATH (default: /og-image.png for backward compat).
   // Set to empty string in your .slopstopper.yml under smoke.og_image_path to
-  // disable — use this if you ship per-post share images instead of one
+  // disable it if you ship per-post share images instead of one
   // site-wide image.
   const ogImagePath = process.env.SMOKE_OG_IMAGE_PATH ?? '/og-image.png';
   if (ogImagePath) {

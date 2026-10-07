@@ -5,7 +5,7 @@ name: SlopStopper · Reliability Smoke Tests
 # pages.smoke in .slopstopper.yml. Triggers: PR, push to main, hourly
 # schedule, Cloudflare deployment events. Failure raises a
 # main-branch tracking issue with the run URL; recovery auto-closes
-# it. No PR comment — exit code is the signal.
+# it. There is no PR comment because the exit code is the signal.
 # Docs: docs/reliability/README.md.
 
 on:

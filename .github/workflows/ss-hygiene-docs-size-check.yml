@@ -45,9 +45,9 @@ jobs:
         run: |
           task ss:hygiene:docs-size
           # The report is canonical (.ss/reports/docs/docs-size-report.md).
-          # We set has_alerts from the report content — the check itself
-          # is non-blocking and always exits 0; the workflow's gating is
-          # what surfaces them.
+          # We set has_alerts from the report content because the check
+          # itself is non-blocking and always exits 0, so the workflow's
+          # gating is what surfaces the alerts.
           if grep -q "❌" .ss/reports/docs/docs-size-report.md; then
             echo "has_alerts=true" >> "$GITHUB_OUTPUT"
           else

@@ -12,12 +12,12 @@ name: SlopStopper · PR Summary
 # check finishes, converging on the full picture.
 #
 # `workflow_run` only fires for workflows on the default branch, and the
-# triggering list below has to name each workflow explicitly — globs aren't
-# supported. Add a row when you add a check workflow.
+# triggering list below has to name each workflow explicitly because it
+# does not support globs. Add a row when you add a check workflow.
 #
 # Permissions note: `workflow_run` runs in the base-repo context with a
 # token that can write PR comments even for fork PRs. It never checks out
-# or executes PR code — it only reads run conclusions via the API — so the
+# or executes PR code and only reads run conclusions via the API, so the
 # usual `pull_request_target` footgun doesn't apply here.
 
 on:
@@ -64,9 +64,9 @@ concurrency:
 jobs:
   summary:
     name: Summarise check status on the PR
-    # Only for runs that belong to a pull request. A push to main has no
-    # PR to comment on, and `slopstopper summary` exits 0 in that case
-    # anyway — this just skips the job entirely.
+    # This job only runs for a pull request. A push to main has no PR to
+    # comment on, and `slopstopper summary` would exit 0 in that case
+    # anyway, so the condition just skips the job entirely.
     if: github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
 

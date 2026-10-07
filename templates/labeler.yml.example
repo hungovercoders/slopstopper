@@ -1,8 +1,8 @@
-# .github/labeler.yml — seeded by slopstopper install.sh.
+# .github/labeler.yml: seeded by slopstopper install.sh.
 #
 # Drives the ss-hygiene-auto-label-pr workflow. Maps changed-file globs
-# to PR labels. Adjust to your repo's structure — these are sensible
-# starting categories.
+# to PR labels. These are sensible starting categories, so adjust them to
+# your repo's structure.
 #
 # Format: actions/labeler@v5
 #   <label-name>:

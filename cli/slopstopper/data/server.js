@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Slopstopper portable static server — bundled inside slopstopper-cli
+ * Slopstopper portable static server, bundled inside slopstopper-cli
  * and run by `slopstopper serve`. Used by the local dynamic-check loop
  * (smoke, accessibility, broken-links, SEO, CWV, DAST). Adopters who
  * need to customise can eject with `slopstopper templates eject
@@ -26,8 +26,8 @@
  *
  * Known gap vs Cloudflare's edge: this server doesn't strip headers
  * Cloudflare strips automatically (e.g. `Server`). For DAST purposes
- * the parity is close enough — the security headers we care about
- * (CSP, X-Frame-Options, COOP/CORP, etc.) are what the scanner checks.
+ * the parity is close enough, because the security headers we care
+ * about (CSP, X-Frame-Options, COOP/CORP, etc.) are what the scanner checks.
  */
 
 'use strict';
@@ -104,12 +104,12 @@ function parseJsonRules(headersPath) {
 	try {
 		const parsed = JSON.parse(fs.readFileSync(headersPath, 'utf8'));
 		if (!Array.isArray(parsed)) {
-			console.warn(`Warning: ${headersPath} is not an array — no headers will be applied`);
+			console.warn(`Warning: ${headersPath} is not an array, so no headers will be applied`);
 			return [];
 		}
 		return parsed.filter(r => r && typeof r.for === 'string' && r.values && typeof r.values === 'object');
 	} catch (e) {
-		console.warn(`Warning: could not read ${headersPath} (${e.message}) — no headers will be applied`);
+		console.warn(`Warning: could not read ${headersPath} (${e.message}), so no headers will be applied`);
 		return [];
 	}
 }
@@ -164,7 +164,7 @@ function parseCloudflareHeaders(headersPath) {
 	try {
 		text = fs.readFileSync(headersPath, 'utf8');
 	} catch (e) {
-		console.warn(`Warning: could not read ${headersPath} (${e.message}) — no headers will be applied`);
+		console.warn(`Warning: could not read ${headersPath} (${e.message}), so no headers will be applied`);
 		return [];
 	}
 	const rules = [];
@@ -205,7 +205,7 @@ function headersForPath(rules, urlPath) {
 // Module-level constants the request handler closes over. Initialised
 // inside the require.main guard so `require('./server.js')` from a test
 // harness doesn't trigger SERVE_ROOT detection (which exits 1 when
-// CWD has no build output — fine for `slopstopper serve`, fatal for
+// CWD has no build output: fine for `slopstopper serve`, fatal for
 // unit tests of just the parsers).
 let SERVE_ROOT, HEADERS_PATH, HEADER_RULES;
 

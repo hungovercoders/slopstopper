@@ -3,8 +3,8 @@
 # Seeded by slopstopper install.sh. The block is wrapped with the
 # begin/end markers above and below so re-runs detect "already
 # appended" and don't duplicate the block. Adopters can move, edit, or
-# delete the entries between the markers — the only requirement for
-# the idempotency check is that the begin marker line survives.
+# delete the entries between the markers. The idempotency check only
+# needs the begin marker line to survive.
 #
 # Native Cloudflare/Netlify _headers format. Cloudflare Workers Builds
 # (with assets) and Netlify both serve these per response. Uncomment

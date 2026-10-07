@@ -8,7 +8,7 @@ description: >-
 # Twelve workflows carried a copy of this logic, each with its own
 # `validate_url()`. The two shapes, exactly as those copies behaved:
 #
-#   mode skip (the API checks — audit a deployed environment or nothing)
+#   mode skip (the API checks, which audit a deployed environment or nothing)
 #     workflow_dispatch   → the `url` input
 #     deployment_status   → the deployment's target URL         (prod=true)
 #     pull_request        → urls.preview
@@ -16,16 +16,16 @@ description: >-
 #     … and when that comes out empty: a notice and skip=true. An API
 #     check with no URLs configured is inert, never red.
 #
-#   mode local (the browser checks — build and serve the repo itself)
-#     workflow_dispatch   → the `url` input; if blank, a local build — or,
-#                           with dispatch-fallback: production, urls.production
-#                           (an error if unset)
+#   mode local (the browser checks, which build and serve the repo itself)
+#     workflow_dispatch   → the `url` input. If blank, a local build, or
+#                           urls.production when dispatch-fallback is
+#                           production (an error if unset)
 #     deployment_status   → the deployment's target URL         (prod=true)
 #     schedule            → urls.production (an error if unset) (prod=true)
 #     pull_request / push → http://localhost:8080, use_local=true
 #
 # Every URL is validated to http(s); an invalid one fails the step. A
-# failing `slopstopper config get` fails the step too — a broken CLI is
+# failing `slopstopper config get` fails the step too, so a broken CLI is
 # never mistaken for an unset key.
 #
 # CUSTOMISE FOR YOUR APP: `urls.production` and `urls.preview` live in
@@ -47,7 +47,7 @@ inputs:
     required: false
     default: ''
   dispatch-fallback:
-    description: "Mode local only: where a blank dispatch goes — `local` or `production`"
+    description: "Mode local only: where a blank dispatch goes (`local` or `production`)"
     required: false
     default: local
   check:
@@ -103,7 +103,7 @@ runs:
         # `slopstopper config get` prints "" for an unset key; a non-zero
         # exit is a broken CLI or config, and stops the step here.
         config_get() {
-          slopstopper config get "$1" || fail "slopstopper config get $1 failed — see the error above"
+          slopstopper config get "$1" || fail "slopstopper config get $1 failed. See the error above."
         }
 
         if [ "$MODE" = "skip" ]; then
@@ -115,7 +115,7 @@ runs:
             *)                 candidate="$(config_get urls.production)"; prod=true ;;
           esac
           if [ -z "$candidate" ]; then
-            echo "::notice::No URL resolved for this event — set urls.preview / urls.production in .slopstopper.yml to enable ${CHECK} here."
+            echo "::notice::No URL resolved for this event. Set urls.preview / urls.production in .slopstopper.yml to enable ${CHECK} here."
             emit "" true false false
           else
             audit "$candidate" "$prod"

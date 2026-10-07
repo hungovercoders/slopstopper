@@ -3,9 +3,9 @@ name: SlopStopper · Raise Issue on Workflow Failure
 on:
   workflow_run:
     workflows:
-      # Every check workflow plus the doc updater. workflow_run can't
-      # glob, so a name left out here fails on main with no issue raised
-      # — cli/tests/test_workflow_triggers.py keeps this list in step
+      # This lists every check workflow plus the doc updater. workflow_run
+      # can't glob, so a name left out here fails on main with no issue
+      # raised. cli/tests/test_workflow_triggers.py keeps this list in step
       # with ss-pr-summary.yml.
       - "SlopStopper · Code Complexity Check"
       - "SlopStopper · Hygiene - CSP Exceptions Drift Check"

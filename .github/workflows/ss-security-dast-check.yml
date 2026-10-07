@@ -36,11 +36,11 @@ jobs:
 
       - name: Decide scan mode
         id: mode
-        # Two shapes, two paths. With `api.openapi.spec` set the target is a
-        # deployed API and ZAP reads the spec — there is nothing to build or
-        # serve, and guessing an API's start command would be worse than not
-        # guessing. Without a spec this is the original site path: build,
-        # serve on :8080, spider it.
+        # The scan takes one of two paths. With `api.openapi.spec` set the
+        # target is a deployed API and ZAP reads the spec. There is nothing to
+        # build or serve, and guessing an API's start command would be worse
+        # than not guessing. Without a spec this is the original site path,
+        # which builds the site, serves it on :8080 and spiders it.
         run: |
           SPEC="$(slopstopper config get api.openapi.spec)"
           if [ -z "$SPEC" ]; then
@@ -58,7 +58,7 @@ jobs:
           esac
 
           if [ -z "$URL" ]; then
-            echo "::notice::api.openapi.spec is set but no URL resolved for this event — set urls.preview / urls.production to enable the API scan here."
+            echo "::notice::api.openapi.spec is set but no URL resolved for this event. Set urls.preview / urls.production to enable the API scan here."
             echo "mode=skip" >> "$GITHUB_OUTPUT"
           else
             if [[ ! "$URL" =~ ^https?://[^[:space:][:cntrl:]]+$ ]]; then
@@ -92,7 +92,7 @@ jobs:
         if: steps.mode.outputs.mode != 'skip'
         continue-on-error: true
         # The spec itself comes from .slopstopper.yml, so the same command
-        # covers both modes — the check picks the ZAP entry point.
+        # covers both modes and the check picks the ZAP entry point.
         run: task ss:security:dast -- ${{ steps.mode.outputs.url }}
 
       - name: Stop local server

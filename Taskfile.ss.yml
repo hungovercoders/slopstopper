@@ -2,7 +2,7 @@ version: '3'
 
 # Canonical adopter interface for the slopstopper quality suite.
 #
-# This Taskfile is THE entry point — humans, agents and CI all invoke
+# This Taskfile is THE entry point. Humans, agents and CI all invoke
 # checks through `task ss:<category>:<check>`. The underlying
 # `slopstopper-cli` is the implementation each shim calls; it is not
 # a parallel surface to promote to adopters.
@@ -100,7 +100,7 @@ tasks:
       with HTTP 200 passes any reachability probe and fails here, which is
       the whole reason a health endpoint returns a body at all.
 
-      Skips gracefully (exit 0) when `api.health.path` is unset — an
+      Skips gracefully (exit 0) when `api.health.path` is unset, because an
       unconfigured check is not a failing check.
 
       Configuration (environment variables; every knob below is also read
@@ -137,12 +137,12 @@ tasks:
       middle. `slowest_ms` is there for anyone who wants an explicit tail
       ceiling, opt-in.
 
-      Budgets are opt-in throughout: with none set the check reports
-      timings as notes and exits 0. Reachability is not — an endpoint that
-      errors or answers non-2xx fails whether or not a budget is set,
-      because timing a connection error is meaningless.
+      Budgets are opt-in throughout. With none set, the check reports
+      timings as notes and exits 0. Reachability is not opt-in. An
+      endpoint that errors or answers non-2xx fails whether or not a
+      budget is set, because timing a connection error is meaningless.
 
-      Skips gracefully (exit 0) when `api.latency.paths` is empty — an
+      Skips gracefully (exit 0) when `api.latency.paths` is empty, because an
       unconfigured check is not a failing check.
 
       Configuration (environment variables; every knob below is also read
@@ -391,11 +391,11 @@ tasks:
       404 from one could mean "route missing" or merely "no such record",
       and this check can't tell those apart.
 
-      JSON specs only — slopstopper-cli has no YAML parser, so it can't
-      read YAML. A YAML spec skips with guidance rather than
-      failing; most frameworks serve the JSON form at /openapi.json.
+      It reads JSON specs only, because slopstopper-cli has no YAML
+      parser. A YAML spec skips with guidance rather than failing, and
+      most frameworks serve the JSON form at /openapi.json.
 
-      Skips gracefully (exit 0) when `api.openapi.spec` is unset — an
+      Skips gracefully (exit 0) when `api.openapi.spec` is unset, because an
       unconfigured check is not a failing check.
 
       Configuration (.slopstopper.yml's `api.openapi`):
@@ -419,7 +419,7 @@ tasks:
   hygiene:test:
     desc: Run all hygiene checks (docs-size, docs-structure, docs-accuracy, entry-files, csp-exceptions, complexity)
     # Deliberately excludes hygiene:openapi. This aggregate is what the
-    # installed pre-push hook runs, and it is all-static by design —
+    # installed pre-push hook runs. It is all-static by design, because
     # adding a URL-driven check would make every `git push` hit the
     # network.
     cmds:
@@ -459,14 +459,14 @@ tasks:
     summary: |
       Subprocess-invokes `docker run ghcr.io/zaproxy/zaproxy:stable`
       (Docker must be running). The CLI also runs the CSP-exception gate
-      against the resulting JSON — see docs/security/CSP_EXCEPTIONS.md.
+      against the resulting JSON. See docs/security/CSP_EXCEPTIONS.md.
 
       Two scan modes, picked by whether an OpenAPI spec is configured:
 
-        baseline (default) — ZAP spiders the site from the URL you pass.
-          Right for an HTML surface; useless on a JSON API, which exposes
-          no links to crawl.
-        API — set `api.openapi.spec` in .slopstopper.yml (or pass
+        baseline (default): ZAP spiders the site from the URL you pass.
+          That suits an HTML surface and is useless on a JSON API, which
+          exposes no links to crawl.
+        API: set `api.openapi.spec` in .slopstopper.yml (or pass
           `--spec`) and ZAP reads the spec and exercises the operations it
           declares instead. The URL you pass becomes ZAP's -O host
           override, so a spec naming production can be scanned against a
@@ -498,9 +498,9 @@ tasks:
     desc: Audit API response headers + CORS policy on a live URL
     summary: |
       The API-shaped analogue of the CSP-exceptions check. On an HTML
-      surface CSP is the header that matters; on a JSON API it's CORS —
-      a permissive policy on a credentialed endpoint is a cross-origin
-      data leak, not a style violation.
+      surface CSP is the header that matters. On a JSON API it's CORS,
+      because a permissive policy on a credentialed endpoint is a
+      cross-origin data leak, not a style violation.
 
       Probes each path in `api.headers.paths` and hard-fails on: a
       wildcard `Access-Control-Allow-Origin` sent with
@@ -511,7 +511,7 @@ tasks:
       leaks (`X-Powered-By`, a versioned `Server`) and a missing
       `Vary: Origin` are advisory.
 
-      Skips gracefully (exit 0) when `api.headers.paths` is empty — an
+      Skips gracefully (exit 0) when `api.headers.paths` is empty, because an
       unconfigured check is not a failing check.
 
       Configuration (environment variables; every knob below is also read
@@ -534,7 +534,7 @@ tasks:
 
   security:scan:
     desc: Run full security scan suite (SAST + vulnerabilities + DAST + API headers + secrets)
-    # Runs every scan even when an earlier one fails — sast now exits 1 on
+    # Runs every scan even when an earlier one fails. sast exits 1 on
     # findings, and a sequential `task:` list would stop there and never
     # reach secrets. Calls the CLI the way each shim does and exits with
     # the worst code: 2 (couldn't run) > 1 > 0. A target passed after `--`
@@ -546,7 +546,7 @@ tasks:
         worst=0
         for check in sast vulnerability:all dast api-headers secrets; do
           code=0
-          # `|| code=$?` — Task's shell exits on the first failing command.
+          # `|| code=$?` is needed because Task's shell exits on a failure.
           case "$check" in
             dast|api-headers) slopstopper run "security:$check" -- {{.CLI_ARGS}} || code=$? ;;
             *) slopstopper run "security:$check" || code=$? ;;

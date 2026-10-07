@@ -7,8 +7,8 @@ import { defineConfig, devices } from '@playwright/test';
  * are picked up regardless of what the consumer has under their own
  * `tests/` directory.
  *
- * No webServer block — the consumer (or task) is responsible for ensuring
- * the target URL is reachable before tests run. The base URL is taken from
+ * There is no webServer block: the consumer (or task) must make sure the
+ * target URL is reachable before tests run. The base URL is taken from
  * one of: ACCESSIBILITY_TEST_URL, SMOKE_TEST_URL, E2E_TEST_URL, BASE_URL, or
  * http://localhost:8080 as a final fallback.
  */

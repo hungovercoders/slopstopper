@@ -6,13 +6,13 @@ name: SlopStopper · API Latency Check
 # the answerable question is how long the endpoint takes and how much it
 # sends back.
 # Triggers: PR, push to main, daily schedule, Cloudflare deployment
-# events. Emits a rolling PR comment; workflow fails when an endpoint is
-# unreachable or a configured budget is exceeded — no separate
-# main-branch issue (exit code is the signal).
+# events. Emits a rolling PR comment. The workflow fails when an endpoint is
+# unreachable or a configured budget is exceeded. There is no separate
+# main-branch issue because the exit code is the signal.
 # Docs: docs/reliability/README.md.
 #
 # Budgets are opt-in: with none set the check reports timings and exits
-# 0. Reachability is not opt-in — a non-2xx endpoint fails regardless,
+# 0. Reachability is not opt-in. A non-2xx endpoint fails regardless,
 # because a timing taken from an error response is not a measurement.
 #
 # Like the other API workflows this never tries to build and serve the
@@ -64,8 +64,8 @@ jobs:
         id: url
         # CUSTOMISE FOR YOUR APP: point urls.preview (.slopstopper.yml) at the
         # environment your PRs deploy to. Timings from a preview environment
-        # are noisier than production ones — derive budgets from what you
-        # actually observe there, or the check becomes noise. See
+        # are noisier than production ones, so derive budgets from what you
+        # actually observe there or the check becomes noise. See
         # .github/actions/ss-resolve-url for the event → URL table.
         uses: ./.github/actions/ss-resolve-url
         with:

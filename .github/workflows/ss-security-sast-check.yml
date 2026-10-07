@@ -74,7 +74,7 @@ jobs:
         run: slopstopper emit security:sast --target pr-comment --status ${{ steps.sast.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete
 
       - name: Emit issue on main (if error-severity findings)
-        # rc 1 only — exit 2 means the scan didn't run, which is not a finding
+        # Only rc 1 is a finding. Exit 2 means the scan didn't run.
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.sast.outputs.rc == '1'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
