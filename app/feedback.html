@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feedback — SlopStopper</title>
-    <meta name="description" content="Tell us what you think about SlopStopper. Comments are powered by GitHub Discussions via Giscus — embedded under a scoped, documented CSP exception you can copy.">
+    <title>Feedback | SlopStopper</title>
+    <meta name="description" content="Tell us what you think about SlopStopper. Comments are powered by GitHub Discussions via Giscus, embedded under a scoped, documented CSP exception you can copy.">
     <meta name="theme-color" content="#FBF5EC">
     <meta name="author" content="SlopStopper">
-    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity — <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
     <link rel="canonical" href="https://slopstopper.dev/feedback.html">
 
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://slopstopper.dev/feedback.html">
-    <meta property="og:title" content="Feedback — SlopStopper">
-    <meta property="og:description" content="Tell us what you think. Comments via GitHub Discussions — and a worked example of a scoped CSP exception you can copy.">
+    <meta property="og:title" content="Feedback | SlopStopper">
+    <meta property="og:description" content="Tell us what you think. Comments via GitHub Discussions, and a worked example of a scoped CSP exception you can copy.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="SlopStopper — stop the slop. Deterministic feedback for AI-driven development.">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Feedback — SlopStopper">
-    <meta name="twitter:description" content="Tell us what you think. Comments via GitHub Discussions — and a worked example of a scoped CSP exception you can copy.">
+    <meta name="twitter:title" content="Feedback | SlopStopper">
+    <meta name="twitter:description" content="Tell us what you think. Comments via GitHub Discussions, and a worked example of a scoped CSP exception you can copy.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
-    <meta name="twitter:image:alt" content="SlopStopper — stop the slop. Deterministic feedback for AI-driven development.">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -57,7 +57,7 @@
         <section class="hero hero--feedback">
             <span class="kicker">💬 Tell us what you think</span>
             <h1>Bug? Wishlist? Genuinely <span class="highlight">confused?</span></h1>
-            <p>Comments below are powered by GitHub Discussions. Sign in with GitHub to add yours — or open a discussion or issue directly if you'd rather skip the page.</p>
+            <p>Comments below are powered by GitHub Discussions. Sign in with GitHub to add yours, or open a discussion or issue directly if you'd rather skip the page.</p>
         </section>
 
         <section class="section testimonials-section">
@@ -67,7 +67,7 @@
             <div class="testimonial">
                 <p class="testimonial__quote">&ldquo;I use SlopStopper on the <a href="https://hungovercoders.com" rel="noopener noreferrer">Hungovercoders</a> site every day. Honestly couldn't ship without it.&rdquo;</p>
                 <p class="testimonial__attrib">— <strong>datagriff</strong>, Hungovercoders</p>
-                <div class="testimonial__interrupt" aria-hidden="true">Wait — didn't you <em>also</em> build SlopStopper..?</div>
+                <div class="testimonial__interrupt" aria-hidden="true">Wait, didn't you <em>also</em> build SlopStopper?</div>
             </div>
 
             <p class="docs-pointer">Got a less-conflicted testimonial? Drop it in the comments below.</p>
@@ -75,16 +75,16 @@
 
         <section class="section comments-section" id="comments">
             <span class="kicker">Discussion</span>
-            <h2>Got something to add?</h2>
+            <h2>Comments</h2>
             <p class="lede">Sign in with GitHub. Your comment goes straight to <a href="https://github.com/hungovercoders/slopstopper/discussions/categories/feedback" rel="noopener noreferrer">our Discussions tab</a>.</p>
 
             <!--
                 Giscus embed. This page (and ONLY this page) has a relaxed
-                CSP — see worker/headers.json's entry for /feedback.html
+                CSP: see worker/headers.json's entry for /feedback.html
                 and the full rationale in docs/security/CSP_EXCEPTIONS.md.
                 The ss:hygiene:csp-exceptions check keeps the two in sync.
                 The integrity= attribute pins the exact bundle hash served
-                by giscus.app — refresh procedure in CSP_EXCEPTIONS.md.
+                by giscus.app; the refresh procedure is in CSP_EXCEPTIONS.md.
             -->
             <div class="giscus"></div>
             <script src="https://giscus.app/client.js"
@@ -114,13 +114,13 @@
             <h2>Other places this might belong.</h2>
             <div class="card-grid card-grid--two">
                 <div class="card">
-                    <h3>🐞 Found a bug?</h3>
+                    <h3>🐞 Bugs</h3>
                     <p>Reproducible problem in the CLI, the workflows or the site? An issue is the fastest route to a fix.</p>
                     <a class="card-link" href="https://github.com/hungovercoders/slopstopper/issues/new" rel="noopener noreferrer">Open an issue →</a>
                 </div>
                 <div class="card">
-                    <h3>🤝 Want to contribute?</h3>
-                    <p>Adding a check, fixing a doc, improving the installer — all welcome. <code>CONTRIBUTING.md</code> walks through the conventions.</p>
+                    <h3>🤝 Contributing</h3>
+                    <p>Adding a check, fixing a doc or improving the installer are all welcome. <code>CONTRIBUTING.md</code> walks through the conventions.</p>
                     <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/CONTRIBUTING.md" rel="noopener noreferrer">Read CONTRIBUTING →</a>
                 </div>
             </div>
@@ -128,13 +128,13 @@
 
         <section class="section csp-pattern-section">
             <span class="kicker">🔐 About the comments embed</span>
-            <h2>Strict CSP &mdash; with one documented exception.</h2>
+            <h2>A strict CSP with one documented exception.</h2>
             <p>This site ships a strict <code>default-src 'self'</code> Content Security Policy on every path. This page is the only exception: <code>/feedback.html</code> allows <code>https://giscus.app</code> via a per-path entry in <code>worker/headers.json</code> (the Cloudflare Worker reads it and applies the headers), with the loader script SRI-pinned. The exception is documented in <code>docs/security/CSP_EXCEPTIONS.md</code>, and a hygiene check (<code>task ss:hygiene:csp-exceptions</code>) fails the build if either side drifts.</p>
-            <p>If you're adopting SlopStopper and need to embed a third-party widget (GTM, Sentry, Intercom, an analytics tag) — this is the pattern. <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">Read the full guide →</a></p>
+            <p>If you're adopting SlopStopper and need to embed a third-party widget (GTM, Sentry, Intercom, an analytics tag), this is the pattern. <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">Read the full guide →</a></p>
         </section>
     </main>
     <footer>
-        <p>SlopStopper is open source — <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">view the repository on GitHub</a>.</p>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
     </footer>
 </body>
 </html>

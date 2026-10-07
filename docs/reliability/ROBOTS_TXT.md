@@ -1,8 +1,8 @@
 # robots.txt Discoverability Check
 
-`ss:reliability:robots-txt`, implemented in [`cli/slopstopper/checks/robots_txt.py`](../../cli/slopstopper/checks/robots_txt.py), audits your site's `/robots.txt` — the [Robots Exclusion Protocol](https://www.rfc-editor.org/rfc/rfc9309.html) file every crawler reads first. Its headline job is the **de-index guard**: a stray `Disallow: /` under `User-agent: *` (often leaked from a staging config) silently removes an entire public site from search — the single highest-blast-radius line a site can ship. It complements [`ss:reliability:seo`](SEO.md) (what human crawlers read) and [`ss:reliability:llms-txt`](LLMS_TXT.md) (what AI assistants read); together the three form the discovery-file triangle.
+`ss:reliability:robots-txt`, implemented in [`cli/slopstopper/checks/robots_txt.py`](../../cli/slopstopper/checks/robots_txt.py), audits your site's `/robots.txt`, which is the [Robots Exclusion Protocol](https://www.rfc-editor.org/rfc/rfc9309.html) file every crawler reads first. Its headline job is the **de-index guard**: a stray `Disallow: /` under `User-agent: *` (often leaked from a staging config) silently removes an entire public site from search, which makes it the single highest-blast-radius line a site can ship. It complements [`ss:reliability:seo`](SEO.md) (what human crawlers read) and [`ss:reliability:llms-txt`](LLMS_TXT.md) (what AI assistants read).
 
-The check is Python stdlib only — no new dependencies on top of Python 3.
+The check is Python stdlib only, so it adds no dependencies on top of Python 3.
 
 ## What gets validated
 
@@ -12,16 +12,16 @@ The check fetches `/robots.txt` and asserts it is present and does not sabotage 
 
 - The file is reachable (HTTP 200)
 - The body is non-empty
-- The `User-agent: *` group has no blanket `Disallow: /` — escape hatch `allow_disallow_all`
+- The `User-agent: *` group has no blanket `Disallow: /`, unless `allow_disallow_all` says otherwise
 - At least one `Sitemap:` directive is present
 
 **Advisory (notes only, unless escalated via config):**
 
 - Content-Type is `text/plain`
-- An `Llms:` pointer to `/llms.txt` is present — escalate with `require_llms`
+- An `Llms:` pointer to `/llms.txt` is present. Escalate with `require_llms`
 - When `check_links` is on, the `Sitemap:`/`Llms:` URLs are HEAD-verified as reachable (non-4xx/5xx)
 
-Lighthouse's SEO audit (run by `ss:reliability:cwv`) already checks that robots.txt *parses*; this check surfaces the two failures Lighthouse buries — accidental blanket blocking and a missing sitemap pointer — as a named, first-class gate.
+Lighthouse's SEO audit (run by `ss:reliability:cwv`) already checks that robots.txt *parses*, but it buries accidental blanket blocking and a missing sitemap pointer. This check surfaces those two failures as a named, first-class gate.
 
 ## Configuration
 
@@ -63,11 +63,11 @@ Sitemap: https://example.com/sitemap.xml
 Llms: https://example.com/llms.txt
 ```
 
-See [`app/robots.txt`](../../app/robots.txt) for this site's own file — it's the canonical example.
+This site's own file, [`app/robots.txt`](../../app/robots.txt), is the canonical example.
 
 ## Why this exists
 
-A single wrong line in robots.txt can de-index a whole site, and the failure is silent — nothing errors, traffic just evaporates over the following weeks. Making it a first-class, deploy-time gate turns a slow, invisible catastrophe into a red check on the PR that introduced it. The sitemap-pointer assertion completes the discovery story: crawlers that read robots.txt find the URL inventory rather than guessing.
+A single wrong line in robots.txt can de-index a whole site, and the failure is silent, because nothing errors and traffic just evaporates over the following weeks. Making it a first-class, deploy-time gate turns a slow, invisible catastrophe into a red check on the PR that introduced it. The sitemap-pointer assertion completes the discovery story: crawlers that read robots.txt find the URL inventory rather than guessing.
 
 ## CI integration
 

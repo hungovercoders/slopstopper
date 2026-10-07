@@ -1,4 +1,4 @@
-# Agent guide — SlopStopper
+# SlopStopper agent guide
 
 Open standard for agents, AI assistants and automation tools working in
 this repo (conformant with [agents.md](https://agents.md)). `CLAUDE.md` is
@@ -7,11 +7,11 @@ end say when to open anything else.
 
 ## What this repo is
 
-Two things at once: **`slopstopper-cli`** under `cli/` (every check's
-logic, published to PyPI) plus the `ss-*.yml` workflows, `task ss:*` shims
-and `install.sh` adopters pull in; and **slopstopper.dev** under `app/`,
-a reference site built and deployed with the same suite it advertises.
-A change that affects adopters usually touches both layers and the docs.
+**`slopstopper-cli`** under `cli/` holds every check's logic and is
+published to PyPI; adopters pull it in with the `ss-*.yml` workflows,
+`task ss:*` shims and `install.sh`. **slopstopper.dev** under `app/` is a
+reference site built and deployed with the same suite it advertises. A
+change that affects adopters usually touches both layers and the docs.
 
 ## Ground rules
 
@@ -28,7 +28,7 @@ A change that affects adopters usually touches both layers and the docs.
 4. **Budgets are the feature.** When `entry-files` or `docs-structure`
    fails, move content deeper into `docs/` and route it; those budgets
    (tokens, lines, hops) never move. `docs-size`'s totals are advisory
-   and sized to the repo — change them only in a commit that says why.
+   and sized to the repo. Change them only in a commit that says why.
 5. **Conventional Commits** (`feat:`, `fix:`, `docs:`, `chore:` …);
    release-please cuts the CLI release from them. Third-party actions are
    pinned to a commit SHA, never a tag.
@@ -52,7 +52,7 @@ A change that affects adopters usually touches both layers and the docs.
 
 ```
 AGENTS.md            this file (CLAUDE.md is @AGENTS.md)
-docs/                topic docs — docs/README.md is the map; one concern per doc
+docs/                topic docs, one per concern; docs/README.md is the map
 cli/slopstopper/     the CLI: checks/<check>.py, data/ (templates, specs), profiles.json
 cli/tests/           pytest; test_check_registration.py enforces every surface a check needs
 .github/workflows/   ss-*.yml, each `uses: ./.github/actions/ss-setup` then one task
@@ -79,15 +79,15 @@ app/  worker/        the site and the Cloudflare Worker that serves it (headers.
 - **Headers/CSP:** `worker/headers.json` is the single source of truth;
   a CSP change is blast-radius (DAST tests, the exceptions doc).
 
-## Routes — read before you act
+## Routes: read before you act
 
 | When you are…                                                              | Do this                                                                                   |
 | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| changing anything that ships to adopters (a check, workflow, skill, config key, template, page) | Read [docs/contributing/CHANGE_MAP.md](./docs/contributing/CHANGE_MAP.md) before you start — every surface each kind of change must touch |
-| about to add a workflow, task, report path or external resource            | Read [docs/contributing/PITFALLS.md](./docs/contributing/PITFALLS.md) first — the gotchas that have bitten before |
-| fixing a failing docs or hygiene check                                      | Read [docs/hygiene/README.md](./docs/hygiene/README.md) — what each check enforces, its knobs, its report |
-| installing or refreshing slopstopper in another repo                        | Read [.claude/skills/slopstopper-install/SKILL.md](./.claude/skills/slopstopper-install/SKILL.md) — the install/refresh playbook |
-| diagnosing a failing slopstopper check in any repo                          | Read [.claude/skills/slopstopper-triage/SKILL.md](./.claude/skills/slopstopper-triage/SKILL.md) — workflow → task → report → fix |
+| changing anything that ships to adopters (a check, workflow, skill, config key, template, page) | Read [docs/contributing/CHANGE_MAP.md](./docs/contributing/CHANGE_MAP.md) before you start. It lists what each kind of change must touch |
+| about to add a workflow, task, report path or external resource            | Read [docs/contributing/PITFALLS.md](./docs/contributing/PITFALLS.md) first. It lists what has bitten before |
+| fixing a failing docs or hygiene check                                      | Read [docs/hygiene/README.md](./docs/hygiene/README.md). It gives each check's rules, knobs and report |
+| installing or refreshing slopstopper in another repo                        | Read [.claude/skills/slopstopper-install/SKILL.md](./.claude/skills/slopstopper-install/SKILL.md), the install/refresh playbook |
+| diagnosing a failing slopstopper check in any repo                          | Read [.claude/skills/slopstopper-triage/SKILL.md](./.claude/skills/slopstopper-triage/SKILL.md). It walks workflow → task → report → fix |
 | doing any task not covered above                                            | Read [docs/README.md](./docs/README.md) before you start; do not guess a convention        |
 
 `ss:hygiene:entry-files` keeps this file under ~2k tokens and every route

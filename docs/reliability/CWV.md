@@ -17,11 +17,11 @@ Lighthouse loads the page three times (`numberOfRuns: 3`). Neither bundled confi
 
 The production config (`--prod`) keeps those and adds advisory warnings for Accessibility and Best Practices scores (≥ 80), Speed Index (≤ 5.8 s) and Time to Interactive (≤ 7.3 s). Warnings appear in the report and never fail the run.
 
-These are deliberately loose — a static site should clear them easily, and a budget that fires on CI-runner noise is worse than none. Tighten them once you have a few weeks of numbers.
+These are deliberately loose, because a static site should clear them easily and a budget that fires on CI-runner noise is worse than none. Tighten them once you have a few weeks of numbers.
 
 ## Configuration
 
-The budgets live in Lighthouse's own config, not `.slopstopper.yml`. The CLI ships two — `cli/slopstopper/data/lighthouserc.json` (dev) and `cli/slopstopper/data/lighthouserc.prod.json` — inside the wheel. To change a budget, eject the one you want and edit the copy:
+The budgets live in Lighthouse's own config, not `.slopstopper.yml`. The CLI ships two inside the wheel, `cli/slopstopper/data/lighthouserc.json` (dev) and `cli/slopstopper/data/lighthouserc.prod.json` (prod). To change a budget, eject the one you want and edit the copy:
 
 ```bash
 slopstopper templates eject lighthouserc.json        # → .ss/lighthouserc.json
@@ -38,7 +38,7 @@ task ss:reliability:cwv -- https://example.com --prod      # production budgets
 CWV_URL=http://localhost:8080 task ss:reliability:cwv
 ```
 
-Needs `node` (Lighthouse runs in headless Chrome via `npx lhci`). The check generates `cwv-report.md` under `.ss/reports/cwv/` — the threshold table with pass/fail per metric, plus a link to the full Lighthouse HTML report on Lighthouse's temporary public storage. Raw Lighthouse output lands in `.lighthouseci/` (gitignored; the workflow uploads it as an artifact).
+Needs `node` (Lighthouse runs in headless Chrome via `npx lhci`). The check generates `cwv-report.md` under `.ss/reports/cwv/`. It holds the threshold table with pass/fail per metric, plus a link to the full Lighthouse HTML report on Lighthouse's temporary public storage. Raw Lighthouse output lands in `.lighthouseci/` (gitignored; the workflow uploads it as an artifact).
 
 ## Running in CI
 
@@ -48,16 +48,16 @@ Needs `node` (Lighthouse runs in headless Chrome via `npx lhci`). The check gene
 |---|---|---|
 | `pull_request`, `push` | the site built and served on `localhost:8080` | dev |
 | `workflow_dispatch` | the `url` input, else `urls.production` | dev |
-| `deployment_status` (e.g. a Cloudflare deploy) | that deployment's own `target_url` — a preview deploy audits the preview | `--prod` |
+| `deployment_status` (e.g. a Cloudflare deploy) | that deployment's own `target_url`, so a preview deploy audits the preview | `--prod` |
 | `schedule` (daily) | `urls.production` | `--prod` |
 
 It posts the rolling PR comment, opens a tracking issue when `main` regresses, and closes that issue automatically on the next green run.
 
 ## Reading a failure
 
-- **Performance score under 70 with LCP over budget** — almost always an unoptimised hero image or a render-blocking stylesheet. Lighthouse's HTML report (linked from the check's report) names the resource.
-- **CLS over 0.25** — an image or embed without explicit `width`/`height`, or a web font swapping in late.
-- **TBT over 600 ms** — long JavaScript tasks on load. On a static site this usually means a third-party script.
-- **Everything passes locally, fails in CI** — the CI runner is slower and noisier than your laptop. Look at all three runs in the Lighthouse output before touching a budget — the gate passes on the best one, so a failure means every run missed; if the numbers are consistently near the line, the budget is telling you something.
+- **Performance score under 70 with LCP over budget.** Almost always an unoptimised hero image or a render-blocking stylesheet. Lighthouse's HTML report (linked from the check's report) names the resource.
+- **CLS over 0.25.** An image or embed without explicit `width`/`height`, or a web font swapping in late.
+- **TBT over 600 ms.** Long JavaScript tasks on load. On a static site this usually means a third-party script.
+- **Everything passes locally, fails in CI.** The CI runner is slower and noisier than your laptop. Look at all three runs in the Lighthouse output before touching a budget. The gate passes on the best one, so a failure means every run missed; if the numbers are consistently near the line, the budget is telling you something.
 
 Dropped by `--profile api` and `--profile library`; there is no page to render.

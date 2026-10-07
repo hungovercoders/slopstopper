@@ -1,12 +1,12 @@
-# Step 5 — Set up the docs layout (AGENTS.md first)
+# Step 5: Set up the docs layout (AGENTS.md first)
 
 > Part of the `slopstopper-install` skill. `SKILL.md` says when to read this; it is not loaded until then.
 
-## Step 5 — Set up the docs layout (if keeping the docs-* checks)
+## Step 5: Set up the docs layout (if keeping the docs-* checks)
 
-**Why this layout, beyond passing the check.** `AGENTS.md` is loaded into every agent conversation, and it is prompt-cached — so the tokens it carries are cheap per turn, while every "go read another file" hop costs a whole tool turn on every task that takes it. The failure mode is not size but rule count: instruction-following degrades as competing rules pile up, and ~2,000 estimated tokens (chars/4) holds roughly 40–60 rules, about where models start dropping some. So `AGENTS.md` **carries what most tasks need** within that budget — ground rules, the command surface, the layout, the conventions most changes touch — and **routes the rest** to `docs/` with explicit, conditional lines: "Before you change CI, read docs/ci.md — it defines what `task ci` runs." Measured downstream: an unrouted runbook was skipped one run in three; a routed one was read every time. A "see docs/" is decoration agents skip. Frame it to the user as rules that get followed and tasks that start with zero extra reads, not paperwork the check demands.
+**Why this layout, beyond passing the check.** `AGENTS.md` is loaded into every agent conversation, and it is prompt-cached, so the tokens it carries are cheap per turn, while every "go read another file" hop costs a whole tool turn on every task that takes it. The failure mode is not size but rule count: instruction-following degrades as competing rules pile up, and ~2,000 estimated tokens (chars/4) holds roughly 40–60 rules, about where models start dropping some. So `AGENTS.md` **carries what most tasks need** within that budget (ground rules, the command surface, the layout, the conventions most changes touch) and **routes the rest** to `docs/` with explicit, conditional lines: "Before you change CI, read docs/ci.md, which defines what `task ci` runs." Measured downstream: an unrouted runbook was skipped one run in three; a routed one was read every time. A "see docs/" is decoration agents skip. Frame it to the user as rules that get followed and tasks that start with zero extra reads, not paperwork the check demands.
 
-Four workflows enforce it — `ss-hygiene-entry-files-check.yml`, `ss-hygiene-docs-structure-check.yml`, `ss-hygiene-docs-accuracy-check.yml`, `ss-hygiene-docs-size-check.yml`. The shape they expect:
+The four workflows `ss-hygiene-entry-files-check.yml`, `ss-hygiene-docs-structure-check.yml`, `ss-hygiene-docs-accuracy-check.yml` and `ss-hygiene-docs-size-check.yml` enforce it. The shape they expect:
 
 ```
 README.md         human orientation + quick start, ≤ 600 tokens (badges excluded); links the map
@@ -16,17 +16,17 @@ docs/README.md    the map: one trigger-first "read" row per doc AGENTS.md does n
 docs/<topic>.md   one concern each, ≤ 300 lines; a directory with its own README only when a topic split
 ```
 
-**Decide how much to change first — least change wins.** Measure the target's entry file (`task ss:hygiene:entry-files` prints the cold-start cost even when it fails) and pick one outcome; say which in your summary:
+**Decide how much to change first. The least change wins.** Measure the target's entry file (`task ss:hygiene:entry-files` prints the cold-start cost even when it fails) and pick one outcome; say which in your summary:
 
 - **Routes only.** An entry file already auto-loads (`CLAUDE.md` or `AGENTS.md`), fits ~2,000 tokens, and its rules are followed. Do not move content. Rename `CLAUDE.md` → `AGENTS.md` and make `CLAUDE.md` the include (a rename plus one line, not a rewrite), add an explicit route for every doc it does not route to, add the catch-all route to `docs/README.md`, and stop. This is the right answer more often than it feels.
-- **Build.** Nothing auto-loads (a README is the only doc, or `AGENTS.md` is a stub). `install.sh` seeded the scaffolds (below); fill `AGENTS.md` in priority order — ground rules, commands, layout, conventions, gotchas, routes — and stop at the budget.
+- **Build.** Nothing auto-loads (a README is the only doc, or `AGENTS.md` is a stub). `install.sh` seeded the scaffolds (below); fill `AGENTS.md` in priority order (ground rules, commands, layout, conventions, gotchas, routes) and stop at the budget.
 - **Fan out.** The entry file is over budget. Keep what most tasks need; move the content that serves the fewest tasks into `docs/<topic>.md` and route it. A one-line rule stays inline; its procedure, tables and examples go to the doc.
 
 **Auto-seeded scaffolds.** On a fresh install `install.sh` writes `README.md`, `AGENTS.md`, `CLAUDE.md` and `docs/README.md` from `cli/slopstopper/data/templates/entry-files/` when they don't already exist, so a greenfield clone is green on Step 7's local loop. A file that exists is left alone; remediation runs through the reports (next paragraph). A pre-0.15 install that seeded `docs/index.md` gets a warning instead: the map is a README now, because the repo UI renders a README in place when someone browses `docs/`.
 
-**Remediating existing files.** `task ss:hygiene:entry-files` writes `.ss/reports/entry-files/entry-file-size-report.md` with a paste-ready fix per violation — the route line for a missing map pointer, the one-line `@AGENTS.md` body for `CLAUDE.md`, a map skeleton, the `git mv docs/index.md docs/README.md` for a legacy map, and the list of soft routes to reword. `task ss:hygiene:docs-structure` writes `.ss/reports/docs/docs-structure-report.md` listing every unrouted doc with the README that should route it. Read both, confirm the placement with the user if a file is non-trivial, apply, re-run.
+**Remediating existing files.** `task ss:hygiene:entry-files` writes `.ss/reports/entry-files/entry-file-size-report.md` with a paste-ready fix per violation, covering the route line for a missing map pointer, the one-line `@AGENTS.md` body for `CLAUDE.md`, a map skeleton, the `git mv docs/index.md docs/README.md` for a legacy map, and the list of soft routes to reword. `task ss:hygiene:docs-structure` writes `.ss/reports/docs/docs-structure-report.md` listing every unrouted doc with the README that should route it. Read both, confirm the placement with the user if a file is non-trivial, apply, re-run.
 
-**Route wording that gets followed** — trigger first, then "read", then the file as a markdown link, then what it holds. In a table, the header's first cell is the trigger ("When you are…") and each row's second cell starts with "Read":
+**Route wording that gets followed** puts the trigger first, then "read", then the file as a markdown link, then what it holds. In a table, the header's first cell is the trigger ("When you are…") and each row's second cell starts with "Read":
 
 | Soft (skipped)                   | Explicit (followed)                                                      |
 | -------------------------------- | ------------------------------------------------------------------------ |
@@ -55,8 +55,8 @@ hygiene:
     max_doc_lines: 300             # 0 disables
 ```
 
-Tune a knob only for a deliberate design decision, never to silence a finding — budgets are the feature.
+Tune a knob only for a deliberate design decision, never to silence a finding, because budgets are the feature.
 
 **Cross-references in docs:** the `docs-accuracy` check scans for `` `backtick-quoted` `` filenames and broken markdown links. Use full repo-relative paths (`scripts/foo.sh`, not bare `foo.sh`) so the checker can resolve them.
 
-If none of this fits the target — short-lived prototype, single-file tool, generated docs only — delete the four workflows instead. `.ss/.workflows-installed` will remember the deletion so re-installs don't bring them back.
+If none of this fits the target (a short-lived prototype, single-file tool, generated docs only), delete the four workflows instead. `.ss/.workflows-installed` remembers the deletion, so re-installs don't bring them back.

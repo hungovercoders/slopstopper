@@ -17,8 +17,8 @@ them under the `ss` namespace via `includes:`. This keeps SlopStopper's
 tasks isolated from anything a consumer has in their own root Taskfile.
 
 The Taskfile is the single source of truth for build, test, lint and scan
-operations so developers, AI agents and CI all run the same thing — no
-drift, no version skew.
+operations so developers, AI agents and CI all run the same thing, with
+no drift and no version skew.
 
 Run `task --list` for the full set. The most-used ones:
 
@@ -28,7 +28,7 @@ Run `task --list` for the full set. The most-used ones:
 | `task contributing:test` | The CLI's pytest suite under `cli/tests/` (what `ci-cli.yml` runs) |
 | `task contributing:run` | Serve `app/` on port 8080 via `slopstopper serve` (`PORT=…` to change it; `test:site` follows) |
 | `task contributing:test:site` | Playwright smoke + a11y against `SITE_URL` (default the server above); `-- --ci` passes through |
-| `task contributing:lint` | markdownlint over `docs/` — advisory, not a CI gate |
+| `task contributing:lint` | markdownlint over `docs/` (advisory, not a CI gate) |
 | `task ss:hygiene:complexity` | Cyclomatic complexity check (Lizard) |
 | `task ss:hygiene:entry-files` | Enforce <2k token budget on entry files |
 | `task ss:hygiene:docs-accuracy` | Catch broken links + stale task/workflow refs |
@@ -41,18 +41,18 @@ Run `task --list` for the full set. The most-used ones:
 | `task ss:reliability:cwv` | Lighthouse CI / Core Web Vitals |
 
 For CI-style output (retries, HTML reports, fail-on-flake), pass
-`--ci` through the Task `--` separator the same way the workflows do —
-e.g. `task ss:reliability:accessibility -- --ci`. Same Task command runs
-in both loops; the flag toggles the run shape.
+`--ci` through the Task `--` separator the same way the workflows do,
+for example `task ss:reliability:accessibility -- --ci`. The same Task command
+runs in both loops, and the flag toggles the run shape.
 
 ## Exit codes
 
-Every check returns the same three codes, and CI gates on them directly —
-there is no per-check post-processing step deciding the verdict:
+Every check returns the same three codes, and CI gates on them directly,
+so there is no per-check post-processing step deciding the verdict.
 
 | Code | Meaning |
 |---|---|
-| `0` | Ran; nothing to fail on. Includes a graceful skip — an unconfigured check is not a failing check |
+| `0` | Ran; nothing to fail on. Includes a graceful skip, because an unconfigured check is not a failing check |
 | `1` | Ran; the repo failed it. Findings over a threshold, drift, a budget exceeded |
 | `2` | Could not run. Missing tool, missing input, unreadable report, an argument the check has no parser for |
 
@@ -68,23 +68,23 @@ exactly:
 ```bash
 task contributing:test                # CLI pytest suite (ci-cli.yml)
 task ss:hygiene:test                  # Full hygiene suite (also the pre-push hook)
-task contributing:run                 # Serve app/ on :8080 — separate terminal
+task contributing:run                 # Serve app/ on :8080 in a separate terminal
 task contributing:test:site           # Playwright smoke + a11y against it
 task ss:reliability:cwv -- --url http://localhost:8080   # Lighthouse CI
 task ss:security:sast                 # Semgrep
 ```
 
 Or call the CLI directly if you'd rather skip the `task` shim layer
-(`slopstopper serve &`, `slopstopper run reliability:smoke`, etc.) —
+(`slopstopper serve &`, `slopstopper run reliability:smoke`, etc.), since
 the shims are thin and call the same code path either way.
 
 ## The CLI test suite (pytest)
 
 The product is the Python package under [`cli/`](../../cli/); its tests
 live in `cli/tests/` and are the first thing to run after any change to a
-check, the installer, or a workflow (several tests read the workflow files
-and the skills as fixtures — `cli/tests/test_workflow_triggers.py`, for one, so a
-YAML edit can fail a Python test).
+check, the installer, or a workflow (several tests, such as `cli/tests/test_workflow_triggers.py`,
+read the workflow files and the skills as fixtures, so a YAML edit
+can fail a Python test).
 
 ```bash
 task contributing:test                       # whole suite
@@ -111,7 +111,7 @@ Python under PEP 668. CI runs the identical target from
 
 ## Actions are pinned to commits
 
-Every third-party action in the hand-written workflows is `uses: owner/repo@<sha> # vN` — a commit, not a tag. A tag can be moved; the job that publishes to PyPI with `id-token: write` should not run whatever a moved tag points at. Dependabot (`.github/dependabot.yml`) opens a weekly PR when a new release lands and updates both the SHA and the version comment, so pinning costs nothing day to day. `cli/tests/test_action_pins.py` fails on any floating ref. The gh-aw lock file is generated and carries its own pins — edit the `.md` source and recompile, never the lock.
+Every third-party action in the hand-written workflows is pinned to a commit as `uses: owner/repo@<sha> # vN`, never to a tag. A tag can be moved; the job that publishes to PyPI with `id-token: write` should not run whatever a moved tag points at. Dependabot (`.github/dependabot.yml`) opens a weekly PR when a new release lands and updates both the SHA and the version comment, so pinning costs nothing day to day. `cli/tests/test_action_pins.py` fails on any floating ref. The gh-aw lock file is generated and carries its own pins, so edit the `.md` source and recompile, never the lock.
 
 ## Commit conventions
 
@@ -133,5 +133,5 @@ Every third-party action in the hand-written workflows is `uses: owner/repo@<sha
 
 | When you are…                                                              | Do this                                                                             |
 | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| changing anything that ships to adopters (a check, workflow, skill, config key, template, page) | Read [CHANGE_MAP.md](CHANGE_MAP.md) before you start — every surface each kind of change must touch |
-| about to add a workflow, task, report path or external resource            | Read [PITFALLS.md](PITFALLS.md) first — workflow naming, task namespace, CSP, brand contrast |
+| changing anything that ships to adopters (a check, workflow, skill, config key, template, page) | Read [CHANGE_MAP.md](CHANGE_MAP.md) before you start. It lists every surface each kind of change must touch |
+| about to add a workflow, task, report path or external resource            | Read [PITFALLS.md](PITFALLS.md) first for workflow naming, the task namespace, CSP and brand contrast |

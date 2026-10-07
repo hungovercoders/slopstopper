@@ -23,7 +23,7 @@ flowchart TD
     I --> Z
 ```
 
-## Step 1 — Ask AI First
+## Step 1. Ask AI First
 
 Use GitHub Copilot or another AI assistant to ask questions about the codebase before raising an issue. This is the fastest path to an answer and keeps the issue tracker focused on genuine bugs or gaps.
 
@@ -34,7 +34,7 @@ Use GitHub Copilot or another AI assistant to ask questions about the codebase b
 - "What does this workflow file do?"
 - "How do I add a new page to the site?"
 
-## Step 2 — Raise a Support Issue (repo-specific problems)
+## Step 2. Raise a Support Issue (repo-specific problems)
 
 If AI cannot resolve your question and the problem is **specific to this repository**, open a support issue using the template provided:
 
@@ -46,7 +46,7 @@ Use this for:
 - Missing documentation that is clearly scoped to this project
 - Configuration questions specific to this template
 
-## Step 3 — Start a Discussion (cross-repo or cross-team)
+## Step 3. Start a Discussion (cross-repo or cross-team)
 
 If the problem spans multiple repositories, teams, or is architectural in nature, start a **GitHub Discussion** rather than an issue:
 

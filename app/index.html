@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SlopStopper — stop the slop</title>
-    <meta name="description" content="SlopStopper — a Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.">
+    <title>SlopStopper: stop the slop</title>
+    <meta name="description" content="SlopStopper: a Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.">
     <meta name="theme-color" content="#FBF5EC">
     <meta name="author" content="SlopStopper">
-    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity — <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
     <link rel="canonical" href="https://slopstopper.dev/">
 
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://slopstopper.dev/">
-    <meta property="og:title" content="SlopStopper — stop the slop">
+    <meta property="og:title" content="SlopStopper: stop the slop">
     <meta property="og:description" content="A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="SlopStopper — stop the slop. Deterministic feedback for AI-driven development.">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="SlopStopper — stop the slop">
+    <meta name="twitter:title" content="SlopStopper: stop the slop">
     <meta name="twitter:description" content="A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
-    <meta name="twitter:image:alt" content="SlopStopper — stop the slop. Deterministic feedback for AI-driven development.">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -77,7 +77,7 @@
             <div class="bubble">Catch slop before it ships.</div>
             <h1>Stop the <span class="highlight">slop.</span></h1>
             <p class="hero__what">A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.</p>
-            <p>Deterministic, automated feedback for AI-driven development — keep your repo healthy while you ship fast.</p>
+            <p>Deterministic, automated feedback for AI-driven development. The repo stays healthy while you ship fast.</p>
             <div class="cta-row">
                 <a href="#get-started" class="btn btn--primary">Get started →</a>
                 <a href="features.html" class="btn btn--ghost">See features</a>
@@ -87,12 +87,12 @@
         <section class="about">
             <span class="kicker about__kicker">🪞 Dogfooded here</span>
             <p>slopstopper.dev is the reference install: this site is built and deployed with the same CLI and workflows it describes. As AI-assisted development accelerates the pace of change, consistent automated checks keep code quality high without slowing teams down.</p>
-            <p class="about__dogfood">Every check you see on Features runs on this repo too — pipeline-status badges on the <a href="https://github.com/hungovercoders/slopstopper#readme" rel="noopener noreferrer">README</a> are real.</p>
+            <p class="about__dogfood">Every check on the Features page runs on this repo too, and the status badges on the <a href="https://github.com/hungovercoders/slopstopper#readme" rel="noopener noreferrer">README</a> are real.</p>
         </section>
 
         <section class="section" id="get-started">
             <span class="kicker">Get started</span>
-            <h2>Install the CLI. Run checks anywhere.</h2>
+            <h2>Install the CLI and run the checks anywhere.</h2>
             <p class="lede">SlopStopper is a Python CLI plus the GitHub Actions workflows that drive it. Try the CLI alone for a quick local run, or run the all-in-one installer to pin it and seed the workflows + Taskfile shim into a repo.</p>
             <h3 class="install-heading">Just the CLI (quick try)</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install slopstopper-cli via pipx" data-copyable>
@@ -117,19 +117,19 @@ slopstopper run hygiene:docs-size            # underlying CLI; same code as task
             <details class="details">
                 <summary>What does the installer do?</summary>
                 <div class="details__body">
-                    <p>The installer pins <code>slopstopper-cli</code> + <code>task</code> in <code>mise.toml</code> and installs them via <strong>mise</strong> (required), then seeds your repo with the <code>.github/workflows/ss-*.yml</code> CI checks and the <code>.github/actions/ss-*</code> composite steps they share (toolchain setup via <code>jdx/mise-action</code>, URL resolution), a thin <code>Taskfile.ss.yml</code> of <code>task ss:*</code> shims that call the CLI, and a <code>.slopstopper.yml</code> starter config. Idempotent — re-run any time to refresh; move the pin with <code>install.sh --upgrade-cli</code> / <code>--cli-version</code>.</p>
+                    <p>The installer pins <code>slopstopper-cli</code> + <code>task</code> in <code>mise.toml</code> and installs them via <strong>mise</strong> (required), then seeds your repo with the <code>.github/workflows/ss-*.yml</code> CI checks and the <code>.github/actions/ss-*</code> composite steps they share (toolchain setup via <code>jdx/mise-action</code>, URL resolution), a thin <code>Taskfile.ss.yml</code> of <code>task ss:*</code> shims that call the CLI, and a <code>.slopstopper.yml</code> starter config. It is idempotent, so re-run it any time to refresh, and move the pin with <code>install.sh --upgrade-cli</code> / <code>--cli-version</code>.</p>
                     <p>It also wires a <strong>pre-push git hook</strong> (<code>.githooks/pre-push</code>, via <code>core.hooksPath</code>) that runs the fast hygiene checks (<code>task ss:hygiene:test</code>) before every push, so the first CI run confirms rather than discovers. It won't touch an existing <code>husky</code> / <code>lefthook</code> / <code>pre-commit</code> setup; opt out with <code>--no-hooks</code>, or bypass a single push with <code>git push --no-verify</code>.</p>
                     <p>Bundled Playwright specs, lighthouserc, and the local-CI static server (<code>slopstopper serve</code>) live inside the wheel. Run <code>slopstopper templates eject &lt;name&gt;</code> to customise any of them.</p>
                     <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/install.sh" rel="noopener noreferrer">View install.sh on GitHub →</a>
                 </div>
             </details>
-            <h3 class="install-heading">Not a website? Pick a profile</h3>
+            <h3 class="install-heading">Pick a profile for an API or a library</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install with a project-shape profile" data-copyable>
                 <pre><code># JSON/gRPC endpoints, no browser surface
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh \
   | bash -s -- --profile api
 
-# library, CLI or package — nothing deployed
+# library, CLI or package: nothing deployed
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh \
   | bash -s -- --profile library</code></pre>
             </div>
@@ -148,7 +148,7 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
                 </div>
                 <div class="step">
                     <h3>Customise</h3>
-                    <p>Project-shape profile, complexity thresholds, page lists, headers source — everything via <code>.slopstopper.yml</code>.</p>
+                    <p>Project-shape profile, complexity thresholds, page lists and headers source all live in <code>.slopstopper.yml</code>.</p>
                 </div>
                 <div class="step">
                     <h3>Open a PR</h3>
@@ -161,14 +161,14 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
         <section class="section" id="claude-code-skill">
             <span class="kicker">Claude Code users</span>
             <h2>Let the agent drive the install.</h2>
-            <p class="lede">Two companion skills — <a href="https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-install/SKILL.md" rel="noopener noreferrer">slopstopper-install</a> (first install <em>and</em> refresh) and <a href="https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-triage/SKILL.md" rel="noopener noreferrer">slopstopper-triage</a> (failing-check diagnosis) — land in <code>&lt;repo&gt;/.claude/skills/</code> alongside the workflows when you run <code>install.sh</code>. Every contributor that clones the repo gets them automatically; Claude Code auto-picks the right skill per prompt.</p>
+            <p class="lede">Two companion skills land in <code>&lt;repo&gt;/.claude/skills/</code> alongside the workflows when you run <code>install.sh</code>: <a href="https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-install/SKILL.md" rel="noopener noreferrer">slopstopper-install</a> for the first install <em>and</em> every refresh, and <a href="https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-triage/SKILL.md" rel="noopener noreferrer">slopstopper-triage</a> for diagnosing a failing check. Every contributor that clones the repo gets them automatically; Claude Code auto-picks the right skill per prompt.</p>
             <div class="codeblock codeblock--sh" role="region" aria-label="Skill refresh command" data-copyable>
                 <pre><code>curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash</code></pre>
             </div>
             <details class="details">
                 <summary>What does this do?</summary>
                 <div class="details__body">
-                    <p>The above one-liner is for <em>refreshing</em> just the skills inside an existing slopstopper-adopting repo without re-running the whole installer. It writes two directories — <code>&lt;repo&gt;/.claude/skills/slopstopper-install/</code> and <code>&lt;repo&gt;/.claude/skills/slopstopper-triage/</code>, each a short <code>SKILL.md</code> map plus the <code>references/</code> it links — at project level, so every contributor gets them on <code>git clone</code>. Commit the whole directories. Different prompts trigger different skills: "install / refresh / upgrade slopstopper" → <code>slopstopper-install</code>; "fix this failing slopstopper check" → <code>slopstopper-triage</code>. For a first-time install, just run <code>install.sh</code> — it includes the skills.</p>
+                    <p>The above one-liner is for <em>refreshing</em> just the skills inside an existing slopstopper-adopting repo without re-running the whole installer. It writes two directories at project level, <code>&lt;repo&gt;/.claude/skills/slopstopper-install/</code> and <code>&lt;repo&gt;/.claude/skills/slopstopper-triage/</code>, each a short <code>SKILL.md</code> map plus the <code>references/</code> it links, so every contributor gets them on <code>git clone</code>. Commit the whole directories. Different prompts trigger different skills: "install / refresh / upgrade slopstopper" → <code>slopstopper-install</code>; "fix this failing slopstopper check" → <code>slopstopper-triage</code>. For a first-time install just run <code>install.sh</code>, which includes the skills.</p>
                     <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/install-skill.sh" rel="noopener noreferrer">View install-skill.sh on GitHub →</a>
                 </div>
             </details>
@@ -202,14 +202,14 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
                 </div>
                 <div class="card">
                     <h3>🚀 Deployment</h3>
-                    <p>How slopstopper.dev ships: Cloudflare Workers Builds deploys every push to <code>main</code>, gives every PR a preview URL and retires it on close. Nothing for <code>install.sh</code> to add — connect your repo in the Cloudflare dash and you get the same.</p>
+                    <p>How slopstopper.dev ships: Cloudflare Workers Builds deploys every push to <code>main</code>, gives every PR a preview URL and retires it on close. There is nothing for <code>install.sh</code> to add. Connect your repo in the Cloudflare dash and you get the same.</p>
                     <a href="features.html#deployment" class="card-link">See how this site ships →</a>
                 </div>
             </div>
         </section>
     </main>
     <footer>
-        <p>SlopStopper is open source — <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">view the repository on GitHub</a>.</p>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
     </footer>
     <script src="copy.js" defer></script>
 </body>

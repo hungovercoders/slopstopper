@@ -6,7 +6,7 @@ before; the rule is "do the obvious thing the obvious way."
 ## Quality checks
 
 - **Adding a quality check workflow but forgetting to add a matching
-  Task target.** CI and local diverge — contributors can't reproduce
+  Task target.** CI and local diverge, so contributors can't reproduce
   the failure. Every workflow that runs a check must invoke
   `task ss:<category>:<action>`; the same target must exist in
   [`Taskfile.ss.yml`](../../Taskfile.ss.yml).
@@ -14,9 +14,9 @@ before; the rule is "do the obvious thing the obvious way."
   `.ss/reports/<category>/`.** It won't be `.gitignore`d and could
   pollute the consumer's repo when they install SlopStopper.
 - **Invoking a task without the `ss:` prefix.** A bare `hygiene:complexity`
-  gives "Task not found"; the target is `task ss:hygiene:complexity` — all SlopStopper tasks live under the
-  `ss` namespace via the root `Taskfile.yml`'s `includes:` block. Use
-  `task ss:hygiene:complexity`.
+  gives "Task not found"; the target is `task ss:hygiene:complexity`, because
+  all SlopStopper tasks live under the `ss` namespace via the root
+  `Taskfile.yml`'s `includes:` block. Use `task ss:hygiene:complexity`.
 
 ## Workflows
 
@@ -32,18 +32,18 @@ before; the rule is "do the obvious thing the obvious way."
   production; test in DevTools first. If the resource is genuinely
   required, open a per-path exception in
   [`worker/headers.json`](../../worker/headers.json) and document it
-  in [`docs/security/CSP_EXCEPTIONS.md`](../security/CSP_EXCEPTIONS.md)
-  — the `ss:hygiene:csp-exceptions` check fails the build if they
+  in [`docs/security/CSP_EXCEPTIONS.md`](../security/CSP_EXCEPTIONS.md),
+  because the `ss:hygiene:csp-exceptions` check fails the build if they
   drift apart.
 
 ## Site (`app/`)
 
 - **Editing `app/index.html` but forgetting `aria-current="page"` on
-  the active nav link.** Accessibility regression — axe-core catches
-  it on every PR.
-- **Tweaking `--accent` to use it as text colour.** AA contrast fail.
+  the active nav link.** It is an accessibility regression that
+  axe-core catches on every PR.
+- **Tweaking `--accent` to use it as text colour.** It fails AA contrast.
   Use `--accent-deep` for text on light backgrounds, `--accent` for
   decorative shapes only.
 - **Adding to one HTML page's header but not the other two.** There
-  is no build step or SSI — nav drifts. Change one, change all
+  is no build step or SSI, so the nav drifts. Change one, change all
   three.
