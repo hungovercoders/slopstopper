@@ -23,7 +23,7 @@ Writes a markdown report and a JSON report under .ss/reports/entry-files/.
 The markdown report includes a paste-ready snippet for each violation so
 adopters can remediate in one copy/paste.
 
-Configuration (.slopstopper.yml — optional):
+Configuration (.slopstopper.yml, optional):
 
     hygiene:
       entry_files:
@@ -39,9 +39,9 @@ See .slopstopper.yml.example for the canonical schema. The pre-0.15
 `max_words` knob is ignored (with a note) — budgets are tokens now.
 
 Exit codes:
-  0 — every entry file within budget AND every rule satisfied
-  1 — at least one budget OR rule violation
-  2 — required entry files missing, or arguments were passed (this
+  0: every entry file within budget AND every rule satisfied
+  1: at least one budget OR rule violation
+  2: required entry files missing, or arguments were passed (this
       check takes none)
 """
 

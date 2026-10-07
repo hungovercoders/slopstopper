@@ -35,10 +35,10 @@ ref, killed): that is exit 2. The previous run's report is removed before
 every scan, so it can never stand in for this one.
 
 Exit codes:
-  0 — no secrets detected
-  1 — one or more secrets detected, or gitleaks' report could not be read
+  0: no secrets detected
+  1: one or more secrets detected, or gitleaks' report could not be read
       (counted as a finding — see above). The check itself is the gate
-  2 — gitleaks is not installed, arguments were passed (this check takes
+  2: gitleaks is not installed, arguments were passed (this check takes
       none), or gitleaks wrote no report — the scan did not run
 """
 

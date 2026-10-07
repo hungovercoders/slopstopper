@@ -24,7 +24,7 @@ CLI surface:
 
 Stdlib-only (urllib). Writes .ss/reports/api-health/api-health-report.{md,json}.
 
-Configuration (.slopstopper.yml — all optional):
+Configuration (.slopstopper.yml, all optional):
 
     api:
       base_path: ''             # prefix the API is served under, e.g. /api/v1
@@ -44,9 +44,9 @@ Env-var equivalents the CLI also honours (precedence: flag > env > config):
 See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
-  0 — endpoint healthy, or no endpoint configured (graceful skip)
-  1 — failures detected
-  2 — the URL is missing, or its scheme is not http/https
+  0: endpoint healthy, or no endpoint configured (graceful skip)
+  1: failures detected
+  2: the URL is missing, or its scheme is not http/https
 """
 
 from __future__ import annotations

@@ -631,9 +631,9 @@ def _dispatch_discover(check_name: str, event: str) -> int:
     """Resolve pages for `check_name` under `event` and print comma-joined paths.
 
     Mirrors the bash `.ss/scripts/discover-pages.py` exit codes:
-      0 — at least one path resolved (printed to stdout)
-      1 — internal error (logged to stderr)
-      2 — no path resolved (nothing printed)
+      0: at least one path resolved (printed to stdout)
+      1: internal error (logged to stderr)
+      2: no path resolved (nothing printed)
     """
     normalised = check_name.replace("-", "_")
     try:

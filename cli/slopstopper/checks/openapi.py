@@ -43,7 +43,7 @@ CLI surface:
 Stdlib-only (urllib + json). Writes
 .ss/reports/openapi/openapi-report.{md,json}.
 
-Configuration (.slopstopper.yml — all optional):
+Configuration (.slopstopper.yml, all optional):
 
     api:
       openapi:
@@ -55,11 +55,11 @@ Configuration (.slopstopper.yml — all optional):
 See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
-  0 — spec and API agree, or nothing configured / the spec is YAML
+  0: spec and API agree, or nothing configured / the spec is YAML
       (graceful skip)
-  1 — drift detected, or the committed spec is not valid JSON / not an
+  1: drift detected, or the committed spec is not valid JSON / not an
       OpenAPI document — a verdict about the repo
-  2 — the spec could not be loaded (file missing, URL unreachable,
+  2: the spec could not be loaded (file missing, URL unreachable,
       refused or unsafe) or the target URL has an unsafe scheme — the
       check could not run, the same as DAST for the same config
 """

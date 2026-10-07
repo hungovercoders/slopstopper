@@ -19,7 +19,7 @@ CLI surface:
 
 Stdlib-only (urllib). Writes .ss/reports/llms-txt/llms-txt-report.{md,json}.
 
-Configuration (.slopstopper.yml — all optional):
+Configuration (.slopstopper.yml, all optional):
 
     reliability:
       llms_txt:
@@ -33,9 +33,9 @@ Env-var equivalents the CLI also honours (precedence: flag > env > config):
 See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
-  0 — llms.txt present and well-formed
-  1 — failures detected
-  2 — the URL is missing, or its scheme is not http/https
+  0: llms.txt present and well-formed
+  1: failures detected
+  2: the URL is missing, or its scheme is not http/https
 """
 
 from __future__ import annotations

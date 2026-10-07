@@ -30,7 +30,7 @@ CLI surface:
 Stdlib-only (urllib + statistics). Writes
 .ss/reports/api-latency/api-latency-report.{md,json}.
 
-Configuration (.slopstopper.yml — all optional):
+Configuration (.slopstopper.yml, all optional):
 
     api:
       base_path: ''          # prefix the API is served under
@@ -49,11 +49,11 @@ Env-var equivalents the CLI also honours (precedence: flag > env > config):
 See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
-  0 — every path reachable and within any configured budget, or no paths
+  0: every path reachable and within any configured budget, or no paths
       configured (graceful skip)
-  1 — a path was unreachable / answered non-2xx, or a configured budget
+  1: a path was unreachable / answered non-2xx, or a configured budget
       was exceeded
-  2 — the URL is missing, or its scheme is not http/https
+  2: the URL is missing, or its scheme is not http/https
 """
 
 from __future__ import annotations

@@ -51,11 +51,11 @@ the full rules. The swallowed-CSP block is prepended to the report
 MD so the PR bot comment keeps showing what got filtered.
 
 Exit codes:
-  0 — ZAP ran and the gate found no blocking alerts, or API mode was
+  0: ZAP ran and the gate found no blocking alerts, or API mode was
       requested with no spec configured (graceful skip)
-  1 — gate found blocking alerts (riskcode >= 2 on a non-swallowed
+  1: gate found blocking alerts (riskcode >= 2 on a non-swallowed
       finding)
-  2 — could not run: Docker not installed, nothing listening on
+  2: could not run: Docker not installed, nothing listening on
       localhost, the configured spec file does not exist, or the ZAP
       report is missing or unparseable
 """

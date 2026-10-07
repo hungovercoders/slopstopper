@@ -18,7 +18,7 @@ slopstopper-cli wheel ships zero Playwright code. The test specs and
 Playwright config are bundled in the wheel; adopters can override by
 writing same-named files under .ss/ (see slopstopper.templates).
 
-Configuration (.slopstopper.yml — all optional):
+Configuration (.slopstopper.yml, all optional):
 
     pages:
       smoke: /,/blog,/about       # which paths to smoke-test
@@ -28,9 +28,9 @@ Configuration (.slopstopper.yml — all optional):
 See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
-  0 — playwright tests passed
-  1 — playwright tests ran and failed (report still written)
-  2 — npx (Node.js) not available, the URL is missing, the bundled
+  0: playwright tests passed
+  1: playwright tests ran and failed (report still written)
+  2: npx (Node.js) not available, the URL is missing, the bundled
       spec could not be found, or Playwright exited with any other
       non-zero code (the suite didn't run to a verdict).
       Playwright exiting 1 without running the tests (a config error,

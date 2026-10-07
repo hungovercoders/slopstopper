@@ -22,16 +22,16 @@ complexity exceeds `max_ccn` fails it. This is the single source of
 truth — `task ss:hygiene:complexity`, the pre-push hook and CI all
 inherit this exit code, so behaviour is identical everywhere.
 
-Configuration (.slopstopper.yml — all optional):
+Configuration (.slopstopper.yml, all optional):
 
     hygiene:
       complexity:
         max_ccn: 15   # CCN ceiling; a function above this fails the check
 
 Exit codes:
-  0 — analysis completed, no function over `max_ccn`
-  1 — a function exceeds `max_ccn`
-  2 — lizard is not installed, or arguments were passed (this check
+  0: analysis completed, no function over `max_ccn`
+  1: a function exceeds `max_ccn`
+  2: lizard is not installed, or arguments were passed (this check
       takes none)
 """
 

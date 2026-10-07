@@ -21,7 +21,7 @@ in-CLI slopstopper.discovery module.
 Falls back to SMOKE_TEST_URL when ACCESSIBILITY_TEST_URL is unset,
 matching the bash flow exactly.
 
-Configuration (.slopstopper.yml — all optional):
+Configuration (.slopstopper.yml, all optional):
 
     pages:
       accessibility: /,/blog,/about
@@ -34,9 +34,9 @@ See .slopstopper.yml.example for the canonical schema and coverage
 modes.
 
 Exit codes:
-  0 — playwright tests passed
-  1 — playwright tests ran and failed (report still written)
-  2 — npx (Node.js) not available, the URL is missing, the bundled
+  0: playwright tests passed
+  1: playwright tests ran and failed (report still written)
+  2: npx (Node.js) not available, the URL is missing, the bundled
       spec could not be found, or Playwright exited with any other
       non-zero code (the suite didn't run to a verdict).
       Playwright exiting 1 without running the tests (a config error,

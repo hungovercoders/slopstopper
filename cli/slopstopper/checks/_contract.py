@@ -1,8 +1,8 @@
 """The exit-code contract's shared helpers (see `slopstopper.checks`).
 
-  0 — the repo passed (or the check skipped gracefully)
-  1 — the repo failed the check: a verdict about the code or the site
-  2 — the check could not run: bad input, a missing tool, a scan that
+  0: the repo passed (or the check skipped gracefully)
+  1: the repo failed the check: a verdict about the code or the site
+  2: the check could not run: bad input, a missing tool, a scan that
       produced nothing readable. Never a verdict, so never a tracking issue
 
 Every mapping from "something went wrong" to an exit code lives here, so

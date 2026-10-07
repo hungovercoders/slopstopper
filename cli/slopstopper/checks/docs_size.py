@@ -5,7 +5,7 @@ one self-contained check. Writes .ss/reports/docs/docs-size-report.md
 and prints a coloured summary to stdout. Exits 0 always — alerts are
 reported, not enforced.
 
-Configuration (.slopstopper.yml — all keys optional):
+Configuration (.slopstopper.yml, all keys optional):
 
     hygiene:
       docs_size:
@@ -16,9 +16,9 @@ Configuration (.slopstopper.yml — all keys optional):
 See .slopstopper.yml.example for the canonical schema.
 
 Exit codes:
-  0 — always; the thresholds are advisory and the report carries the
+  0: always; the thresholds are advisory and the report carries the
       verdict (`❌ Status: THRESHOLDS EXCEEDED`), never the exit code
-  2 — arguments were passed (this check takes none)
+  2: arguments were passed (this check takes none)
 """
 
 from __future__ import annotations

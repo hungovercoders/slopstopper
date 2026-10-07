@@ -10,7 +10,7 @@ nothing routes to is invisible to agents, so it fails the build; so does a
 soft link in the map, a route that runs more hops than an agent should
 pay, and a topic doc too long to read in one sitting.
 
-Configuration (.slopstopper.yml — optional):
+Configuration (.slopstopper.yml, optional):
 
     hygiene:
       entry_files:
@@ -28,9 +28,9 @@ Writes a JSON report (machine-readable, drives downstream tooling) and a
 markdown report (human-readable).
 
 Exit codes:
-  0 — clean
-  1 — violations
-  2 — docs/ or the map missing (no map to check against), or
+  0: clean
+  1: violations
+  2: docs/ or the map missing (no map to check against), or
       arguments were passed (this check takes none)
 """
 

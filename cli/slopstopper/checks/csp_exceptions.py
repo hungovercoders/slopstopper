@@ -14,9 +14,9 @@ See .slopstopper.yml.example for the canonical schema and supported
 adapters.
 
 Exit codes mirror the bash:
-  0 — source and doc agree (or no source configured — graceful skip)
-  1 — drift detected (details in report)
-  2 — required input files missing, unknown adapter format, or arguments
+  0: source and doc agree (or no source configured — graceful skip)
+  1: drift detected (details in report)
+  2: required input files missing, unknown adapter format, or arguments
       were passed (this check takes none)
 """
 

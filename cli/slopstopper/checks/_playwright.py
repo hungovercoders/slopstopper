@@ -15,9 +15,9 @@ cannot resolve `node_modules`. Ejecting them into `.ss/` in the
 adopter's CWD puts them next to `node_modules`. It is idempotent.
 
 Exit codes (the contract every one of these checks keeps):
-  0 — playwright tests passed
-  1 — playwright tests ran and failed (report still written)
-  2 — npx (Node.js) not available, the URL is missing, the spec could
+  0: playwright tests passed
+  1: playwright tests ran and failed (report still written)
+  2: npx (Node.js) not available, the URL is missing, the spec could
       not be found, or Playwright exited with any other non-zero code
       (the suite didn't run to a verdict). Playwright exiting 1 without
       running the tests (a config error, no tests found, the browser

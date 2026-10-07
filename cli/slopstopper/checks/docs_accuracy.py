@@ -26,7 +26,7 @@ releases ago gets caught, which the docs/-only scan never could. The
 relative-link and backtick-path checks are not applied outside docs/:
 a skill or a site page describes an adopter's tree, not this one.
 
-Configuration (.slopstopper.yml — all optional):
+Configuration (.slopstopper.yml, all optional):
 
     hygiene:
       docs_accuracy:
@@ -36,9 +36,9 @@ Writes a JSON report (machine-readable) and a Markdown report (human-
 readable).
 
 Exit codes:
-  0 — clean
-  1 — issues
-  2 — docs/ missing (nothing to check), or arguments were passed
+  0: clean
+  1: issues
+  2: docs/ missing (nothing to check), or arguments were passed
       (this check takes none)
 """
 

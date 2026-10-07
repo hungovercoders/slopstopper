@@ -24,9 +24,9 @@ limits mirror that file so the rendered table matches what lhci
 actually enforced.
 
 Exit codes:
-  0 — lhci passed all thresholds
-  1 — lhci audited the page and failed a threshold (report still written)
-  2 — npx (Node.js) not available, the URL is missing, the Lighthouse
+  0: lhci passed all thresholds
+  1: lhci audited the page and failed a threshold (report still written)
+  2: npx (Node.js) not available, the URL is missing, the Lighthouse
       config does not exist, or lhci didn't run to a verdict: any exit
       other than 0/1, or an exit 1 with no Lighthouse result written this
       run (Chrome failed to launch, collection aborted)

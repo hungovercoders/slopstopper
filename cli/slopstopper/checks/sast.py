@@ -25,16 +25,16 @@ A scan that produced no readable report (Semgrep crashed, timed out
 fetching rules, or wrote nothing) is "could not run", not "no findings":
 the check exits 2 rather than passing a scan that never happened.
 
-Configuration (.slopstopper.yml — optional):
+Configuration (.slopstopper.yml, optional):
 
     security:
       sast:
         fail_on: error     # error (default) | warning | info | none
 
 Exit codes:
-  0 — no findings at or above `security.sast.fail_on`
-  1 — one or more findings at or above `security.sast.fail_on`
-  2 — semgrep is not installed, exited with an error (a failed rules
+  0: no findings at or above `security.sast.fail_on`
+  1: one or more findings at or above `security.sast.fail_on`
+  2: semgrep is not installed, exited with an error (a failed rules
       fetch, a bad config), wrote no readable report, or arguments were
       passed (this check takes none)
 """
