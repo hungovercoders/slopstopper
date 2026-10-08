@@ -68,7 +68,19 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        # A stalled browser download otherwise holds the job until GitHub's
+        # six-hour limit. Each attempt gets five minutes and a stall is
+        # retried once; the step timeout bounds both attempts.
+        timeout-minutes: 12
+        run: |
+          for attempt in 1 2; do
+            if timeout --kill-after=30s 5m npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "::warning::Playwright browser install attempt ${attempt} failed or stalled after 5 minutes"
+          done
+          echo "::error::Playwright browser install failed twice. Re-run the job; if it keeps failing, check the runner's network."
+          exit 1
 
       - name: Determine audit URL
         id: url

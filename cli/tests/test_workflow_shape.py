@@ -123,3 +123,26 @@ def test_local_build_steps_follow_the_resolved_url(workflow):
         text,
     )
     assert not hand_rolled, f"{workflow}: gate {hand_rolled} on steps.<id>.outputs.use_local"
+
+
+def _playwright_install_steps(text: str) -> list[str]:
+    """Each step block (from `- name:` to the next step) that installs Playwright browsers."""
+    steps = re.split(r"(?m)^(?=\s+- name: )", text)
+    return [step for step in steps if "playwright install" in step]
+
+
+@pytest.mark.parametrize(
+    "workflow", sorted(p.name for p in WORKFLOWS_DIR.glob("*.yml") if "playwright install" in p.read_text(encoding="utf-8"))
+)
+def test_playwright_install_is_time_boxed(workflow):
+    # A stalled browser download once held two PR jobs for hours, because
+    # nothing bounded the step short of GitHub's six-hour job limit (#386).
+    steps = _playwright_install_steps(_text(workflow))
+    assert steps, f"{workflow}: mentions `playwright install` but no step runs it"
+    for step in steps:
+        assert re.search(r"(?m)^\s+timeout-minutes:\s*\d+", step), (
+            f"{workflow}: the Playwright install step has no `timeout-minutes`"
+        )
+        assert "timeout " in step, (
+            f"{workflow}: the Playwright install step does not bound each attempt with `timeout`"
+        )
