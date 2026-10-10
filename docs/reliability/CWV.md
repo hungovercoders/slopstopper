@@ -50,7 +50,7 @@ Nothing leaves the runner by default. Lighthouse reports carry screenshots and p
 |---|---|---|
 | `pull_request`, `push` | the site built and served on `localhost:8080` | dev |
 | `workflow_dispatch` | the `url` input, else `urls.production` | dev |
-| `deployment_status` (e.g. a Cloudflare deploy) | that deployment's own `target_url`, so a preview deploy audits the preview | `--prod` |
+| `deployment_status` (success; e.g. a Cloudflare or GitHub Pages deploy) | that deployment's own `environment_url` (else `target_url`), so a preview deploy audits the preview. A `github.com/…/actions/` log link is never audited: `urls.production` is used instead, or a local build | `--prod` |
 | `schedule` (daily) | `urls.production` | `--prod` |
 
 It posts the rolling PR comment, opens a tracking issue when `main` regresses, and closes that issue automatically on the next green run.

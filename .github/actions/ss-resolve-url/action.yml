@@ -10,7 +10,7 @@ description: >-
 #
 #   mode skip (the API checks, which audit a deployed environment or nothing)
 #     workflow_dispatch   → the `url` input
-#     deployment_status   → the deployment's target URL         (prod=true)
+#     deployment_status   → the deployment's URL                (prod=true)
 #     pull_request        → urls.preview
 #     schedule / push     → urls.production                     (prod=true)
 #     … and when that comes out empty: a notice and skip=true. An API
@@ -20,9 +20,17 @@ description: >-
 #     workflow_dispatch   → the `url` input. If blank, a local build, or
 #                           urls.production when dispatch-fallback is
 #                           production (an error if unset)
-#     deployment_status   → the deployment's target URL         (prod=true)
+#     deployment_status   → the deployment's URL                (prod=true)
 #     schedule            → urls.production (an error if unset) (prod=true)
 #     pull_request / push → http://localhost:8080, use_local=true
+#
+# The deployment's URL is its environment_url, falling back to target_url
+# (the workflows pass `environment_url || target_url`). Some providers,
+# GitHub Pages among them, put the deployment's *log* in target_url, so a
+# github.com/<owner>/<repo>/actions/ link is never audited as the site:
+# it is replaced by urls.production, and with that unset the API checks
+# skip and the browser checks build and serve the repo, each with a
+# notice.
 #
 # Every URL is validated to http(s); an invalid one fails the step. A
 # failing `slopstopper config get` fails the step too, so a broken CLI is
@@ -43,7 +51,7 @@ inputs:
     required: false
     default: ''
   deployment-url:
-    description: The deployment_status target URL, if any
+    description: "The deployment_status URL, if any: `environment_url || target_url`"
     required: false
     default: ''
   dispatch-fallback:
@@ -105,6 +113,14 @@ runs:
         config_get() {
           slopstopper config get "$1" || fail "slopstopper config get $1 failed. See the error above."
         }
+        # A deployment's log link (GitHub Pages sets target_url to the
+        # Actions job) is not the site, so it is never audited.
+        if [ "$EVENT_NAME" = "deployment_status" ] &&
+           [[ "$DEPLOYMENT_URL" =~ ^https://github\.com/[^/]+/[^/]+/actions/ ]]; then
+          echo "::notice::The deployment URL is a GitHub Actions log ($DEPLOYMENT_URL), not the site, so ${CHECK} uses urls.production instead."
+          DEPLOYMENT_URL="$(config_get urls.production)"
+          deployment_log=true
+        fi
 
         if [ "$MODE" = "skip" ]; then
           prod=false
@@ -136,7 +152,12 @@ runs:
             fi
             ;;
           deployment_status)
-            audit "$DEPLOYMENT_URL" true
+            if [ -z "$DEPLOYMENT_URL" ] && [ -n "${deployment_log:-}" ]; then
+              echo "::notice::urls.production is unset, so ${CHECK} builds and serves the repo instead."
+              local_build
+            else
+              audit "$DEPLOYMENT_URL" true
+            fi
             ;;
           schedule)
             production="$(config_get urls.production)"

@@ -65,7 +65,7 @@ jobs:
         with:
           mode: skip
           url: ${{ github.event.inputs.url }}
-          deployment-url: ${{ github.event.deployment_status.target_url }}
+          deployment-url: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
           check: OpenAPI Drift Check
 
       - name: Run OpenAPI drift audit

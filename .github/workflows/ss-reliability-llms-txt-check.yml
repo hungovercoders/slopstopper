@@ -57,7 +57,7 @@ jobs:
         with:
           mode: local
           url: ${{ github.event.inputs.url }}
-          deployment-url: ${{ github.event.deployment_status.target_url }}
+          deployment-url: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
           check: llms.txt Check
 
       - name: Install dependencies (local build only)

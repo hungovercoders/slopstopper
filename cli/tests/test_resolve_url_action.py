@@ -168,3 +168,47 @@ def test_a_broken_cli_is_not_an_unset_key(tmp_path, mode, event):
     assert rc != 0
     assert "config get" in log and "failed" in log
     assert outputs == {}
+
+
+# ── a deployment whose URL is its log (#416) ─────────────────────
+#
+# GitHub Pages sets deployment_status.target_url to the Actions job and the
+# site to environment_url. The workflows pass `environment_url ||
+# target_url`; a provider that only fills target_url with a log link must
+# still never have that link audited as the site.
+
+PAGES_LOG = "https://github.com/hungovercoders/terminal-of-terror/actions/runs/38064650455/job/114249869256"
+
+
+@pytest.mark.parametrize("mode", ["skip", "local"])
+def test_a_log_link_is_replaced_by_urls_production(tmp_path, mode):
+    rc, outputs, log = resolve(tmp_path, "deployment_status", mode=mode, deployment=PAGES_LOG, production=PROD)
+    assert rc == 0, log
+    assert outputs["url"] == PROD and outputs["prod"] == "true"
+    assert "GitHub Actions log" in log
+
+
+def test_a_log_link_with_no_production_skips_an_api_check(tmp_path):
+    rc, outputs, log = resolve(tmp_path, "deployment_status", mode="skip", deployment=PAGES_LOG)
+    assert rc == 0, log
+    assert outputs["skip"] == "true" and outputs["url"] == ""
+
+
+def test_a_log_link_with_no_production_builds_locally_for_a_browser_check(tmp_path):
+    rc, outputs, log = resolve(tmp_path, "deployment_status", mode="local", deployment=PAGES_LOG)
+    assert rc == 0, log
+    assert outputs["url"] == LOCAL and outputs["use_local"] == "true"
+
+
+WORKFLOWS = REPO_ROOT / ".github" / "workflows"
+
+
+@pytest.mark.parametrize(
+    "workflow",
+    sorted(p.name for p in WORKFLOWS.glob("ss-*.yml") if "deployment_status:" in p.read_text()),
+)
+def test_deployment_workflows_pass_environment_url_and_only_on_success(workflow):
+    text = (WORKFLOWS / workflow).read_text()
+    assert ("deployment-url: ${{ github.event.deployment_status.environment_url"
+            " || github.event.deployment_status.target_url }}") in text
+    assert "github.event.deployment_status.state == 'success'" in text
