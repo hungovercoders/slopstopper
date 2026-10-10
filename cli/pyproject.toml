@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "slopstopper-cli"
-version = "0.17.0"
+version = "0.18.0"
 description = "A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo."
 readme = "README.md"
 requires-python = ">=3.11"
