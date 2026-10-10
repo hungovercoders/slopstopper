@@ -323,6 +323,9 @@ def test_stale_marker_with_zero_workflows_on_disk_is_ignored(tmp_path):
     deleted every workflow and silently installs zero.
     """
     target = _make_minimal_target(tmp_path)
+    # An API spec, so the ui profile keeps its four API checks and every
+    # workflow is expected back.
+    (target / "openapi.yaml").write_text("openapi: 3.0.0\n")
 
     # Plant a stale marker listing all 20 ss-*.yml workflows, with zero
     # workflows on disk (no .github/workflows/ at all).
@@ -562,10 +565,35 @@ API_WORKFLOWS = {
 }
 
 
-def test_api_checks_ship_under_the_default_profile(tmp_path):
-    """A ui repo keeps them: they're inert until configured, and a repo with
-    API routes shouldn't have to find workflows.enabled to get coverage."""
+def test_ui_profile_leaves_out_api_checks_when_there_is_no_api(tmp_path):
+    """A static site shouldn't run four jobs that check nothing."""
     target = _make_minimal_target(tmp_path)
+    result = _run_install(target)
+    assert result.returncode == 0
+    assert not (_installed(target) & API_WORKFLOWS)
+    assert "No API found" in result.stdout
+    assert "ss-reliability-smoke-tests.yml" in _installed(target)
+
+
+@pytest.mark.parametrize(
+    "marker,body",
+    [("openapi.yaml", "openapi: 3.0.0\n"), ("package.json", '{"dependencies": {"express": "^4"}}\n')],
+)
+def test_ui_profile_keeps_api_checks_when_the_repo_has_an_api(tmp_path, marker, body):
+    target = _make_minimal_target(tmp_path)
+    (target / marker).write_text(body)
+    result = _run_install(target)
+    assert result.returncode == 0
+    assert API_WORKFLOWS <= _installed(target)
+    assert "No API found" not in result.stdout
+
+
+def test_configuring_api_and_rerunning_adds_the_api_checks(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target).returncode == 0
+    assert not (_installed(target) & API_WORKFLOWS)
+    cfg = target / ".slopstopper.yml"
+    cfg.write_text(cfg.read_text() + "\napi:\n  health:\n    path: /healthz\n")
     assert _run_install(target).returncode == 0
     assert API_WORKFLOWS <= _installed(target)
 

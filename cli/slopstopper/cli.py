@@ -1020,10 +1020,16 @@ def _print_profile_show() -> int:
         output._emit("  Disabled workflows: none. This repo carries the full suite.")
         return 0
 
-    from_profile = set(profiles.expand(name) or [])
+    from_profile = profiles.profile_disables()
+    no_api = set(profiles.without_api(name)) & from_profile
     output._emit(f"  Disabled workflows ({len(disabled)}):")
     for workflow in disabled:
-        source = "profile" if workflow in from_profile else "workflows.disabled"
+        if workflow in no_api:
+            source = "profile, no API detected"
+        elif workflow in from_profile:
+            source = "profile"
+        else:
+            source = "workflows.disabled"
         output._emit(f"    · {workflow:<42} ({source})")
 
     taken_back = sorted(from_profile - set(disabled))

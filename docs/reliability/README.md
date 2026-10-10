@@ -107,7 +107,7 @@ Report: `.ss/reports/api-health/api-health-report.{md,json}`.
 
 `ss-reliability-api-health-check.yml` audits `urls.preview` on pull requests and `urls.production` on pushes to main, schedules and Cloudflare deployment events. Unlike the browser checks it **never builds and serves the repo locally**, because an API isn't a static bundle `slopstopper serve` can host, and guessing a start command would be worse than not guessing. With neither URL configured the PR run emits a notice and skips; the deployed-main and scheduled runs still cover the endpoint.
 
-The check ships under every [project-shape profile](../architecture/PROFILES.md) except `library`, and stays inert until configured, so a UI repo with API routes gets it without having to opt in.
+The check ships under the `api` [project-shape profile](../architecture/PROFILES.md), and under `ui` once the repo shows an API (a spec, a server framework or any `api.*` key). It stays inert until configured.
 
 ## API Latency Check
 
@@ -168,7 +168,7 @@ Report: `.ss/reports/api-latency/api-latency-report.{md,json}`.
 
 One caveat specific to this check: **timings from a preview environment are not timings from production.** A cold-started preview deploy is slower and noisier. Either set budgets loose enough for it, or leave them unset on PRs and rely on the scheduled production run.
 
-Ships under every [project-shape profile](../architecture/PROFILES.md) except `library`, and stays inert until configured.
+Ships under `api`, and under `ui` once the repo shows an API (see [profiles](../architecture/PROFILES.md)). Inert until configured.
 
 ## Broken Link Checks
 

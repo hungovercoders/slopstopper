@@ -522,6 +522,18 @@ print(name + "\t" + reason)
 '
 }
 
+# Workflows the active profile holds back because the repo shows no API,
+# one per line. Empty when there is an API or the profile has no such list.
+profile_held_for_api() {
+  ss_profiles_py '
+from slopstopper import profiles
+if not profiles.api_signal():
+    dropped = set(profiles.without_api(profiles.active_name())) & profiles.effective_disabled()
+    for name in sorted(dropped):
+        print(name)
+'
+}
+
 # Write `profile: <name>` into the target .slopstopper.yml. It replaces an
 # existing top-level key in place, or appends a documented block if the
 # file predates the key. Comment-preserving line edit, same spirit as the
@@ -1411,6 +1423,12 @@ echo "       $(profile_summary)"
 if [ "$PROFILE_SKIPPED" -gt 0 ]; then
   echo "       $PROFILE_SKIPPED check(s) left out as not applying to this shape."
   echo "       'slopstopper profile show' lists them; workflows.enabled keeps one."
+fi
+HELD_FOR_API="$(profile_held_for_api 2>/dev/null || true)"
+if [ -n "$HELD_FOR_API" ]; then
+  echo "       No API found (no OpenAPI spec, server framework or api.* config),"
+  echo "       so the $(printf '%s\n' "$HELD_FOR_API" | wc -l | tr -d ' ') API checks aren't installed. To add them, set api.* in"
+  echo "       .slopstopper.yml (or list them under workflows.enabled) and re-run."
 fi
 echo ""
 # The shape suggestion is advisory only, and skipped when the run set the

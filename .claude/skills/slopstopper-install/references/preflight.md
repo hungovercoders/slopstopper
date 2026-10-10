@@ -8,11 +8,11 @@
 
 | Shape | Profile | Install with | Gets |
 | ----- | ------- | ------------ | ---- |
-| Serves HTML to a browser | `ui` (default) | `bash install.sh` | everything (25 checks) |
+| Serves HTML to a browser | `ui` (default) | `bash install.sh` | everything (25 checks; 21 until the repo has an API) |
 | JSON/gRPC API, no browser surface | `api` | `bash install.sh --profile api` | the static layer, the four API checks (`api-health`, `api-latency`, `api-headers`, `openapi`) and DAST via ZAP's OpenAPI mode; no browser checks (16 checks) |
 | Library, CLI or package, nothing deployed | `library` | `bash install.sh --profile library` | the static layer only (10 checks) |
 
-The four API checks (`reliability:api-health`, `reliability:api-latency`, `security:api-headers`, `hygiene:openapi`) ship under `ui` as well as `api`, and stay inert until `api.health.path` / `api.latency.paths` / `api.headers.paths` / `api.openapi.spec` are set, so a UI repo with API routes (Next.js handlers, Astro endpoints) gets them without having to find `workflows.enabled`. Configuring them is Step 4.
+The four API checks (`reliability:api-health`, `reliability:api-latency`, `security:api-headers`, `hygiene:openapi`) ship under `api` always, and under `ui` only when the repo has an API: an OpenAPI/Swagger spec or proto file, a server-framework dependency, or any `api.*` key in `.slopstopper.yml`. A UI repo with API routes (Next.js handlers, Astro endpoints) gets them without having to find `workflows.enabled`; a static site doesn't run four jobs that check nothing. They stay inert until `api.health.path` / `api.latency.paths` / `api.headers.paths` / `api.openapi.spec` are set. Configuring them is Step 4, and a `ui` repo that had none needs `install.sh` re-run afterwards to add the workflows.
 
 Note the odd one out: `hygiene:openapi` is the only **hygiene** check that needs a URL, since drift means the spec measured against the thing it documents. That is why `library`, which drops everything URL-driven, is the one profile without a complete static layer.
 
