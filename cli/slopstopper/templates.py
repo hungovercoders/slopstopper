@@ -22,6 +22,7 @@ from pathlib import Path
 
 PACKAGE_DATA_DIR = Path(__file__).resolve().parent / "data"
 OVERRIDE_ROOT = Path(".ss")
+RUN_ROOT = OVERRIDE_ROOT / ".run"
 
 PLAYWRIGHT_CONFIG_NAME = "playwright.config.js"
 LIGHTHOUSERC_NAME = "lighthouserc.json"
@@ -109,23 +110,34 @@ def eject(name: str) -> tuple[Path, bool]:
     return override, True
 
 
-def ensure_ejected(name: str) -> tuple[Path, bool]:
-    """Auto-eject `<name>` if no override exists.
+def stage_playwright(spec_name: str) -> tuple[Path, Path]:
+    """Copy the resolved Playwright config and spec into `.ss/.run/`.
 
-    Returns (destination_path, was_new), the same shape as `eject()`.
+    Returns (config_path, spec_path) for `npx playwright test`.
 
-    Used by the reliability checks before they invoke `npx playwright`:
-    Playwright resolves `@playwright/test` from the directory of its
-    own config, and the bundled config lives inside the installed package
-    (mise's tool install), where no `node_modules` is reachable. Ejecting the config (and the spec
-    Playwright is about to run) into `.ss/` puts them in the adopter's
-    CWD where node_modules IS reachable.
+    Playwright resolves `@playwright/test` from the directory of its own
+    config, and the bundled config lives inside the installed package
+    (mise's tool install), where no `node_modules` is reachable. The
+    copies go under the adopter's CWD, where node_modules IS reachable,
+    but into a run directory rather than `.ss/<name>`: only `eject` writes
+    there, so `templates list` reports a file as ejected only when the
+    adopter asked for it. A deliberate `.ss/` override is what gets
+    copied, so it still wins.
 
-    Silent when the override already exists; the caller is responsible
-    for emitting a one-line info message on first eject so the new
-    `.ss/<name>` file isn't surprising to the adopter.
+    Both files are refreshed on every run, so a CLI upgrade or an edit to
+    an override takes effect immediately. The config's `testDir: './tests'`
+    resolves to `.ss/.run/tests/`, next to the staged spec. The run
+    directory ignores itself, so it never shows in `git status`, even in a
+    repo whose `.gitignore` predates it.
     """
-    return eject(name)
+    config_dest = RUN_ROOT / PLAYWRIGHT_CONFIG_NAME
+    spec_rel = f"tests/{spec_name}.spec.ts"
+    spec_dest = RUN_ROOT / spec_rel
+    spec_dest.parent.mkdir(parents=True, exist_ok=True)
+    (RUN_ROOT / ".gitignore").write_text("*\n")
+    shutil.copyfile(template_path(PLAYWRIGHT_CONFIG_NAME), config_dest)
+    shutil.copyfile(template_path(spec_rel), spec_dest)
+    return config_dest, spec_dest
 
 
 # ── back-compat thin wrappers used by the check modules ──────────

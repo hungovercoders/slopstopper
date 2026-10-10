@@ -760,11 +760,13 @@ if [ -n "$DATA_DIR" ] && [ -d "$DATA_DIR" ]; then
   scrub_if_byte_equal "lighthouserc.json"
   scrub_if_byte_equal "lighthouserc.prod.json"
   scrub_if_byte_equal "server.js"
+  # Spec by spec: a run under CLI <= 0.17 auto-ejected only the specs it
+  # ran, so a partial set of unmodified copies is the common case.
   if [ -d "$TARGET_DIR/.ss/tests" ] && [ -d "$DATA_DIR/tests" ]; then
-    if diff -rq "$TARGET_DIR/.ss/tests" "$DATA_DIR/tests" >/dev/null 2>&1; then
-      rm -rf "$TARGET_DIR/.ss/tests"
-      success ".ss/tests/ removed (unmodified copy of package-data fallback)"
-    fi
+    for spec in "$DATA_DIR"/tests/*.spec.ts; do
+      scrub_if_byte_equal "tests/$(basename "$spec")"
+    done
+    rmdir "$TARGET_DIR/.ss/tests" 2>/dev/null || true
   fi
 fi
 

@@ -199,24 +199,42 @@ def test_playwright_spec_override_only_for_named_check(isolated_cwd):
     )
 
 
-# ── ensure_ejected (auto-eject helper used by reliability checks) ─
+# ── stage_playwright (run-time copies for the reliability checks) ─
 
 
-def test_ensure_ejected_copies_when_missing(isolated_cwd):
-    dest, was_new = templates.ensure_ejected("playwright.config.js")
-    assert was_new is True
-    assert dest == Path(".ss/playwright.config.js")
-    assert dest.exists()
-    # Content matches the bundled file (sanity that we copied not symlinked).
-    bundled = (templates.PACKAGE_DATA_DIR / "playwright.config.js").read_text()
-    assert dest.read_text() == bundled
+def test_stage_playwright_copies_bundled_files_into_the_run_dir(isolated_cwd):
+    config, spec = templates.stage_playwright("smoke")
+    assert config == Path(".ss/.run/playwright.config.js")
+    assert spec == Path(".ss/.run/tests/smoke.spec.ts")
+    assert config.read_text() == (templates.PACKAGE_DATA_DIR / "playwright.config.js").read_text()
+    assert spec.read_text() == (templates.PACKAGE_DATA_DIR / "tests" / "smoke.spec.ts").read_text()
 
 
-def test_ensure_ejected_is_silent_when_already_present(isolated_cwd):
-    override = isolated_cwd / ".ss" / "playwright.config.js"
-    override.parent.mkdir(parents=True, exist_ok=True)
-    override.write_text("// customised")
-    dest, was_new = templates.ensure_ejected("playwright.config.js")
-    assert was_new is False
-    assert dest == Path(".ss/playwright.config.js")
-    assert override.read_text() == "// customised"
+def test_stage_playwright_never_writes_an_override(isolated_cwd):
+    templates.stage_playwright("smoke")
+    for name in templates.list_templates():
+        assert not templates.is_ejected(name), f"{name} reads as ejected after a run"
+
+
+def test_stage_playwright_run_dir_ignores_itself(isolated_cwd):
+    templates.stage_playwright("smoke")
+    assert (isolated_cwd / ".ss" / ".run" / ".gitignore").read_text() == "*\n"
+
+
+def test_stage_playwright_copies_a_deliberate_override(isolated_cwd):
+    override = isolated_cwd / ".ss" / "tests" / "smoke.spec.ts"
+    override.parent.mkdir(parents=True)
+    override.write_text("// customised spec")
+    config_override = isolated_cwd / ".ss" / "playwright.config.js"
+    config_override.write_text("// customised config")
+    config, spec = templates.stage_playwright("smoke")
+    assert spec.read_text() == "// customised spec"
+    assert config.read_text() == "// customised config"
+
+
+def test_stage_playwright_refreshes_a_stale_copy(isolated_cwd):
+    stale = isolated_cwd / ".ss" / ".run" / "tests" / "smoke.spec.ts"
+    stale.parent.mkdir(parents=True)
+    stale.write_text("// from an older CLI")
+    _, spec = templates.stage_playwright("smoke")
+    assert spec.read_text() == (templates.PACKAGE_DATA_DIR / "tests" / "smoke.spec.ts").read_text()

@@ -222,7 +222,7 @@ task ss:reliability:smoke -- https://your-site.example.com --ci
 SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke
 ```
 
-`task ss:reliability:smoke` shells through to `slopstopper run reliability:smoke`, which launches the bundled Playwright spec via the config baked into the `slopstopper-cli` wheel. The config is [`cli/slopstopper/data/playwright.config.js`](../../cli/slopstopper/data/playwright.config.js) and the spec is [`cli/slopstopper/data/tests/smoke.spec.ts`](../../cli/slopstopper/data/tests/smoke.spec.ts). Adopters don't vendor those files; the CLI owns them. To customise, run `slopstopper templates eject playwright.config.js` to drop an editable copy into `.ss/`; the CLI picks `.ss/<filename>` up automatically.
+`task ss:reliability:smoke` shells through to `slopstopper run reliability:smoke`, which launches the bundled Playwright spec via the config baked into the `slopstopper-cli` wheel. The config is [`cli/slopstopper/data/playwright.config.js`](../../cli/slopstopper/data/playwright.config.js) and the spec is [`cli/slopstopper/data/tests/smoke.spec.ts`](../../cli/slopstopper/data/tests/smoke.spec.ts). Adopters don't vendor those files; the CLI owns them. To customise, run `slopstopper templates eject playwright.config.js` to drop an editable copy into `.ss/`; the CLI picks `.ss/<filename>` up automatically. Each run copies the resolved config and spec (your override if there is one, else the bundled file) into `.ss/.run/` so Playwright can reach your `node_modules`; that directory ignores itself and is rewritten on every run, so don't edit it.
 
 ### Running in CI
 
@@ -246,7 +246,7 @@ That is the same Task command you ran locally, with the positional URL resolved 
 
 ### Test configuration
 
-The portable spec is configured via [`cli/slopstopper/data/playwright.config.js`](../../cli/slopstopper/data/playwright.config.js), which is bundled in the `slopstopper-cli` wheel. `testDir: './tests'` resolves to the bundled spec directory so SlopStopper's specs never collide with your own `tests/` directory. To customise, eject an editable copy into your repo's `.ss/` directory:
+The portable spec is configured via [`cli/slopstopper/data/playwright.config.js`](../../cli/slopstopper/data/playwright.config.js), which is bundled in the `slopstopper-cli` wheel. `testDir: './tests'` resolves to `.ss/.run/tests/`, where each run stages the spec, so SlopStopper's specs never collide with your own `tests/` directory. An ejected config is staged there too, so any relative path in it resolves from `.ss/.run/`. To customise, eject an editable copy into your repo's `.ss/` directory:
 
 ```bash
 slopstopper templates eject playwright.config.js
