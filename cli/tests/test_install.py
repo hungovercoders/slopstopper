@@ -957,3 +957,44 @@ def test_profile_flag_writes_into_the_seeded_starter(tmp_path):
     lines = (target / ".slopstopper.yml").read_text().splitlines()
     assert lines.count("profile: api") == 1
     assert "profile: ui" not in lines
+
+
+# ── legacy run-time copies under .ss/ (#389) ─────────────────────────────────
+
+DATA_DIR = REPO_ROOT / "cli" / "slopstopper" / "data"
+
+
+def test_unmodified_spec_copies_are_scrubbed_one_by_one(tmp_path):
+    """CLI <= 0.17 auto-ejected only the specs a run used, so a partial set
+    of byte-equal copies must go too; a customised spec stays an override."""
+    target = _make_minimal_target(tmp_path)
+    tests = target / ".ss" / "tests"
+    tests.mkdir(parents=True)
+    shutil.copy(DATA_DIR / "tests" / "smoke.spec.ts", tests / "smoke.spec.ts")
+    shutil.copy(DATA_DIR / "playwright.config.js", target / ".ss" / "playwright.config.js")
+    (tests / "e2e.spec.ts").write_text("// customised journeys\n")
+    result = _run_install(
+        target, args=["--no-hooks", "--no-skills"], env_extra={"PYTHONPATH": str(REPO_ROOT / "cli")}
+    )
+    assert result.returncode == 0, result.stderr
+    assert not (tests / "smoke.spec.ts").exists()
+    assert not (target / ".ss" / "playwright.config.js").exists()
+    assert (tests / "e2e.spec.ts").read_text() == "// customised journeys\n"
+
+
+def test_a_tests_dir_of_only_unmodified_copies_is_removed(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    tests = target / ".ss" / "tests"
+    tests.mkdir(parents=True)
+    shutil.copy(DATA_DIR / "tests" / "accessibility.spec.ts", tests / "accessibility.spec.ts")
+    result = _run_install(
+        target, args=["--no-hooks", "--no-skills"], env_extra={"PYTHONPATH": str(REPO_ROOT / "cli")}
+    )
+    assert result.returncode == 0, result.stderr
+    assert not tests.exists()
+
+
+def test_gitignore_block_covers_the_playwright_run_dir(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
+    assert ".ss/.run/" in (target / ".gitignore").read_text().splitlines()

@@ -8,11 +8,12 @@ reads and the wording differ, so the plumbing lives here once:
 `Check` description plus its `_build_env` (the config keys its spec reads).
 That pair is a module's entire production surface.
 
-The eject dance is the non-obvious part and is documented once, here:
-the bundled config and specs live inside the installed slopstopper-cli
-package (mise's tool install, per mise.toml), where Playwright
-cannot resolve `node_modules`. Ejecting them into `.ss/` in the
-adopter's CWD puts them next to `node_modules`. It is idempotent.
+The staging step is the non-obvious part: the bundled config and specs
+live inside the installed slopstopper-cli package (mise's tool install,
+per mise.toml), where Playwright cannot resolve `node_modules`. Each run
+copies the resolved config and spec into the self-ignoring `.ss/.run/`
+in the adopter's CWD, next to `node_modules`. `templates.stage_playwright`
+documents it.
 
 Exit codes (the contract every one of these checks keeps):
   0: playwright tests passed
@@ -116,22 +117,14 @@ def base_env(check: Check, url: str, ci_mode: bool) -> dict[str, str]:
     return env
 
 
-def ensure_assets_ejected(spec_name: str) -> None:
-    """Eject the Playwright config and `tests/<spec_name>.spec.ts` if not already."""
-    for name in (templates.PLAYWRIGHT_CONFIG_NAME, f"tests/{spec_name}.spec.ts"):
-        dest, was_new = templates.ensure_ejected(name)
-        if was_new:
-            output.info(f"ejected {dest} (Playwright must run from a path with node_modules reachable)")
-
-
-def build_cmd(spec_name: str, ci_mode: bool) -> list[str]:
+def build_cmd(config: Path, spec: Path, ci_mode: bool) -> list[str]:
     # `json` feeds `_contract.playwright_ran`: Playwright exits 1 both when
     # tests failed and when they never ran, and only the report can tell.
     reporter = "list,html,json" if ci_mode else "list,json"
     return [
         "npx", "playwright", "test",
-        f"--config={templates.playwright_config()}",
-        str(templates.playwright_spec(spec_name)),
+        f"--config={config}",
+        str(spec),
         f"--reporter={reporter}",
     ]
 
@@ -190,15 +183,15 @@ def run_check(
         output.status(check.banner_icon, message)
     else:
         output.running(message)
-    ensure_assets_ejected(check.spec_name)
     spec = templates.playwright_spec(check.spec_name)
     if not spec.exists():
         output.error(f"{check.name} spec not found at {spec}")
         output._emit("   The spec is bundled inside slopstopper-cli; reinstall to repair.")
         return 2
 
+    config, staged_spec = templates.stage_playwright(check.spec_name)
     env = build_env(url, parsed.ci)
-    cmd = build_cmd(check.spec_name, parsed.ci)
+    cmd = build_cmd(config, staged_spec, parsed.ci)
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     check.playwright_json.unlink(missing_ok=True)
     result = subprocess.run(cmd, env=env, check=False)

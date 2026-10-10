@@ -188,28 +188,13 @@ def test_npx_available_uses_which(monkeypatch):
     assert _tools.npx_available() is False
 
 
-def test_build_cmd_names_the_spec_and_reporter(monkeypatch):
-    monkeypatch.setattr(_playwright.templates, "playwright_config", lambda: Path("/cfg/playwright.config.js"))
-    monkeypatch.setattr(_playwright.templates, "playwright_spec", lambda name: Path(f"/cfg/tests/{name}.spec.ts"))
-    cmd = _playwright.build_cmd("smoke", ci_mode=True)
+def test_build_cmd_names_the_config_spec_and_reporter():
+    cmd = _playwright.build_cmd(Path("/cfg/playwright.config.js"), Path("/cfg/tests/smoke.spec.ts"), ci_mode=True)
     assert cmd[:3] == ["npx", "playwright", "test"]
     assert "--config=/cfg/playwright.config.js" in cmd
     assert "/cfg/tests/smoke.spec.ts" in cmd
     assert "--reporter=list,html,json" in cmd  # json: see _contract.playwright_ran
-    assert "--reporter=list,json" in _playwright.build_cmd("smoke", ci_mode=False)
-
-
-def test_ensure_assets_ejected_ejects_config_and_the_named_spec(monkeypatch, capsys):
-    ejected = []
-
-    def fake(name):
-        ejected.append(name)
-        return Path(".ss") / name, True
-
-    monkeypatch.setattr(_playwright.templates, "ensure_ejected", fake)
-    _playwright.ensure_assets_ejected("accessibility")
-    assert ejected == [_playwright.templates.PLAYWRIGHT_CONFIG_NAME, "tests/accessibility.spec.ts"]
-    assert "ejected" in capsys.readouterr().out
+    assert "--reporter=list,json" in _playwright.build_cmd(Path("c"), Path("s"), ci_mode=False)
 
 
 def test_write_summary_pass_and_fail(tmp_path, monkeypatch):
@@ -353,12 +338,12 @@ def test_run_check_returns_two_without_a_url_and_names_the_check(monkeypatch, is
 
 
 def test_run_check_returns_two_when_the_spec_is_missing(monkeypatch, isolated_cwd, capsys):
-    monkeypatch.setattr(_playwright, "ensure_assets_ejected", lambda name: None)
     monkeypatch.setattr(_playwright.templates, "playwright_spec", lambda name: Path("/nowhere/x.spec.ts"))
     code, captured = _run_fake(["--url", "https://x"], monkeypatch)
     assert code == 2
     assert "cmd" not in captured, "Playwright must not run without a spec"
     assert "fake spec not found" in capsys.readouterr().out
+    assert not (isolated_cwd / ".ss" / ".run").exists(), "nothing is staged for a missing spec"
 
 
 def test_run_check_prints_the_banner_with_its_icon_before_anything_else(monkeypatch, isolated_cwd, capsys):
@@ -379,6 +364,10 @@ def test_run_check_runs_playwright_writes_the_summary_and_maps_exit_codes(monkey
     assert "--reporter=list,html,json" in captured["cmd"]
     assert captured["env"]["FAKE_TEST_URL"] == "https://x"
     assert captured["env"]["CI"] == "true"
+    assert "--config=.ss/.run/playwright.config.js" in captured["cmd"]
+    assert ".ss/.run/tests/smoke.spec.ts" in captured["cmd"]
+    assert not (isolated_cwd / ".ss" / "playwright.config.js").exists(), "a run must not eject"
+    assert not (isolated_cwd / ".ss" / "tests").exists(), "a run must not eject"
     body = _FAKE_CHECK.report_md.read_text()
     assert body.startswith("## Fake Results") and "PASSED" in body
 

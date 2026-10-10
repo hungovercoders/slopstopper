@@ -8,6 +8,8 @@
 **/.ss/reports/
 .ss/scripts/**/__pycache__/
 .ss/tests/**/__pycache__/
+# Run-time copies of the Playwright config + specs (they also self-ignore).
+.ss/.run/
 playwright-report/
 test-results/
 .lighthouseci/

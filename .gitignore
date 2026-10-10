@@ -12,6 +12,8 @@ test-results/
 # across re-runs and must be tracked.
 .ss/scripts/**/__pycache__/
 .ss/tests/**/__pycache__/
+# Run-time copies of the Playwright config + specs (they also self-ignore).
+.ss/.run/
 # CLI package build artefacts (in-tree CLI pivot; see cli/README.md)
 cli/**/__pycache__/
 cli/*.egg-info/
