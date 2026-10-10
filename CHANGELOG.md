@@ -4,6 +4,29 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.19.0](https://github.com/hungovercoders/slopstopper/compare/v0.18.0...v0.19.0) (2026-10-10)
+
+
+### Features
+
+* **headers:** headers.format meta reads each built page's &lt;meta&gt; CSP for the drift check ([#430](https://github.com/hungovercoders/slopstopper/issues/430)) ([59b1b3c](https://github.com/hungovercoders/slopstopper/commit/59b1b3cbdc72c8416228fb1e87ad129eb1a54968)), closes [#422](https://github.com/hungovercoders/slopstopper/issues/422)
+* **hygiene:** hygiene.docs.exclude takes paths out of all three docs checks ([#421](https://github.com/hungovercoders/slopstopper/issues/421)) ([0c2075e](https://github.com/hungovercoders/slopstopper/commit/0c2075ecf57b4449f018f634fc8d31dbd532b71b)), closes [#403](https://github.com/hungovercoders/slopstopper/issues/403)
+* **profiles:** ui holds back the API checks until the repo shows an API ([#418](https://github.com/hungovercoders/slopstopper/issues/418)) ([0388c85](https://github.com/hungovercoders/slopstopper/commit/0388c8594c4f27fafb3124af3e52ffe732fd91ba)), closes [#408](https://github.com/hungovercoders/slopstopper/issues/408)
+* **security:** rules.tsv accepts alert refs, and the DAST gate names what swallowed each finding ([#423](https://github.com/hungovercoders/slopstopper/issues/423)) ([81d7f7d](https://github.com/hungovercoders/slopstopper/commit/81d7f7d99f0bc31638e345dac19bff867f92d776)), closes [#406](https://github.com/hungovercoders/slopstopper/issues/406) [#407](https://github.com/hungovercoders/slopstopper/issues/407)
+
+
+### Bug Fixes
+
+* **alerts:** a workflow-failure issue is suppressed only by the failing workflow's own issue ([#428](https://github.com/hungovercoders/slopstopper/issues/428)) ([7e1c311](https://github.com/hungovercoders/slopstopper/commit/7e1c311c577d8657fd75e6affe60d162c0442996)), closes [#412](https://github.com/hungovercoders/slopstopper/issues/412)
+* **cwv:** keep Lighthouse reports local unless public upload is opted in ([#410](https://github.com/hungovercoders/slopstopper/issues/410)) ([5f74ef3](https://github.com/hungovercoders/slopstopper/commit/5f74ef3e6f34ebb7e023ad8f3e6a7dc625b98687)), closes [#405](https://github.com/hungovercoders/slopstopper/issues/405)
+* **doc-updater:** the shipped prompt learns the project from the repo, not from slopstopper ([#429](https://github.com/hungovercoders/slopstopper/issues/429)) ([218134d](https://github.com/hungovercoders/slopstopper/commit/218134dbb93fb47c9bcf6769d9ae1637e7d9529d)), closes [#411](https://github.com/hungovercoders/slopstopper/issues/411)
+* **emit:** create missing labels before opening an issue, and never lose the issue over one ([#424](https://github.com/hungovercoders/slopstopper/issues/424)) ([4007f0f](https://github.com/hungovercoders/slopstopper/commit/4007f0f393a8201367c20ca00c9d09848ca8f891)), closes [#417](https://github.com/hungovercoders/slopstopper/issues/417)
+* **hygiene:** complexity skips test files and gitignored output ([#419](https://github.com/hungovercoders/slopstopper/issues/419)) ([fc00e65](https://github.com/hungovercoders/slopstopper/commit/fc00e6547c6274918f4996d039c114a3c0135b41)), closes [#404](https://github.com/hungovercoders/slopstopper/issues/404)
+* **hygiene:** docs-accuracy resolves bare filenames anywhere in the repo ([#420](https://github.com/hungovercoders/slopstopper/issues/420)) ([4583855](https://github.com/hungovercoders/slopstopper/commit/458385560f5b2a57a9f0cce8d5ad09657a48818d)), closes [#402](https://github.com/hungovercoders/slopstopper/issues/402)
+* **install:** own package.json seed, refresh the .gitignore block, detect Cloudflare ([#415](https://github.com/hungovercoders/slopstopper/issues/415)) ([96f41f2](https://github.com/hungovercoders/slopstopper/commit/96f41f244626931cda80355fd0ed104913c7450c)), closes [#398](https://github.com/hungovercoders/slopstopper/issues/398) [#399](https://github.com/hungovercoders/slopstopper/issues/399) [#409](https://github.com/hungovercoders/slopstopper/issues/409)
+* **reliability:** audit a deployment's environment_url, never its Actions log ([#427](https://github.com/hungovercoders/slopstopper/issues/427)) ([90badd2](https://github.com/hungovercoders/slopstopper/commit/90badd25c453b0b37b2e3298cc72a96d68bcc5d9)), closes [#416](https://github.com/hungovercoders/slopstopper/issues/416)
+* **reliability:** resolve page paths under the base URL and relative hrefs from the clicked page ([#413](https://github.com/hungovercoders/slopstopper/issues/413)) ([d4f58c1](https://github.com/hungovercoders/slopstopper/commit/d4f58c133de9682b8001ff9a9c080bba02edbd47)), closes [#400](https://github.com/hungovercoders/slopstopper/issues/400) [#401](https://github.com/hungovercoders/slopstopper/issues/401)
+
 ## [0.18.0](https://github.com/hungovercoders/slopstopper/compare/v0.17.0...v0.18.0) (2026-10-10)
 
 
