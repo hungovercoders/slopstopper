@@ -112,7 +112,14 @@ headers:
   # Adapter to use when parsing. Shipped:
   #   json              [{for, values}, ...] JSON array
   #   cloudflare-text   Cloudflare _headers text format
-  #   auto              infer from extension (json→json, no-ext→cloudflare-text)
+  #   meta              hosts that can't send headers (GitHub Pages, S3
+  #                     without CloudFront): source is the built HTML root
+  #                     (e.g. dist), and each page's <meta> CSP is read. The
+  #                     most common policy is the baseline; a page allowing
+  #                     an origin it doesn't is an exception; a page with
+  #                     no policy is a warning. CI builds first (npm run
+  #                     build); locally an unbuilt root skips
+  #   auto              infer: directory→meta, .json→json, else cloudflare-text
   format: auto
 
 # ── Dynamic-check URLs ───────────────────────────────────────────────

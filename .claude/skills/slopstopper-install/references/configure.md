@@ -60,7 +60,7 @@ A first install seeds a short starter with each key commented. Fill these in. A 
 ```yaml
 headers:
   source: public/_headers       # or worker/headers.json, or null to skip the check
-  format: cloudflare-text       # or json, or auto
+  format: cloudflare-text       # or json, meta (source = built HTML root, for a <meta> CSP), or auto
 
 urls:
   production: https://your-site.example.com

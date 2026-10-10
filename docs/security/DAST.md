@@ -116,7 +116,7 @@ Accept exactly those, by alert ref, in `.zap/rules.tsv` (tab-separated, three fi
 10055-13	IGNORE	# static host: frame-ancestors is ignored in a <meta> CSP
 ```
 
-Every other CSP alert, `10055-6` (style-src unsafe-inline) included, keeps blocking. Set `headers.source: null` too, since there is no headers file for the CSP-exceptions drift check to read (reading a `<meta>` policy is [#422](https://github.com/hungovercoders/slopstopper/issues/422)).
+Every other CSP alert, `10055-6` (style-src unsafe-inline) included, keeps blocking. Point the CSP-exceptions drift check at the built pages with `headers.format: meta` and `headers.source: <built HTML root>`, so a page that relaxes the meta policy still has to be documented.
 
 ### Disable DAST Checking
 

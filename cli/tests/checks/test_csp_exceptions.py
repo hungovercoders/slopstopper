@@ -224,3 +224,57 @@ def test_run_clean_returns_zero(isolated_cwd, write_config):
     assert rc == 0
     report = _json.loads(csp_exceptions.REPORT_JSON.read_text())
     assert all(i["severity"] != "error" for i in report["issues"])
+
+
+# ── headers.format: meta (#422) ──────────────────────────────────
+
+
+def _built_site(root: Path, discuss_csp: str | None) -> None:
+    pages = {"index.html": "default-src 'self'", "about.html": "default-src 'self'", "discuss/index.html": discuss_csp}
+    for rel, csp in pages.items():
+        target = root / "dist" / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        meta = f'<meta http-equiv="Content-Security-Policy" content="{csp}">' if csp else ""
+        target.write_text(f"<html><head>{meta}</head></html>")
+
+
+GISCUS_CSP = "default-src 'self'; script-src 'self' https://giscus.app; frame-src https://giscus.app"
+
+
+def test_meta_source_flags_an_undocumented_relaxation(isolated_cwd, write_config):
+    _built_site(isolated_cwd, GISCUS_CSP)
+    write_config("headers:\n  source: dist\n  format: meta\n")
+    _seed_csp_doc("# CSP Exceptions\n\n## Exceptions\n\n(empty section)\n")
+    assert csp_exceptions.run() == 1
+    report = _json.loads(csp_exceptions.REPORT_JSON.read_text())
+    assert [i["path"] for i in report["issues"]] == ["/discuss/"]
+
+
+def test_meta_source_passes_when_the_relaxation_is_documented(isolated_cwd, write_config):
+    _built_site(isolated_cwd, GISCUS_CSP)
+    write_config("headers:\n  source: dist\n  format: meta\n")
+    _seed_csp_doc(CSP_DOC_MATCHES.replace("### `/discuss`", "### `/discuss/`"))
+    assert csp_exceptions.run() == 0
+
+
+def test_meta_source_warns_on_a_page_with_no_policy(isolated_cwd, write_config):
+    _built_site(isolated_cwd, None)
+    write_config("headers:\n  source: dist\n  format: meta\n")
+    _seed_csp_doc("# CSP Exceptions\n\n## Exceptions\n\n(empty section)\n")
+    assert csp_exceptions.run() == 0
+    report = _json.loads(csp_exceptions.REPORT_JSON.read_text())
+    assert [(i["severity"], i["path"]) for i in report["issues"]] == [("warn", "/discuss/")]
+
+
+def test_meta_source_unbuilt_is_could_not_run_in_ci(isolated_cwd, write_config, monkeypatch, capsys):
+    write_config("headers:\n  source: dist\n  format: meta\n")
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    assert csp_exceptions.run() == 2
+    assert "build the site" in capsys.readouterr().out
+
+
+def test_meta_source_unbuilt_skips_locally(isolated_cwd, write_config, monkeypatch, capsys):
+    write_config("headers:\n  source: dist\n  format: meta\n")
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    assert csp_exceptions.run() == 0
+    assert "build the site" in capsys.readouterr().out
