@@ -57,6 +57,6 @@ hygiene:
 
 Tune a knob only for a deliberate design decision, never to silence a finding, because budgets are the feature.
 
-**Cross-references in docs:** the `docs-accuracy` check scans for `` `backtick-quoted` `` filenames and broken markdown links. Use full repo-relative paths (`scripts/foo.sh`, not bare `foo.sh`) so the checker can resolve them.
+**Cross-references in docs:** the `docs-accuracy` check scans for `` `backtick-quoted` `` filenames and broken markdown links. A bare name (`foo.sh`) or partial path (`demos/foo.sh`) resolves if any file in the repo has that name or ends with that path; a full repo-relative path (`scripts/foo.sh`) is still clearest for readers.
 
 If none of this fits the target (a short-lived prototype, single-file tool, generated docs only), delete the four workflows instead. `.ss/.workflows-installed` remembers the deletion, so re-installs don't bring them back.
