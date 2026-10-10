@@ -39,11 +39,10 @@ tools:
     - "find docs -name '*.md' -exec cat {} +"
     - "cat docs/**/*.md"
     - "cat docs/*.md"
-    - "cat *.html"
-    - "cat *.js"
-    - "cat *.css"
-    - "cat wrangler.jsonc"
-    - "cat worker/headers.json"
+    - "cat AGENTS.md"
+    - "cat CLAUDE.md"
+    - "cat README.md"
+    - "cat CONTRIBUTING.md"
     - "cat Taskfile.yml"
     - "cat package.json"
     - "cat .github/workflows/*.yml"
@@ -59,38 +58,27 @@ You are an AI documentation agent that updates the project documentation weekly 
 
 ## Project Context
 
-This is the **SlopStopper** project — a Python CLI plus GitHub Actions
-workflows that run security, hygiene and reliability checks on every PR,
-which consumers install into their own repos, and a live reference site
-that markets the suite. Deployed to Cloudflare Workers
-(Workers Builds Git integration — no GitHub Action ships deploys).
-The key characteristics are:
+This workflow ships to every repository slopstopper is installed in, so it
+knows nothing about this project in advance. Learn it from the repository
+itself before you change anything:
 
-- **Multi-page static site**: `app/index.html`, `app/features.html`, `app/tools.html` with a shared `app/shared.css` plus per-page CSS files
-- **No build step**: `npm run build` is a no-op echo; Cloudflare Workers Builds serves `app/` as-is via the Worker's `[assets]` binding and Wrangler bundles `worker/index.ts` itself
-- **Comprehensive docs**: All documentation lives in `docs/` following an index-driven governance model
-- **Taskfile automation**: Tasks follow `category:action` naming (e.g., `hygiene:complexity`); the Taskfile is the single source of truth for local + CI commands
-- **GitHub Actions CI/CD**: Workflows follow `category-action-check.yml` naming
+```bash
+cat AGENTS.md
+cat docs/README.md
+cat README.md
+```
 
-## Documentation Structure
+- `AGENTS.md` (or `CLAUDE.md`, or `README.md` if neither exists) says what
+  the project is, its stack, its commands and its conventions.
+- `docs/README.md` is the docs map: the routing table every doc under
+  `docs/` is reachable from by an explicit "when you X, read Y" row. Its
+  rows are the documentation categories and where each lives.
 
-`AGENTS.md` carries what most tasks need; `docs/README.md` is the map — the routing table every doc under `docs/` must be reachable from by an explicit "when you X, read Y" row. Categories include:
-
-| Category | Path | Purpose |
-|----------|------|---------|
-| architecture | `docs/architecture/` | System structure and boundaries |
-| decisions | `docs/decisions/` | Significant decisions and rationale |
-| deployment | `docs/deployment/` | Release and environment workflows |
-| contributing | `docs/contributing/` | Contributor workflow and expectations |
-| hygiene | `docs/hygiene/` | Quality gates and maintenance |
-| reliability | `docs/reliability/` | Service level and incident response |
-| runbooks | `docs/runbooks/` | Operational procedures |
-| security | `docs/security/` | Security scanning and controls |
-
-Key documentation files:
-- `AGENTS.md` (repo root) — Instructions for AI agents working in this repo
-- `docs/contributing/README.md` — Contribution guidelines
-- `docs/README.md` — The docs map: one trigger-first route per doc
+Write about **this** repository only, in its own terms and layout. Never
+assume a framework, a host, a directory or a command the repository does
+not show you. If there is no `AGENTS.md` and no `docs/README.md`, call the
+`noop` safe-output tool explaining that the repository has no documentation
+map to maintain, rather than inventing one.
 
 ## Your Mission
 
@@ -144,7 +132,7 @@ cat AGENTS.md
 
 Key documentation conventions:
 - Every new document needs an explicit route ("when you X, read Y") in `docs/README.md` or the README above it — `ss:hygiene:docs-structure` fails on an unrouted doc
-- Documentation categories map to Taskfile tasks and GitHub Actions workflow names
+- Follow whatever conventions `AGENTS.md` and `docs/README.md` state; they override the defaults here
 - Use clear, concise technical writing
 - Include links to relevant files and workflows
 - Keep documentation practical and actionable
@@ -166,14 +154,10 @@ find docs -name '*.md'
 
 For each missing or incomplete documentation:
 
-1. **Determine the correct file** based on the change type:
-   - Workflow/CI changes → `docs/deployment/` or `docs/hygiene/`
-   - Security changes → `docs/security/`
-   - Test changes → `docs/reliability/`
-   - Code quality changes → `docs/hygiene/`
-   - Architecture changes → `docs/architecture/`
-   - New decisions → a row in `docs/decisions/README.md` (supporting note via `task decisions:new SLUG=<name>`)
-   - Setup/contribution changes → `docs/contributing/README.md`
+1. **Determine the correct file** from the map: find the `docs/README.md`
+   row (or directory README row) whose trigger matches the change, and
+   update the doc it routes to. Only when no existing doc fits, add one in
+   the closest category directory and route it.
 
 2. **Update the appropriate file(s)** using the edit tool:
    - Add new sections for new features

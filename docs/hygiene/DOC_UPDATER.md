@@ -28,6 +28,11 @@ with the GitHub Copilot CLI engine.
 If no drift is found, it exits via the `noop` safe-output and creates
 nothing.
 
+The prompt is project-agnostic: it ships unchanged to every adopter and
+learns the project from the repo's own `AGENTS.md` and `docs/README.md`
+(no map means a `noop`). Project context belongs in those files, not in
+the prompt, which `install.sh` overwrites on every refresh.
+
 ## Required configuration (adopters: read this)
 
 The workflow won't fully function without two pieces of repo configuration:

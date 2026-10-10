@@ -146,3 +146,27 @@ def test_playwright_install_is_time_boxed(workflow):
         assert "timeout " in step, (
             f"{workflow}: the Playwright install step does not bound each attempt with `timeout`"
         )
+
+
+# ── the doc updater ships to adopters (#411) ─────────────────────
+#
+# Its prompt is runtime-imported from the adopter's own copy of the .md,
+# so anything slopstopper-specific in it would steer an agent to edit a
+# project that isn't there. Project context comes from the adopter's
+# AGENTS.md and docs map instead.
+
+DOC_UPDATER = REPO_ROOT / ".github" / "workflows" / "ss-hygiene-doc-updater.md"
+DOC_UPDATER_LOCK = DOC_UPDATER.with_suffix(".lock.yml")
+SLOPSTOPPER_ONLY = ("app/", "worker/", "Cloudflare", "wrangler", "slopstopper.dev", "task decisions:new")
+
+
+@pytest.mark.parametrize("path", [DOC_UPDATER, DOC_UPDATER_LOCK], ids=lambda p: p.name)
+def test_the_doc_updater_names_nothing_slopstopper_only(path):
+    text = path.read_text()
+    assert not [term for term in SLOPSTOPPER_ONLY if term in text]
+
+
+def test_the_doc_updater_learns_the_project_from_the_repo():
+    body = DOC_UPDATER.read_text().split("\n---\n", 1)[1]
+    assert "cat AGENTS.md" in body and "cat docs/README.md" in body
+    assert "{{#runtime-import .github/workflows/ss-hygiene-doc-updater.md}}" in DOC_UPDATER_LOCK.read_text()
