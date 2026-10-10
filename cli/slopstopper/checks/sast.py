@@ -23,7 +23,10 @@ unknown label must not quietly fall below the gate.
 
 A scan that produced no readable report (Semgrep crashed, timed out
 fetching rules, or wrote nothing) is "could not run", not "no findings":
-the check exits 2 rather than passing a scan that never happened.
+the check exits 2 rather than passing a scan that never happened. Semgrep's
+stderr streams through as it runs, and its last lines go into the report,
+so the reason (a failed rules fetch, a `semgrep` on PATH that can't run)
+travels with the artifact and the PR comment.
 
 Configuration (.slopstopper.yml, optional):
 
@@ -44,6 +47,8 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import sys
+from collections import deque
 from pathlib import Path
 
 from slopstopper import config, output
@@ -135,27 +140,62 @@ def _rank(finding: dict) -> int:
 # did not run, even if Semgrep still wrote a JSON with `"results": []`.
 SEMGREP_COMPLETED = frozenset({0, 1})
 
+# How much of Semgrep's stderr an incomplete-scan report carries.
+STDERR_TAIL_LINES = 20
 
-def _run_semgrep() -> int:
-    """Run Semgrep and return its exit code.
 
-    The previous run's report is removed first: a scan that dies before
-    writing must leave no report, not last run's.
+def _run_semgrep() -> tuple[int, list[str]]:
+    """Run Semgrep; return its exit code and the last lines of its stderr.
+
+    stderr is echoed live, so the terminal shows Semgrep's progress as
+    before, and the tail is kept for the report. The previous run's report
+    is removed first: a scan that dies before writing must leave no
+    report, not last run's.
     """
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     REPORT_JSON.unlink(missing_ok=True)
-    return subprocess.run(
-        [
-            "semgrep",
-            "--config=auto",
-            "--json",
-            f"--output={REPORT_JSON}",
-            "--exclude=node_modules",
-            "--exclude=.git",
-            ".",
-        ],
-        check=False,
-    ).returncode
+    try:
+        # why: `errors=` needs Python 3.6+; the CLI requires >=3.11.
+        # nosemgrep: python.lang.compatibility.python36.python36-compatibility-Popen1
+        proc = subprocess.Popen(
+            [
+                "semgrep",
+                "--config=auto",
+                "--json",
+                f"--output={REPORT_JSON}",
+                "--exclude=node_modules",
+                "--exclude=.git",
+                ".",
+            ],
+            stderr=subprocess.PIPE,
+            text=True,
+            errors="replace",
+        )
+    except OSError as exc:
+        return 127, [str(exc)]
+    tail: deque[str] = deque(maxlen=STDERR_TAIL_LINES)
+    for line in proc.stderr:
+        sys.stderr.write(line)
+        if line.strip():
+            tail.append(line.rstrip())
+    return proc.wait(), list(tail)
+
+
+def _incomplete_detail(rc: int, has_data: bool, stderr_tail: list[str]) -> str:
+    what = "wrote no readable report" if not has_data else "reported a fatal error"
+    detail = (
+        f"Semgrep exited {rc} and {what} (`{REPORT_JSON}`). "
+        "The scan is treated as not run, not as clean."
+    )
+    if not stderr_tail:
+        return detail + " Semgrep printed nothing to stderr."
+    body = "\n".join(stderr_tail)
+    return (
+        f"{detail}\n\nThe last {len(stderr_tail)} line(s) Semgrep printed to stderr:\n\n"
+        f"```text\n{body}\n```\n\n"
+        "If it says the `semgrep` command can't run (a stale mise shim, a broken "
+        "venv), `slopstopper doctor` confirms it."
+    )
 
 
 def _read_data() -> dict | None:
@@ -302,15 +342,12 @@ def run(args: list[str] | None = None) -> int:
         return 2
 
     output.running("Running SAST analysis…")
-    rc = _run_semgrep()
+    rc, stderr_tail = _run_semgrep()
     data = _read_data()
     if data is None or rc not in SEMGREP_COMPLETED:
         return scan_incomplete(
             REPORT_DIR, REPORT_MD, "SAST Analysis Report",
-            f"Semgrep exited {rc} and "
-            + ("wrote no readable report" if data is None else "reported a fatal error")
-            + f" (`{REPORT_JSON}`). The scan is treated as not run, not as clean. "
-            "Re-run it and check Semgrep's output above.",
+            _incomplete_detail(rc, data is not None, stderr_tail),
         )
 
     fail_on = _fail_on()

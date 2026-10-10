@@ -1367,6 +1367,23 @@ if [ -z "$PROFILE_FLAG" ]; then
     echo ""
   fi
 fi
+# GitHub disables scheduled workflows after 60 days without repo activity,
+# and a disabled workflow runs on no trigger, PRs included. A refresh is
+# often run on exactly such a quiet repo, so say so here rather than let
+# the checks vanish from the next PR. Silent when gh can't reach the repo.
+DISABLED_WORKFLOWS="$(ss_profiles_py '
+from slopstopper import workflow_state as w
+for row in w.disabled_ss_workflows() or []:
+    print("\t".join([str(row.get("name")), str(row.get("state")), w.enable_command(row)]))
+' 2>/dev/null || true)"
+if [ -n "$DISABLED_WORKFLOWS" ]; then
+  echo "  ⛔ GitHub has switched off $(printf '%s\n' "$DISABLED_WORKFLOWS" | wc -l | tr -d ' ') slopstopper workflow(s). They run on no trigger, PRs included:"
+  while IFS=$'\t' read -r wf_name wf_state wf_enable; do
+    echo "       $wf_name ($wf_state) → $wf_enable"
+  done <<< "$DISABLED_WORKFLOWS"
+  echo "     GitHub disables scheduled workflows after 60 days without repo activity."
+  echo ""
+fi
 echo "  ✅ Active now on any code, with no config needed:"
 echo "       SAST · Secrets · Dependency CVEs · Dependency Review"
 echo "       Complexity · Doc Structure · Doc Accuracy · Doc Size"

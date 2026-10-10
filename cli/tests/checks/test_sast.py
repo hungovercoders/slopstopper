@@ -175,7 +175,7 @@ def test_run_clean_when_no_results(monkeypatch, isolated_cwd, capsys):
     def fake_semgrep():
         sast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         sast.REPORT_JSON.write_text(json.dumps({"results": [], "errors": []}))
-        return 0
+        return 0, []
 
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
     monkeypatch.setattr(sast, "_run_semgrep", fake_semgrep)
@@ -189,7 +189,7 @@ def _stub_semgrep(monkeypatch, *findings):
     def fake_semgrep():
         sast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         sast.REPORT_JSON.write_text(json.dumps({"results": list(findings), "errors": []}))
-        return 0
+        return 0, []
 
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
     monkeypatch.setattr(sast, "_run_semgrep", fake_semgrep)
@@ -250,17 +250,63 @@ def test_blocking_findings_ranks_severities():
 def test_run_returns_two_when_semgrep_writes_no_report(monkeypatch, isolated_cwd, capsys):
     """A crashed scan is 'could not run', never a clean pass."""
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
-    monkeypatch.setattr(sast, "_run_semgrep", lambda: 0)
+    monkeypatch.setattr(sast, "_run_semgrep", lambda: (0, []))
     assert sast.run() == 2
     assert "did not complete" in capsys.readouterr().out
     assert "Scan did not complete" in sast.REPORT_MD.read_text()
+
+
+def test_incomplete_report_carries_semgreps_stderr_tail(monkeypatch, isolated_cwd):
+    """The reason the scan died travels with the report, not just the terminal."""
+    monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
+    monkeypatch.setattr(
+        sast, "_run_semgrep",
+        lambda: (1, ["mise ERROR osemgrep is not a valid shim. This likely means you uninstalled a tool"]),
+    )
+    assert sast.run() == 2
+    md = sast.REPORT_MD.read_text()
+    assert "Semgrep exited 1 and wrote no readable report" in md
+    assert "osemgrep is not a valid shim" in md
+    assert "slopstopper doctor" in md
+
+
+def test_incomplete_report_says_when_stderr_was_empty(monkeypatch, isolated_cwd):
+    monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
+    monkeypatch.setattr(sast, "_run_semgrep", lambda: (2, []))
+    assert sast.run() == 2
+    assert "printed nothing to stderr" in sast.REPORT_MD.read_text()
+
+
+def test_run_semgrep_tees_stderr_and_keeps_the_tail(monkeypatch, isolated_cwd, capsys):
+    lines = [f"line {i}\n" for i in range(sast.STDERR_TAIL_LINES + 5)] + ["\n"]
+
+    class FakeProc:
+        stderr = iter(lines)
+
+        def wait(self):
+            return 2
+
+    monkeypatch.setattr(sast.subprocess, "Popen", lambda *a, **k: FakeProc())
+    rc, tail = sast._run_semgrep()
+    assert rc == 2
+    assert len(tail) == sast.STDERR_TAIL_LINES
+    assert tail[-1] == f"line {sast.STDERR_TAIL_LINES + 4}"
+    assert "line 0" in capsys.readouterr().err
+
+
+def test_run_semgrep_reports_an_exec_failure(monkeypatch, isolated_cwd):
+    def boom(*a, **k):
+        raise OSError("Exec format error")
+
+    monkeypatch.setattr(sast.subprocess, "Popen", boom)
+    assert sast._run_semgrep() == (127, ["Exec format error"])
 
 
 def test_run_returns_two_when_the_report_is_malformed(monkeypatch, isolated_cwd):
     def fake_semgrep():
         sast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         sast.REPORT_JSON.write_text('{"results": [')
-        return 0
+        return 0, []
 
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
     monkeypatch.setattr(sast, "_run_semgrep", fake_semgrep)
