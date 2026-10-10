@@ -349,6 +349,15 @@ mise_active_cli_version() {
     | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
 }
 
+# slopstopper-cli version the caller's shell resolves from the target, i.e.
+# what a bare `slopstopper` runs there right now. `mise activate` puts the
+# pinned version's install dir on PATH and only refreshes it when the prompt
+# hook fires, so after the pin moves the shell that ran install.sh keeps the
+# old binary until the user re-enters the directory. Empty if not on PATH.
+shell_cli_version() {
+  ( cd "$TARGET_DIR" 2>/dev/null && installed_cli_version )
+}
+
 # ── prerequisite check ────────────────────────────────────────────────────────
 #
 # Surface missing tools up front rather than letting the install fail mid-flight
@@ -676,6 +685,7 @@ sync_mise_cli() {
     info "Skipping mise install (SKIP_CLI_INSTALL=1)"
     SLOPSTOPPER_CLI_VERSION="$pinned"
     SLOPSTOPPER_CLI_PREVIOUS="$pre_version"
+    SLOPSTOPPER_CLI_SHELL="$(shell_cli_version)"
     return 0
   fi
 
@@ -694,6 +704,10 @@ sync_mise_cli() {
     warn "Could not determine a slopstopper-cli version (offline?). Only task is pinned. Set the CLI pin later with 'install.sh --upgrade-cli'."
     mise use --path "$mcfg" "task@3" $node_arg >/dev/null || true
   fi
+
+  # In shims mode a reshim points `slopstopper` at the new pin straight away.
+  # In PATH-activation mode it changes nothing; the banner says what to do.
+  mise reshim >/dev/null 2>&1 || true
 
   # mise installs into its own dir; the binary is only on PATH if mise is
   # activated in this shell, which it may not be. Validate via `mise exec`
@@ -719,6 +733,7 @@ sync_mise_cli() {
   SLOPSTOPPER_CLI_VERSION="$post_version"
   SLOPSTOPPER_CLI_LATEST="$(latest_pypi_version)"
   SLOPSTOPPER_CLI_PREVIOUS="$pre_version"
+  SLOPSTOPPER_CLI_SHELL="$(shell_cli_version)"
 }
 
 sync_mise_cli
@@ -1336,6 +1351,15 @@ if [ -n "$ss_installed" ]; then
   if [ -n "$ss_previous" ] && [ "$ss_previous" != "$ss_installed" ]; then
     echo "  ⬆  Upgraded $ss_previous → $ss_installed"
     echo "     What's new: ${REPO_URL%.git}/releases/tag/v${ss_installed}"
+  fi
+  # The pin moved but this shell still resolves the old binary, so a local
+  # check loop run straight after the install would test the wrong version.
+  ss_shell="${SLOPSTOPPER_CLI_SHELL:-}"
+  if [ -n "$ss_shell" ] && [ "$ss_shell" != "$ss_installed" ]; then
+    warn "This shell still runs slopstopper $ss_shell, not the pinned $ss_installed."
+    echo "     Re-enter the directory (cd out and back in) so mise re-activates,"
+    echo "     or run: eval \"\$(mise activate bash)\"   (zsh/fish: swap the shell name)"
+    echo "     Until then, use: mise exec -- slopstopper …"
   fi
   echo ""
 fi

@@ -141,6 +141,42 @@ def test_upgrade_cli_flag_bumps_pin_to_latest(tmp_path):
     assert (target / "mise.toml").read_text().count("pipx:slopstopper-cli") == 1
 
 
+def _fake_cli_on_path(tmp_path: Path, version: str) -> dict[str, str]:
+    """A `slopstopper` stub printing `version`, first on PATH: what a shell
+    with mise activated resolves until the prompt hook re-runs."""
+    bin_dir = tmp_path / "fakebin"
+    bin_dir.mkdir()
+    stub = bin_dir / "slopstopper"
+    stub.write_text(f'#!/bin/sh\necho "slopstopper {version}"\n')
+    stub.chmod(0o755)
+    return {"PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"}
+
+
+def test_moved_pin_warns_when_shell_resolves_old_cli(tmp_path):
+    """After the pin moves, a shell still on the old binary gets told how to
+    pick up the new one, so the local check loop doesn't test the old CLI."""
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(
+        target,
+        args=["--cli-version", "2.0.0"],
+        env_extra=_fake_cli_on_path(tmp_path, "1.0.0"),
+    )
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert "This shell still runs slopstopper 1.0.0, not the pinned 2.0.0" in result.stdout
+    assert "mise exec -- slopstopper" in result.stdout
+
+
+def test_no_shell_warning_when_shell_resolves_pinned_cli(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(
+        target,
+        args=["--cli-version", "2.0.0"],
+        env_extra=_fake_cli_on_path(tmp_path, "2.0.0"),
+    )
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert "This shell still runs" not in result.stdout
+
+
 def test_legacy_cli_version_migrates_and_strips(tmp_path):
     """A pre-mise cli_version in .slopstopper.yml migrates into mise.toml and
     the dead key is stripped, leaving other config keys untouched."""

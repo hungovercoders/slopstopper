@@ -10,6 +10,8 @@ If the target was installed with `--no-task` (rare; opt-out for adopters who don
 
 The `task ss:hygiene:test` aggregate in Pass A is also what the installed **pre-push hook** runs automatically on every push (unless installed with `--no-hooks`), so once Pass A is green the hook won't block the push. It's a gate, not a substitute for this step: the hook only runs the static hygiene subset, so you still drive the security and Pass B server/browser checks to green here by hand.
 
+**First, confirm the CLI you'll run is the pinned one:** `slopstopper --version` must equal the `"pipx:slopstopper-cli"` pin in `mise.toml`. Straight after a pin move the current shell can still resolve the old binary (see "Move the CLI pin" in `refresh.md`); re-enter the directory or run every command below through `mise exec --`.
+
 **Two passes, in order:**
 
 ### Pass A: Static checks (no URL, no build needed, runs in seconds)
