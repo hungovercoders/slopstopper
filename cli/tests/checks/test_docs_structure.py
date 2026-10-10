@@ -108,6 +108,27 @@ def test_a_directory_readme_routes_its_own_subtree(isolated_cwd):
     assert routes["docs/security/DAST.md"] == 3
 
 
+def test_excluded_docs_need_no_route_or_line_budget(write_config):
+    write_config("hygiene:\n  docs:\n    exclude: [docs/course/**]\n")
+    _seed_agents()
+    _seed_map()
+    _doc("course/01-intro.md", "# Lesson\n" + "line\n" * 400)
+    _doc("archive/old.md")
+    assert docs_structure.run() == 1
+    assert [v["type"] for v in _violations()] == ["unrouted_doc"]
+    assert "archive/old.md" in _violations()[0]["message"]
+    data = json.loads(docs_structure.REPORT_JSON.read_text())
+    assert data["excluded"] == ["docs/course/01-intro.md"]
+    assert "`docs/course/01-intro.md`" in docs_structure.REPORT_MD.read_text()
+
+
+def test_the_archive_is_excluded_by_default(isolated_cwd):
+    _seed_agents()
+    _seed_map()
+    _doc("archive/old.md")
+    assert docs_structure.run() == 0
+
+
 def test_run_works_without_an_agents_file(isolated_cwd):
     _seed_map(_route("ci.md"))
     _doc("ci.md")

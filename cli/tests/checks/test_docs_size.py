@@ -21,6 +21,23 @@ def test_iter_doc_files_excludes_archive(docs_tree):
     assert rels == ["docs/a.md"]
 
 
+def test_docs_exclude_replaces_the_archive_default(docs_tree, write_config):
+    write_config("hygiene:\n  docs:\n    exclude: [docs/course/**]\n")
+    docs_tree({"a.md": "alpha", "course/01/lesson.md": "lesson", "archive/old.md": "archived"})
+    rels = sorted(str(p) for p in docs_size._iter_doc_files(Path("docs")))
+    assert rels == ["docs/a.md", "docs/archive/old.md"]
+
+
+def test_run_lists_excluded_docs_in_the_report(docs_tree, write_config):
+    write_config("hygiene:\n  docs:\n    exclude: [docs/course/**]\n")
+    docs_tree({"a.md": "alpha", "course/lesson.md": "lesson"})
+    assert docs_size.run() == 0
+    report = docs_size.REPORT_FILE.read_text()
+    assert "**Total Files:** 1" in report
+    assert "## Excluded" in report
+    assert "`docs/course/lesson.md`" in report
+
+
 def test_iter_doc_files_missing_dir_returns_empty(isolated_cwd):
     assert docs_size._iter_doc_files(Path("nonexistent")) == []
 

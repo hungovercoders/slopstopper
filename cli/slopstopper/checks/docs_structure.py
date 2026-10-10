@@ -20,6 +20,9 @@ Configuration (.slopstopper.yml, optional):
         max_route_depth: 3           # AGENTS.md → map → directory README → doc
         max_doc_lines: 300           # per topic doc (0 disables)
 
+Docs matching `hygiene.docs.exclude` (default `docs/archive/**`, see
+_docs.py) need no route and have no line budget; the report lists them.
+
 The pre-0.15 `require_indexed_docs` knob is read as `require_routed_docs`
 with a note. A `docs/index.md` beside the map is reported. The map is a
 README so that the repo UI renders it in place.
@@ -41,7 +44,7 @@ from collections import deque
 from pathlib import Path
 
 from slopstopper import config, output
-from slopstopper.checks import _report, _routes
+from slopstopper.checks import _docs, _report, _routes
 from slopstopper.checks._contract import reject_extra_args
 
 DOCS_DIR = Path("docs")
@@ -298,8 +301,10 @@ def _check_structure(docs_dir: Path, settings: dict) -> dict | None:
         hint = f" ({_rel(LEGACY_INDEX)} exists, so rename it to {settings['map_path']})" if LEGACY_INDEX.is_file() else ""
         output.error(f"{settings['map_path']} not found{hint}")
         return None
-    docs = [p for p in sorted(docs_dir.rglob("*.md")) if p.resolve() != map_file.resolve()]
+    docs, excluded = _docs.split([p for p in sorted(docs_dir.rglob("*.md")) if p.resolve() != map_file.resolve()])
     reached, broken = _walk_routes(docs_dir, map_file)
+    skip = {p.resolve() for p in excluded}
+    reached = {doc: info for doc, info in reached.items() if doc.resolve() not in skip}
     violations = _check_routed(docs, reached, _mentions(docs_dir, map_file), settings, docs_dir, map_file)
     violations += _check_map_soft_routes(map_file)
     violations += _check_depth(reached, settings)
@@ -310,7 +315,7 @@ def _check_structure(docs_dir: Path, settings: dict) -> dict | None:
         {"doc": _rel(doc), "depth": info["depth"], "via": info["via"]}
         for doc, info in sorted(reached.items(), key=lambda kv: (kv[1]["depth"], _rel(kv[0])))
     ]
-    return {"violations": violations, "routes": routes, "doc_count": len(docs)}
+    return {"violations": violations, "routes": routes, "doc_count": len(docs), "excluded": [_rel(p) for p in excluded]}
 
 
 # ── report ───────────────────────────────────────────────────────
@@ -369,6 +374,7 @@ def _build_md_report(data: dict, generated_at: str) -> str:
     )
     report += _format_violations_content(violations) if violations else "✅ No violations found\n\n"
     report += _format_routes_section(data.get("routes", []))
+    report += _docs.report_section([Path(p) for p in data.get("excluded", [])])
     report += (
         "## How to Fix\n\n"
         f"1. **Unrouted doc:** add a row to the README above it, or to the map, in the form `{ROUTE_FORM}`. "
@@ -402,6 +408,7 @@ def run(args: list[str] | None = None) -> int:
         "doc_count": result["doc_count"],
         "routes": result["routes"],
         "map_path": settings["map_path"],
+        "excluded": result["excluded"],
     }
     REPORT_JSON.write_text(json.dumps(data, indent=2))
     REPORT_MD.write_text(_build_md_report(data, _report.generated_at()))
@@ -412,6 +419,7 @@ def run(args: list[str] | None = None) -> int:
             output._emit(f"  - {v['message']}")
         output.footer(REPORT_DIR, [REPORT_MD.name])
         return 1
-    output.success(f"Documentation structure is valid: all {result['doc_count']} docs are routed")
+    excluded_note = f" ({len(result['excluded'])} excluded by hygiene.docs.exclude)" if result["excluded"] else ""
+    output.success(f"Documentation structure is valid: all {result['doc_count']} docs are routed{excluded_note}")
     output.footer(REPORT_DIR, [REPORT_MD.name])
     return 0

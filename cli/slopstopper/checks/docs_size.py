@@ -9,9 +9,12 @@ Configuration (.slopstopper.yml, all keys optional):
 
     hygiene:
       docs_size:
-        max_total_size_kb: 150   # total .md under docs/ (excl. docs/archive/**)
+        max_total_size_kb: 150   # total .md under docs/ (excl. hygiene.docs.exclude)
         max_file_size_kb: 20     # largest single doc
         max_files: 25            # total doc count
+
+Docs matching `hygiene.docs.exclude` (default `docs/archive/**`, see
+_docs.py) are left out and listed in the report.
 
 See .slopstopper.yml.example for the canonical schema.
 
@@ -26,11 +29,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from slopstopper import config, output
-from slopstopper.checks import _report
+from slopstopper.checks import _docs, _report
 from slopstopper.checks._contract import reject_extra_args
 
 DOCS_DIR = Path("docs")
-ARCHIVE_PREFIX = Path("docs/archive")
 REPORT_DIR = Path(".ss/reports/docs")
 REPORT_FILE = REPORT_DIR / "docs-size-report.md"
 
@@ -57,11 +59,15 @@ BLUE = "\033[0;34m"
 NC = "\033[0m"
 
 
-def _iter_doc_files(docs_dir: Path = DOCS_DIR) -> list[Path]:
+def _split_doc_files(docs_dir: Path = DOCS_DIR) -> tuple[list[Path], list[Path]]:
+    """`(scanned, excluded)` markdown under docs_dir."""
     if not docs_dir.exists():
-        return []
-    archive = docs_dir / "archive"
-    return [p for p in sorted(docs_dir.rglob("*.md")) if archive not in p.parents]
+        return [], []
+    return _docs.split(sorted(docs_dir.rglob("*.md")))
+
+
+def _iter_doc_files(docs_dir: Path = DOCS_DIR) -> list[Path]:
+    return _split_doc_files(docs_dir)[0]
 
 
 def _load_thresholds() -> dict[str, int]:
@@ -119,6 +125,7 @@ def _build_report_md(
     alerts: list[str],
     thresholds: dict[str, int],
     generated_at: str | None = None,
+    excluded: list[Path] | None = None,
 ) -> str:
     has_alerts = bool(alerts)
     alerts_str = ("\n".join(alerts) + "\n") if has_alerts else ""
@@ -154,6 +161,7 @@ def _build_report_md(
     )
     if has_alerts:
         report += f"### Alerts\n\n{alerts_str}\n"
+    report += _docs.report_section(excluded or [])
     report += (
         f"## Thresholds\n"
         f"\n"
@@ -222,12 +230,15 @@ def run(args: list[str] | None = None) -> int:
     if args:
         return reject_extra_args("hygiene:docs-size", args)
     thresholds = _load_thresholds()
-    files_with_size = [(p, p.stat().st_size) for p in _iter_doc_files()]
+    scanned, excluded = _split_doc_files()
+    files_with_size = [(p, p.stat().st_size) for p in scanned]
     stats = _compute_stats(files_with_size)
     largest_files = _format_largest(files_with_size)
     alerts = _compute_alerts(stats, files_with_size, thresholds)
 
     _print_terminal_summary(stats, largest_files, alerts, thresholds)
+    if excluded:
+        output.status("🚫", f"{len(excluded)} doc(s) excluded by hygiene.docs.exclude (listed in the report)")
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     REPORT_FILE.write_text(_build_report_md(
@@ -235,6 +246,7 @@ def run(args: list[str] | None = None) -> int:
         largest_files=largest_files,
         alerts=alerts,
         thresholds=thresholds,
+        excluded=excluded,
     ))
 
     output.footer(REPORT_DIR, [f"{REPORT_FILE.name} (human-readable)"])

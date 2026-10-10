@@ -54,9 +54,11 @@
 #            is the one hygiene check that needs a live API. Drift means
 #            the spec measured against the thing it documents.
 #
-# The `ui` default keeps the API checks, which stay inert until you
-# configure them. A UI repo with API routes (Next.js handlers, Astro
-# endpoints) should get them without having to find workflows.enabled.
+# The `ui` default keeps the API checks once the repo shows an API (an
+# OpenAPI/Swagger spec or proto file, a server-framework dependency, or
+# any `api.*` key here), so a UI repo with API routes gets them without
+# having to find workflows.enabled and a static site doesn't run four
+# jobs that check nothing. They stay inert until configured.
 #
 # A profile only ever subtracts. `workflows.disabled` adds to its set and
 # `workflows.enabled` takes an individual check back out of it, so the
@@ -381,9 +383,18 @@ security:
 # pages, and the problem is `max_files: 25` rather than your docs).
 # Don't tune to silence noise; tune to match a deliberate design decision.
 hygiene:
+  docs:
+    # Paths under docs/ that docs-size, docs-structure and docs-accuracy
+    # all skip: content that lives in docs/ but isn't agent or contributor
+    # documentation, such as a course or tutorial rendered onto a site.
+    # Repo-relative globs (`*` also crosses `/`). Setting the key replaces
+    # the default, so keep docs/archive/** in the list if you have one.
+    # Each report lists what it left out.
+    exclude:
+      - docs/archive/**
   docs_size:
     # Total markdown size under docs/ before the report flags an alert.
-    # Excludes docs/archive/**.
+    # Excludes hygiene.docs.exclude.
     max_total_size_kb: 150
     # Largest single doc before the report flags it.
     max_file_size_kb: 20
