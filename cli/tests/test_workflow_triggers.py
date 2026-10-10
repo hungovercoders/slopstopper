@@ -37,7 +37,9 @@ WORKFLOWS_DIR = REPO_ROOT / ".github/workflows"
 #   ss-release                  publishes the CLI; not a check verdict
 #   ss-workflow-failure-issue   reacts to failures; not a check
 #   ss-hygiene-doc-updater.lock the agentic doc updater; opens a PR
+#   ss-cloudflare-deployed      dispatches the checks after a Workers Builds deploy
 NON_CHECK_WORKFLOWS = {
+    "ss-cloudflare-deployed.yml",
     "ss-pr-summary.yml",
     "ss-release.yml",
     "ss-workflow-failure-issue.yml",
@@ -46,10 +48,14 @@ NON_CHECK_WORKFLOWS = {
 
 # Each trigger list and the workflows it is allowed to leave out. The
 # failure tracker also watches the doc updater (a failed weekly sync is
-# worth an issue), so its exclusion set is smaller.
+# worth an issue) and the Cloudflare deploy trigger (a failed dispatch on
+# main means the live site went unchecked), so its exclusion set is smaller.
 TRIGGER_LISTS = {
     "ss-pr-summary.yml": NON_CHECK_WORKFLOWS,
-    "ss-workflow-failure-issue.yml": NON_CHECK_WORKFLOWS - {"ss-hygiene-doc-updater.lock.yml"},
+    "ss-workflow-failure-issue.yml": NON_CHECK_WORKFLOWS - {
+        "ss-hygiene-doc-updater.lock.yml",
+        "ss-cloudflare-deployed.yml",
+    },
 }
 
 

@@ -7,7 +7,7 @@ name: SlopStopper · DAST Analysis
 # and on a manual run given a `url`, because headers set at the edge
 # (CSP, HSTS, framing from a CDN or _headers) only exist there. Emits a
 # rolling PR comment (with the swallowed-CSP preamble inline) and, on
-# every non-PR run, opens or closes the tracking issue.
+# every non-PR run on main, opens or closes the tracking issue.
 # Docs: docs/security/README.md.
 
 on:
@@ -161,14 +161,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit security:dast --target pr-comment --status ${{ steps.dast.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete
 
-      - name: Emit issue (non-PR runs with blocking alerts)
-        if: github.event_name != 'pull_request' && steps.mode.outputs.mode != 'skip' && steps.dast.outcome == 'failure'
+      - name: Emit issue on main (non-PR runs with blocking alerts)
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.mode.outputs.mode != 'skip' && steps.dast.outcome == 'failure'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit security:dast --target issue
 
-      - name: Close issue when clean (non-PR runs)
-        if: github.event_name != 'pull_request' && steps.mode.outputs.mode != 'skip' && steps.dast.outcome == 'success'
+      - name: Close issue on main when clean (non-PR runs)
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.mode.outputs.mode != 'skip' && steps.dast.outcome == 'success'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit security:dast --target issue --on-pass=close

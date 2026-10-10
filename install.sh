@@ -845,7 +845,16 @@ GENERIC_WORKFLOWS=(
   # NB: gh-aw workflows ship as a .md source + .lock.yml compiled artifact.
   "ss-hygiene-doc-updater.md"
   "ss-hygiene-doc-updater.lock.yml"
+  # Cloudflare Workers Builds only (see is_cloudflare_repo): runs the
+  # URL-driven checks against each deployed preview and the live site.
+  "ss-cloudflare-deployed.yml"
 )
+
+# Cloudflare config in the target: wrangler config or a worker/ directory.
+is_cloudflare_repo() {
+  [ -f "$TARGET_DIR/wrangler.toml" ] || [ -f "$TARGET_DIR/wrangler.jsonc" ] ||
+    [ -f "$TARGET_DIR/wrangler.json" ] || [ -d "$TARGET_DIR/worker" ]
+}
 
 MARKER_FILE="$TARGET_DIR/.ss/.workflows-installed"
 
@@ -922,6 +931,13 @@ for wf in "${GENERIC_WORKFLOWS[@]}"; do
   # and deliberately keep it out of the marker: the marker means "we
   # installed this", so omitting it lets a later profile change bring the
   # workflow back instead of the deletion-respect rule below suppressing it.
+  # Only a Cloudflare repo carries the Workers Builds trigger; drop a copy
+  # left behind after the repo moved off Cloudflare.
+  if [ "$wf" = "ss-cloudflare-deployed.yml" ] && ! is_cloudflare_repo; then
+    rm -f "$DST"
+    continue
+  fi
+
   if workflow_is_disabled "$wf"; then
     if [ -f "$DST" ]; then
       rm -f "$DST"
@@ -1531,12 +1547,14 @@ echo "         → Settings → Actions → General →"
 echo "           'Allow GitHub Actions to create and approve pull requests'"
 echo "         → See docs/hygiene/DOC_UPDATER.md for the full setup"
 echo ""
-if [ -f "$TARGET_DIR/wrangler.toml" ] || [ -f "$TARGET_DIR/wrangler.jsonc" ] || [ -f "$TARGET_DIR/wrangler.json" ] || [ -d "$TARGET_DIR/worker" ]; then
+if is_cloudflare_repo; then
   echo "  🚀 Cloudflare config detected. Deploy is handled by Cloudflare, not by"
   echo "     a workflow in this suite:"
   echo "       Cloudflare dash → Workers & Pages → Create → Connect to Git"
   echo "       Pushes deploy to prod, PRs get preview URLs, closing a PR"
   echo "       cleans up the preview. No GitHub secrets required."
+  echo "       ss-cloudflare-deployed.yml runs the URL-driven checks against"
+  echo "       each preview and, on the default branch, urls.production."
   echo "       See docs/deployment/README.md for the full cutover steps."
 else
   echo "  🚀 Deploy stays wherever it is today; this suite doesn't deploy."

@@ -216,7 +216,9 @@ def test_check_is_documented_under_its_category(check):
 # stale number fails here rather than surviving in a playbook.
 
 EXPECTED_CHECKS = 25
-EXPECTED_INSTALLED_WORKFLOWS = 28  # every ss-*.yml except ss-release.yml
+# every ss-*.yml except ss-release.yml and ss-cloudflare-deployed.yml,
+# which install.sh adds only to a repo with Cloudflare config
+EXPECTED_INSTALLED_WORKFLOWS = 28
 
 # Files that quote the counts, and the numbers each may pair with the word
 # "check(s)" / "workflow(s)". A number outside the set is drift.
@@ -242,7 +244,7 @@ _COUNT_RE = re.compile(
 
 
 def _installed_workflows() -> set[str]:
-    return {p.name for p in WORKFLOWS_DIR.glob("ss-*.yml")} - {"ss-release.yml"}
+    return {p.name for p in WORKFLOWS_DIR.glob("ss-*.yml")} - {"ss-release.yml", "ss-cloudflare-deployed.yml"}
 
 
 def test_the_check_count_is_the_one_quoted_in_the_docs():
