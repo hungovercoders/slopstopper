@@ -71,7 +71,7 @@ jobs:
         with:
           mode: skip
           url: ${{ github.event.inputs.url }}
-          deployment-url: ${{ github.event.deployment_status.target_url }}
+          deployment-url: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
           check: API Latency Check
 
       - name: Run API latency audit
