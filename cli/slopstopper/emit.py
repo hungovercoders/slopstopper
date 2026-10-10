@@ -30,6 +30,10 @@ Each check that wants to emit declares a META dict beside its `run()`:
 
 The brand label `slopstopper` is auto-prepended to `issue_labels` so every
 emitted issue can be discovered with `gh issue list --label slopstopper`.
+`gh issue create --label` fails on a label the repo doesn't have, so any
+missing label is created first; if one still can't be applied, the issue
+is created without labels and a warning says so, because a lost failure
+report is worse than an unlabelled one.
 Bodies also gain a hidden HTML-comment marker `<!-- slopstopper:check=<name> -->`
 in the footer for machine-readable dedup (used by
 `ss-workflow-failure-issue.yml`'s deduplication).
@@ -405,11 +409,48 @@ def _find_existing_issue(labels: list[str]) -> int | None:
     return None
 
 
-def _create_issue(title: str, body_path: Path, labels: list[str]) -> int:
-    cmd: list[str] = ["issue", "create", "--title", title, "--body-file", str(body_path)]
+_LABEL_COLOR = "5319e7"
+
+
+def _ensure_labels(labels: list[str]) -> None:
+    """Create each label the repo doesn't have yet. Existing labels are left as they are."""
+    result = _gh("label", "list", "--limit", "1000", "--json", "name", capture=True)
+    if result.returncode != 0:
+        return
+    try:
+        existing = {str(entry.get("name", "")).lower() for entry in json.loads(result.stdout or "[]")}
+    except (json.JSONDecodeError, AttributeError):
+        return
     for lbl in labels:
-        cmd += ["--label", lbl]
-    return _gh(*cmd).returncode
+        if lbl.lower() not in existing:
+            print(f"+ Creating label {lbl!r}")
+            _gh(
+                "label", "create", lbl,
+                "--color", _LABEL_COLOR,
+                "--description", "Raised by a slopstopper check",
+                capture=True,
+            )
+
+
+def _create_issue(title: str, body_path: Path, labels: list[str]) -> int:
+    _ensure_labels(labels)
+    cmd: list[str] = ["issue", "create", "--title", title, "--body-file", str(body_path)]
+    labelled = list(cmd)
+    for lbl in labels:
+        labelled += ["--label", lbl]
+    result = _gh(*labelled, capture=True)
+    if result.returncode != 0 and labels and "label" in (result.stderr or "").lower():
+        print(
+            f"⚠️  Could not apply labels {labels} ({(result.stderr or '').strip()}); "
+            "creating the issue without them",
+            file=sys.stderr,
+        )
+        result = _gh(*cmd, capture=True)
+    if result.stdout:
+        print(result.stdout, end="")
+    if result.returncode != 0 and result.stderr:
+        print(result.stderr, end="", file=sys.stderr)
+    return result.returncode
 
 
 def _update_issue_body(number: int, body_path: Path) -> int:

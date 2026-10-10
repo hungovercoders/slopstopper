@@ -211,8 +211,7 @@ def test_emit_issue_creates_new(monkeypatch, isolated_cwd, capsys):
         "🔔 followup",
     )
     assert rc == 0
-    call = captured["calls"][0]
-    assert "issue" in call and "create" in call
+    call = next(c for c in captured["calls"] if c[:2] == ("issue", "create"))
     assert "--title" in call and "Test Title" in call
     # Body file should contain the report content + sha footer
     body_file = next(arg for arg in call if "issue-body" in str(arg))
@@ -816,3 +815,51 @@ def test_run_records_the_exit_code_for_emit(isolated_cwd, monkeypatch):
     monkeypatch.setitem(cli.REGISTRY, "hygiene:test-two", lambda _args: 2)
     assert cli.main(["run", "hygiene:test-two"]) == 2
     assert emit.last_exit("hygiene:test-two") == 2
+
+
+# ── labels the repo doesn't have (#417) ──────────────────────────
+
+
+class _FakeRepo:
+    """A `gh` stand-in holding a repo's labels; `issue create` fails on a missing one, as gh does."""
+
+    def __init__(self, labels=(), label_create_works=True):
+        self.labels = set(labels)
+        self.label_create_works = label_create_works
+        self.created: list[list[str]] = []
+
+    def __call__(self, *args, capture=False):
+        import subprocess
+        if args[:2] == ("label", "list"):
+            return subprocess.CompletedProcess(args, 0, json.dumps([{"name": n} for n in self.labels]), "")
+        if args[:2] == ("label", "create"):
+            if self.label_create_works:
+                self.labels.add(args[2])
+                return subprocess.CompletedProcess(args, 0, "", "")
+            return subprocess.CompletedProcess(args, 1, "", "HTTP 403")
+        if args[:2] == ("issue", "create"):
+            wanted = [args[i + 1] for i, a in enumerate(args) if a == "--label"]
+            missing = [w for w in wanted if w not in self.labels]
+            if missing:
+                return subprocess.CompletedProcess(args, 1, "", f"could not add label: '{missing[0]}' not found")
+            self.created.append(wanted)
+            return subprocess.CompletedProcess(args, 0, "https://github.com/o/r/issues/1\n", "")
+        raise AssertionError(args)
+
+
+def test_create_issue_creates_missing_labels_first(monkeypatch, isolated_cwd):
+    repo = _FakeRepo(labels={"security"})
+    monkeypatch.setattr(emit, "_gh", repo)
+    Path("body.md").write_text("x")
+    assert emit._create_issue("T", Path("body.md"), ["slopstopper", "sast", "security"]) == 0
+    assert repo.created == [["slopstopper", "sast", "security"]]
+    assert {"slopstopper", "sast"} <= repo.labels
+
+
+def test_create_issue_falls_back_to_no_labels_when_a_label_cant_be_made(monkeypatch, isolated_cwd, capsys):
+    repo = _FakeRepo(label_create_works=False)
+    monkeypatch.setattr(emit, "_gh", repo)
+    Path("body.md").write_text("x")
+    assert emit._create_issue("T", Path("body.md"), ["slopstopper"]) == 0
+    assert repo.created == [[]]
+    assert "creating the issue without them" in capsys.readouterr().err
