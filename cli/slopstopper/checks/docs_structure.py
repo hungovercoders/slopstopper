@@ -218,14 +218,14 @@ def _check_routed(
 
 
 def _check_map_soft_routes(map_file: Path) -> list[dict]:
-    _explicit, soft = _routes.route_table(map_file)
+    _explicit, soft = _routes.numbered_route_table(map_file)
     return [
         {
             "type": "soft_route",
             "path": _rel(map_file),
-            "message": _routes.soft_route_message(_rel(map_file), _rel(doc), line),
+            "message": _routes.soft_route_message(_rel(map_file), lineno, _rel(doc), line),
         }
-        for doc, line in sorted(soft.items())
+        for doc, (lineno, line) in sorted(soft.items(), key=lambda item: item[1][0])
     ]
 
 
