@@ -100,6 +100,7 @@ hygiene:
     require_claude_include: true    # (default) CLAUDE.md is exactly `@AGENTS.md`
   complexity:
     max_ccn: 15              # (default) CCN ceiling; a function above this fails
+    exclude: []              # extra globs to skip; test files and gitignored paths already are
   docs_accuracy:
     extra_paths: []          # (default) globs outside docs/ to scan too, e.g. [app/*.html, .claude/skills/**/*.md]
   docs_structure:

@@ -28,7 +28,7 @@ The check's heuristic is misfiring on this codebase. Use the check's documented 
 | DAST, other rule false positives | `.zap/rules.tsv` → `<plugin-id>\tIGNORE\t# why` | Per-rule, site-wide |
 | Accessibility (axe-core) | `disabledRules` in the spec, or scope the spec to exclude the offending selector | Per-rule or per-element |
 | Vulnerability (Trivy) | `.trivyignore` with the CVE ID + a `# why` line | Per-CVE |
-| Complexity (lizard) | Refactor the function, or raise `hygiene.complexity.max_ccn` in `.slopstopper.yml` (default 15) with a `# why` note | Per-repo (the ceiling is global) |
+| Complexity (lizard) | Refactor the function, or raise `hygiene.complexity.max_ccn` in `.slopstopper.yml` (default 15) with a `# why` note. A flagged file that is generated or vendored → `hygiene.complexity.exclude` | Per-repo (the ceiling is global) |
 
 Each suppression is a documented gate exception, not a way to quiet findings that should be fixed. The PR that adds it is the place reviewers catch it.
 

@@ -421,6 +421,11 @@ hygiene:
     # one gate and one exit code. 15 is Lizard's own default warning line;
     # drop to 10 for McCabe's classic "review" bound to be stricter.
     max_ccn: 15
+    # Extra path globs to skip, added to the built-in set. Test files by
+    # common convention (tests/, *_test.go, *.spec.*, test_*.py …) and
+    # anything .gitignore ignores are already skipped; this is for
+    # generated or vendored code that's committed.
+    exclude: []
   # ── hygiene:docs-accuracy ───────────────────────────────────────────
   docs_accuracy:
     # Files outside docs/ and the root entry files to scan too. Globs,
