@@ -93,6 +93,41 @@ def test_build_cmd_threads_url_and_config():
     assert "--config=myconf.json" in cmd
 
 
+def test_build_cmd_keeps_reports_local_by_default():
+    cmd = cwv._build_cmd("https://example.com", "myconf.json")
+    assert "--upload.target=filesystem" in cmd
+    assert f"--upload.outputDir={cwv.HTML_DIR}" in cmd
+    assert not any("temporary-public-storage" in arg for arg in cmd)
+
+
+def test_build_cmd_public_report_is_opt_in():
+    cmd = cwv._build_cmd("https://example.com", "myconf.json", public_report=True)
+    assert "--upload.target=temporary-public-storage" in cmd
+    assert "--upload.target=filesystem" not in cmd
+
+
+def test_bundled_lighthouserc_never_targets_public_storage():
+    from slopstopper import templates
+
+    for prod in (False, True):
+        rc = json.loads(templates.lighthouserc(prod=prod).read_text())
+        assert rc["ci"]["upload"]["target"] == "filesystem"
+
+
+def test_run_reads_public_report_from_config(monkeypatch, isolated_cwd, write_config):
+    write_config("reliability:\n  cwv:\n    public_report: true\n")
+    captured: dict = {}
+
+    def fake_run_lhci(cmd):
+        captured["cmd"] = cmd
+        return 0, ""
+
+    monkeypatch.setattr(cwv, "_npx_available", lambda: True)
+    monkeypatch.setattr(cwv, "_run_lhci", fake_run_lhci)
+    cwv.run(["--url", "https://example.com"])
+    assert "--upload.target=temporary-public-storage" in captured["cmd"]
+
+
 # ── META contract ────────────────────────────────────────────────
 
 
@@ -199,8 +234,9 @@ def test_build_report_md_fail_path_marks_failing_metrics():
     # Performance row should have a ❌; LCP row should have a ❌.
     assert "❌ 40/100" in md
     assert "❌ 9000 ms" in md
-    # No storage URL => no full-report link.
+    # No storage URL => point at the local HTML reports instead.
     assert "Full Lighthouse Report" not in md
+    assert f"`{cwv.HTML_DIR}/`" in md
 
 
 def test_build_report_md_renders_warning_for_missing_metric():

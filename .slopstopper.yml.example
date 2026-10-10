@@ -304,13 +304,21 @@ api:
     # frontend domain, a regex that no longer fires).
     allowed_origins: []
 
-# ── llms.txt AI-discoverability check ────────────────────────────────
-# `reliability:llms-txt` audits /llms.txt, the llmstxt.org convention for
-# a curated markdown map that lets AI assistants read your key content
-# without parsing HTML. The hard-fail bar is deliberately low, so the file
-# only has to be reachable and non-empty with an H1 and at least one link.
-# These knobs escalate the advisory spec-niceties to hard failures.
+# ── Core Web Vitals (Lighthouse CI) ──────────────────────────────────
 reliability:
+  cwv:
+    # Upload the full Lighthouse report (screenshots, page content) to
+    # Google's temporary public storage and link it from the report.
+    # Off by default: reports stay in .ss/reports/cwv/lighthouse/ and the
+    # workflow artifact. Never enable for private or authenticated sites.
+    public_report: false
+
+  # ── llms.txt AI-discoverability check ──────────────────────────────
+  # `reliability:llms-txt` audits /llms.txt, the llmstxt.org convention for
+  # a curated markdown map that lets AI assistants read your key content
+  # without parsing HTML. The hard-fail bar is deliberately low, so the file
+  # only has to be reachable and non-empty with an H1 and at least one link.
+  # These knobs escalate the advisory spec-niceties to hard failures.
   llms_txt:
     # HEAD-verify every link inside llms.txt resolves (non-4xx/5xx).
     check_links: false

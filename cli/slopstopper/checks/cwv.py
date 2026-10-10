@@ -23,6 +23,16 @@ Configuration: thresholds and the lhci config path live in the
 limits mirror that file so the rendered table matches what lhci
 actually enforced.
 
+  reliability:
+    cwv:
+      public_report: false   # true uploads the full Lighthouse report
+                             # (screenshots, page content) to Google's
+                             # temporary public storage and links it
+
+The upload target is set on the lhci command line, so it overrides
+whatever an ejected `.ss/lighthouserc.json` says. By default the HTML
+reports stay local under `.ss/reports/cwv/lighthouse/`.
+
 Exit codes:
   0: lhci passed all thresholds
   1: lhci audited the page and failed a threshold (report still written)
@@ -43,13 +53,14 @@ import sys
 import time
 from pathlib import Path
 
-from slopstopper import output, templates
+from slopstopper import config, output, templates
 from slopstopper.checks import _tools
 from slopstopper.checks._contract import runner_exit
 
 REPORT_DIR = Path(".ss/reports/cwv")
 REPORT_MD = REPORT_DIR / "cwv-report.md"
 LHCI_DIR = Path(".lighthouseci")
+HTML_DIR = REPORT_DIR / "lighthouse"
 
 # The threshold table is kept in lockstep with `.ss/lighthouserc.json`'s
 # `assertions` block so the rendered table reflects what lhci actually
@@ -107,11 +118,17 @@ def _resolve_url(parsed_url: str | None) -> str | None:
     return parsed_url or os.environ.get("CWV_URL")
 
 
-def _build_cmd(url: str, config_path: str) -> list[str]:
+def _build_cmd(url: str, config_path: str, public_report: bool = False) -> list[str]:
+    upload = (
+        ["--upload.target=temporary-public-storage"]
+        if public_report
+        else ["--upload.target=filesystem", f"--upload.outputDir={HTML_DIR}"]
+    )
     return [
         "npx", "lhci", "autorun",
         f"--collect.url={url}",
         f"--config={config_path}",
+        *upload,
     ]
 
 
@@ -213,7 +230,12 @@ def _build_report_md(
     lines.append("")
     if report_url:
         lines.append(f"[📊 Full Lighthouse Report]({report_url})")
-        lines.append("")
+    else:
+        lines.append(
+            f"📊 Full Lighthouse HTML reports: `{HTML_DIR}/` "
+            "(in CI, the `lighthouse-reports` workflow artifact)."
+        )
+    lines.append("")
     lines.append("### How to run locally")
     lines.append("")
     lines.append("```bash")
@@ -273,7 +295,7 @@ def run(args: list[str] | None = None) -> int:
         return 2
 
     output.status("🚦", f"Running Core Web Vitals audit against: {url}")
-    cmd = _build_cmd(url, str(config_path))
+    cmd = _build_cmd(url, str(config_path), config.get_bool("reliability.cwv.public_report"))
     started = time.time()
     rc, captured = _run_lhci(cmd)
     _write_report(url, captured, rc)

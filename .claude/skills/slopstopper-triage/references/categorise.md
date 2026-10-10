@@ -48,6 +48,7 @@ Config-driven knobs (no file edit needed beyond `.slopstopper.yml`):
 | `reliability:e2e` | `pages.e2e`, `e2e.max_links` | `/`, `25` |
 | `reliability:{accessibility,seo,broken_links}` | `pages.<check>`, `reliability.coverage.<event>` | `/`, hand-list mode |
 | `hygiene:csp-exceptions` | `headers.source`, `headers.format` | unset (graceful skip) |
+| `reliability:cwv` | `reliability.cwv.public_report` (report hosting, not a threshold; budgets live in `.ss/lighthouserc.json`) | `false`, so reports stay local |
 
 Tunings that are NOT yet config-driven (require code/file edits):
 
