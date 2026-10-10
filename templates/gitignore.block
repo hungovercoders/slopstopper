@@ -13,6 +13,8 @@
 playwright-report/
 test-results/
 .lighthouseci/
+# npm installs slopstopper's Playwright and Lighthouse devDependencies here.
+node_modules/
 # slopstopper's Claude Code skills are installed at project level so every
 # contributor benefits. If you've added .claude/* to .gitignore above,
 # these negations keep the skills tracked.

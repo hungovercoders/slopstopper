@@ -1052,8 +1052,24 @@ JS
     fi
   fi
 elif [ ! -f "$PKG" ]; then
-  cp "$SRC_PKG" "$PKG"
-  success "package.json installed"
+  # A minimal manifest named after the target, carrying only slopstopper's
+  # devDependencies. No build script: the browser-check workflows skip the
+  # build when there is none and serve the repo as-is, so a site that needs
+  # building says so by adding scripts.build.
+  if python3 - "$PKG" "$SRC_PKG" "$(basename "$(cd "$TARGET_DIR" && pwd)")" <<'PY'
+import json, re, sys
+dst, src, name = sys.argv[1:]
+dev = json.load(open(src)).get("devDependencies", {})
+name = re.sub(r"[^a-z0-9._-]+", "-", name.lower()).strip("-._") or "site"
+with open(dst, "w") as f:
+    json.dump({"name": name, "private": True, "devDependencies": dev}, f, indent=2)
+    f.write("\n")
+PY
+  then
+    success "package.json created (devDependencies only; add scripts.build if your site needs building)"
+  else
+    warn "package.json: could not create one (python3 failed). Add slopstopper's devDependencies by hand."
+  fi
 fi
 
 # 6. Seed adopter-default templates. seed_template() copies <src> to <dst>
@@ -1168,14 +1184,39 @@ else
     "$TARGET_DIR/docs/README.md"
 fi
 
-# .gitignore: append the slopstopper block if not already present.
-# Idempotent re-append: the block is bracketed with markers so re-runs
-# detect the existing block and skip rather than duplicate.
+# .gitignore: the block between `# slopstopper begin` and `# slopstopper end`
+# is slopstopper-owned, like Taskfile.ss.yml. Every run replaces it with the
+# current template so new ignore lines reach existing installs; lines outside
+# the markers are never touched. A begin marker with no end marker is a
+# hand-edited block, so it's left alone with a warning rather than guessed at.
 GI="$TARGET_DIR/.gitignore"
 GI_BLOCK_SRC="$SCRIPT_DIR/templates/gitignore.block"
 if [ -f "$GI_BLOCK_SRC" ]; then
   if [ -f "$GI" ] && grep -Fq "# slopstopper begin" "$GI" 2>/dev/null; then
-    info ".gitignore: slopstopper block already present, so leaving it alone"
+    GI_RESULT="$(python3 - "$GI" "$GI_BLOCK_SRC" <<'PY'
+import sys
+gi, src = sys.argv[1:]
+lines = open(gi).read().splitlines(keepends=True)
+block = open(src).read()
+if not block.endswith("\n"):
+    block += "\n"
+begin = next(i for i, l in enumerate(lines) if l.strip() == "# slopstopper begin")
+end = next((i for i in range(begin, len(lines)) if lines[i].strip() == "# slopstopper end"), None)
+if end is None:
+    print("no-end")
+elif "".join(lines[begin:end + 1]) == block:
+    print("current")
+else:
+    open(gi, "w").write("".join(lines[:begin]) + block + "".join(lines[end + 1:]))
+    print("updated")
+PY
+)" || GI_RESULT=""
+    case "$GI_RESULT" in
+      updated) success ".gitignore: slopstopper block updated to the current template" ;;
+      current) info ".gitignore: slopstopper block already current" ;;
+      no-end) warn ".gitignore: '# slopstopper begin' has no '# slopstopper end', so the block was left alone. Restore the end marker and re-run to refresh it." ;;
+      *) warn ".gitignore: could not refresh the slopstopper block (python3 failed), so it was left alone" ;;
+    esac
   else
     [ -f "$GI" ] && [ -s "$GI" ] && printf '\n' >> "$GI"
     cat "$GI_BLOCK_SRC" >> "$GI"
@@ -1472,11 +1513,18 @@ echo "         → Settings → Actions → General →"
 echo "           'Allow GitHub Actions to create and approve pull requests'"
 echo "         → See docs/hygiene/DOC_UPDATER.md for the full setup"
 echo ""
-echo "  🚀 Deploy is handled by Cloudflare, not by a workflow in this suite:"
-echo "       Cloudflare dash → Workers & Pages → Create → Connect to Git"
-echo "       Pushes deploy to prod, PRs get preview URLs, closing a PR"
-echo "       cleans up the preview. No GitHub secrets required."
-echo "       See docs/deployment/README.md for the full cutover steps."
+if [ -f "$TARGET_DIR/wrangler.toml" ] || [ -f "$TARGET_DIR/wrangler.jsonc" ] || [ -f "$TARGET_DIR/wrangler.json" ] || [ -d "$TARGET_DIR/worker" ]; then
+  echo "  🚀 Cloudflare config detected. Deploy is handled by Cloudflare, not by"
+  echo "     a workflow in this suite:"
+  echo "       Cloudflare dash → Workers & Pages → Create → Connect to Git"
+  echo "       Pushes deploy to prod, PRs get preview URLs, closing a PR"
+  echo "       cleans up the preview. No GitHub secrets required."
+  echo "       See docs/deployment/README.md for the full cutover steps."
+else
+  echo "  🚀 Deploy stays wherever it is today; this suite doesn't deploy."
+  echo "       Point urls.production in .slopstopper.yml at the deployed site"
+  echo "       (including any sub-path) so scheduled and main runs audit it."
+fi
 echo ""
 echo "  If you don't use the doc-updater, delete its workflows from"
 echo "  .github/workflows/. Re-running this installer won't bring them"

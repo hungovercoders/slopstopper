@@ -6,7 +6,7 @@
 
 **Skip this section on a first install.** It's relevant only when `.slopstopper.yml` and `.ss/.workflows-installed` both existed in Step 1 (mode-detection), meaning the installer just ran in-place over an existing slopstopper install.
 
-`install.sh` is idempotent but **not transactional**. Every workflow YAML in `GENERIC_WORKFLOWS`, `Taskfile.ss.yml`, and `.github/actions/ss-*/` is rewritten wholesale on every run, and the CLI is reinstalled at the **pinned** version in `mise.toml` (a refresh never bumps it, as "Move the CLI pin" below explains). A refresh of an older install also migrates a legacy `cli_version` from `.slopstopper.yml` into `mise.toml` and strips it, and strips a dead `node_version` key. A few classes of customization get wiped and need re-applying; a few classes of upstream change need manual catch-up because the installer doesn't drag everything across. Walk this section before the local-verify loop in Step 7.
+`install.sh` is idempotent but **not transactional**. Every workflow YAML in `GENERIC_WORKFLOWS`, `Taskfile.ss.yml`, `.github/actions/ss-*/` and the `# slopstopper begin/end` block in `.gitignore` is rewritten wholesale on every run, and the CLI is reinstalled at the **pinned** version in `mise.toml` (a refresh never bumps it, as "Move the CLI pin" below explains). A refresh of an older install also migrates a legacy `cli_version` from `.slopstopper.yml` into `mise.toml` and strips it, and strips a dead `node_version` key. A few classes of customization get wiped and need re-applying; a few classes of upstream change need manual catch-up because the installer doesn't drag everything across. Walk this section before the local-verify loop in Step 7.
 
 ### Re-enable workflows GitHub switched off
 
@@ -26,7 +26,7 @@ Any line in the output is an `ss-*.yml` workflow that exists upstream but isn't 
 
 ### Re-apply customizations the installer wiped
 
-The installer refreshes `Taskfile.ss.yml`, the `.ss/` overlay, `.ss/.installed-from`, `.githooks/pre-push`, the `.github/actions/ss-*/` composite actions and the `ss-*.yml` workflows wholesale. Anything hand-edited in those files is gone. `.slopstopper.yml`, though, is **never** overwritten by the installer, so the bulk of customization (headers source/format, URLs, pages, og-image path, disabled workflows, hygiene thresholds) survives every re-run. The Node version lives in `mise.toml` and is seeded only when absent, so a bump you made there survives too.
+The installer refreshes `Taskfile.ss.yml`, the slopstopper block in `.gitignore` (between its markers only), the `.ss/` overlay, `.ss/.installed-from`, `.githooks/pre-push`, the `.github/actions/ss-*/` composite actions and the `ss-*.yml` workflows wholesale. Anything hand-edited in those files is gone. `.slopstopper.yml`, though, is **never** overwritten by the installer, so the bulk of customization (headers source/format, URLs, pages, og-image path, disabled workflows, hygiene thresholds) survives every re-run. The Node version lives in `mise.toml` and is seeded only when absent, so a bump you made there survives too.
 
 What still needs re-checking after a refresh:
 
