@@ -41,7 +41,7 @@ task ss:security:dast -- http://localhost:8080
 The DAST gate in this template (driven by [`cli/slopstopper/dast_gate.py`](../../cli/slopstopper/dast_gate.py)) consults [`docs/security/CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md) on every run:
 
 - **With no `CSP_EXCEPTIONS.md` file**, the gate behaves exactly like a vanilla riskcode ≥ 2 cutoff, so nothing changes for you. Adopters with no third-party scripts can ignore this section entirely.
-- **If you add a third-party widget (GTM, Sentry, Intercom, Giscus…)**, add a per-path entry to `worker/headers.json` for the affected path, *and* document it under `## Exceptions` in `CSP_EXCEPTIONS.md` using the schema in that file. Once it's documented, ZAP's CSP findings on that exact path stop blocking the build. They still appear in the PR comment under a separate "🛡 Documented CSP exceptions" section so they stay visible in review.
+- **If you add a third-party widget (GTM, Sentry, Intercom, Giscus…)**, add a per-path entry to `worker/headers.json` for the affected path, *and* document it under `## Exceptions` in `CSP_EXCEPTIONS.md` using the schema in that file. Once it's documented, ZAP's CSP findings on that exact path stop blocking the build. They still appear in the PR comment under a separate "🛡 Accepted findings" section, each naming the entry that accepted it, so they stay visible in review.
 - **An exception does not unblock anything else.** Any non-CSP finding (XSS, missing other headers, CSRF, etc.) on the same path still blocks, as does any finding at all on a non-documented path and any High-severity (riskcode 3) finding anywhere, including CSP High on a documented path. The exception only relaxes the *Medium-CSP-on-this-path* case; the rest of DAST coverage is unchanged.
 
 The companion check `ss:hygiene:csp-exceptions` (workflow `ss-hygiene-csp-exceptions-check.yml`) keeps `worker/headers.json` and `CSP_EXCEPTIONS.md` in sync. If either side drifts, the build fails before DAST even runs.
@@ -86,8 +86,37 @@ In `ss-security-dast-check.yml`, the CI workflow starts a local server and passe
 
 Medium and High (riskcode ≥ 2) block, and that cutoff is fixed in `cli/slopstopper/dast_gate.py`; there is no workflow line or `.slopstopper.yml` knob for it. To stop a specific Medium alert blocking, scope it rather than the threshold:
 
-- Set its ZAP plugin to `IGNORE` in `.zap/rules.tsv`. The gate honours that list, so an ignored plugin doesn't count.
+- Mark it `IGNORE` in `.zap/rules.tsv`, as a plugin id (`10055`, every alert that plugin raises) or an alert ref (`10055-13`, just that alert). Prefer the alert ref: plugin 10055 raises both "no frame-ancestors fallback" and "style-src unsafe-inline", and ignoring the plugin hides the second. The alert ref is in each alert's link at [zaproxy.org/docs/alerts](https://www.zaproxy.org/docs/alerts/) and in the report's `alertRef` field.
 - For a CSP finding caused by a third-party embed, document the path in [`CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md) (see below).
+
+The gate output names the entry behind every finding it swallowed.
+
+### Static hosts (GitHub Pages, S3 without CloudFront)
+
+A host that can't send custom response headers can still enforce a CSP from a tag that comes first in every page's head:
+
+```html
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">
+```
+
+ZAP reads it for its other CSP rules, so `unsafe-inline`, wildcards and missing `object-src` are still caught. Set `form-action` explicitly, because it has no fallback. A few things only a header can do, so these Medium alerts can't be fixed on such a host:
+
+| Alert ref | Alert | Why a meta tag can't fix it |
+| --- | --- | --- |
+| `10038-1` | CSP Header Not Set | ZAP checks for the header itself |
+| `10020-1` | Missing Anti-clickjacking Header | `X-Frame-Options` is header-only |
+| `10055-13` | CSP: Failure to Define Directive with No Fallback | `frame-ancestors` is ignored in a meta policy |
+
+Accept exactly those, by alert ref, in `.zap/rules.tsv` (tab-separated, three fields):
+
+```tsv
+10038-1	IGNORE	# static host: CSP is a <meta> tag, no response headers
+10020-1	IGNORE	# static host: X-Frame-Options can't be set without headers
+10055-13	IGNORE	# static host: frame-ancestors is ignored in a <meta> CSP
+```
+
+Every other CSP alert, `10055-6` (style-src unsafe-inline) included, keeps blocking. Set `headers.source: null` too, since there is no headers file for the CSP-exceptions drift check to read (reading a `<meta>` policy is [#422](https://github.com/hungovercoders/slopstopper/issues/422)).
 
 ### Disable DAST Checking
 
