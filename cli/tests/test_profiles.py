@@ -77,14 +77,14 @@ def test_library_profile_is_a_superset_of_api():
 def test_unset_profile_resolves_to_the_default(write_config):
     write_config("urls:\n  production:\n")
     assert profiles.active_name() == profiles.default_name()
-    assert profiles.effective_disabled() == set()
+    assert profiles.effective_disabled() == set(profiles.without_api("ui"))
     assert profiles.validate() is None
 
 
 def test_unknown_profile_falls_back_to_default_and_warns(write_config):
     write_config("profile: rest-api\n")
     assert profiles.active_name() == profiles.default_name()
-    assert profiles.effective_disabled() == set()
+    assert profiles.effective_disabled() == set(profiles.without_api("ui"))
     message = profiles.validate()
     assert message is not None
     assert "rest-api" in message
@@ -253,7 +253,36 @@ def test_profile_show_flags_an_unset_key_as_the_default(write_config, capsys):
     assert cli.main(["profile", "show"]) == 0
     out = capsys.readouterr().out
     assert "unset" in out
-    assert "none" in out
+    assert "no API detected" in out
+
+
+def test_ui_without_api_holds_back_exactly_the_four_api_checks(write_config):
+    write_config("profile: ui\n")
+    assert profiles.api_signal() is None
+    assert profiles.effective_disabled() == {
+        "ss-reliability-api-health-check.yml",
+        "ss-security-api-headers-check.yml",
+        "ss-reliability-api-latency-check.yml",
+        "ss-hygiene-openapi-check.yml",
+    }
+
+
+def test_api_config_counts_as_an_api(write_config):
+    write_config("api:\n  base_path: /v1\n")
+    assert profiles.api_signal() == "api.* is set in .slopstopper.yml"
+    assert profiles.effective_disabled() == set()
+
+
+def test_an_openapi_spec_counts_as_an_api(write_config, isolated_cwd):
+    write_config("profile: ui\n")
+    (isolated_cwd / "openapi.json").write_text("{}")
+    assert profiles.api_signal() == "found openapi.json"
+    assert profiles.effective_disabled() == set()
+
+
+def test_workflows_enabled_takes_back_an_api_check_without_an_api(write_config):
+    write_config("workflows:\n  enabled: [ss-reliability-api-health-check.yml]\n")
+    assert "ss-reliability-api-health-check.yml" not in profiles.effective_disabled()
 
 
 def test_profile_show_warns_on_an_unknown_name(write_config, capsys):

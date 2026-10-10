@@ -17,7 +17,7 @@ If these disagree, decide which is right and edit `profile:` in `.slopstopper.ym
 
 ### Configure the API checks (if the target serves an API)
 
-All four API checks ship inert and **stay inert until configured**. They exit 0 with a note, so they'll never fail a PR on their own, and they'll also never catch anything. If the target has an API, wire them up here; it's the single highest-value post-install step on an `api`-profile repo:
+All four API checks ship inert and **stay inert until configured**. They exit 0 with a note, so they'll never fail a PR on their own, and they'll also never catch anything. If the target has an API, wire them up here; it's the single highest-value post-install step on an `api`-profile repo. Under `ui` the installer leaves them out when it finds no spec, server framework or `api.*` key, so after setting `api.*` here, re-run `install.sh` to add the workflows:
 
 ```yaml
 # .slopstopper.yml

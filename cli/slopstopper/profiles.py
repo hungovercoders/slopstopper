@@ -21,10 +21,16 @@ Profiles only ever SUBTRACT, and explicit config always wins:
 
     effective = (profile.disables − workflows.enabled) ∪ workflows.disabled
 
+A profile may also list `disables_without_api`: workflows it drops only
+while the repo shows no API (see `api_signal`). `ui` uses it for the
+four API checks, so a static site doesn't run jobs that check nothing,
+and a UI with API routes gets them as soon as it has a spec, a server
+framework or an `api.*` key.
+
 so `workflows.enabled` is the escape hatch for a repo that wants back
 one check its profile drops (an API that does serve a docs site and
 wants broken-links, say). An unset `profile:` resolves to the default
-(`ui`, which disables nothing), so existing installs are unaffected.
+(`ui`).
 
 Configuration (.slopstopper.yml):
 
@@ -88,6 +94,12 @@ def describe(name: str) -> dict | None:
     return load().get("profiles", {}).get(name)
 
 
+def without_api(name: str) -> list[str]:
+    """Workflows the named profile drops only while the repo shows no API."""
+    entry = describe(name) or {}
+    return [str(w) for w in entry.get("disables_without_api", [])]
+
+
 def expand(name: str) -> list[str] | None:
     """Workflow filenames the named profile disables, or None if unknown."""
     entry = describe(name)
@@ -149,8 +161,16 @@ def effective_disabled() -> set[str]:
     the explicit disable wins: it's the adopter's direct instruction about
     this repo, where `enabled` is only a correction to a preset.
     """
-    from_profile = set(expand(active_name()) or [])
-    return (from_profile - _config_list("workflows.enabled")) | _config_list("workflows.disabled")
+    return (profile_disables() - _config_list("workflows.enabled")) | _config_list("workflows.disabled")
+
+
+def profile_disables() -> set[str]:
+    """The active profile's contribution, before workflows.enabled/disabled."""
+    name = active_name()
+    out = set(expand(name) or [])
+    if not api_signal():
+        out |= set(without_api(name))
+    return out
 
 
 # ── check → workflow mapping ─────────────────────────────────────
@@ -331,6 +351,19 @@ def _dep_match(manifests: list[tuple[str, str]], deps: tuple[str, ...]) -> str |
             label = dep.strip('"')
             return f"{filename} declares {label}"
     return None
+
+
+def api_signal(root: Path | None = None) -> str | None:
+    """Why the repo looks like it has an API, or None if it doesn't.
+
+    Any `api.*` key in .slopstopper.yml counts: configuring the API checks
+    is the adopter saying there is one.
+    """
+    if config.get("api"):
+        return "api.* is set in .slopstopper.yml"
+    root = Path(root) if root is not None else Path(".")
+    hit = _first_match(root, _API_MARKERS) or _dep_match(_manifest_texts(root), _API_DEPS)
+    return f"found {hit}" if hit else None
 
 
 def detect(root: Path | None = None) -> tuple[str, str]:
