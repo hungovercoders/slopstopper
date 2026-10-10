@@ -126,6 +126,42 @@ def test_check_source_file_references_flags_missing(isolated_cwd):
     assert issues[0]["type"] == "stale_file_ref"
 
 
+def _git_repo_with(*paths: str) -> None:
+    subprocess.run(["git", "init", "-q"], check=True)
+    for rel in paths:
+        _write(Path(rel), "x\n")
+
+
+def test_a_bare_name_resolves_to_a_file_anywhere_in_the_repo(isolated_cwd):
+    _git_repo_with("internal/monsters/packs/ghoul/pack.json")
+    md = isolated_cwd / "docs" / "x.md"
+    _write(md, "Each pack has a `pack.json` next to its art.\n")
+    assert docs_accuracy._check_source_file_references(md) == []
+
+
+def test_a_partial_path_resolves_by_suffix(isolated_cwd):
+    _git_repo_with("docs/demos/render.sh")
+    md = isolated_cwd / "docs" / "guide" / "x.md"
+    _write(md, "Run `demos/render.sh` to rebuild the GIFs.\n")
+    assert docs_accuracy._check_source_file_references(md) == []
+
+
+def test_a_name_no_file_has_is_still_flagged(isolated_cwd):
+    _git_repo_with("internal/monsters/packs/ghoul/pack.json")
+    md = isolated_cwd / "docs" / "x.md"
+    _write(md, "Each pack has a `manifest.json` and `packs/ghoul/art.json`.\n")
+    issues = docs_accuracy._check_source_file_references(md)
+    assert sorted(i["message"].split("`")[1] for i in issues) == ["manifest.json", "packs/ghoul/art.json"]
+
+
+def test_a_gitignored_file_does_not_count(isolated_cwd):
+    _git_repo_with(".gitignore", "dist/bundle.json")
+    Path(".gitignore").write_text("dist/\n")
+    md = isolated_cwd / "docs" / "x.md"
+    _write(md, "Ships `bundle.json`.\n")
+    assert len(docs_accuracy._check_source_file_references(md)) == 1
+
+
 def test_check_source_file_references_suppresses_via_suggestion_context(isolated_cwd):
     md = isolated_cwd / "docs" / "x.md"
     _write(md, "For example, `something.py` could be created.\n")

@@ -7,7 +7,10 @@ AGENTS.md, CLAUDE.md, CONTRIBUTING.md) for four kinds of drift:
   - broken_link:        markdown link target missing on disk
   - stale_task_ref:     `task <namespace:name>` doesn't match Taskfile
   - stale_workflow_ref: .github/workflows/<file> doesn't exist
-  - stale_file_ref:     backtick-quoted filepath not found on disk
+  - stale_file_ref:     backtick-quoted filepath not found on disk: not at
+                        the repo root, not next to the doc, and no file in
+                        the repo (git ls-files) has that name or ends with
+                        that path
 
 Optionally scans more files, with only the checks that are precise for
 them: `stale_task_ref` and `stale_workflow_ref` for markdown, and for
@@ -203,10 +206,41 @@ def _ref_is_placeholder_or_external(ref: str, ext: str) -> bool:
     return False
 
 
+@lru_cache(maxsize=None)
+def _repo_files(root: str) -> tuple[frozenset[str], tuple[str, ...]]:
+    """(basenames, paths) of the files git knows about under `root`, tracked
+    or untracked-but-not-ignored. Empty outside a git checkout."""
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return frozenset(), ()
+    if result.returncode != 0:
+        return frozenset(), ()
+    paths = tuple(line for line in result.stdout.splitlines() if line)
+    return frozenset(p.rsplit("/", 1)[-1] for p in paths), paths
+
+
+def _exists_in_repo(ref: str) -> bool:
+    """Prose names files loosely: "each pack has a `pack.json`", "run
+    `render.sh`". A bare name resolves if any file in the repo has it, and
+    a partial path if any file's path ends with it."""
+    ref = ref.removeprefix("./")
+    basenames, paths = _repo_files(os.getcwd())
+    if "/" not in ref:
+        return ref in basenames
+    return any(p == ref or p.endswith("/" + ref) for p in paths)
+
+
 def _should_skip_file_ref(ref: str, ext: str, base: Path, content: str, m: re.Match) -> bool:
     if _ref_is_placeholder_or_external(ref, ext):
         return True
-    if Path(ref).exists() or (base / ref).exists():
+    if Path(ref).exists() or (base / ref).exists() or _exists_in_repo(ref):
         return True
     start = max(0, m.start() - 250)
     end = min(len(content), m.end() + 250)
