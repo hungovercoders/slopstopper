@@ -200,7 +200,25 @@ def test_soft_routes_are_labelled_by_path(isolated_cwd):
     (isolated_cwd / "docs" / "b").mkdir()
     (isolated_cwd / "AGENTS.md").write_text("See [a](docs/a/README.md) and [b](docs/b/README.md).\n")
     labels = entry_files._soft_routes("AGENTS.md", entry_files._settings())
-    assert [l.split(":")[0] for l in labels] == ["docs/a/README.md", "docs/b/README.md"]
+    assert [l.split(":")[0] for l in labels] == [
+        "AGENTS.md line 1 → docs/a/README.md",
+        "AGENTS.md line 1 → docs/b/README.md",
+    ]
+
+
+def test_soft_routes_name_the_source_line_and_the_target(isolated_cwd):
+    (isolated_cwd / "docs").mkdir()
+    (isolated_cwd / "AGENTS.md").write_text(
+        "# Agents\n\n<!-- a\nmulti-line comment -->\nIntro text.\n\n"
+        "- Read [map](docs/README.md) when stuck.\n"
+        "- See [ci](docs/ci.md) and\n  [deploy](docs/deploy.md).\n"
+    )
+    labels = entry_files._soft_routes("AGENTS.md", entry_files._settings())
+    assert labels == [
+        'AGENTS.md line 7 → docs/README.md: "- Read [map](docs/README.md) when stuck."',
+        'AGENTS.md line 8 → docs/ci.md: "- See [ci](docs/ci.md) and [deploy](docs/deploy.md)."',
+        'AGENTS.md line 8 → docs/deploy.md: "- See [ci](docs/ci.md) and [deploy](docs/deploy.md)."',
+    ]
 
 
 def test_over_budget_advice_fits_the_file():
@@ -355,7 +373,7 @@ def test_soft_routes_are_listed_for_agents_only(isolated_cwd):
     (isolated_cwd / "AGENTS.md").write_text(body)
     (isolated_cwd / "README.md").write_text(body)
     s = entry_files._settings()
-    assert entry_files._soft_routes("AGENTS.md", s) == ['docs/ci.md: "See [ci](docs/ci.md)."']
+    assert entry_files._soft_routes("AGENTS.md", s) == ['AGENTS.md line 1 → docs/ci.md: "See [ci](docs/ci.md)."']
     assert entry_files._soft_routes("README.md", s) == []
 
 
@@ -474,7 +492,7 @@ def test_run_returns_one_on_a_soft_route_in_agents(isolated_cwd, capsys):
     assert entry_files.run() == 1
     agents = next(m for m in _payload()["measurements"] if m["file"] == "AGENTS.md")
     assert agents["pointer_ok"] is True
-    assert agents["soft_routes"] == ['docs/ci.md: "See [ci](docs/ci.md)."']
+    assert agents["soft_routes"] == ['AGENTS.md line 3 → docs/ci.md: "See [ci](docs/ci.md)."']
 
 
 def test_run_returns_one_when_claude_is_not_a_pure_include(isolated_cwd, capsys):

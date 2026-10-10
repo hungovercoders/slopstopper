@@ -149,8 +149,11 @@ def _soft_routes(name: str, settings: dict) -> list[str]:
     """Soft `.md` links in AGENTS.md. Every link there must be a route."""
     if name != AGENTS_FILE or not settings["require_explicit_routes"]:
         return []
-    _explicit, soft = _routes.route_table(Path(name))
-    return [f"{_rel(doc)}: \"{line[:70]}\"" for doc, line in sorted(soft.items())]
+    _explicit, soft = _routes.numbered_route_table(Path(name))
+    return [
+        _routes.soft_route_label(name, lineno, _rel(doc), line)
+        for doc, (lineno, line) in sorted(soft.items(), key=lambda item: item[1][0])
+    ]
 
 
 def _rel(path: Path) -> str:

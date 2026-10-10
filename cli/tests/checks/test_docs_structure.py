@@ -195,7 +195,7 @@ def test_a_soft_link_in_the_map_is_a_violation_even_when_the_doc_is_routed_elsew
     _doc("ci.md")
     assert docs_structure.run() == 1
     assert _types() == ["soft_route"]
-    assert "soft route to docs/ci.md" in _violations()[0]["message"]
+    assert 'docs/README.md line 5 → docs/ci.md: "See also' in _violations()[0]["message"]
 
 
 def test_a_route_deeper_than_the_limit_fails(isolated_cwd):

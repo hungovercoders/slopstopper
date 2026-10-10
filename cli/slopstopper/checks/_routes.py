@@ -74,14 +74,15 @@ class _Joiner:
     """Accumulates source lines into logical lines (see `logical_lines`)."""
 
     def __init__(self) -> None:
-        self.out: list[str] = []
+        self.out: list[tuple[int, str]] = []
         self.current: str | None = None
+        self.start = 0
         self.in_table = False
         self.table_prefix = ""
 
     def flush(self) -> None:
         if self.current is not None:
-            self.out.append(self.current)
+            self.out.append((self.start, self.current))
         self.current = None
 
     def blank(self) -> None:
@@ -89,8 +90,9 @@ class _Joiner:
         self.in_table = False
         self.table_prefix = ""
 
-    def table_row(self, stripped: str) -> None:
+    def table_row(self, stripped: str, lineno: int) -> None:
         self.flush()
+        self.start = lineno
         if _TABLE_RULE_RE.match(stripped):
             return
         if not self.in_table:
@@ -104,8 +106,9 @@ class _Joiner:
             return
         self.current = self.table_prefix + stripped
 
-    def block_start(self, stripped: str) -> None:
+    def block_start(self, stripped: str, lineno: int) -> None:
         self.flush()
+        self.start = lineno
         self.current = stripped
         self.in_table = False
         self.table_prefix = ""
@@ -135,21 +138,35 @@ def _table_row_flags(lines: list[str]) -> list[bool]:
     return flags
 
 
-def logical_lines(text: str) -> list[str]:
-    """Paragraphs, bullets and table rows as single strings.
+def _strip_comments(text: str) -> tuple[list[str], list[int]]:
+    """`text` without HTML comments, split into lines, plus the 1-based
+    source line each kept line starts on (a multi-line comment shifts them)."""
+    kept: list[str] = []
+    removed: list[tuple[int, int]] = []  # (offset in the stripped text, newlines removed there)
+    last = 0
+    for m in _HTML_COMMENT_RE.finditer(text):
+        kept.append(text[last:m.start()])
+        removed.append((sum(map(len, kept)), m.group(0).count("\n")))
+        last = m.end()
+    kept.append(text[last:])
+    lines = "".join(kept).splitlines(keepends=True)
+    origin: list[int] = []
+    offset = newlines = 0
+    for line in lines:
+        hidden = sum(n for at, n in removed if at < offset)
+        origin.append(1 + newlines + hidden)
+        offset += len(line)
+        newlines += 1
+    return [(line.splitlines() or [""])[0] for line in lines], origin
 
-    Wrapped prose is joined so a route split over two source lines still
-    reads as one. Fenced code blocks (``` or ~~~) are skipped, because a
-    link inside a code sample is an example, not a route. A data row of a
-    table whose header's first cell is a trigger ("When you are…") comes
-    back with that header prefixed, so the row reads as the trigger-first
-    sentence it is.
-    """
+
+def numbered_logical_lines(text: str) -> list[tuple[int, str]]:
+    """`logical_lines`, each paired with the 1-based source line it starts on."""
     joiner = _Joiner()
     fence: str | None = None
-    lines = _HTML_COMMENT_RE.sub("", text).splitlines()  # a commented-out route is not a route
+    lines, origin = _strip_comments(text)  # a commented-out route is not a route
     is_row = _table_row_flags(lines)
-    for line, row in zip(lines, is_row):
+    for line, row, lineno in zip(lines, is_row, origin):
         stripped = line.strip()
         opener = _FENCE_RE.match(line)
         if opener and (fence is None or stripped.startswith(fence)):
@@ -162,15 +179,28 @@ def logical_lines(text: str) -> list[str]:
         elif not stripped:
             joiner.blank()
         elif row:
-            joiner.table_row(stripped)
+            joiner.table_row(stripped, lineno)
         elif joiner.current is not None and _NESTED_ITEM_RE.match(line):
             joiner.continuation(stripped)  # a sub-bullet continues its parent's sentence
         elif joiner.current is None or _BLOCK_START_RE.match(line):
-            joiner.block_start(stripped)
+            joiner.block_start(stripped, lineno)
         else:
             joiner.continuation(stripped)
     joiner.flush()
     return joiner.out
+
+
+def logical_lines(text: str) -> list[str]:
+    """Paragraphs, bullets and table rows as single strings.
+
+    Wrapped prose is joined so a route split over two source lines still
+    reads as one. Fenced code blocks (``` or ~~~) are skipped, because a
+    link inside a code sample is an example, not a route. A data row of a
+    table whose header's first cell is a trigger ("When you are…") comes
+    back with that header prefixed, so the row reads as the trigger-first
+    sentence it is.
+    """
+    return [line for _lineno, line in numbered_logical_lines(text)]
 
 
 def read_markdown(path: Path) -> str:
@@ -260,38 +290,55 @@ def resolve(source: Path, target: str) -> Path | None:
 
 
 def route_table(source: Path) -> tuple[dict[Path, str], dict[Path, str]]:
+    """`numbered_route_table` without the line numbers."""
+    explicit, soft = numbered_route_table(source)
+    return (
+        {doc: line for doc, (_n, line) in explicit.items()},
+        {doc: line for doc, (_n, line) in soft.items()},
+    )
+
+
+def numbered_route_table(
+    source: Path,
+) -> tuple[dict[Path, tuple[int, str]], dict[Path, tuple[int, str]]]:
     """Split the `.md` links in `source` into explicit routes and soft links.
 
     Returns `(explicit, soft)`, each mapping the resolved target to the
-    first logical line that mentions it. Each link is judged on its own
-    position: a trigger and a read cue must both come before it. A doc
+    first logical line that mentions it, as `(source line number, line)`.
+    Each link is judged on its own position: a trigger and a read cue must
+    both come before it. A doc
     that is routed explicitly on one line and mentioned softly on another
     counts as routed; a doc with only soft mentions is unreachable in
     practice.
     """
-    explicit: dict[Path, str] = {}
-    soft: dict[Path, str] = {}
+    explicit: dict[Path, tuple[int, str]] = {}
+    soft: dict[Path, tuple[int, str]] = {}
     try:
         text = read_markdown(source)
     except OSError:
         return explicit, soft
     refs = reference_definitions(text)
-    for line in logical_lines(text):
+    for lineno, line in numbered_logical_lines(text):
         for position, target in link_spans(line, refs):
             resolved = resolve(source, target)
             if resolved is None:
                 continue
             bucket = explicit if _explicit_before(line, position) else soft
-            bucket.setdefault(resolved, line)
+            bucket.setdefault(resolved, (lineno, line))
     for doc in explicit:
         soft.pop(doc, None)
     return explicit, soft
 
 
-def soft_route_message(source: str, target: str, line: str) -> str:
+def soft_route_label(source: str, lineno: int, target: str, line: str) -> str:
+    """Where a soft link sits and what it links: `AGENTS.md line 5 → docs/ci.md: "…"`."""
+    return f"{source} line {lineno} → {target}: \"{line[:70]}\""
+
+
+def soft_route_message(source: str, lineno: int, target: str, line: str) -> str:
     return (
-        f"{source}: soft route to {target}: \"{line[:70]}\". A route agents follow "
-        f"names its trigger and says read: '{ROUTE_TEMPLATE}'."
+        f"{soft_route_label(source, lineno, target, line)} is a soft route. A route agents "
+        f"follow names its trigger and says read: '{ROUTE_TEMPLATE}'."
     )
 
 
