@@ -44,6 +44,7 @@ Config-driven knobs (no file edit needed beyond `.slopstopper.yml`):
 | `hygiene:entry-files` | `hygiene.entry_files.max_tokens` / `.readme_max_tokens` / `.map_max_tokens` / `.map_path` / `.require_map_pointer` / `.require_explicit_routes` / `.require_claude_include` | 2000 / 600 / 1000 / `docs/README.md` / true / true / true |
 | `hygiene:docs-accuracy` | `hygiene.docs_accuracy.extra_paths` | `[]`, so only `docs/` + the root entry files are scanned |
 | `hygiene:docs-structure` | `hygiene.docs_structure.require_routed_docs` / `.max_route_depth` / `.max_doc_lines` | `true`, so every doc has an explicit route / 3 / 300 |
+| all three docs checks | `hygiene.docs.exclude` (globs) | `[docs/archive/**]`; for non-doc content under `docs/` such as a course, rather than raising the caps |
 | `reliability:smoke` | `pages.smoke`, `smoke.og_image_path` | `/`, `/og-image.png` |
 | `reliability:e2e` | `pages.e2e`, `e2e.max_links` | `/`, `25` |
 | `reliability:{accessibility,seo,broken_links}` | `pages.<check>`, `reliability.coverage.<event>` | `/`, hand-list mode |

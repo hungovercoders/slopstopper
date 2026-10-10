@@ -86,10 +86,14 @@ workflows:
 
 Every hygiene check reads its own thresholds from `.slopstopper.yml`, falling back to a sensible default when unset. None are in the starter, so add the ones you need. You don't need to touch these to get started, but if a check fires for a reason that's actually fine (e.g. your repo intentionally has 30 docs pages, or a topic doc is a reference table that cannot split), tune the cap rather than dropping content. The entry-file budgets are the exception: an `AGENTS.md` past ~2,000 tokens is where agents start dropping rules, so route the overflow rather than raising it. Don't tune to silence noise; tune to match a deliberate design decision.
 
+If `docs/` also holds content that isn't agent or contributor documentation (a course, tutorials rendered onto a site), exclude it rather than raising the caps: `hygiene.docs.exclude` takes it out of all three docs checks.
+
 ```yaml
 hygiene:
+  docs:
+    exclude: [docs/archive/**]   # (default) skipped by docs-size, docs-structure, docs-accuracy; setting it replaces the default
   docs_size:
-    max_total_size_kb: 150   # (default) total .md under docs/ (excl. archive/)
+    max_total_size_kb: 150   # (default) total .md under docs/ (excl. hygiene.docs.exclude)
     max_file_size_kb: 20     # (default) largest single doc
     max_files: 25            # (default) total doc count
   entry_files:

@@ -218,6 +218,26 @@ def test_run_flags_broken_link(isolated_cwd):
     assert any(i["type"] == "broken_link" for i in data["issues"])
 
 
+def test_excluded_docs_are_not_scanned_and_are_listed(write_config):
+    write_config("hygiene:\n  docs:\n    exclude: [docs/course/**]\n")
+    _write(Path("docs/index.md"), "# docs\n")
+    _write(Path("docs/course/lesson.md"), "Create [main.go](cmd/main.go) in your tree.\n")
+    assert docs_accuracy.run() == 0
+    data = json.loads(docs_accuracy.REPORT_JSON.read_text())
+    assert data["excluded"] == ["docs/course/lesson.md"]
+    assert "`docs/course/lesson.md`" in docs_accuracy.REPORT_MD.read_text()
+
+
+def test_extra_paths_do_not_pull_excluded_docs_back_in(write_config):
+    write_config(
+        "hygiene:\n  docs:\n    exclude: [docs/course/**]\n"
+        "  docs_accuracy:\n    extra_paths: [docs/**/*.md]\n"
+    )
+    _write(Path("docs/index.md"), "# docs\n")
+    _write(Path("docs/course/lesson.md"), "Run `task ss:nope`.\n")
+    assert docs_accuracy._collect_extra_targets() == []
+
+
 # ── extra_paths: files outside docs/ ─────────────────────────────
 #
 # Every piece of site/skill drift the repo review found lived in a file

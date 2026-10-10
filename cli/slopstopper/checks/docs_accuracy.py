@@ -35,6 +35,10 @@ Configuration (.slopstopper.yml, all optional):
       docs_accuracy:
         extra_paths: []   # repo-relative globs, e.g. [app/*.html, .claude/skills/**/*.md]
 
+Docs matching `hygiene.docs.exclude` (default `docs/archive/**`, see
+_docs.py) are not scanned, by the docs/ pass or by extra_paths, and the
+report lists them.
+
 Writes a JSON report (machine-readable) and a Markdown report (human-
 readable).
 
@@ -56,7 +60,7 @@ from pathlib import Path
 
 from slopstopper import config, output
 from slopstopper.badges import detect_owner_repo
-from slopstopper.checks import _report
+from slopstopper.checks import _docs, _report
 from slopstopper.checks._contract import reject_extra_args
 
 REPORT_DIR = Path(".ss/reports/docs")
@@ -266,7 +270,7 @@ def _check_source_file_references(md_path: Path) -> list[dict]:
 
 
 def _collect_targets() -> list[Path]:
-    targets = sorted(DOCS_DIR.rglob("*.md"))
+    targets = _docs.split(sorted(DOCS_DIR.rglob("*.md")))[0]
     for entry in ROOT_ENTRY_FILES:
         entry_path = Path(entry)
         if entry_path.exists():
@@ -314,13 +318,14 @@ def _collect_extra_targets(primary_targets: list[Path] | None = None) -> list[Pa
     traceback or as a silent pass.
     """
     primary = set(primary_targets if primary_targets is not None else _collect_targets())
+    excludes = _docs.exclude_patterns()
     root = Path.cwd().resolve()
     raw = config.get("hygiene.docs_accuracy.extra_paths", []) or []
     patterns = raw if isinstance(raw, list) else [raw]
     out: list[Path] = []
     for pattern in patterns:
         for hit in _glob_extra_pattern(pattern, root):
-            if hit not in primary and hit not in out:
+            if hit not in primary and hit not in out and not _docs.is_excluded(hit, excludes):
                 out.append(hit)
     return out
 
@@ -511,6 +516,9 @@ def _build_md_report(data: dict, generated_at: str) -> str:
                 lines.append(f"- **{item['file']}** (line {item['line']}): {item['message']}")
             lines.append("")
 
+    excluded = _docs.report_section([Path(p) for p in data.get("excluded", [])])
+    if excluded:
+        lines += ["", excluded.rstrip("\n"), ""]
     lines += [
         "## How to Fix",
         "",
@@ -537,11 +545,14 @@ def run(args: list[str] | None = None) -> int:
     issues = _collect_all_issues(targets, valid_tasks, valid_workflows)
     issues += _collect_extra_issues(_collect_extra_targets(targets), valid_tasks, valid_workflows)
 
+    excluded = _docs.split(sorted(DOCS_DIR.rglob("*.md")))[1]
+
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     data = {
         "issues": issues,
         "issue_count": len(issues),
         "clean": len(issues) == 0,
+        "excluded": [p.as_posix() for p in excluded],
     }
     REPORT_JSON.write_text(json.dumps(data, indent=2))
     REPORT_MD.write_text(_build_md_report(data, _report.generated_at()))

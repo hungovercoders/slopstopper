@@ -27,6 +27,10 @@ The gate measures production code. Test files by the common conventions (`tests/
 
 When a function trips the ceiling and is genuinely well-factored (e.g. a flat dispatch or validation table), prefer raising `max_ccn` with a note over contorting the code, but treat that as a deliberate, documented decision rather than a way to silence noise.
 
+### Excluding docs from the docs checks
+
+`hygiene.docs.exclude` (repo-relative globs, default `docs/archive/**`) takes paths out of docs-size, docs-structure and docs-accuracy at once. Use it for content that lives under `docs/` but isn't agent or contributor documentation, such as a course rendered onto a site, rather than raising budgets or turning off routing for the real docs. Setting it replaces the default, so list the archive too if you keep one. Every report has an **Excluded** section naming what it left out.
+
 ### Documentation Size Monitoring
 Monitors overall documentation size and checks against configured thresholds:
 
