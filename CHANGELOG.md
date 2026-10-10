@@ -4,6 +4,20 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.18.0](https://github.com/hungovercoders/slopstopper/compare/v0.17.0...v0.18.0) (2026-10-10)
+
+
+### Features
+
+* **doctor:** flag broken tools and ss-* workflows GitHub disabled ([#395](https://github.com/hungovercoders/slopstopper/issues/395)) ([4c9ff4e](https://github.com/hungovercoders/slopstopper/commit/4c9ff4e0dc226611aefa8d6f862570c26ff9aa11))
+
+
+### Bug Fixes
+
+* **hygiene:** label soft routes by source file, line and target ([#393](https://github.com/hungovercoders/slopstopper/issues/393)) ([480d7f4](https://github.com/hungovercoders/slopstopper/commit/480d7f40802cb14a3a6522a3ddd4fa244d7a9a9a)), closes [#392](https://github.com/hungovercoders/slopstopper/issues/392)
+* **install:** warn when the shell still runs the old CLI after a pin move ([#396](https://github.com/hungovercoders/slopstopper/issues/396)) ([94e89e4](https://github.com/hungovercoders/slopstopper/commit/94e89e4fb583cfd79b3fb967fa0d95787e6ff8d7)), closes [#390](https://github.com/hungovercoders/slopstopper/issues/390)
+* **reliability:** stage Playwright run files in .ss/.run, not .ss/ ([#394](https://github.com/hungovercoders/slopstopper/issues/394)) ([a5cd5a8](https://github.com/hungovercoders/slopstopper/commit/a5cd5a84a42143e422fc2617ac8e51f37b77518e)), closes [#389](https://github.com/hungovercoders/slopstopper/issues/389)
+
 ## [0.17.0](https://github.com/hungovercoders/slopstopper/compare/v0.16.0...v0.17.0) (2026-10-10)
 
 
