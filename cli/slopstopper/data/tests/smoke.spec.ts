@@ -22,6 +22,16 @@ import { test, expect } from '@playwright/test';
 
 const targetUrl = process.env.SMOKE_TEST_URL || process.env.BASE_URL || 'http://localhost:8080';
 
+/**
+ * A configured page path, resolved under the base URL. Paths are relative to
+ * the base even with a leading `/`, so `/about` under
+ * `https://org.github.io/project/` is `/project/about`, never the host root.
+ */
+function pageUrl(path: string): string {
+  const base = targetUrl.endsWith('/') ? targetUrl : `${targetUrl}/`;
+  return new URL(path.replace(/^\/+/, ''), base).href;
+}
+
 const pagesToCheck = (process.env.SMOKE_PAGES ?? '/')
   .split(',')
   .map((s) => s.trim())
@@ -38,7 +48,7 @@ test.describe('Smoke Tests', () => {
       page.on('pageerror', (e) => errors.push(e));
 
       const startTime = Date.now();
-      const response = await page.goto(path);
+      const response = await page.goto(pageUrl(path));
       const loadTime = Date.now() - startTime;
 
       expect(response, `${path}: navigation returned no response`).not.toBeNull();
@@ -55,7 +65,7 @@ test.describe('Smoke Tests', () => {
   }
 
   test('homepage has at least one stylesheet linked', async ({ page }) => {
-    await page.goto(pagesToCheck[0]);
+    await page.goto(pageUrl(pagesToCheck[0]));
     const stylesheets = await page.locator('link[rel="stylesheet"]').count();
     expect(stylesheets, 'expected at least one <link rel="stylesheet"> on the homepage')
       .toBeGreaterThan(0);
@@ -68,7 +78,7 @@ test.describe('Smoke Tests', () => {
   const ogImagePath = process.env.SMOKE_OG_IMAGE_PATH ?? '/og-image.png';
   if (ogImagePath) {
     test(`og image (${ogImagePath}) is publicly shareable`, async ({ request }) => {
-      const response = await request.get(ogImagePath);
+      const response = await request.get(pageUrl(ogImagePath));
       expect(response.status(), `expected ${ogImagePath} to return 200`).toBe(200);
       expect(response.headers()['content-type']).toContain('image/png');
       expect(response.headers()['cross-origin-resource-policy']).toBe('cross-origin');
