@@ -212,3 +212,17 @@ def test_deployment_workflows_pass_environment_url_and_only_on_success(workflow)
     assert ("deployment-url: ${{ github.event.deployment_status.environment_url"
             " || github.event.deployment_status.target_url }}") in text
     assert "github.event.deployment_status.state == 'success'" in text
+
+
+# ── a dispatch of the live site is production (#425) ─────────────
+#
+# ss-cloudflare-deployed.yml dispatches each check with the URL it just
+# deployed; for the default branch that is urls.production, which should
+# get the production treatment (CWV's stricter config) as a deployment does.
+
+@pytest.mark.parametrize("mode", ["skip", "local"])
+@pytest.mark.parametrize("url,prod", [(PROD, "true"), (PROD + "/", "true"), (PREVIEW, "false")])
+def test_a_dispatch_is_production_only_when_its_url_is_urls_production(tmp_path, mode, url, prod):
+    rc, outputs, log = resolve(tmp_path, "workflow_dispatch", mode=mode, url=url, production=PROD)
+    assert rc == 0, log
+    assert outputs["url"] == url and outputs["prod"] == prod

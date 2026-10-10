@@ -170,3 +170,37 @@ def test_the_doc_updater_learns_the_project_from_the_repo():
     body = DOC_UPDATER.read_text().split("\n---\n", 1)[1]
     assert "cat AGENTS.md" in body and "cat docs/README.md" in body
     assert "{{#runtime-import .github/workflows/ss-hygiene-doc-updater.md}}" in DOC_UPDATER_LOCK.read_text()
+
+
+# ── what a dispatched run may report (#425) ──────────────────────
+#
+# ss-cloudflare-deployed.yml dispatches the URL-driven checks on the
+# deployed branch: a preview on its PR branch, the live site on main. A
+# per-check issue means production is broken, so it opens and closes only
+# for a non-PR run on main; a preview's result stays on its commit.
+
+def _dispatched_by_cloudflare() -> set[str]:
+    text = _text("ss-cloudflare-deployed.yml")
+    return set(re.findall(r"(ss-[a-z0-9-]+\.yml)", text[text.index("checks=("):]))
+
+
+def _issue_step_conditions(text: str) -> list[str]:
+    """The `if:` text of every step that runs `slopstopper emit … --target issue`."""
+    steps = re.split(r"\n      - ", text)
+    return [step.split("if:", 1)[1].split("run:", 1)[0] for step in steps
+            if "--target issue" in step and "if:" in step]
+
+
+@pytest.mark.parametrize("workflow", sorted(_dispatched_by_cloudflare()))
+def test_per_check_issues_come_only_from_non_pr_runs_on_main(workflow):
+    for cond in _issue_step_conditions(_text(workflow)):
+        assert "github.event_name != 'pull_request'" in cond and "github.ref == 'refs/heads/main'" in cond, (workflow, cond)
+
+
+def test_the_cloudflare_trigger_dispatches_only_workflows_that_take_a_url():
+    text = _text("ss-cloudflare-deployed.yml")
+    block = text[text.index("checks=(") : text.index(")", text.index("checks=("))]
+    dispatched = set(re.findall(r"(ss-[a-z0-9-]+\.yml)", text[text.index("checks=("):]))
+    assert "ss-security-dast-check.yml" in dispatched and "ss-security-dast-check.yml" not in block
+    for workflow in dispatched:
+        assert re.search(r"workflow_dispatch:\n\s+inputs:\n\s+url:", _text(workflow)), workflow

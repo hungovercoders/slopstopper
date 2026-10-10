@@ -330,7 +330,10 @@ def test_stale_marker_with_zero_workflows_on_disk_is_ignored(tmp_path):
     # Plant a stale marker listing all 20 ss-*.yml workflows, with zero
     # workflows on disk (no .github/workflows/ at all).
     (target / ".ss").mkdir()
-    workflow_names = sorted(p.name for p in (REPO_ROOT / ".github/workflows").glob("ss-*.yml"))
+    # ss-cloudflare-deployed.yml ships only to a Cloudflare repo, which this isn't.
+    workflow_names = sorted(
+        p.name for p in (REPO_ROOT / ".github/workflows").glob("ss-*.yml") if p.name != "ss-cloudflare-deployed.yml"
+    )
     assert len(workflow_names) >= 15, f"Sanity: expected ≥15 ss-*.yml workflows, found {len(workflow_names)}"
     (target / ".ss/.workflows-installed").write_text("\n".join(workflow_names) + "\n")
 
@@ -1136,3 +1139,20 @@ def test_deploy_summary_names_cloudflare_only_when_configured(tmp_path):
     (target / "wrangler.toml").write_text('name = "site"\n')
     with_cf = _run_install(target, args=["--no-hooks", "--no-skills"])
     assert "Cloudflare config detected" in with_cf.stdout
+
+
+def test_the_cloudflare_deploy_trigger_ships_only_to_a_cloudflare_repo(tmp_path):
+    """Workers Builds raises no GitHub deployment, so a Cloudflare repo gets
+    ss-cloudflare-deployed.yml to check each deploy (#425); nothing else does,
+    and a repo that leaves Cloudflare loses it on the next refresh."""
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target).returncode == 0
+    assert "ss-cloudflare-deployed.yml" not in _installed(target)
+
+    (target / "wrangler.jsonc").write_text('{"name": "site"}\n')
+    assert _run_install(target).returncode == 0
+    assert "ss-cloudflare-deployed.yml" in _installed(target)
+
+    (target / "wrangler.jsonc").unlink()
+    assert _run_install(target).returncode == 0
+    assert "ss-cloudflare-deployed.yml" not in _installed(target)

@@ -150,13 +150,13 @@ jobs:
         run: slopstopper emit reliability:broken-links --target pr-comment --status ${{ steps.links.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete
 
       - name: Emit issue on broken-links failure (main)
-        if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: failure() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit reliability:broken-links --target issue
 
       - name: Close broken-links issue on recovery (main)
-        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit reliability:broken-links --target issue --on-pass=close

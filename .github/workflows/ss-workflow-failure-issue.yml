@@ -3,7 +3,8 @@ name: SlopStopper · Raise Issue on Workflow Failure
 on:
   workflow_run:
     workflows:
-      # This lists every check workflow plus the doc updater. workflow_run
+      # This lists every check workflow plus the doc updater and the
+      # Cloudflare deploy trigger. workflow_run
       # can't glob, so a name left out here fails on main with no issue
       # raised. cli/tests/test_workflow_triggers.py keeps this list in step
       # with ss-pr-summary.yml.
@@ -33,6 +34,7 @@ on:
       - "SlopStopper · Dependency Vulnerability Scan"
       - "SlopStopper · Dependency review"
       - "SlopStopper · Hygiene - Documentation Updater"
+      - "SlopStopper · Cloudflare Deployed Checks"
     types:
       - completed
 

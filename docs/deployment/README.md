@@ -15,7 +15,7 @@ every push and PR, so there is **no** deploy workflow in this repo.
 
 | Event | What happens | Where you see it |
 | ----- | ------------ | ---------------- |
-| Push to `main` | Workers Builds runs `npm run build`, then `wrangler deploy`. Worker is updated; custom domain serves the new version. | GitHub Deployments tab; Cloudflare dash → Workers → `slopstopper` → Deployments |
+| Push to `main` | Workers Builds runs `npm run build`, then `wrangler deploy`. Worker is updated; custom domain serves the new version. | Commit check (Workers Builds); Cloudflare dash → Workers → `slopstopper` → Deployments |
 | Open PR | Workers Builds creates a Worker *version* with a unique preview URL of the form `<hash>-slopstopper.<account>.workers.dev`. | Commit check on the PR (Cloudflare Workers · Build) |
 | New commit on the PR | Version is replaced; preview URL refreshes. | Same commit check, updated. |
 | Close PR | Cloudflare retires the preview version automatically. | Cloudflare dash → Versions |
@@ -40,21 +40,27 @@ runs locally before commits, and the PNG outputs are checked in.
 
 ## Visibility
 
-- **Per-deploy README badge.** shields.io renders a badge off the
-  GitHub Deployments API:
-  `https://img.shields.io/github/deployments/hungovercoders/slopstopper/Production`.
-  Cloudflare's GitHub App writes a deployment event for every push.
+- **Checks after every deploy.** Workers Builds reports a check run, not
+  a GitHub deployment, so `deployment_status` never fires.
+  [`ss-cloudflare-deployed.yml`](../../.github/workflows/ss-cloudflare-deployed.yml)
+  waits for that check run to succeed, then dispatches every installed
+  URL-driven check on the deployed branch with the deployed URL:
+  `urls.production` for `main`, otherwise the preview URL from the
+  commit's row in Cloudflare's PR comment. Results land on the commit,
+  so they show on the PR; a run on `main` opens or closes each check's
+  own issue. DAST runs against production only, because a preview
+  answers missing paths with a bare "Not found" without the site's
+  headers. `install.sh` ships it to any repo with wrangler config or a
+  `worker/` directory.
 - **Live-health README badge.** The existing
   [`ss-reliability-smoke-tests.yml`](../../.github/workflows/ss-reliability-smoke-tests.yml)
-  workflow runs hourly and on every `deployment_status` event, and its
-  GitHub Actions status badge tells you whether the live site is
-  behaving right now.
+  workflow runs hourly and after every deploy, and its GitHub Actions
+  status badge tells you whether the live site is behaving right now.
 - **Per-PR check.** Cloudflare's GitHub App writes a Workers Builds
   check on each PR commit with the preview URL. It has the same shape
   as a Netlify preview deploy check.
-- **Auto-issue on failure.** `ss-reliability-smoke-tests.yml` already
-  opens (and closes) an issue labelled `smoke-test-failure` when the
-  scheduled run fails on production.
+- **Auto-issue on failure.** Each URL-driven check opens (and closes)
+  its own issue when a non-PR run on `main` fails against production.
 - **Dashboard.** Cloudflare dash → Workers → `slopstopper` →
   Deployments shows the full per-version history with build logs.
 

@@ -62,6 +62,7 @@ import traceback
 from slopstopper import (
     __version__,
     badges as badges_mod,
+    cloudflare,
     config,
     discovery,
     emit as emit_mod,
@@ -153,6 +154,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_checks(sub)
     _add_doctor(sub)
     _add_profile(sub)
+    _add_cloudflare(sub)
 
     return parser
 
@@ -488,6 +490,25 @@ def _add_doctor(sub) -> None:
     )
 
 
+def _add_cloudflare(sub) -> None:
+    p = sub.add_parser(
+        "cloudflare",
+        help="Cloudflare Workers Builds helpers (used by ss-cloudflare-deployed.yml)",
+        description="Helpers for repos deployed by Cloudflare Workers Builds.\n",
+    )
+    cf_sub = p.add_subparsers(dest="cloudflare_action", required=True)
+    pu = cf_sub.add_parser(
+        "preview-url",
+        help="Print a commit's preview URL from Cloudflare's PR comment on stdin",
+        description=(
+            "Read the Cloudflare bot's PR comment body on stdin and print the\n"
+            "preview URL from the row for <sha>. Exits 1 when there is none.\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    pu.add_argument("sha", help="The deployed commit SHA (full or 7+ characters)")
+
+
 def _add_profile(sub) -> None:
     p = sub.add_parser(
         "profile",
@@ -564,6 +585,7 @@ _DISPATCHERS = {
     "checks":    lambda a: _dispatch_checks_list(a.category, a.json),
     "doctor":    lambda a: _dispatch_doctor(),
     "profile":   lambda a: _dispatch_profile(a.profile_action, getattr(a, "name", None)),
+    "cloudflare": lambda a: _dispatch_cloudflare_preview_url(a.sha),
 }
 
 
@@ -594,6 +616,14 @@ def main(argv: list[str] | None = None) -> int:
 
 
 # ── dispatchers ──────────────────────────────────────────────────
+
+
+def _dispatch_cloudflare_preview_url(sha: str) -> int:
+    url = cloudflare.preview_url(sys.stdin.read(), sha)
+    if url is None:
+        return 1
+    print(url)
+    return 0
 
 
 def _dispatch_run(check_name: str, check_args: list[str]) -> int:

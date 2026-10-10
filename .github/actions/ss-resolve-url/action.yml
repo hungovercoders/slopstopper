@@ -9,7 +9,7 @@ description: >-
 # `validate_url()`. The two shapes, exactly as those copies behaved:
 #
 #   mode skip (the API checks, which audit a deployed environment or nothing)
-#     workflow_dispatch   → the `url` input
+#     workflow_dispatch   → the `url` input (prod=true when it is urls.production)
 #     deployment_status   → the deployment's URL                (prod=true)
 #     pull_request        → urls.preview
 #     schedule / push     → urls.production                     (prod=true)
@@ -17,7 +17,8 @@ description: >-
 #     check with no URLs configured is inert, never red.
 #
 #   mode local (the browser checks, which build and serve the repo itself)
-#     workflow_dispatch   → the `url` input. If blank, a local build, or
+#     workflow_dispatch   → the `url` input (prod=true when it is
+#                           urls.production). If blank, a local build, or
 #                           urls.production when dispatch-fallback is
 #                           production (an error if unset)
 #     deployment_status   → the deployment's URL                (prod=true)
@@ -74,7 +75,7 @@ outputs:
     description: "`true` when the workflow should build and serve the repo itself (mode local)"
     value: ${{ steps.resolve.outputs.use_local }}
   prod:
-    description: "`true` for a deployment, or a scheduled / main-branch run against urls.production (CWV: the stricter Lighthouse config). A dispatch is never prod"
+    description: "`true` for a deployment, a scheduled / main-branch run against urls.production, or a dispatch whose url is urls.production (CWV: the stricter Lighthouse config)"
     value: ${{ steps.resolve.outputs.prod }}
 
 runs:
@@ -108,6 +109,13 @@ runs:
         }
         audit() { require_http "$1"; emit "$1" false false "$2"; }
         local_build() { emit "http://localhost:8080" false true false; }
+        # A dispatch is production when its url is urls.production (the
+        # Cloudflare deploy trigger dispatches the live site that way).
+        dispatch_prod() {
+          local production
+          production="$(config_get urls.production)"
+          if [ -n "$production" ] && [ "${1%/}" = "${production%/}" ]; then echo true; else echo false; fi
+        }
         # `slopstopper config get` prints "" for an unset key; a non-zero
         # exit is a broken CLI or config, and stops the step here.
         config_get() {
@@ -125,7 +133,7 @@ runs:
         if [ "$MODE" = "skip" ]; then
           prod=false
           case "$EVENT_NAME" in
-            workflow_dispatch) candidate="$INPUT_URL" ;;
+            workflow_dispatch) candidate="$INPUT_URL"; [ -z "$candidate" ] || prod="$(dispatch_prod "$candidate")" ;;
             deployment_status) candidate="$DEPLOYMENT_URL"; prod=true ;;
             pull_request)      candidate="$(config_get urls.preview)" ;;
             *)                 candidate="$(config_get urls.production)"; prod=true ;;
@@ -142,7 +150,8 @@ runs:
         case "$EVENT_NAME" in
           workflow_dispatch)
             if [ -n "$INPUT_URL" ]; then
-              audit "$INPUT_URL" false
+              prod="$(dispatch_prod "$INPUT_URL")"
+              audit "$INPUT_URL" "$prod"
             elif [ "$DISPATCH_FALLBACK" = "production" ]; then
               production="$(config_get urls.production)"
               [ -n "$production" ] || fail "No url input given and urls.production is unset in .slopstopper.yml"

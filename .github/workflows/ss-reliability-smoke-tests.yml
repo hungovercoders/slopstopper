@@ -130,13 +130,13 @@ jobs:
           [View detailed results](${run_url})"
 
       - name: Emit issue on smoke failure
-        if: failure() && github.event_name != 'pull_request'
+        if: failure() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit reliability:smoke --target issue
 
       - name: Close smoke failure issue on recovery
-        if: success() && github.event_name != 'pull_request'
+        if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit reliability:smoke --target issue --on-pass=close
