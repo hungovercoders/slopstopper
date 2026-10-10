@@ -35,8 +35,11 @@ missing label is created first; if one still can't be applied, the issue
 is created without labels and a warning says so, because a lost failure
 report is worse than an unlabelled one.
 Bodies also gain a hidden HTML-comment marker `<!-- slopstopper:check=<name> -->`
-in the footer for machine-readable dedup (used by
-`ss-workflow-failure-issue.yml`'s deduplication).
+in the footer for machine-readable dedup and, in Actions, a
+`<!-- slopstopper:workflow=<file>.yml -->` marker naming the workflow that
+raised it. `ss-workflow-failure-issue.yml` skips its generic failure issue
+only when an open issue carries the failing workflow's own marker, so one
+check's issue never silences another check's failure.
 
 PR-comment update path: `gh api PATCH .../issues/comments/{id}`, because
 `gh` doesn't have a direct edit-comment command.
@@ -461,6 +464,16 @@ def _comment_issue(number: int, body: str) -> int:
     return _gh("issue", "comment", str(number), "--body", body).returncode
 
 
+WORKFLOW_MARKER = "<!-- slopstopper:workflow={file} -->"
+
+
+def _workflow_file() -> str:
+    """The running workflow's file name (`ss-reliability-smoke-tests.yml`), from
+    GITHUB_WORKFLOW_REF (`owner/repo/.github/workflows/<file>@<ref>`); "" outside Actions."""
+    ref = os.environ.get("GITHUB_WORKFLOW_REF", "")
+    return ref.split("@", 1)[0].rsplit("/", 1)[-1] if ref else ""
+
+
 def _commit_sha() -> str:
     return os.environ.get("GITHUB_SHA", "")
 
@@ -495,6 +508,9 @@ def emit_issue(
         footer_lines.append(f"*Commit: {sha}*")
     if check_name:
         footer_lines.append(f"<!-- slopstopper:check={check_name} -->")
+    workflow = _workflow_file()
+    if workflow:
+        footer_lines.append(WORKFLOW_MARKER.format(file=workflow))
     footer = ("\n\n---\n" + "\n".join(footer_lines) + "\n") if footer_lines else "\n"
     body_with_footer = body + footer
 

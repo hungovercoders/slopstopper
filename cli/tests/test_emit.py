@@ -863,3 +863,20 @@ def test_create_issue_falls_back_to_no_labels_when_a_label_cant_be_made(monkeypa
     assert emit._create_issue("T", Path("body.md"), ["slopstopper"]) == 0
     assert repo.created == [[]]
     assert "creating the issue without them" in capsys.readouterr().err
+
+
+def test_emit_issue_marks_the_workflow_that_raised_it(monkeypatch, isolated_cwd):
+    """ss-workflow-failure-issue.yml matches this marker to the failing workflow (#412)."""
+    Path("report.md").write_text("body")
+    monkeypatch.setattr(emit, "_gh_available", lambda: True)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: None)
+    monkeypatch.setenv("GITHUB_WORKFLOW_REF", "o/r/.github/workflows/ss-reliability-smoke-tests.yml@refs/heads/main")
+    captured: dict = {}
+
+    def fake_create(title, body_path, labels):
+        captured["body"] = Path(body_path).read_text()
+        return 0
+
+    monkeypatch.setattr(emit, "_create_issue", fake_create)
+    assert emit.emit_issue(Path("report.md"), "T", ["x"], "F", check_name="reliability:smoke") == 0
+    assert "<!-- slopstopper:workflow=ss-reliability-smoke-tests.yml -->" in captured["body"]
