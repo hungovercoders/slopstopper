@@ -4,6 +4,14 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.20.0](https://github.com/hungovercoders/slopstopper/compare/v0.19.0...v0.20.0) (2026-10-10)
+
+
+### Features
+
+* **deploy:** check every Cloudflare Workers Builds deploy, previews and the live site ([#433](https://github.com/hungovercoders/slopstopper/issues/433)) ([ac37f7d](https://github.com/hungovercoders/slopstopper/commit/ac37f7d1516c6fe25e8f22a27161451c8eead339)), closes [#425](https://github.com/hungovercoders/slopstopper/issues/425)
+* **security:** DAST scans the deployed site after deploys, daily and on demand ([#431](https://github.com/hungovercoders/slopstopper/issues/431)) ([f9a2aed](https://github.com/hungovercoders/slopstopper/commit/f9a2aed2f3929e865533d7a22c369a4b982a56b3)), closes [#426](https://github.com/hungovercoders/slopstopper/issues/426)
+
 ## [0.19.0](https://github.com/hungovercoders/slopstopper/compare/v0.18.0...v0.19.0) (2026-10-10)
 
 
