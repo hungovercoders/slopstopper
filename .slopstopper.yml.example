@@ -133,6 +133,12 @@ urls:
 # lands. For larger sites, prefer the `reliability.coverage.*` block below,
 # which derives the list from your sitemap or git diff automatically.
 #
+# Paths are relative to the audited URL, leading `/` or not. A site served
+# under a sub-path (a GitHub Pages project site, with
+# `urls.production: https://org.github.io/project/`) lists `/` and `/about`
+# and they resolve to `/project/` and `/project/about`; no check follows a
+# link outside that base.
+#
 # Defaults to '/' for every check when unset.
 pages:
   smoke:         /

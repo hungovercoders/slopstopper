@@ -53,5 +53,19 @@ jobs:
         # Installs the mise-pinned `task` (mise.toml [tools]), the same
         # version locally and in CI. Replaces a `curl | sh` bootstrap.
         uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+      - name: Install Playwright
+        # test_specs_subpath.py runs the bundled specs in a real browser and
+        # skips without this. Each attempt is bounded so a stalled browser
+        # download can't hold the job.
+        timeout-minutes: 12
+        run: |
+          npm ci
+          for attempt in 1 2; do
+            if timeout --kill-after=30s 5m npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "::warning::Playwright browser install attempt ${attempt} failed or stalled after 5 minutes"
+          done
+          exit 1
       - name: Run CLI tests
         run: task -t cli/Taskfile.yml test

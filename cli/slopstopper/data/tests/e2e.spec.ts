@@ -6,7 +6,7 @@ import { test, expect, type Page } from '@playwright/test';
  * Smoke proves each page renders; this proves a visitor can get around.
  * From every start path it:
  *
- *   1. clicks each same-origin link in the primary navigation (the first
+ *   1. clicks each link under the base URL in the primary navigation (the first
  *      <nav> on the page, plus any other link in the <header> that holds
  *      it, such as a call-to-action button) and asserts the destination
  *      answers, shows a heading and still carries a nav;
@@ -51,6 +51,16 @@ const DEFAULT_MAX_LINKS = 25;
 const parsedMax = parseInt(process.env.E2E_MAX_LINKS || '', 10);
 const maxLinks = Number.isFinite(parsedMax) && parsedMax > 0 ? parsedMax : DEFAULT_MAX_LINKS;
 
+/**
+ * A configured page path, resolved under the base URL. Paths are relative to
+ * the base even with a leading `/`, so `/about` under
+ * `https://org.github.io/project/` is `/project/about`, never the host root.
+ */
+function pageUrl(path: string): string {
+  const base = targetUrl.endsWith('/') ? targetUrl : `${targetUrl}/`;
+  return new URL(path.replace(/^\/+/, ''), base).href;
+}
+
 /** Files a browser downloads or renders without a site shell, so never a page to walk. */
 const NON_HTML = /\.(pdf|xml|txt|json|rss|atom|zip|gz|tar|csv|ics|png|jpe?g|gif|svg|webp|avif|ico|mp[34]|webm|woff2?|css|js|mjs)$/i;
 
@@ -63,9 +73,13 @@ function normalisePath(pathname: string): string {
   return stripped || '/';
 }
 
-/** The page landed where `href` points, allowing for `.html` stripping, trailing slashes and a locale prefix. */
-function landedOn(page: Page, href: string): boolean {
-  const expected = normalisePath(new URL(href, page.url()).pathname);
+/**
+ * The page landed where `href` points, allowing for `.html` stripping, trailing
+ * slashes and a locale prefix. `from` is the URL the link was clicked on: a
+ * relative href resolves against that, not against where the click landed.
+ */
+function landedOn(page: Page, href: string, from: string): boolean {
+  const expected = normalisePath(new URL(href, from).pathname);
   const actual = normalisePath(new URL(page.url()).pathname);
   return expected === '/' ? true : actual === expected || actual.endsWith(expected);
 }
@@ -77,7 +91,7 @@ function cssString(value: string): string {
 
 /** Load a start path and fail (not skip) if it doesn't answer: a wrong `pages.e2e` entry is a verdict. */
 async function openStart(page: Page, start: string): Promise<void> {
-  const response = await page.goto(start);
+  const response = await page.goto(pageUrl(start));
   expect(response, `${start}: start page should respond`).not.toBeNull();
   expect(response!.status(), `${start}: start page should answer 2xx/3xx, got ${response!.status()}`).toBeLessThan(400);
 }
@@ -95,7 +109,7 @@ function navLink(page: Page, href: string) {
 }
 
 /**
- * Same-origin, same-tab, visible page links from the primary navigation, in
+ * Visible, same-tab page links under the base URL from the primary navigation, in
  * document order, deduped by destination (fragment included, so a header
  * call-to-action that deep-links into the home page is walked as well as the
  * Home link). Hidden links (a collapsed mobile menu, a hover dropdown),
@@ -103,7 +117,7 @@ function navLink(page: Page, href: string) {
  * follow them in place, and a site that has them is not broken.
  */
 async function navTargets(page: Page): Promise<string[]> {
-  const origin = new URL(page.url()).origin;
+  const root = pageUrl('/');
   const hrefs = await primaryNav(page).locator('a[href]').evaluateAll((anchors) =>
     anchors.flatMap((el) => {
       const a = el as HTMLAnchorElement;
@@ -121,7 +135,7 @@ async function navTargets(page: Page): Promise<string[]> {
     } catch {
       continue;
     }
-    if (url.origin !== origin || NON_HTML.test(url.pathname)) continue;
+    if (!url.href.startsWith(root) || NON_HTML.test(url.pathname)) continue;
     const key = normalisePath(url.pathname) + url.search + url.hash;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -141,10 +155,11 @@ test.describe('E2E Journeys', () => {
 
       await openStart(page, start);
       const targets = await navTargets(page);
-      test.skip(targets.length === 0, `${start}: no followable same-origin links inside a <nav>`);
+      test.skip(targets.length === 0, `${start}: no followable links under the base URL inside a <nav>`);
 
       for (const href of targets) {
-        await page.goto(start);
+        await page.goto(pageUrl(start));
+        const from = page.url();
         const link = navLink(page, href);
         await expect(link, `${start}: nav link ${href} should be visible`).toBeVisible();
 
@@ -153,7 +168,7 @@ test.describe('E2E Journeys', () => {
         await link.click();
         await page.waitForLoadState('domcontentloaded');
 
-        expect(landedOn(page, href), `${href}: should land on that page, got ${page.url()}`).toBe(true);
+        expect(landedOn(page, href, from), `${href}: should land on that page, got ${page.url()}`).toBe(true);
         await expect(page.locator('h1').first(), `${href}: page should have a heading`).toBeVisible();
         expect(await page.locator('nav a[href]').count(), `${href}: primary navigation should still be present`)
           .toBeGreaterThan(0);
@@ -232,9 +247,10 @@ test.describe('E2E Journeys', () => {
       const away = targets.find((href) => normalisePath(new URL(href, page.url()).pathname) !== startPath);
       test.skip(!away, `${start}: no nav link leads to another page`);
 
+      const from = page.url();
       await navLink(page, away!).click();
       await page.waitForLoadState('domcontentloaded');
-      expect(landedOn(page, away!), `${away}: should land on that page, got ${page.url()}`).toBe(true);
+      expect(landedOn(page, away!, from), `${away}: should land on that page, got ${page.url()}`).toBe(true);
 
       await page.goBack();
       await page.waitForLoadState('domcontentloaded');

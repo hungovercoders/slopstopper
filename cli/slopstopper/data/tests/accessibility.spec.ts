@@ -36,6 +36,16 @@ const impactThreshold = IMPACT_LEVELS.indexOf(minImpact);
 // Maximum number of violations allowed before the test fails
 const maxViolations = parseInt(process.env.ACCESSIBILITY_THRESHOLD || '0', 10);
 
+/**
+ * A configured page path, resolved under the base URL. Paths are relative to
+ * the base even with a leading `/`, so `/about` under
+ * `https://org.github.io/project/` is `/project/about`, never the host root.
+ */
+function pageUrl(path: string): string {
+  const base = targetUrl.endsWith('/') ? targetUrl : `${targetUrl}/`;
+  return new URL(path.replace(/^\/+/, ''), base).href;
+}
+
 const pagesToAudit = (process.env.ACCESSIBILITY_PAGES ?? '/')
   .split(',')
   .map((s) => s.trim())
@@ -47,7 +57,7 @@ test.describe('Accessibility Audit', () => {
 
   for (const { path, label } of pagesToAudit) {
     test(`${label} meets accessibility threshold`, async ({ page }) => {
-      await page.goto(path);
+      await page.goto(pageUrl(path));
       await page.waitForLoadState('networkidle');
 
       const results = await new AxeBuilder({ page })

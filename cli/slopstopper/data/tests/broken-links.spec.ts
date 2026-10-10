@@ -11,15 +11,25 @@ const pagesToScan = (process.env.BROKEN_LINKS_PAGES ?? '/')
   .map((s) => s.trim())
   .filter(Boolean);
 
+/**
+ * A configured page path, resolved under the base URL. Paths are relative to
+ * the base even with a leading `/`, so `/about` under
+ * `https://org.github.io/project/` is `/project/about`, never the host root.
+ */
+function pageUrl(path: string): string {
+  const base = targetUrl.endsWith('/') ? targetUrl : `${targetUrl}/`;
+  return new URL(path.replace(/^\/+/, ''), base).href;
+}
+
 test.describe('Broken Link Checks', () => {
   test.use({ baseURL: targetUrl });
 
-  test('internal links return successful responses', async ({ page, request, baseURL }) => {
-    const base = new URL(baseURL!);
+  test('internal links return successful responses', async ({ page, request }) => {
+    const root = pageUrl('/');
     const links = new Set<string>();
 
     for (const path of pagesToScan) {
-      await page.goto(path);
+      await page.goto(pageUrl(path));
       const hrefs = await page.locator('a[href]').evaluateAll((anchors) =>
         anchors
           .map((a) => a.getAttribute('href'))
@@ -31,8 +41,10 @@ test.describe('Broken Link Checks', () => {
           continue;
         }
 
-        const resolved = new URL(href, base);
-        if (resolved.origin !== base.origin) {
+        const resolved = new URL(href, page.url());
+        // Off-site, or on this host but outside the base path (another
+        // project's site under the same github.io origin): not ours to check.
+        if (!resolved.href.startsWith(root)) {
           continue;
         }
 
