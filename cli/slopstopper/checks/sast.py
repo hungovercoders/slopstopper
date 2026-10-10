@@ -155,6 +155,8 @@ def _run_semgrep() -> tuple[int, list[str]]:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     REPORT_JSON.unlink(missing_ok=True)
     try:
+        # why: `errors=` needs Python 3.6+; the CLI requires >=3.11.
+        # nosemgrep: python.lang.compatibility.python36.python36-compatibility-Popen1
         proc = subprocess.Popen(
             [
                 "semgrep",
