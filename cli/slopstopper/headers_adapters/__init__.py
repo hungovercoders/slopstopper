@@ -22,21 +22,25 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slopstopper.headers_adapters import cloudflare_adapter, json_adapter
+from slopstopper.headers_adapters import cloudflare_adapter, json_adapter, meta_adapter
 
 ADAPTERS = {
     "json": json_adapter.parse,
     "cloudflare-text": cloudflare_adapter.parse,
+    "meta": meta_adapter.parse,
 }
 
 
 def detect_format(path: Path) -> str:
     """Best-effort format detection from a file path.
 
-    Used when `.slopstopper.yml` says `format: auto`. Extension `.json`
-    means the json adapter; anything else (including no extension, like
-    a bare `_headers` file) means the cloudflare-text adapter.
+    Used when `.slopstopper.yml` says `format: auto`. A directory means
+    the meta adapter (built HTML), extension `.json` the json adapter, and
+    anything else (including no extension, like a bare `_headers` file)
+    the cloudflare-text adapter.
     """
+    if path.is_dir():
+        return "meta"
     if path.suffix.lower() == ".json":
         return "json"
     return "cloudflare-text"

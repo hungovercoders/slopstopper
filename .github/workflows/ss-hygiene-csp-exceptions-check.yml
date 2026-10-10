@@ -6,18 +6,14 @@ name: SlopStopper · Hygiene - CSP Exceptions Drift Check
 # issue (exit code is the signal).
 # Docs: docs/security/CSP_EXCEPTIONS.md.
 
+# No paths filter: the headers source is whatever .slopstopper.yml names
+# (a headers file, or with `format: meta` every built page's <meta> CSP),
+# so a fixed list of paths would miss most of the changes that matter.
+# Without a source configured the check skips in seconds.
 on:
   pull_request:
-    paths:
-      - 'worker/headers.json'
-      - 'docs/security/CSP_EXCEPTIONS.md'
-      - '.github/workflows/ss-hygiene-csp-exceptions-check.yml'
   push:
     branches: [main]
-    paths:
-      - 'worker/headers.json'
-      - 'docs/security/CSP_EXCEPTIONS.md'
-      - '.github/workflows/ss-hygiene-csp-exceptions-check.yml'
   workflow_dispatch:
 
 permissions:
@@ -38,6 +34,16 @@ jobs:
         # in the slopstopper repo only, the CLI from source. One local
         # composite action; install.sh copies it in next to the workflows.
         uses: ./.github/actions/ss-setup
+
+      - name: Build the site (headers.format meta only)
+        # `format: meta` reads each page's <meta> CSP from the built HTML,
+        # so build first, the same way the browser checks do.
+        run: |
+          if [ "$(slopstopper config get headers.format)" = "meta" ] &&
+             [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then
+            if [ -f package-lock.json ]; then npm ci; fi
+            npm run build
+          fi
 
       - name: Run CSP exceptions check
         id: check

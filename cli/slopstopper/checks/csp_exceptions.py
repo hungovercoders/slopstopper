@@ -8,7 +8,14 @@ Configuration (.slopstopper.yml):
 
     headers:
       source: worker/headers.json   # path to header file (set to null to skip)
-      format: json                  # json | cloudflare-text | auto
+      format: json                  # json | cloudflare-text | meta | auto
+
+`format: meta` is for hosts that can't send headers (GitHub Pages, S3
+without CloudFront): `source` is the built HTML root (`dist`), and each
+page's `<meta http-equiv="Content-Security-Policy">` is read instead (see
+headers_adapters/meta_adapter.py). A page with no policy is a warning.
+The root only exists after a build: missing in CI it exits 2, and
+locally it skips with a note, so the pre-push gate doesn't need a build.
 
 See .slopstopper.yml.example for the canonical schema and supported
 adapters.
@@ -16,13 +23,15 @@ adapters.
 Exit codes mirror the bash:
   0: source and doc agree, or no source is configured (a graceful skip)
   1: drift detected (details in report)
-  2: required input files missing, unknown adapter format, or arguments
-      were passed (this check takes none)
+  2: required input files missing, unknown adapter format, the built
+      HTML root missing in CI (format: meta), or arguments were passed
+      (this check takes none)
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 
@@ -157,6 +166,18 @@ def _headers_exception_map(rules: list[dict]) -> dict[str, set[str]]:
     return out
 
 
+def _missing_policy_issues(rules: list[dict]) -> list[dict]:
+    return [
+        {
+            "severity": "warn",
+            "path": rule["for"],
+            "message": f"`{rule['for']}` has no Content-Security-Policy meta tag, so the browser enforces no policy on it",
+        }
+        for rule in rules
+        if rule.get("missing")
+    ]
+
+
 def _sri_issues(path: str, sri: str) -> list[dict]:
     if "TODO" in sri.upper():
         return [{
@@ -194,7 +215,7 @@ def _issues_for_documented_path(path: str, required: set[str], entry: dict, sour
 
 
 def _compare(rules: list[dict], doc_entries: dict[str, dict], source_label: str) -> list[dict]:
-    issues: list[dict] = []
+    issues: list[dict] = _missing_policy_issues(rules)
     headers_map = _headers_exception_map(rules)
     for path, required in headers_map.items():
         entry = doc_entries.get(path)
@@ -298,8 +319,12 @@ def run(args: list[str] | None = None) -> int:
     if source_path is None:
         output.info(f"CSP exceptions check: {skip_reason}, so skipping.")
         return 0
+    if skip_reason and format_name == "meta" and os.environ.get("GITHUB_ACTIONS") == "true":
+        output.error(f"CSP exceptions check: {skip_reason}. headers.format meta reads the built HTML, so build the site before this check runs.")
+        return 2
     if skip_reason:
-        output.info(f"CSP exceptions check: {skip_reason}, so skipping.")
+        hint = " (format: meta reads the built HTML; build the site to check it)" if format_name == "meta" else ""
+        output.info(f"CSP exceptions check: {skip_reason}{hint}, so skipping.")
         return 0
     if format_name not in {*headers_adapters.ADAPTERS.keys(), "auto"}:
         output.error(
