@@ -4,6 +4,21 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.19.0](https://github.com/hungovercoders/slopstopper/compare/v0.18.0...v0.19.0) (2026-10-10)
+
+
+### Features
+
+* **profiles:** ui holds back the API checks until the repo shows an API ([#418](https://github.com/hungovercoders/slopstopper/issues/418)) ([0388c85](https://github.com/hungovercoders/slopstopper/commit/0388c8594c4f27fafb3124af3e52ffe732fd91ba)), closes [#408](https://github.com/hungovercoders/slopstopper/issues/408)
+
+
+### Bug Fixes
+
+* **cwv:** keep Lighthouse reports local unless public upload is opted in ([#410](https://github.com/hungovercoders/slopstopper/issues/410)) ([5f74ef3](https://github.com/hungovercoders/slopstopper/commit/5f74ef3e6f34ebb7e023ad8f3e6a7dc625b98687)), closes [#405](https://github.com/hungovercoders/slopstopper/issues/405)
+* **hygiene:** complexity skips test files and gitignored output ([#419](https://github.com/hungovercoders/slopstopper/issues/419)) ([fc00e65](https://github.com/hungovercoders/slopstopper/commit/fc00e6547c6274918f4996d039c114a3c0135b41)), closes [#404](https://github.com/hungovercoders/slopstopper/issues/404)
+* **install:** own package.json seed, refresh the .gitignore block, detect Cloudflare ([#415](https://github.com/hungovercoders/slopstopper/issues/415)) ([96f41f2](https://github.com/hungovercoders/slopstopper/commit/96f41f244626931cda80355fd0ed104913c7450c)), closes [#398](https://github.com/hungovercoders/slopstopper/issues/398) [#399](https://github.com/hungovercoders/slopstopper/issues/399) [#409](https://github.com/hungovercoders/slopstopper/issues/409)
+* **reliability:** resolve page paths under the base URL and relative hrefs from the clicked page ([#413](https://github.com/hungovercoders/slopstopper/issues/413)) ([d4f58c1](https://github.com/hungovercoders/slopstopper/commit/d4f58c133de9682b8001ff9a9c080bba02edbd47)), closes [#400](https://github.com/hungovercoders/slopstopper/issues/400) [#401](https://github.com/hungovercoders/slopstopper/issues/401)
+
 ## [0.18.0](https://github.com/hungovercoders/slopstopper/compare/v0.17.0...v0.18.0) (2026-10-10)
 
 
