@@ -31,23 +31,24 @@ def test_documented_exception_paths_returns_empty_when_doc_missing(tmp_path):
     assert dast_gate.documented_exception_paths(tmp_path / "missing.md") == set()
 
 
-# ── ignored_plugin_ids ───────────────────────────────────────────
+# ── ignored_rules ────────────────────────────────────────────────
 
 
-def test_ignored_plugin_ids_parses_tsv(tmp_path):
+def test_ignored_rules_parses_tsv(tmp_path):
     rules = tmp_path / "rules.tsv"
     rules.write_text(
         "# header comment\n"
         "10063\tIGNORE\tinformational rule\n"
         "10038\tWARN\tdo not skip warns\n"
         "90003\tIGNORE\n"
+        "10055-13\tIGNORE\t# frame-ancestors can't be set from a meta CSP\n"
         "\n"
     )
-    assert dast_gate.ignored_plugin_ids(rules) == {"10063", "90003"}
+    assert dast_gate.ignored_rules(rules) == {"10063", "90003", "10055-13"}
 
 
-def test_ignored_plugin_ids_returns_empty_when_missing(tmp_path):
-    assert dast_gate.ignored_plugin_ids(tmp_path / "nope.tsv") == set()
+def test_ignored_rules_returns_empty_when_missing(tmp_path):
+    assert dast_gate.ignored_rules(tmp_path / "nope.tsv") == set()
 
 
 # ── is_csp_alert ─────────────────────────────────────────────────
@@ -82,9 +83,10 @@ def test_match_exception_path_no_match():
 # ── classify_alerts ──────────────────────────────────────────────
 
 
-def _alert(riskcode=2, pluginid="10055", alert_name="CSP", uri="https://example.com/feedback.html"):
+def _alert(riskcode=2, pluginid="10055", alert_name="CSP", uri="https://example.com/feedback.html", alert_ref=None):
     return {
         "pluginid": pluginid,
+        "alertRef": alert_ref or pluginid,
         "riskcode": str(riskcode),
         "alert": alert_name,
         "instances": [{"uri": uri}],
@@ -129,6 +131,29 @@ def test_classify_swallows_via_zap_rules_ignore():
     assert blocking == 0
     assert len(swallowed) == 1
     assert swallowed[0]["source"] == ".zap/rules.tsv"
+    assert swallowed[0]["rule"] == "90003"
+
+
+def test_an_alert_ref_entry_swallows_only_that_alert_of_the_plugin():
+    """10055 bundles unrelated CSP alerts: accepting -13 (no frame-ancestors
+    fallback) must leave -6 (style-src unsafe-inline) blocking."""
+    zap = {"site": [{"alerts": [
+        _alert(pluginid="10055", alert_ref="10055-13", alert_name="Failure to Define Directive with No Fallback"),
+        _alert(pluginid="10055", alert_ref="10055-6", alert_name="CSP: style-src unsafe-inline"),
+    ]}]}
+    blocking, swallowed = dast_gate.classify_alerts(zap, set(), {"10055-13"})
+    assert blocking == 1
+    assert [(s["alertRef"], s["rule"]) for s in swallowed] == [("10055-13", "10055-13")]
+
+
+def test_a_bare_plugin_id_still_swallows_every_alert_of_the_plugin():
+    zap = {"site": [{"alerts": [
+        _alert(pluginid="10055", alert_ref="10055-13"),
+        _alert(pluginid="10055", alert_ref="10055-6"),
+    ]}]}
+    blocking, swallowed = dast_gate.classify_alerts(zap, set(), {"10055"})
+    assert blocking == 0
+    assert {s["rule"] for s in swallowed} == {"10055"}
 
 
 def test_classify_ignores_low_risk_alerts():
@@ -168,10 +193,19 @@ def test_swallowed_preamble_md_renders_each_finding():
     md = dast_gate.swallowed_preamble_md([
         {"path": "/feedback.html", "pluginid": "10055", "alert": "CSP wildcard", "riskcode": 2},
     ])
-    assert "🛡 Documented CSP exceptions" in md
+    assert "🛡 Accepted findings" in md
     assert "/feedback.html" in md
-    assert "pluginid `10055`" in md
+    assert "alert `10055`" in md
     assert "CSP wildcard" in md
+    assert "CSP_EXCEPTIONS.md path `/feedback.html`" in md
+
+
+def test_swallowed_output_names_the_rules_tsv_entry():
+    record = {"path": "/", "pluginid": "10055", "alertRef": "10055-13", "alert": "No fallback",
+              "riskcode": 2, "source": ".zap/rules.tsv", "rule": "10055-13"}
+    assert ".zap/rules.tsv entry `10055-13`" in dast_gate.swallowed_preamble_md([record])
+    assert "alert=10055-13" in dast_gate.format_summary_text(0, [record])
+    assert ".zap/rules.tsv entry `10055-13`" in dast_gate.format_summary_text(0, [record])
 
 
 # ── format_summary_text ──────────────────────────────────────────

@@ -25,7 +25,7 @@ The check's heuristic is misfiring on this codebase. Use the check's documented 
 | Secrets (gitleaks) | `.gitleaks.toml` `[allowlist]` block | Path or regex |
 | SAST (Semgrep) | `# nosemgrep: <rule-id>` inline, or `.semgrepignore` for path-scoped | Inline or path |
 | DAST (OWASP ZAP), CSP findings | `docs/security/CSP_EXCEPTIONS.md` `## Exceptions` → `### /path` heading (glob patterns supported: `/*`, `/blog/*`) | Per-path |
-| DAST, other rule false positives | `.zap/rules.tsv` → `<plugin-id>\tIGNORE\t# why` | Per-rule, site-wide |
+| DAST, other rule false positives | `.zap/rules.tsv` → `<alert-ref>\tIGNORE\t# why` (`10055-13`), or a bare plugin id for every alert of that plugin | Per-alert or per-plugin, site-wide |
 | Accessibility (axe-core) | `disabledRules` in the spec, or scope the spec to exclude the offending selector | Per-rule or per-element |
 | Vulnerability (Trivy) | `.trivyignore` with the CVE ID + a `# why` line | Per-CVE |
 | Complexity (lizard) | Refactor the function, or raise `hygiene.complexity.max_ccn` in `.slopstopper.yml` (default 15) with a `# why` note. A flagged file that is generated or vendored → `hygiene.complexity.exclude` | Per-repo (the ceiling is global) |

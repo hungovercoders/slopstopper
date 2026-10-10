@@ -1,8 +1,17 @@
 """DAST blocking-alerts gate (lifted from .ss/scripts/check-dast-alerts.py).
 
-Decides which ZAP findings should fail the build, with one narrow
-exception: CSP findings on paths that are explicitly documented in
-`docs/security/CSP_EXCEPTIONS.md`.
+Decides which ZAP findings should fail the build, with two narrow
+exceptions: findings `.zap/rules.tsv` marks IGNORE, and CSP findings on
+paths that are explicitly documented in `docs/security/CSP_EXCEPTIONS.md`.
+
+A rules.tsv entry is a plugin id (`10055`, every alert that plugin
+raises) or an alert ref (`10055-13`, one alert of it). Some plugins
+bundle unrelated alerts under one id: CSP plugin 10055 raises both
+"no frame-ancestors fallback" (unfixable with a `<meta>` CSP) and
+"style-src unsafe-inline" (a real regression), so a static host can
+accept the first and still be gated on the second. ZAP itself only
+matches the plugin id, so an alert-ref line is inert to ZAP and decided
+here. Each swallowed finding records the entry that swallowed it.
 
 Why this filter exists:
 The site ships a strict CSP on `/*`. Where a vetted third-party
@@ -71,8 +80,8 @@ def documented_exception_paths(doc: Path = EXCEPTIONS_DOC) -> set[str]:
     return paths
 
 
-def ignored_plugin_ids(rules_file: Path = ZAP_RULES_FILE) -> set[str]:
-    """Return the set of ZAP plugin IDs the consumer has marked IGNORE in .zap/rules.tsv.
+def ignored_rules(rules_file: Path = ZAP_RULES_FILE) -> set[str]:
+    """Return the entries (`<pluginid>` or `<pluginid>-<n>` alert refs) marked IGNORE in .zap/rules.tsv.
 
     ZAP's `-c` flag stops these rules from FAILing the scan but still
     leaves the findings in the JSON report with their original
@@ -94,6 +103,16 @@ def ignored_plugin_ids(rules_file: Path = ZAP_RULES_FILE) -> set[str]:
 
 
 # ── Alert classification ────────────────────────────────────────────
+
+
+def ignore_entry(alert: dict, ignored: set[str]) -> str | None:
+    """The rules.tsv entry that ignores this alert, or None. The exact
+    alert ref (`10055-13`) wins over the plugin id (`10055`)."""
+    ref = str(alert.get("alertRef", ""))
+    if ref and ref in ignored:
+        return ref
+    pid = str(alert.get("pluginid", ""))
+    return pid if pid in ignored else None
 
 
 def is_csp_alert(alert: dict) -> bool:
@@ -145,6 +164,7 @@ def _classify_instance(alert: dict, uri: str, exception_paths: set[str]) -> dict
         "path": matched,
         "uri": uri,
         "pluginid": str(alert.get("pluginid", "")),
+        "alertRef": str(alert.get("alertRef", "")),
         "alert": alert.get("alert") or alert.get("name", ""),
         "riskcode": riskcode(alert),
     }
@@ -153,7 +173,7 @@ def _classify_instance(alert: dict, uri: str, exception_paths: set[str]) -> dict
 def classify_alerts(
     zap_data: dict,
     exception_paths: set[str],
-    ignored_pluginids: set[str],
+    ignored: set[str],
 ) -> tuple[int, list[dict]]:
     """Return (blocking_count, swallowed_records) across all sites/alerts/instances."""
     blocking = 0
@@ -163,25 +183,29 @@ def classify_alerts(
             if riskcode(alert) < 2:
                 continue
             pid = str(alert.get("pluginid", ""))
+            entry = ignore_entry(alert, ignored)
             instances = alert.get("instances") or [{"uri": alert.get("url", "")}]
             for inst in instances:
                 # Rule-level IGNORE in .zap/rules.tsv: swallow
                 # regardless of path or alert class, because the consumer has
                 # explicitly accepted this finding type for the whole
                 # site.
-                if pid in ignored_pluginids:
+                if entry is not None:
                     swallowed.append({
                         "path": instance_path(inst.get("uri", "")),
                         "uri": inst.get("uri", ""),
                         "pluginid": pid,
+                        "alertRef": str(alert.get("alertRef", "")),
                         "alert": alert.get("alert") or alert.get("name", ""),
                         "riskcode": riskcode(alert),
                         "source": ".zap/rules.tsv",
+                        "rule": entry,
                     })
                     continue
                 record = _classify_instance(alert, inst.get("uri", ""), exception_paths)
                 if record is not None:
                     record["source"] = "docs/security/CSP_EXCEPTIONS.md"
+                    record["rule"] = record["path"]
                     swallowed.append(record)
                 else:
                     blocking += 1
@@ -191,8 +215,7 @@ def classify_alerts(
 def compute_gate(zap_data: dict) -> tuple[int, list[dict]]:
     """Run the full gate using the docs/rules sources on disk."""
     exception_paths = documented_exception_paths()
-    ignored = ignored_plugin_ids()
-    return classify_alerts(zap_data, exception_paths, ignored)
+    return classify_alerts(zap_data, exception_paths, ignored_rules())
 
 
 # ── Reporting ──────────────────────────────────────────────────────
@@ -206,30 +229,40 @@ def write_gate_report(blocking: int, swallowed: list[dict]) -> None:
     }, indent=2) + "\n")
 
 
-def swallowed_preamble_md(swallowed: list[dict]) -> str:
-    """Render the "🛡 Documented CSP exceptions" preamble block.
+def _swallowed_by(s: dict) -> str:
+    """Which entry swallowed a finding: the rules.tsv line or the documented path."""
+    if s.get("source") == ".zap/rules.tsv":
+        return f".zap/rules.tsv entry `{s.get('rule') or s['pluginid']}`"
+    return f"CSP_EXCEPTIONS.md path `{s.get('rule') or s['path']}`"
 
-    Same shape as the pre-flip JS produced. Empty string when no
-    findings were swallowed, which keeps the report MD clean on the happy
-    path.
+
+def _alert_id(s: dict) -> str:
+    return s.get("alertRef") or s["pluginid"]
+
+
+def swallowed_preamble_md(swallowed: list[dict]) -> str:
+    """Render the "🛡 Accepted findings" preamble block, one line per
+    swallowed finding naming the entry that swallowed it. Empty string
+    when nothing was swallowed, which keeps the report MD clean on the
+    happy path.
     """
     if not swallowed:
         return ""
     lines = [
-        "### 🛡 Documented CSP exceptions (swallowed by gate)",
+        "### 🛡 Accepted findings (swallowed by gate)",
         "",
-        f"{len(swallowed)} CSP finding(s) on documented exception paths were filtered out:",
+        f"{len(swallowed)} finding(s) accepted by `.zap/rules.tsv` or `docs/security/CSP_EXCEPTIONS.md` were filtered out:",
         "",
     ]
     for s in swallowed:
         lines.append(
-            f"- **{s['path']}**: pluginid `{s['pluginid']}`, "
-            f"riskcode {s['riskcode']}, _{s['alert']}_"
+            f"- **{s['path']}**: alert `{_alert_id(s)}`, "
+            f"riskcode {s['riskcode']}, _{s['alert']}_, by {_swallowed_by(s)}"
         )
     lines += [
         "",
-        "These do not block the build. They will block again if the path "
-        "is removed from the exceptions doc or if a higher-risk variant appears.",
+        "These do not block the build. They will block again if the entry "
+        "is removed or if a higher-risk variant appears.",
         "",
     ]
     return "\n".join(lines) + "\n"
@@ -239,12 +272,12 @@ def format_summary_text(blocking: int, swallowed: list[dict]) -> str:
     out = [
         "🕷️  DAST gate",
         f"   blocking alerts (riskcode >= 2): {blocking}",
-        f"   swallowed (documented CSP exceptions): {len(swallowed)}",
+        f"   swallowed (rules.tsv IGNORE or documented CSP exceptions): {len(swallowed)}",
         "━" * 60,
     ]
     for s in swallowed:
         out.append(
-            f"   🛡 {s['path']}: pluginid={s['pluginid']} riskcode={s['riskcode']} {s['alert']!r}"
+            f"   🛡 {s['path']}: alert={_alert_id(s)} riskcode={s['riskcode']} {s['alert']!r} ← {_swallowed_by(s)}"
         )
     if swallowed:
         out.append("━" * 60)

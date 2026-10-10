@@ -5,11 +5,16 @@
 # rules that apply to your site, and keep the `# why` line so the
 # exception is documented at the point of suppression.
 #
-# Format: <plugin-id>\tIGNORE\t# why this is accepted on this site
-# See https://www.zaproxy.org/docs/alerts/ for the plugin registry.
+# Format: <rule>\tIGNORE\t# why this is accepted on this site
+# <rule> is a plugin id (10055: every alert that plugin raises) or an
+# alert ref (10055-13: just that one). Prefer the alert ref; some plugins
+# bundle unrelated alerts. See https://www.zaproxy.org/docs/alerts/.
+# Static host with a <meta> CSP? docs/security/DAST.md lists the three
+# header-only alerts to accept.
 #
 # Honoured by slopstopper's dast:analyze task AND by the DAST gate
-# (.ss/scripts/check-dast-alerts.py).
+# (cli/slopstopper/dast_gate.py), which names the entry behind each
+# finding it swallows.
 
 # 90003	IGNORE	# SRI: GTM script and similar cross-domain scripts are
 #                # rotated by the third party; no stable SRI hash is viable
