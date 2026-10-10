@@ -15,7 +15,7 @@ task ss:security:dast -- http://localhost:8080
 ### What You Get Automatically
 - ✅ PR comments with DAST findings report
 - ✅ Merge blocking if any High or Medium alerts exist
-- ✅ GitHub issues on main branch for blocking alerts
+- ✅ Scheduled and post-deploy scans of the live site, with a tracking issue for blocking alerts
 - ✅ Documented CSP exceptions surfaced separately and **not** blocking (see below)
 
 ### Common Issues
@@ -80,7 +80,7 @@ In `Taskfile.yml`, the `dast` task accepts the target URL as an argument:
 task ss:security:dast -- http://your-site-url
 ```
 
-In `ss-security-dast-check.yml`, the CI workflow starts a local server and passes `http://localhost:8080`. To scan a deployed preview instead, update that step with your preview URL.
+In CI, pull requests and pushes to `main` scan a local build on `http://localhost:8080` (fast, no secrets). The deployed site is scanned after each successful `deployment_status`, daily against `urls.production` (skipped with a notice when unset), and on a manual run given a `url` input. Scan the deployed site when headers come from the edge (`_headers`, a CDN, a proxy), since a local build doesn't carry them. Every non-PR run opens or closes the DAST tracking issue.
 
 ### Change the Blocking Threshold
 
