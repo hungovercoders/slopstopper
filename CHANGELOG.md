@@ -4,6 +4,24 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.17.0](https://github.com/hungovercoders/slopstopper/compare/v0.16.0...v0.17.0) (2026-10-10)
+
+
+### Features
+
+* **site:** self-host Nunito so every platform gets the rounded face ([#379](https://github.com/hungovercoders/slopstopper/issues/379)) ([9632e8a](https://github.com/hungovercoders/slopstopper/commit/9632e8a5779ac2e7d22abdcc0a8e67a9d27823ae)), closes [#370](https://github.com/hungovercoders/slopstopper/issues/370)
+
+
+### Bug Fixes
+
+* **ci:** time-box the Playwright browser install so a stalled download fails fast ([#387](https://github.com/hungovercoders/slopstopper/issues/387)) ([dc01f2c](https://github.com/hungovercoders/slopstopper/commit/dc01f2caad5971d271c477de02a214438d15c223)), closes [#386](https://github.com/hungovercoders/slopstopper/issues/386)
+* **site:** give the Features page a jump row and a way back to the top ([#378](https://github.com/hungovercoders/slopstopper/issues/378)) ([67d486a](https://github.com/hungovercoders/slopstopper/commit/67d486a72f67f024e1abb770d16297341f0670b8))
+* **site:** group the Tools cards by loop and let each size to its content ([#376](https://github.com/hungovercoders/slopstopper/issues/376)) ([7ab5fa6](https://github.com/hungovercoders/slopstopper/commit/7ab5fa6d9a4ddbcd76455a97d1a86c5b63f01c1e)), closes [#366](https://github.com/hungovercoders/slopstopper/issues/366)
+* **site:** keep each highlighted headline phrase on one line ([#374](https://github.com/hungovercoders/slopstopper/issues/374)) ([266d315](https://github.com/hungovercoders/slopstopper/commit/266d315b68b661913399ae1bd3ffe85c8e6ab291)), closes [#369](https://github.com/hungovercoders/slopstopper/issues/369)
+* **site:** keep the home install section short, with the runbook detail one click away ([#377](https://github.com/hungovercoders/slopstopper/issues/377)) ([65023ce](https://github.com/hungovercoders/slopstopper/commit/65023ce373070f3ca7e6116e22777e2364083d28)), closes [#367](https://github.com/hungovercoders/slopstopper/issues/367)
+* **site:** mobile header, tap targets, touch copy buttons, color-scheme, comments placeholder, tablet overflow ([#375](https://github.com/hungovercoders/slopstopper/issues/375)) ([ea13f51](https://github.com/hungovercoders/slopstopper/commit/ea13f51cc729a2bbcf030fbd5ae6809e3ebf618d)), closes [#371](https://github.com/hungovercoders/slopstopper/issues/371)
+* **site:** show the --profile flag in the home install block without scrolling ([#372](https://github.com/hungovercoders/slopstopper/issues/372)) ([2bdb94b](https://github.com/hungovercoders/slopstopper/commit/2bdb94b4dfe3be0926cc525bf3a739533b4ebd62)), closes [#365](https://github.com/hungovercoders/slopstopper/issues/365)
+
 ## [0.16.0](https://github.com/hungovercoders/slopstopper/compare/v0.15.0...v0.16.0) (2026-10-05)
 
 
