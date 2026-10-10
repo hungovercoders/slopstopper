@@ -7,7 +7,7 @@ commands; this is the rest.
 
 ## Prerequisites
 
-mise pins + installs `slopstopper-cli`; each check subprocess-invokes its own tool (`semgrep`, `gitleaks`, `trivy`, `docker`, `node`). `slopstopper doctor` reports what's missing.
+mise pins + installs `slopstopper-cli`; each check subprocess-invokes its own tool (`semgrep`, `gitleaks`, `trivy`, `docker`, `node`). `slopstopper doctor` reports what's missing or won't run, and which `ss-*` workflows GitHub has disabled for inactivity.
 
 - **[mise](https://mise.jdx.dev)** is required. It installs the pinned `slopstopper-cli` + `task`, activated per-directory (CI uses `jdx/mise-action`)
 - **Python 3.11+** must be on PATH, because mise's pipx backend needs it

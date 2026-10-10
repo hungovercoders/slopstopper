@@ -35,8 +35,9 @@ Subcommands:
                                     name + one-line description. Useful for
                                     discoverability before running.
   doctor                            Verify install state: which external
-                                    tools are present (node, gh, lizard,
-                                    semgrep, gitleaks, trivy, docker).
+                                    tools are present and run (node, gh,
+                                    semgrep, gitleaks, trivy, docker), and
+                                    which ss-* workflows GitHub disabled.
   profile list | show | expand <n> | detect
                                     Inspect project-shape profiles. Each is a
                                     `profile:` preset that switches off the
@@ -67,6 +68,7 @@ from slopstopper import (
     output,
     profiles,
     templates,
+    workflow_state,
 )
 from slopstopper.checks import REGISTRY
 
@@ -468,12 +470,18 @@ def _add_doctor(sub) -> None:
         help="Verify install + required external tools",
         description=(
             "Check that the external tools each slopstopper check needs are on\n"
-            "PATH: node (Playwright/Lighthouse/server), gh (emit), lizard\n"
-            "(complexity), semgrep (sast), gitleaks (secrets), trivy\n"
-            "(dependencies), docker (dast). Reports each tool's install state.\n\n"
-            "Exit 0 if everything required is installed (a missing tool whose\n"
-            "check is in `workflows.disabled` doesn't count). Exit 1 if a\n"
-            "required-and-enabled tool is missing.\n"
+            "PATH and run (`<tool> --version` exits 0): node (Playwright/\n"
+            "Lighthouse/server), gh (emit), semgrep (sast), gitleaks (secrets),\n"
+            "trivy (dependencies), docker (dast). A tool that resolves but\n"
+            "fails to run (a stale mise shim, say) counts as missing.\n\n"
+            "Then ask GitHub (via gh) which ss-* workflows it has disabled.\n"
+            "GitHub switches off scheduled workflows after 60 days without\n"
+            "repo activity, and a disabled workflow runs on no trigger, PRs\n"
+            "included. Skipped with a note when gh can't reach the repo.\n\n"
+            "Exit 0 if everything required is installed and running (a tool\n"
+            "whose check this repo doesn't carry doesn't count). Exit 1 if a\n"
+            "required-and-enabled tool is missing or broken, or an ss-*\n"
+            "workflow is disabled for inactivity.\n"
         ),
         epilog="Example:\n  slopstopper doctor\n",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -840,16 +848,26 @@ _DOCTOR_TOOLS: list[tuple[str, str | None, str]] = [
 ]
 
 
-def _tool_version(tool: str) -> str:
-    """Best-effort short version string for a tool. Returns '' if unknown."""
+def _probe_tool(tool: str) -> tuple[bool, str]:
+    """Run `<tool> --version`. Returns (runs, first line of output).
+
+    A tool that resolves on PATH but can't run (a stale mise shim, a
+    broken venv) returns False with the first line it printed, so doctor
+    reports it rather than passing a binary every check will trip over.
+    """
     try:
         result = subprocess.run(
-            [tool, "--version"], capture_output=True, text=True, check=False, timeout=5
+            [tool, "--version"], capture_output=True, text=True, check=False, timeout=15
         )
-    except (OSError, subprocess.TimeoutExpired):
-        return ""
-    text = (result.stdout or result.stderr or "").strip().splitlines()
-    return text[0] if text else ""
+    except subprocess.TimeoutExpired:
+        return False, "`--version` timed out"
+    except OSError as exc:
+        return False, str(exc)
+    runs = result.returncode == 0
+    lines = [ln.strip() for ln in (result.stdout or result.stderr or "").splitlines() if ln.strip()]
+    if lines:
+        return runs, lines[0]
+    return runs, "" if runs else f"`--version` exited {result.returncode}"
 
 
 def _disabled_workflows() -> set[str]:
@@ -866,42 +884,87 @@ def _check_is_disabled(check_name: str, disabled: set[str]) -> bool:
     return profiles.check_is_disabled(check_name, disabled)
 
 
-def _dispatch_doctor() -> int:
-    """Verify external tools are installed; exit 1 if a required one is missing."""
-    output.status("🩺", "slopstopper doctor: checking external tools")
-    output.separator()
-
-    disabled = _disabled_workflows()
-    missing_required = 0
-
+def _doctor_tools(disabled: set[str]) -> int:
+    """Report each external tool; return how many required ones are unusable."""
+    unusable = 0
     for tool, needed_by, hint in _DOCTOR_TOOLS:
         path = shutil.which(tool)
         if path:
-            version = _tool_version(tool)
-            extra = f" ({version})" if version else ""
-            output.success(f"{tool:<10} found at {path}{extra}")
-            continue
+            runs, detail = _probe_tool(tool)
+            if runs:
+                extra = f" ({detail})" if detail else ""
+                output.success(f"{tool:<10} found at {path}{extra}")
+                continue
+            problem = f"found at {path} but does not run: {detail}"
+        else:
+            problem = "not installed"
 
-        # Missing.
         if needed_by and _check_is_disabled(needed_by, disabled):
             output.info(
-                f"{tool:<10} not installed, but only {needed_by} needs it and this "
+                f"{tool:<10} {problem}, but only {needed_by} needs it and this "
                 f"repo doesn't carry that check (profile: {profiles.active_name()} / "
                 f"workflows.disabled), so skipping"
             )
             continue
 
-        # Required and not disabled.
         scope = needed_by if needed_by else "the CLI itself"
-        output.error(f"{tool:<10} not installed but needed by {scope}")
+        output.error(f"{tool:<10} {problem}, and {scope} needs it")
+        if path:
+            output._emit("             A mise shim that no longer resolves: run `mise reshim`,")
+            output._emit("             or reinstall the tool. Otherwise:")
         output._emit(f"             {hint}")
-        missing_required += 1
+        unusable += 1
+    return unusable
+
+
+def _doctor_workflows() -> int:
+    """Report ss-* workflows GitHub has disabled; return how many are
+    disabled for inactivity. A manually disabled one is reported but
+    doesn't fail doctor, since someone chose it."""
+    rows = workflow_state.disabled_ss_workflows()
+    if rows is None:
+        output.info(
+            "workflows  skipped: gh is missing, unauthenticated, or this isn't a "
+            "GitHub repo, so GitHub can't be asked which ss-* workflows it disabled"
+        )
+        return 0
+    if not rows:
+        output.success("workflows  every installed ss-* workflow is enabled on GitHub")
+        return 0
+    inactive = 0
+    for row in rows:
+        name = row.get("name") or row.get("path")
+        state = row.get("state")
+        enable = workflow_state.enable_command(row)
+        if state == workflow_state.INACTIVITY:
+            inactive += 1
+            output.error(f"workflows  {name}: {state}. It runs on no trigger. Fix: {enable}")
+        else:
+            output.warn(f"workflows  {name}: {state}. Re-enable with: {enable}")
+    if inactive:
+        output._emit(
+            "             GitHub disables scheduled workflows after 60 days without "
+            "repo activity; re-enable each one above."
+        )
+    return inactive
+
+
+def _dispatch_doctor() -> int:
+    """Verify external tools and workflow state; exit 1 on any blocking problem."""
+    output.status("🩺", "slopstopper doctor: checking external tools and workflows")
+    output.separator()
+
+    unusable = _doctor_tools(_disabled_workflows())
+    inactive = _doctor_workflows()
 
     output.separator()
-    if missing_required == 0:
+    if unusable == 0 and inactive == 0:
         output.success("All required tools available.")
         return 0
-    output.error(f"{missing_required} required tool(s) missing. See the hints above.")
+    if unusable:
+        output.error(f"{unusable} required tool(s) missing or broken. See the hints above.")
+    if inactive:
+        output.error(f"{inactive} ss-* workflow(s) disabled by GitHub for inactivity.")
     return 1
 
 

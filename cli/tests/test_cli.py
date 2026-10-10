@@ -423,9 +423,15 @@ def test_checks_list_empty_category_says_so(isolated_cwd, capsys, monkeypatch):
 # ── doctor subcommand ─────────────────────────────────────────────
 
 
+def _no_github(monkeypatch, rows=None):
+    """Keep doctor off the network: GitHub reports `rows` (None = unreachable)."""
+    monkeypatch.setattr(cli.workflow_state, "disabled_ss_workflows", lambda: rows)
+
+
 def test_doctor_passes_when_all_tools_present(isolated_cwd, capsys, monkeypatch):
     monkeypatch.setattr(cli.shutil, "which", lambda _: "/usr/bin/stub")
-    monkeypatch.setattr(cli, "_tool_version", lambda _: "stub 1.0")
+    monkeypatch.setattr(cli, "_probe_tool", lambda _: (True, "stub 1.0"))
+    _no_github(monkeypatch)
     rc = cli.main(["doctor"])
     assert rc == 0
     out = capsys.readouterr().out
@@ -438,7 +444,8 @@ def test_doctor_passes_when_all_tools_present(isolated_cwd, capsys, monkeypatch)
 def test_doctor_fails_when_required_tool_missing(isolated_cwd, capsys, monkeypatch):
     """Missing trivy with security:vulnerability:all enabled → exit 1."""
     monkeypatch.setattr(cli.shutil, "which", lambda tool: None if tool == "trivy" else "/x")
-    monkeypatch.setattr(cli, "_tool_version", lambda _: "")
+    monkeypatch.setattr(cli, "_probe_tool", lambda _: (True, ""))
+    _no_github(monkeypatch)
     monkeypatch.setattr(cli, "_disabled_workflows", lambda: set())
     rc = cli.main(["doctor"])
     assert rc == 1
@@ -453,7 +460,8 @@ def test_doctor_skips_disabled_check_tools(isolated_cwd, capsys, monkeypatch):
     monkeypatch.setattr(
         cli.shutil, "which", lambda tool: None if tool == "semgrep" else "/x"
     )
-    monkeypatch.setattr(cli, "_tool_version", lambda _: "")
+    monkeypatch.setattr(cli, "_probe_tool", lambda _: (True, ""))
+    _no_github(monkeypatch)
     monkeypatch.setattr(
         cli, "_disabled_workflows", lambda: {"ss-security-sast-check.yml"}
     )
@@ -481,7 +489,8 @@ def test_doctor_skips_tools_for_a_check_the_profile_drops(
         "which",
         lambda tool: None if tool in ("docker", "trivy") else "/x",
     )
-    monkeypatch.setattr(cli, "_tool_version", lambda _: "")
+    monkeypatch.setattr(cli, "_probe_tool", lambda _: (True, ""))
+    _no_github(monkeypatch)
     rc = cli.main(["doctor"])
     assert rc == 0, capsys.readouterr().out
     out = capsys.readouterr().out
@@ -491,12 +500,86 @@ def test_doctor_skips_tools_for_a_check_the_profile_drops(
 def test_doctor_fails_when_node_or_gh_missing(isolated_cwd, capsys, monkeypatch):
     """node and gh are needed by the CLI itself (no disabled-bypass)."""
     monkeypatch.setattr(cli.shutil, "which", lambda tool: None if tool == "node" else "/x")
-    monkeypatch.setattr(cli, "_tool_version", lambda _: "")
+    monkeypatch.setattr(cli, "_probe_tool", lambda _: (True, ""))
+    _no_github(monkeypatch)
     rc = cli.main(["doctor"])
     assert rc == 1
     out = capsys.readouterr().out
     assert "node" in out
     assert "the CLI itself" in out
+
+
+def test_doctor_fails_when_a_tool_resolves_but_does_not_run(isolated_cwd, capsys, monkeypatch):
+    """A stale mise shim is on PATH but can't run: that's broken, not installed."""
+    monkeypatch.setattr(cli.shutil, "which", lambda tool: f"/shims/{tool}")
+    monkeypatch.setattr(
+        cli, "_probe_tool",
+        lambda tool: (False, "mise ERROR osemgrep is not a valid shim") if tool == "semgrep" else (True, ""),
+    )
+    monkeypatch.setattr(cli, "_disabled_workflows", lambda: set())
+    _no_github(monkeypatch)
+    rc = cli.main(["doctor"])
+    assert rc == 1
+    out = capsys.readouterr().out
+    assert "semgrep    found at /shims/semgrep but does not run" in out
+    assert "not a valid shim" in out
+    assert "mise reshim" in out
+    assert "missing or broken" in out
+
+
+def test_probe_tool_reports_a_nonzero_exit_as_not_running(monkeypatch):
+    class Result:
+        returncode = 1
+        stdout = ""
+        stderr = "mise ERROR osemgrep is not a valid shim\nmise ERROR Run with --verbose\n"
+
+    monkeypatch.setattr(cli.subprocess, "run", lambda *a, **k: Result())
+    assert cli._probe_tool("semgrep") == (False, "mise ERROR osemgrep is not a valid shim")
+
+
+def test_probe_tool_returns_the_version_line(monkeypatch):
+    class Result:
+        returncode = 0
+        stdout = "1.90.0\nextra\n"
+        stderr = ""
+
+    monkeypatch.setattr(cli.subprocess, "run", lambda *a, **k: Result())
+    assert cli._probe_tool("semgrep") == (True, "1.90.0")
+
+
+def test_doctor_fails_when_an_ss_workflow_is_disabled_for_inactivity(isolated_cwd, capsys, monkeypatch):
+    monkeypatch.setattr(cli.shutil, "which", lambda _: "/x")
+    monkeypatch.setattr(cli, "_probe_tool", lambda _: (True, ""))
+    _no_github(monkeypatch, [{
+        "id": 292375157, "name": "SlopStopper · Reliability Smoke Tests",
+        "path": ".github/workflows/ss-reliability-smoke-tests.yml",
+        "state": "disabled_inactivity",
+    }])
+    rc = cli.main(["doctor"])
+    assert rc == 1
+    out = capsys.readouterr().out
+    assert "Reliability Smoke Tests: disabled_inactivity" in out
+    assert "gh workflow enable 292375157" in out
+    assert "60 days" in out
+
+
+def test_doctor_warns_but_passes_on_a_manually_disabled_workflow(isolated_cwd, capsys, monkeypatch):
+    monkeypatch.setattr(cli.shutil, "which", lambda _: "/x")
+    monkeypatch.setattr(cli, "_probe_tool", lambda _: (True, ""))
+    _no_github(monkeypatch, [{
+        "id": 1, "name": "SlopStopper · DAST Analysis",
+        "path": ".github/workflows/ss-security-dast-check.yml", "state": "disabled_manually",
+    }])
+    assert cli.main(["doctor"]) == 0
+    assert "gh workflow enable 1" in capsys.readouterr().out
+
+
+def test_doctor_skips_the_workflow_check_when_github_is_unreachable(isolated_cwd, capsys, monkeypatch):
+    monkeypatch.setattr(cli.shutil, "which", lambda _: "/x")
+    monkeypatch.setattr(cli, "_probe_tool", lambda _: (True, ""))
+    _no_github(monkeypatch, None)
+    assert cli.main(["doctor"]) == 0
+    assert "GitHub can't be asked" in capsys.readouterr().out
 
 
 # ── --quiet global flag ───────────────────────────────────────────
