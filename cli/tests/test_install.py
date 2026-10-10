@@ -17,6 +17,7 @@ deterministically, without performing the real mise install.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -1034,3 +1035,76 @@ def test_gitignore_block_covers_the_playwright_run_dir(tmp_path):
     target = _make_minimal_target(tmp_path)
     assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
     assert ".ss/.run/" in (target / ".gitignore").read_text().splitlines()
+
+
+# ── package.json seed, .gitignore block refresh, deploy copy ─────
+
+
+def test_a_repo_without_package_json_gets_a_minimal_one_of_its_own(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
+    raw = (target / "package.json").read_text()
+    pkg = json.loads(raw)
+    assert pkg["name"] == "adopter"
+    assert pkg["private"] is True
+    assert "@playwright/test" in pkg["devDependencies"]
+    assert "scripts" not in pkg
+    assert "slopstopper" not in raw.lower() and "cloudflare" not in raw.lower()
+
+
+def test_gitignore_block_ignores_node_modules(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
+    assert "node_modules/" in (target / ".gitignore").read_text().splitlines()
+
+
+OLD_GITIGNORE_BLOCK = (
+    "# slopstopper begin\n"
+    "**/.ss/reports/\n"
+    "playwright-report/\n"
+    "test-results/\n"
+    ".lighthouseci/\n"
+    "# slopstopper end\n"
+)
+
+
+def test_refresh_replaces_an_old_gitignore_block_and_keeps_adopter_lines(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    (target / ".gitignore").write_text("dist/\n.env\n\n" + OLD_GITIGNORE_BLOCK + "\n# mine\ncoverage/\n")
+    result = _run_install(target, args=["--no-hooks", "--no-skills"])
+    assert result.returncode == 0, result.stderr
+    assert "slopstopper block updated" in result.stdout
+    text = (target / ".gitignore").read_text()
+    template = (REPO_ROOT / "templates" / "gitignore.block").read_text()
+    assert text == "dist/\n.env\n\n" + template + "\n# mine\ncoverage/\n"
+    assert text.count("# slopstopper begin") == 1
+
+
+def test_a_current_gitignore_block_is_left_byte_identical(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
+    before = (target / ".gitignore").read_text()
+    result = _run_install(target, args=["--no-hooks", "--no-skills"])
+    assert "slopstopper block already current" in result.stdout
+    assert (target / ".gitignore").read_text() == before
+
+
+def test_a_gitignore_block_without_an_end_marker_is_left_alone(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    hand_edited = "# slopstopper begin\n.lighthouseci/\nsecrets.txt\n"
+    (target / ".gitignore").write_text(hand_edited)
+    result = _run_install(target, args=["--no-hooks", "--no-skills"])
+    assert result.returncode == 0, result.stderr
+    assert "has no '# slopstopper end'" in result.stdout
+    assert (target / ".gitignore").read_text() == hand_edited
+
+
+def test_deploy_summary_names_cloudflare_only_when_configured(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    plain = _run_install(target, args=["--no-hooks", "--no-skills"])
+    assert "Cloudflare" not in plain.stdout
+    assert "urls.production" in plain.stdout
+
+    (target / "wrangler.toml").write_text('name = "site"\n')
+    with_cf = _run_install(target, args=["--no-hooks", "--no-skills"])
+    assert "Cloudflare config detected" in with_cf.stdout

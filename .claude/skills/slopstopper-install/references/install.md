@@ -53,13 +53,13 @@ Three categories of write, in order of "how much trust to extend on re-run":
 - `.slopstopper.yml` (config; a first install seeds a short starter from `templates/slopstopper.yml.starter` with `profile`, URLs, page lists, og-image path, `headers.source` and `workflows`, and it links the full schema reference for every other key. Once it exists `install.sh` never touches it, **except** to strip a legacy `cli_version` pin line (value migrated into `mise.toml` once) and a dead `node_version` key (just removed, since node lives in `mise.toml`)). The CLI + node pins now live in `mise.toml`, which the installer writes on first install and rewrites only when you pass `--upgrade-cli` / `--cli-version`
 - `.github/labeler.yml`, `.zap/rules.tsv`, `.markdownlint.json`
 - Root `Taskfile.yml`, only if absent; otherwise install.sh prints the `includes:` block to paste in
-- `package.json`, only if absent (otherwise see below)
+- `package.json`, only if absent (otherwise see below): a minimal manifest named after the repo, `private: true`, slopstopper's devDependencies and **no** `build` script. The browser-check workflows skip the build when there is none and serve the repo as-is, so add `scripts.build` if the site needs building first
 - AGENTS.md-first entry files (`README.md`, `AGENTS.md`, `CLAUDE.md`, `docs/README.md`), seeded from `cli/slopstopper/data/templates/entry-files/` when absent and never overwritten. If they exist but break a rule (budget, soft route, `CLAUDE.md` not the pure include, no route to the map), the `ss:hygiene:entry-files` check fails with a paste-ready fix in its report, which you apply manually rather than re-seeding. A pre-0.15 `docs/index.md` is never touched; the installer warns and the check's report carries the rename
 
 **Conservatively additive on shared files (adopter content preserved):**
 
 - `package.json` devDeps merge: adds missing keys; existing keys are kept on version conflict (warning printed, not error).
-- `.gitignore`: appends a `# slopstopper begin` / `# slopstopper end` marker-bracketed block exactly once. Re-runs detect the marker and skip; adopter's existing lines are never edited.
+- `.gitignore`: the `# slopstopper begin` / `# slopstopper end` block is slopstopper-owned. The first install appends it, and every re-run replaces what's between the markers with the current template, so new ignore lines (`.ss/.run/`, `node_modules/`) reach existing installs. Lines outside the markers are never edited. A begin marker with no end marker is left alone with a warning.
 - `public/_headers` (only if `public/` exists): appends a commented-out security-headers baseline inside `# slopstopper security headers begin/end` markers. Same idempotent skip on re-run.
 - `core.hooksPath` (git config, not a file): set to `.githooks` **only** when the adopter has no custom `core.hooksPath` and no other hook manager (`.husky/`, `lefthook.yml`/`.yaml`, `.pre-commit-config.yaml`). If they already manage hooks, the installer drops `.githooks/pre-push` in but leaves their config alone and prints a one-line opt-in. `--no-hooks` / `SLOPSTOPPER_NO_HOOKS=1` skips the whole step.
 
