@@ -27,6 +27,13 @@ Configuration (.slopstopper.yml, all optional):
     hygiene:
       complexity:
         max_ccn: 15   # CCN ceiling; a function above this fails the check
+        exclude: []   # extra path globs to skip, on top of DEFAULT_EXCLUDES
+
+Whatever .gitignore ignores is skipped (`git ls-files --ignored`), so
+build output such as `dist/` never counts and a local run sees what CI
+sees. Test files are skipped by the common naming conventions in
+DEFAULT_EXCLUDES (`*_test.go`, `*.spec.ts`, `tests/` …): the gate is for
+production code.
 
 Exit codes:
   0: analysis completed, no function over `max_ccn`
@@ -65,14 +72,22 @@ META = {
     "issue_followup": "🔔 Code complexity issues detected again in commit",
 }
 
-# Exclude tests, generated files, vendored deps from the scan. Same list
-# as Taskfile.ss.yml's hygiene:complexity:analyze.
-LIZARD_EXCLUDES = (
-    "tests/*",
-    ".ss/tests/*",
-    ".github/*",
-    "node_modules/*",
-    ".git/*",
+# Test files by the common conventions, plus tooling and vendored trees.
+# Matched with fnmatch against repo-relative paths, where `*` also
+# crosses `/`, so `*_test.go` catches every Go test file at any depth.
+DEFAULT_EXCLUDES = (
+    "tests/*", "*/tests/*",
+    "test/*", "*/test/*",
+    "__tests__/*", "*/__tests__/*",
+    "spec/*", "*/spec/*",
+    "*_test.go",
+    "test_*.py", "*/test_*.py", "*_test.py",
+    "*.test.*", "*.spec.*",
+    "*_spec.rb",
+    "*Test.java", "*Tests.java", "*Test.kt", "*Tests.cs",
+    ".ss/*", ".github/*",
+    "node_modules/*", "*/node_modules/*",
+    "vendor/*",
 )
 
 DEFAULT_MAX_CCN = 15
@@ -100,14 +115,42 @@ def _lizard_available() -> bool:
         return False
 
 
-def _run_lizard(target_dir: str = ".") -> str:
-    """Invoke `python -m lizard <target> --csv ...` and return stdout."""
-    cmd = [sys.executable, "-m", "lizard", target_dir]
-    for ex in LIZARD_EXCLUDES:
-        cmd += ["-x", ex]
-    cmd += ["--csv"]
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-    return result.stdout
+def _excludes() -> tuple[str, ...]:
+    extra = config.get("hygiene.complexity.exclude", []) or []
+    if not isinstance(extra, list):
+        extra = [extra]
+    return DEFAULT_EXCLUDES + tuple(str(p).strip() for p in extra if str(p).strip())
+
+
+def _gitignored() -> list[str]:
+    """Paths .gitignore ignores, directories collapsed (`dist/`). Empty outside git."""
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "--others", "--ignored", "--exclude-standard", "--directory"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return []
+    return [line for line in result.stdout.splitlines() if line] if result.returncode == 0 else []
+
+
+def _lizard_patterns(excludes: tuple[str, ...], ignored: list[str]) -> list[str]:
+    """lizard -x patterns. lizard matches against `./<path>`, so a pattern that
+    doesn't start with `*` is anchored at the root."""
+    patterns = [p if p.startswith("*") else f"./{p}" for p in excludes]
+    patterns += [f"./{p}*" if p.endswith("/") else f"./{p}" for p in ignored]
+    return patterns
+
+
+def _run_lizard() -> str:
+    """Invoke `python -m lizard . -x ... --csv` and return stdout."""
+    cmd = [sys.executable, "-m", "lizard", "."]
+    for pattern in _lizard_patterns(_excludes(), _gitignored()):
+        cmd += ["-x", pattern]
+    cmd.append("--csv")
+    return subprocess.run(cmd, capture_output=True, text=True, check=False).stdout
 
 
 def _parse_csv_rows(csv_text: str) -> list[tuple]:

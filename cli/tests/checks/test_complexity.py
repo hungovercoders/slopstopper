@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import csv
+import io
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -219,3 +222,44 @@ def test_run_config_loosens_threshold(monkeypatch, write_config, capsys):
     rc = complexity.run()
     assert rc == 0
     assert "all CCN ≤ 20" in capsys.readouterr().out
+
+
+# ── scope: what lizard actually scans (real lizard, temp git repo) ──
+
+
+def _scanned_files(csv_text: str) -> set[str]:
+    return {Path(row[6].strip('"')).as_posix().removeprefix("./") for row in csv.reader(io.StringIO(csv_text)) if len(row) > 6}
+
+
+@pytest.fixture
+def scope_repo(isolated_cwd):
+    if not complexity._lizard_available():
+        pytest.skip("lizard not installed")
+    subprocess.run(["git", "init", "-q"], check=True)
+    files = {
+        "main.go": "package main\n\nfunc Add(a, b int) int {\n\tif a > b {\n\t\treturn a\n\t}\n\treturn a + b\n}\n",
+        "main_test.go": "package main\n\nfunc TestAdd(t *T) {\n\tif Add(1, 2) != 3 {\n\t\tt.Fail()\n\t}\n}\n",
+        "src/site.js": "function go(x) {\n  if (x) { return 1; }\n  return 2;\n}\n",
+        "dist/site.js": "function go(x) {\n  if (x) { return 1; }\n  return 2;\n}\n",
+        "src/legacy/old.js": "function old(x) {\n  if (x) { return 1; }\n  return 2;\n}\n",
+        ".gitignore": "dist/\n",
+    }
+    for name, body in files.items():
+        Path(name).parent.mkdir(parents=True, exist_ok=True)
+        Path(name).write_text(body)
+    return isolated_cwd
+
+
+def test_scan_skips_go_test_files_and_gitignored_output(scope_repo):
+    scanned = _scanned_files(complexity._run_lizard())
+    assert {"main.go", "src/site.js"} <= scanned
+    assert "main_test.go" not in scanned
+    assert "dist/site.js" not in scanned
+
+
+def test_config_exclude_adds_to_the_defaults(scope_repo, write_config):
+    write_config("hygiene:\n  complexity:\n    exclude: ['src/legacy/*']\n")
+    scanned = _scanned_files(complexity._run_lizard())
+    assert "src/legacy/old.js" not in scanned
+    assert "main_test.go" not in scanned
+    assert "src/site.js" in scanned

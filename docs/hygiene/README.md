@@ -23,6 +23,8 @@ hygiene:
     max_ccn: 10   # McCabe's classic "review" bound
 ```
 
+The gate measures production code. Test files by the common conventions (`tests/`, `test/`, `__tests__/`, `spec/`, `*_test.go`, `test_*.py`, `*.test.*`, `*.spec.*`, `*_spec.rb`, `*Test.java` …) and everything `.gitignore` ignores (build output such as `dist/`) are skipped, so a local run after a build sees what CI sees. Committed generated or vendored code goes in `hygiene.complexity.exclude` (globs, added to the built-in set).
+
 When a function trips the ceiling and is genuinely well-factored (e.g. a flat dispatch or validation table), prefer raising `max_ccn` with a note over contorting the code, but treat that as a deliberate, documented decision rather than a way to silence noise.
 
 ### Documentation Size Monitoring
