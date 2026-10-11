@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import argparse
+
 import pytest
 
 from slopstopper import cli
@@ -678,3 +680,51 @@ def test_badges_surfaces_generate_value_error(monkeypatch, capsys):
     rc = cli.main(["badges"])
     assert rc == 2
     assert "Could not detect owner/repo" in capsys.readouterr().err
+
+
+# ── every subcommand parses ─────────────────────────────────────
+#
+# The parser is the source of the list, so a new subcommand is covered the
+# moment it is added: `--help` at every level must exit 0 with a usage
+# line, and every top-level command must have a dispatcher, or `main()`
+# would parse it and then fall through to "unknown command".
+
+
+def _command_paths(parser, prefix=()):
+    """Every subcommand path the parser accepts, depth first."""
+    paths = []
+    for action in parser._actions:
+        if not isinstance(action, argparse._SubParsersAction):
+            continue
+        for name, sub in action.choices.items():
+            path = (*prefix, name)
+            paths.append(path)
+            paths.extend(_command_paths(sub, path))
+    return paths
+
+
+COMMAND_PATHS = _command_paths(cli._build_parser())
+
+
+def test_the_parser_walk_finds_the_nested_commands():
+    assert ("run",) in COMMAND_PATHS
+    assert ("templates", "eject") in COMMAND_PATHS
+    assert ("profile", "detect") in COMMAND_PATHS
+    assert ("cloudflare", "preview-url") in COMMAND_PATHS
+
+
+@pytest.mark.parametrize("path", COMMAND_PATHS, ids=" ".join)
+def test_every_subcommand_help_exits_zero(path, capsys):
+    with pytest.raises(SystemExit) as exc:
+        cli.main([*path, "--help"])
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert out.startswith("usage: slopstopper " + " ".join(path)), out.splitlines()[0]
+
+
+def test_every_top_level_command_has_a_dispatcher():
+    top = {path[0] for path in COMMAND_PATHS}
+    assert top == set(cli._DISPATCHERS), (
+        f"commands without a dispatcher: {sorted(top - set(cli._DISPATCHERS))}; "
+        f"dispatchers without a command: {sorted(set(cli._DISPATCHERS) - top)}"
+    )
