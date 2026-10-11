@@ -135,3 +135,4 @@ Every third-party action in the hand-written workflows is pinned to a commit as 
 | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | changing anything that ships to adopters (a check, workflow, skill, config key, template, page) | Read [CHANGE_MAP.md](CHANGE_MAP.md) before you start. It lists every surface each kind of change must touch |
 | about to add a workflow, task, report path or external resource            | Read [PITFALLS.md](PITFALLS.md) first for workflow naming, the task namespace, CSP and brand contrast |
+| re-recording the README demos, or adding a tape for a new command          | Read [DEMOS.md](DEMOS.md) for the tapes, the render pipeline and what each recording needs |

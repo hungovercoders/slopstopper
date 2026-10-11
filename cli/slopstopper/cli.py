@@ -850,13 +850,14 @@ def _dispatch_checks_list(category: str | None, as_json: bool) -> int:
 
     width = max(len(e["name"]) for e in entries)
     for e in entries:
-        marker = " ⏸" if e["disabled"] else "  "
+        # The emoji is two columns wide, so the bare marker is three spaces.
+        marker = " 💤" if e["disabled"] else "   "
         print(f" {marker} {e['name']:<{width}}  {e['summary']}")
 
     if any(e["disabled"] for e in entries):
         print("")
         print(
-            f"  ⏸ = no workflow in this repo (profile: {profiles.active_name()} "
+            f"  💤 = no workflow in this repo (profile: {profiles.active_name()} "
             "/ workflows.disabled). It still runs locally via `slopstopper run`."
         )
     return 0

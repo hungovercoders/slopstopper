@@ -57,6 +57,11 @@ tasks:
     cmds:
       - node scripts/render-static-assets.js
 
+  contributing:demos:
+    desc: Re-record the README demo GIFs and stills from demos/*.tape (needs vhs, ttyd 1.7.7+, ffmpeg); `-- hero` for one
+    cmds:
+      - demos/render.sh {{.CLI_ARGS}}
+
   contributing:lint:
     desc: markdownlint over docs/ and CONTRIBUTING.md (advisory, not a CI gate)
     cmds:

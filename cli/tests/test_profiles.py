@@ -321,7 +321,7 @@ def test_checks_list_marks_checks_the_profile_drops(write_config, capsys):
     write_config("profile: api\n")
     assert cli.main(["checks", "list", "--category", "reliability"]) == 0
     out = capsys.readouterr().out
-    assert "⏸" in out
+    assert "💤" in out
     assert "profile: api" in out
 
 

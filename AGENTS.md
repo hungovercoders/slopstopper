@@ -60,6 +60,7 @@ Taskfile.ss.yml      the `task ss:*` shims  ·  Taskfile.yml includes them under
 install.sh           adopter installer (seeds templates, pins the CLI via mise)
 .claude/skills/      slopstopper-install + slopstopper-triage, shipped to adopters
 app/  worker/        the site and the Cloudflare Worker that serves it (headers.json = CSP)
+demos/               VHS tapes and the GIFs/PNGs they render (task contributing:demos)
 .slopstopper.yml     this repo's config; .slopstopper.yml.example is the schema
 ```
 
