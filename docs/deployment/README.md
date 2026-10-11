@@ -47,7 +47,10 @@ runs locally before commits, and the PNG outputs are checked in.
   URL-driven check the repo hasn't disabled (`slopstopper profile
   disabled`) on the deployed branch with the deployed URL:
   `urls.production` for `main`, otherwise the preview URL from the
-  commit's row in Cloudflare's PR comment. Results land on the commit,
+  commit's row in Cloudflare's PR comment. A deploy whose branch has
+  already moved on to a newer commit is skipped, since a dispatch runs on
+  the branch head and its results would land on the wrong commit; the
+  newer commit's deploy runs the checks. Results land on the commit,
   so they show on the PR; a run on `main` opens or closes each check's
   own issue. DAST runs against production only, because a preview
   answers missing paths with a bare "Not found" without the site's
