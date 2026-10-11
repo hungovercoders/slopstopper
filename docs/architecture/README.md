@@ -23,41 +23,24 @@ Notation: C4 (Context + Container).
 
 ## Project Layout
 
+`AGENTS.md` carries the top-level layout. What it leaves out:
+
 ```
-slopstopper/
-├── .github/actions/          # Composite steps every ss-* workflow shares (ss-setup, ss-resolve-url)
-├── .github/workflows/        # All SlopStopper workflows are `ss-*.yml`
-│                             #   (`uses: ./.github/actions/ss-setup`, then `task ss:…` / `slopstopper run …`)
-├── .ss/                      # SlopStopper-owned (adopter side)
-│   ├── reports/              # CLI writes here (.gitignored)
-│   ├── .workflows-installed  # Manifest of installed workflows (commit this)
-│   └── .installed-from       # slopstopper commit the install came from (commit this)
-├── cli/                      # slopstopper-cli, the Python package (PyPI); pinned via mise
-│   ├── slopstopper/cli.py    # argparse dispatcher + bare-invocation banner
-│   ├── slopstopper/output.py # Shared formatters + `--quiet` toggle
-│   ├── slopstopper/checks/   # One module per check (security/hygiene/reliability)
-│   ├── slopstopper/data/     # Bundled Playwright specs, lighthouserc dev/prod, server.js
-│   ├── slopstopper/templates.py / emit.py / discovery.py / config.py
-│   ├── tests/                # pytest suite (`task -t cli/Taskfile.yml test`)
-│   └── pyproject.toml        # Beta. Standalone: `pipx install slopstopper-cli`; suite: pinned in mise.toml
-├── app/                      # Static site, bound as the [assets] dir on the Worker
-│   ├── index.html            # Hero + Get Started (CLI quick-try + mise suite install) + capability grid
-│   ├── features.html         # 5 category cards with workflow excerpts + mock reports
-│   ├── tools.html            # Tool cards (incl. slopstopper-cli itself)
-│   ├── feedback.html         # Giscus comments embed (per-path CSP exception)
-│   ├── shared.css / copy.js / manifest.webmanifest / robots.txt / sitemap.xml
-├── docs/                     # Topic docs, routed from AGENTS.md and docs/README.md (the map)
-├── install.sh                # Adopter installer (pins CLI via mise + seeds workflows)
-├── wrangler.jsonc            # Cloudflare Worker + [assets] binding
-├── worker/                   # Cloudflare Worker that applies headers to every response
-│   ├── index.ts              # fetch handler: env.ASSETS.fetch + per-path headers
-│   └── headers.json          # Canonical header map (CSP, COOP/COEP, X-Frame-Options …)
-├── mise.toml                 # Toolchain pins for `"pipx:slopstopper-cli"` + `task` + `node` (read locally + by jdx/mise-action)
-├── Taskfile.yml              # Thin root with `includes: { ss: ./Taskfile.ss.yml }`
-├── Taskfile.ss.yml           # `task ss:*` shims that call `slopstopper run …`
-├── README.md                 # Consumer-facing entry point
-├── AGENTS.md                 # The working layer: what most tasks need, within ~2k tokens (CLAUDE.md is @AGENTS.md)
-└── CONTRIBUTING.md → docs/contributing/README.md
+.github/actions/          # Composite steps every ss-* workflow shares (ss-setup, ss-resolve-url)
+.ss/                      # SlopStopper-owned, adopter side
+├── reports/              # The CLI writes here (.gitignored)
+├── .workflows-installed  # Manifest of installed workflows (commit this)
+└── .installed-from       # slopstopper commit the install came from (commit this)
+cli/slopstopper/
+├── cli.py                # argparse dispatcher + bare-invocation banner
+├── output.py             # Shared formatters + `--quiet` toggle
+├── checks/               # One module per check; `_` modules are shared helpers
+├── data/                 # Bundled Playwright specs, lighthouserc dev/prod, server.js, profiles.json
+└── templates.py / emit.py / discovery.py / config.py / profiles.py
+app/                      # index, features, tools, feedback (Giscus, per-path CSP exception); shared.css, copy.js
+worker/                   # index.ts (fetch handler) + headers.json (the canonical header map)
+mise.toml                 # Pins `"pipx:slopstopper-cli"`, `task` and `node`; read locally and by jdx/mise-action
+Taskfile.yml              # Thin root, `includes: { ss: ./Taskfile.ss.yml }`
 ```
 
 ## C4 – Level 1 (System Context)

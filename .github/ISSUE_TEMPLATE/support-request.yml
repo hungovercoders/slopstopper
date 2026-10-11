@@ -7,7 +7,7 @@ body:
       value: |
         ## Before you open this issue
 
-        Please work through the [Support Guide](../../docs/support/SUPPORT.md) first:
+        Please work through the [Support Guide](../../docs/support/README.md) first:
 
         1. **Ask AI / Copilot.** Most questions can be answered immediately without an issue.
         2. **If it's cross-repo or cross-team,** use a [Discussion](../../discussions/new) instead.
