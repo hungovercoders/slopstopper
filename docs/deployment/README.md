@@ -52,7 +52,10 @@ runs locally before commits, and the PNG outputs are checked in.
   own issue. DAST runs against production only, because a preview
   answers missing paths with a bare "Not found" without the site's
   headers. `install.sh` ships it to any repo with wrangler config or a
-  `worker/` directory.
+  `worker/` directory. The per-check issues it can open gate on
+  `github.ref == 'refs/heads/main'`, so a provider whose
+  `deployment_status` carries a SHA rather than a branch ref, or a repo
+  whose default branch isn't `main`, gets the checks but not the issues.
 - **Live-health README badge.** The existing
   [`ss-reliability-smoke-tests.yml`](../../.github/workflows/ss-reliability-smoke-tests.yml)
   workflow runs hourly and after every deploy, and its GitHub Actions

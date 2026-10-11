@@ -109,7 +109,7 @@ task ss:hygiene:csp-exceptions
 ```
 
 The workflow `ss-hygiene-csp-exceptions-check.yml` runs on PRs/pushes touching
-`worker/headers.json` or `docs/security/CSP_EXCEPTIONS.md`.
+anything: the source is whatever `headers.source` names, and under `format: meta` the workflow builds the site first and reads every page's `<meta>` CSP.
 
 ### OpenAPI Drift
 
@@ -165,7 +165,7 @@ task ss:hygiene:openapi -- https://api.example.com
 
 Report: `.ss/reports/openapi/openapi-report.{md,json}`. Workflow:
 `ss-hygiene-openapi-check.yml`, resolving `urls.preview` on pull requests and
-`urls.production` on main, schedules and deployment events like the API
+`urls.production` on main, schedules, deployments and the Cloudflare dispatch like the API
 workflows. With no URL the committed-vs-served comparison still runs (it needs
 only `served_spec`); just the probes are skipped.
 

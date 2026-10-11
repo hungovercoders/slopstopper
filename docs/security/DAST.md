@@ -16,7 +16,7 @@ task ss:security:dast -- http://localhost:8080
 - ✅ PR comments with DAST findings report
 - ✅ Merge blocking if any High or Medium alerts exist
 - ✅ Scheduled and post-deploy scans of the live site, with a tracking issue for blocking alerts
-- ✅ Documented CSP exceptions surfaced separately and **not** blocking (see below)
+- ✅ Accepted findings (documented CSP exceptions and `rules.tsv` entries) surfaced separately and **not** blocking (see below)
 
 ### Common Issues
 
@@ -55,7 +55,8 @@ The companion check `ss:hygiene:csp-exceptions` (workflow `ss-hygiene-csp-except
 | `.github/workflows/ss-security-dast-check.yml` | GitHub Actions workflow |
 | `Taskfile.ss.yml` (`dast` task) | Local task runner shim → `slopstopper run security:dast` |
 | `cli/slopstopper/checks/dast.py` | Check implementation (subprocess-invokes Docker + OWASP ZAP, renders MD report) |
-| `cli/slopstopper/dast_gate.py` | Pass/fail gate that filters documented CSP exceptions from the blocker count |
+| `cli/slopstopper/dast_gate.py` | Pass/fail gate that filters `rules.tsv` IGNOREs and documented CSP exceptions from the blocker count, naming the entry behind each |
+| `.zap/rules.tsv` | Per-alert (`10055-13`) or per-plugin (`10055`) IGNOREs, each with a `# why` |
 | `docs/security/CSP_EXCEPTIONS.md` | Single source of truth for per-path CSP relaxations (optional, as the gate handles absence) |
 | `.gitignore` | Excludes `.ss/reports/dast/` |
 
@@ -69,7 +70,7 @@ In `Taskfile.yml`, the `dast` task accepts the target URL as an argument:
 task ss:security:dast -- http://your-site-url
 ```
 
-In CI, pull requests and pushes to `main` scan a local build on `http://localhost:8080` (fast, no secrets). The deployed site is scanned after each successful `deployment_status`, daily against `urls.production` (skipped with a notice when unset), and on a manual run given a `url` input. Scan the deployed site when headers come from the edge (`_headers`, a CDN, a proxy), since a local build doesn't carry them. Every non-PR run opens or closes the DAST tracking issue.
+In CI, pull requests and pushes to `main` scan a local build on `http://localhost:8080`. The deployed site is scanned after each successful `deployment_status`, daily against `urls.production` (skipped with a notice when unset), on a manual run given a `url` input, and on a Cloudflare repo after each Workers Builds deploy of `main` (`ss-cloudflare-deployed.yml` dispatches it for production only; see [Deployment](../deployment/README.md)). Scan the deployed site when headers come from the edge (`_headers`, a CDN, a proxy), since a local build doesn't carry them. Every non-PR run on `main` opens or closes the DAST tracking issue.
 
 ### Change the Blocking Threshold
 

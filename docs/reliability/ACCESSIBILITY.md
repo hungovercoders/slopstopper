@@ -65,9 +65,9 @@ The default threshold (`serious`) means the workflow fails when any `critical` o
 |---|---|
 | `pull_request` → `main` | Local build (`localhost:8080`) |
 | `push` → `main` | Local build (`localhost:8080`) |
-| `deployment_status` (success) | Deployment URL from Cloudflare Workers Builds |
+| `deployment_status` (success) | The deployment's `environment_url` (else `target_url`); never a GitHub Actions log link |
 | `schedule` (daily 06:00 UTC) | Production URL (`https://slopstopper.dev`) |
-| `workflow_dispatch` | Configurable via inputs |
+| `workflow_dispatch` | The `url` input, or the local build when blank. `ss-cloudflare-deployed.yml` dispatches each Workers Builds deploy this way |
 
 ### Manual Trigger
 

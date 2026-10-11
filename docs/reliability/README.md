@@ -19,7 +19,7 @@ SlopStopper's reliability checks, wired against any reachable URL: portable smok
 
 ## Configuration (env vars)
 
-Every reliability check takes its base URL as a positional argument (`task ss:reliability:<check> -- https://host/`, sub-path and all) or from `<CHECK>_TEST_URL`; the browser checks fall back to `SMOKE_TEST_URL`, then `BASE_URL`, then `http://localhost:8080`. Each check's own variables (pages, thresholds, paths) are in its section below or its doc: [ACCESSIBILITY.md](ACCESSIBILITY.md), [E2E.md](E2E.md), [CWV.md](CWV.md), [SEO.md](SEO.md), [LLMS_TXT.md](LLMS_TXT.md), [ROBOTS_TXT.md](ROBOTS_TXT.md), [SITEMAP.md](SITEMAP.md). `.slopstopper.yml` (`pages.*`, `api.*`, `reliability.*`) is the committed form of the same settings.
+Every reliability check takes its base URL as a positional argument (`task ss:reliability:<check> -- https://host/`; a sub-path such as `https://user.github.io/proj/` is kept, and every page path is resolved under it) or from `<CHECK>_TEST_URL`; the browser checks fall back to `SMOKE_TEST_URL`, then `BASE_URL`, then `http://localhost:8080`. Each check's own variables (pages, thresholds, paths) are in its section below or its doc: [ACCESSIBILITY.md](ACCESSIBILITY.md), [E2E.md](E2E.md), [CWV.md](CWV.md), [SEO.md](SEO.md), [LLMS_TXT.md](LLMS_TXT.md), [ROBOTS_TXT.md](ROBOTS_TXT.md), [SITEMAP.md](SITEMAP.md). `.slopstopper.yml` (`pages.*`, `api.*`, `reliability.*`) is the committed form of the same settings.
 
 ## API Health Check
 
@@ -75,7 +75,7 @@ Report: `.ss/reports/api-health/api-health-report.{md,json}`.
 
 ### Running in CI
 
-`ss-reliability-api-health-check.yml` audits `urls.preview` on pull requests and `urls.production` on pushes to main, schedules and Cloudflare deployment events. Unlike the browser checks it **never builds and serves the repo locally**, because an API isn't a static bundle `slopstopper serve` can host, and guessing a start command would be worse than not guessing. With neither URL configured the PR run emits a notice and skips; the deployed-main and scheduled runs still cover the endpoint.
+`ss-reliability-api-health-check.yml` audits `urls.preview` on pull requests and `urls.production` on pushes to main, schedules, `deployment_status` events and the Cloudflare post-deploy dispatch. Unlike the browser checks it **never builds and serves the repo locally**, because an API isn't a static bundle `slopstopper serve` can host, and guessing a start command would be worse than not guessing. With neither URL configured the PR run emits a notice and skips; the deployed-main and scheduled runs still cover the endpoint.
 
 The check ships under the `api` [project-shape profile](../architecture/PROFILES.md), and under `ui` once the repo shows an API (a spec, a server framework or an API check configured under `api.*`). It stays inert until configured.
 
@@ -134,7 +134,7 @@ Report: `.ss/reports/api-latency/api-latency-report.{md,json}`.
 
 ### Running in CI
 
-`ss-reliability-api-latency-check.yml` resolves its URL exactly as the API health workflow does (`urls.preview` on pull requests, `urls.production` on main, schedules and deployment events) and never builds or serves the repo locally.
+`ss-reliability-api-latency-check.yml` resolves its URL exactly as the API health workflow does (`urls.preview` on pull requests, `urls.production` on main, schedules, `deployment_status` events and the Cloudflare post-deploy dispatch) and never builds or serves the repo locally.
 
 One caveat specific to this check: **timings from a preview environment are not timings from production.** A cold-started preview deploy is slower and noisier. Either set budgets loose enough for it, or leave them unset on PRs and rely on the scheduled production run.
 
@@ -196,7 +196,7 @@ SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke
 
 ### Running in CI
 
-The canonical shape is the ready-to-run workflow the installer copies to [`.github/workflows/ss-reliability-smoke-tests.yml`](../../.github/workflows/ss-reliability-smoke-tests.yml). It runs on PRs, pushes to `main`, an hourly schedule, Cloudflare deployment events, and `workflow_dispatch`; on failure it opens (or updates) a tracking issue, and on recovery it closes it. The job calls:
+The canonical shape is the ready-to-run workflow the installer copies to [`.github/workflows/ss-reliability-smoke-tests.yml`](../../.github/workflows/ss-reliability-smoke-tests.yml). It runs on PRs, pushes to `main`, an hourly schedule, `deployment_status` events, and `workflow_dispatch` (which is how `ss-cloudflare-deployed.yml` runs it after a Workers Builds deploy); on failure it opens (or updates) a tracking issue, and on recovery it closes it. The job calls:
 
 ```yaml
 - name: Run smoke tests

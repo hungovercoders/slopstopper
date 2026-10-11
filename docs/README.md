@@ -19,7 +19,7 @@ when, and each category README routes onward to its own detail.
 | fixing a reliability check (smoke, accessibility, CWV, SEO, links, llms.txt, robots, sitemap, API health/latency) | Read [reliability/README.md](reliability/README.md) for the env-var contract and the routes to each audit |
 | cutting a release, moving the CLI pin, or installing the Claude Code skills    | Read [runbooks/README.md](runbooks/README.md) for the operational procedures                 |
 | editing the site under `app/`: brand tokens, pages, nav, content rules         | Read [app/README.md](app/README.md) first                                                  |
-| touching the Cloudflare Worker, `wrangler.jsonc`, or asking how deploys happen | Read [deployment/README.md](deployment/README.md) first                                    |
+| touching the Cloudflare Worker, `wrangler.jsonc`, asking how deploys happen, or why checks did or didn't run after a deploy | Read [deployment/README.md](deployment/README.md) first |
 | recording or revisiting a significant decision                                 | Read [decisions/README.md](decisions/README.md) for the log and the note template            |
 | asking how to get help or escalate                                             | Read [support/README.md](support/README.md)                                                |
 

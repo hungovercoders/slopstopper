@@ -43,7 +43,8 @@ slopstopper templates {list, path <n>, eject <n>}   # inspect / customise bundle
 slopstopper serve                              # bundled static server (auto-detects worker/headers.json)
 slopstopper checks list [--category <c>] [--json]
 slopstopper doctor                             # verify external tools are installed
-slopstopper profile {list, show, expand <n>, detect}   # project-shape profile (ui / api / library)
+slopstopper profile {list, show, expand <n>, disabled, detect}   # project-shape profile (ui / api / library)
+slopstopper cloudflare preview-url <sha>       # a commit's Workers Builds preview URL, from Cloudflare's PR comment on stdin
 slopstopper --quiet …                          # suppress decorative output (CI logs)
 ```
 
@@ -80,7 +81,7 @@ This workflow is slopstopper-internal. It is **not** part of the distributed `ss
 
 ## Adding a check
 
-A check is more than a module. It needs a workflow, a Task target, profile classification, a badge label, docs, site copy and a skills entry. Follow the single checklist in the **"New quality check"** row of [`AGENTS.md`](https://github.com/hungovercoders/slopstopper/blob/main/AGENTS.md) rather than a summary here. Inside this package, `slopstopper/checks/<name>.py` exposes `run(args) -> int` (0 pass, 1 findings, 2 could-not-run) and registers in `checks/__init__.py`'s `REGISTRY`. Its docstring's first line is what `slopstopper checks list` prints. It prints through `from slopstopper import output` so `--quiet` works, and declares a `META` dict if `emit.py` should post it.
+A check is more than a module. It needs a workflow, a Task target, profile classification, a badge label, docs, site copy and a skills entry. Follow the single checklist in the **"New quality check"** row of [`docs/contributing/CHANGE_MAP.md`](https://github.com/hungovercoders/slopstopper/blob/main/docs/contributing/CHANGE_MAP.md) rather than a summary here. Inside this package, `slopstopper/checks/<name>.py` exposes `run(args) -> int` (0 pass, 1 findings, 2 could-not-run) and registers in `checks/__init__.py`'s `REGISTRY`. Its docstring's first line is what `slopstopper checks list` prints. It prints through `from slopstopper import output` so `--quiet` works, and declares a `META` dict if `emit.py` should post it.
 
 ## Skills for agents
 
