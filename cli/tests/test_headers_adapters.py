@@ -113,23 +113,17 @@ def test_parse_unknown_format_raises_key_error(tmp_path):
 # ── meta adapter: the CSP lives in each built page (#422) ────────
 
 from slopstopper.headers_adapters import meta_adapter  # noqa: E402
+from tests.helpers import meta_page  # noqa: E402
 
 STRICT = "default-src 'self'; script-src 'self'"
 GISCUS = "default-src 'self'; script-src 'self' https://giscus.app; frame-src https://giscus.app"
 
 
-def _page(root: Path, rel: str, csp: str | None) -> None:
-    meta = f'<meta http-equiv="Content-Security-Policy" content="{csp}">' if csp else ""
-    target = root / rel
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(f"<!doctype html><html><head>{meta}<title>x</title></head><body></body></html>")
-
-
 def test_meta_adapter_reports_the_shared_policy_as_the_baseline_and_each_relaxation(tmp_path):
-    _page(tmp_path, "index.html", STRICT)
-    _page(tmp_path, "about.html", STRICT)
-    _page(tmp_path, "blog/index.html", STRICT)
-    _page(tmp_path, "discuss/index.html", GISCUS)
+    meta_page(tmp_path, "index.html", STRICT)
+    meta_page(tmp_path, "about.html", STRICT)
+    meta_page(tmp_path, "blog/index.html", STRICT)
+    meta_page(tmp_path, "discuss/index.html", GISCUS)
     assert meta_adapter.parse(tmp_path) == [
         {"for": "/*", "csp": STRICT},
         {"for": "/discuss/", "csp": GISCUS},
@@ -137,15 +131,15 @@ def test_meta_adapter_reports_the_shared_policy_as_the_baseline_and_each_relaxat
 
 
 def test_meta_adapter_reports_a_page_with_no_policy(tmp_path):
-    _page(tmp_path, "index.html", STRICT)
-    _page(tmp_path, "googleabc.html", None)
+    meta_page(tmp_path, "index.html", STRICT)
+    meta_page(tmp_path, "googleabc.html", None)
     assert {"for": "/googleabc.html", "csp": None, "missing": True} in meta_adapter.parse(tmp_path)
 
 
 def test_meta_adapter_does_not_count_a_stricter_page_as_a_relaxation(tmp_path):
-    _page(tmp_path, "index.html", GISCUS)
-    _page(tmp_path, "a.html", GISCUS)
-    _page(tmp_path, "strict.html", STRICT)
+    meta_page(tmp_path, "index.html", GISCUS)
+    meta_page(tmp_path, "a.html", GISCUS)
+    meta_page(tmp_path, "strict.html", STRICT)
     assert meta_adapter.parse(tmp_path) == [{"for": "/*", "csp": GISCUS}]
 
 
@@ -155,6 +149,6 @@ def test_a_directory_source_is_detected_as_meta(tmp_path):
 
 def test_meta_adapter_reports_an_empty_policy_as_missing(tmp_path):
     """`content=""` enforces nothing, so it must read as no policy, not as a stricter one."""
-    _page(tmp_path, "index.html", STRICT)
-    (tmp_path / "blank.html").write_text('<html><head><meta http-equiv="Content-Security-Policy" content=""></head></html>')
+    meta_page(tmp_path, "index.html", STRICT)
+    meta_page(tmp_path, "blank.html", "")
     assert {"for": "/blank.html", "csp": None, "missing": True} in meta_adapter.parse(tmp_path)

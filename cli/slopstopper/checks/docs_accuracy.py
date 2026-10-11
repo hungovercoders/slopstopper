@@ -54,13 +54,12 @@ from __future__ import annotations
 import json
 import os
 import re
-import subprocess
 from functools import lru_cache
 from pathlib import Path
 
 from slopstopper import config, output
 from slopstopper.badges import detect_owner_repo
-from slopstopper.checks import _docs, _report
+from slopstopper.checks import _docs, _report, _tools
 from slopstopper.checks._contract import reject_extra_args
 
 REPORT_DIR = Path(".ss/reports/docs")
@@ -214,19 +213,8 @@ def _ref_is_placeholder_or_external(ref: str, ext: str) -> bool:
 def _repo_files(root: str) -> tuple[frozenset[str], tuple[str, ...]]:
     """(basenames, paths) of the files git knows about under `root`, tracked
     or untracked-but-not-ignored. Empty outside a git checkout."""
-    try:
-        result = subprocess.run(
-            ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
-            cwd=root,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except OSError:
-        return frozenset(), ()
-    if result.returncode != 0:
-        return frozenset(), ()
-    paths = tuple(line for line in result.stdout.splitlines() if line)
+    listing = _tools.git_stdout(root, "ls-files", "--cached", "--others", "--exclude-standard")
+    paths = tuple(line for line in (listing or "").splitlines() if line)
     return frozenset(p.rsplit("/", 1)[-1] for p in paths), paths
 
 
@@ -349,16 +337,7 @@ _REPO_LINK_RE = re.compile(
 _LINK_TRAILING_PUNCT = ".,;:!"
 
 
-@lru_cache(maxsize=None)
-def _git(cwd: str, *args: str) -> str | None:
-    """stdout of `git <args>` in `cwd`, or None when git fails or is absent."""
-    try:
-        result = subprocess.run(
-            ["git", *args], cwd=cwd, capture_output=True, text=True, timeout=10, check=False
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return result.stdout.strip() if result.returncode == 0 else None
+_git = _tools.git_stdout
 
 
 def _working_tree_refs() -> set[str]:

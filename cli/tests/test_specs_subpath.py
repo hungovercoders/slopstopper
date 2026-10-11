@@ -25,8 +25,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 NODE_MODULES = REPO_ROOT / "node_modules"
 SITE = Path(__file__).parent / "fixtures" / "subpath-site"
 
+# Under CI the specs run regardless (ci-cli.yml runs `npm ci` first), so a
+# workflow edit that drops that step fails here instead of skipping.
 pytestmark = pytest.mark.skipif(
-    shutil.which("npx") is None or not (NODE_MODULES / "@playwright" / "test").is_dir(),
+    (shutil.which("npx") is None or not (NODE_MODULES / "@playwright" / "test").is_dir()) and not os.environ.get("CI"),
     reason="needs node and the repo's Playwright install (npm ci)",
 )
 

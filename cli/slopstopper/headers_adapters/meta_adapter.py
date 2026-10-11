@@ -21,6 +21,8 @@ from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
 
+from slopstopper.headers_adapters.csp import csp_origins
+
 
 class _CspMeta(HTMLParser):
     def __init__(self) -> None:
@@ -50,15 +52,6 @@ def url_path(page: Path, root: Path) -> str:
     return "/" + rel
 
 
-def _origins(csp: str) -> set[str]:
-    return {
-        token.rstrip("/")
-        for directive in csp.split(";")
-        for token in directive.split()
-        if token.startswith(("http://", "https://"))
-    }
-
-
 def parse(path: Path) -> list[dict]:
     """Return [{for, csp[, missing]}]: the `/*` baseline, each relaxation, each page without a policy."""
     pages = {
@@ -69,11 +62,11 @@ def parse(path: Path) -> list[dict]:
     if not policies:
         return [{"for": url, "csp": None, "missing": True} for url in pages]
     baseline = Counter(policies).most_common(1)[0][0]
-    allowed = _origins(baseline)
+    allowed = csp_origins(baseline)
     rules: list[dict] = [{"for": "/*", "csp": baseline}]
     for url, csp in pages.items():
         if not csp:
             rules.append({"for": url, "csp": None, "missing": True})
-        elif _origins(csp) - allowed:
+        elif csp_origins(csp) - allowed:
             rules.append({"for": url, "csp": csp})
     return rules

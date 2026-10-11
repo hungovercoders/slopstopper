@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import csv
 import io
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -232,10 +231,9 @@ def _scanned_files(csv_text: str) -> set[str]:
 
 
 @pytest.fixture
-def scope_repo(isolated_cwd):
+def scope_repo(git_repo):
     if not complexity._lizard_available():
         pytest.skip("lizard not installed")
-    subprocess.run(["git", "init", "-q"], check=True)
     files = {
         "main.go": "package main\n\nfunc Add(a, b int) int {\n\tif a > b {\n\t\treturn a\n\t}\n\treturn a + b\n}\n",
         "main_test.go": "package main\n\nfunc TestAdd(t *T) {\n\tif Add(1, 2) != 3 {\n\t\tt.Fail()\n\t}\n}\n",
@@ -247,7 +245,7 @@ def scope_repo(isolated_cwd):
     for name, body in files.items():
         Path(name).parent.mkdir(parents=True, exist_ok=True)
         Path(name).write_text(body)
-    return isolated_cwd
+    return git_repo
 
 
 def test_scan_skips_go_test_files_and_gitignored_output(scope_repo):

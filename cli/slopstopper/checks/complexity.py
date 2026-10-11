@@ -46,12 +46,13 @@ from __future__ import annotations
 
 import csv
 import io
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 from slopstopper import config, output
-from slopstopper.checks import _report
+from slopstopper.checks import _report, _tools
 from slopstopper.checks._contract import reject_extra_args
 
 REPORT_DIR = Path(".ss/reports/complexity")
@@ -124,16 +125,8 @@ def _excludes() -> tuple[str, ...]:
 
 def _gitignored() -> list[str]:
     """Paths .gitignore ignores, directories collapsed (`dist/`). Empty outside git."""
-    try:
-        result = subprocess.run(
-            ["git", "ls-files", "--others", "--ignored", "--exclude-standard", "--directory"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except OSError:
-        return []
-    return [line for line in result.stdout.splitlines() if line] if result.returncode == 0 else []
+    listing = _tools.git_stdout(os.getcwd(), "ls-files", "--others", "--ignored", "--exclude-standard", "--directory")
+    return [line for line in (listing or "").splitlines() if line]
 
 
 def _lizard_patterns(excludes: tuple[str, ...], ignored: list[str]) -> list[str]:
