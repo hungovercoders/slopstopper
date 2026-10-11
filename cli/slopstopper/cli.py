@@ -553,6 +553,18 @@ def _add_profile(sub) -> None:
     )
     ex.add_argument("name", help=f"Profile name ({' | '.join(profiles.names())})")
     sub2.add_parser(
+        "disabled",
+        help="Print the workflows this repo doesn't carry (one per line)",
+        description=(
+            "Print this repo's effective disabled set, one filename per line: the\n"
+            "profile's workflows (and its no-API holdbacks) minus workflows.enabled,\n"
+            "plus workflows.disabled. The set install.sh leaves out; workflows read it\n"
+            "to skip checks the repo has turned off.\n"
+        ),
+        epilog="Example:\n  slopstopper profile disabled\n",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    sub2.add_parser(
         "detect",
         help="Suggest a profile from the repo's contents without changing anything",
         description=(
@@ -1100,10 +1112,17 @@ def _print_profile_detect() -> int:
     return 0
 
 
+def _print_profile_disabled() -> int:
+    for workflow in sorted(profiles.effective_disabled()):
+        print(workflow)
+    return 0
+
+
 _PROFILE_ACTIONS = {
     "list": lambda name: _print_profile_list(),
     "show": lambda name: _print_profile_show(),
     "expand": _print_profile_expand,
+    "disabled": lambda name: _print_profile_disabled(),
     "detect": lambda name: _print_profile_detect(),
 }
 
