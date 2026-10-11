@@ -68,7 +68,7 @@ jobs:
               exit 0
             fi
           else
-            pr_line="$(gh pr list -R "$GITHUB_REPOSITORY" --head "$BRANCH" --state open --json number,headRepositoryOwner -q '.[0] | "\(.number) \(.headRepositoryOwner.login)"')"
+            pr_line="$(gh pr list -R "$GITHUB_REPOSITORY" --head "$BRANCH" --state open --json number,headRepositoryOwner -q '.[0] // empty | "\(.number) \(.headRepositoryOwner.login)"')"
             pr="${pr_line%% *}"
             pr_owner="${pr_line#* }"
             if [ -z "$pr" ]; then
@@ -111,8 +111,18 @@ jobs:
           URL: ${{ steps.target.outputs.url }}
           BRANCH: ${{ steps.target.outputs.branch }}
           PRODUCTION: ${{ steps.target.outputs.production }}
+          SHA: ${{ github.event.check_run.head_sha }}
         run: |
           set -eo pipefail
+          # A dispatch runs on the branch head, not on a commit. If a newer
+          # commit has reached the branch, these results would land on it
+          # while auditing this older deploy, so leave it to that commit's
+          # own deploy.
+          head="$(gh api "repos/$GITHUB_REPOSITORY/commits/$BRANCH" --jq .sha)"
+          if [ "$head" != "$SHA" ]; then
+            echo "::notice::$BRANCH has moved on from ${SHA:0:7} to ${head:0:7}, so this deploy's checks are left to the newer one."
+            exit 0
+          fi
           checks=(
             ss-reliability-smoke-tests.yml
             ss-reliability-e2e-check.yml
