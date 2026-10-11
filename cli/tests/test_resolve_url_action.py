@@ -116,9 +116,10 @@ def test_skip_mode(tmp_path, event, kwargs, expected):
         ("workflow_dispatch", {"url": PREVIEW}, {"url": PREVIEW, "use_local": "false", "prod": "false"}),
         ("deployment_status", {"deployment": PREVIEW}, {"url": PREVIEW, "prod": "true"}),
         ("schedule", {"production": PROD}, {"url": PROD, "prod": "true", "use_local": "false"}),
-        # CWV: a blank dispatch audits production with the dev config.
+        # CWV: a blank dispatch audits production, with the production config
+        # like any other run against urls.production.
         ("workflow_dispatch", {"fallback": "production", "production": PROD},
-         {"url": PROD, "prod": "false", "use_local": "false"}),
+         {"url": PROD, "prod": "true", "use_local": "false"}),
     ],
 )
 def test_local_mode(tmp_path, event, kwargs, expected):
@@ -162,9 +163,14 @@ def test_an_invalid_url_fails_the_step(tmp_path, mode, event, kwargs):
     assert "url" not in outputs, "no URL may be emitted for the check to run against"
 
 
-@pytest.mark.parametrize("mode,event", [("skip", "pull_request"), ("skip", "schedule"), ("local", "schedule")])
-def test_a_broken_cli_is_not_an_unset_key(tmp_path, mode, event):
-    rc, outputs, log = resolve(tmp_path, event, mode=mode, cli_fails=True)
+@pytest.mark.parametrize("mode,event,kwargs", [
+    ("skip", "pull_request", {}), ("skip", "schedule", {}), ("local", "schedule", {}),
+    # The is-it-production lookup for a dispatched url runs inside `$(…)`,
+    # where bash drops `set -e` unless told otherwise.
+    ("skip", "workflow_dispatch", {"url": PREVIEW}), ("local", "workflow_dispatch", {"url": PREVIEW}),
+])
+def test_a_broken_cli_is_not_an_unset_key(tmp_path, mode, event, kwargs):
+    rc, outputs, log = resolve(tmp_path, event, mode=mode, cli_fails=True, **kwargs)
     assert rc != 0
     assert "config get" in log and "failed" in log
     assert outputs == {}

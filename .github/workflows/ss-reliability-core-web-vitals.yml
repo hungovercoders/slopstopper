@@ -1,11 +1,11 @@
 name: SlopStopper · Core Web Vitals
 
-# Measures Core Web Vitals (LCP, FID, CLS) with Lighthouse CI against
-# the thresholds in cli/slopstopper/data/lighthouserc{,.prod}.json.
-# Triggers: PR, push to main, daily schedule, Cloudflare deployment
-# events. Emits a rolling PR comment with the threshold table and a
-# main-branch tracking issue on regressions; auto-closes the issue
-# on a green run.
+# Measures Core Web Vitals (LCP, INP, CLS) with Lighthouse CI against the
+# thresholds in cli/slopstopper/data/lighthouserc{,.prod}.json. Triggers:
+# PR, push to main, daily schedule, `deployment_status` events, and a
+# dispatch from ss-cloudflare-deployed.yml after a Workers Builds deploy.
+# Emits a rolling PR comment with the threshold table and a main-branch
+# tracking issue on regressions; auto-closes the issue on a green run.
 # Docs: docs/reliability/README.md.
 
 on:

@@ -1,11 +1,12 @@
 name: SlopStopper · Reliability Smoke Tests
 
 # Runs Playwright smoke tests against the deployed site (or local
-# `slopstopper serve` for PR builds). Page list comes from
-# pages.smoke in .slopstopper.yml. Triggers: PR, push to main, hourly
-# schedule, Cloudflare deployment events. Failure raises a
-# main-branch tracking issue with the run URL; recovery auto-closes
-# it. There is no PR comment because the exit code is the signal.
+# `slopstopper serve` for PR builds). Page list comes from pages.smoke in
+# .slopstopper.yml. Triggers: PR, push to main, hourly schedule,
+# `deployment_status` events, and a dispatch from ss-cloudflare-deployed.yml
+# after a Workers Builds deploy. Failure raises a main-branch tracking issue
+# with the run URL; recovery auto-closes it. There is no PR comment because
+# the exit code is the signal.
 # Docs: docs/reliability/README.md.
 
 on:

@@ -67,13 +67,13 @@ jobs:
         run: slopstopper emit hygiene:complexity --target pr-comment --status ${{ steps.check.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete
 
       - name: Emit issue on main (if high complexity)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check.outcome == 'failure'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.check.outcome == 'failure'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit hygiene:complexity --target issue
 
       - name: Close issue on main when clean
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check.outcome == 'success'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.check.outcome == 'success'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit hygiene:complexity --target issue --on-pass=close

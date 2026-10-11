@@ -1,13 +1,14 @@
 name: SlopStopper · API Headers Check
 
 # Audits the response headers and CORS policy of each endpoint in
-# `api.headers.paths`: a wildcard origin sent with credentials, an
-# arbitrary Origin reflected back, a missing HSTS or nosniff header. It is
-# the API-shaped analogue of the CSP-exceptions check, because on a JSON API
-# CORS is the header that decides who can read the response.
-# Triggers: PR, push to main, daily schedule, Cloudflare deployment
-# events. Emits a rolling PR comment. The workflow fails on a permissive policy.
-# There is no separate main-branch issue because the exit code is the signal.
+# `api.headers.paths`: a wildcard origin sent with credentials, an arbitrary
+# Origin reflected back, a missing HSTS or nosniff header. It is the
+# API-shaped analogue of the CSP-exceptions check, because on a JSON API
+# CORS is the header that decides who can read the response. Triggers: PR,
+# push to main, daily schedule, `deployment_status` events, and a dispatch
+# from ss-cloudflare-deployed.yml after a Workers Builds deploy. Emits a
+# rolling PR comment. The workflow fails on a permissive policy. There is no
+# separate main-branch issue because the exit code is the signal.
 # Docs: docs/security/README.md.
 #
 # Unlike the browser checks, this workflow never tries to build and serve

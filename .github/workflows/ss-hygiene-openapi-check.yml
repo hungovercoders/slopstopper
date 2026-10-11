@@ -2,11 +2,12 @@ name: SlopStopper · OpenAPI Drift Check
 
 # Compares the committed OpenAPI spec against the API it documents: the
 # operation set the live deployment publishes (`api.openapi.served_spec`)
-# and the reachability of every documented path that takes no parameters.
-# It is the API-shaped analogue of the docs-accuracy check. It catches the
-# same failure, a document that quietly became fiction, on another surface.
-# Triggers: PR, push to main, daily schedule, Cloudflare deployment
-# events. Emits a rolling PR comment. The workflow fails on drift. There is
+# and the reachability of every documented path that takes no parameters. It
+# is the API-shaped analogue of the docs-accuracy check. It catches the same
+# failure, a document that quietly became fiction, on another surface.
+# Triggers: PR, push to main, daily schedule, `deployment_status` events,
+# and a dispatch from ss-cloudflare-deployed.yml after a Workers Builds
+# deploy. Emits a rolling PR comment. The workflow fails on drift. There is
 # no separate main-branch issue because the exit code is the signal.
 # Docs: docs/hygiene/README.md.
 #

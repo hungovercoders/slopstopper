@@ -1,14 +1,14 @@
 name: SlopStopper · API Latency Check
 
-# Samples each endpoint in `api.latency.paths` several times and reports
-# the median and slowest response, plus the payload size. The API-shaped
-# analogue of Core Web Vitals: there is no rendering on a JSON API, so
-# the answerable question is how long the endpoint takes and how much it
-# sends back.
-# Triggers: PR, push to main, daily schedule, Cloudflare deployment
-# events. Emits a rolling PR comment. The workflow fails when an endpoint is
-# unreachable or a configured budget is exceeded. There is no separate
-# main-branch issue because the exit code is the signal.
+# Samples each endpoint in `api.latency.paths` several times and reports the
+# median and slowest response, plus the payload size. The API-shaped
+# analogue of Core Web Vitals: there is no rendering on a JSON API, so the
+# answerable question is how long the endpoint takes and how much it sends
+# back. Triggers: PR, push to main, daily schedule, `deployment_status`
+# events, and a dispatch from ss-cloudflare-deployed.yml after a Workers
+# Builds deploy. Emits a rolling PR comment. The workflow fails when an
+# endpoint is unreachable or a configured budget is exceeded. There is no
+# separate main-branch issue because the exit code is the signal.
 # Docs: docs/reliability/README.md.
 #
 # Budgets are opt-in: with none set the check reports timings and exits

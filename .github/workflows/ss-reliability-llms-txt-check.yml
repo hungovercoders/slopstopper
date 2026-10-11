@@ -1,10 +1,11 @@
 name: SlopStopper · llms.txt Check
 
 # Validates the /llms.txt AI-discoverability map on the deployed site
-# (llmstxt.org convention): an H1 title, an optional `> summary`
-# blockquote and one or more markdown links. Triggers: PR, push to main,
-# daily schedule, Cloudflare deployment events. Emits a rolling PR
-# comment. The workflow fails on a missing or malformed file. There is no
+# (llmstxt.org convention): an H1 title, an optional `> summary` blockquote
+# and one or more markdown links. Triggers: PR, push to main, daily
+# schedule, `deployment_status` events, and a dispatch from
+# ss-cloudflare-deployed.yml after a Workers Builds deploy. Emits a rolling
+# PR comment. The workflow fails on a missing or malformed file. There is no
 # separate main-branch issue because the exit code is the signal.
 # Docs: docs/reliability/LLMS_TXT.md.
 

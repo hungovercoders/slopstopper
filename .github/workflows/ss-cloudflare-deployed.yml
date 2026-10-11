@@ -12,8 +12,10 @@ name: SlopStopper · Cloudflare Deployed Checks
 #
 # and dispatches each installed URL-driven check on the deployed branch
 # with that `url`, skipping any this repo turns off (`slopstopper profile
-# disabled`: the profile, its no-API holdbacks, workflows.disabled). The runs land on the deployed commit, so they show on
-# the PR, and a run on main opens or closes each check's own issue.
+# disabled`: the profile, its no-API holdbacks, workflows.disabled). The
+# runs land on the branch head, so they show on the PR, and a run on main
+# opens or closes the issue for the checks that raise one. A PR from a
+# fork is skipped, because `gh workflow run` can't target a fork's branch.
 # DAST runs against production only: Cloudflare previews answer a missing
 # path with a bare "Not found" carrying none of the site's headers, which
 # ZAP's 404 probes always flag.
@@ -66,9 +68,15 @@ jobs:
               exit 0
             fi
           else
-            pr="$(gh pr list -R "$GITHUB_REPOSITORY" --head "$BRANCH" --state open --json number -q '.[0].number')"
+            pr_line="$(gh pr list -R "$GITHUB_REPOSITORY" --head "$BRANCH" --state open --json number,headRepositoryOwner -q '.[0] | "\(.number) \(.headRepositoryOwner.login)"')"
+            pr="${pr_line%% *}"
+            pr_owner="${pr_line#* }"
             if [ -z "$pr" ]; then
               echo "::notice::$BRANCH has no open PR, so there is no preview URL to check."
+              exit 0
+            fi
+            if [ "$pr_owner" != "${GITHUB_REPOSITORY%%/*}" ]; then
+              echo "::notice::#$pr comes from a fork ($pr_owner), whose branch gh workflow run can't target, so its preview isn't checked."
               exit 0
             fi
             # The bot's comment is a table with one row per deployed commit.
@@ -79,11 +87,13 @@ jobs:
                 --jq '.[] | select(.user.login == "cloudflare-workers-and-pages[bot]") | .body' |
                 slopstopper cloudflare preview-url "$SHA")" || true
               [ -n "$url" ] && break
-              sleep 20
+              [ "$attempt" = 6 ] || sleep 20
             done
             if [ -z "$url" ]; then
-              echo "::error::No preview URL for ${SHA:0:7} in Cloudflare's comment on #$pr."
-              exit 1
+              # A PR-only problem: this workflow runs on main, so a failure
+              # here would open a "failure on main" issue.
+              echo "::warning::No preview URL for ${SHA:0:7} in Cloudflare's comment on #$pr, so its preview isn't checked."
+              exit 0
             fi
           fi
           [[ "$url" =~ ^https?://[^[:space:][:cntrl:]]+$ ]] || { echo "::error::Invalid URL format: $url"; exit 1; }
@@ -120,6 +130,7 @@ jobs:
           )
           [ "$PRODUCTION" = "true" ] && checks+=(ss-security-dast-check.yml)
           disabled="$(slopstopper profile disabled)"
+          failed=0
           for wf in "${checks[@]}"; do
             [ -f ".github/workflows/$wf" ] || continue
             if printf '%s\n' "$disabled" | grep -Fxq "$wf"; then
@@ -127,5 +138,9 @@ jobs:
               continue
             fi
             echo "→ $wf against $URL on $BRANCH"
-            gh workflow run "$wf" -R "$GITHUB_REPOSITORY" --ref "$BRANCH" -f url="$URL"
+            # One refusal (a branch whose copy of the workflow predates the
+            # `url` input, say) must not drop the rest.
+            gh workflow run "$wf" -R "$GITHUB_REPOSITORY" --ref "$BRANCH" -f url="$URL" ||
+              { echo "::warning::$wf was not dispatched; see the error above."; failed=1; }
           done
+          exit "$failed"

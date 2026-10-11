@@ -2,12 +2,12 @@ name: SlopStopper · E2E Check
 
 # Walks user journeys with Playwright against the deployed site (or local
 # `slopstopper serve` for PR builds): clicks every primary-nav link from
-# each start path (pages.e2e, or reliability.coverage.* via
-# `slopstopper discover e2e`), follows in-page anchors, toggles every
-# <details>, and checks the back button. Triggers: PR, push to main,
-# daily schedule, Cloudflare deployment events. Emits a rolling PR
-# comment and a main-branch tracking issue on failure; auto-closes the
-# issue on recovery.
+# each start path (pages.e2e, or reliability.coverage.* via `slopstopper
+# discover e2e`), follows in-page anchors, toggles every <details>, and
+# checks the back button. Triggers: PR, push to main, daily schedule,
+# `deployment_status` events, and a dispatch from ss-cloudflare-deployed.yml
+# after a Workers Builds deploy. Emits a rolling PR comment and a
+# main-branch tracking issue on failure; auto-closes the issue on recovery.
 # Docs: docs/reliability/E2E.md.
 
 on:
@@ -48,6 +48,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Changed-mode discovery diffs against origin/main, so it needs history.
+          fetch-depth: 0
 
       - name: Set up slopstopper
         # Python, the mise-pinned toolchain (task, node, slopstopper-cli) and,
