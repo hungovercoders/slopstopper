@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from slopstopper import templates
 from slopstopper.checks import _tools, cwv
 
 
@@ -409,3 +410,13 @@ def test_an_lhci_exit_one_without_a_fresh_result_is_could_not_run(monkeypatch, i
     monkeypatch.setattr(cwv, "_npx_available", lambda: True)
     monkeypatch.setattr(cwv, "_run_lhci", lambda cmd: (1, "Unable to launch Chrome"))
     assert cwv.run(["--url", "https://example.com"]) == 2
+
+
+def test_the_dev_config_skips_is_crawlable_and_the_prod_config_keeps_it():
+    """Previews send X-Robots-Tag: noindex by design, which fails Lighthouse's
+    is-crawlable audit and sinks SEO to ~0.6; in production noindex is a bug."""
+    dev = json.loads(templates.lighthouserc(prod=False).read_text())
+    prod = json.loads(templates.lighthouserc(prod=True).read_text())
+    assert dev["ci"]["collect"]["settings"]["skipAudits"] == ["is-crawlable"]
+    assert "skipAudits" not in prod["ci"]["collect"].get("settings", {})
+    assert prod["ci"]["assert"]["assertions"]["categories:seo"] == dev["ci"]["assert"]["assertions"]["categories:seo"]

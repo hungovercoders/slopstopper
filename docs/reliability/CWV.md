@@ -30,6 +30,8 @@ slopstopper templates eject lighthouserc.prod.json   # → .ss/lighthouserc.prod
 
 The check resolves `.ss/lighthouserc[.prod].json` first and falls back to the bundled copy, so an ejected file is picked up automatically. `--config <path>` overrides both.
 
+The dev config skips one audit, `is-crawlable`: preview hosts (workers.dev, Vercel, Netlify) answer `X-Robots-Tag: noindex` by design, which would fail that audit and sink the SEO category to about 0.6 on every preview. The prod config keeps it, because noindex in production is a real bug. Two preview-only SEO symptoms and their fixes are in the triage skill's gotchas.
+
 ## Running locally
 
 ```bash
@@ -50,7 +52,7 @@ Nothing leaves the runner by default. Lighthouse reports carry screenshots and p
 |---|---|---|
 | `pull_request`, `push` | the site built and served on `localhost:8080` | dev |
 | `workflow_dispatch` | the `url` input, else `urls.production` | `--prod` when the URL is `urls.production` (the Cloudflare trigger dispatches the live site this way), else dev |
-| `deployment_status` (success; e.g. a Cloudflare or GitHub Pages deploy) | that deployment's own `environment_url` (else `target_url`), so a preview deploy audits the preview. A `github.com/…/actions/` log link is never audited: `urls.production` is used instead, or a local build | `--prod` |
+| `deployment_status` (success; e.g. a Cloudflare or GitHub Pages deploy) | that deployment's own `environment_url` (else `target_url`), so a preview deploy audits the preview. A `github.com/…/actions/` log link is never audited: `urls.production` is used instead, or a local build | `--prod` when the URL is `urls.production`, else dev |
 | `schedule` (daily) | `urls.production` | `--prod` |
 
 It posts the rolling PR comment, opens a tracking issue when `main` regresses, and closes that issue automatically on the next green run.

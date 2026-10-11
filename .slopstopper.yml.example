@@ -133,8 +133,10 @@ headers:
 #   - schedule                  → urls.production (the browser checks error
 #                                 when it is unset; the API checks skip)
 #   - deployment_status         → the deployment's environment_url (else
-#                                 target_url); a GitHub Actions log link is
-#                                 never audited, urls.production stands in
+#                                 target_url), with production budgets only
+#                                 when it is urls.production; a GitHub
+#                                 Actions log link is never audited,
+#                                 urls.production stands in
 #   - workflow_dispatch         → the `url` you pass (production when it is
 #                                 urls.production); with none, a local
 #                                 build (CWV: urls.production)
