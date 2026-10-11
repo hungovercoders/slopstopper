@@ -19,37 +19,7 @@ SlopStopper's reliability checks, wired against any reachable URL: portable smok
 
 ## Configuration (env vars)
 
-All reliability checks read their target URL and audit scope from environment variables, so no code change is needed.
-
-| Variable | Default | Used by |
-|---|---|---|
-| `SMOKE_TEST_URL` | (none) | smoke |
-| `SMOKE_PAGES` | `/` | smoke (comma-separated paths, e.g. `/,/login,/pricing`) |
-| `SMOKE_TIMEOUT` | `5000` | smoke (per-request ms) |
-| `E2E_TEST_URL` | falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080` | e2e |
-| `E2E_PAGES` | `/` | e2e (comma-separated start paths for the journeys) |
-| `E2E_MAX_LINKS` | `25` | e2e (primary-nav links followed per start path) |
-| `BROKEN_LINKS_TEST_URL` | falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080` | broken links |
-| `BROKEN_LINKS_PAGES` | `/` | broken links (comma-separated crawl seed paths, e.g. `/,/features.html,/tools.html`) |
-| `ACCESSIBILITY_TEST_URL` | falls back to `SMOKE_TEST_URL` / `BASE_URL` / `localhost:8080` | accessibility |
-| `ACCESSIBILITY_PAGES` | `/` | accessibility (comma-separated paths) |
-| `ACCESSIBILITY_IMPACT` | `serious` | accessibility (min `critical`/`serious`/`moderate`/`minor`) |
-| `ACCESSIBILITY_THRESHOLD` | `0` | accessibility (max violations before failing) |
-| `CWV_URL` | (none) | Core Web Vitals (URL to audit, see [CWV.md](CWV.md)) |
-| `SEO_TEST_URL` | (none) | SEO metatag check (base URL to audit) |
-| `SEO_PAGES` | `/` | SEO metatag check (comma-separated paths, e.g. `/,/features.html`) |
-| `SEO_REQUIRE_OG_IMAGE` | `1` | SEO metatag check (set `0` to skip og:image presence check) |
-| `SEO_VERIFY_OG_IMAGE` | `1` | SEO metatag check (set `0` to skip HEAD-fetching og:image) |
-| `LLMS_TXT_TEST_URL` | (none) | llms.txt check (base URL to audit) |
-| `LLMS_TXT_PATH` | `/llms.txt` | llms.txt check (path to the file) |
-| `ROBOTS_TXT_TEST_URL` | (none) | robots.txt check (base URL to audit) |
-| `ROBOTS_TXT_PATH` | `/robots.txt` | robots.txt check (path to the file) |
-| `SITEMAP_TEST_URL` | (none) | sitemap check (base URL to crawl + audit) |
-| `SITEMAP_PATH` | `/sitemap.xml` | sitemap check (path to the sitemap) |
-| `API_HEALTH_TEST_URL` | (none) | API health check (base URL of the API) |
-| `API_HEALTH_PATH` | (none; unset skips the check) | API health check (path to the health endpoint) |
-| `API_LATENCY_TEST_URL` | (none) | API latency check (base URL of the API) |
-| `API_LATENCY_PATHS` | (none; unset skips the check) | API latency check (comma-separated paths to sample) |
+Every reliability check takes its base URL as a positional argument (`task ss:reliability:<check> -- https://host/`, sub-path and all) or from `<CHECK>_TEST_URL`; the browser checks fall back to `SMOKE_TEST_URL`, then `BASE_URL`, then `http://localhost:8080`. Each check's own variables (pages, thresholds, paths) are in its section below or its doc: [ACCESSIBILITY.md](ACCESSIBILITY.md), [E2E.md](E2E.md), [CWV.md](CWV.md), [SEO.md](SEO.md), [LLMS_TXT.md](LLMS_TXT.md), [ROBOTS_TXT.md](ROBOTS_TXT.md), [SITEMAP.md](SITEMAP.md). `.slopstopper.yml` (`pages.*`, `api.*`, `reliability.*`) is the committed form of the same settings.
 
 ## API Health Check
 
@@ -268,17 +238,5 @@ For assertions beyond "page returns 200 and loads cleanly" (e.g. specific elemen
 
 ### Troubleshooting
 
-**Tests fail locally but pass in CI (or vice versa):**
-- Check `SMOKE_TEST_URL` (or the positional URL) points where you expect
-- Verify the target URL is reachable from your network
-- The CI workflow installs the Playwright browsers via `npx playwright install --with-deps chromium`, giving each attempt five minutes and retrying a stall once so a hung download fails the job instead of holding it for hours; locally, run the same command once before your first invocation (or let the spec install on demand)
-
-**Tests timeout:**
-- Check the site is responding (try `curl`/`wget`)
-- Verify no network issues or rate limiting
-- Bump Playwright's timeout by ejecting the bundled config (`slopstopper templates eject playwright.config.js`) and editing the copy that lands in `.ss/`
-
-**Flaky tests:**
-- Add explicit waits (`await page.waitForLoadState('networkidle')`) in any custom specs you add
-- Increase the CI retry count by editing the ejected config in `.ss/` (see "Test configuration" above)
-- Check for timing-dependent assertions
+- CI installs the Playwright browsers with `npx playwright install --with-deps chromium`, five minutes per attempt and one retry, so a stalled download fails the job instead of holding it. Locally, run that once (or let the spec install on demand).
+- Timeouts and retries live in the bundled Playwright config: `slopstopper templates eject playwright.config.js` and edit the copy under `.ss/`.

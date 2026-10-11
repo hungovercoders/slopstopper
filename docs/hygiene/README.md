@@ -4,7 +4,7 @@ Overview of code and documentation hygiene and quality gates.
 
 ## Overview
 
-Hygiene checks ensure that the project's code and documentation are well-maintained, appropriately sized, and adhere to quality standards. These checks help maintain code that is efficient and sustainable, and documentation that is easy to navigate, quick to load, and stays within manageable limits for AI context windows.
+Hygiene checks keep code within complexity bounds and documentation sized, routed and accurate enough for an AI context window.
 
 ## Checks
 

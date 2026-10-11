@@ -48,17 +48,6 @@ The companion check `ss:hygiene:csp-exceptions` (workflow `ss-hygiene-csp-except
 
 ---
 
-## Overview
-
-What DAST checks: **your running application** for HTTP-level security vulnerabilities such as missing security headers, injection vectors, exposed sensitive endpoints, and other issues that only appear at runtime.
-
-The DAST workflow:
-- ✅ Starts a local http-server for the static site
-- ✅ Runs OWASP ZAP baseline scan against it
-- ✅ Posts findings as PR comments
-- ✅ Creates GitHub issues when High/Medium alerts land on `main`
-- ✅ Fails PRs with High or Medium alerts
-
 ## Files Involved
 
 | File | Purpose |
@@ -120,35 +109,7 @@ Every other CSP alert, `10055-6` (style-src unsafe-inline) included, keeps block
 
 ### Disable DAST Checking
 
-```bash
-# Option A: delete the workflow
-rm .github/workflows/ss-security-dast-check.yml
-
-# Option B: disable in GitHub UI → Actions → DAST Analysis → Disable workflow
-```
-
-## Running Locally
-
-```bash
-# Install Task (one-time)
-curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
-
-# Serve the built site on :8080
-slopstopper serve &
-
-# Run DAST scan (requires Docker)
-task ss:security:dast -- http://localhost:8080
-```
-
-Reports are saved to `.ss/reports/dast/`.
-
-## For More Information
-
-- **OWASP ZAP Documentation:** https://www.zaproxy.org/docs/
-- **ZAP Baseline Scan:** https://www.zaproxy.org/docs/docker/baseline-scan/
-- **Task Documentation:** https://taskfile.dev
-
----
+List `ss-security-dast-check.yml` under `workflows.disabled` in `.slopstopper.yml` and re-run `install.sh`, which removes the workflow and keeps it out on every refresh.
 
 ## Scanning an API (ZAP OpenAPI mode)
 
