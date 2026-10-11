@@ -4,6 +4,13 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.20.5](https://github.com/hungovercoders/slopstopper/compare/v0.20.4...v0.20.5) (2026-10-11)
+
+
+### Bug Fixes
+
+* **deploy:** skip stale Cloudflare deploys and branches with no PR ([#457](https://github.com/hungovercoders/slopstopper/issues/457)) ([a11f3fd](https://github.com/hungovercoders/slopstopper/commit/a11f3fd2ee6c1a72a0a03b8d92ba2064c9effca2))
+
 ## [0.20.4](https://github.com/hungovercoders/slopstopper/compare/v0.20.3...v0.20.4) (2026-10-11)
 
 
