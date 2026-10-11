@@ -56,7 +56,7 @@ The companion check `ss:hygiene:csp-exceptions` (workflow `ss-hygiene-csp-except
 | `Taskfile.ss.yml` (`dast` task) | Local task runner shim → `slopstopper run security:dast` |
 | `cli/slopstopper/checks/dast.py` | Check implementation (subprocess-invokes Docker + OWASP ZAP, renders MD report) |
 | `cli/slopstopper/dast_gate.py` | Pass/fail gate that filters `rules.tsv` IGNOREs and documented CSP exceptions from the blocker count, naming the entry behind each |
-| `.zap/rules.tsv` | Per-alert (`10055-13`) or per-plugin (`10055`) IGNOREs, each with a `# why` |
+| `.zap/rules.tsv` | Per-alert (`10055-13`) or per-plugin (`10055`) IGNOREs, each with a `# why`. ZAP is handed the plugin-id rows only; the gate applies both |
 | `docs/security/CSP_EXCEPTIONS.md` | Single source of truth for per-path CSP relaxations (optional, as the gate handles absence) |
 | `.gitignore` | Excludes `.ss/reports/dast/` |
 
