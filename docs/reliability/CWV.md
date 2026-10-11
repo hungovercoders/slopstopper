@@ -40,7 +40,7 @@ CWV_URL=http://localhost:8080 task ss:reliability:cwv
 
 Needs `node` (Lighthouse runs in headless Chrome via `npx lhci`). The check generates `cwv-report.md` under `.ss/reports/cwv/`. It holds the threshold table with pass/fail per metric. The full Lighthouse HTML reports land in `.ss/reports/cwv/lighthouse/` and raw output in `.lighthouseci/`; both stay local, and the workflow uploads them as the `lighthouse-reports` artifact.
 
-Nothing leaves the runner by default. Lighthouse reports carry screenshots and page content, so publishing them to Lighthouse's temporary public storage is opt-in: set `reliability.cwv.public_report: true` in `.slopstopper.yml` and the report links the public copy. Leave it off for private repos, authenticated previews and internal apps. The CLI sets the upload target on every run, so a Lighthouse config ejected with `slopstopper templates eject` can't turn it back on.
+Nothing leaves the runner by default. Lighthouse reports carry screenshots and page content, so publishing them to Lighthouse's temporary public storage is opt-in: set `reliability.cwv.public_report: true` in `.slopstopper.yml` and the report links the public copy. Leave it off for private repos, authenticated previews and internal apps. The CLI sets the upload target on every run, so a Lighthouse config ejected with `slopstopper templates eject` can't enable it.
 
 ## Running in CI
 
@@ -49,7 +49,7 @@ Nothing leaves the runner by default. Lighthouse reports carry screenshots and p
 | Event | URL audited | Budgets |
 |---|---|---|
 | `pull_request`, `push` | the site built and served on `localhost:8080` | dev |
-| `workflow_dispatch` | the `url` input, else `urls.production` | dev |
+| `workflow_dispatch` | the `url` input, else `urls.production` | `--prod` when the URL is `urls.production` (the Cloudflare trigger dispatches the live site this way), else dev |
 | `deployment_status` (success; e.g. a Cloudflare or GitHub Pages deploy) | that deployment's own `environment_url` (else `target_url`), so a preview deploy audits the preview. A `github.com/…/actions/` log link is never audited: `urls.production` is used instead, or a local build | `--prod` |
 | `schedule` (daily) | `urls.production` | `--prod` |
 
@@ -57,7 +57,7 @@ It posts the rolling PR comment, opens a tracking issue when `main` regresses, a
 
 ## Reading a failure
 
-- **Performance score under 70 with LCP over budget.** Almost always an unoptimised hero image or a render-blocking stylesheet. Lighthouse's HTML report (linked from the check's report) names the resource.
+- **Performance score under 70 with LCP over budget.** Almost always an unoptimised hero image or a render-blocking stylesheet. Lighthouse's HTML report in `.ss/reports/cwv/lighthouse/` (linked from the check's report only with `public_report`) names the resource.
 - **CLS over 0.25.** An image or embed without explicit `width`/`height`, or a web font swapping in late.
 - **TBT over 600 ms.** Long JavaScript tasks on load. On a static site this usually means a third-party script.
 - **Everything passes locally, fails in CI.** The CI runner is slower and noisier than your laptop. Look at all three runs in the Lighthouse output before touching a budget. The gate passes on the best one, so a failure means every run missed; if the numbers are consistently near the line, the budget is telling you something.

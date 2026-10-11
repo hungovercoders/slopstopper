@@ -78,6 +78,8 @@ operational:
       - '.github/workflows/ss-release.yml'
       - '.github/workflows/ss-hygiene-doc-updater.md'
       - '.github/workflows/ss-hygiene-doc-updater.lock.yml'
+      - '.github/workflows/ss-cloudflare-deployed.yml'
+      - 'cli/slopstopper/cloudflare.py'
       - 'cli/slopstopper/comment.py'
       - 'cli/slopstopper/emit.py'
       - 'docs/architecture/PR_FEEDBACK.md'

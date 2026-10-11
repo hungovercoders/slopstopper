@@ -67,4 +67,4 @@ Lighthouse's SEO category passes a site with no OpenGraph or Twitter Card metada
 
 ## CI integration
 
-The [`ss-reliability-seo-check.yml`](../../.github/workflows/ss-reliability-seo-check.yml) workflow runs on every PR, every push to `main`, on `deployment_status` success, and daily. PR runs comment back with pass/fail and a link to the artefact.
+The [`ss-reliability-seo-check.yml`](../../.github/workflows/ss-reliability-seo-check.yml) workflow runs on every PR, every push to `main`, on `deployment_status` success, daily, and on a `url` dispatch (which is how `ss-cloudflare-deployed.yml` runs it after a Workers Builds deploy). PR runs comment back with pass/fail and a link to the artefact.

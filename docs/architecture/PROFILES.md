@@ -34,6 +34,7 @@ bash install.sh --profile api      # writes `profile: api` into .slopstopper.yml
 slopstopper profile show           # what this repo resolves to, and why
 slopstopper profile detect         # suggest one from the repo's contents
 slopstopper profile list           # the full mapping
+slopstopper profile disabled       # this repo's effective set, one per line (what install.sh and the Cloudflare trigger read)
 ```
 
 ## Design decisions

@@ -109,11 +109,11 @@ Re-run when the widget breaks after a third-party release.
 ## Adopters: how to use this in your own repo
 
 1. Keep your default `/*` entry in `worker/headers.json` (or your host's
-   equivalent) strict by default. On a host that can't send headers, the
-   CSP is a `<meta>` tag per page: set `headers.format: meta` with
-   `headers.source` at the built HTML root, and the policy most pages
-   share is the baseline while a page allowing an extra origin is the
-   exception to document here
+   equivalent) strict by default
+   - On a host that can't send headers, the CSP is a `<meta>` tag per
+     page: set `headers.format: meta` with `headers.source` at the built
+     HTML root. The policy most pages share is the baseline; a page
+     allowing an extra origin is the exception to document here
 2. Add a new entry per page that needs a relaxation; **list the full
    replacement directives**, not just additions
 3. Add an entry to this file mirroring the schema above

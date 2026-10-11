@@ -137,7 +137,7 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
             <details class="details">
                 <summary>What does each profile keep?</summary>
                 <div class="details__body">
-                    <p>On an API the browser checks don't quietly pass, they go red, so <code>--profile api</code> drops them and keeps the four API checks (health, latency, headers, OpenAPI drift), CSP exceptions, DAST and the whole static-analysis layer; <code>--profile library</code> keeps the static layer only. The choice is written as <code>profile:</code> in <code>.slopstopper.yml</code> so it survives re-runs, switching is reversible either way, and <code>workflows.enabled</code> takes back any single check. <code>slopstopper profile list</code> prints the full mapping.</p>
+                    <p>On an API the browser checks don't quietly pass, they go red, so <code>--profile api</code> drops them and keeps the four API checks (health, latency, headers, OpenAPI drift), CSP exceptions, DAST and the whole static-analysis layer; <code>--profile library</code> keeps the static layer only; <code>ui</code> keeps everything, adding the four API checks once the repo shows an API. The choice is written as <code>profile:</code> in <code>.slopstopper.yml</code> so it survives re-runs, switching is reversible either way, and <code>workflows.enabled</code> takes back any single check. <code>slopstopper profile list</code> prints the full mapping.</p>
                     <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PROFILES.md" rel="noopener noreferrer">Project-shape profiles, in full →</a>
                 </div>
             </details>
@@ -202,7 +202,7 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
                 </div>
                 <div class="card">
                     <h3>🚀 Deployment</h3>
-                    <p>How slopstopper.dev ships: Cloudflare Workers Builds deploys every push to <code>main</code>, gives every PR a preview URL and retires it on close. There is nothing for <code>install.sh</code> to add. Connect your repo in the Cloudflare dash and you get the same.</p>
+                    <p>How slopstopper.dev ships: Cloudflare Workers Builds deploys every push to <code>main</code>, gives every PR a preview URL and retires it on close. Connect your repo in the Cloudflare dash and you get the same; <code>install.sh</code> adds one workflow that checks each preview and the live site after every deploy.</p>
                     <a href="features.html#deployment" class="card-link">See how this site ships →</a>
                 </div>
             </div>

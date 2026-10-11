@@ -63,6 +63,8 @@ WORKFLOW_DISPLAY: dict[str, tuple[str, str]] = {
     "ss-reliability-sitemap-check.yml": ("reliability", "Sitemap"),
     "ss-release.yml": ("operational", "Release"),
     "ss-workflow-failure-issue.yml": ("operational", "Workflow Failures"),
+    "ss-cloudflare-deployed.yml": ("operational", "Deployed Checks"),
+    "ss-cloudflare-deployed.yml": ("operational", "Deployed Checks"),
 }
 
 ADVERT_BADGE = (

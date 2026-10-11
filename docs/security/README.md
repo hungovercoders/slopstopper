@@ -9,7 +9,7 @@ is the map, so read only the doc whose trigger matches.
 | When you are…                                                        | Do this                                                                 |
 | -------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | tuning what SAST blocks, or suppressing a Semgrep finding            | Read [SAST.md](SAST.md) for the quick start, severity table, `security.sast.fail_on`, the suppression pattern and this repo's suppressions |
-| configuring or debugging the OWASP ZAP scan (baseline or OpenAPI mode) | Read [DAST.md](DAST.md) for local commands, CI wiring, risk levels, the CSP-exception gate and `api.openapi.spec` |
+| configuring or debugging the OWASP ZAP scan (baseline or OpenAPI mode), or a static host with a `<meta>` CSP | Read [DAST.md](DAST.md) for local commands, CI wiring, risk levels, the gate (`rules.tsv` alert refs, CSP exceptions), the static-host alerts and `api.openapi.spec` |
 | fixing a Trivy CVE finding, or when local and CI disagree on one      | Read [VULNERABILITY.md](VULNERABILITY.md) for the Trivy scan, the licence gate and local/CI parity (DB cache, binary version) |
 | handling a Gitleaks finding or allowlisting a false positive          | Read [SECRETS.md](SECRETS.md) for the quick start, the allowlist format and what to do the moment a real secret is detected |
 | adding a third-party script, widget or any external resource to a page | Read [CSP_EXCEPTIONS.md](CSP_EXCEPTIONS.md) first for the strict-default + per-path exception pattern and the live list |

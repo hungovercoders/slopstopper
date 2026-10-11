@@ -15,7 +15,7 @@ with the GitHub Copilot CLI engine.
 
 ## What it does
 
-1. Triggers weekly (Friday, around 22:36 UTC) and on `workflow_dispatch`.
+1. Triggers weekly (Wednesday, 03:20 UTC) and on `workflow_dispatch`.
 2. Searches for PRs merged in the last 7 days and open issues labelled
    `documentation`.
 3. Reviews changed files in each PR against the corresponding sections
@@ -30,7 +30,7 @@ nothing.
 
 The prompt is project-agnostic: it ships unchanged to every adopter and
 learns the project from the repo's own `AGENTS.md` and `docs/README.md`
-(no map means a `noop`). Project context belongs in those files, not in
+(no `AGENTS.md` and no map means a `noop`). Project context belongs in those files, not in
 the prompt, which `install.sh` overwrites on every refresh.
 
 ## Required configuration (adopters: read this)

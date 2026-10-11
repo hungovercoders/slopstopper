@@ -77,9 +77,9 @@ the walk without editing config.
 |---|---|
 | `pull_request` → `main` | Local build (`localhost:8080`) |
 | `push` → `main` | Local build (`localhost:8080`) |
-| `deployment_status` (success) | Deployment URL from Cloudflare Workers Builds |
+| `deployment_status` (success) | The deployment's `environment_url` (else `target_url`); never a GitHub Actions log link |
 | `schedule` (daily 05:00 UTC) | Production URL (`urls.production`) |
-| `workflow_dispatch` | The `url` input, or the local build when blank |
+| `workflow_dispatch` | The `url` input, or the local build when blank. `ss-cloudflare-deployed.yml` dispatches each Workers Builds deploy this way |
 
 The job builds and serves the repo with `slopstopper serve` on PRs and
 pushes, runs `task ss:reliability:e2e -- <url> --ci`, uploads the

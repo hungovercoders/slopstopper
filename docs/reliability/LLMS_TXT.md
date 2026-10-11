@@ -75,4 +75,4 @@ A product whose value proposition is quality for the AI/agent era should be legi
 
 ## CI integration
 
-The [`ss-reliability-llms-txt-check.yml`](../../.github/workflows/ss-reliability-llms-txt-check.yml) workflow runs on every PR, every push to `main`, on `deployment_status` success, and daily. PR runs comment back with pass/fail and a link to the artefact.
+The [`ss-reliability-llms-txt-check.yml`](../../.github/workflows/ss-reliability-llms-txt-check.yml) workflow runs on every PR, every push to `main`, on `deployment_status` success, daily, and on a `url` dispatch (which is how `ss-cloudflare-deployed.yml` runs it after a Workers Builds deploy). PR runs comment back with pass/fail and a link to the artefact.

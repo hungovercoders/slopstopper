@@ -227,3 +227,14 @@ def test_the_cloudflare_trigger_skips_workflows_the_repo_disables():
     loop = text[text.index('for wf in "${checks[@]}"'):]
     assert "slopstopper profile disabled" in text
     assert loop.index("grep -Fxq") < loop.index("gh workflow run")
+
+
+def test_every_url_driven_check_is_dispatched_after_a_cloudflare_deploy():
+    """CHANGE_MAP: a check that takes a `url` on dispatch belongs in the
+    trigger's list, or Cloudflare repos never run it against a deploy."""
+    url_driven = {
+        w for w in WORKFLOWS
+        if w not in {"ss-cloudflare-deployed.yml"}
+        and re.search(r"workflow_dispatch:\n\s+inputs:\n\s+url:", _text(w))
+    }
+    assert url_driven <= _dispatched_by_cloudflare(), sorted(url_driven - _dispatched_by_cloudflare())

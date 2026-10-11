@@ -91,3 +91,14 @@ from the same place.
 "does the body still contain the report's H1". The old discriminator
 substring is still tried as a fallback, so comments posted by an earlier
 CLI are updated in place instead of duplicated.
+
+**Issues follow the same rule.** `emit --target issue` runs only for a
+non-PR run on `main`, so a preview or a branch dispatch never opens a
+production issue. The issue carries the `slopstopper` label plus the
+check's own labels (created when the repo lacks them; if one still
+can't be applied the issue is created unlabelled, and the body marker
+finds it next time), the `slopstopper:check=` marker and a
+`<!-- slopstopper:workflow=<file>.yml -->` marker. The workflow-failure
+tracker skips its generic issue only when an open issue carries the
+failing workflow's own marker, so one check's issue never silences
+another check's failure.

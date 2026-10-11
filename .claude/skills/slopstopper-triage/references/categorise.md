@@ -49,11 +49,11 @@ Config-driven knobs (no file edit needed beyond `.slopstopper.yml`):
 | `reliability:e2e` | `pages.e2e`, `e2e.max_links` | `/`, `25` |
 | `reliability:{accessibility,seo,broken_links}` | `pages.<check>`, `reliability.coverage.<event>` | `/`, hand-list mode |
 | `hygiene:csp-exceptions` | `headers.source`, `headers.format` | unset (graceful skip) |
+| `hygiene:complexity` | `hygiene.complexity.max_ccn` / `.exclude` | 15 / `[]` (tests and gitignored paths are skipped without it) |
 | `reliability:cwv` | `reliability.cwv.public_report` (report hosting, not a threshold; budgets live in `.ss/lighthouserc.json`) | `false`, so reports stay local |
 
 Tunings that are NOT yet config-driven (require code/file edits):
 
-- `docs/hygiene/README.md` complexity config, the lizard cyclomatic complexity caps.
 - `.ss/lighthouserc.json` (or the bundled `cli/slopstopper/data/lighthouserc.json`) holds the Core Web Vitals thresholds. Edit the `.ss/` copy if you want adopter-side persistence; the CLI prefers it over the package-data fallback.
 
 Tuning is a real decision. When you raise a threshold, leave a `# why` comment in `.slopstopper.yml` so the next maintainer doesn't roll it back. Don't tune to silence noise; tune to match a deliberate design decision.

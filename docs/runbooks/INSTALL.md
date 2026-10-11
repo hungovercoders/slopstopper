@@ -56,7 +56,7 @@ There are five feedback loops. The first four run on every PR and push to `main`
 | 🧹 **Hygiene** | Complexity caps, docs structure/accuracy/size and entry-file checks, OpenAPI drift, auto-labelled PRs | Lizard, stdlib Python | [Hygiene →](../hygiene/README.md) |
 | ✅ **Reliability** | E2E + smoke tests, broken-link audits, accessibility (WCAG 2.1 AA), Core Web Vitals, SEO metatags, llms.txt, robots.txt, sitemap.xml, API health + latency | Playwright, axe-core, Lighthouse CI, stdlib Python | [Reliability →](../reliability/README.md) |
 | 🤖 **Runbooks** | One rolling PR comment summarises every check; failed workflows auto-raise issues; an agentic doc updater opens weekly sync PRs | GitHub Actions, gh-aw | [Runbooks →](./README.md) |
-| 🚀 **Deployment** | How slopstopper.dev ships: preview deploys per PR, automated production releases, automatic preview cleanup. `install.sh` does not install it | Cloudflare Workers Builds (Git integration) | [Deployment →](../deployment/README.md) |
+| 🚀 **Deployment** | How slopstopper.dev ships: preview deploys per PR, automated production releases, automatic preview cleanup. `install.sh` installs no deploy, only the post-deploy check trigger on a Cloudflare repo | Cloudflare Workers Builds (Git integration) | [Deployment →](../deployment/README.md) |
 
 ## What each check needs
 
@@ -67,10 +67,12 @@ Three portability layers. Layer 1 runs on install; layers 2–3 need a little co
 | **1. Static analysis** (any code) | SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure/Accuracy/Size, Entry Files, Auto-label PRs, Workflow-failure tracker | Nothing. It works out of the box |
 | **2. Deployed surface** (need a URL) | Smoke, E2E, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, llms.txt, robots.txt, sitemap.xml, DAST, Playwright, API Health/Latency/Headers, OpenAPI Drift | `urls.production` / `urls.preview` in `.slopstopper.yml` ([per-check env vars](../reliability/README.md) also work) |
 | **3. Agentic doc-updater** | Weekly doc-sync PRs | `COPILOT_GITHUB_TOKEN` repo secret |
+| **Cloudflare repos only** | `ss-cloudflare-deployed.yml`: after each Workers Builds deploy, runs the layer-2 checks against the preview (PRs) or `urls.production` (main) | wrangler config or `worker/` in the repo; `urls.production` for the live site |
+| **Cloudflare repos only** | `ss-cloudflare-deployed.yml`: after each Workers Builds deploy, runs the layer-2 checks against the preview (PRs) or `urls.production` (main) | wrangler config or `worker/` in the repo; `urls.production` for the live site |
 
 To drop a check, delete its workflow or list it under `workflows.disabled`. Re-runs respect both. If the repo is not a website, `--profile api` (or `library`) installs only the applicable checks (see [Profiles](../architecture/PROFILES.md)).
 
-Deploy is intentionally not a layer: connect your repo in the Cloudflare dash for production deploys, PR previews and preview cleanup. See [Deployment](../deployment/README.md).
+Deploy is intentionally not a layer: connect your repo in the Cloudflare dash for production deploys, PR previews and preview cleanup. The one workflow `install.sh` adds for a Cloudflare repo runs the checks against what was deployed. See [Deployment](../deployment/README.md).
 
 ## Same commands, both loops
 
