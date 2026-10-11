@@ -1,9 +1,10 @@
 name: SlopStopper · Hygiene - CSP Exceptions Drift Check
 
 # Validates that CSP exceptions declared in code (suppressions,
-# allowlists) match docs/security/CSP_EXCEPTIONS.md. Triggers: PR,
-# push to main. Workflow fails on drift; no separate main-branch
-# issue (exit code is the signal).
+# allowlists) match docs/security/CSP_EXCEPTIONS.md. Triggers: every
+# PR and push to main, since the source is whatever headers.source names
+# (a headers file, or every built page's <meta> CSP). Workflow fails on
+# drift; no separate main-branch issue (exit code is the signal).
 # Docs: docs/security/CSP_EXCEPTIONS.md.
 
 # No paths filter: the headers source is whatever .slopstopper.yml names
@@ -35,11 +36,21 @@ jobs:
         # composite action; install.sh copies it in next to the workflows.
         uses: ./.github/actions/ss-setup
 
-      - name: Build the site (headers.format meta only)
-        # `format: meta` reads each page's <meta> CSP from the built HTML,
-        # so build first, the same way the browser checks do.
+      - name: Build the site (a <meta> CSP source only)
+        # `format: meta`, or `auto` with a source that is a built HTML root
+        # (no extension and not a file), reads each page's <meta> CSP from
+        # the built HTML, so build first, the way the browser checks do.
+        # Each `config get` fails the step on a broken CLI.
         run: |
-          if [ "$(slopstopper config get headers.format)" = "meta" ] &&
+          format="$(slopstopper config get headers.format)"
+          source="$(slopstopper config get headers.source)"
+          meta=false
+          if [ "$format" = "meta" ]; then
+            meta=true
+          elif [ "$format" = "auto" ] || [ -z "$format" ]; then
+            if [ -n "$source" ] && [ ! -f "$source" ] && [[ "${source##*/}" != *.* ]]; then meta=true; fi
+          fi
+          if [ "$meta" = true ] &&
              [ -f package.json ] && node -e "process.exit(require('./package.json').scripts?.build ? 0 : 1)"; then
             if [ -f package-lock.json ]; then npm ci; fi
             npm run build

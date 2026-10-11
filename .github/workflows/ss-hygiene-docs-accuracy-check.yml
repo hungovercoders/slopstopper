@@ -54,18 +54,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit hygiene:docs-accuracy --target pr-comment --status ${{ steps.check.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete
 
-      - name: Emit issue on push, schedule or dispatch (if issues found)
-        if: >-
-          (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-          && steps.check.outcome == 'failure'
+      - name: Emit issue on main (if issues found)
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.check.outcome == 'failure'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit hygiene:docs-accuracy --target issue
 
-      - name: Auto-close issue when clean
-        if: >-
-          (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-          && steps.check.outcome == 'success'
+      - name: Close issue on main when clean
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.check.outcome == 'success'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit hygiene:docs-accuracy --target issue --on-pass=close

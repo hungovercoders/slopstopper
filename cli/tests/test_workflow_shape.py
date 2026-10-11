@@ -191,10 +191,26 @@ def _issue_step_conditions(text: str) -> list[str]:
             if "--target issue" in step and "if:" in step]
 
 
-@pytest.mark.parametrize("workflow", sorted(_dispatched_by_cloudflare()))
+# One rule for every check that raises its own issue, dispatched or not: a
+# branch dispatch never opens the main issue, and a dispatch on main
+# opens or closes it like a push does.
+@pytest.mark.parametrize("workflow", [w for w in WORKFLOWS if re.search(r"run: slopstopper emit \S+ --target issue", _text(w))])
 def test_per_check_issues_come_only_from_non_pr_runs_on_main(workflow):
-    for cond in _issue_step_conditions(_text(workflow)):
+    conditions = _issue_step_conditions(_text(workflow))
+    assert conditions, workflow
+    for cond in conditions:
         assert "github.event_name != 'pull_request'" in cond and "github.ref == 'refs/heads/main'" in cond, (workflow, cond)
+
+
+def test_the_csp_build_step_reads_both_header_keys_without_swallowing_a_cli_failure():
+    """`format: auto` picks the meta adapter for a built HTML root, which only
+    exists after a build, so the step must look at the source too; and a
+    `$(…)` inside `[ ]` would hide a broken CLI."""
+    text = _text("ss-hygiene-csp-exceptions-check.yml")
+    step = text[text.index("- name: Build the site"):text.index("- name: Run CSP exceptions check")]
+    assert 'format="$(slopstopper config get headers.format)"' in step
+    assert 'source="$(slopstopper config get headers.source)"' in step
+    assert '[ "$(slopstopper' not in step
 
 
 def test_the_cloudflare_trigger_dispatches_only_workflows_that_take_a_url():

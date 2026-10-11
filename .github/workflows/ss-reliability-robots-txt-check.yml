@@ -3,9 +3,11 @@ name: SlopStopper · robots.txt Check
 # Audits /robots.txt on the deployed site: reachable, non-empty, no blanket
 # `Disallow: /` (the de-index footgun) and at least one `Sitemap:` pointer.
 # An `Llms:` pointer and the text/plain content-type are advisory. Triggers:
-# PR, push to main, daily schedule, Cloudflare deployment events. Emits a
-# rolling PR comment. The workflow fails on a missing or broken file. There
-# is no separate main-branch issue because the exit code is the signal.
+# PR, push to main, daily schedule, `deployment_status` events, and a
+# dispatch from ss-cloudflare-deployed.yml after a Workers Builds deploy.
+# Emits a rolling PR comment. The workflow fails on a missing or broken
+# file. There is no separate main-branch issue because the exit code is the
+# signal.
 # Docs: docs/reliability/ROBOTS_TXT.md.
 
 on:

@@ -2,11 +2,12 @@ name: SlopStopper · API Health Check
 
 # Probes the API's health/readiness endpoint and asserts its contract:
 # reachable, the documented status code, a JSON content-type, a body that
-# parses, and whatever fields `api.health.require_fields` /
-# `expect_fields` declare. The API-shaped analogue of the smoke check.
-# Triggers: PR, push to main, daily schedule, Cloudflare deployment
-# events. Emits a rolling PR comment. The workflow fails on a broken contract.
-# There is no separate main-branch issue because the exit code is the signal.
+# parses, and whatever fields `api.health.require_fields` / `expect_fields`
+# declare. The API-shaped analogue of the smoke check. Triggers: PR, push to
+# main, daily schedule, `deployment_status` events, and a dispatch from
+# ss-cloudflare-deployed.yml after a Workers Builds deploy. Emits a rolling
+# PR comment. The workflow fails on a broken contract. There is no separate
+# main-branch issue because the exit code is the signal.
 # Docs: docs/reliability/README.md.
 #
 # Unlike the browser checks, this workflow never tries to build and serve

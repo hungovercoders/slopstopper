@@ -2,11 +2,12 @@ name: SlopStopper · sitemap Check
 
 # Crawls the deployed site from `/` and cross-checks sitemap.xml against the
 # pages it actually reaches: a reachable page missing from the sitemap or a
-# `<loc>` that 404s hard-fails (drift); llms.txt page gaps are advisory. Both
-# flat and nested (sitemap-index) shapes are supported. Triggers: PR, push to
-# main, daily schedule, Cloudflare deployment events. Emits a rolling PR
-# comment; the workflow fails on drift (exit code is the signal, no separate
-# main-branch issue).
+# `<loc>` that 404s hard-fails (drift); llms.txt page gaps are advisory.
+# Both flat and nested (sitemap-index) shapes are supported. Triggers: PR,
+# push to main, daily schedule, `deployment_status` events, and a dispatch
+# from ss-cloudflare-deployed.yml after a Workers Builds deploy. Emits a
+# rolling PR comment; the workflow fails on drift (exit code is the signal,
+# no separate main-branch issue).
 # Docs: docs/reliability/SITEMAP.md.
 
 on:

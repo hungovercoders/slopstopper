@@ -61,19 +61,19 @@ jobs:
         run: slopstopper emit hygiene:docs-size --target pr-comment --status ${{ steps.check.outputs.has_alerts == 'true' && 'warn' || 'pass' }} --on-pass=delete
 
       - name: Emit issue on main (if thresholds exceeded)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check.outputs.has_alerts == 'true'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.check.outputs.has_alerts == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit hygiene:docs-size --target issue
 
       - name: Close issue on main when within thresholds
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check.outputs.has_alerts != 'true'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.check.outputs.has_alerts != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit hygiene:docs-size --target issue --on-pass=close
 
       - name: Warn if thresholds exceeded on main
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check.outputs.has_alerts == 'true'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.check.outputs.has_alerts == 'true'
         run: |
           echo "::warning::Documentation size thresholds exceeded! An issue has been created."
 
