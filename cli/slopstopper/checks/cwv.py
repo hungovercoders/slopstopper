@@ -19,7 +19,10 @@ the same way it does for every other check.
 
 Configuration: thresholds and the lhci config path live in the
 `.ss/lighthouserc.json` override (or the package-data fallback under
-`cli/slopstopper/data/lighthouserc.json`). cwv.py's threshold-table
+`cli/slopstopper/data/lighthouserc.json`). The dev config skips the
+`is-crawlable` audit: previews (workers.dev, Vercel, Netlify) answer
+`X-Robots-Tag: noindex` by design, which would sink SEO to ~0.6. The
+prod config keeps it, because noindex in production is a real bug. cwv.py's threshold-table
 limits mirror that file so the rendered table matches what lhci
 actually enforced.
 

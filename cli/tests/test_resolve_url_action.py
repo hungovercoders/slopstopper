@@ -79,7 +79,10 @@ LOCAL = "http://localhost:8080"
         # A blank manual run skips; it does not quietly probe production.
         ("workflow_dispatch", {"production": PROD}, {"skip": "true"}),
         ("workflow_dispatch", {"url": PREVIEW}, {"url": PREVIEW, "prod": "false"}),
-        ("deployment_status", {"deployment": PREVIEW}, {"url": PREVIEW, "prod": "true"}),
+        # A preview deploy audits the preview with the dev config; only the
+        # production URL gets the production one.
+        ("deployment_status", {"deployment": PREVIEW, "production": PROD}, {"url": PREVIEW, "prod": "false"}),
+        ("deployment_status", {"deployment": PROD, "production": PROD}, {"url": PROD, "prod": "true"}),
         ("deployment_status", {}, {"skip": "true"}),
     ],
 )
@@ -101,7 +104,8 @@ def test_skip_mode(tmp_path, event, kwargs, expected):
         ("push", {"production": PROD}, {"url": LOCAL, "use_local": "true"}),
         ("workflow_dispatch", {}, {"url": LOCAL, "use_local": "true"}),
         ("workflow_dispatch", {"url": PREVIEW}, {"url": PREVIEW, "use_local": "false", "prod": "false"}),
-        ("deployment_status", {"deployment": PREVIEW}, {"url": PREVIEW, "prod": "true"}),
+        ("deployment_status", {"deployment": PREVIEW, "production": PROD}, {"url": PREVIEW, "prod": "false"}),
+        ("deployment_status", {"deployment": PROD + "/", "production": PROD}, {"url": PROD + "/", "prod": "true"}),
         ("schedule", {"production": PROD}, {"url": PROD, "prod": "true", "use_local": "false"}),
         # CWV: a blank dispatch audits production, with the production config
         # like any other run against urls.production.

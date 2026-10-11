@@ -10,7 +10,8 @@ description: >-
 #
 #   mode skip (the API checks, which audit a deployed environment or nothing)
 #     workflow_dispatch   → the `url` input (prod=true when it is urls.production)
-#     deployment_status   → the deployment's URL                (prod=true)
+#     deployment_status   → the deployment's URL (prod=true when it is
+#                           urls.production; a preview deploy is not)
 #     pull_request        → urls.preview
 #     schedule / push     → urls.production                     (prod=true)
 #     … and when that comes out empty: a notice and skip=true. An API
@@ -21,7 +22,8 @@ description: >-
 #                           urls.production). If blank, a local build, or
 #                           urls.production when dispatch-fallback is
 #                           production (prod=true; an error if unset)
-#     deployment_status   → the deployment's URL                (prod=true)
+#     deployment_status   → the deployment's URL (prod=true when it is
+#                           urls.production; a preview deploy is not)
 #     schedule            → urls.production (an error if unset) (prod=true)
 #     pull_request / push → http://localhost:8080, use_local=true
 #
@@ -75,7 +77,7 @@ outputs:
     description: "`true` when the workflow should build and serve the repo itself (mode local)"
     value: ${{ steps.resolve.outputs.use_local }}
   prod:
-    description: "`true` for a deployment, a scheduled / main-branch run against urls.production, or a dispatch whose url is urls.production (CWV: the stricter Lighthouse config)"
+    description: "`true` for a scheduled / main-branch run against urls.production, or a deployment or dispatch whose url is urls.production (CWV: the stricter Lighthouse config). A preview deploy is never prod"
     value: ${{ steps.resolve.outputs.prod }}
 
 runs:
@@ -109,12 +111,14 @@ runs:
         }
         audit() { require_http "$1"; emit "$1" false false "$2"; }
         local_build() { emit "http://localhost:8080" false true false; }
-        # A dispatch is production when its url is urls.production (the
-        # Cloudflare deploy trigger dispatches the live site that way).
+        # A dispatched or deployed URL is production when it is
+        # urls.production (the Cloudflare trigger dispatches the live site
+        # that way). A preview deploy is not: CWV's prod config asserts
+        # is-crawlable, and previews answer noindex by design.
         # Runs inside `$(...)`, where bash drops `set -e`, so a failed
         # lookup is passed up explicitly: the caller's assignment then
         # fails, and that one is under `set -e`.
-        dispatch_prod() {
+        is_production_url() {
           local production
           production="$(config_get urls.production)" || exit 1
           if [ -n "$production" ] && [ "${1%/}" = "${production%/}" ]; then echo true; else echo false; fi
@@ -136,8 +140,8 @@ runs:
         if [ "$MODE" = "skip" ]; then
           prod=false
           case "$EVENT_NAME" in
-            workflow_dispatch) candidate="$INPUT_URL"; [ -z "$candidate" ] || prod="$(dispatch_prod "$candidate")" ;;
-            deployment_status) candidate="$DEPLOYMENT_URL"; prod=true ;;
+            workflow_dispatch) candidate="$INPUT_URL"; [ -z "$candidate" ] || prod="$(is_production_url "$candidate")" ;;
+            deployment_status) candidate="$DEPLOYMENT_URL"; [ -z "$candidate" ] || prod="$(is_production_url "$candidate")" ;;
             pull_request)      candidate="$(config_get urls.preview)" ;;
             *)                 candidate="$(config_get urls.production)"; prod=true ;;
           esac
@@ -153,7 +157,7 @@ runs:
         case "$EVENT_NAME" in
           workflow_dispatch)
             if [ -n "$INPUT_URL" ]; then
-              prod="$(dispatch_prod "$INPUT_URL")"
+              prod="$(is_production_url "$INPUT_URL")"
               audit "$INPUT_URL" "$prod"
             elif [ "$DISPATCH_FALLBACK" = "production" ]; then
               production="$(config_get urls.production)"
@@ -168,7 +172,8 @@ runs:
               echo "::notice::urls.production is unset, so ${CHECK} builds and serves the repo instead."
               local_build
             else
-              audit "$DEPLOYMENT_URL" true
+              prod="$(is_production_url "$DEPLOYMENT_URL")"
+              audit "$DEPLOYMENT_URL" "$prod"
             fi
             ;;
           schedule)
