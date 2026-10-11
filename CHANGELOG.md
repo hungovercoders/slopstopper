@@ -4,6 +4,13 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.20.4](https://github.com/hungovercoders/slopstopper/compare/v0.20.3...v0.20.4) (2026-10-11)
+
+
+### Bug Fixes
+
+* **robots-txt:** stop asking for an Llms: line, which Lighthouse scores robots.txt 0 for ([#450](https://github.com/hungovercoders/slopstopper/issues/450)) ([9ed5cfa](https://github.com/hungovercoders/slopstopper/commit/9ed5cfa3424a3832c2163285ab1dbd6cbfb8d505)), closes [#448](https://github.com/hungovercoders/slopstopper/issues/448)
+
 ## [0.20.3](https://github.com/hungovercoders/slopstopper/compare/v0.20.2...v0.20.3) (2026-10-11)
 
 
