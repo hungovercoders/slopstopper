@@ -52,6 +52,7 @@ Most checks write structured output under `.ss/reports/<check>/`:
 
 - `.ss/reports/<check>/<check>-report.md` is human-readable and the one you want first.
 - `.ss/reports/<check>/<check>-report.json` is machine-readable, useful for grep / jq.
+- `slopstopper run --json <category>:<check>` prints one object on stdout (`exit_code`, `status`, the `- ❌` `failures` the PR comment lists, the `reports` it wrote) with the check's own output on stderr, so you can read the verdict without parsing text. `slopstopper doctor --json` and `slopstopper profile show --json` do the same for tools and the profile.
 
 For DAST: `.ss/reports/dast/dast-report.json` + `.ss/reports/dast/dast-report.md` + `.ss/reports/dast/dast-gate.json` (the swallow-vs-block decisions the gate made, with `source` field naming which exception mechanism let each one through).
 

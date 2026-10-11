@@ -60,6 +60,26 @@ The full contract, and why it matters, is in the `slopstopper.checks`
 package docstring; `cli/tests/test_exit_code_contract.py` checks every
 check's docstring against what its code can actually return.
 
+## Machine-readable output
+
+Every command that reports something takes `--json` and then prints one
+JSON value and nothing else on stdout, so a skill, a workflow or a script
+reads it instead of parsing the decorated text. These shapes are a
+contract like the exit codes: add a key freely, never rename or remove
+one without a note in the CLI README. `cli/tests/test_cli.py` pins them.
+
+| Command | Prints |
+|---|---|
+| `run --json <check>` | `{check, exit_code, status, failures, reports}`. `status` names the exit code (`pass`, `fail`, `cannot-run`); `failures` is the report's `- ❌` bullets, the same list the PR comment shows; `reports` is every file the check wrote this run under its report directory. The check's own output goes to stderr |
+| `doctor --json` | `{ok, exit_code, tools, workflows}`. Each tool row has `tool`, `needed_by`, `path`, `version`, `status` (`ok`, `missing`, `broken`, `skipped`), `problem` and `hint`; `workflows.checked` is false when GitHub could not be asked, else `workflows.disabled` lists `{name, state, inactive, fix}` |
+| `profile list --json` | a list of `{name, default, summary, detail, disables, disables_without_api}` |
+| `profile show --json` | `{profile, origin, configured, warning, summary, disabled: [{workflow, source}], re_enabled}` |
+| `profile detect --json` | `{suggested, reason, active, matches}` |
+| `profile expand <n> --json` | `{profile, workflows}`, or `{error}` with exit 2 |
+| `profile disabled --json` | `{disabled}` |
+| `config get <key> --json` | the value as JSON: a list stays a list, an unset key prints the default, or `null` when none was given |
+| `checks list --json` | a list of `{name, summary, workflow, disabled}` |
+
 ## Quick verification checklist
 
 Run these before opening a PR. Each one mirrors the equivalent CI check
