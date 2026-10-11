@@ -21,16 +21,16 @@ Profiles only ever SUBTRACT, and explicit config always wins:
 
     effective = (profile.disables − workflows.enabled) ∪ workflows.disabled
 
-A profile may also list `disables_without_api`: workflows it drops only
-while the repo shows no API (see `api_signal`). `ui` uses it for the
-four API checks, so a static site doesn't run jobs that check nothing,
-and a UI with API routes gets them as soon as it has a spec, a server
-framework or an `api.*` key.
-
 so `workflows.enabled` is the escape hatch for a repo that wants back
 one check its profile drops (an API that does serve a docs site and
 wants broken-links, say). An unset `profile:` resolves to the default
 (`ui`).
+
+A profile may also list `disables_without_api`: workflows it drops only
+while the repo shows no API (see `api_signal`). `ui` uses it for the
+four API checks, so a static site doesn't run jobs that check nothing,
+and a UI with API routes gets them as soon as it has a spec, a server
+framework or one of the API checks configured under `api.*`.
 
 Configuration (.slopstopper.yml):
 
@@ -154,7 +154,7 @@ def _config_list(key: str) -> set[str]:
 def effective_disabled() -> set[str]:
     """Workflow filenames this repo should not carry.
 
-    (profile.disables − workflows.enabled) ∪ workflows.disabled
+    ((profile.disables ∪ profile.disables_without_api if no API) − workflows.enabled) ∪ workflows.disabled
 
     `enabled` cancels the *profile's* contribution only. Listing the same
     workflow under both `disabled` and `enabled` is a contradiction, and
@@ -353,14 +353,17 @@ def _dep_match(manifests: list[tuple[str, str]], deps: tuple[str, ...]) -> str |
     return None
 
 
-def api_signal(root: Path | None = None) -> str | None:
-    """Why the repo looks like it has an API, or None if it doesn't.
+# Setting any of these configures an API check, which is the adopter
+# saying there is an API. A bare `api:` block (the schema example's, say)
+# with nothing filled in is not.
+_API_CONFIG_KEYS = ("api.health.path", "api.latency.paths", "api.headers.paths", "api.openapi.spec")
 
-    Any `api.*` key in .slopstopper.yml counts: configuring the API checks
-    is the adopter saying there is one.
-    """
-    if config.get("api"):
-        return "api.* is set in .slopstopper.yml"
+
+def api_signal(root: Path | None = None) -> str | None:
+    """Why the repo looks like it has an API, or None if it doesn't."""
+    for key in _API_CONFIG_KEYS:
+        if config.get(key):
+            return f"{key} is set in .slopstopper.yml"
     root = Path(root) if root is not None else Path(".")
     hit = _first_match(root, _API_MARKERS) or _dep_match(_manifest_texts(root), _API_DEPS)
     return f"found {hit}" if hit else None

@@ -28,14 +28,13 @@ What still blocks (intentional):
   other headers, CSRF, etc.)
 - High (riskcode 3) alerts everywhere, even CSP ones on exception
   paths, because `Refresh policy` and approval still don't make a high-risk
-  finding acceptable.
+  finding acceptable. Only a `.zap/rules.tsv` IGNORE entry swallows one.
 
 Outputs:
 - `.ss/reports/dast/dast-gate.json` with {blocking, swallowed[]}
-- The `swallowed_preamble_md()` helper renders the same
-  "🛡 Documented CSP exceptions" block the legacy JS used to
-  prepend to the PR comment, so emit-routed PR comments keep
-  showing which findings were filtered out.
+- The `swallowed_preamble_md()` helper renders the "🛡 Accepted
+  findings" block at the top of the report (and so the PR comment),
+  naming the entry that swallowed each finding.
 """
 
 from __future__ import annotations

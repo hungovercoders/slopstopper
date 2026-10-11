@@ -10,7 +10,7 @@ page, served at its path relative to the root (`blog/index.html` →
 The policy most pages share is the site baseline and comes back as
 `/*`. A page whose policy allows an external origin the baseline
 doesn't is a relaxation and comes back under its own path, as a per-path
-block would in a headers file. A page with no CSP meta tag comes back
+block would in a headers file. A page with no CSP meta tag, or an empty one, comes back
 with `csp: None, missing: True`, so the check can report it instead of
 reading it as unrestricted.
 """
@@ -72,7 +72,7 @@ def parse(path: Path) -> list[dict]:
     allowed = _origins(baseline)
     rules: list[dict] = [{"for": "/*", "csp": baseline}]
     for url, csp in pages.items():
-        if csp is None:
+        if not csp:
             rules.append({"for": url, "csp": None, "missing": True})
         elif _origins(csp) - allowed:
             rules.append({"for": url, "csp": csp})

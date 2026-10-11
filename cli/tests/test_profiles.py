@@ -16,6 +16,8 @@ import pytest
 
 from slopstopper import cli, config, profiles
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 
 DATA_PATH = Path(profiles.__file__).resolve().parent / "data" / "profiles.json"
 
@@ -267,10 +269,24 @@ def test_ui_without_api_holds_back_exactly_the_four_api_checks(write_config):
     }
 
 
-def test_api_config_counts_as_an_api(write_config):
-    write_config("api:\n  base_path: /v1\n")
-    assert profiles.api_signal() == "api.* is set in .slopstopper.yml"
+def test_a_configured_api_check_counts_as_an_api(write_config):
+    write_config("api:\n  health:\n    path: /healthz\n")
+    assert profiles.api_signal() == "api.health.path is set in .slopstopper.yml"
     assert profiles.effective_disabled() == set()
+
+
+def test_the_schema_examples_empty_api_block_is_not_an_api(write_config):
+    """Copying .slopstopper.yml.example verbatim must not switch the ui holdback off."""
+    write_config((REPO_ROOT / ".slopstopper.yml.example").read_text())
+    assert profiles.api_signal() is None
+    assert profiles.effective_disabled() == set(profiles.without_api("ui"))
+
+
+def test_profile_list_shows_what_ui_holds_back(isolated_cwd, capsys):
+    assert cli.main(["profile", "list"]) == 0
+    out = capsys.readouterr().out
+    assert "holds back 4 workflow(s) until the repo shows an API" in out
+    assert "nothing, so every check applies" not in out
 
 
 def test_an_openapi_spec_counts_as_an_api(write_config, isolated_cwd):

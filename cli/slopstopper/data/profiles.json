@@ -16,7 +16,7 @@
   "profiles": {
     "ui": {
       "summary": "A web UI: a site or app that serves HTML to a browser.",
-      "detail": "Every browser, SEO, security and hygiene check applies. This is the default when `profile:` is unset. The four API checks (api-health, api-headers, api-latency, openapi drift) are added only when the repo has an API: an OpenAPI/Swagger spec or proto file, a server-framework dependency, or any `api.*` key in .slopstopper.yml. A site with no API doesn't run four jobs that check nothing; configure `api.*` (or list them under workflows.enabled) and re-run the installer to add them.",
+      "detail": "Every browser, SEO, security and hygiene check applies. This is the default when `profile:` is unset. The four API checks (api-health, api-headers, api-latency, openapi drift) are added only when the repo has an API: an OpenAPI/Swagger spec or proto file, a server-framework dependency, or one of the API checks configured (api.health.path, api.latency.paths, api.headers.paths or api.openapi.spec). A site with no API doesn't run four jobs that check nothing; configure `api.*` (or list them under workflows.enabled) and re-run the installer to add them.",
       "disables": [],
       "disables_without_api": [
         "ss-reliability-api-health-check.yml",

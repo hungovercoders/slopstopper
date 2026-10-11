@@ -66,9 +66,6 @@ def _split_doc_files(docs_dir: Path = DOCS_DIR) -> tuple[list[Path], list[Path]]
     return _docs.split(sorted(docs_dir.rglob("*.md")))
 
 
-def _iter_doc_files(docs_dir: Path = DOCS_DIR) -> list[Path]:
-    return _split_doc_files(docs_dir)[0]
-
 
 def _load_thresholds() -> dict[str, int]:
     return {

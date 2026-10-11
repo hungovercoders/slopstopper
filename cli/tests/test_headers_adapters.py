@@ -151,3 +151,10 @@ def test_meta_adapter_does_not_count_a_stricter_page_as_a_relaxation(tmp_path):
 
 def test_a_directory_source_is_detected_as_meta(tmp_path):
     assert headers_adapters.detect_format(tmp_path) == "meta"
+
+
+def test_meta_adapter_reports_an_empty_policy_as_missing(tmp_path):
+    """`content=""` enforces nothing, so it must read as no policy, not as a stricter one."""
+    _page(tmp_path, "index.html", STRICT)
+    (tmp_path / "blank.html").write_text('<html><head><meta http-equiv="Content-Security-Policy" content=""></head></html>')
+    assert {"for": "/blank.html", "csp": None, "missing": True} in meta_adapter.parse(tmp_path)

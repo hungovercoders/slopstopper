@@ -36,8 +36,8 @@ Configuration (.slopstopper.yml, all optional):
         extra_paths: []   # repo-relative globs, e.g. [app/*.html, .claude/skills/**/*.md]
 
 Docs matching `hygiene.docs.exclude` (default `docs/archive/**`, see
-_docs.py) are not scanned, by the docs/ pass or by extra_paths, and the
-report lists them.
+_docs.py) are not scanned, whether the docs/ pass or extra_paths would
+have reached them, and the report lists every one it left out.
 
 Writes a JSON report (machine-readable) and a Markdown report (human-
 readable).
@@ -269,8 +269,8 @@ def _check_source_file_references(md_path: Path) -> list[dict]:
     return issues
 
 
-def _collect_targets() -> list[Path]:
-    targets = _docs.split(sorted(DOCS_DIR.rglob("*.md")))[0]
+def _collect_targets(docs: list[Path] | None = None) -> list[Path]:
+    targets = list(docs) if docs is not None else _docs.split(sorted(DOCS_DIR.rglob("*.md")))[0]
     for entry in ROOT_ENTRY_FILES:
         entry_path = Path(entry)
         if entry_path.exists():
@@ -307,15 +307,19 @@ def _glob_extra_pattern(pattern: object, root: Path) -> list[Path]:
     return hits
 
 
-def _collect_extra_targets(primary_targets: list[Path] | None = None) -> list[Path]:
+def _collect_extra_targets(
+    primary_targets: list[Path] | None = None, excluded_out: list[Path] | None = None
+) -> list[Path]:
     """Files named by `hygiene.docs_accuracy.extra_paths`, deduplicated, in order.
 
     Files the primary scan already covers (`docs/**` and the root entry
     files) are left out, so an overlapping glob like `**/*.md` never
-    double-counts an issue. An entry that is empty, absolute, climbs out
-    of the repo with `..`, or matches nothing warns and is skipped. That
-    matches the config.py contract that a bad value never surfaces as a
-    traceback or as a silent pass.
+    double-counts an issue; files `hygiene.docs.exclude` names are left
+    out too, and appended to `excluded_out` so the report can list them.
+    An entry that is empty, absolute, climbs out of the repo with `..`, or
+    matches nothing warns and is skipped. That matches the config.py
+    contract that a bad value never surfaces as a traceback or as a
+    silent pass.
     """
     primary = set(primary_targets if primary_targets is not None else _collect_targets())
     excludes = _docs.exclude_patterns()
@@ -325,8 +329,13 @@ def _collect_extra_targets(primary_targets: list[Path] | None = None) -> list[Pa
     out: list[Path] = []
     for pattern in patterns:
         for hit in _glob_extra_pattern(pattern, root):
-            if hit not in primary and hit not in out and not _docs.is_excluded(hit, excludes):
-                out.append(hit)
+            if hit in primary or hit in out:
+                continue
+            if _docs.is_excluded(hit, excludes):
+                if excluded_out is not None and hit not in excluded_out:
+                    excluded_out.append(hit)
+                continue
+            out.append(hit)
     return out
 
 
@@ -541,11 +550,13 @@ def run(args: list[str] | None = None) -> int:
 
     valid_tasks = _get_taskfile_tasks()
     valid_workflows = _get_workflow_files()
-    targets = _collect_targets()
+    docs, excluded = _docs.split(sorted(DOCS_DIR.rglob("*.md")))
+    targets = _collect_targets(docs)
     issues = _collect_all_issues(targets, valid_tasks, valid_workflows)
-    issues += _collect_extra_issues(_collect_extra_targets(targets), valid_tasks, valid_workflows)
-
-    excluded = _docs.split(sorted(DOCS_DIR.rglob("*.md")))[1]
+    extra = _collect_extra_targets(targets, excluded_out=excluded)
+    issues += _collect_extra_issues(extra, valid_tasks, valid_workflows)
+    if excluded:
+        output.status("🚫", f"{len(excluded)} doc(s) excluded by hygiene.docs.exclude (listed in the report)")
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     data = {

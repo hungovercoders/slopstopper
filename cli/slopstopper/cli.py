@@ -38,12 +38,14 @@ Subcommands:
                                     tools are present and run (node, gh,
                                     semgrep, gitleaks, trivy, docker), and
                                     which ss-* workflows GitHub disabled.
-  profile list | show | expand <n> | detect
+  profile list | show | expand <n> | disabled | detect
                                     Inspect project-shape profiles. Each is a
                                     `profile:` preset that switches off the
                                     checks a UI / API / library repo has no
                                     use for. `show` reports the active one,
                                     `detect` suggests one from repo contents.
+  cloudflare preview-url <sha>      Print a commit's Workers Builds preview URL
+                                    from Cloudflare's PR comment on stdin.
 
 Future: init, inspect.
 """
@@ -490,25 +492,6 @@ def _add_doctor(sub) -> None:
     )
 
 
-def _add_cloudflare(sub) -> None:
-    p = sub.add_parser(
-        "cloudflare",
-        help="Cloudflare Workers Builds helpers (used by ss-cloudflare-deployed.yml)",
-        description="Helpers for repos deployed by Cloudflare Workers Builds.\n",
-    )
-    cf_sub = p.add_subparsers(dest="cloudflare_action", required=True)
-    pu = cf_sub.add_parser(
-        "preview-url",
-        help="Print a commit's preview URL from Cloudflare's PR comment on stdin",
-        description=(
-            "Read the Cloudflare bot's PR comment body on stdin and print the\n"
-            "preview URL from the row for <sha>. Exits 1 when there is none.\n"
-        ),
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    pu.add_argument("sha", help="The deployed commit SHA (full or 7+ characters)")
-
-
 def _add_profile(sub) -> None:
     p = sub.add_parser(
         "profile",
@@ -543,10 +526,12 @@ def _add_profile(sub) -> None:
     )
     ex = sub2.add_parser(
         "expand",
-        help="Print the workflow filenames a named profile disables (one per line)",
+        help="Print the workflow filenames a named profile always disables (one per line)",
         description=(
-            "Print the raw workflow list for a profile, one filename per line,\n"
-            "which is the form install.sh consumes. Exits 2 on an unknown profile name.\n"
+            "Print a profile's unconditional workflow list, one filename per line.\n"
+            "It leaves out the API checks `ui` holds back until the repo shows an\n"
+            "API; `profile disabled` prints this repo's full effective set.\n"
+            "Exits 2 on an unknown profile name.\n"
         ),
         epilog="Example:\n  slopstopper profile expand api\n",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -578,6 +563,25 @@ def _add_profile(sub) -> None:
     )
 
 
+def _add_cloudflare(sub) -> None:
+    p = sub.add_parser(
+        "cloudflare",
+        help="Cloudflare Workers Builds helpers (used by ss-cloudflare-deployed.yml)",
+        description="Helpers for repos deployed by Cloudflare Workers Builds.\n",
+    )
+    cf_sub = p.add_subparsers(dest="cloudflare_action", required=True)
+    pu = cf_sub.add_parser(
+        "preview-url",
+        help="Print a commit's preview URL from Cloudflare's PR comment on stdin",
+        description=(
+            "Read the Cloudflare bot's PR comment body on stdin and print the\n"
+            "preview URL from the row for <sha>. Exits 1 when there is none.\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    pu.add_argument("sha", help="The deployed commit SHA (full or 7+ characters)")
+
+
 # ── main entry point ─────────────────────────────────────────────
 
 
@@ -597,7 +601,7 @@ _DISPATCHERS = {
     "checks":    lambda a: _dispatch_checks_list(a.category, a.json),
     "doctor":    lambda a: _dispatch_doctor(),
     "profile":   lambda a: _dispatch_profile(a.profile_action, getattr(a, "name", None)),
-    "cloudflare": lambda a: _dispatch_cloudflare_preview_url(a.sha),
+    "cloudflare": lambda a: _dispatch_cloudflare(a.cloudflare_action, a.sha),
 }
 
 
@@ -628,14 +632,6 @@ def main(argv: list[str] | None = None) -> int:
 
 
 # ── dispatchers ──────────────────────────────────────────────────
-
-
-def _dispatch_cloudflare_preview_url(sha: str) -> int:
-    url = cloudflare.preview_url(sys.stdin.read(), sha)
-    if url is None:
-        return 1
-    print(url)
-    return 0
 
 
 def _dispatch_run(check_name: str, check_args: list[str]) -> int:
@@ -1025,11 +1021,16 @@ def _print_profile_list() -> int:
         if detail:
             output._emit(f"      {detail}")
         disables = entry.get("disables", [])
-        if not disables:
+        held = entry.get("disables_without_api", [])
+        if not disables and not held:
             output._emit("      disables: nothing, so every check applies")
-        else:
+        if disables:
             output._emit(f"      disables {len(disables)} workflow(s):")
             for workflow in disables:
+                output._emit(f"        · {workflow}")
+        if held:
+            output._emit(f"      holds back {len(held)} workflow(s) until the repo shows an API:")
+            for workflow in held:
                 output._emit(f"        · {workflow}")
         output._emit("")
     output._emit("  Set one in .slopstopper.yml:  profile: api")
@@ -1084,7 +1085,8 @@ def _print_profile_show() -> int:
 
 
 def _print_profile_expand(name: str | None) -> int:
-    """Raw workflow list for a named profile, in the form install.sh consumes."""
+    """The profile's unconditional list, one per line. install.sh reads this
+    repo's effective set via `profile disabled` instead."""
     workflows = profiles.expand(name or "")
     if workflows is None:
         output.error(
@@ -1133,3 +1135,24 @@ def _dispatch_profile(action: str, name: str | None) -> int:
         output.error(f"unknown profile action: {action}")
         return 2
     return handler(name)
+
+
+def _cloudflare_preview_url(sha: str) -> int:
+    url = cloudflare.preview_url(sys.stdin.read(), sha)
+    if url is None:
+        return 1
+    print(url)
+    return 0
+
+
+_CLOUDFLARE_ACTIONS = {
+    "preview-url": _cloudflare_preview_url,
+}
+
+
+def _dispatch_cloudflare(action: str, sha: str) -> int:
+    handler = _CLOUDFLARE_ACTIONS.get(action)
+    if handler is None:
+        output.error(f"unknown cloudflare action: {action}")
+        return 2
+    return handler(sha)

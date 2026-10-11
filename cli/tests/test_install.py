@@ -1156,3 +1156,19 @@ def test_the_cloudflare_deploy_trigger_ships_only_to_a_cloudflare_repo(tmp_path)
     (target / "wrangler.jsonc").unlink()
     assert _run_install(target).returncode == 0
     assert "ss-cloudflare-deployed.yml" not in _installed(target)
+
+
+def test_a_gitignore_that_mentions_the_begin_marker_without_the_line_is_left_alone(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    hand_edited = "node_modules/\n# see the # slopstopper begin marker below, once added\n"
+    (target / ".gitignore").write_text(hand_edited)
+    result = _run_install(target, args=["--no-hooks", "--no-skills"])
+    assert result.returncode == 0, result.stderr
+    assert "no line that is exactly that marker" in result.stdout
+    assert (target / ".gitignore").read_text() == hand_edited
+
+
+def test_the_starter_describes_the_ui_api_holdback():
+    starter = (REPO_ROOT / "templates" / "slopstopper.yml.starter").read_text()
+    assert "ship inert" not in starter
+    assert "re-run install.sh" in starter and "format: meta" in starter

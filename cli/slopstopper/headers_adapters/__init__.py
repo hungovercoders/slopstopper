@@ -9,8 +9,10 @@ Adapter contract:
     def parse(path: pathlib.Path) -> list[dict]:
         '''Return [{"for": str, "csp": str | None}, ...] for each rule.'''
 
-Path is the file the adopter named in `.slopstopper.yml` `headers.source`.
-Adapters do not validate the file's existence; the caller checks first.
+Path is what the adopter named in `.slopstopper.yml` `headers.source`: a
+headers file, or for `meta` the built HTML root. A rule may also carry
+`missing: True` (a page with no policy); its `csp` is then None.
+Adapters do not validate the path's existence; the caller checks first.
 
 Built-in adapters live as submodules here. The plan-doc convention for
 adopter-supplied custom adapters is to drop a Python module under

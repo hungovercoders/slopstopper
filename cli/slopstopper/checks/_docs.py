@@ -18,15 +18,21 @@ from __future__ import annotations
 import fnmatch
 from pathlib import Path
 
-from slopstopper import config
+from slopstopper import config, output
 
 DEFAULT_EXCLUDE = ["docs/archive/**"]
 
 
 def exclude_patterns() -> list[str]:
     raw = config.get("hygiene.docs.exclude", DEFAULT_EXCLUDE)
-    patterns = raw if isinstance(raw, list) else [raw]
-    return [str(p).strip().removeprefix("./") for p in patterns if str(p).strip()]
+    patterns = [str(p).strip().removeprefix("./") for p in (raw if isinstance(raw, list) else [raw]) if str(p).strip()]
+    usable = []
+    for pattern in patterns:
+        if pattern.startswith(("/", "~")) or ".." in Path(pattern).parts:
+            output.warn(f"hygiene.docs.exclude entry {pattern!r} is not a repo-relative glob, so it is ignored")
+            continue
+        usable.append(pattern)
+    return usable
 
 
 def is_excluded(path: Path, patterns: list[str]) -> bool:

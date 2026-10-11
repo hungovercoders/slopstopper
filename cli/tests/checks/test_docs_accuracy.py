@@ -236,6 +236,22 @@ def test_extra_paths_do_not_pull_excluded_docs_back_in(write_config):
     _write(Path("docs/index.md"), "# docs\n")
     _write(Path("docs/course/lesson.md"), "Run `task ss:nope`.\n")
     assert docs_accuracy._collect_extra_targets() == []
+    assert docs_accuracy.run() == 0
+    data = json.loads(docs_accuracy.REPORT_JSON.read_text())
+    assert data["excluded"] == ["docs/course/lesson.md"]
+
+
+def test_an_excluded_extra_path_outside_docs_is_listed_too(write_config, capsys):
+    write_config(
+        "hygiene:\n  docs:\n    exclude: [docs/archive/**, course/**]\n"
+        "  docs_accuracy:\n    extra_paths: [course/*.md]\n"
+    )
+    _write(Path("docs/index.md"), "# docs\n")
+    _write(Path("course/lesson.md"), "Run `task ss:nope`.\n")
+    assert docs_accuracy.run() == 0
+    data = json.loads(docs_accuracy.REPORT_JSON.read_text())
+    assert data["excluded"] == ["course/lesson.md"]
+    assert "1 doc(s) excluded by hygiene.docs.exclude" in capsys.readouterr().out
 
 
 # ── extra_paths: files outside docs/ ─────────────────────────────
