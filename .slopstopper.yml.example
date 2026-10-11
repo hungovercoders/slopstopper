@@ -353,15 +353,15 @@ reliability:
   # ── robots.txt discoverability + de-index guard check ──────────────
   # `reliability:robots-txt` audits /robots.txt: reachable, non-empty, no
   # blanket `Disallow: /` under `User-agent: *` (the de-index footgun), and
-  # at least one `Sitemap:` pointer. An `Llms:` pointer and the text/plain
-  # content-type are advisory. These knobs adjust that bar.
+  # at least one `Sitemap:` pointer. The text/plain content-type is
+  # advisory, as is an `Llms:` line if present: it is not a robots.txt
+  # directive, Lighthouse scores the file 0 for it, and /llms.txt is found
+  # at its own path. A `require_llms` key is ignored with a note.
   robots_txt:
     # Permit a blanket `Disallow: /` without failing (e.g. a private
     # staging site that genuinely wants to block all crawlers).
     allow_disallow_all: false
-    # Fail if the `Llms:` pointer to /llms.txt is missing.
-    require_llms: false
-    # HEAD-verify the Sitemap:/Llms: URLs resolve (non-4xx/5xx).
+    # HEAD-verify the Sitemap: URLs resolve (non-4xx/5xx).
     check_links: false
 
   # ── sitemap.xml completeness + drift check ─────────────────────────

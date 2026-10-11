@@ -28,19 +28,17 @@ def test_parse_args_defaults():
     assert parsed.url is None
     assert parsed.path is None
     assert parsed.check_links is False
-    assert parsed.require_llms is False
     assert parsed.allow_disallow_all is False
 
 
 def test_parse_args_explicit():
     parsed = robots_txt._parse_args(
         ["--url", "https://example.com", "--path", "/r.txt", "--check-links",
-         "--require-llms", "--allow-disallow-all"]
+         "--allow-disallow-all"]
     )
     assert parsed.url == "https://example.com"
     assert parsed.path == "/r.txt"
     assert parsed.check_links is True
-    assert parsed.require_llms is True
     assert parsed.allow_disallow_all is True
 
 
@@ -118,16 +116,16 @@ def test_blocks_all_true_when_star_shares_group_with_other_agent():
 
 def test_audit_pass_on_valid_body(monkeypatch):
     monkeypatch.setattr(robots_txt, "_fetch", lambda url: (200, "text/plain", VALID_BODY))
-    result = robots_txt._audit("https://example.com", "/robots.txt", False, False, False)
+    result = robots_txt._audit("https://example.com", "/robots.txt", False, False)
     assert result["status"] == "pass"
     assert result["issues"] == []
     assert result["sitemap_count"] == 1
-    assert result["llms_count"] == 1
+    assert any("`Llms:` is not a robots.txt directive" in n for n in result["notes"])
 
 
 def test_audit_fails_on_blanket_disallow(monkeypatch):
     monkeypatch.setattr(robots_txt, "_fetch", lambda url: (200, "text/plain", DISALLOW_ALL_BODY))
-    result = robots_txt._audit("https://example.com", "/robots.txt", False, False, False)
+    result = robots_txt._audit("https://example.com", "/robots.txt", False, False)
     assert result["status"] == "fail"
     assert any("de-indexes the entire site" in i for i in result["issues"])
 
@@ -135,7 +133,7 @@ def test_audit_fails_on_blanket_disallow(monkeypatch):
 def test_audit_allow_disallow_all_downgrades_to_note(monkeypatch):
     monkeypatch.setattr(robots_txt, "_fetch", lambda url: (200, "text/plain", DISALLOW_ALL_BODY))
     result = robots_txt._audit(
-        "https://example.com", "/robots.txt", False, False, allow_disallow_all=True
+        "https://example.com", "/robots.txt", False, allow_disallow_all=True
     )
     assert result["status"] == "pass"
     assert any("allowed by allow_disallow_all" in n for n in result["notes"])
@@ -143,14 +141,14 @@ def test_audit_allow_disallow_all_downgrades_to_note(monkeypatch):
 
 def test_audit_fails_when_no_sitemap(monkeypatch):
     monkeypatch.setattr(robots_txt, "_fetch", lambda url: (200, "text/plain", "User-agent: *\nAllow: /\n"))
-    result = robots_txt._audit("https://example.com", "/robots.txt", False, False, False)
+    result = robots_txt._audit("https://example.com", "/robots.txt", False, False)
     assert result["status"] == "fail"
     assert any("No `Sitemap:`" in i for i in result["issues"])
 
 
 def test_audit_fails_when_empty(monkeypatch):
     monkeypatch.setattr(robots_txt, "_fetch", lambda url: (200, "text/plain", "   "))
-    result = robots_txt._audit("https://example.com", "/robots.txt", False, False, False)
+    result = robots_txt._audit("https://example.com", "/robots.txt", False, False)
     assert result["status"] == "fail"
     assert any("empty" in i for i in result["issues"])
 
@@ -160,7 +158,7 @@ def test_audit_fails_when_unreachable(monkeypatch):
         raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
 
     monkeypatch.setattr(robots_txt, "_fetch", boom)
-    result = robots_txt._audit("https://example.com", "/robots.txt", False, False, False)
+    result = robots_txt._audit("https://example.com", "/robots.txt", False, False)
     assert result["status"] == "fail"
     assert result["sitemap_count"] == 0
     assert any("not reachable" in i for i in result["issues"])
@@ -168,39 +166,40 @@ def test_audit_fails_when_unreachable(monkeypatch):
 
 def test_audit_content_type_note(monkeypatch):
     monkeypatch.setattr(robots_txt, "_fetch", lambda url: (200, "text/html", VALID_BODY))
-    result = robots_txt._audit("https://example.com", "/robots.txt", False, False, False)
+    result = robots_txt._audit("https://example.com", "/robots.txt", False, False)
     assert result["status"] == "pass"
     assert any("Content-Type" in n for n in result["notes"])
 
 
-def test_audit_llms_advisory_by_default(monkeypatch):
+def test_a_body_without_llms_gets_no_llms_note(monkeypatch):
     body = "User-agent: *\nAllow: /\n\nSitemap: https://e.com/s.xml\n"
     monkeypatch.setattr(robots_txt, "_fetch", lambda url: (200, "text/plain", body))
-    result = robots_txt._audit("https://example.com", "/robots.txt", False, require_llms=False, allow_disallow_all=False)
+    result = robots_txt._audit("https://example.com", "/robots.txt", False, allow_disallow_all=False)
     assert result["status"] == "pass"
-    assert any("Llms:" in n for n in result["notes"])
+    assert not any("Llms" in n for n in result["notes"])
 
 
-def test_audit_llms_hard_fail_when_required(monkeypatch):
+def test_the_require_llms_knob_is_ignored_with_a_note(monkeypatch, write_config, capsys):
+    """A retired knob never fails a run and never silently does nothing."""
     body = "User-agent: *\nAllow: /\n\nSitemap: https://e.com/s.xml\n"
     monkeypatch.setattr(robots_txt, "_fetch", lambda url: (200, "text/plain", body))
-    result = robots_txt._audit("https://example.com", "/robots.txt", False, require_llms=True, allow_disallow_all=False)
-    assert result["status"] == "fail"
-    assert any("Llms:" in i for i in result["issues"])
+    write_config("reliability:\n  robots_txt:\n    require_llms: true\n")
+    assert robots_txt.run(["--url", "https://example.com"]) == 0
+    assert "require_llms is ignored" in capsys.readouterr().out
 
 
 def test_audit_check_links_records_reachability(monkeypatch):
     monkeypatch.setattr(robots_txt, "_fetch", lambda url: (200, "text/plain", VALID_BODY))
     monkeypatch.setattr(robots_txt, "_head_ok", lambda url: (True, "HTTP 200"))
-    result = robots_txt._audit("https://example.com", "/robots.txt", check_links=True, require_llms=False, allow_disallow_all=False)
+    result = robots_txt._audit("https://example.com", "/robots.txt", check_links=True, allow_disallow_all=False)
     assert result["status"] == "pass"
-    assert len(result["link_checks"]) == 2
+    assert len(result["link_checks"]) == 1
 
 
 def test_audit_check_links_notes_dead_link(monkeypatch):
     monkeypatch.setattr(robots_txt, "_fetch", lambda url: (200, "text/plain", VALID_BODY))
     monkeypatch.setattr(robots_txt, "_head_ok", lambda url: (False, "HTTP 404"))
-    result = robots_txt._audit("https://example.com", "/robots.txt", check_links=True, require_llms=False, allow_disallow_all=False)
+    result = robots_txt._audit("https://example.com", "/robots.txt", check_links=True, allow_disallow_all=False)
     # dead links are advisory, so it still passes
     assert result["status"] == "pass"
     assert any("not reachable" in n for n in result["notes"])
@@ -216,7 +215,6 @@ def test_build_markdown_report_pass():
         "issues": [],
         "notes": [],
         "sitemap_count": 1,
-        "llms_count": 1,
         "link_checks": [],
     }
     md = robots_txt._build_markdown_report(result)

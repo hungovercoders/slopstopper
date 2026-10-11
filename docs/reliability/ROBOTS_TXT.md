@@ -15,11 +15,11 @@ The check fetches `/robots.txt` and asserts it is present and does not sabotage 
 - The `User-agent: *` group has no blanket `Disallow: /`, unless `allow_disallow_all` says otherwise
 - At least one `Sitemap:` directive is present
 
-**Advisory (notes only, unless escalated via config):**
+**Advisory (notes only):**
 
 - Content-Type is `text/plain`
-- An `Llms:` pointer to `/llms.txt` is present. Escalate with `require_llms`. Lighthouse's `robots-txt` audit counts `Llms:` as an unknown directive and scores the file 0, which costs the Core Web Vitals SEO category; a site that runs both checks should leave it out (the `llms-txt` check finds `/llms.txt` at its own path)
-- When `check_links` is on, the `Sitemap:`/`Llms:` URLs are HEAD-verified as reachable (non-4xx/5xx)
+- No `Llms:` line. It is not a robots.txt directive: no crawler reads it, Lighthouse's `robots-txt` audit counts it as an unknown directive and scores the file 0 (which costs the Core Web Vitals SEO category), and `/llms.txt` is found at its own path, which the `llms-txt` check covers
+- When `check_links` is on, the `Sitemap:` URLs are HEAD-verified as reachable (non-4xx/5xx)
 
 Lighthouse's SEO audit (run by `ss:reliability:cwv`) already checks that robots.txt *parses*, but it buries accidental blanket blocking and a missing sitemap pointer. This check surfaces those two failures as a named, first-class gate.
 
@@ -32,8 +32,9 @@ Read from environment variables or `.slopstopper.yml`'s `reliability.robots_txt`
 | `ROBOTS_TXT_TEST_URL` | (none, required) | Base URL to audit |
 | `ROBOTS_TXT_PATH` | `/robots.txt` | Path to the file |
 | `reliability.robots_txt.allow_disallow_all` | `false` | Permit a blanket `Disallow: /` (`--allow-disallow-all`) |
-| `reliability.robots_txt.require_llms` | `false` | Fail if the `Llms:` pointer is missing (`--require-llms`) |
-| `reliability.robots_txt.check_links` | `false` | HEAD-verify Sitemap:/Llms: URLs resolve (`--check-links`) |
+| `reliability.robots_txt.check_links` | `false` | HEAD-verify Sitemap: URLs resolve (`--check-links`) |
+
+A `require_llms` key is ignored with a note.
 
 ## Running it
 
@@ -60,7 +61,6 @@ User-agent: *
 Allow: /
 
 Sitemap: https://example.com/sitemap.xml
-Llms: https://example.com/llms.txt
 ```
 
 This site's own file, [`app/robots.txt`](../../app/robots.txt), is the canonical example.

@@ -11,12 +11,15 @@ triangle.
 
 The hard-fail bar is deliberately scoped to real damage: reachable,
 non-empty, no blanket `Disallow: /`, and at least one `Sitemap:` pointer.
-An `Llms:` pointer and the `text/plain` content-type are advisory notes
-that only fail the check when a config knob escalates them.
+The `text/plain` content-type is an advisory note. So is an `Llms:` line,
+when one is present: it is not a robots.txt directive, no crawler reads
+it, Lighthouse's robots-txt audit scores the file 0 for an unknown
+directive, and `/llms.txt` is found at its own path (which
+`reliability:llms-txt` checks).
 
 CLI surface:
   slopstopper run reliability:robots-txt -- --url URL [--path /robots.txt]
-        [--check-links] [--require-llms] [--allow-disallow-all]
+        [--check-links] [--allow-disallow-all]
 
 Stdlib-only (urllib). Writes .ss/reports/robots-txt/robots-txt-report.{md,json}.
 
@@ -25,8 +28,9 @@ Configuration (.slopstopper.yml, all optional):
     reliability:
       robots_txt:
         allow_disallow_all: false   # suppress the blanket `Disallow: /` failure
-        require_llms: false          # escalate a missing `Llms:` pointer to hard-fail
-        check_links: false           # HEAD-verify Sitemap:/Llms: targets resolve
+        check_links: false           # HEAD-verify Sitemap: targets resolve
+
+A `require_llms` key is ignored with a note.
 
 Env-var equivalents the CLI also honours (precedence: flag > env > config):
   ROBOTS_TXT_TEST_URL   base URL to audit (required)
@@ -138,7 +142,6 @@ def _validate_body(
     status: int,
     ctype: str,
     body: str,
-    require_llms: bool,
     allow_disallow_all: bool,
 ) -> tuple[list[str], list[str], dict]:
     """Return (issues, notes, parsed) for a fetched robots.txt body."""
@@ -163,12 +166,13 @@ def _validate_body(
     if not sitemaps:
         issues.append("No `Sitemap:` directive, so crawlers can't discover your URL inventory")
 
-    llms = _global_directive(body, "Llms")
-    if not llms:
-        msg = "No `Llms:` pointer to /llms.txt (recommended for AI-assistant discoverability)"
-        (issues if require_llms else notes).append(msg)
+    if _global_directive(body, "Llms"):
+        notes.append(
+            "`Llms:` is not a robots.txt directive: no crawler reads it, Lighthouse's robots-txt "
+            "audit scores the file 0 for it, and /llms.txt is found at its own path. Remove the line"
+        )
 
-    return issues, notes, {"sitemaps": sitemaps, "llms": llms}
+    return issues, notes, {"sitemaps": sitemaps}
 
 
 def _check_links(urls: list[str], notes: list[str]) -> list[dict]:
@@ -187,7 +191,6 @@ def _audit(
     base: str,
     path: str,
     check_links: bool,
-    require_llms: bool,
     allow_disallow_all: bool,
 ) -> dict:
     file_url = urllib.parse.urljoin(base.rstrip("/") + "/", path.lstrip("/"))
@@ -201,15 +204,14 @@ def _audit(
             "issues": [f"robots.txt not reachable: {type(e).__name__}: {e}"],
             "notes": [],
             "sitemap_count": 0,
-            "llms_count": 0,
             "link_checks": [],
         }
 
-    issues, notes, parsed = _validate_body(status, ctype, body, require_llms, allow_disallow_all)
+    issues, notes, parsed = _validate_body(status, ctype, body, allow_disallow_all)
 
     link_checks: list[dict] = []
     if check_links:
-        link_checks = _check_links(parsed["sitemaps"] + parsed["llms"], notes)
+        link_checks = _check_links(parsed["sitemaps"], notes)
 
     return {
         "url": file_url,
@@ -217,7 +219,6 @@ def _audit(
         "issues": issues,
         "notes": notes,
         "sitemap_count": len(parsed["sitemaps"]),
-        "llms_count": len(parsed["llms"]),
         "link_checks": link_checks,
     }
 
@@ -265,6 +266,10 @@ def _build_markdown_report(result: dict) -> str:
         "- **Missing `Sitemap:`** → add `Sitemap: https://your-site/sitemap.xml` so crawlers "
         "can discover your URLs."
     )
+    lines.append(
+        "- **`Llms:` line** → remove it. It is not a robots.txt directive and Lighthouse scores "
+        "the file 0 for it; `/llms.txt` is found at its own path."
+    )
     lines.append("")
     return "\n".join(lines) + "\n"
 
@@ -288,12 +293,7 @@ def _parse_args(args: list[str] | None) -> argparse.Namespace:
     p.add_argument("url_positional", nargs="?", default=None, help="Base URL to audit")
     p.add_argument("--url", default=None, help="Base URL to audit")
     p.add_argument("--path", default=None, help="Path to robots.txt (default: /robots.txt)")
-    p.add_argument("--check-links", action="store_true", help="HEAD-verify Sitemap:/Llms: targets")
-    p.add_argument(
-        "--require-llms",
-        action="store_true",
-        help="Fail if the `Llms:` pointer is missing",
-    )
+    p.add_argument("--check-links", action="store_true", help="HEAD-verify Sitemap: targets")
     p.add_argument(
         "--allow-disallow-all",
         action="store_true",
@@ -326,14 +326,18 @@ def run(args: list[str] | None = None) -> int:
 
     path = _resolve_path(parsed.path)
     check_links = parsed.check_links or config.get_bool("reliability.robots_txt.check_links", False)
-    require_llms = parsed.require_llms or config.get_bool("reliability.robots_txt.require_llms", False)
+    if config.get("reliability.robots_txt.require_llms") is not None:
+        output.info(
+            "reliability.robots_txt.require_llms is ignored: `Llms:` is not a robots.txt directive "
+            "and Lighthouse scores the file 0 for it, so the check doesn't ask for one."
+        )
     allow_disallow_all = parsed.allow_disallow_all or config.get_bool("reliability.robots_txt.allow_disallow_all", False)
 
     output.status("🤖", f"robots.txt audit against: {url}{path}")
     output.separator()
 
     try:
-        result = _audit(url, path, check_links, require_llms, allow_disallow_all)
+        result = _audit(url, path, check_links, allow_disallow_all)
     except ValueError as e:
         # A bad input the up-front URL guard couldn't see (a configured path
         # that composes to an unusable URL): the check could not run.

@@ -195,19 +195,17 @@ tasks:
       sabotage discoverability. The headline assertion is the de-index guard:
       a blanket `Disallow: /` under `User-agent: *` removes the whole site
       from search. The hard-fail bar is scoped to real damage (reachable,
-      non-empty, no blanket disallow, at least one `Sitemap:`); an `Llms:`
-      pointer and the text/plain content-type are advisory unless escalated
-      via config.
+      non-empty, no blanket disallow, at least one `Sitemap:`); the text/plain
+      content-type and a stray `Llms:` line (not a directive; Lighthouse
+      scores it 0) are advisory notes.
 
-      Configuration (environment variables; allow_disallow_all / require_llms
-      / check_links are also read from .slopstopper.yml's
-      `reliability.robots_txt`):
+      Configuration (environment variables; allow_disallow_all / check_links
+      are also read from .slopstopper.yml's `reliability.robots_txt`):
         ROBOTS_TXT_TEST_URL  - base URL to audit (required)
         ROBOTS_TXT_PATH      - path to the file (default: /robots.txt)
 
       Flags:
-        --check-links         - HEAD-verify Sitemap:/Llms: targets resolve
-        --require-llms        - fail if the `Llms:` pointer is missing
+        --check-links         - HEAD-verify Sitemap: targets resolve
         --allow-disallow-all  - permit a blanket `Disallow: /` without failing
 
       Usage:

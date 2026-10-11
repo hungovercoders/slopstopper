@@ -345,7 +345,7 @@ on:
             <div class="card">
                 <h3>🤖 robots.txt Check</h3>
                 <span class="tool-license">MIT</span>
-                <p>Audits your site's <code>/robots.txt</code> for the two failures Lighthouse buries. Its headline job is the de-index guard: a stray <code>Disallow: /</code> under <code>User-agent: *</code> silently removes the whole site from search. Also requires a <code>Sitemap:</code> pointer, treats an <code>Llms:</code> pointer as advisory, and can HEAD-verify the referenced URLs resolve. Stdlib Python, so no new dependencies.</p>
+                <p>Audits your site's <code>/robots.txt</code> for the two failures Lighthouse buries. Its headline job is the de-index guard: a stray <code>Disallow: /</code> under <code>User-agent: *</code> silently removes the whole site from search. Also requires a <code>Sitemap:</code> pointer, notes a stray <code>Llms:</code> line (not a directive; Lighthouse scores it 0), and can HEAD-verify the referenced URLs resolve. Stdlib Python, so no new dependencies.</p>
                 <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/ROBOTS_TXT.md" rel="noopener noreferrer">Learn more about robots.txt check config →</a>
                 <details class="details">
                     <summary>Taskfile excerpt</summary>
@@ -355,7 +355,7 @@ on:
   cmds:
     - slopstopper run reliability:robots-txt -- {{.CLI_ARGS}}
   # Env: ROBOTS_TXT_TEST_URL, ROBOTS_TXT_PATH (default /robots.txt)
-  # Config: reliability.robots_txt.{allow_disallow_all, require_llms, check_links}</code></pre></div>
+  # Config: reliability.robots_txt.{allow_disallow_all, check_links}</code></pre></div>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/checks/robots_txt.py" rel="noopener noreferrer">View check script →</a>
                         <br>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-robots-txt-check.yml" rel="noopener noreferrer">View workflow →</a>
