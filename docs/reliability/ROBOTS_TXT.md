@@ -18,7 +18,7 @@ The check fetches `/robots.txt` and asserts it is present and does not sabotage 
 **Advisory (notes only, unless escalated via config):**
 
 - Content-Type is `text/plain`
-- An `Llms:` pointer to `/llms.txt` is present. Escalate with `require_llms`
+- An `Llms:` pointer to `/llms.txt` is present. Escalate with `require_llms`. Lighthouse's `robots-txt` audit counts `Llms:` as an unknown directive and scores the file 0, which costs the Core Web Vitals SEO category; a site that runs both checks should leave it out (the `llms-txt` check finds `/llms.txt` at its own path)
 - When `check_links` is on, the `Sitemap:`/`Llms:` URLs are HEAD-verified as reachable (non-4xx/5xx)
 
 Lighthouse's SEO audit (run by `ss:reliability:cwv`) already checks that robots.txt *parses*, but it buries accidental blanket blocking and a missing sitemap pointer. This check surfaces those two failures as a named, first-class gate.

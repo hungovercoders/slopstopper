@@ -2,4 +2,3 @@ User-agent: *
 Allow: /
 
 Sitemap: https://slopstopper.dev/sitemap.xml
-Llms: https://slopstopper.dev/llms.txt
