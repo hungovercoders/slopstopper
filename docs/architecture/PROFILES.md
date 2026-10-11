@@ -80,7 +80,7 @@ Web Vitals → [api-latency](../reliability/README.md#api-latency-check), CSP
 exceptions → [api-headers](../security/API_HEADERS.md), docs-accuracy →
 [openapi](../hygiene/README.md#openapi-drift), DAST's spider → [its OpenAPI
 scan mode](../security/DAST.md). Each is inert until configured. Under `ui`
-the four API checks ship only when the repo has an API: an OpenAPI/Swagger spec or proto file, a server-framework dependency, or any `api.*` key in `.slopstopper.yml`
+the four API checks ship only when the repo has an API: an OpenAPI/Swagger spec or proto file, a server-framework dependency, or an API check configured under `api.*` in `.slopstopper.yml`
 (`disables_without_api` in `cli/slopstopper/data/profiles.json`), so a static site doesn't run four
 jobs that check nothing and a UI with API routes still gets them without
 finding `workflows.enabled`. Re-run the installer after adding one to pick

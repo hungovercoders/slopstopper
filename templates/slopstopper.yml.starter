@@ -11,18 +11,17 @@
 # from (put it in place of `main` to see that version). A knob the CLI reads
 # takes effect once the slopstopper-cli pinned in mise.toml has it.
 
-# This repo's shape. ui (the default) is a site or app that serves HTML.
+# This repo's shape. ui (the default) is a site or app that serves HTML;
 # api has JSON/gRPC endpoints and no browser surface, so it drops the nine
-# browser checks. library deploys nothing and drops every URL-driven check.
-# `install.sh --profile api` writes this for you; re-run install.sh after
-# changing it so the workflow set follows.
+# browser checks; library deploys nothing and drops every URL-driven check.
+# `install.sh --profile api` writes this; re-run install.sh after changing it.
 profile: ui
 
-# Where the deployed app lives. production is what the scheduled runs and
-# pushes to main audit; preview is the environment your PRs deploy to. The
-# browser checks build and serve the repo on PRs; preview is what the API
-# checks and DAST's API mode (api.openapi.spec) hit on a PR, and without it
-# they skip there. Leave it blank if you have no preview environment.
+# Where the deployed app lives. production is what scheduled and post-deploy
+# runs audit (and the API checks on a push to main); preview is where your
+# PRs deploy. The browser checks build and serve the repo on PRs and pushes;
+# the API checks and DAST's API mode (api.openapi.spec) hit preview on a PR,
+# and skip there without it. Leave it blank if you have no preview.
 urls:
   production:
   preview:
@@ -41,15 +40,17 @@ pages:
 smoke:
   og_image_path: /og-image.png
 
-# Your security-headers file, for the CSP-drift check. Common values:
-# public/_headers (Cloudflare Pages / Netlify) or worker/headers.json.
-# null skips the check.
+# Your security-headers file, for the CSP-drift check: public/_headers
+# (Cloudflare Pages / Netlify), worker/headers.json, or on a host that can't
+# send headers the built HTML root (e.g. dist) with `format: meta`, which
+# reads each page's <meta> CSP. null skips the check.
 headers:
   source: null
 
 # If you serve an API, copy the `api:` block from the schema reference
-# above. The four API checks ship inert until api.health.path /
-# api.latency.paths / api.headers.paths / api.openapi.spec are set.
+# above. Under `ui` the four API checks are installed once the repo shows an
+# API: a spec, a server framework, or api.health.path / api.latency.paths /
+# api.headers.paths / api.openapi.spec set here; re-run install.sh after.
 
 # Any check you don't want, by workflow filename. A profile drops whole
 # sets; this is for one-offs. `enabled` takes a single check back from a

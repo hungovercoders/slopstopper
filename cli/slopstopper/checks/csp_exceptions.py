@@ -13,9 +13,10 @@ Configuration (.slopstopper.yml):
 `format: meta` is for hosts that can't send headers (GitHub Pages, S3
 without CloudFront): `source` is the built HTML root (`dist`), and each
 page's `<meta http-equiv="Content-Security-Policy">` is read instead (see
-headers_adapters/meta_adapter.py). A page with no policy is a warning.
-The root only exists after a build: missing in CI it exits 2, and
-locally it skips with a note, so the pre-push gate doesn't need a build.
+headers_adapters/meta_adapter.py); `auto` picks it for a source with no
+file extension. A page with no policy is a warning. The root only exists
+after a build: missing or empty in CI it exits 2, and locally it skips
+with a note, so the pre-push gate doesn't need a build.
 
 See .slopstopper.yml.example for the canonical schema and supported
 adapters.
@@ -80,6 +81,25 @@ def _resolve_source() -> tuple[Path | None, str | None, str | None]:
     if not source_path.exists():
         return source_path, format_name, f"configured headers source {source_path} does not exist"
     return source_path, format_name, None
+
+
+def _meta_source(source_path: Path, format_name: str) -> bool:
+    """Whether the source is read as built HTML: `meta`, or `auto` on a
+    directory (a path with no file extension, until it exists)."""
+    if format_name == "meta":
+        return True
+    if format_name != "auto":
+        return False
+    return source_path.is_dir() if source_path.exists() else not source_path.suffix
+
+
+def _unbuilt(reason: str) -> int:
+    """A <meta> source is the built HTML: could-not-run in CI, a skip locally."""
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        output.error(f"CSP exceptions check: {reason}. A <meta> CSP source is the built HTML, so build the site before this check runs.")
+        return 2
+    output.info(f"CSP exceptions check: {reason} (a <meta> CSP source is the built HTML; build the site to check it), so skipping.")
+    return 0
 
 
 def _extract_csp_origins(csp: str) -> set[str]:
@@ -319,12 +339,10 @@ def run(args: list[str] | None = None) -> int:
     if source_path is None:
         output.info(f"CSP exceptions check: {skip_reason}, so skipping.")
         return 0
-    if skip_reason and format_name == "meta" and os.environ.get("GITHUB_ACTIONS") == "true":
-        output.error(f"CSP exceptions check: {skip_reason}. headers.format meta reads the built HTML, so build the site before this check runs.")
-        return 2
+    if skip_reason and _meta_source(source_path, format_name):
+        return _unbuilt(skip_reason)
     if skip_reason:
-        hint = " (format: meta reads the built HTML; build the site to check it)" if format_name == "meta" else ""
-        output.info(f"CSP exceptions check: {skip_reason}{hint}, so skipping.")
+        output.info(f"CSP exceptions check: {skip_reason}, so skipping.")
         return 0
     if format_name not in {*headers_adapters.ADAPTERS.keys(), "auto"}:
         output.error(
@@ -337,6 +355,8 @@ def run(args: list[str] | None = None) -> int:
         return 2
 
     rules = headers_adapters.parse(source_path, format_name)
+    if not rules and _meta_source(source_path, format_name):
+        return _unbuilt(f"{source_path} has no HTML pages")
     doc_entries = _parse_exceptions_doc(EXCEPTIONS_DOC)
     headers_count = len(_headers_exception_map(rules))
     issues = _compare(rules, doc_entries, str(source_path))

@@ -33,7 +33,8 @@ emitted issue can be discovered with `gh issue list --label slopstopper`.
 `gh issue create --label` fails on a label the repo doesn't have, so any
 missing label is created first; if one still can't be applied, the issue
 is created without labels and a warning says so, because a lost failure
-report is worse than an unlabelled one.
+report is worse than an unlabelled one. The body marker then stands in
+for the labels when the issue is looked up again.
 Bodies also gain a hidden HTML-comment marker `<!-- slopstopper:check=<name> -->`
 in the footer for machine-readable dedup and, in Actions, a
 `<!-- slopstopper:workflow=<file>.yml -->` marker naming the workflow that
@@ -386,29 +387,37 @@ def _augment_labels(labels: list[str]) -> list[str]:
     return [_BRAND_LABEL, *labels]
 
 
-def _find_existing_issue(labels: list[str]) -> int | None:
-    """Return the first open issue number that has every label."""
-    label_args: list[str] = []
-    for lbl in labels:
-        label_args += ["--label", lbl]
-    result = _gh(
-        "issue", "list",
-        "--state", "open",
-        *label_args,
-        "--json", "number",
-        capture=True,
-    )
+def _list_open_issues(*args: str) -> list[dict]:
+    result = _gh("issue", "list", "--state", "open", *args, capture=True)
     if result.returncode != 0:
-        return None
+        return []
     try:
         data = json.loads(result.stdout or "[]")
     except json.JSONDecodeError:
+        return []
+    return [item for item in data if isinstance(item, dict)] if isinstance(data, list) else []
+
+
+def _find_existing_issue(labels: list[str], check_name: str | None = None) -> int | None:
+    """The open issue this check owns: the first with every label, else the
+    first whose body carries the check's marker.
+
+    The marker pass is what finds an issue created without labels (see
+    `_create_issue`), so a repo that can't take labels still gets one
+    issue per check, updated and closed like any other.
+    """
+    label_args: list[str] = []
+    for lbl in labels:
+        label_args += ["--label", lbl]
+    for item in _list_open_issues(*label_args, "--json", "number"):
+        if isinstance(item.get("number"), int):
+            return item["number"]
+    if not check_name:
         return None
-    if not isinstance(data, list) or not data:
-        return None
-    first = data[0]
-    if isinstance(first, dict) and isinstance(first.get("number"), int):
-        return first["number"]
+    marker = f"<!-- slopstopper:check={check_name} -->"
+    for item in _list_open_issues("--limit", "100", "--json", "number,body"):
+        if isinstance(item.get("number"), int) and marker in (item.get("body") or ""):
+            return item["number"]
     return None
 
 
@@ -517,7 +526,7 @@ def emit_issue(
     body_path = report_path.with_suffix(".issue-body.md")
     body_path.write_text(body_with_footer)
 
-    existing = _find_existing_issue(labels)
+    existing = _find_existing_issue(labels, check_name)
     if existing is not None:
         print(f"↻ Updating existing issue #{existing}")
         rc = _update_issue_body(existing, body_path)
@@ -534,19 +543,19 @@ def emit_issue(
 _DEFAULT_CLOSE_COMMENT = "✅ Check is now passing on `main`. Closing automatically."
 
 
-def _close_issue(labels: list[str], close_comment: str) -> int:
-    """Comment + close any open issue matching `labels`. No-op if none exists.
+def _close_issue(labels: list[str], close_comment: str, check_name: str | None = None) -> int:
+    """Comment + close the open issue this check owns. No-op if none exists.
 
     Used by `emit --on-pass=close` as the post-success twin of
-    `emit_issue`'s post-failure open path. Same label-intersection dedup
-    (including the `slopstopper` brand label) via `_find_existing_issue`,
-    so a check only ever closes the issue it would have re-opened.
+    `emit_issue`'s post-failure open path. Same lookup (labels, then the
+    body marker) via `_find_existing_issue`, so a check only ever closes
+    the issue it would have re-opened.
     """
     if not _gh_available():
         print("❌ gh CLI is not available, and --on-pass=close needs it", file=sys.stderr)
         return 1
     labels = _augment_labels(labels)
-    existing = _find_existing_issue(labels)
+    existing = _find_existing_issue(labels, check_name)
     if existing is None:
         print("· No open issue to close")
         return 0
@@ -628,6 +637,7 @@ def emit(
             return _close_issue(
                 meta["issue_labels"],
                 meta.get("issue_close_comment", _DEFAULT_CLOSE_COMMENT),
+                check_name=check_name,
             )
         return emit_issue(
             report_path,

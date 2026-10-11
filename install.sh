@@ -155,12 +155,14 @@ Env var equivalents:
 
 Profiles (--profile) tailor the suite to the repo's shape:
 
-  ui       a site or app that serves HTML. Every check applies (default).
+  ui       a site or app that serves HTML. Every check applies (default);
+           the four API checks once the repo shows an API (a spec, a
+           server framework, or an API check configured under api.*).
   api      JSON/gRPC endpoints with no browser surface. Drops the nine
            browser-and-SEO reliability checks, which assume HTML and a
            public web surface and would go red rather than no-op.
   library  a library, CLI or package with no deployed surface. Also drops
-           DAST and CSP exceptions.
+           DAST, CSP exceptions and the four API checks.
 
 The flag writes `profile:` into .slopstopper.yml, so the choice survives
 re-runs and is visible in review; the workflow set is derived from that key
@@ -841,7 +843,7 @@ GENERIC_WORKFLOWS=(
   # The one hygiene check that needs a URL: drift means the spec measured
   # against the thing it documents, so it lives in layer 2 with the rest.
   "ss-hygiene-openapi-check.yml"
-  # Layer 3: agentic doc-updater (needs ANTHROPIC_API_KEY)
+  # Layer 3: agentic doc-updater (needs COPILOT_GITHUB_TOKEN)
   # NB: gh-aw workflows ship as a .md source + .lock.yml compiled artifact.
   "ss-hygiene-doc-updater.md"
   "ss-hygiene-doc-updater.lock.yml"
@@ -1228,9 +1230,11 @@ lines = open(gi).read().splitlines(keepends=True)
 block = open(src).read()
 if not block.endswith("\n"):
     block += "\n"
-begin = next(i for i, l in enumerate(lines) if l.strip() == "# slopstopper begin")
-end = next((i for i in range(begin, len(lines)) if lines[i].strip() == "# slopstopper end"), None)
-if end is None:
+begin = next((i for i, l in enumerate(lines) if l.strip() == "# slopstopper begin"), None)
+end = None if begin is None else next((i for i in range(begin, len(lines)) if lines[i].strip() == "# slopstopper end"), None)
+if begin is None:
+    print("no-begin")
+elif end is None:
     print("no-end")
 elif "".join(lines[begin:end + 1]) == block:
     print("current")
@@ -1243,6 +1247,7 @@ PY
       updated) success ".gitignore: slopstopper block updated to the current template" ;;
       current) info ".gitignore: slopstopper block already current" ;;
       no-end) warn ".gitignore: '# slopstopper begin' has no '# slopstopper end', so the block was left alone. Restore the end marker and re-run to refresh it." ;;
+      no-begin) warn ".gitignore: mentions '# slopstopper begin' but has no line that is exactly that marker, so the block was left alone. Restore the marker line and re-run to refresh it." ;;
       *) warn ".gitignore: could not refresh the slopstopper block (python3 failed), so it was left alone" ;;
     esac
   else
@@ -1442,8 +1447,9 @@ if [ "$PROFILE_SKIPPED" -gt 0 ]; then
 fi
 HELD_FOR_API="$(profile_held_for_api 2>/dev/null || true)"
 if [ -n "$HELD_FOR_API" ]; then
-  echo "       No API found (no OpenAPI spec, server framework or api.* config),"
-  echo "       so the $(printf '%s\n' "$HELD_FOR_API" | wc -l | tr -d ' ') API checks aren't installed. To add them, set api.* in"
+  HELD_COUNT="$(printf '%s\n' "$HELD_FOR_API" | wc -l | tr -d ' ')"
+  echo "       No API found (no OpenAPI spec, server framework or configured API check),"
+  echo "       so $HELD_COUNT API check$([ "$HELD_COUNT" = 1 ] || echo s) $([ "$HELD_COUNT" = 1 ] && echo isn\'t || echo aren\'t) installed. To add them, set api.* in"
   echo "       .slopstopper.yml (or list them under workflows.enabled) and re-run."
 fi
 echo ""

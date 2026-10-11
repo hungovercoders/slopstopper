@@ -278,3 +278,26 @@ def test_meta_source_unbuilt_skips_locally(isolated_cwd, write_config, monkeypat
     monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     assert csp_exceptions.run() == 0
     assert "build the site" in capsys.readouterr().out
+
+
+def test_a_meta_source_with_no_pages_is_unbuilt(isolated_cwd, write_config, monkeypatch, capsys):
+    Path("dist").mkdir()
+    write_config("headers:\n  source: dist\n  format: meta\n")
+    _seed_csp_doc()
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    assert csp_exceptions.run() == 2
+    assert "no HTML pages" in capsys.readouterr().out
+
+
+def test_auto_treats_a_missing_extensionless_source_as_unbuilt_in_ci(isolated_cwd, write_config, monkeypatch, capsys):
+    write_config("headers:\n  source: dist\n  format: auto\n")
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    assert csp_exceptions.run() == 2
+    assert "build the site" in capsys.readouterr().out
+
+
+def test_auto_still_skips_a_missing_headers_file_in_ci(isolated_cwd, write_config, monkeypatch, capsys):
+    write_config("headers:\n  source: worker/headers.json\n  format: auto\n")
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    assert csp_exceptions.run() == 0
+    assert "skipping" in capsys.readouterr().out

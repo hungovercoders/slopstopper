@@ -7,16 +7,16 @@ from pathlib import Path
 from slopstopper.checks import docs_size
 
 
-def test_iter_doc_files_finds_markdown(docs_tree):
+def test_split_doc_files_finds_markdown(docs_tree):
     docs_tree({"a.md": "alpha", "sub/b.md": "beta", "c.txt": "ignored"})
-    found = docs_size._iter_doc_files(Path("docs"))
+    found = docs_size._split_doc_files(Path("docs"))[0]
     names = sorted(p.name for p in found)
     assert names == ["a.md", "b.md"]
 
 
-def test_iter_doc_files_excludes_archive(docs_tree):
+def test_split_doc_files_excludes_archive(docs_tree):
     docs_tree({"a.md": "alpha", "archive/old.md": "archived"})
-    found = docs_size._iter_doc_files(Path("docs"))
+    found = docs_size._split_doc_files(Path("docs"))[0]
     rels = sorted(str(p) for p in found)
     assert rels == ["docs/a.md"]
 
@@ -24,7 +24,7 @@ def test_iter_doc_files_excludes_archive(docs_tree):
 def test_docs_exclude_replaces_the_archive_default(docs_tree, write_config):
     write_config("hygiene:\n  docs:\n    exclude: [docs/course/**]\n")
     docs_tree({"a.md": "alpha", "course/01/lesson.md": "lesson", "archive/old.md": "archived"})
-    rels = sorted(str(p) for p in docs_size._iter_doc_files(Path("docs")))
+    rels = sorted(str(p) for p in docs_size._split_doc_files(Path("docs"))[0])
     assert rels == ["docs/a.md", "docs/archive/old.md"]
 
 
@@ -38,8 +38,8 @@ def test_run_lists_excluded_docs_in_the_report(docs_tree, write_config):
     assert "`docs/course/lesson.md`" in report
 
 
-def test_iter_doc_files_missing_dir_returns_empty(isolated_cwd):
-    assert docs_size._iter_doc_files(Path("nonexistent")) == []
+def test_split_doc_files_missing_dir_returns_empty(isolated_cwd):
+    assert docs_size._split_doc_files(Path("nonexistent"))[0] == []
 
 
 def test_compute_stats_basic():
@@ -201,3 +201,12 @@ def test_run_against_oversized_corpus_flags_alerts(docs_tree, write_config, caps
     report = docs_size.REPORT_FILE.read_text()
     assert "❌ Documentation size exceeds thresholds!" in report
     assert "Number of documentation files (2)" in report
+
+
+def test_a_docs_exclude_entry_that_is_not_repo_relative_is_ignored_with_a_warning(docs_tree, write_config, capsys):
+    write_config("hygiene:\n  docs:\n    exclude: [/etc/**, ../**, docs/archive/**]\n")
+    docs_tree({"a.md": "alpha", "archive/old.md": "archived"})
+    rels = sorted(str(p) for p in docs_size._split_doc_files(Path("docs"))[0])
+    assert rels == ["docs/a.md"]
+    out = capsys.readouterr().out
+    assert "/etc/**" in out and "../**" in out and "ignored" in out

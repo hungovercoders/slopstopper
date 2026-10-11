@@ -194,7 +194,7 @@ def test_find_existing_issue_returns_none_on_gh_failure(monkeypatch):
 def test_emit_issue_creates_new(monkeypatch, isolated_cwd, capsys):
     Path("report.md").write_text("body")
     monkeypatch.setattr(emit, "_gh_available", lambda: True)
-    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: None)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels, check_name=None: None)
     monkeypatch.setenv("GITHUB_SHA", "abc123")
 
     captured: dict = {}
@@ -223,7 +223,7 @@ def test_emit_issue_creates_new(monkeypatch, isolated_cwd, capsys):
 def test_emit_issue_updates_existing_and_comments(monkeypatch, isolated_cwd, capsys):
     Path("report.md").write_text("body")
     monkeypatch.setattr(emit, "_gh_available", lambda: True)
-    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: 42)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels, check_name=None: 42)
     monkeypatch.setenv("GITHUB_SHA", "deadbeef")
 
     captured: dict = {}
@@ -259,7 +259,7 @@ def test_emit_issue_prepends_slopstopper_label(monkeypatch, isolated_cwd):
     monkeypatch.setattr(emit, "_gh_available", lambda: True)
     captured: dict = {}
 
-    def fake_find(labels):
+    def fake_find(labels, check_name=None):
         captured["find_labels"] = list(labels)
         return None
 
@@ -284,7 +284,7 @@ def test_emit_issue_does_not_duplicate_slopstopper_label(monkeypatch, isolated_c
         captured["create_labels"] = list(labels)
         return 0
 
-    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: None)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels, check_name=None: None)
     monkeypatch.setattr(emit, "_create_issue", fake_create)
     rc = emit.emit_issue(Path("report.md"), "T", ["slopstopper", "sast"], "F")
     assert rc == 0
@@ -294,7 +294,7 @@ def test_emit_issue_does_not_duplicate_slopstopper_label(monkeypatch, isolated_c
 def test_emit_issue_writes_marker_when_check_name_provided(monkeypatch, isolated_cwd):
     Path("report.md").write_text("body")
     monkeypatch.setattr(emit, "_gh_available", lambda: True)
-    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: None)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels, check_name=None: None)
     monkeypatch.setenv("GITHUB_SHA", "abc123")
 
     captured: dict = {}
@@ -319,7 +319,7 @@ def test_emit_issue_writes_marker_when_check_name_provided(monkeypatch, isolated
 def test_emit_issue_omits_marker_when_check_name_none(monkeypatch, isolated_cwd):
     Path("report.md").write_text("body")
     monkeypatch.setattr(emit, "_gh_available", lambda: True)
-    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: None)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels, check_name=None: None)
     monkeypatch.setenv("GITHUB_SHA", "abc123")
 
     captured: dict = {}
@@ -339,7 +339,7 @@ def test_emit_issue_marker_idempotent_on_update(monkeypatch, isolated_cwd):
     so the marker appears exactly once and is never duplicated."""
     Path("report.md").write_text("body content")
     monkeypatch.setattr(emit, "_gh_available", lambda: True)
-    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: 42)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels, check_name=None: 42)
     monkeypatch.setenv("GITHUB_SHA", "abc123")
 
     captured: dict = {}
@@ -370,7 +370,7 @@ def test_emit_issue_marker_idempotent_on_update(monkeypatch, isolated_cwd):
 
 def test_close_issue_comments_and_closes_when_match(monkeypatch, capsys):
     monkeypatch.setattr(emit, "_gh_available", lambda: True)
-    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: 77)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels, check_name=None: 77)
 
     captured: dict = {}
 
@@ -391,7 +391,7 @@ def test_close_issue_comments_and_closes_when_match(monkeypatch, capsys):
 
 def test_close_issue_noops_when_no_match(monkeypatch, capsys):
     monkeypatch.setattr(emit, "_gh_available", lambda: True)
-    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: None)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels, check_name=None: None)
 
     def fake_gh(*args, capture=False):
         raise AssertionError(f"_gh should not be called when no open issue, got {args}")
@@ -416,7 +416,7 @@ def test_close_issue_searches_with_augmented_labels(monkeypatch):
     monkeypatch.setattr(emit, "_gh_available", lambda: True)
     captured: dict = {}
 
-    def fake_find(labels):
+    def fake_find(labels, check_name=None):
         captured["find_labels"] = list(labels)
         return None
 
@@ -468,7 +468,7 @@ def test_emit_rejects_unknown_target(capsys):
 def test_emit_routes_on_pass_close_to_close_issue(monkeypatch):
     called: dict = {}
 
-    def fake_close(labels, close_comment):
+    def fake_close(labels, close_comment, check_name=None):
         called["close"] = (labels, close_comment)
         return 0
 
@@ -484,7 +484,7 @@ def test_emit_close_uses_meta_close_comment_when_present(monkeypatch):
     meta_with_close = {**SAMPLE_META, "issue_close_comment": "✅ custom-close"}
     called: dict = {}
 
-    def fake_close(labels, close_comment):
+    def fake_close(labels, close_comment, check_name=None):
         called["close"] = (labels, close_comment)
         return 0
 
@@ -827,6 +827,7 @@ class _FakeRepo:
         self.labels = set(labels)
         self.label_create_works = label_create_works
         self.created: list[list[str]] = []
+        self.issues: dict[int, dict] = {}
 
     def __call__(self, *args, capture=False):
         import subprocess
@@ -843,7 +844,22 @@ class _FakeRepo:
             if missing:
                 return subprocess.CompletedProcess(args, 1, "", f"could not add label: '{missing[0]}' not found")
             self.created.append(wanted)
-            return subprocess.CompletedProcess(args, 0, "https://github.com/o/r/issues/1\n", "")
+            body = Path(args[args.index("--body-file") + 1]).read_text()
+            self.issues[len(self.issues) + 1] = {"labels": set(wanted), "body": body, "state": "open"}
+            return subprocess.CompletedProcess(args, 0, f"https://github.com/o/r/issues/{len(self.issues)}\n", "")
+        if args[:2] == ("issue", "list"):
+            wanted = {args[i + 1] for i, a in enumerate(args) if a == "--label"}
+            rows = [{"number": n, "body": i["body"]} for n, i in self.issues.items()
+                    if i["state"] == "open" and wanted <= i["labels"]]
+            return subprocess.CompletedProcess(args, 0, json.dumps(rows), "")
+        if args[:2] == ("issue", "edit"):
+            self.issues[int(args[2])]["body"] = Path(args[args.index("--body-file") + 1]).read_text()
+            return subprocess.CompletedProcess(args, 0, "", "")
+        if args[:2] == ("issue", "comment"):
+            return subprocess.CompletedProcess(args, 0, "", "")
+        if args[:2] == ("issue", "close"):
+            self.issues[int(args[2])]["state"] = "closed"
+            return subprocess.CompletedProcess(args, 0, "", "")
         raise AssertionError(args)
 
 
@@ -869,7 +885,7 @@ def test_emit_issue_marks_the_workflow_that_raised_it(monkeypatch, isolated_cwd)
     """ss-workflow-failure-issue.yml matches this marker to the failing workflow (#412)."""
     Path("report.md").write_text("body")
     monkeypatch.setattr(emit, "_gh_available", lambda: True)
-    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels: None)
+    monkeypatch.setattr(emit, "_find_existing_issue", lambda labels, check_name=None: None)
     monkeypatch.setenv("GITHUB_WORKFLOW_REF", "o/r/.github/workflows/ss-reliability-smoke-tests.yml@refs/heads/main")
     captured: dict = {}
 
@@ -880,3 +896,19 @@ def test_emit_issue_marks_the_workflow_that_raised_it(monkeypatch, isolated_cwd)
     monkeypatch.setattr(emit, "_create_issue", fake_create)
     assert emit.emit_issue(Path("report.md"), "T", ["x"], "F", check_name="reliability:smoke") == 0
     assert "<!-- slopstopper:workflow=ss-reliability-smoke-tests.yml -->" in captured["body"]
+
+
+def test_an_unlabelled_issue_is_still_found_updated_and_closed(monkeypatch, isolated_cwd):
+    """Dedup can't rely on labels after the no-labels fallback, so the body
+    marker finds the issue instead: one issue per check, closed on recovery."""
+    repo = _FakeRepo(label_create_works=False)
+    monkeypatch.setattr(emit, "_gh", repo)
+    monkeypatch.setattr(emit, "_gh_available", lambda: True)
+    monkeypatch.setenv("GITHUB_SHA", "abc123")
+    Path("report.md").write_text("first failure")
+    assert emit.emit_issue(Path("report.md"), "T", ["smoke"], "F", check_name="reliability:smoke") == 0
+    Path("report.md").write_text("second failure")
+    assert emit.emit_issue(Path("report.md"), "T", ["smoke"], "F", check_name="reliability:smoke") == 0
+    assert list(repo.issues) == [1] and "second failure" in repo.issues[1]["body"]
+    assert emit._close_issue(["smoke"], "fixed", check_name="reliability:smoke") == 0
+    assert repo.issues[1]["state"] == "closed"

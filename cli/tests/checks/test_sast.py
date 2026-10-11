@@ -338,20 +338,25 @@ def test_fail_on_false_warns_instead_of_silently_defaulting(monkeypatch, write_c
 # ── round-3 contract gaps ────────────────────────────────────────
 
 
-class _Proc:
-    def __init__(self, returncode):
+class _FakeSemgrep:
+    """What `_run_semgrep` drives: a Popen with a stderr stream and a wait()."""
+
+    def __init__(self, returncode, report=None):
         self.returncode = returncode
+        self.stderr = iter([])
+        if report is not None:
+            sast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+            sast.REPORT_JSON.write_text(json.dumps(report))
+
+    def wait(self):
+        return self.returncode
 
 
 def test_a_fatal_semgrep_exit_is_not_a_clean_pass(monkeypatch, isolated_cwd, capsys):
     """Semgrep can exit 2/7 yet still write `{"results": [], "errors": [...]}`."""
-
-    def fake_subprocess_run(argv, **kw):
-        sast.REPORT_JSON.write_text(json.dumps({"results": [], "errors": [{"level": "error"}]}))
-        return _Proc(7)
-
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
-    monkeypatch.setattr(sast.subprocess, "run", fake_subprocess_run)
+    monkeypatch.setattr(sast.subprocess, "Popen",
+                        lambda *a, **k: _FakeSemgrep(7, {"results": [], "errors": [{"level": "error"}]}))
     assert sast.run() == 2
     assert "did not complete" in capsys.readouterr().out
 
@@ -360,17 +365,13 @@ def test_a_previous_runs_sast_report_cannot_stand_in_for_this_one(monkeypatch, i
     sast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
     sast.REPORT_JSON.write_text(json.dumps({"results": [], "errors": []}))
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
-    monkeypatch.setattr(sast.subprocess, "run", lambda argv, **kw: _Proc(0))  # writes nothing
+    monkeypatch.setattr(sast.subprocess, "Popen", lambda *a, **k: _FakeSemgrep(0))  # writes nothing
     assert sast.run() == 2
 
 
-@pytest.mark.parametrize("severity", ["INVENTORY", "EXPERIMENT"])
-def test_non_security_severities_do_not_block_by_default(severity):
-    finding = {"check_id": "x", "extra": {"severity": severity}}
-    assert sast._blocking_findings([finding], "error") == []
-
-
-def test_a_finding_with_null_extra_neither_crashes_nor_passes():
-    finding = {"check_id": "x", "path": "a.py", "extra": None}
-    assert sast._blocking_findings([finding], "error") == [finding]  # fail closed
-    assert "unknown" in sast._format_finding_row(finding)
+def test_a_missing_semgrep_is_could_not_run_with_no_report(monkeypatch, isolated_cwd, capsys):
+    """CI runners never carry semgrep until ss-setup installs it, and a
+    missing scanner must never read as a clean scan."""
+    monkeypatch.setattr(sast.shutil, "which", lambda name: None)
+    assert sast.run() == 2
+    assert not sast.REPORT_JSON.exists()

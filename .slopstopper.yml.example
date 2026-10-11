@@ -55,8 +55,8 @@
 #            the spec measured against the thing it documents.
 #
 # The `ui` default keeps the API checks once the repo shows an API (an
-# OpenAPI/Swagger spec or proto file, a server-framework dependency, or
-# any `api.*` key here), so a UI repo with API routes gets them without
+# OpenAPI/Swagger spec or proto file, a server-framework dependency, or an
+# API check configured under `api.*` here), so a UI repo with API routes gets them without
 # having to find workflows.enabled and a static site doesn't run four
 # jobs that check nothing. They stay inert until configured.
 #
@@ -123,15 +123,23 @@ headers:
   format: auto
 
 # ── Dynamic-check URLs ───────────────────────────────────────────────
-# Reliability + DAST workflows pick a URL based on the event:
-#   - push to main / scheduled  → urls.production
-#   - pull_request              → the browser checks build the site and audit
-#                                 it on localhost; the API checks and DAST's
-#                                 API mode audit urls.preview and skip when
-#                                 it is unset
-#   - workflow_dispatch         → the URL you pass; with none, the browser
-#                                 checks fall back to urls.production and the
-#                                 API checks skip with a notice
+# Which URL each URL-driven check audits, by event (the one copy of this
+# table is .github/actions/ss-resolve-url):
+#   - pull_request / push       → the browser checks and DAST build the site
+#                                 and audit it on localhost; the API checks
+#                                 and DAST's API mode audit urls.preview on
+#                                 a PR and urls.production on a push, and
+#                                 skip when that is unset
+#   - schedule                  → urls.production (the browser checks error
+#                                 when it is unset; the API checks skip)
+#   - deployment_status         → the deployment's environment_url (else
+#                                 target_url); a GitHub Actions log link is
+#                                 never audited, urls.production stands in
+#   - workflow_dispatch         → the `url` you pass (production when it is
+#                                 urls.production); with none, a local
+#                                 build (CWV: urls.production)
+#   - a Workers Builds deploy   → ss-cloudflare-deployed.yml dispatches each
+#                                 check with the preview or production URL
 urls:
   production:
   preview:
