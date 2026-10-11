@@ -198,6 +198,7 @@ def test_run_clean_when_no_alerts(monkeypatch, isolated_cwd, capsys):
     def fake_zap(_target, **_kwargs):
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+        return 0, []
 
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_run_zap", fake_zap)
@@ -218,6 +219,7 @@ def test_run_with_blocking_alerts(monkeypatch, isolated_cwd, capsys):
     def fake_zap(_target, **_kwargs):
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps(_zap_payload(HIGH_ALERT, MEDIUM_ALERT, LOW_ALERT)))
+        return 0, []
 
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_run_zap", fake_zap)
@@ -235,6 +237,7 @@ def test_run_with_only_low_or_info(monkeypatch, isolated_cwd, capsys):
     def fake_zap(_target, **_kwargs):
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps(_zap_payload(LOW_ALERT, INFO_ALERT)))
+        return 0, []
 
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_run_zap", fake_zap)
@@ -242,6 +245,37 @@ def test_run_with_only_low_or_info(monkeypatch, isolated_cwd, capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "Found 2 alert(s), but none are high/medium" in out
+
+
+def test_a_crashed_scan_writes_a_report_that_says_why(monkeypatch, isolated_cwd, capsys):
+    """ZAP dying (a rules row it can't parse, #454) must surface in the
+    report the emit step posts, not as 'Report not found' (#455)."""
+    monkeypatch.setattr(dast, "_docker_available", lambda: True)
+    monkeypatch.setattr(
+        dast, "_run_zap",
+        lambda *_a, **_k: (1, ["Traceback (most recent call last):", "ValueError: invalid literal for int() with base 10: '10055-5'"]),
+    )
+    assert dast.run(["--target", "https://example.com"]) == 2
+    assert "did not complete" in capsys.readouterr().out
+    md = dast.REPORT_MD.read_text()
+    assert "Scan did not complete" in md
+    assert "ZAP exited 1 and wrote no readable report" in md
+    assert "invalid literal for int()" in md
+
+
+def test_a_crashed_scan_with_no_stderr_says_so(monkeypatch, isolated_cwd):
+    monkeypatch.setattr(dast, "_docker_available", lambda: True)
+    monkeypatch.setattr(dast, "_run_zap", lambda *_a, **_k: (125, []))
+    assert dast.run(["--target", "https://example.com"]) == 2
+    assert "ZAP printed nothing to stderr" in dast.REPORT_MD.read_text()
+
+
+def test_a_previous_runs_report_cannot_stand_in_for_this_one(monkeypatch, isolated_cwd):
+    dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+    monkeypatch.setattr(dast, "_docker_available", lambda: True)
+    monkeypatch.setattr(dast._tools, "run_tailing_stderr", lambda *_a, **_k: (2, []))
+    assert dast.run(["--target", "https://example.com"]) == 2
 
 
 # ── scan-mode selection (ZAP API scan) ───────────────────────────
@@ -397,6 +431,7 @@ def test_run_passes_the_spec_through_to_zap(monkeypatch, isolated_cwd, write_con
         seen.update(target=target, **kwargs)
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+        return 0, []
 
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_run_zap", fake_zap)
@@ -415,6 +450,7 @@ def test_run_honours_the_host_override_config(monkeypatch, isolated_cwd, write_c
         seen.update(kwargs)
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+        return 0, []
 
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_run_zap", fake_zap)
@@ -430,6 +466,7 @@ def test_run_without_a_spec_stays_on_baseline(monkeypatch, isolated_cwd, write_c
         seen.update(kwargs)
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+        return 0, []
 
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_run_zap", fake_zap)

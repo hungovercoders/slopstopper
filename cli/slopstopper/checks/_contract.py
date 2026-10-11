@@ -121,3 +121,11 @@ def scan_incomplete(report_dir: Path, report_md: Path, title: str, detail: str) 
     output.error(f"{title}: the scan did not complete, so it counts as not run rather than clean")
     output.footer(report_dir, [report_md.name])
     return EXIT_CANNOT_RUN
+
+
+def stderr_tail_md(tool: str, stderr_tail: list[str]) -> str:
+    """The stderr block of an incomplete-scan report: what the tool last said."""
+    if not stderr_tail:
+        return f"{tool} printed nothing to stderr."
+    body = "\n".join(stderr_tail)
+    return f"The last {len(stderr_tail)} line(s) {tool} printed to stderr:\n\n```text\n{body}\n```"

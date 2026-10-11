@@ -151,6 +151,12 @@ already names the right host.
 run and removed afterwards, because the container only sees `/zap/wrk/`
 and a repo-relative path can't be handed to it directly.
 
+**A scan that dies is not clean.** When ZAP exits without a readable
+report, the check exits 2 and the markdown report says the scan did not
+complete, with ZAP's exit code and the last lines it wrote to stderr, so the
+PR comment shows the cause. In CI that fails the scan step itself, and only
+blocking alerts (exit 1) open the tracking issue.
+
 **Unconfigured is not failing.** With no spec the check keeps its baseline
 behaviour, and on an `api`-profile repo the workflow skips rather than
 scanning nothing, which is the same contract as `reliability:api-health` and

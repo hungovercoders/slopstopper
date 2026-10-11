@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from slopstopper.checks import sast
+from slopstopper.checks import _tools, sast
 
 
 ERROR_FINDING = {
@@ -286,7 +286,7 @@ def test_run_semgrep_tees_stderr_and_keeps_the_tail(monkeypatch, isolated_cwd, c
         def wait(self):
             return 2
 
-    monkeypatch.setattr(sast.subprocess, "Popen", lambda *a, **k: FakeProc())
+    monkeypatch.setattr(_tools.subprocess, "Popen", lambda *a, **k: FakeProc())
     rc, tail = sast._run_semgrep()
     assert rc == 2
     assert len(tail) == sast.STDERR_TAIL_LINES
@@ -298,7 +298,7 @@ def test_run_semgrep_reports_an_exec_failure(monkeypatch, isolated_cwd):
     def boom(*a, **k):
         raise OSError("Exec format error")
 
-    monkeypatch.setattr(sast.subprocess, "Popen", boom)
+    monkeypatch.setattr(_tools.subprocess, "Popen", boom)
     assert sast._run_semgrep() == (127, ["Exec format error"])
 
 
@@ -355,7 +355,7 @@ class _FakeSemgrep:
 def test_a_fatal_semgrep_exit_is_not_a_clean_pass(monkeypatch, isolated_cwd, capsys):
     """Semgrep can exit 2/7 yet still write `{"results": [], "errors": [...]}`."""
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
-    monkeypatch.setattr(sast.subprocess, "Popen",
+    monkeypatch.setattr(_tools.subprocess, "Popen",
                         lambda *a, **k: _FakeSemgrep(7, {"results": [], "errors": [{"level": "error"}]}))
     assert sast.run() == 2
     assert "did not complete" in capsys.readouterr().out
@@ -365,7 +365,7 @@ def test_a_previous_runs_sast_report_cannot_stand_in_for_this_one(monkeypatch, i
     sast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
     sast.REPORT_JSON.write_text(json.dumps({"results": [], "errors": []}))
     monkeypatch.setattr(sast, "_semgrep_available", lambda: True)
-    monkeypatch.setattr(sast.subprocess, "Popen", lambda *a, **k: _FakeSemgrep(0))  # writes nothing
+    monkeypatch.setattr(_tools.subprocess, "Popen", lambda *a, **k: _FakeSemgrep(0))  # writes nothing
     assert sast.run() == 2
 
 
