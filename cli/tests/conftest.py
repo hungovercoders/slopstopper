@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 from pathlib import Path
 from typing import Iterator
 
@@ -23,6 +24,13 @@ def isolated_cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Pa
     config.reload()
     yield tmp_path
     config.reload()
+
+
+@pytest.fixture
+def git_repo(isolated_cwd: Path) -> Path:
+    """An isolated CWD that is an empty git checkout, for checks that ask git which files the repo owns."""
+    subprocess.run(["git", "init", "-q"], check=True)
+    return isolated_cwd
 
 
 @pytest.fixture

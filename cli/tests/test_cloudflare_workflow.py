@@ -8,17 +8,17 @@ must not drop the rest. `gh`, `slopstopper` and `sleep` are stubs on PATH.
 from __future__ import annotations
 
 import os
-import shutil
 import subprocess
-import textwrap
 from pathlib import Path
 
 import pytest
 
+from tests.helpers import needs, yaml_block
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ss-cloudflare-deployed.yml"
 
-pytestmark = pytest.mark.skipif(shutil.which("bash") is None, reason="needs bash")
+pytestmark = needs("bash")
 
 GH = """#!/bin/sh
 # gh stub: `pr list` → $STUB_PR_LINE; `api` → $STUB_COMMENTS; `workflow run` fails for $STUB_REFUSE.
@@ -40,19 +40,6 @@ esac
 """
 
 
-def _run_block(step_name: str) -> str:
-    lines = WORKFLOW.read_text().splitlines()
-    start = next(i for i, l in enumerate(lines) if l.strip() == f"- name: {step_name}")
-    run_at = next(i for i in range(start, len(lines)) if lines[i].strip() == "run: |")
-    indent = len(lines[run_at]) - len(lines[run_at].lstrip()) + 2
-    body = []
-    for line in lines[run_at + 1:]:
-        if line.strip() and len(line) - len(line.lstrip()) < indent:
-            break
-        body.append(line)
-    return textwrap.dedent("\n".join(body))
-
-
 def _bin(tmp_path: Path) -> Path:
     bindir = tmp_path / "bin"
     bindir.mkdir(exist_ok=True)
@@ -68,7 +55,7 @@ def _sh(tmp_path: Path, step: str, env: dict[str, str]) -> tuple[int, dict[str, 
     log = tmp_path / "dispatched"
     log.write_text("")
     script = tmp_path / "step.sh"
-    script.write_text(_run_block(step))
+    script.write_text(yaml_block(WORKFLOW, "run", step=step))
     (tmp_path / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
     full = {**os.environ, "PATH": f"{_bin(tmp_path)}{os.pathsep}{os.environ['PATH']}",
             "GITHUB_OUTPUT": str(out), "GITHUB_REPOSITORY": "o/r", "STUB_LOG": str(log),

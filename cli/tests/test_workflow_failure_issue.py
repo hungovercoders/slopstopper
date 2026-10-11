@@ -9,17 +9,17 @@ extracted from the workflow and run against a stubbed `github` client.
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
-import textwrap
 from pathlib import Path
 
 import pytest
 
+from tests.helpers import needs, yaml_block
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ss-workflow-failure-issue.yml"
 
-pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
+pytestmark = needs("node")
 
 RUN_URL = "https://github.com/o/r/actions/runs/1"
 
@@ -43,16 +43,7 @@ const context = {
 
 
 def _raise_issue_script() -> str:
-    lines = WORKFLOW.read_text().splitlines()
-    start = next(i for i, l in enumerate(lines) if "Create or update issue for failed workflow run" in l)
-    script_at = next(i for i in range(start, len(lines)) if lines[i].strip() == "script: |")
-    indent = len(lines[script_at]) - len(lines[script_at].lstrip()) + 2
-    body = []
-    for line in lines[script_at + 1:]:
-        if line.strip() and len(line) - len(line.lstrip()) < indent:
-            break
-        body.append(line)
-    return textwrap.dedent("\n".join(body))
+    return yaml_block(WORKFLOW, "script", step="Create or update issue for failed workflow run")
 
 
 def _fail(tmp_path, workflow_file: str, name: str, open_issues: list[dict]) -> list:

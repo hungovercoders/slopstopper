@@ -102,15 +102,6 @@ def _unbuilt(reason: str) -> int:
     return 0
 
 
-def _extract_csp_origins(csp: str) -> set[str]:
-    origins: set[str] = set()
-    for directive in csp.split(";"):
-        for token in directive.strip().split():
-            if token.startswith(("http://", "https://")):
-                origins.add(token.rstrip("/"))
-    return origins
-
-
 # ── CSP_EXCEPTIONS.md parser ────────────────────────────────────────
 
 
@@ -180,7 +171,7 @@ def _headers_exception_map(rules: list[dict]) -> dict[str, set[str]]:
         path = rule["for"]
         if path == "/*" or rule["csp"] is None:
             continue
-        external = _extract_csp_origins(rule["csp"])
+        external = headers_adapters.csp_origins(rule["csp"])
         if external:
             out[path] = external
     return out

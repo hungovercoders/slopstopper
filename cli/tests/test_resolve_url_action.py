@@ -10,30 +10,17 @@ Actions uses (`bash -e -o pipefail`), with a stub `slopstopper` on PATH.
 from __future__ import annotations
 
 import os
-import shutil
 import subprocess
-import textwrap
 from pathlib import Path
 
 import pytest
 
+from tests.helpers import needs, yaml_block
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ACTION = REPO_ROOT / ".github" / "actions" / "ss-resolve-url" / "action.yml"
 
-pytestmark = pytest.mark.skipif(shutil.which("bash") is None, reason="needs bash")
-
-
-def _run_block() -> str:
-    """The composite step's `run: |` body, dedented."""
-    lines = ACTION.read_text().splitlines()
-    start = next(i for i, l in enumerate(lines) if l.strip() == "run: |")
-    indent = len(lines[start]) - len(lines[start].lstrip()) + 2
-    body = []
-    for line in lines[start + 1:]:
-        if line.strip() and len(line) - len(line.lstrip()) < indent:
-            break
-        body.append(line)
-    return textwrap.dedent("\n".join(body))
+pytestmark = needs("bash")
 
 
 STUB = """#!/bin/sh
@@ -56,7 +43,7 @@ def resolve(tmp_path, event, mode="local", url="", deployment="", fallback="loca
     out = tmp_path / "out"
     out.write_text("")
     script = tmp_path / "resolve.sh"
-    script.write_text(_run_block())
+    script.write_text(yaml_block(ACTION, "run"))
     env = {
         **os.environ,
         "PATH": f"{bindir}{os.pathsep}{os.environ['PATH']}",

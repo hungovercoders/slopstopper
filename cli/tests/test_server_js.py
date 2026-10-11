@@ -10,6 +10,7 @@ node-less environments too (e.g. lint-only CI matrices).
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -42,7 +43,8 @@ def _run_node_assert(fixture_path: Path, parser_name: str) -> list[dict]:
     return json.loads(proc.stdout)
 
 
-if shutil.which("node") is None:
+# Under CI node is always present (ss-setup / mise), so a missing node fails there rather than skipping.
+if shutil.which("node") is None and not os.environ.get("CI"):
     pytest.skip("node not on PATH; server.js parser tests require node", allow_module_level=True)
 
 

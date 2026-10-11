@@ -5,7 +5,9 @@ from __future__ import annotations
 import json as _json
 from pathlib import Path
 
+from slopstopper import headers_adapters
 from slopstopper.checks import csp_exceptions
+from tests.helpers import meta_page
 
 
 HEADERS_JSON_TWO_EXCEPTIONS = _json.dumps([
@@ -43,14 +45,14 @@ Some preamble.
 
 
 def test_extract_csp_origins_picks_only_external():
-    origins = csp_exceptions._extract_csp_origins(
+    origins = headers_adapters.csp_origins(
         "default-src 'self'; script-src 'self' https://giscus.app; frame-src https://giscus.app/"
     )
     assert origins == {"https://giscus.app"}
 
 
 def test_extract_csp_origins_ignores_keywords():
-    assert csp_exceptions._extract_csp_origins("default-src 'self' 'unsafe-inline'") == set()
+    assert headers_adapters.csp_origins("default-src 'self' 'unsafe-inline'") == set()
 
 
 def test_parse_exceptions_doc_picks_up_section(isolated_cwd):
@@ -230,12 +232,8 @@ def test_run_clean_returns_zero(isolated_cwd, write_config):
 
 
 def _built_site(root: Path, discuss_csp: str | None) -> None:
-    pages = {"index.html": "default-src 'self'", "about.html": "default-src 'self'", "discuss/index.html": discuss_csp}
-    for rel, csp in pages.items():
-        target = root / "dist" / rel
-        target.parent.mkdir(parents=True, exist_ok=True)
-        meta = f'<meta http-equiv="Content-Security-Policy" content="{csp}">' if csp else ""
-        target.write_text(f"<html><head>{meta}</head></html>")
+    for rel, csp in {"index.html": "default-src 'self'", "about.html": "default-src 'self'", "discuss/index.html": discuss_csp}.items():
+        meta_page(root / "dist", rel, csp)
 
 
 GISCUS_CSP = "default-src 'self'; script-src 'self' https://giscus.app; frame-src https://giscus.app"
