@@ -316,3 +316,13 @@ def test_checks_list_json_carries_the_workflow_and_disabled_flag(write_config, c
     assert entries["reliability:cwv"]["disabled"] is True
     assert entries["reliability:cwv"]["workflow"] == "ss-reliability-core-web-vitals.yml"
     assert entries["security:dast"]["disabled"] is False
+
+
+def test_profile_disabled_prints_the_effective_set_one_per_line(write_config, capsys):
+    """ss-cloudflare-deployed.yml reads this to skip checks the repo turns off."""
+    write_config("profile: ui\nworkflows:\n  disabled: [ss-reliability-seo-check.yml]\n"
+                 "  enabled: [ss-reliability-api-health-check.yml]\n")
+    assert cli.main(["profile", "disabled"]) == 0
+    assert capsys.readouterr().out.splitlines() == sorted(profiles.effective_disabled())
+    assert "ss-reliability-seo-check.yml" in profiles.effective_disabled()
+    assert "ss-reliability-api-health-check.yml" not in profiles.effective_disabled()

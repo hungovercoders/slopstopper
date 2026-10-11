@@ -204,3 +204,10 @@ def test_the_cloudflare_trigger_dispatches_only_workflows_that_take_a_url():
     assert "ss-security-dast-check.yml" in dispatched and "ss-security-dast-check.yml" not in block
     for workflow in dispatched:
         assert re.search(r"workflow_dispatch:\n\s+inputs:\n\s+url:", _text(workflow)), workflow
+
+
+def test_the_cloudflare_trigger_skips_workflows_the_repo_disables():
+    text = _text("ss-cloudflare-deployed.yml")
+    loop = text[text.index('for wf in "${checks[@]}"'):]
+    assert "slopstopper profile disabled" in text
+    assert loop.index("grep -Fxq") < loop.index("gh workflow run")

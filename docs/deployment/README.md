@@ -44,7 +44,8 @@ runs locally before commits, and the PNG outputs are checked in.
   a GitHub deployment, so `deployment_status` never fires.
   [`ss-cloudflare-deployed.yml`](../../.github/workflows/ss-cloudflare-deployed.yml)
   waits for that check run to succeed, then dispatches every installed
-  URL-driven check on the deployed branch with the deployed URL:
+  URL-driven check the repo hasn't disabled (`slopstopper profile
+  disabled`) on the deployed branch with the deployed URL:
   `urls.production` for `main`, otherwise the preview URL from the
   commit's row in Cloudflare's PR comment. Results land on the commit,
   so they show on the PR; a run on `main` opens or closes each check's

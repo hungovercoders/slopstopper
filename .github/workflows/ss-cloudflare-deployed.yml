@@ -11,7 +11,8 @@ name: SlopStopper · Cloudflare Deployed Checks
 #                      from the comment row for this commit
 #
 # and dispatches each installed URL-driven check on the deployed branch
-# with that `url`. The runs land on the deployed commit, so they show on
+# with that `url`, skipping any this repo turns off (`slopstopper profile
+# disabled`: the profile, its no-API holdbacks, workflows.disabled). The runs land on the deployed commit, so they show on
 # the PR, and a run on main opens or closes each check's own issue.
 # DAST runs against production only: Cloudflare previews answer a missing
 # path with a bare "Not found" carrying none of the site's headers, which
@@ -118,8 +119,13 @@ jobs:
             ss-hygiene-openapi-check.yml
           )
           [ "$PRODUCTION" = "true" ] && checks+=(ss-security-dast-check.yml)
+          disabled="$(slopstopper profile disabled)"
           for wf in "${checks[@]}"; do
             [ -f ".github/workflows/$wf" ] || continue
+            if printf '%s\n' "$disabled" | grep -Fxq "$wf"; then
+              echo "· $wf is disabled for this repo, so not dispatched"
+              continue
+            fi
             echo "→ $wf against $URL on $BRANCH"
             gh workflow run "$wf" -R "$GITHUB_REPOSITORY" --ref "$BRANCH" -f url="$URL"
           done
