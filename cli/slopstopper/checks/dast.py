@@ -61,8 +61,9 @@ Exit codes:
       localhost, the configured spec file does not exist, or ZAP exited
       without a readable report. In that last case the markdown report
       says the scan did not complete and carries ZAP's exit code and
-      the last lines it wrote to stderr, so the PR comment and the
-      issue show the cause rather than "report not found".
+      the last lines it wrote to stderr, so the PR comment shows the
+      cause rather than "report not found". No tracking issue opens
+      for it: the workflow files one only on exit 1, a verdict.
 """
 
 from __future__ import annotations
@@ -328,12 +329,18 @@ def _incomplete_detail(rc: int, stderr_tail: list[str]) -> str:
 
 
 def _read_data() -> dict:
+    """ZAP's JSON report as a dict, or {} when there is no usable report:
+    missing, unreadable, undecodable, malformed, or valid JSON that is not
+    an object. Every one of those means the scan did not complete, and
+    the caller writes the incomplete-scan markdown rather than crashing
+    into "Report not found" at the emit step."""
     if not REPORT_JSON.exists():
         return {}
     try:
-        return json.loads(REPORT_JSON.read_text())
-    except json.JSONDecodeError:
+        data = json.loads(REPORT_JSON.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _collect_alerts(data: dict) -> dict[str, list[dict]]:

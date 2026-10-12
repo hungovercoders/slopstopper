@@ -171,6 +171,22 @@ def test_read_data_handles_malformed_json(isolated_cwd):
     assert dast._read_data() == {}
 
 
+def test_read_data_treats_non_object_json_as_no_report(isolated_cwd):
+    """Valid JSON that is not an object is truthy, and would crash the
+    report builder; it is no report."""
+    dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    dast.REPORT_JSON.write_text(json.dumps([1, 2, 3]))
+    assert dast._read_data() == {}
+    dast.REPORT_JSON.write_text("null")
+    assert dast._read_data() == {}
+
+
+def test_read_data_treats_undecodable_bytes_as_no_report(isolated_cwd):
+    dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    dast.REPORT_JSON.write_bytes(b"\xff\xfe not utf-8")
+    assert dast._read_data() == {}
+
+
 def test_read_data_parses_payload(isolated_cwd):
     dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
     dast.REPORT_JSON.write_text(json.dumps(_zap_payload(HIGH_ALERT)))
@@ -348,6 +364,7 @@ def test_run_stages_the_rules_for_zap_and_cleans_them_up(monkeypatch, isolated_c
         seen["rules"] = kwargs.get("rules")
         seen["staged"] = (dast.REPORT_DIR / "zap-rules.tsv").read_text()
         dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+        return 0, ""
 
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_run_zap", fake_zap)
