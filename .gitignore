@@ -30,5 +30,7 @@ app/*.js
 # Local Claude Code state, but ship shared skills with the repo
 .claude/*
 !.claude/skills/
+# vhs frames while demos/render.sh runs
+demos/.frames/
 # Lighthouse CI output (reliability:cwv writes here; uploaded as an artifact)
 .lighthouseci/

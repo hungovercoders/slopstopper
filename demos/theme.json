@@ -1,0 +1,23 @@
+{
+  "name": "SlopStopper",
+  "background": "#FBF5EC",
+  "foreground": "#2A2118",
+  "cursor": "#E8512B",
+  "selection": "#FFD9B8",
+  "black": "#2A2118",
+  "red": "#B33A1A",
+  "green": "#2E8B6F",
+  "yellow": "#A67C00",
+  "blue": "#3B5BA5",
+  "purple": "#7A4E8C",
+  "cyan": "#2E7F8B",
+  "white": "#FBF5EC",
+  "brightBlack": "#6B5B47",
+  "brightRed": "#E8512B",
+  "brightGreen": "#2E8B6F",
+  "brightYellow": "#A67C00",
+  "brightBlue": "#3B5BA5",
+  "brightPurple": "#7A4E8C",
+  "brightCyan": "#2E7F8B",
+  "brightWhite": "#FFFFFF"
+}

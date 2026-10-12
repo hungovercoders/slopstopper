@@ -142,3 +142,47 @@ def test_set_quiet_toggles(capsys):
     assert output.QUIET is True
     output.set_quiet(False)
     assert output.QUIET is False
+
+
+# ── colour ───────────────────────────────────────────────────────
+#
+# Colour is an accent for terminals only. Under pytest stdout is captured
+# and not a TTY, which is exactly the CI-log case the helper must respect.
+
+
+def test_colour_is_plain_when_stdout_is_not_a_tty(monkeypatch):
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.delenv("FORCE_COLOR", raising=False)
+    assert output.colour("42", "blue") == "42"
+
+
+def test_colour_wraps_in_sgr_when_forced(monkeypatch):
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    assert output.colour("42", "blue") == "\033[0;34m42\033[0m"
+    assert output.colour("ok", "green") == "\033[0;32mok\033[0m"
+
+
+def test_no_color_wins_over_force_color(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.setenv("NO_COLOR", "1")
+    assert output.colour("42", "red") == "42"
+
+
+def test_colour_on_a_tty_stream(monkeypatch):
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.delenv("FORCE_COLOR", raising=False)
+    monkeypatch.delenv("TERM", raising=False)
+
+    class Tty:
+        def isatty(self):
+            return True
+
+    assert output.colour("42", "blue", stream=Tty()) == "\033[0;34m42\033[0m"
+    monkeypatch.setenv("TERM", "dumb")
+    assert output.colour("42", "blue", stream=Tty()) == "42"
+
+
+def test_colour_unknown_name_is_plain(monkeypatch):
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    assert output.colour("42", "magenta") == "42"
