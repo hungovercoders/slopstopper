@@ -5,10 +5,9 @@ Ports the bash security:dast flow:
   task dast:check-tool          (verifies Docker is on PATH)
   + docker run --rm
         -v $PWD/.ss/reports/dast:/zap/wrk/:rw
-        [-v $PWD/.zap:/zap/wrk/.zap:ro]
         ghcr.io/zaproxy/zaproxy:stable
         zap-baseline.py -t <TARGET> -J dast-report.json -I
-        [-c .zap/rules.tsv]
+        [-c zap-rules.tsv]
   + python3 .ss/scripts/generate-dast-md.py
   + python3 .ss/scripts/check-dast-alerts.py
 
@@ -31,7 +30,10 @@ Two scan modes, picked by whether an OpenAPI spec is configured:
 
 A spec may be a URL or a repo-relative file. A file is staged into the
 already-mounted report directory rather than adding a second bind mount
-(ZAP only sees `/zap/wrk/`), and removed afterwards.
+(ZAP only sees `/zap/wrk/`), and removed afterwards. `.zap/rules.tsv` is
+staged the same way, reduced to its plugin-id rows: zap-baseline.py reads
+column 1 as an integer, so an alert ref such as `10055-5` would crash the
+scan. Alert refs are applied by the gate alone.
 
 Configuration (.slopstopper.yml):
 
@@ -188,6 +190,7 @@ def _docker_host_target(target: str) -> str:
 # ── OpenAPI spec resolution ──────────────────────────────────────
 
 
+ZAP_RULES_NAME = "zap-rules.tsv"
 STAGED_SPEC_NAME = "openapi-spec"
 
 
@@ -224,25 +227,53 @@ def _cleanup_staged_spec() -> None:
         path.unlink(missing_ok=True)
 
 
+_PLUGIN_ID = re.compile(r"[0-9]+")
+
+
+def _stage_zap_rules(rules_file: Path = dast_gate.ZAP_RULES_FILE) -> str | None:
+    """Stage the plugin-id rows of .zap/rules.tsv for ZAP's `-c`.
+
+    Returns the container-side file name, or None when the file is absent
+    or holds no plugin-id row (alert refs such as `10055-5` are the gate's).
+    """
+    if not rules_file.exists():
+        return None
+    # ZAP reads column 1 with int(), so only ASCII digits may reach it:
+    # str.isdigit() also accepts superscripts and other Unicode digits
+    # that int() rejects, which would reproduce the crash this prevents.
+    rows = [
+        line for line in rules_file.read_text().splitlines()
+        if _PLUGIN_ID.fullmatch(line.split("\t", 1)[0].strip())
+    ]
+    if not rows:
+        return None
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    (REPORT_DIR / ZAP_RULES_NAME).write_text("\n".join(rows) + "\n")
+    return ZAP_RULES_NAME
+
+
+def _cleanup_zap_rules() -> None:
+    (REPORT_DIR / ZAP_RULES_NAME).unlink(missing_ok=True)
+
+
 def _zap_command(
     target: str,
     *,
     spec: str | None = None,
     host_override: bool = True,
+    rules: str | None = None,
 ) -> list[str]:
     """Build the docker invocation for whichever scan mode applies.
 
     Split out from `_run_zap` so the command can be asserted in tests,
     because ZAP itself needs a Docker daemon, which CI sandboxes often lack.
+    `rules` is the staged rules file name from `_stage_zap_rules`.
     """
     cmd = [
         "docker", "run", "--rm",
         "-v", f"{Path.cwd() / REPORT_DIR}:/zap/wrk/:rw",
+        "ghcr.io/zaproxy/zaproxy:stable",
     ]
-    rules_path = Path(".zap/rules.tsv")
-    if rules_path.exists():
-        cmd += ["-v", f"{Path.cwd() / '.zap'}:/zap/wrk/.zap:ro"]
-    cmd += ["ghcr.io/zaproxy/zaproxy:stable"]
 
     if spec:
         cmd += ["zap-api-scan.py", "-t", spec, "-f", "openapi"]
@@ -254,16 +285,18 @@ def _zap_command(
         cmd += ["zap-baseline.py", "-t", target]
 
     cmd += ["-J", "dast-report.json", "-I"]
-    if rules_path.exists():
-        cmd += ["-c", ".zap/rules.tsv"]
+    if rules:
+        cmd += ["-c", rules]
     return cmd
 
 
-def _run_zap(target: str, *, spec: str | None = None, host_override: bool = True) -> None:
+def _run_zap(
+    target: str, *, spec: str | None = None, host_override: bool = True, rules: str | None = None
+) -> None:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     os.chmod(REPORT_DIR, 0o777)
     subprocess.run(
-        _zap_command(target, spec=spec, host_override=host_override), check=False
+        _zap_command(target, spec=spec, host_override=host_override, rules=rules), check=False
     )
 
 
@@ -437,7 +470,7 @@ def run(args: list[str] | None = None) -> int:
         host_override = not parsed.no_host_override and config.get_bool(
             "api.openapi.host_override", True
         )
-        _run_zap(target, spec=scan_spec, host_override=host_override)
+        _run_zap(target, spec=scan_spec, host_override=host_override, rules=_stage_zap_rules())
         data = _read_data()
         if not data:
             output.error("ZAP report missing or unparseable")
@@ -449,3 +482,4 @@ def run(args: list[str] | None = None) -> int:
         if server_proc is not None:
             server_proc.terminate()
         _cleanup_staged_spec()
+        _cleanup_zap_rules()

@@ -281,12 +281,57 @@ def test_both_modes_keep_the_report_and_warn_flags():
         assert cmd.split()[-1] == "-I"
 
 
-def test_rules_file_is_mounted_and_passed_in_both_modes(isolated_cwd):
+def test_staged_rules_are_passed_in_both_modes():
+    for cmd in (_cmd("http://x:8080", rules="zap-rules.tsv"), _cmd("http://x:8080", spec="s.json", rules="zap-rules.tsv")):
+        assert "-c zap-rules.tsv" in cmd
+        assert ".zap" not in cmd
+    assert "-c" not in _cmd("http://x:8080").split()
+
+
+def test_zap_sees_only_the_plugin_id_rows_of_rules_tsv(isolated_cwd):
+    """zap-baseline.py parses column 1 as an int, so an alert ref would crash it (#454)."""
     (isolated_cwd / ".zap").mkdir()
-    (isolated_cwd / ".zap/rules.tsv").write_text("10038\tIGNORE\n")
-    for cmd in (_cmd("http://x:8080"), _cmd("http://x:8080", spec="s.json")):
-        assert "/zap/wrk/.zap:ro" in cmd
-        assert "-c .zap/rules.tsv" in cmd
+    (isolated_cwd / ".zap/rules.tsv").write_text(
+        "# why\n10055-5\tIGNORE\t# meta CSP can't set frame-ancestors\n10038\tIGNORE\n"
+        "\u00b2\tIGNORE\t# a Unicode digit: str.isdigit() says yes, int() says no\n\n"
+    )
+    assert dast._stage_zap_rules() == "zap-rules.tsv"
+    staged = (dast.REPORT_DIR / "zap-rules.tsv").read_text().splitlines()
+    assert staged == ["10038\tIGNORE"]
+    assert all(line.split("\t")[0].isascii() and line.split("\t")[0].isdigit() for line in staged)
+    dast._cleanup_zap_rules()
+    assert not (dast.REPORT_DIR / "zap-rules.tsv").exists()
+
+
+def test_run_stages_the_rules_for_zap_and_cleans_them_up(monkeypatch, isolated_cwd):
+    """The wiring: run() hands _run_zap the staged file name, the staged
+    file holds only plugin-id rows while ZAP runs, and it is gone after."""
+    (isolated_cwd / ".zap").mkdir()
+    (isolated_cwd / ".zap/rules.tsv").write_text("10055-5\tIGNORE\n10038\tIGNORE\n")
+    seen = {}
+
+    def fake_zap(_target, **kwargs):
+        seen["rules"] = kwargs.get("rules")
+        seen["staged"] = (dast.REPORT_DIR / "zap-rules.tsv").read_text()
+        dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+
+    monkeypatch.setattr(dast, "_docker_available", lambda: True)
+    monkeypatch.setattr(dast, "_run_zap", fake_zap)
+    assert dast.run(["--target", "https://example.com"]) == 0
+    assert seen["rules"] == "zap-rules.tsv"
+    assert seen["staged"] == "10038\tIGNORE\n"
+    assert not (dast.REPORT_DIR / "zap-rules.tsv").exists()
+
+
+def test_a_rules_tsv_of_alert_refs_only_gives_zap_no_config(isolated_cwd):
+    (isolated_cwd / ".zap").mkdir()
+    (isolated_cwd / ".zap/rules.tsv").write_text("10055-5\tIGNORE\n10055-6\tIGNORE\n")
+    assert dast._stage_zap_rules() is None
+    assert not (dast.REPORT_DIR / "zap-rules.tsv").exists()
+
+
+def test_no_rules_tsv_gives_zap_no_config(isolated_cwd):
+    assert dast._stage_zap_rules() is None
 
 
 # ── spec resolution ──────────────────────────────────────────────
