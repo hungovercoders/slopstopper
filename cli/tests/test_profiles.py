@@ -129,6 +129,15 @@ def test_disabled_keeps_the_doc_updaters_md_source_name(write_config):
     assert not any(name.endswith(".md.yml") for name in disabled)
 
 
+def test_disabled_keeps_any_name_that_already_has_an_extension(write_config):
+    """The rule is "has an extension", not an allowlist: an adopter-added
+    `custom.yaml` must stay `custom.yaml` so the installer's sweep can
+    remove it (#452)."""
+    write_config("workflows:\n  disabled: [custom.yaml, ss-x.yml, ss-y]\n")
+    assert profiles.effective_disabled() >= {"custom.yaml", "ss-x.yml", "ss-y.yml"}
+    assert not any(name.endswith(".yaml.yml") for name in profiles.effective_disabled())
+
+
 def test_explicit_disable_wins_over_explicit_enable(write_config):
     write_config(
         "workflows:\n"

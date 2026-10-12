@@ -43,7 +43,7 @@ Configuration (.slopstopper.yml):
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from slopstopper import config
 
@@ -139,14 +139,14 @@ def validate() -> str | None:
 
 # The extensions a shipped workflow file can carry: `.yml`, or `.md` for the
 # gh-aw doc-updater's source (its compiled half is `.lock.yml`).
-_WORKFLOW_SUFFIXES = (".yml", ".md")
 
 
 def _config_list(key: str) -> set[str]:
     """A `workflows.*` list from config, normalised to workflow filenames.
 
-    A bare name gets `.yml`; a name already ending `.yml` or `.md` is kept
-    as written, so `ss-hygiene-doc-updater.md` matches the shipped file.
+    A bare name gets `.yml`; a name that already has an extension is kept
+    as written, so `ss-hygiene-doc-updater.md` matches the shipped file
+    and an adopter's `custom.yaml` is not turned into `custom.yaml.yml`.
     """
     raw = config.get(key, [])
     if not isinstance(raw, list):
@@ -156,7 +156,7 @@ def _config_list(key: str) -> set[str]:
         name = str(item).strip()
         if not name:
             continue
-        out.add(name if name.endswith(_WORKFLOW_SUFFIXES) else f"{name}.yml")
+        out.add(name if PurePosixPath(name).suffix else f"{name}.yml")
     return out
 
 
