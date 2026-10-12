@@ -227,6 +227,9 @@ def _cleanup_staged_spec() -> None:
         path.unlink(missing_ok=True)
 
 
+_PLUGIN_ID = re.compile(r"[0-9]+")
+
+
 def _stage_zap_rules(rules_file: Path = dast_gate.ZAP_RULES_FILE) -> str | None:
     """Stage the plugin-id rows of .zap/rules.tsv for ZAP's `-c`.
 
@@ -235,9 +238,12 @@ def _stage_zap_rules(rules_file: Path = dast_gate.ZAP_RULES_FILE) -> str | None:
     """
     if not rules_file.exists():
         return None
+    # ZAP reads column 1 with int(), so only ASCII digits may reach it:
+    # str.isdigit() also accepts superscripts and other Unicode digits
+    # that int() rejects, which would reproduce the crash this prevents.
     rows = [
         line for line in rules_file.read_text().splitlines()
-        if line.split("\t", 1)[0].strip().isdigit()
+        if _PLUGIN_ID.fullmatch(line.split("\t", 1)[0].strip())
     ]
     if not rows:
         return None
