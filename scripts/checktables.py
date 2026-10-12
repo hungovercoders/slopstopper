@@ -25,6 +25,7 @@ check cannot land without its row.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import sys
 from pathlib import Path
 
@@ -64,7 +65,10 @@ def category_table(category: str) -> str:
 
 def badges_block(owner: str = OWNER, repo: str = REPO) -> str:
     """The README's badge groups, without the generator's own heading."""
-    block = badges.generate(owner=owner, repo=repo, no_advert=True)
+    # The generator lists .github/workflows/ relative to the working
+    # directory; pin it to the repository so the test can run from cli/.
+    with contextlib.chdir(ROOT):
+        block = badges.generate(owner=owner, repo=repo, no_advert=True)
     heading = "## Pipeline status\n\n"
     return block[len(heading):] if block.startswith(heading) else block
 
