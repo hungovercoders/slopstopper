@@ -321,7 +321,7 @@ def test_checks_list_marks_checks_the_profile_drops(write_config, capsys):
     write_config("profile: api\n")
     assert cli.main(["checks", "list", "--category", "reliability"]) == 0
     out = capsys.readouterr().out
-    assert "⏸" in out
+    assert "💤" in out
     assert "profile: api" in out
 
 
@@ -342,3 +342,63 @@ def test_profile_disabled_prints_the_effective_set_one_per_line(write_config, ca
     assert capsys.readouterr().out.splitlines() == sorted(profiles.effective_disabled())
     assert "ss-reliability-seo-check.yml" in profiles.effective_disabled()
     assert "ss-reliability-api-health-check.yml" not in profiles.effective_disabled()
+
+
+# ── --json ───────────────────────────────────────────────────────
+
+
+def test_profile_list_json_has_one_row_per_profile(capsys):
+    import json
+
+    assert cli.main(["profile", "list", "--json"]) == 0
+    rows = json.loads(capsys.readouterr().out)
+    assert [row["name"] for row in rows] == profiles.names()
+    assert sum(1 for row in rows if row["default"]) == 1
+    api = next(row for row in rows if row["name"] == "api")
+    assert "ss-reliability-smoke-tests.yml" in api["disables"]
+    assert {"name", "default", "summary", "detail", "disables", "disables_without_api"} <= set(rows[0])
+
+
+def test_profile_show_json_reports_the_profile_and_each_source(write_config, capsys):
+    import json
+
+    write_config("profile: api\nworkflows:\n  disabled: [ss-security-sast-check.yml]\n")
+    assert cli.main(["profile", "show", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["profile"] == "api"
+    assert data["configured"] == "api"
+    assert data["origin"] == "from .slopstopper.yml"
+    assert data["warning"] is None
+    sources = {row["workflow"]: row["source"] for row in data["disabled"]}
+    assert sources["ss-security-sast-check.yml"] == "workflows.disabled"
+    assert sources["ss-reliability-smoke-tests.yml"] == "profile"
+    assert data["re_enabled"] == []
+
+
+def test_profile_detect_json(isolated_cwd, capsys):
+    import json
+
+    assert cli.main(["profile", "detect", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert {"suggested", "reason", "active", "matches"} <= set(data)
+    assert data["matches"] == (data["suggested"] == data["active"])
+
+
+def test_profile_expand_json_and_its_error(capsys):
+    import json
+
+    assert cli.main(["profile", "expand", "api", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["profile"] == "api"
+    assert data["workflows"] == profiles.expand("api")
+    assert cli.main(["profile", "expand", "nope", "--json"]) == 2
+    assert "unknown profile" in json.loads(capsys.readouterr().out)["error"]
+
+
+def test_profile_disabled_json(write_config, capsys):
+    import json
+
+    write_config("profile: library\n")
+    assert cli.main(["profile", "disabled", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["disabled"] == sorted(profiles.effective_disabled())

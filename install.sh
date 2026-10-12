@@ -1555,7 +1555,7 @@ if [ -n "$DYNAMIC_LABELS" ]; then
   echo "     mise use node@22"
   echo ""
 else
-  echo "  ⏸ URL-driven checks: none installed. Profile '$PROFILE_ACTIVE' has no"
+  echo "  💤 URL-driven checks: none installed. Profile '$PROFILE_ACTIVE' has no"
   echo "       served surface to audit, so nothing here needs a URL."
   echo "       Take one back with workflows.enabled in .slopstopper.yml."
   echo ""
