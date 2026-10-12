@@ -114,7 +114,12 @@ The next scheduled run picks up the new value; no recompile needed.
 
 ### "Don't want this workflow at all"
 
-Delete `.github/workflows/ss-hygiene-doc-updater.md` and
-`.github/workflows/ss-hygiene-doc-updater.lock.yml`. Re-running the
-installer respects the deletion (tracked via
-`.ss/.workflows-installed`).
+List both files under `workflows.disabled` in `.slopstopper.yml`:
+
+```yaml
+workflows:
+  disabled: [ss-hygiene-doc-updater.md, ss-hygiene-doc-updater.lock.yml]
+```
+
+The installer removes them and never brings them back. Deleting the two
+files works too (tracked via `.ss/.workflows-installed`).
