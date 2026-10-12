@@ -58,8 +58,12 @@ Exit codes:
   1: gate found blocking alerts (riskcode >= 2 on a non-swallowed
       finding)
   2: could not run: Docker not installed, nothing listening on
-      localhost, the configured spec file does not exist, or the ZAP
-      report is missing or unparseable
+      localhost, the configured spec file does not exist, or ZAP exited
+      without a readable report. In that last case the markdown report
+      says the scan did not complete and carries ZAP's exit code and
+      the last lines it wrote to stderr, so the PR comment shows the
+      cause rather than "report not found". No tracking issue opens
+      for it: the workflow files one only on exit 1, a verdict.
 """
 
 from __future__ import annotations
@@ -75,7 +79,8 @@ import time
 from pathlib import Path
 
 from slopstopper import config, dast_gate, output
-from slopstopper.checks import _report
+from slopstopper.checks import _report, _tools
+from slopstopper.checks._contract import scan_incomplete, stderr_tail_md
 
 REPORT_DIR = Path(".ss/reports/dast")
 REPORT_JSON = REPORT_DIR / "dast-report.json"
@@ -191,6 +196,8 @@ def _docker_host_target(target: str) -> str:
 
 
 ZAP_RULES_NAME = "zap-rules.tsv"
+# How much of ZAP's stderr an incomplete-scan report carries.
+STDERR_TAIL_LINES = 20
 STAGED_SPEC_NAME = "openapi-spec"
 
 
@@ -292,21 +299,48 @@ def _zap_command(
 
 def _run_zap(
     target: str, *, spec: str | None = None, host_override: bool = True, rules: str | None = None
-) -> None:
+) -> tuple[int, list[str]]:
+    """Run ZAP; return its exit code and the last lines of its stderr.
+
+    The previous run's JSON is removed first: a scan that dies before
+    writing must leave no report, not last run's.
+    """
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     os.chmod(REPORT_DIR, 0o777)
-    subprocess.run(
-        _zap_command(target, spec=spec, host_override=host_override, rules=rules), check=False
+    REPORT_JSON.unlink(missing_ok=True)
+    return _tools.run_tailing_stderr(
+        _zap_command(target, spec=spec, host_override=host_override, rules=rules), STDERR_TAIL_LINES
+    )
+
+
+def _incomplete_detail(rc: int, stderr_tail: list[str]) -> str:
+    detail = (
+        f"ZAP exited {rc} and wrote no readable report (`{REPORT_JSON}`). "
+        "The scan is treated as not run, not as clean."
+    )
+    if not stderr_tail:
+        return f"{detail} {stderr_tail_md('ZAP', stderr_tail)}"
+    return (
+        f"{detail}\n\n{stderr_tail_md('ZAP', stderr_tail)}\n\n"
+        "A traceback from `zap-baseline.py` or `zap-api-scan.py` names an input it "
+        "could not read (a spec, a rules row); `Unable to find image` or a "
+        "connection error is Docker or the network, so re-run."
     )
 
 
 def _read_data() -> dict:
+    """ZAP's JSON report as a dict, or {} when there is no usable report:
+    missing, unreadable, undecodable, malformed, or valid JSON that is not
+    an object. Every one of those means the scan did not complete, and
+    the caller writes the incomplete-scan markdown rather than crashing
+    into "Report not found" at the emit step."""
     if not REPORT_JSON.exists():
         return {}
     try:
-        return json.loads(REPORT_JSON.read_text())
-    except json.JSONDecodeError:
+        data = json.loads(REPORT_JSON.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _collect_alerts(data: dict) -> dict[str, list[dict]]:
@@ -470,11 +504,14 @@ def run(args: list[str] | None = None) -> int:
         host_override = not parsed.no_host_override and config.get_bool(
             "api.openapi.host_override", True
         )
-        _run_zap(target, spec=scan_spec, host_override=host_override, rules=_stage_zap_rules())
+        rc, stderr_tail = _run_zap(
+            target, spec=scan_spec, host_override=host_override, rules=_stage_zap_rules()
+        )
         data = _read_data()
         if not data:
-            output.error("ZAP report missing or unparseable")
-            return 2
+            return scan_incomplete(
+                REPORT_DIR, REPORT_MD, "DAST Analysis Report", _incomplete_detail(rc, stderr_tail)
+            )
         REPORT_MD.write_text(_build_md_report(data))
         _print_summary(data)
         return _run_gate(data)
