@@ -1143,6 +1143,16 @@ seed_template ".github/labeler.yml" \
 # bracketed by markers if it isn't there yet; leave existing content
 # untouched. The block ships fully commented so adopters opt in by
 # uncommenting, which keeps the same default safety as the fresh-install case.
+#
+# A _headers that already sets a security header (an uncommented CSP, HSTS
+# or X-Content-Type-Options line) is configured, so it gets nothing: the
+# commented baseline would sit next to the live policy as a second,
+# conflicting one, and an adopter who removed the block would get it back
+# on every refresh (#453).
+headers_already_configured() {
+  grep -Eiq '^[[:space:]]*(Content-Security-Policy|Strict-Transport-Security|X-Content-Type-Options):' "$1" 2>/dev/null
+}
+
 seed_headers_block() {
   if [ ! -d "$TARGET_DIR/public" ]; then
     info "public/_headers: no public/ directory in target, so skipping. Add one and re-run if you want the baseline."
@@ -1155,6 +1165,10 @@ seed_headers_block() {
   fi
   if [ -f "$dst" ] && grep -Fq "# slopstopper security headers begin" "$dst" 2>/dev/null; then
     info "public/_headers: slopstopper security headers block already present, so leaving it alone"
+    return 0
+  fi
+  if [ -f "$dst" ] && headers_already_configured "$dst"; then
+    info "public/_headers: already sets security headers, so leaving it alone (the baseline is templates/_headers.example upstream)"
     return 0
   fi
   mkdir -p "$(dirname "$dst")"

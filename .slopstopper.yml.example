@@ -532,9 +532,11 @@ hygiene:
 # when your repo is mostly one shape but wants one check back, such as an
 # API that also serves a docs site and wants broken-links. It has no
 # effect on a workflow you also list under `disabled` (an explicit
-# disable wins) and none on `ui`, which drops nothing.
+# disable wins). On `ui` it also brings back an API check the no-API
+# holdback dropped.
 #
-# Names may be given with or without the `.yml` extension.
+# Names may be given with or without the `.yml` extension. The doc-updater
+# is two files, `ss-hygiene-doc-updater.md` and `.lock.yml`; list both.
 workflows:
   disabled: []
   enabled: []

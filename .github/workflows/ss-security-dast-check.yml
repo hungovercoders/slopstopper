@@ -136,13 +136,24 @@ jobs:
             sleep 1
           done
 
+      # The check itself is the gate: it exits 1 on blocking alerts and 2
+      # when ZAP did not produce a report, so this step's outcome IS the
+      # verdict and the step that fails is the one that ran the scan. The
+      # spec comes from .slopstopper.yml, so the same command covers both
+      # modes and the check picks the ZAP entry point.
       - name: Run DAST analysis + gate
         id: dast
         if: steps.mode.outputs.mode != 'skip'
-        continue-on-error: true
-        # The spec itself comes from .slopstopper.yml, so the same command
-        # covers both modes and the check picks the ZAP entry point.
-        run: task ss:security:dast -- ${{ steps.mode.outputs.url }}
+        # `task -x` passes the CLI's exit code through (plain `task` maps
+        # every failure to 201). The code is kept as an output so later
+        # steps can tell blocking alerts (1) from could-not-run (2).
+        shell: bash
+        run: |
+          set +e
+          task -x ss:security:dast -- ${{ steps.mode.outputs.url }}
+          rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          exit $rc
 
       - name: Stop local server
         if: steps.mode.outputs.mode == 'site' && always()
@@ -161,25 +172,21 @@ jobs:
           if-no-files-found: warn
 
       - name: Emit PR comment
-        if: github.event_name == 'pull_request' && steps.mode.outputs.mode != 'skip' && always()
+        if: always() && github.event_name == 'pull_request' && steps.mode.outputs.mode != 'skip'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit security:dast --target pr-comment --status ${{ steps.dast.outcome == 'success' && 'pass' || 'fail' }} --on-pass=delete
 
       - name: Emit issue on main (non-PR runs with blocking alerts)
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.mode.outputs.mode != 'skip' && steps.dast.outcome == 'failure'
+        # Only rc 1 is a finding. Exit 2 means the scan didn't run, and the
+        # failure tracker raises that.
+        if: always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.dast.outputs.rc == '1'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit security:dast --target issue
 
       - name: Close issue on main when clean (non-PR runs)
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.mode.outputs.mode != 'skip' && steps.dast.outcome == 'success'
+        if: always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.dast.outcome == 'success'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: slopstopper emit security:dast --target issue --on-pass=close
-
-      - name: Fail job if gate found blocking alerts
-        if: steps.dast.outcome == 'failure'
-        run: |
-          echo "::error::DAST gate found blocking alerts. See .ss/reports/dast/dast-report.md."
-          exit 1

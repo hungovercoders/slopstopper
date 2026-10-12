@@ -431,6 +431,34 @@ def test_headers_append_is_idempotent(tmp_path):
     assert second_content == first_content, "second install must not modify the headers file"
 
 
+def test_leaves_a_configured_headers_file_alone(tmp_path):
+    """A _headers that already sets a security header is the adopter's policy; no block is appended (#453)."""
+    target = _make_minimal_target(tmp_path)
+    existing = (
+        "/*\n"
+        "  Content-Security-Policy: default-src 'self'\n"
+        "  Strict-Transport-Security: max-age=63072000\n"
+        "  Cache-Control: public, max-age=0, must-revalidate\n"
+    )
+    (target / "public/_headers").write_text(existing)
+
+    result = _run_install(target)
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert (target / "public/_headers").read_text() == existing
+    assert "already sets security headers" in result.stdout
+
+
+def test_a_commented_security_header_does_not_count_as_configured(tmp_path):
+    """Only an uncommented header line marks the file as configured."""
+    target = _make_minimal_target(tmp_path)
+    existing = "/*\n  # Content-Security-Policy: default-src 'self'\n  Cache-Control: public, max-age=0\n"
+    (target / "public/_headers").write_text(existing)
+
+    result = _run_install(target)
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert "# slopstopper security headers begin" in (target / "public/_headers").read_text()
+
+
 # ── pre-push hygiene hook ────────────────────────────────────────
 
 

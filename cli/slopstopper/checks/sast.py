@@ -46,14 +46,11 @@ from __future__ import annotations
 
 import json
 import shutil
-import subprocess
-import sys
-from collections import deque
 from pathlib import Path
 
 from slopstopper import config, output
-from slopstopper.checks import _report
-from slopstopper.checks._contract import reject_extra_args, scan_incomplete
+from slopstopper.checks import _report, _tools
+from slopstopper.checks._contract import reject_extra_args, scan_incomplete, stderr_tail_md
 
 REPORT_DIR = Path(".ss/reports/sast")
 REPORT_JSON = REPORT_DIR / "sast-report.json"
@@ -154,31 +151,18 @@ def _run_semgrep() -> tuple[int, list[str]]:
     """
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     REPORT_JSON.unlink(missing_ok=True)
-    try:
-        # why: `errors=` needs Python 3.6+; the CLI requires >=3.11.
-        # nosemgrep: python.lang.compatibility.python36.python36-compatibility-Popen1
-        proc = subprocess.Popen(
-            [
-                "semgrep",
-                "--config=auto",
-                "--json",
-                f"--output={REPORT_JSON}",
-                "--exclude=node_modules",
-                "--exclude=.git",
-                ".",
-            ],
-            stderr=subprocess.PIPE,
-            text=True,
-            errors="replace",
-        )
-    except OSError as exc:
-        return 127, [str(exc)]
-    tail: deque[str] = deque(maxlen=STDERR_TAIL_LINES)
-    for line in proc.stderr:
-        sys.stderr.write(line)
-        if line.strip():
-            tail.append(line.rstrip())
-    return proc.wait(), list(tail)
+    return _tools.run_tailing_stderr(
+        [
+            "semgrep",
+            "--config=auto",
+            "--json",
+            f"--output={REPORT_JSON}",
+            "--exclude=node_modules",
+            "--exclude=.git",
+            ".",
+        ],
+        STDERR_TAIL_LINES,
+    )
 
 
 def _incomplete_detail(rc: int, has_data: bool, stderr_tail: list[str]) -> str:
@@ -188,11 +172,9 @@ def _incomplete_detail(rc: int, has_data: bool, stderr_tail: list[str]) -> str:
         "The scan is treated as not run, not as clean."
     )
     if not stderr_tail:
-        return detail + " Semgrep printed nothing to stderr."
-    body = "\n".join(stderr_tail)
+        return f"{detail} {stderr_tail_md('Semgrep', stderr_tail)}"
     return (
-        f"{detail}\n\nThe last {len(stderr_tail)} line(s) Semgrep printed to stderr:\n\n"
-        f"```text\n{body}\n```\n\n"
+        f"{detail}\n\n{stderr_tail_md('Semgrep', stderr_tail)}\n\n"
         "If it says the `semgrep` command can't run (a stale mise shim, a broken "
         "venv), `slopstopper doctor` confirms it."
     )

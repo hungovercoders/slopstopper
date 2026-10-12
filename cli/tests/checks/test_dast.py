@@ -171,6 +171,22 @@ def test_read_data_handles_malformed_json(isolated_cwd):
     assert dast._read_data() == {}
 
 
+def test_read_data_treats_non_object_json_as_no_report(isolated_cwd):
+    """Valid JSON that is not an object is truthy, and would crash the
+    report builder; it is no report."""
+    dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    dast.REPORT_JSON.write_text(json.dumps([1, 2, 3]))
+    assert dast._read_data() == {}
+    dast.REPORT_JSON.write_text("null")
+    assert dast._read_data() == {}
+
+
+def test_read_data_treats_undecodable_bytes_as_no_report(isolated_cwd):
+    dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    dast.REPORT_JSON.write_bytes(b"\xff\xfe not utf-8")
+    assert dast._read_data() == {}
+
+
 def test_read_data_parses_payload(isolated_cwd):
     dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
     dast.REPORT_JSON.write_text(json.dumps(_zap_payload(HIGH_ALERT)))
@@ -198,6 +214,7 @@ def test_run_clean_when_no_alerts(monkeypatch, isolated_cwd, capsys):
     def fake_zap(_target, **_kwargs):
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+        return 0, []
 
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_run_zap", fake_zap)
@@ -218,6 +235,7 @@ def test_run_with_blocking_alerts(monkeypatch, isolated_cwd, capsys):
     def fake_zap(_target, **_kwargs):
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps(_zap_payload(HIGH_ALERT, MEDIUM_ALERT, LOW_ALERT)))
+        return 0, []
 
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_run_zap", fake_zap)
@@ -235,6 +253,7 @@ def test_run_with_only_low_or_info(monkeypatch, isolated_cwd, capsys):
     def fake_zap(_target, **_kwargs):
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps(_zap_payload(LOW_ALERT, INFO_ALERT)))
+        return 0, []
 
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_run_zap", fake_zap)
@@ -242,6 +261,37 @@ def test_run_with_only_low_or_info(monkeypatch, isolated_cwd, capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "Found 2 alert(s), but none are high/medium" in out
+
+
+def test_a_crashed_scan_writes_a_report_that_says_why(monkeypatch, isolated_cwd, capsys):
+    """ZAP dying (a rules row it can't parse, #454) must surface in the
+    report the emit step posts, not as 'Report not found' (#455)."""
+    monkeypatch.setattr(dast, "_docker_available", lambda: True)
+    monkeypatch.setattr(
+        dast, "_run_zap",
+        lambda *_a, **_k: (1, ["Traceback (most recent call last):", "ValueError: invalid literal for int() with base 10: '10055-5'"]),
+    )
+    assert dast.run(["--target", "https://example.com"]) == 2
+    assert "did not complete" in capsys.readouterr().out
+    md = dast.REPORT_MD.read_text()
+    assert "Scan did not complete" in md
+    assert "ZAP exited 1 and wrote no readable report" in md
+    assert "invalid literal for int()" in md
+
+
+def test_a_crashed_scan_with_no_stderr_says_so(monkeypatch, isolated_cwd):
+    monkeypatch.setattr(dast, "_docker_available", lambda: True)
+    monkeypatch.setattr(dast, "_run_zap", lambda *_a, **_k: (125, []))
+    assert dast.run(["--target", "https://example.com"]) == 2
+    assert "ZAP printed nothing to stderr" in dast.REPORT_MD.read_text()
+
+
+def test_a_previous_runs_report_cannot_stand_in_for_this_one(monkeypatch, isolated_cwd):
+    dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+    monkeypatch.setattr(dast, "_docker_available", lambda: True)
+    monkeypatch.setattr(dast._tools, "run_tailing_stderr", lambda *_a, **_k: (2, []))
+    assert dast.run(["--target", "https://example.com"]) == 2
 
 
 # ── scan-mode selection (ZAP API scan) ───────────────────────────
@@ -281,12 +331,58 @@ def test_both_modes_keep_the_report_and_warn_flags():
         assert cmd.split()[-1] == "-I"
 
 
-def test_rules_file_is_mounted_and_passed_in_both_modes(isolated_cwd):
+def test_staged_rules_are_passed_in_both_modes():
+    for cmd in (_cmd("http://x:8080", rules="zap-rules.tsv"), _cmd("http://x:8080", spec="s.json", rules="zap-rules.tsv")):
+        assert "-c zap-rules.tsv" in cmd
+        assert ".zap" not in cmd
+    assert "-c" not in _cmd("http://x:8080").split()
+
+
+def test_zap_sees_only_the_plugin_id_rows_of_rules_tsv(isolated_cwd):
+    """zap-baseline.py parses column 1 as an int, so an alert ref would crash it (#454)."""
     (isolated_cwd / ".zap").mkdir()
-    (isolated_cwd / ".zap/rules.tsv").write_text("10038\tIGNORE\n")
-    for cmd in (_cmd("http://x:8080"), _cmd("http://x:8080", spec="s.json")):
-        assert "/zap/wrk/.zap:ro" in cmd
-        assert "-c .zap/rules.tsv" in cmd
+    (isolated_cwd / ".zap/rules.tsv").write_text(
+        "# why\n10055-5\tIGNORE\t# meta CSP can't set frame-ancestors\n10038\tIGNORE\n"
+        "\u00b2\tIGNORE\t# a Unicode digit: str.isdigit() says yes, int() says no\n\n"
+    )
+    assert dast._stage_zap_rules() == "zap-rules.tsv"
+    staged = (dast.REPORT_DIR / "zap-rules.tsv").read_text().splitlines()
+    assert staged == ["10038\tIGNORE"]
+    assert all(line.split("\t")[0].isascii() and line.split("\t")[0].isdigit() for line in staged)
+    dast._cleanup_zap_rules()
+    assert not (dast.REPORT_DIR / "zap-rules.tsv").exists()
+
+
+def test_run_stages_the_rules_for_zap_and_cleans_them_up(monkeypatch, isolated_cwd):
+    """The wiring: run() hands _run_zap the staged file name, the staged
+    file holds only plugin-id rows while ZAP runs, and it is gone after."""
+    (isolated_cwd / ".zap").mkdir()
+    (isolated_cwd / ".zap/rules.tsv").write_text("10055-5\tIGNORE\n10038\tIGNORE\n")
+    seen = {}
+
+    def fake_zap(_target, **kwargs):
+        seen["rules"] = kwargs.get("rules")
+        seen["staged"] = (dast.REPORT_DIR / "zap-rules.tsv").read_text()
+        dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+        return 0, ""
+
+    monkeypatch.setattr(dast, "_docker_available", lambda: True)
+    monkeypatch.setattr(dast, "_run_zap", fake_zap)
+    assert dast.run(["--target", "https://example.com"]) == 0
+    assert seen["rules"] == "zap-rules.tsv"
+    assert seen["staged"] == "10038\tIGNORE\n"
+    assert not (dast.REPORT_DIR / "zap-rules.tsv").exists()
+
+
+def test_a_rules_tsv_of_alert_refs_only_gives_zap_no_config(isolated_cwd):
+    (isolated_cwd / ".zap").mkdir()
+    (isolated_cwd / ".zap/rules.tsv").write_text("10055-5\tIGNORE\n10055-6\tIGNORE\n")
+    assert dast._stage_zap_rules() is None
+    assert not (dast.REPORT_DIR / "zap-rules.tsv").exists()
+
+
+def test_no_rules_tsv_gives_zap_no_config(isolated_cwd):
+    assert dast._stage_zap_rules() is None
 
 
 # ── spec resolution ──────────────────────────────────────────────
@@ -373,6 +469,7 @@ def test_run_passes_the_spec_through_to_zap(monkeypatch, isolated_cwd, write_con
         seen.update(target=target, **kwargs)
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+        return 0, []
 
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_run_zap", fake_zap)
@@ -391,6 +488,7 @@ def test_run_honours_the_host_override_config(monkeypatch, isolated_cwd, write_c
         seen.update(kwargs)
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+        return 0, []
 
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_run_zap", fake_zap)
@@ -406,6 +504,7 @@ def test_run_without_a_spec_stays_on_baseline(monkeypatch, isolated_cwd, write_c
         seen.update(kwargs)
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
         dast.REPORT_JSON.write_text(json.dumps({"site": []}))
+        return 0, []
 
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_run_zap", fake_zap)

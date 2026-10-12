@@ -87,6 +87,8 @@ def ignored_rules(rules_file: Path = ZAP_RULES_FILE) -> set[str]:
     riskcode. The gate honours the same allowlist so a `90003 IGNORE`
     (e.g. SRI on a rotating cross-domain script) doesn't keep
     blocking the build just because ZAP recorded the alert anyway.
+    ZAP itself is given the plugin-id rows only (its parser reads the
+    first column as an integer); alert refs exist for this gate.
     """
     if not rules_file.exists():
         return set()

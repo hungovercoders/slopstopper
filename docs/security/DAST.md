@@ -56,7 +56,7 @@ The companion check `ss:hygiene:csp-exceptions` (workflow `ss-hygiene-csp-except
 | `Taskfile.ss.yml` (`dast` task) | Local task runner shim → `slopstopper run security:dast` |
 | `cli/slopstopper/checks/dast.py` | Check implementation (subprocess-invokes Docker + OWASP ZAP, renders MD report) |
 | `cli/slopstopper/dast_gate.py` | Pass/fail gate that filters `rules.tsv` IGNOREs and documented CSP exceptions from the blocker count, naming the entry behind each |
-| `.zap/rules.tsv` | Per-alert (`10055-13`) or per-plugin (`10055`) IGNOREs, each with a `# why` |
+| `.zap/rules.tsv` | Per-alert (`10055-13`) or per-plugin (`10055`) IGNOREs, each with a `# why`. ZAP is handed the plugin-id rows only; the gate applies both |
 | `docs/security/CSP_EXCEPTIONS.md` | Single source of truth for per-path CSP relaxations (optional, as the gate handles absence) |
 | `.gitignore` | Excludes `.ss/reports/dast/` |
 
@@ -150,6 +150,12 @@ already names the right host.
 **A local spec file** is staged into ZAP's mounted report directory for the
 run and removed afterwards, because the container only sees `/zap/wrk/`
 and a repo-relative path can't be handed to it directly.
+
+**A scan that dies is not clean.** When ZAP exits without a readable
+report, the check exits 2 and the markdown report says the scan did not
+complete, with ZAP's exit code and the last lines it wrote to stderr, so the
+PR comment shows the cause. In CI that fails the scan step itself, and only
+blocking alerts (exit 1) open the tracking issue.
 
 **Unconfigured is not failing.** With no spec the check keeps its baseline
 behaviour, and on an `api`-profile repo the workflow skips rather than

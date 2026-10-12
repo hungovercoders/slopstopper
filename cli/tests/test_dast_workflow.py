@@ -85,3 +85,17 @@ def test_the_workflow_takes_a_url_and_runs_on_schedule_and_successful_deployment
     assert re.search(r"schedule:\n\s+- cron:", text)
     assert "deployment_status:" in text
     assert "github.event.deployment_status.state == 'success'" in text
+
+
+def test_a_scanner_error_fails_the_scan_step_itself():
+    """No continue-on-error: the step that ran ZAP is the one that goes red,
+    and only blocking alerts (rc 1) open the issue on main (#455)."""
+    text = WORKFLOW.read_text()
+    assert "continue-on-error" not in text
+    assert "Fail job if gate" not in text
+    run_block = yaml_block(WORKFLOW, "run", step="Run DAST analysis + gate")
+    assert "task -x ss:security:dast" in run_block
+    assert 'echo "rc=$rc" >> "$GITHUB_OUTPUT"' in run_block
+    assert "steps.dast.outputs.rc == '1'" in text
+    for step in ("Emit PR comment", "Emit issue on main", "Close issue on main"):
+        assert re.search(rf"- name: {step}.*?\n\s+(?:#.*\n\s+)*if: always\(\)", text, re.S), step
