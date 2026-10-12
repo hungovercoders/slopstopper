@@ -28,6 +28,7 @@ skills and the site copy. This table is the checklist;
 | Editing a Playwright spec, `playwright.config.js`, or `lighthouserc{,.prod}.json` | **`cli/slopstopper/data/` is the only home**. Adopter repos no longer carry these files by default; the CLI ships them inside the wheel and resolves `.ss/<filename>` first only if an adopter has explicitly overridden it. Edit under `cli/slopstopper/data/` and the change ships on the next `slopstopper-cli` release |
 | New page | Add HTML + page-specific CSS in `app/`; link `app/shared.css` first; copy header/nav/footer; add to nav on the other pages; add to `tests/smoke.spec.ts` and `tests/accessibility.spec.ts` (under `cli/slopstopper/data/tests/`, per the row above) |
 | Headers / CSP | `worker/headers.json` (single source of truth). CSP changes are blast-radius, so touch DAST tests too |
+| Changing what a command prints: a check's stdout, `doctor`, `profile`, `checks list` or the banner | The demo it appears in. `demos/*.tape` names the commands each one records; re-record with `task contributing:demos` (see [DEMOS.md](DEMOS.md)) and commit the GIF or PNG beside the tape |
 | Worker behaviour | `worker/index.ts` (path matching, redirects); `wrangler.jsonc` (assets binding, compatibility date) |
 
 The right-hand column flags the skill duo wherever a change would drift either skill from reality, because they name specific workflows, tasks and env vars and silently rot if those change without them. Each skill's closing section carries the same instruction in the other direction.

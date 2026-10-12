@@ -6,7 +6,10 @@ local `task ss:*` shim, and every CI step ultimately calls into one of
 the subcommands below.
 
 Subcommands:
-  run <category>:<check>            Run a check, write reports under .ss/reports/.
+  run [--json] <category>:<check>   Run a check, write reports under .ss/reports/.
+                                    --json prints one object (exit code, status,
+                                    the ❌ failures, the files written) on stdout
+                                    and sends the check's own output to stderr.
   emit <category>:<check> --target  Post the report to a PR comment or main-
         {pr-comment, issue}         branch tracking issue (find-or-update).
         [--status {pass,fail}]      PR comments are compact: a verdict line, the
@@ -18,8 +21,9 @@ Subcommands:
                                     changed-pages / explicit list, print
                                     comma-separated paths.
   config get <key> [<default>]      Read a value from .slopstopper.yml.
-                                    Scalars print as-is; lists comma-joined;
-                                    null/missing prints the default.
+        [--json]                    Scalars print as-is; lists comma-joined;
+                                    null/missing prints the default. --json
+                                    prints the value as JSON (null when unset).
   templates list | path <n> | eject <n>
                                     Inspect / resolve / customise bundled
                                     Playwright specs, config, lighthouserc,
@@ -34,11 +38,11 @@ Subcommands:
                                     Walk the registry and show every check's
                                     name + one-line description. Useful for
                                     discoverability before running.
-  doctor                            Verify install state: which external
+  doctor [--json]                   Verify install state: which external
                                     tools are present and run (node, gh,
                                     semgrep, gitleaks, trivy, docker), and
                                     which ss-* workflows GitHub disabled.
-  profile list | show | expand <n> | disabled | detect
+  profile list | show | expand <n> | disabled | detect   [--json]
                                     Inspect project-shape profiles. Each is a
                                     `profile:` preset that switches off the
                                     checks a UI / API / library repo has no
@@ -47,12 +51,19 @@ Subcommands:
   cloudflare preview-url <sha>      Print a commit's Workers Builds preview URL
                                     from Cloudflare's PR comment on stdin.
 
+`run`, `doctor`, `profile`, `config get` and `checks list` take `--json`
+and then print one JSON value and nothing else on stdout, so a skill, a
+workflow or a script can read it without parsing the decorated text. The
+shapes are a public contract, documented next to the exit codes in
+docs/contributing/README.md.
+
 Future: init, inspect.
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib
 import json as _json
 import os
@@ -60,11 +71,13 @@ import shutil
 import subprocess
 import sys
 import traceback
+from pathlib import Path
 
 from slopstopper import (
     __version__,
     badges as badges_mod,
     cloudflare,
+    comment,
     config,
     discovery,
     emit as emit_mod,
@@ -74,6 +87,7 @@ from slopstopper import (
     workflow_state,
 )
 from slopstopper.checks import REGISTRY
+from slopstopper.checks._contract import EXIT_CANNOT_RUN, EXIT_FAIL, EXIT_PASS
 
 
 DOCS_URL = "https://slopstopper.dev"
@@ -175,8 +189,17 @@ def _add_run(sub) -> None:
             "  slopstopper run security:secrets\n"
             "  slopstopper run reliability:cwv -- --url https://example.com --prod\n"
             "  slopstopper run security:dast -- --target http://localhost:8080\n"
+            "  slopstopper run --json hygiene:entry-files\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument(
+        "--json",
+        action="store_true",
+        help=(
+            "Print one JSON object with the verdict (exit_code, status, failures, "
+            "reports) on stdout; the check's own output goes to stderr"
+        ),
     )
     p.add_argument(
         "check",
@@ -325,8 +348,13 @@ def _add_config(sub) -> None:
     get.add_argument(
         "default",
         nargs="?",
-        default="",
+        default=None,
         help="Fallback printed when the key is missing or null (default: empty string)",
+    )
+    get.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the value as JSON (a list stays a list; unset prints null, or the default)",
     )
 
 
@@ -469,7 +497,7 @@ def _add_checks(sub) -> None:
 
 
 def _add_doctor(sub) -> None:
-    sub.add_parser(
+    p = sub.add_parser(
         "doctor",
         help="Verify install + required external tools",
         description=(
@@ -490,6 +518,11 @@ def _add_doctor(sub) -> None:
         epilog="Example:\n  slopstopper doctor\n",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    p.add_argument(
+        "--json",
+        action="store_true",
+        help="Print one JSON object (ok, exit_code, tools, workflows) instead of the report",
+    )
 
 
 def _add_profile(sub) -> None:
@@ -506,14 +539,15 @@ def _add_profile(sub) -> None:
         ),
     )
     sub2 = p.add_subparsers(dest="profile_action", required=True)
-    sub2.add_parser(
+    actions = []
+    actions.append(sub2.add_parser(
         "list",
         help="List every profile and the workflows it disables",
         description="Print each profile, what it's for, and which workflows it switches off.\n",
         epilog="Example:\n  slopstopper profile list\n",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    sub2.add_parser(
+    ))
+    actions.append(sub2.add_parser(
         "show",
         help="Show the active profile and this repo's effective disabled set",
         description=(
@@ -523,7 +557,7 @@ def _add_profile(sub) -> None:
         ),
         epilog="Example:\n  slopstopper profile show\n",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
+    ))
     ex = sub2.add_parser(
         "expand",
         help="Print the workflow filenames a named profile always disables (one per line)",
@@ -537,7 +571,8 @@ def _add_profile(sub) -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     ex.add_argument("name", help=f"Profile name ({' | '.join(profiles.names())})")
-    sub2.add_parser(
+    actions.append(ex)
+    actions.append(sub2.add_parser(
         "disabled",
         help="Print the workflows this repo doesn't carry (one per line)",
         description=(
@@ -548,8 +583,8 @@ def _add_profile(sub) -> None:
         ),
         epilog="Example:\n  slopstopper profile disabled\n",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    sub2.add_parser(
+    ))
+    actions.append(sub2.add_parser(
         "detect",
         help="Suggest a profile from the repo's contents without changing anything",
         description=(
@@ -560,7 +595,13 @@ def _add_profile(sub) -> None:
         ),
         epilog="Example:\n  slopstopper profile detect\n",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
+    ))
+    for action in actions:
+        action.add_argument(
+            "--json",
+            action="store_true",
+            help="Print the result as one JSON value instead of the text",
+        )
 
 
 def _add_cloudflare(sub) -> None:
@@ -590,17 +631,17 @@ def _add_cloudflare(sub) -> None:
 # data-driven keeps main()'s cyclomatic complexity flat as the CLI
 # gains subcommands.
 _DISPATCHERS = {
-    "run":       lambda a: _dispatch_run(a.check, a.check_args),
+    "run":       lambda a: _dispatch_run(a.check, a.check_args, as_json=a.json),
     "emit":      lambda a: _dispatch_emit(a.check, a.target, on_pass=a.on_pass, status=a.status),
     "summary":   lambda a: emit_mod.emit_pr_summary(),
     "discover":  lambda a: _dispatch_discover(a.check, a.event),
-    "config":    lambda a: _dispatch_config_get(a.key, a.default),
+    "config":    lambda a: _dispatch_config_get(a.key, a.default, as_json=a.json),
     "templates": lambda a: _dispatch_templates(a.templates_action, getattr(a, "name", None)),
     "badges":    lambda a: _dispatch_badges(a.owner, a.repo, a.no_advert),
     "serve":     lambda a: _dispatch_serve(),
     "checks":    lambda a: _dispatch_checks_list(a.category, a.json),
-    "doctor":    lambda a: _dispatch_doctor(),
-    "profile":   lambda a: _dispatch_profile(a.profile_action, getattr(a, "name", None)),
+    "doctor":    lambda a: _dispatch_doctor(as_json=a.json),
+    "profile":   lambda a: _dispatch_profile(a.profile_action, getattr(a, "name", None), as_json=a.json),
     "cloudflare": lambda a: _dispatch_cloudflare(a.cloudflare_action, a.sha),
 }
 
@@ -634,13 +675,49 @@ def main(argv: list[str] | None = None) -> int:
 # ── dispatchers ──────────────────────────────────────────────────
 
 
-def _dispatch_run(check_name: str, check_args: list[str]) -> int:
-    if check_name not in REGISTRY:
-        print(f"❌ unknown check: {check_name}", file=sys.stderr)
-        print(f"   known checks: {', '.join(sorted(REGISTRY))}", file=sys.stderr)
-        return 2
+_STATUS = {EXIT_PASS: "pass", EXIT_FAIL: "fail", EXIT_CANNOT_RUN: "cannot-run"}
+
+
+def _check_module_name(check_name: str) -> str:
+    """`security:vulnerability:all` → `slopstopper.checks.vulnerability_all`:
+    drop the category, join the rest with underscores."""
+    parts = check_name.split(":")[1:]
+    return "slopstopper.checks." + "_".join(parts).replace("-", "_")
+
+
+def _check_meta(check_name: str) -> dict | None:
+    """The check's META dict, or None when it has none or is not a module
+    (a test's fake registered straight into REGISTRY)."""
     try:
-        rc = REGISTRY[check_name](check_args)
+        module = importlib.import_module(_check_module_name(check_name))
+    except ImportError:
+        return None
+    meta = getattr(module, "META", None)
+    return meta if isinstance(meta, dict) else None
+
+
+@contextlib.contextmanager
+def _stdout_to_stderr():
+    """Route everything the check prints, subprocesses included, to stderr,
+    so stdout carries the JSON verdict and nothing else. The file
+    descriptor is swapped as well as sys.stdout because the Playwright,
+    Lighthouse and scanner wrappers inherit fd 1 rather than the Python
+    object."""
+    sys.stdout.flush()
+    saved = os.dup(1)
+    try:
+        os.dup2(2, 1)
+        with contextlib.redirect_stdout(sys.stderr):
+            yield
+    finally:
+        sys.stderr.flush()
+        os.dup2(saved, 1)
+        os.close(saved)
+
+
+def _run_check(check_name: str, check_args: list[str]) -> int:
+    try:
+        return REGISTRY[check_name](check_args)
     except Exception:  # noqa: BLE001
         # Any crash means "could not run". Python's default for an uncaught
         # exception is exit 1, which the contract (and every workflow gate)
@@ -652,19 +729,103 @@ def _dispatch_run(check_name: str, check_args: list[str]) -> int:
             "That is not a verdict on the repo.",
             file=sys.stderr,
         )
-        rc = 2
+        return EXIT_CANNOT_RUN
+
+
+def _report_path(check_name: str) -> Path | None:
+    meta = _check_meta(check_name)
+    if meta and meta.get("report_path"):
+        return Path(meta["report_path"])
+    return None
+
+
+def _report_dir_state(report: Path | None) -> dict[Path, int]:
+    """Every file under the report directory with its mtime, so the verdict
+    can tell what this run wrote from what an earlier run left behind."""
+    if report is None or not report.parent.is_dir():
+        return {}
+    return {
+        path: path.stat().st_mtime_ns
+        for path in report.parent.iterdir()
+        if path.is_file()
+    }
+
+
+def _run_verdict(check_name: str, rc: int, before: dict[Path, int]) -> dict:
+    """The `run --json` object: the exit code and its name, the `- ❌`
+    failures from the report (what the PR comment lists), and the files
+    the check wrote this run under its report directory. A report an
+    earlier run left behind is neither: a check that could not run
+    (exit 2 before writing) reports no failures, not last time's."""
+    failures: list[str] = []
+    report = _report_path(check_name)
+    written = sorted(
+        path for path, mtime in _report_dir_state(report).items()
+        if before.get(path) != mtime
+    )
+    if report is not None and report in written:
+        failures = comment.extract_failures(report.read_text(encoding="utf-8"))
+    reports = [str(path) for path in written]
+    return {
+        "check": check_name,
+        "exit_code": rc,
+        "status": _STATUS.get(rc, "cannot-run"),
+        "failures": failures,
+        "reports": reports,
+    }
+
+
+def _dispatch_run(check_name: str, check_args: list[str], as_json: bool = False) -> int:
+    # `run <check> --json` reads the flag as a check argument (REMAINDER
+    # takes everything after the name); honour it there too.
+    if check_args and check_args[0] == "--json":
+        as_json, check_args = True, check_args[1:]
+        # argparse strips a leading `--` only when it is the first remainder.
+        if check_args and check_args[0] == "--":
+            check_args = check_args[1:]
+    if check_name not in REGISTRY:
+        print(f"❌ unknown check: {check_name}", file=sys.stderr)
+        print(f"   known checks: {', '.join(sorted(REGISTRY))}", file=sys.stderr)
+        if as_json:
+            print(_json.dumps({
+                "check": check_name,
+                "exit_code": EXIT_CANNOT_RUN,
+                "status": "cannot-run",
+                "error": "unknown check",
+                "failures": [],
+                "reports": [],
+            }, indent=2))
+        return EXIT_CANNOT_RUN
+    if as_json:
+        before = _report_dir_state(_report_path(check_name))
+        with _stdout_to_stderr():
+            rc = _run_check(check_name, check_args)
+    else:
+        rc = _run_check(check_name, check_args)
     # Read back by `emit --target issue`, which never files exit 2 as a finding.
     emit_mod.record_exit(check_name, rc)
+    if as_json:
+        print(_json.dumps(_run_verdict(check_name, rc, before), indent=2))
     return rc
 
 
-def _dispatch_config_get(key: str, default: str) -> int:
+def _dispatch_config_get(key: str, default: str | None, as_json: bool = False) -> int:
     """Print the value at `key`, matching the bash load_config.py shape.
 
     Scalars print as-is. Lists print comma-joined. Missing / null
-    values print the `default` argument (which itself defaults to an
-    empty string).
+    values print the `default` argument (an empty string when none was
+    given). With --json the value prints as JSON, so a list stays a
+    list; an unset key prints the default, or null when none was given,
+    and an explicit empty default is still an empty string.
     """
+    if as_json:
+        value = config.get(key, None)
+        if value is None:
+            value = default
+        print(_json.dumps(value))
+        return 0
+    if default is None:
+        default = ""
     value = config.get(key, default)
     if value is None:
         print("")
@@ -778,11 +939,7 @@ def _dispatch_emit(
             file=sys.stderr,
         )
         return 2
-    # Drop the category, join remaining segments with underscores so multi-
-    # segment names like `security:vulnerability:all` resolve to the
-    # `vulnerability_all` module.
-    parts = check_name.split(":")[1:]
-    module_name = "slopstopper.checks." + "_".join(parts).replace("-", "_")
+    module_name = _check_module_name(check_name)
     try:
         module = importlib.import_module(module_name)
     except ImportError as e:
@@ -850,13 +1007,14 @@ def _dispatch_checks_list(category: str | None, as_json: bool) -> int:
 
     width = max(len(e["name"]) for e in entries)
     for e in entries:
-        marker = " ⏸" if e["disabled"] else "  "
+        # The emoji is two columns wide, so the bare marker is three spaces.
+        marker = " 💤" if e["disabled"] else "   "
         print(f" {marker} {e['name']:<{width}}  {e['summary']}")
 
     if any(e["disabled"] for e in entries):
         print("")
         print(
-            f"  ⏸ = no workflow in this repo (profile: {profiles.active_name()} "
+            f"  💤 = no workflow in this repo (profile: {profiles.active_name()} "
             "/ workflows.disabled). It still runs locally via `slopstopper run`."
         )
     return 0
@@ -922,22 +1080,50 @@ def _check_is_disabled(check_name: str, disabled: set[str]) -> bool:
     return profiles.check_is_disabled(check_name, disabled)
 
 
-def _doctor_tools(disabled: set[str]) -> int:
-    """Report each external tool; return how many required ones are unusable."""
-    unusable = 0
+def _doctor_tool_rows(disabled: set[str]) -> list[dict]:
+    """One row per external tool: `status` is ok, missing, broken (on PATH
+    but `--version` fails) or skipped (unusable, but only a check this
+    repo doesn't carry needs it)."""
+    rows = []
     for tool, needed_by, hint in _DOCTOR_TOOLS:
         path = shutil.which(tool)
+        row = {
+            "tool": tool,
+            "needed_by": needed_by,
+            "path": path,
+            "version": None,
+            "status": "ok",
+            "problem": None,
+            "hint": hint,
+        }
         if path:
             runs, detail = _probe_tool(tool)
             if runs:
-                extra = f" ({detail})" if detail else ""
-                output.success(f"{tool:<10} found at {path}{extra}")
+                row["version"] = detail or None
+                rows.append(row)
                 continue
-            problem = f"found at {path} but does not run: {detail}"
+            row["problem"] = f"found at {path} but does not run: {detail}"
+            row["status"] = "broken"
         else:
-            problem = "not installed"
-
+            row["problem"] = "not installed"
+            row["status"] = "missing"
         if needed_by and _check_is_disabled(needed_by, disabled):
+            row["status"] = "skipped"
+        rows.append(row)
+    return rows
+
+
+def _doctor_tools(rows: list[dict]) -> int:
+    """Report each external tool; return how many required ones are unusable."""
+    unusable = 0
+    for row in rows:
+        tool, status = row["tool"], row["status"]
+        if status == "ok":
+            extra = f" ({row['version']})" if row["version"] else ""
+            output.success(f"{tool:<10} found at {row['path']}{extra}")
+            continue
+        needed_by, problem = row["needed_by"], row["problem"]
+        if status == "skipped":
             output.info(
                 f"{tool:<10} {problem}, but only {needed_by} needs it and this "
                 f"repo doesn't carry that check (profile: {profiles.active_name()} / "
@@ -947,19 +1133,35 @@ def _doctor_tools(disabled: set[str]) -> int:
 
         scope = needed_by if needed_by else "the CLI itself"
         output.error(f"{tool:<10} {problem}, and {scope} needs it")
-        if path:
+        if status == "broken":
             output._emit("             A mise shim that no longer resolves: run `mise reshim`,")
             output._emit("             or reinstall the tool. Otherwise:")
-        output._emit(f"             {hint}")
+        output._emit(f"             {row['hint']}")
         unusable += 1
     return unusable
 
 
-def _doctor_workflows() -> int:
+def _doctor_workflow_rows() -> list[dict] | None:
+    """The ss-* workflows GitHub has disabled, or None when GitHub can't
+    be asked (no gh, unauthenticated, not a GitHub repo)."""
+    rows = workflow_state.disabled_ss_workflows()
+    if rows is None:
+        return None
+    return [
+        {
+            "name": row.get("name") or row.get("path"),
+            "state": row.get("state"),
+            "inactive": row.get("state") == workflow_state.INACTIVITY,
+            "fix": workflow_state.enable_command(row),
+        }
+        for row in rows
+    ]
+
+
+def _doctor_workflows(rows: list[dict] | None) -> int:
     """Report ss-* workflows GitHub has disabled; return how many are
     disabled for inactivity. A manually disabled one is reported but
     doesn't fail doctor, since someone chose it."""
-    rows = workflow_state.disabled_ss_workflows()
     if rows is None:
         output.info(
             "workflows  skipped: gh is missing, unauthenticated, or this isn't a "
@@ -971,10 +1173,8 @@ def _doctor_workflows() -> int:
         return 0
     inactive = 0
     for row in rows:
-        name = row.get("name") or row.get("path")
-        state = row.get("state")
-        enable = workflow_state.enable_command(row)
-        if state == workflow_state.INACTIVITY:
+        name, state, enable = row["name"], row["state"], row["fix"]
+        if row["inactive"]:
             inactive += 1
             output.error(f"workflows  {name}: {state}. It runs on no trigger. Fix: {enable}")
         else:
@@ -987,13 +1187,28 @@ def _doctor_workflows() -> int:
     return inactive
 
 
-def _dispatch_doctor() -> int:
+def _dispatch_doctor(as_json: bool = False) -> int:
     """Verify external tools and workflow state; exit 1 on any blocking problem."""
+    tools = _doctor_tool_rows(_disabled_workflows())
+    workflows = _doctor_workflow_rows()
+
+    if as_json:
+        unusable = sum(1 for row in tools if row["status"] in ("missing", "broken"))
+        inactive = sum(1 for row in workflows or [] if row["inactive"])
+        rc = EXIT_PASS if unusable == 0 and inactive == 0 else EXIT_FAIL
+        print(_json.dumps({
+            "ok": rc == EXIT_PASS,
+            "exit_code": rc,
+            "tools": tools,
+            "workflows": {"checked": workflows is not None, "disabled": workflows or []},
+        }, indent=2))
+        return rc
+
     output.status("🩺", "slopstopper doctor: checking external tools and workflows")
     output.separator()
 
-    unusable = _doctor_tools(_disabled_workflows())
-    inactive = _doctor_workflows()
+    unusable = _doctor_tools(tools)
+    inactive = _doctor_workflows(workflows)
 
     output.separator()
     if unusable == 0 and inactive == 0:
@@ -1009,19 +1224,35 @@ def _dispatch_doctor() -> int:
 # ── profile ──────────────────────────────────────────────────────
 
 
-def _print_profile_list() -> int:
-    """Every profile, what it's for, and the workflows it switches off."""
+def _profile_rows() -> list[dict]:
     default = profiles.default_name()
+    rows = []
     for name in profiles.names():
         entry = profiles.describe(name) or {}
-        suffix = "  (default)" if name == default else ""
-        output._emit(f"  {name}{suffix}")
-        output._emit(f"      {entry.get('summary', '')}")
-        detail = entry.get("detail")
-        if detail:
-            output._emit(f"      {detail}")
-        disables = entry.get("disables", [])
-        held = entry.get("disables_without_api", [])
+        rows.append({
+            "name": name,
+            "default": name == default,
+            "summary": entry.get("summary", ""),
+            "detail": entry.get("detail") or None,
+            "disables": list(entry.get("disables", [])),
+            "disables_without_api": list(entry.get("disables_without_api", [])),
+        })
+    return rows
+
+
+def _print_profile_list(as_json: bool = False) -> int:
+    """Every profile, what it's for, and the workflows it switches off."""
+    rows = _profile_rows()
+    if as_json:
+        print(_json.dumps(rows, indent=2))
+        return 0
+    for row in rows:
+        suffix = "  (default)" if row["default"] else ""
+        output._emit(f"  {row['name']}{suffix}")
+        output._emit(f"      {row['summary']}")
+        if row["detail"]:
+            output._emit(f"      {row['detail']}")
+        disables, held = row["disables"], row["disables_without_api"]
         if not disables and not held:
             output._emit("      disables: nothing, so every check applies")
         if disables:
@@ -1038,12 +1269,9 @@ def _print_profile_list() -> int:
     return 0
 
 
-def _print_profile_show() -> int:
-    """The active profile plus this repo's effective disabled set."""
-    warning = profiles.validate()
-    if warning:
-        output.warn(warning)
-
+def _profile_show_data() -> dict:
+    """The active profile, where it came from, and this repo's effective
+    disabled set with the source of each entry."""
     name = profiles.active_name()
     entry = profiles.describe(name) or {}
     configured = str(config.get("profile") or "").strip()
@@ -1054,18 +1282,10 @@ def _print_profile_show() -> int:
     else:
         origin = f"default, because {configured!r} in .slopstopper.yml is not a known profile"
 
-    output._emit(f"  Profile: {name}  ({origin})")
-    output._emit(f"      {entry.get('summary', '')}")
-    output._emit("")
-
     disabled = sorted(profiles.effective_disabled())
-    if not disabled:
-        output._emit("  Disabled workflows: none. This repo carries the full suite.")
-        return 0
-
     from_profile = profiles.profile_disables()
     no_api = set(profiles.without_api(name)) & from_profile
-    output._emit(f"  Disabled workflows ({len(disabled)}):")
+    rows = []
     for workflow in disabled:
         if workflow in no_api:
             source = "profile, no API detected"
@@ -1073,35 +1293,78 @@ def _print_profile_show() -> int:
             source = "profile"
         else:
             source = "workflows.disabled"
-        output._emit(f"    · {workflow:<42} ({source})")
+        rows.append({"workflow": workflow, "source": source})
+    return {
+        "profile": name,
+        "origin": origin,
+        "configured": configured or None,
+        "warning": profiles.validate() or None,
+        "summary": entry.get("summary", ""),
+        "disabled": rows,
+        "re_enabled": sorted(from_profile - set(disabled)),
+    }
 
-    taken_back = sorted(from_profile - set(disabled))
-    if taken_back:
+
+def _print_profile_show(as_json: bool = False) -> int:
+    """The active profile plus this repo's effective disabled set."""
+    data = _profile_show_data()
+    if as_json:
+        print(_json.dumps(data, indent=2))
+        return 0
+    if data["warning"]:
+        output.warn(data["warning"])
+
+    output._emit(f"  Profile: {data['profile']}  ({data['origin']})")
+    output._emit(f"      {data['summary']}")
+    output._emit("")
+
+    if not data["disabled"]:
+        output._emit("  Disabled workflows: none. This repo carries the full suite.")
+        return 0
+
+    output._emit(f"  Disabled workflows ({len(data['disabled'])}):")
+    for row in data["disabled"]:
+        output._emit(f"    · {row['workflow']:<42} ({row['source']})")
+
+    if data["re_enabled"]:
         output._emit("")
         output._emit("  Re-enabled by workflows.enabled despite the profile:")
-        for workflow in taken_back:
+        for workflow in data["re_enabled"]:
             output._emit(f"    · {workflow}")
     return 0
 
 
-def _print_profile_expand(name: str | None) -> int:
+def _print_profile_expand(name: str | None, as_json: bool = False) -> int:
     """The profile's unconditional list, one per line. install.sh reads this
     repo's effective set via `profile disabled` instead."""
     workflows = profiles.expand(name or "")
     if workflows is None:
-        output.error(
-            f"unknown profile {name!r}. Expected one of: {', '.join(profiles.names())}"
-        )
+        message = f"unknown profile {name!r}. Expected one of: {', '.join(profiles.names())}"
+        if as_json:
+            print(_json.dumps({"error": message}))
+        else:
+            output.error(message)
         return 2
+    if as_json:
+        print(_json.dumps({"profile": name, "workflows": list(workflows)}, indent=2))
+        return 0
     for workflow in workflows:
         print(workflow)
     return 0
 
 
-def _print_profile_detect() -> int:
+def _print_profile_detect(as_json: bool = False) -> int:
     """Suggest a profile from repo contents. Advisory: changes nothing."""
     suggested, reason = profiles.detect()
     active = profiles.active_name()
+    if as_json:
+        print(_json.dumps({
+            "suggested": suggested,
+            "reason": reason,
+            "active": active,
+            "matches": suggested == active,
+        }, indent=2))
+        return 0
     output._emit(f"  Suggested profile: {suggested}  ({reason})")
     if suggested == active:
         output._emit(f"  Active profile:    {active} (already a match, nothing to do).")
@@ -1114,27 +1377,31 @@ def _print_profile_detect() -> int:
     return 0
 
 
-def _print_profile_disabled() -> int:
-    for workflow in sorted(profiles.effective_disabled()):
+def _print_profile_disabled(as_json: bool = False) -> int:
+    disabled = sorted(profiles.effective_disabled())
+    if as_json:
+        print(_json.dumps({"disabled": disabled}, indent=2))
+        return 0
+    for workflow in disabled:
         print(workflow)
     return 0
 
 
 _PROFILE_ACTIONS = {
-    "list": lambda name: _print_profile_list(),
-    "show": lambda name: _print_profile_show(),
+    "list": lambda name, as_json: _print_profile_list(as_json),
+    "show": lambda name, as_json: _print_profile_show(as_json),
     "expand": _print_profile_expand,
-    "disabled": lambda name: _print_profile_disabled(),
-    "detect": lambda name: _print_profile_detect(),
+    "disabled": lambda name, as_json: _print_profile_disabled(as_json),
+    "detect": lambda name, as_json: _print_profile_detect(as_json),
 }
 
 
-def _dispatch_profile(action: str, name: str | None) -> int:
+def _dispatch_profile(action: str, name: str | None, as_json: bool = False) -> int:
     handler = _PROFILE_ACTIONS.get(action)
     if handler is None:
         output.error(f"unknown profile action: {action}")
         return 2
-    return handler(name)
+    return handler(name, as_json)
 
 
 def _cloudflare_preview_url(sha: str) -> int:
