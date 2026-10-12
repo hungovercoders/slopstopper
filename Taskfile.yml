@@ -69,6 +69,12 @@ tasks:
     cmds:
       - '"{{.PYTHON}}" scripts/shot.py'
 
+  contributing:tables:
+    desc: Regenerate the per-category check tables and the README badges from the CLI's registry (`-- --check` only reports)
+    deps: [cli:install]
+    cmds:
+      - '"{{.PYTHON}}" scripts/checktables.py {{.CLI_ARGS}}'
+
   contributing:lint:
     desc: markdownlint over docs/ and CONTRIBUTING.md (advisory, not a CI gate)
     cmds:

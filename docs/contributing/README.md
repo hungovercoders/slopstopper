@@ -29,6 +29,7 @@ Run `task --list` for the full set. The most-used ones:
 | `task contributing:run` | Serve `app/` on port 8080 via `slopstopper serve` (`PORT=…` to change it; `test:site` follows) |
 | `task contributing:test:site` | Playwright smoke + a11y against `SITE_URL` (default the server above); `-- --ci` passes through |
 | `task contributing:lint` | markdownlint over `docs/` (advisory, not a CI gate) |
+| `task contributing:tables` | Regenerate the per-category check tables and the README badges from the CLI's registry; `cli/tests/test_check_tables.py` fails while they are stale |
 | `task ss:hygiene:complexity` | Cyclomatic complexity check (Lizard) |
 | `task ss:hygiene:entry-files` | Enforce <2k token budget on entry files |
 | `task ss:hygiene:docs-accuracy` | Catch broken links + stale task/workflow refs |
