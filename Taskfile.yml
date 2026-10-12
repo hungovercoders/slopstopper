@@ -34,6 +34,7 @@ vars:
   # `pip install` is refused on PEP 668 Pythons, and a released
   # slopstopper-cli earlier on PATH would test the wrong code.
   SLOPSTOPPER: '{{.ROOT_DIR}}/cli/.venv/bin/slopstopper'
+  PYTHON: '{{.ROOT_DIR}}/cli/.venv/bin/python'
 
 tasks:
   # ───────────── Contributing: slopstopper's own dev loop ─────────────
@@ -61,6 +62,12 @@ tasks:
     desc: Re-record the README demo GIFs and stills from demos/*.tape (needs vhs, ttyd 1.7.7+, ffmpeg); `-- hero` for one
     cmds:
       - demos/render.sh {{.CLI_ARGS}}
+
+  contributing:shots:
+    desc: Regenerate app/assets/demo.svg, the site's terminal demo, from real CLI output (no VHS needed)
+    deps: [cli:install]
+    cmds:
+      - '"{{.PYTHON}}" scripts/shot.py'
 
   contributing:lint:
     desc: markdownlint over docs/ and CONTRIBUTING.md (advisory, not a CI gate)

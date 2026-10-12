@@ -46,6 +46,18 @@ carries `Set Theme @theme.json` and nothing else about colour.
 snapshot of whoever recorded it. A machine with a tool or two missing
 makes the better demo, because the hints are the point.
 
+## The site's demo
+
+`app/assets/demo.svg`, under the home-page hero, is not a tape. It is
+drawn by `scripts/shot.py` (`task contributing:shots`) from the real
+output of `slopstopper checks list` and `slopstopper run
+hygiene:entry-files` on this repo, as animated SVG text: no VHS, ttyd or
+ffmpeg, a few kilobytes, same-origin so the CSP needs nothing, and
+diffable in a PR. Readers who prefer reduced motion get the last screen,
+still. The `shots` job in `ci-cli.yml` renders it on every CLI change
+and uploads it as an artifact, so a change to what a command prints is
+seen before the committed file is re-rendered.
+
 ## Adding a tape
 
 1. Copy the header from an existing tape (output directory, size, theme,
