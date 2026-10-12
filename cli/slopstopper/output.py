@@ -16,6 +16,7 @@ disk, but CI logs stay clean.
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 from typing import Iterable
@@ -36,6 +37,55 @@ def set_quiet(quiet: bool) -> None:
     """Toggle decorative output suppression for the current process."""
     global QUIET
     QUIET = quiet
+
+
+# ── colour ───────────────────────────────────────────────────────
+#
+# The suite's visual language is emoji plus plain text, so colour is an
+# accent, never the signal. It is only ever written when a terminal will
+# read it: CI logs, a `task` run piped to a file, a report and a demo
+# recording all get the bare text, so `[0;34m` never leaks into them.
+
+_SGR = {
+    "red": "\033[0;31m",
+    "green": "\033[0;32m",
+    "yellow": "\033[0;33m",
+    "blue": "\033[0;34m",
+    "bold": "\033[1m",
+}
+_SGR_RESET = "\033[0m"
+
+
+def colour_enabled(stream=None) -> bool:
+    """Whether escape codes may be written to `stream` (default stdout).
+
+    Follows the conventions terminals and CI agree on: `NO_COLOR` set to
+    anything switches colour off, `FORCE_COLOR` set to anything switches
+    it on, a `TERM` of `dumb` or a stream that is not a TTY gets plain
+    text. Evaluated per call, because tests and `--quiet` swap streams.
+    """
+    if os.environ.get("NO_COLOR"):
+        return False
+    if os.environ.get("FORCE_COLOR"):
+        return True
+    if os.environ.get("TERM") == "dumb":
+        return False
+    target = stream if stream is not None else sys.stdout
+    isatty = getattr(target, "isatty", None)
+    return bool(isatty and isatty())
+
+
+def colour(text: str, name: str, *, stream=None) -> str:
+    """Wrap `text` in the SGR sequence for `name` when colour is enabled.
+
+    `name` is one of red, green, yellow, blue, bold. Unknown names and a
+    non-colour stream both return `text` untouched, so a caller never
+    has to branch on the terminal itself.
+    """
+    code = _SGR.get(name)
+    if code is None or not colour_enabled(stream):
+        return text
+    return f"{code}{text}{_SGR_RESET}"
 
 
 def _emit(line: str = "", *, force: bool = False, stream=None) -> None:
