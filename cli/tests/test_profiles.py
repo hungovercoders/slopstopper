@@ -356,7 +356,7 @@ def test_profile_list_json_has_one_row_per_profile(capsys):
     assert sum(1 for row in rows if row["default"]) == 1
     api = next(row for row in rows if row["name"] == "api")
     assert "ss-reliability-smoke-tests.yml" in api["disables"]
-    assert set(rows[0]) == {"name", "default", "summary", "detail", "disables", "disables_without_api"}
+    assert {"name", "default", "summary", "detail", "disables", "disables_without_api"} <= set(rows[0])
 
 
 def test_profile_show_json_reports_the_profile_and_each_source(write_config, capsys):
@@ -380,7 +380,7 @@ def test_profile_detect_json(isolated_cwd, capsys):
 
     assert cli.main(["profile", "detect", "--json"]) == 0
     data = json.loads(capsys.readouterr().out)
-    assert set(data) == {"suggested", "reason", "active", "matches"}
+    assert {"suggested", "reason", "active", "matches"} <= set(data)
     assert data["matches"] == (data["suggested"] == data["active"])
 
 

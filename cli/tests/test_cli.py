@@ -749,13 +749,12 @@ def test_run_json_prints_one_object_and_sends_the_check_output_to_stderr(isolate
     assert cli.main(["run", "--json", "hygiene:test-fake-json"]) == 0
     captured = capsys.readouterr()
     data = json.loads(captured.out)
-    assert data == {
-        "check": "hygiene:test-fake-json",
-        "exit_code": 0,
-        "status": "pass",
-        "failures": [],
-        "reports": [],
-    }
+    # Required keys and values; an added key is allowed by the contract.
+    assert data["check"] == "hygiene:test-fake-json"
+    assert data["exit_code"] == 0
+    assert data["status"] == "pass"
+    assert data["failures"] == []
+    assert data["reports"] == []
     assert "chatter" in captured.err
 
 
@@ -817,8 +816,10 @@ def test_run_json_unknown_check_is_cannot_run_with_an_error(isolated_cwd, capsys
     assert data["error"] == "unknown check"
 
 
-def test_run_json_keeps_stdout_clean_of_subprocess_output(isolated_cwd, capsys, monkeypatch):
-    """The scanner and browser wrappers inherit fd 1, not sys.stdout."""
+def test_run_json_keeps_stdout_clean_of_subprocess_output(isolated_cwd, capfd, monkeypatch):
+    """The scanner and browser wrappers inherit fd 1, not sys.stdout, so
+    this captures at the file-descriptor level: a regression of the fd
+    swap would put the child's line on stdout."""
     import json
     import subprocess
 
@@ -828,9 +829,29 @@ def test_run_json_keeps_stdout_clean_of_subprocess_output(isolated_cwd, capsys, 
 
     monkeypatch.setitem(cli.REGISTRY, "hygiene:test-fake-json", fake_run)
     assert cli.main(["run", "--json", "hygiene:test-fake-json"]) == 0
-    out = capsys.readouterr().out
+    out, err = capfd.readouterr()
     assert "from a child process" not in out
+    assert "from a child process" in err
     json.loads(out)
+
+
+def test_run_json_ignores_a_report_an_earlier_run_left_behind(isolated_cwd, capsys, monkeypatch):
+    """A check that exits 2 before writing (a missing scanner, say) must
+    not report last time's failures as this run's."""
+    import json
+    from pathlib import Path
+
+    report_dir = Path(".ss/reports/fake")
+    report_dir.mkdir(parents=True)
+    (report_dir / "fake-report.md").write_text("**Issues:**\n- ❌ from last time\n")
+
+    monkeypatch.setitem(cli.REGISTRY, "hygiene:test-fake-json", lambda args: 2)
+    monkeypatch.setattr(cli, "_check_meta", lambda name: {"report_path": str(report_dir / "fake-report.md")})
+    assert cli.main(["run", "--json", "hygiene:test-fake-json"]) == 2
+    data = json.loads(capsys.readouterr().out)
+    assert data["status"] == "cannot-run"
+    assert data["failures"] == []
+    assert data["reports"] == []
 
 
 def test_doctor_json_when_everything_is_present(isolated_cwd, capsys, monkeypatch):
@@ -909,3 +930,6 @@ def test_config_get_json_unset_is_null_or_the_default(monkeypatch, capsys):
     assert json.loads(capsys.readouterr().out) is None
     assert cli.main(["config", "get", "urls.production", "http://x", "--json"]) == 0
     assert json.loads(capsys.readouterr().out) == "http://x"
+    # An explicit empty fallback is a supplied default, not an omitted one.
+    assert cli.main(["config", "get", "urls.production", "", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == ""

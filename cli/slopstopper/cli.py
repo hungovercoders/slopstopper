@@ -51,10 +51,11 @@ Subcommands:
   cloudflare preview-url <sha>      Print a commit's Workers Builds preview URL
                                     from Cloudflare's PR comment on stdin.
 
-Every command that reports something takes `--json` and then prints one
-JSON value and nothing else on stdout, so a skill, a workflow or a script
-can read it without parsing the decorated text. The shapes are a public
-contract, documented next to the exit codes in docs/contributing/README.md.
+`run`, `doctor`, `profile`, `config get` and `checks list` take `--json`
+and then print one JSON value and nothing else on stdout, so a skill, a
+workflow or a script can read it without parsing the decorated text. The
+shapes are a public contract, documented next to the exit codes in
+docs/contributing/README.md.
 
 Future: init, inspect.
 """
@@ -69,7 +70,6 @@ import os
 import shutil
 import subprocess
 import sys
-import time
 import traceback
 from pathlib import Path
 
@@ -348,7 +348,7 @@ def _add_config(sub) -> None:
     get.add_argument(
         "default",
         nargs="?",
-        default="",
+        default=None,
         help="Fallback printed when the key is missing or null (default: empty string)",
     )
     get.add_argument(
@@ -732,22 +732,40 @@ def _run_check(check_name: str, check_args: list[str]) -> int:
         return EXIT_CANNOT_RUN
 
 
-def _run_verdict(check_name: str, rc: int, started: float) -> dict:
+def _report_path(check_name: str) -> Path | None:
+    meta = _check_meta(check_name)
+    if meta and meta.get("report_path"):
+        return Path(meta["report_path"])
+    return None
+
+
+def _report_dir_state(report: Path | None) -> dict[Path, int]:
+    """Every file under the report directory with its mtime, so the verdict
+    can tell what this run wrote from what an earlier run left behind."""
+    if report is None or not report.parent.is_dir():
+        return {}
+    return {
+        path: path.stat().st_mtime_ns
+        for path in report.parent.iterdir()
+        if path.is_file()
+    }
+
+
+def _run_verdict(check_name: str, rc: int, before: dict[Path, int]) -> dict:
     """The `run --json` object: the exit code and its name, the `- ❌`
     failures from the report (what the PR comment lists), and the files
-    the check wrote this run under its report directory."""
+    the check wrote this run under its report directory. A report an
+    earlier run left behind is neither: a check that could not run
+    (exit 2 before writing) reports no failures, not last time's."""
     failures: list[str] = []
-    reports: list[str] = []
-    meta = _check_meta(check_name)
-    report = Path(meta["report_path"]) if meta and meta.get("report_path") else None
-    if report is not None and report.exists():
+    report = _report_path(check_name)
+    written = sorted(
+        path for path, mtime in _report_dir_state(report).items()
+        if before.get(path) != mtime
+    )
+    if report is not None and report in written:
         failures = comment.extract_failures(report.read_text(encoding="utf-8"))
-        reports = sorted(
-            str(path)
-            for path in report.parent.iterdir()
-            # mtimes can be a whole second coarse, so allow a second of slack
-            if path.is_file() and path.stat().st_mtime >= started - 1
-        )
+    reports = [str(path) for path in written]
     return {
         "check": check_name,
         "exit_code": rc,
@@ -778,8 +796,8 @@ def _dispatch_run(check_name: str, check_args: list[str], as_json: bool = False)
                 "reports": [],
             }, indent=2))
         return EXIT_CANNOT_RUN
-    started = time.time()
     if as_json:
+        before = _report_dir_state(_report_path(check_name))
         with _stdout_to_stderr():
             rc = _run_check(check_name, check_args)
     else:
@@ -787,24 +805,27 @@ def _dispatch_run(check_name: str, check_args: list[str], as_json: bool = False)
     # Read back by `emit --target issue`, which never files exit 2 as a finding.
     emit_mod.record_exit(check_name, rc)
     if as_json:
-        print(_json.dumps(_run_verdict(check_name, rc, started), indent=2))
+        print(_json.dumps(_run_verdict(check_name, rc, before), indent=2))
     return rc
 
 
-def _dispatch_config_get(key: str, default: str, as_json: bool = False) -> int:
+def _dispatch_config_get(key: str, default: str | None, as_json: bool = False) -> int:
     """Print the value at `key`, matching the bash load_config.py shape.
 
     Scalars print as-is. Lists print comma-joined. Missing / null
-    values print the `default` argument (which itself defaults to an
-    empty string). With --json the value prints as JSON, so a list stays
-    a list; an unset key prints the default, or null when none was given.
+    values print the `default` argument (an empty string when none was
+    given). With --json the value prints as JSON, so a list stays a
+    list; an unset key prints the default, or null when none was given,
+    and an explicit empty default is still an empty string.
     """
     if as_json:
         value = config.get(key, None)
         if value is None:
-            value = default if default != "" else None
+            value = default
         print(_json.dumps(value))
         return 0
+    if default is None:
+        default = ""
     value = config.get(key, default)
     if value is None:
         print("")

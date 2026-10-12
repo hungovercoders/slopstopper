@@ -48,7 +48,7 @@ slopstopper cloudflare preview-url <sha>       # a commit's Workers Builds previ
 slopstopper --quiet …                          # suppress decorative output (CI logs)
 ```
 
-`--json` prints one JSON value and nothing else on stdout (`run` sends the check's own output to stderr), so a script or an agent reads a verdict without parsing the decorated text. The shapes are a contract, documented with the exit codes in [`docs/contributing/README.md`](https://github.com/hungovercoders/slopstopper/blob/main/docs/contributing/README.md).
+On `run`, `doctor`, `profile`, `config get` and `checks list`, `--json` prints one JSON value and nothing else on stdout (`run` sends the check's own output to stderr), so a script or an agent reads a verdict without parsing the decorated text. The shapes are a contract, documented with the exit codes in [`docs/contributing/README.md`](https://github.com/hungovercoders/slopstopper/blob/main/docs/contributing/README.md).
 
 `slopstopper` with no args prints a banner of the commands above plus a quick-start block.
 
