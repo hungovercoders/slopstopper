@@ -16,6 +16,26 @@
     }
 }
 
+/* Hero: the terminal demo, drawn from real CLI output (scripts/shot.py) */
+.hero__demo {
+    margin: 2rem 0 0;
+    max-width: 910px;
+}
+.hero__demo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: var(--border);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-sticker);
+    background: var(--ink);
+}
+.hero__demo figcaption {
+    margin-top: 0.6rem;
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+}
+
 /* Hero: the one-line statement of what SlopStopper is sits above the tagline */
 .hero p.hero__what {
     color: var(--ink);

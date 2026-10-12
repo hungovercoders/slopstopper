@@ -84,6 +84,9 @@ app/features.html   ← Features page        app/features.css   ← Features sty
 app/tools.html      ← Tools page           app/tools.css      ← Tools styles
 app/feedback.html   ← Feedback page        app/feedback.css   ← Feedback styles
 app/shared.css      ← Brand tokens, header/nav/footer, cards, code blocks
+app/assets/demo.svg ← The hero's terminal demo, drawn from real CLI output by
+                       scripts/shot.py (`task contributing:shots`); re-render
+                       when a command's output changes
 app/copy.js         ← The only script: copy buttons, opt-in via data-copyable
 app/llms.txt, robots.txt, sitemap.xml, manifest.webmanifest, og-image.png,
 favicon.svg, apple-touch-icon.png

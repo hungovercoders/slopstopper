@@ -16,6 +16,7 @@ test-results/
 .ss/.run/
 # CLI package build artefacts (in-tree CLI pivot; see cli/README.md)
 cli/**/__pycache__/
+scripts/__pycache__/
 cli/*.egg-info/
 cli/build/
 cli/dist/
