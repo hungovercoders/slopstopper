@@ -35,6 +35,7 @@ slopstopper profile show           # what this repo resolves to, and why
 slopstopper profile detect         # suggest one from the repo's contents
 slopstopper profile list           # the full mapping
 slopstopper profile disabled       # this repo's effective set, one per line (what install.sh and the Cloudflare trigger read)
+slopstopper profile show --json    # any of these as JSON, for a script or an agent
 ```
 
 ## Design decisions

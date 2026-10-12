@@ -60,6 +60,28 @@ The full contract, and why it matters, is in the `slopstopper.checks`
 package docstring; `cli/tests/test_exit_code_contract.py` checks every
 check's docstring against what its code can actually return.
 
+## Machine-readable output
+
+The commands below take `--json` and then print one JSON value and
+nothing else on stdout, so a skill, a workflow or a script reads it
+instead of parsing the decorated text. The others (`discover`,
+`templates`, `badges`, `cloudflare preview-url`) already print a single
+plain value a shell can use. These shapes are a contract like the exit
+codes: add a key freely, never rename or remove one without a note in the
+CLI README. `cli/tests/test_cli.py` pins them.
+
+| Command | Prints |
+|---|---|
+| `run --json <check>` | `{check, exit_code, status, failures, reports}`. `status` names the exit code (`pass`, `fail`, `cannot-run`); `failures` is the report's `- ❌` bullets, the same list the PR comment shows; `reports` is every file the check wrote this run under its report directory. A report an earlier run left behind counts as neither, so a check that could not run reports no failures. The check's own output goes to stderr |
+| `doctor --json` | `{ok, exit_code, tools, workflows}`. Each tool row has `tool`, `needed_by`, `path`, `version`, `status` (`ok`, `missing`, `broken`, `skipped`), `problem` and `hint`; `workflows.checked` is false when GitHub could not be asked, else `workflows.disabled` lists `{name, state, inactive, fix}` |
+| `profile list --json` | a list of `{name, default, summary, detail, disables, disables_without_api}` |
+| `profile show --json` | `{profile, origin, configured, warning, summary, disabled: [{workflow, source}], re_enabled}` |
+| `profile detect --json` | `{suggested, reason, active, matches}` |
+| `profile expand <n> --json` | `{profile, workflows}`, or `{error}` with exit 2 |
+| `profile disabled --json` | `{disabled}` |
+| `config get <key> [<default>] --json` | the value as JSON: a list stays a list, an unset key prints the default (an explicit `""` included), or `null` when none was given |
+| `checks list --json` | a list of `{name, summary, workflow, disabled}` |
+
 ## Quick verification checklist
 
 Run these before opening a PR. Each one mirrors the equivalent CI check
@@ -135,3 +157,4 @@ Every third-party action in the hand-written workflows is pinned to a commit as 
 | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | changing anything that ships to adopters (a check, workflow, skill, config key, template, page) | Read [CHANGE_MAP.md](CHANGE_MAP.md) before you start. It lists every surface each kind of change must touch |
 | about to add a workflow, task, report path or external resource            | Read [PITFALLS.md](PITFALLS.md) first for workflow naming, the task namespace, CSP and brand contrast |
+| re-recording the README demos, or adding a tape for a new command          | Read [DEMOS.md](DEMOS.md) for the tapes, the render pipeline and what each recording needs |

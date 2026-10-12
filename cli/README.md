@@ -35,18 +35,20 @@ slopstopper run hygiene:docs-size
 ## CLI surface
 
 ```text
-slopstopper run <category>:<check>             # run a check, write reports under .ss/reports/
+slopstopper run [--json] <category>:<check>    # run a check, write reports under .ss/reports/
 slopstopper emit <c>:<n> --target {pr-comment,issue}
 slopstopper discover <check> --event <e>       # resolve pages.<check> from sitemap / changed / list
-slopstopper config get <key> [<default>]       # read .slopstopper.yml
+slopstopper config get <key> [<default>] [--json]   # read .slopstopper.yml
 slopstopper templates {list, path <n>, eject <n>}   # inspect / customise bundled templates
 slopstopper serve                              # bundled static server (auto-detects worker/headers.json)
 slopstopper checks list [--category <c>] [--json]
-slopstopper doctor                             # verify external tools are installed
-slopstopper profile {list, show, expand <n>, disabled, detect}   # project-shape profile (ui / api / library)
+slopstopper doctor [--json]                    # verify external tools are installed
+slopstopper profile {list, show, expand <n>, disabled, detect} [--json]   # project-shape profile (ui / api / library)
 slopstopper cloudflare preview-url <sha>       # a commit's Workers Builds preview URL, from Cloudflare's PR comment on stdin
 slopstopper --quiet …                          # suppress decorative output (CI logs)
 ```
+
+On `run`, `doctor`, `profile`, `config get` and `checks list`, `--json` prints one JSON value and nothing else on stdout (`run` sends the check's own output to stderr), so a script or an agent reads a verdict without parsing the decorated text. The shapes are a contract, documented with the exit codes in [`docs/contributing/README.md`](https://github.com/hungovercoders/slopstopper/blob/main/docs/contributing/README.md).
 
 `slopstopper` with no args prints a banner of the commands above plus a quick-start block.
 

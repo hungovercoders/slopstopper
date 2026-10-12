@@ -53,12 +53,6 @@ DEFAULT_MAX_TOTAL_SIZE_KB = 150
 DEFAULT_MAX_FILE_SIZE_KB = 20
 DEFAULT_MAX_FILES = 25
 
-RED = "\033[0;31m"
-GREEN = "\033[0;32m"
-BLUE = "\033[0;34m"
-NC = "\033[0m"
-
-
 def _split_doc_files(docs_dir: Path = DOCS_DIR) -> tuple[list[Path], list[Path]]:
     """`(scanned, excluded)` markdown under docs_dir."""
     if not docs_dir.exists():
@@ -181,26 +175,30 @@ def _build_report_md(
     return report
 
 
+def _blue(value: object, unit: str = "") -> str:
+    """A figure in the summary: blue on a terminal, bare text elsewhere."""
+    text = f"{value} {unit}" if unit else str(value)
+    return output.colour(text, "blue")
+
+
 def _print_terminal_summary(
     stats: dict[str, int],
     largest_files: str,
     alerts: list[str],
     thresholds: dict[str, int],
 ) -> None:
-    # The structural output (headers, separators, blank lines) goes
-    # through the shared output module so --quiet suppresses all of it.
-    # The colored data lines are emitted via output._emit() so they
-    # also disappear under --quiet.
+    # Everything goes through the shared output module, so --quiet
+    # suppresses all of it and colour only reaches a real terminal.
     output.blank()
     output.status("📚", "Documentation Size Monitor")
     output.separator()
     output.blank()
     output.status("📊", "Documentation Statistics:")
     output.separator()
-    output._emit(f"  Total Files:        {BLUE}{stats['file_count']}{NC}")
-    output._emit(f"  Total Size:         {BLUE}{stats['total_size_kb']} KB{NC}")
-    output._emit(f"  Estimated Tokens:   {BLUE}~{stats['estimated_tokens']}{NC}")
-    output._emit(f"  Average File Size:  {BLUE}{stats['avg_size_kb']} KB{NC}")
+    output._emit(f"  Total Files:        {_blue(stats['file_count'])}")
+    output._emit(f"  Total Size:         {_blue(stats['total_size_kb'], 'KB')}")
+    output._emit(f"  Estimated Tokens:   {_blue('~' + str(stats['estimated_tokens']))}")
+    output._emit(f"  Average File Size:  {_blue(stats['avg_size_kb'], 'KB')}")
     output.blank()
     output.status("📈", "Largest Files:")
     output.separator()
@@ -208,18 +206,18 @@ def _print_terminal_summary(
     output.blank()
     output.status("📋", "Threshold Limits:")
     output.separator()
-    output._emit(f"  Max Total Size:     {BLUE}{thresholds['max_total_size_kb']} KB{NC}")
-    output._emit(f"  Max File Size:      {BLUE}{thresholds['max_file_size_kb']} KB{NC}")
-    output._emit(f"  Max File Count:     {BLUE}{thresholds['max_files']}{NC}")
+    output._emit(f"  Max Total Size:     {_blue(thresholds['max_total_size_kb'], 'KB')}")
+    output._emit(f"  Max File Size:      {_blue(thresholds['max_file_size_kb'], 'KB')}")
+    output._emit(f"  Max File Count:     {_blue(thresholds['max_files'])}")
     output.blank()
     if alerts:
-        output._emit(f"{RED}❌ Status: THRESHOLDS EXCEEDED{NC}", force=True)
+        output._emit(output.colour("❌ Status: THRESHOLDS EXCEEDED", "red"), force=True)
         output.blank()
         output.status("⚠️", "Alerts:")
         output.separator()
         output._emit("\n".join(alerts))
     else:
-        output._emit(f"{GREEN}✅ Status: Within acceptable limits{NC}")
+        output._emit(output.colour("✅ Status: Within acceptable limits", "green"))
     output.blank()
 
 

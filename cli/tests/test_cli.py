@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import argparse
+import sys
+
 import pytest
 
 from slopstopper import cli
@@ -678,3 +681,255 @@ def test_badges_surfaces_generate_value_error(monkeypatch, capsys):
     rc = cli.main(["badges"])
     assert rc == 2
     assert "Could not detect owner/repo" in capsys.readouterr().err
+
+
+# ── every subcommand parses ─────────────────────────────────────
+#
+# The parser is the source of the list, so a new subcommand is covered the
+# moment it is added: `--help` at every level must exit 0 with a usage
+# line, and every top-level command must have a dispatcher, or `main()`
+# would parse it and then fall through to "unknown command".
+
+
+def _command_paths(parser, prefix=()):
+    """Every subcommand path the parser accepts, depth first."""
+    paths = []
+    for action in parser._actions:
+        if not isinstance(action, argparse._SubParsersAction):
+            continue
+        for name, sub in action.choices.items():
+            path = (*prefix, name)
+            paths.append(path)
+            paths.extend(_command_paths(sub, path))
+    return paths
+
+
+COMMAND_PATHS = _command_paths(cli._build_parser())
+
+
+def test_the_parser_walk_finds_the_nested_commands():
+    assert ("run",) in COMMAND_PATHS
+    assert ("templates", "eject") in COMMAND_PATHS
+    assert ("profile", "detect") in COMMAND_PATHS
+    assert ("cloudflare", "preview-url") in COMMAND_PATHS
+
+
+@pytest.mark.parametrize("path", COMMAND_PATHS, ids=" ".join)
+def test_every_subcommand_help_exits_zero(path, capsys):
+    with pytest.raises(SystemExit) as exc:
+        cli.main([*path, "--help"])
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert out.startswith("usage: slopstopper " + " ".join(path)), out.splitlines()[0]
+
+
+def test_every_top_level_command_has_a_dispatcher():
+    top = {path[0] for path in COMMAND_PATHS}
+    assert top == set(cli._DISPATCHERS), (
+        f"commands without a dispatcher: {sorted(top - set(cli._DISPATCHERS))}; "
+        f"dispatchers without a command: {sorted(set(cli._DISPATCHERS) - top)}"
+    )
+
+
+# ── --json: the machine-readable contract ────────────────────────
+#
+# docs/contributing/README.md documents these shapes next to the exit
+# codes. Adding a key is fine; renaming or dropping one breaks adopters'
+# scripts, which is what these tests are for.
+
+
+def test_run_json_prints_one_object_and_sends_the_check_output_to_stderr(isolated_cwd, capsys, monkeypatch):
+    import json
+
+    def fake_run(_args):
+        print("chatter the check prints")
+        return 0
+
+    monkeypatch.setitem(cli.REGISTRY, "hygiene:test-fake-json", fake_run)
+    assert cli.main(["run", "--json", "hygiene:test-fake-json"]) == 0
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    # Required keys and values; an added key is allowed by the contract.
+    assert data["check"] == "hygiene:test-fake-json"
+    assert data["exit_code"] == 0
+    assert data["status"] == "pass"
+    assert data["failures"] == []
+    assert data["reports"] == []
+    assert "chatter" in captured.err
+
+
+def test_run_json_flag_after_the_check_name_also_works(isolated_cwd, capsys, monkeypatch):
+    import json
+
+    monkeypatch.setitem(cli.REGISTRY, "hygiene:test-fake-json", lambda args: 1 if args == ["--url", "u"] else 2)
+    assert cli.main(["run", "hygiene:test-fake-json", "--json", "--", "--url", "u"]) == 1
+    data = json.loads(capsys.readouterr().out)
+    assert data["status"] == "fail"
+    assert data["exit_code"] == 1
+
+
+def test_run_json_lists_the_report_failures_and_the_files_written(isolated_cwd, capsys, monkeypatch):
+    import json
+    from pathlib import Path
+
+    report_dir = Path(".ss/reports/fake")
+
+    def fake_run(_args):
+        report_dir.mkdir(parents=True)
+        (report_dir / "fake-report.md").write_text(
+            "# Fake\n\n**Issues:**\n- ❌ README.md is over budget\n- ❌ docs/x.md is unrouted\n"
+        )
+        (report_dir / "fake-report.json").write_text("{}")
+        return 1
+
+    monkeypatch.setitem(cli.REGISTRY, "hygiene:test-fake-json", fake_run)
+    monkeypatch.setattr(cli, "_check_meta", lambda name: {"report_path": str(report_dir / "fake-report.md")})
+    assert cli.main(["run", "--json", "hygiene:test-fake-json"]) == 1
+    data = json.loads(capsys.readouterr().out)
+    assert data["status"] == "fail"
+    assert data["failures"] == ["README.md is over budget", "docs/x.md is unrouted"]
+    assert data["reports"] == [
+        str(report_dir / "fake-report.json"),
+        str(report_dir / "fake-report.md"),
+    ]
+
+
+def test_run_json_reports_a_crash_as_cannot_run(isolated_cwd, capsys, monkeypatch):
+    import json
+
+    def fake_run(_args):
+        raise RuntimeError("boom")
+
+    monkeypatch.setitem(cli.REGISTRY, "hygiene:test-fake-json", fake_run)
+    assert cli.main(["run", "--json", "hygiene:test-fake-json"]) == 2
+    captured = capsys.readouterr()
+    assert json.loads(captured.out)["status"] == "cannot-run"
+    assert "RuntimeError" in captured.err
+
+
+def test_run_json_unknown_check_is_cannot_run_with_an_error(isolated_cwd, capsys):
+    import json
+
+    assert cli.main(["run", "--json", "hygiene:no-such-check"]) == 2
+    data = json.loads(capsys.readouterr().out)
+    assert data["status"] == "cannot-run"
+    assert data["error"] == "unknown check"
+
+
+def test_run_json_keeps_stdout_clean_of_subprocess_output(isolated_cwd, capfd, monkeypatch):
+    """The scanner and browser wrappers inherit fd 1, not sys.stdout, so
+    this captures at the file-descriptor level: a regression of the fd
+    swap would put the child's line on stdout."""
+    import json
+    import subprocess
+
+    def fake_run(_args):
+        subprocess.run([sys.executable, "-c", "print('from a child process')"], check=False)
+        return 0
+
+    monkeypatch.setitem(cli.REGISTRY, "hygiene:test-fake-json", fake_run)
+    assert cli.main(["run", "--json", "hygiene:test-fake-json"]) == 0
+    out, err = capfd.readouterr()
+    assert "from a child process" not in out
+    assert "from a child process" in err
+    json.loads(out)
+
+
+def test_run_json_ignores_a_report_an_earlier_run_left_behind(isolated_cwd, capsys, monkeypatch):
+    """A check that exits 2 before writing (a missing scanner, say) must
+    not report last time's failures as this run's."""
+    import json
+    from pathlib import Path
+
+    report_dir = Path(".ss/reports/fake")
+    report_dir.mkdir(parents=True)
+    (report_dir / "fake-report.md").write_text("**Issues:**\n- ❌ from last time\n")
+
+    monkeypatch.setitem(cli.REGISTRY, "hygiene:test-fake-json", lambda args: 2)
+    monkeypatch.setattr(cli, "_check_meta", lambda name: {"report_path": str(report_dir / "fake-report.md")})
+    assert cli.main(["run", "--json", "hygiene:test-fake-json"]) == 2
+    data = json.loads(capsys.readouterr().out)
+    assert data["status"] == "cannot-run"
+    assert data["failures"] == []
+    assert data["reports"] == []
+
+
+def test_doctor_json_when_everything_is_present(isolated_cwd, capsys, monkeypatch):
+    import json
+
+    monkeypatch.setattr(cli.shutil, "which", lambda _: "/usr/bin/stub")
+    monkeypatch.setattr(cli, "_probe_tool", lambda _: (True, "stub 1.0"))
+    _no_github(monkeypatch, rows=[])
+    assert cli.main(["doctor", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["ok"] is True
+    assert data["exit_code"] == 0
+    assert [row["tool"] for row in data["tools"]] == [tool for tool, _, _ in cli._DOCTOR_TOOLS]
+    assert all(row["status"] == "ok" and row["version"] == "stub 1.0" for row in data["tools"])
+    assert data["workflows"] == {"checked": True, "disabled": []}
+
+
+def test_doctor_json_names_the_missing_tool_and_its_hint(isolated_cwd, capsys, monkeypatch):
+    import json
+
+    monkeypatch.setattr(cli.shutil, "which", lambda tool: None if tool == "trivy" else "/x")
+    monkeypatch.setattr(cli, "_probe_tool", lambda _: (True, ""))
+    _no_github(monkeypatch)
+    monkeypatch.setattr(cli, "_disabled_workflows", lambda: set())
+    assert cli.main(["doctor", "--json"]) == 1
+    data = json.loads(capsys.readouterr().out)
+    assert data["ok"] is False
+    trivy = next(row for row in data["tools"] if row["tool"] == "trivy")
+    assert trivy["status"] == "missing"
+    assert trivy["needed_by"] == "security:vulnerability:all"
+    assert trivy["problem"] == "not installed"
+    assert "trivy" in trivy["hint"]
+    assert data["workflows"]["checked"] is False
+
+
+def test_doctor_json_marks_a_tool_only_a_dropped_check_needs_as_skipped(isolated_cwd, capsys, monkeypatch):
+    import json
+
+    monkeypatch.setattr(cli.shutil, "which", lambda tool: None if tool == "trivy" else "/x")
+    monkeypatch.setattr(cli, "_probe_tool", lambda _: (True, ""))
+    _no_github(monkeypatch)
+    monkeypatch.setattr(cli, "_check_is_disabled", lambda name, disabled: name == "security:vulnerability:all")
+    assert cli.main(["doctor", "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    trivy = next(row for row in data["tools"] if row["tool"] == "trivy")
+    assert trivy["status"] == "skipped"
+
+
+def test_doctor_json_reports_an_inactive_workflow(isolated_cwd, capsys, monkeypatch):
+    import json
+
+    monkeypatch.setattr(cli.shutil, "which", lambda _: "/x")
+    monkeypatch.setattr(cli, "_probe_tool", lambda _: (True, ""))
+    _no_github(monkeypatch, rows=[{"name": "ss-x.yml", "state": cli.workflow_state.INACTIVITY, "id": "1"}])
+    assert cli.main(["doctor", "--json"]) == 1
+    data = json.loads(capsys.readouterr().out)
+    (row,) = data["workflows"]["disabled"]
+    assert row["name"] == "ss-x.yml"
+    assert row["inactive"] is True
+    assert row["fix"]
+
+
+def test_config_get_json_keeps_a_list_a_list(monkeypatch, capsys):
+    import json
+
+    monkeypatch.setattr(cli.config, "get", lambda key, default=None: ["a.yml", "b.yml"])
+    assert cli.main(["config", "get", "workflows.disabled", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == ["a.yml", "b.yml"]
+
+
+def test_config_get_json_unset_is_null_or_the_default(monkeypatch, capsys):
+    import json
+
+    monkeypatch.setattr(cli.config, "get", lambda key, default=None: None)
+    assert cli.main(["config", "get", "urls.production", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) is None
+    assert cli.main(["config", "get", "urls.production", "http://x", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == "http://x"
+    # An explicit empty fallback is a supplied default, not an omitted one.
+    assert cli.main(["config", "get", "urls.production", "", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == ""
