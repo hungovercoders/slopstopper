@@ -8,6 +8,20 @@ Hygiene checks keep code within complexity bounds and documentation sized, route
 
 ## Checks
 
+Every hygiene check, generated from the CLI's registry by `task contributing:tables`:
+
+<!-- checks:begin -->
+| Check | Run it | Workflow | What it does |
+| ----- | ------ | -------- | ------------ |
+| `hygiene:complexity` | `task ss:hygiene:complexity` | `ss-hygiene-complexity-check.yml` | Code complexity analyzer (Lizard wrapper). |
+| `hygiene:csp-exceptions` | `task ss:hygiene:csp-exceptions` | `ss-hygiene-csp-exceptions-check.yml` | CSP-Exceptions Drift Detector. |
+| `hygiene:docs-accuracy` | `task ss:hygiene:docs-accuracy` | `ss-hygiene-docs-accuracy-check.yml` | Documentation accuracy validator. |
+| `hygiene:docs-size` | `task ss:hygiene:docs-size` | `ss-hygiene-docs-size-check.yml` | Documentation size monitor. |
+| `hygiene:docs-structure` | `task ss:hygiene:docs-structure` | `ss-hygiene-docs-structure-check.yml` | Documentation structure validator. Every doc must have an explicit route. |
+| `hygiene:entry-files` | `task ss:hygiene:entry-files` | `ss-hygiene-entry-files-check.yml` | Entry-file budget + AGENTS.md-first routing check. |
+| `hygiene:openapi` | `task ss:hygiene:openapi` | `ss-hygiene-openapi-check.yml` | OpenAPI spec drift audit (in-CLI implementation). |
+<!-- checks:end -->
+
 ### Code Complexity Analysis
 Analyzes code complexity using Lizard to identify overly complex functions and modules. Helps identify refactoring opportunities and maintain code health.
 

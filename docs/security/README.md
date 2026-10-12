@@ -15,6 +15,22 @@ is the map, so read only the doc whose trigger matches.
 | adding a third-party script, widget or any external resource to a page | Read [CSP_EXCEPTIONS.md](CSP_EXCEPTIONS.md) first for the strict-default + per-path exception pattern and the live list |
 | auditing CORS, HSTS or `nosniff` on a JSON API                        | Read [API_HEADERS.md](API_HEADERS.md) for the findings, the hard-fail split, knobs and commands |
 
+## Checks
+
+Generated from the CLI's registry by `task contributing:tables`:
+
+<!-- checks:begin -->
+| Check | Run it | Workflow | What it does |
+| ----- | ------ | -------- | ------------ |
+| `security:api-headers` | `task ss:security:api-headers` | `ss-security-api-headers-check.yml` | API response-header + CORS policy audit (in-CLI implementation). |
+| `security:dast` | `task ss:security:dast` | `ss-security-dast-check.yml` | Dynamic Application Security Testing (OWASP ZAP). |
+| `security:sast` | `task ss:security:sast` | `ss-security-sast-check.yml` | Static Application Security Testing (Semgrep wrapper). |
+| `security:secrets` | `task ss:security:secrets` | `ss-security-secrets-check.yml` | Secrets detection (Gitleaks wrapper). |
+| `security:vulnerability:all` | `task ss:security:vulnerability:all` | `ss-security-vulnerability-all-check.yml` | Dependency vulnerability scanning (Trivy wrapper). |
+<!-- checks:end -->
+
+What each one blocks on:
+
 | Check | Tool | Blocks on |
 | ----- | ---- | --------- |
 | `security:sast` | Semgrep | findings at or above `security.sast.fail_on` (default ERROR) in your own code |

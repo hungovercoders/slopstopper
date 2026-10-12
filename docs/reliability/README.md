@@ -17,6 +17,26 @@ SlopStopper's reliability checks, wired against any reachable URL: portable smok
 | adding pages, or when the sitemap drift check fires                    | Read [SITEMAP.md](SITEMAP.md), completeness + drift against the served site       |
 
 
+## Checks
+
+Every reliability check, generated from the CLI's registry by `task contributing:tables`:
+
+<!-- checks:begin -->
+| Check | Run it | Workflow | What it does |
+| ----- | ------ | -------- | ------------ |
+| `reliability:accessibility` | `task ss:reliability:accessibility` | `ss-reliability-accessibility-check.yml` | Accessibility audit (Playwright + axe-core wrapper). |
+| `reliability:api-health` | `task ss:reliability:api-health` | `ss-reliability-api-health-check.yml` | API health/readiness endpoint audit (in-CLI implementation). |
+| `reliability:api-latency` | `task ss:reliability:api-latency` | `ss-reliability-api-latency-check.yml` | API latency + payload budget audit (in-CLI implementation). |
+| `reliability:broken-links` | `task ss:reliability:broken-links` | `ss-reliability-broken-links-check.yml` | Broken-link checks (Playwright wrapper). |
+| `reliability:cwv` | `task ss:reliability:cwv` | `ss-reliability-core-web-vitals.yml` | Core Web Vitals audit (Lighthouse CI wrapper). |
+| `reliability:e2e` | `task ss:reliability:e2e` | `ss-reliability-e2e-check.yml` | End-to-end user journeys against a live URL (Playwright wrapper). |
+| `reliability:llms-txt` | `task ss:reliability:llms-txt` | `ss-reliability-llms-txt-check.yml` | llms.txt AI-discoverability audit (in-CLI implementation). |
+| `reliability:robots-txt` | `task ss:reliability:robots-txt` | `ss-reliability-robots-txt-check.yml` | robots.txt discoverability + de-index guard audit (in-CLI implementation). |
+| `reliability:seo` | `task ss:reliability:seo` | `ss-reliability-seo-check.yml` | SEO + social-share metatag audit (in-CLI implementation). |
+| `reliability:sitemap` | `task ss:reliability:sitemap` | `ss-reliability-sitemap-check.yml` | sitemap.xml completeness + drift audit (in-CLI implementation). |
+| `reliability:smoke` | `task ss:reliability:smoke` | `ss-reliability-smoke-tests.yml` | Smoke tests against a live URL (Playwright wrapper). |
+<!-- checks:end -->
+
 ## Configuration (env vars)
 
 Every reliability check takes its base URL as a positional argument (`task ss:reliability:<check> -- https://host/`; a sub-path such as `https://user.github.io/proj/` is kept, and every page path is resolved under it) or from `<CHECK>_TEST_URL`; the browser checks fall back to `SMOKE_TEST_URL`, then `BASE_URL`, then `http://localhost:8080`. Each check's own variables (pages, thresholds, paths) are in its section below or its doc: [ACCESSIBILITY.md](ACCESSIBILITY.md), [E2E.md](E2E.md), [CWV.md](CWV.md), [SEO.md](SEO.md), [LLMS_TXT.md](LLMS_TXT.md), [ROBOTS_TXT.md](ROBOTS_TXT.md), [SITEMAP.md](SITEMAP.md). `.slopstopper.yml` (`pages.*`, `api.*`, `reliability.*`) is the committed form of the same settings.
