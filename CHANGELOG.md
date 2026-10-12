@@ -4,6 +4,22 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.21.0](https://github.com/hungovercoders/slopstopper/compare/v0.20.5...v0.21.0) (2026-10-12)
+
+
+### Features
+
+* **site:** draw the hero's terminal demo as animated SVG from real CLI output ([#474](https://github.com/hungovercoders/slopstopper/issues/474)) ([74c1baa](https://github.com/hungovercoders/slopstopper/commit/74c1baaec86dafd45fba480b01dafee8b856c4c4)), closes [#466](https://github.com/hungovercoders/slopstopper/issues/466)
+* VHS demos, colour-safe output, a CLI surface test and --json on reporting commands ([#472](https://github.com/hungovercoders/slopstopper/issues/472)) ([c6341b3](https://github.com/hungovercoders/slopstopper/commit/c6341b34a9d5a1f9e916d5f33c8702fe138dae66))
+
+
+### Bug Fixes
+
+* **dast:** hand ZAP only the plugin-id rows of .zap/rules.tsv ([#463](https://github.com/hungovercoders/slopstopper/issues/463)) ([e6039e6](https://github.com/hungovercoders/slopstopper/commit/e6039e66def8530f9b28955af202dbc1f2f938e5)), closes [#454](https://github.com/hungovercoders/slopstopper/issues/454)
+* **dast:** report a crashed ZAP scan with its cause and fail the scan step ([#464](https://github.com/hungovercoders/slopstopper/issues/464)) ([fd71f3d](https://github.com/hungovercoders/slopstopper/commit/fd71f3ddf08d18d6053298ffebee800d396cb23b)), closes [#455](https://github.com/hungovercoders/slopstopper/issues/455)
+* **install:** leave an already-configured public/_headers alone on refresh ([#462](https://github.com/hungovercoders/slopstopper/issues/462)) ([f579d90](https://github.com/hungovercoders/slopstopper/commit/f579d90dcda19359085fd5745de0aa0aeb73f7a4)), closes [#453](https://github.com/hungovercoders/slopstopper/issues/453)
+* **profiles:** keep workflow names that already have an extension under workflows.disabled ([#461](https://github.com/hungovercoders/slopstopper/issues/461)) ([99a29b4](https://github.com/hungovercoders/slopstopper/commit/99a29b401079868d32cafa1b8d85d67c9fb9fa56)), closes [#452](https://github.com/hungovercoders/slopstopper/issues/452)
+
 ## [0.20.5](https://github.com/hungovercoders/slopstopper/compare/v0.20.4...v0.20.5) (2026-10-11)
 
 
