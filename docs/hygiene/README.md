@@ -78,7 +78,7 @@ task ss:hygiene:docs-structure
 ```
 
 ### Documentation Accuracy
-Scans markdown for stale or broken references: internal markdown links that don't resolve, `task <name>` references to non-existent Taskfile tasks, workflow filename references that don't match `.github/workflows/`, and stale source-file references. A backtick-quoted file resolves at the repo root, next to the doc, or anywhere in the repo by name or path suffix (for example `pack.json` or `demos/render.sh`), counting files `git ls-files` lists, so prose can name files the way people say them. Scans all of `docs/` plus the repo-root entry files (`README.md`, `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`) so drift in the most-loaded files is caught too.
+Scans markdown for stale or broken references: internal markdown links that don't resolve, `task <name>` references to non-existent Taskfile tasks, workflow filename references that don't match `.github/workflows/`, and stale source-file references. A backtick-quoted file resolves at the repo root, next to the doc, or anywhere in the repo by name or path suffix (for example `pack.json` or `demos/render.sh`), counting files `git ls-files` lists, so prose can name files the way people say them. A path a doc names on purpose although no checkout holds it (a file written at run time, a generated file that is gitignored) goes in `hygiene.docs_accuracy.ignore_refs`. Scans all of `docs/` plus the repo-root entry files (`README.md`, `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`) so drift in the most-loaded files is caught too.
 
 Runs **weekly on a schedule** (Monday 07:00 UTC), on PRs/pushes that change docs or project structure, and can be triggered manually. When issues are found, a GitHub issue is automatically created or updated.
 

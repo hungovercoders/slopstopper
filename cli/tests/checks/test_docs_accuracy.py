@@ -161,6 +161,14 @@ def test_a_gitignored_file_does_not_count(git_repo):
     assert len(docs_accuracy._check_source_file_references(md)) == 1
 
 
+def test_a_ref_matching_ignore_refs_is_not_flagged(git_repo, write_config):
+    write_config("hygiene:\n  docs_accuracy:\n    ignore_refs: ['.apic/*', 'THIRD_PARTY_NOTICES.md']\n")
+    md = git_repo / "docs" / "x.md"
+    _write(md, "Captures go to `.apic/session.json`; `THIRD_PARTY_NOTICES.md` is generated. `missing.json` is not.\n")
+    issues = docs_accuracy._check_source_file_references(md)
+    assert [i["message"].split("`")[1] for i in issues] == ["missing.json"]
+
+
 def test_check_source_file_references_suppresses_via_suggestion_context(isolated_cwd):
     md = isolated_cwd / "docs" / "x.md"
     _write(md, "For example, `something.py` could be created.\n")
