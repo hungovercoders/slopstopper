@@ -164,7 +164,9 @@ def test_a_gitignored_file_does_not_count(git_repo):
 def test_a_ref_matching_ignore_refs_is_not_flagged(git_repo, write_config):
     write_config("hygiene:\n  docs_accuracy:\n    ignore_refs: ['.apic/*', 'THIRD_PARTY_NOTICES.md']\n")
     md = git_repo / "docs" / "x.md"
-    _write(md, "Captures go to `.apic/session.json`; `THIRD_PARTY_NOTICES.md` is generated. `missing.json` is not.\n")
+    # No "generated", "example" or similar nearby: those words are the
+    # suggestion-context heuristic, and this test is about the knob alone.
+    _write(md, "Captures go to `.apic/session.json` and the licences to `THIRD_PARTY_NOTICES.md`; `missing.json` is nowhere.\n")
     issues = docs_accuracy._check_source_file_references(md)
     assert [i["message"].split("`")[1] for i in issues] == ["missing.json"]
 
