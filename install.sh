@@ -852,10 +852,18 @@ GENERIC_WORKFLOWS=(
   "ss-cloudflare-deployed.yml"
 )
 
-# Cloudflare config in the target: wrangler config or a worker/ directory.
+# Cloudflare config in the target: wrangler config at the root or one
+# directory down (a site that lives in website/ or app/ keeps its
+# wrangler.jsonc beside its package.json), or a worker/ directory.
 is_cloudflare_repo() {
-  [ -f "$TARGET_DIR/wrangler.toml" ] || [ -f "$TARGET_DIR/wrangler.jsonc" ] ||
-    [ -f "$TARGET_DIR/wrangler.json" ] || [ -d "$TARGET_DIR/worker" ]
+  local f
+  [ -d "$TARGET_DIR/worker" ] && return 0
+  for f in "$TARGET_DIR"/wrangler.toml "$TARGET_DIR"/wrangler.jsonc "$TARGET_DIR"/wrangler.json \
+           "$TARGET_DIR"/*/wrangler.toml "$TARGET_DIR"/*/wrangler.jsonc "$TARGET_DIR"/*/wrangler.json; do
+    case "$f" in */node_modules/*) continue ;; esac
+    [ -f "$f" ] && return 0
+  done
+  return 1
 }
 
 MARKER_FILE="$TARGET_DIR/.ss/.workflows-installed"

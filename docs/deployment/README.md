@@ -54,7 +54,8 @@ runs locally before commits, and the PNG outputs are checked in.
   so they show on the PR; a run on `main` opens or closes each check's
   own issue. DAST runs against production only, because a preview
   answers missing paths with a bare "Not found" without the site's
-  headers. `install.sh` ships it to any repo with wrangler config or a
+  headers. `install.sh` ships it to any repo with wrangler config (at the
+  root or one directory down, beside a site's `package.json`) or a
   `worker/` directory. The per-check issues it can open gate on
   `github.ref == 'refs/heads/main'`, so a provider whose
   `deployment_status` carries a SHA rather than a branch ref, or a repo

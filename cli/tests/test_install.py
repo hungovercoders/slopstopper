@@ -1185,6 +1185,13 @@ def test_the_cloudflare_deploy_trigger_ships_only_to_a_cloudflare_repo(tmp_path)
     assert _run_install(target).returncode == 0
     assert "ss-cloudflare-deployed.yml" not in _installed(target)
 
+    # A site that lives in a subdirectory keeps its wrangler config there,
+    # beside its package.json, so one directory down counts too.
+    (target / "website").mkdir()
+    (target / "website" / "wrangler.jsonc").write_text('{"name": "site"}\n')
+    assert _run_install(target).returncode == 0
+    assert "ss-cloudflare-deployed.yml" in _installed(target)
+
 
 def test_a_gitignore_that_mentions_the_begin_marker_without_the_line_is_left_alone(tmp_path):
     target = _make_minimal_target(tmp_path)

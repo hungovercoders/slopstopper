@@ -20,8 +20,8 @@ name: SlopStopper · Cloudflare Deployed Checks
 # path with a bare "Not found" carrying none of the site's headers, which
 # ZAP's 404 probes always flag.
 #
-# install.sh ships this only when the repo has wrangler config or a
-# worker/ directory. Docs: docs/deployment/README.md.
+# install.sh ships this only when the repo has wrangler config (at the
+# root or one directory down) or a worker/ directory. Docs: docs/deployment/README.md.
 
 on:
   check_run:
