@@ -145,11 +145,6 @@ def test_local_mode_errors(tmp_path, event, kwargs, message):
         ("local", "deployment_status", {"deployment": "not a url"}),
         ("skip", "pull_request", {"preview": "file:///etc/passwd"}),
         ("skip", "workflow_dispatch", {"url": "ftp://x"}),
-        # The URL is spliced into `run:` lines downstream, so shell syntax
-        # inside an otherwise well-formed URL is refused too.
-        ("skip", "pull_request", {"preview": "https://example.test/$(printf${IFS}INJECTED)"}),
-        ("local", "workflow_dispatch", {"url": "https://example.test/a;id"}),
-        ("local", "deployment_status", {"deployment": "https://example.test/?x=`id`"}),
     ],
 )
 def test_an_invalid_url_fails_the_step(tmp_path, mode, event, kwargs):
@@ -157,6 +152,16 @@ def test_an_invalid_url_fails_the_step(tmp_path, mode, event, kwargs):
     assert rc != 0, (outputs, log)
     assert "Invalid URL format" in log
     assert "url" not in outputs, "no URL may be emitted for the check to run against"
+
+
+@pytest.mark.parametrize("url", [
+    "https://[2001:db8::1]:8443/a?x=1#section",
+    "https://example.test/?x=$(id)#fragment",
+])
+def test_valid_http_urls_with_ipv6_queries_and_fragments_are_preserved(tmp_path, url):
+    rc, outputs, log = resolve(tmp_path, "workflow_dispatch", mode="skip", url=url)
+    assert rc == 0, log
+    assert outputs["url"] == url
 
 
 @pytest.mark.parametrize("mode,event,kwargs", [

@@ -79,6 +79,20 @@ def test_a_deployed_api_with_a_spec_is_an_api_scan(tmp_path):
                   spec="openapi.yaml") == {"mode": "api", "url": LIVE}
 
 
+def test_a_configured_api_url_with_ipv6_query_and_fragment_is_accepted(tmp_path):
+                  url = "https://[2001:db8::1]:8443/openapi?version=1#api"
+                  assert decide(tmp_path, "workflow_dispatch", spec="openapi.yaml", production=url) == {
+                      "mode": "api", "url": url,
+                  }
+
+
+def test_dast_passes_resolved_url_through_a_quoted_environment_variable():
+                  text = WORKFLOW.read_text()
+                  run_block = yaml_block(WORKFLOW, "run", step="Run DAST analysis + gate")
+                  assert "TARGET_URL: ${{ steps.mode.outputs.url }}" in text
+                  assert 'task -x ss:security:dast -- "$TARGET_URL"' in run_block
+
+
 def test_the_workflow_takes_a_url_and_runs_on_schedule_and_successful_deployments():
     text = WORKFLOW.read_text()
     assert re.search(r"workflow_dispatch:\n\s+inputs:\n\s+url:", text)

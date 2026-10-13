@@ -72,7 +72,9 @@ jobs:
       - name: Run API health audit
         if: steps.url.outputs.skip == 'false'
         id: audit
-        run: task ss:reliability:api-health -- ${{ steps.url.outputs.url }}
+        env:
+          TARGET_URL: ${{ steps.url.outputs.url }}
+        run: task ss:reliability:api-health -- "$TARGET_URL"
 
       - name: Upload API health report
         if: always()

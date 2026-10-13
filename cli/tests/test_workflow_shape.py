@@ -91,6 +91,20 @@ def test_every_step_output_reference_names_a_real_step(workflow):
     assert refs <= ids, f"{workflow} references steps that don't exist: {sorted(refs - ids)}"
 
 
+@pytest.mark.parametrize("workflow", BUILT_ON_ACTIONS)
+def test_resolved_urls_reach_shell_commands_through_environment(workflow):
+    for step in re.split(r"(?m)^      - ", _text(workflow)):
+        if "outputs.url" not in step:
+            continue
+        run = step.find("run:")
+        if run >= 0:
+            assert re.search(
+                r"(?m)^\s+[A-Za-z_]+:\s*\$\{\{\s*steps\.[^}]+\.outputs\.url\s*\}\}",
+                step[:run],
+            ), workflow
+            assert not re.search(r"\$\{\{\s*steps\.[^}]+\.outputs\.url", step[run:]), workflow
+
+
 def test_resolve_url_declares_the_outputs_the_workflows_read():
     action = (ACTIONS_DIR / "ss-resolve-url" / "action.yml").read_text(encoding="utf-8")
     # Only the `outputs:` block: an input name read as an output evaluates

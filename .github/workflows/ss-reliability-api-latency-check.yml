@@ -77,7 +77,9 @@ jobs:
       - name: Run API latency audit
         if: steps.url.outputs.skip == 'false'
         id: audit
-        run: task ss:reliability:api-latency -- ${{ steps.url.outputs.url }}
+        env:
+          TARGET_URL: ${{ steps.url.outputs.url }}
+        run: task ss:reliability:api-latency -- "$TARGET_URL"
 
       - name: Upload API latency report
         if: always()

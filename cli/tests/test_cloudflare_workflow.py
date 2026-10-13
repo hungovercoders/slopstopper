@@ -97,6 +97,14 @@ def test_main_resolves_to_production(tmp_path):
     assert out["url"] == "https://example.com" and out["production"] == "true"
 
 
+def test_main_accepts_production_url_with_ipv6_query_and_fragment(tmp_path):
+    url = "https://[2001:db8::1]:8443/app?version=1#section"
+    rc, out, log = _sh(tmp_path, "Work out what was deployed and where",
+                       {**TARGET, "BRANCH": "main", "STUB_PRODUCTION": url})
+    assert rc == 0, log
+    assert out["url"] == url and out["production"] == "true"
+
+
 def _dispatch(tmp_path, production: str, refuse: str = "", disabled: str = ""):
     for wf in ["ss-reliability-smoke-tests.yml", "ss-reliability-seo-check.yml",
                "ss-reliability-api-health-check.yml", "ss-security-dast-check.yml"]:
