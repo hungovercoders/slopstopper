@@ -145,6 +145,11 @@ def test_local_mode_errors(tmp_path, event, kwargs, message):
         ("local", "deployment_status", {"deployment": "not a url"}),
         ("skip", "pull_request", {"preview": "file:///etc/passwd"}),
         ("skip", "workflow_dispatch", {"url": "ftp://x"}),
+        # The URL is spliced into `run:` lines downstream, so shell syntax
+        # inside an otherwise well-formed URL is refused too.
+        ("skip", "pull_request", {"preview": "https://example.test/$(printf${IFS}INJECTED)"}),
+        ("local", "workflow_dispatch", {"url": "https://example.test/a;id"}),
+        ("local", "deployment_status", {"deployment": "https://example.test/?x=`id`"}),
     ],
 )
 def test_an_invalid_url_fails_the_step(tmp_path, mode, event, kwargs):
