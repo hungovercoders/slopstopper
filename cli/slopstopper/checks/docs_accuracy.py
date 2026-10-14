@@ -34,6 +34,12 @@ Configuration (.slopstopper.yml, all optional):
     hygiene:
       docs_accuracy:
         extra_paths: []   # repo-relative globs, e.g. [app/*.html, .claude/skills/**/*.md]
+        ignore_refs: []   # backtick paths that are never on disk, e.g. [.apic/*, THIRD_PARTY_NOTICES.md]
+
+A backtick-quoted path a doc names on purpose although no checkout holds
+it (a file the program writes at run time, a generated file that is
+gitignored) matches a glob in `ignore_refs` and is not reported. The
+alternative, vaguer prose, is worse documentation.
 
 Docs matching `hygiene.docs.exclude` (default `docs/archive/**`, see
 _docs.py) are not scanned, whether the docs/ pass or extra_paths would
@@ -52,6 +58,7 @@ Exit codes:
 from __future__ import annotations
 
 import json
+import fnmatch
 import os
 import re
 from functools import lru_cache
@@ -229,8 +236,16 @@ def _exists_in_repo(ref: str) -> bool:
     return any(p == ref or p.endswith("/" + ref) for p in paths)
 
 
+def _ignored_ref_patterns() -> list[str]:
+    raw = config.get("hygiene.docs_accuracy.ignore_refs", []) or []
+    patterns = raw if isinstance(raw, list) else [raw]
+    return [str(p).strip().removeprefix("./") for p in patterns if str(p).strip()]
+
+
 def _should_skip_file_ref(ref: str, ext: str, base: Path, content: str, m: re.Match) -> bool:
     if _ref_is_placeholder_or_external(ref, ext):
+        return True
+    if any(fnmatch.fnmatchcase(ref.removeprefix("./"), p) for p in _ignored_ref_patterns()):
         return True
     if Path(ref).exists() or (base / ref).exists() or _exists_in_repo(ref):
         return True

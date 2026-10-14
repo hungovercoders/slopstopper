@@ -467,6 +467,11 @@ hygiene:
     # slopstopper.dev scans its own site and the Claude Code skills it
     # ships; a typical adopter leaves this empty.
     extra_paths: []
+    # Backtick-quoted paths a doc names on purpose although no checkout
+    # holds them: a file the program writes at run time, a generated file
+    # that is gitignored. Globs against the quoted text. Naming them beats
+    # the vaguer prose that avoids the check.
+    ignore_refs: []
   # ── hygiene:docs-structure ──────────────────────────────────────────
   docs_structure:
     # Every doc under docs/ must be explicitly routed by a trigger-first

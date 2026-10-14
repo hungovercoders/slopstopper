@@ -97,7 +97,9 @@ jobs:
           done
 
       - name: Run smoke tests
-        run: task ss:reliability:smoke -- ${{ steps.url.outputs.url }} --ci
+        env:
+          TARGET_URL: ${{ steps.url.outputs.url }}
+        run: task ss:reliability:smoke -- "$TARGET_URL" --ci
 
       - name: Stop local server
         if: steps.url.outputs.use_local == 'true' && always()
@@ -113,22 +115,6 @@ jobs:
             .ss/playwright-report/
           retention-days: 30
           if-no-files-found: ignore
-
-      - name: Comment on deployment commit (if applicable)
-        if: github.event_name == 'deployment_status' && always()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          URL: ${{ steps.url.outputs.url }}
-          STATUS: ${{ job.status }}
-        run: |
-          status_marker=$([ "$STATUS" = "success" ] && echo "✅ PASSED" || echo "❌ FAILED")
-          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          gh api -X POST "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/comments" \
-            -f body="## Smoke Test Results ${status_marker}
-
-          Tested URL: ${URL}
-
-          [View detailed results](${run_url})"
 
       - name: Emit issue on smoke failure
         if: failure() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'

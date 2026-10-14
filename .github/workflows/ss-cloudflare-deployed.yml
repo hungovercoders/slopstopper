@@ -20,8 +20,8 @@ name: SlopStopper · Cloudflare Deployed Checks
 # path with a bare "Not found" carrying none of the site's headers, which
 # ZAP's 404 probes always flag.
 #
-# install.sh ships this only when the repo has wrangler config or a
-# worker/ directory. Docs: docs/deployment/README.md.
+# install.sh ships this only when the repo has wrangler config (at the
+# root or one directory down) or a worker/ directory. Docs: docs/deployment/README.md.
 
 on:
   check_run:
@@ -96,7 +96,11 @@ jobs:
               exit 0
             fi
           fi
-          [[ "$url" =~ ^https?://[^[:space:][:cntrl:]]+$ ]] || { echo "::error::Invalid URL format: $url"; exit 1; }
+          if ! python -c 'import sys; from urllib.parse import urlsplit; value=sys.argv[1]; parsed=urlsplit(value); parsed.port; sys.exit(not (parsed.scheme in ("http", "https") and parsed.hostname and not any(char.isspace() for char in value)))' "$url" 2>/dev/null
+          then
+            echo "::error::Invalid URL format"
+            exit 1
+          fi
           echo "Deployed ${SHA:0:7} on $BRANCH to $url"
           {
             echo "url=$url"

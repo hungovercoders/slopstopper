@@ -77,7 +77,9 @@ jobs:
       - name: Run API header + CORS audit
         if: steps.url.outputs.skip == 'false'
         id: audit
-        run: task ss:security:api-headers -- ${{ steps.url.outputs.url }}
+        env:
+          TARGET_URL: ${{ steps.url.outputs.url }}
+        run: task ss:security:api-headers -- "$TARGET_URL"
 
       - name: Upload API headers report
         if: always()

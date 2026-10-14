@@ -67,8 +67,7 @@ Three portability layers. Layer 1 runs on install; layers 2–3 need a little co
 | **1. Static analysis** (any code) | SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure/Accuracy/Size, Entry Files, Auto-label PRs, Workflow-failure tracker | Nothing. It works out of the box |
 | **2. Deployed surface** (need a URL) | Smoke, E2E, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, llms.txt, robots.txt, sitemap.xml, DAST, Playwright, API Health/Latency/Headers, OpenAPI Drift | `urls.production` / `urls.preview` in `.slopstopper.yml` ([per-check env vars](../reliability/README.md) also work) |
 | **3. Agentic doc-updater** | Weekly doc-sync PRs | `COPILOT_GITHUB_TOKEN` repo secret |
-| **Cloudflare repos only** | `ss-cloudflare-deployed.yml`: after each Workers Builds deploy, runs the layer-2 checks against the preview (PRs) or `urls.production` (main) | wrangler config or `worker/` in the repo; `urls.production` for the live site |
-| **Cloudflare repos only** | `ss-cloudflare-deployed.yml`: after each Workers Builds deploy, runs the layer-2 checks against the preview (PRs) or `urls.production` (main) | wrangler config or `worker/` in the repo; `urls.production` for the live site |
+| **Cloudflare repos only** | `ss-cloudflare-deployed.yml`: after each Workers Builds deploy, runs the layer-2 checks against the preview (PRs) or `urls.production` (main) | wrangler config (at the root or one directory down) or `worker/` in the repo; `urls.production` for the live site |
 
 To drop a check, delete its workflow or list it under `workflows.disabled`. Re-runs respect both. If the repo is not a website, `--profile api` (or `library`) installs only the applicable checks (see [Profiles](../architecture/PROFILES.md)).
 

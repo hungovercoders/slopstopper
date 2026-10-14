@@ -429,6 +429,17 @@ def _parse_args(args: list[str] | None) -> argparse.Namespace:
     return p.parse_args(args or [])
 
 
+def _env_enabled(name: str) -> bool:
+    """An on/off env knob: `0`, `false` or `no` turns it off; unset means on.
+
+    The workflows set SEO_VERIFY_OG_IMAGE=0 on a local build, where the
+    absolute og:image URL points at a production that does not carry the
+    new image yet, so the HEAD fetch has to be skippable from the environment
+    and not only from the flag.
+    """
+    return os.environ.get(name, "1").strip().lower() not in {"0", "false", "no", "off"}
+
+
 def _resolve_url(parsed_url: str | None) -> str | None:
     return parsed_url or os.environ.get("SEO_TEST_URL")
 
@@ -461,8 +472,8 @@ def run(args: list[str] | None = None) -> int:
     if (rc := refuse_unsafe_url(url, _LABEL)) is not None:
         return rc
 
-    require_og_image = not parsed.no_require_og_image
-    verify_og_image = not parsed.no_verify_og_image
+    require_og_image = not parsed.no_require_og_image and _env_enabled("SEO_REQUIRE_OG_IMAGE")
+    verify_og_image = not parsed.no_verify_og_image and _env_enabled("SEO_VERIFY_OG_IMAGE")
     og_image_base = parsed.og_image_base or os.environ.get("SEO_OG_IMAGE_BASE", "").strip() or None
     pages = _resolve_pages(parsed.pages)
 

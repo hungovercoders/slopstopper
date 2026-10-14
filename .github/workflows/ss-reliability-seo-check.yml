@@ -119,7 +119,8 @@ jobs:
           # and deployment_status runs verify reachability against the
           # real deployed URL.
           SEO_VERIFY_OG_IMAGE: ${{ steps.url.outputs.use_local == 'true' && '0' || '1' }}
-        run: task ss:reliability:seo -- ${{ steps.url.outputs.url }}
+          TARGET_URL: ${{ steps.url.outputs.url }}
+        run: task ss:reliability:seo -- "$TARGET_URL"
 
       - name: Stop local server
         if: steps.url.outputs.use_local == 'true' && always()

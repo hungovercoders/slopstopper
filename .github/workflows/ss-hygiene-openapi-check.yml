@@ -72,7 +72,9 @@ jobs:
       - name: Run OpenAPI drift audit
         if: steps.url.outputs.skip == 'false'
         id: audit
-        run: task ss:hygiene:openapi -- ${{ steps.url.outputs.url }}
+        env:
+          TARGET_URL: ${{ steps.url.outputs.url }}
+        run: task ss:hygiene:openapi -- "$TARGET_URL"
 
       - name: Upload OpenAPI drift report
         if: always()

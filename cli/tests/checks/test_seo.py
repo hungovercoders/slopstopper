@@ -35,6 +35,16 @@ def test_parse_args_explicit():
     assert parsed.og_image_base == "http://localhost:8080"
 
 
+def test_env_enabled_defaults_on_and_honours_off_values(monkeypatch):
+    monkeypatch.delenv("SEO_VERIFY_OG_IMAGE", raising=False)
+    assert seo._env_enabled("SEO_VERIFY_OG_IMAGE") is True
+    for off in ("0", "false", "No", " off "):
+        monkeypatch.setenv("SEO_VERIFY_OG_IMAGE", off)
+        assert seo._env_enabled("SEO_VERIFY_OG_IMAGE") is False
+    monkeypatch.setenv("SEO_VERIFY_OG_IMAGE", "1")
+    assert seo._env_enabled("SEO_VERIFY_OG_IMAGE") is True
+
+
 def test_resolve_url_prefers_flag(monkeypatch):
     monkeypatch.setenv("SEO_TEST_URL", "https://from-env")
     assert seo._resolve_url("https://from-flag") == "https://from-flag"
@@ -358,6 +368,27 @@ def test_run_returns_zero_when_all_pages_pass(monkeypatch, isolated_cwd, capsys)
     assert "All pages pass" in out
     assert seo.REPORT_DIR.joinpath("seo-metatags-report.md").exists()
     assert seo.REPORT_DIR.joinpath("seo-metatags-report.json").exists()
+
+
+def test_run_allows_missing_og_images_when_disabled_by_environment(monkeypatch, isolated_cwd):
+    monkeypatch.setenv("SEO_REQUIRE_OG_IMAGE", "0")
+    monkeypatch.setenv("SEO_VERIFY_OG_IMAGE", "0")
+    html = _fake_fetch_ok("https://example.com")[2].replace(
+        '<meta property="og:image" content="https://example.com/og.png">', ""
+    ).replace(
+        '<meta name="twitter:image" content="https://example.com/og.png">', ""
+    )
+    monkeypatch.setattr(seo, "_fetch", lambda url: (200, "text/html", html))
+    monkeypatch.setattr(seo, "_discover_pages", lambda: None)
+    assert seo.run(["--url", "https://example.com"]) == 0
+
+
+def test_run_skips_og_image_head_request_when_disabled_by_environment(monkeypatch, isolated_cwd):
+    monkeypatch.setenv("SEO_VERIFY_OG_IMAGE", "0")
+    monkeypatch.setattr(seo, "_fetch", _fake_fetch_ok)
+    monkeypatch.setattr(seo, "_head_ok", lambda url: pytest.fail(f"unexpected HEAD request: {url}"))
+    monkeypatch.setattr(seo, "_discover_pages", lambda: None)
+    assert seo.run(["--url", "https://example.com"]) == 0
 
 
 def test_run_returns_one_when_pages_fail(monkeypatch, isolated_cwd, capsys):

@@ -154,6 +154,16 @@ def test_an_invalid_url_fails_the_step(tmp_path, mode, event, kwargs):
     assert "url" not in outputs, "no URL may be emitted for the check to run against"
 
 
+@pytest.mark.parametrize("url", [
+    "https://[2001:db8::1]:8443/a?x=1#section",
+    "https://example.test/?x=$(id)#fragment",
+])
+def test_valid_http_urls_with_ipv6_queries_and_fragments_are_preserved(tmp_path, url):
+    rc, outputs, log = resolve(tmp_path, "workflow_dispatch", mode="skip", url=url)
+    assert rc == 0, log
+    assert outputs["url"] == url
+
+
 @pytest.mark.parametrize("mode,event,kwargs", [
     ("skip", "pull_request", {}), ("skip", "schedule", {}), ("local", "schedule", {}),
     # The is-it-production lookup for a dispatched url runs inside `$(…)`,
