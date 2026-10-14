@@ -68,7 +68,7 @@ anything on a JSON API.
 Trivy scans the project filesystem for known CVEs in your packages and lock
 files. CRITICAL and HIGH block. A companion GitHub-native workflow
 (`ss-security-vulnerability-new-check.yml`) reviews newly-added dependencies
-on PRs and fails on denied (copyleft) licences.
+on PRs and fails on a licence outside the allowlist in `.github/dependency-review-config.yml`.
 
 ## Secrets Detection
 

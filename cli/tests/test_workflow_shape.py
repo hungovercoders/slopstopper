@@ -105,6 +105,21 @@ def test_resolved_urls_reach_shell_commands_through_environment(workflow):
             assert not re.search(r"\$\{\{\s*steps\.[^}]+\.outputs\.url", step[run:]), workflow
 
 
+def test_the_dependency_review_reads_the_seeded_allowlist():
+    """`deny-licenses` is deprecated by the action and mutually exclusive with
+    an allowlist, so the policy lives in the seeded config file, and that
+    default leaves out every GPL, LGPL and AGPL id."""
+    workflow = _text("ss-security-vulnerability-new-check.yml")
+    assert not re.search(r"(?m)^\s+deny-licenses:", workflow)
+    assert "config-file:" in workflow and ".github/dependency-review-config.yml" in workflow
+    template = (REPO_ROOT / "templates" / "dependency-review-config.yml.example").read_text()
+    allowed = re.findall(r"(?m)^  - (\S+)$", template.split("allow-licenses:", 1)[1].split("\n\n", 1)[0])
+    assert "MIT" in allowed and "Apache-2.0" in allowed
+    assert not [lic for lic in allowed if re.match(r"(A|L)?GPL-", lic)], allowed
+    own = (REPO_ROOT / ".github" / "dependency-review-config.yml").read_text()
+    assert own == template, "this repository runs the default it ships"
+
+
 def test_resolve_url_declares_the_outputs_the_workflows_read():
     action = (ACTIONS_DIR / "ss-resolve-url" / "action.yml").read_text(encoding="utf-8")
     # Only the `outputs:` block: an input name read as an output evaluates
