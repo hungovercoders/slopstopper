@@ -120,6 +120,21 @@ def test_the_dependency_review_reads_the_seeded_allowlist():
     assert own == template, "this repository runs the default it ships"
 
 
+def test_a_missing_licence_allowlist_is_announced_not_silent():
+    """Deleting the allowlist turns the licence check off; the run must say
+    so rather than pass as if licences had been checked."""
+    workflow = _text("ss-security-vulnerability-new-check.yml")
+    step = re.search(
+        r"- name: 'Warn when the licence allowlist is missing'\n"
+        r"\s+if: hashFiles\('\.github/dependency-review-config\.yml'\) == ''\n"
+        r"\s+run: \|\n((?:\s{10}.*\n)+)",
+        workflow,
+    )
+    assert step, "no warning step guarded on the missing allowlist"
+    assert "::warning" in step.group(1) and "GITHUB_STEP_SUMMARY" in step.group(1)
+    assert workflow.index("Warn when the licence allowlist") < workflow.index("name: 'Dependency Review'")
+
+
 def test_resolve_url_declares_the_outputs_the_workflows_read():
     action = (ACTIONS_DIR / "ss-resolve-url" / "action.yml").read_text(encoding="utf-8")
     # Only the `outputs:` block: an input name read as an output evaluates
