@@ -1142,6 +1142,12 @@ seed_template ".github/labeler.yml" \
   "$SCRIPT_DIR/templates/labeler.yml.example" \
   "$TARGET_DIR/.github/labeler.yml"
 
+# .github/dependency-review-config.yml: the licence allowlist for
+# ss-security-vulnerability-new-check.yml
+seed_template ".github/dependency-review-config.yml" \
+  "$SCRIPT_DIR/templates/dependency-review-config.yml.example" \
+  "$TARGET_DIR/.github/dependency-review-config.yml"
+
 # public/_headers: Cloudflare/Netlify static-asset header baseline (commented out)
 #
 # Idempotent append-with-markers (same pattern as the .gitignore block

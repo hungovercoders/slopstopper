@@ -378,6 +378,22 @@ def test_genuine_user_deletion_is_still_respected(tmp_path):
 # ── #102 security-headers idempotent append ──────────────────────
 
 
+def test_seeds_the_dependency_review_allowlist_and_keeps_an_existing_one(tmp_path):
+    """The licence policy is a file the adopter owns: a fresh install seeds the
+    allowlist the dependency review reads, and a refresh never overwrites an
+    edited copy."""
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target)
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    config = target / ".github" / "dependency-review-config.yml"
+    assert "allow-licenses:" in config.read_text()
+
+    config.write_text("allow-licenses:\n  - MIT\n")
+    result = _run_install(target)
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert config.read_text() == "allow-licenses:\n  - MIT\n"
+
+
 def test_seeds_headers_block_when_public_headers_missing(tmp_path):
     """A fresh adopter with no public/_headers gets it seeded with the slopstopper block."""
     target = _make_minimal_target(tmp_path)

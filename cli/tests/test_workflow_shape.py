@@ -105,6 +105,36 @@ def test_resolved_urls_reach_shell_commands_through_environment(workflow):
             assert not re.search(r"\$\{\{\s*steps\.[^}]+\.outputs\.url", step[run:]), workflow
 
 
+def test_the_dependency_review_reads_the_seeded_allowlist():
+    """`deny-licenses` is deprecated by the action and mutually exclusive with
+    an allowlist, so the policy lives in the seeded config file, and that
+    default leaves out every GPL, LGPL and AGPL id."""
+    workflow = _text("ss-security-vulnerability-new-check.yml")
+    assert not re.search(r"(?m)^\s+deny-licenses:", workflow)
+    assert "config-file:" in workflow and ".github/dependency-review-config.yml" in workflow
+    template = (REPO_ROOT / "templates" / "dependency-review-config.yml.example").read_text()
+    allowed = re.findall(r"(?m)^  - (\S+)$", template.split("allow-licenses:", 1)[1].split("\n\n", 1)[0])
+    assert "MIT" in allowed and "Apache-2.0" in allowed
+    assert not [lic for lic in allowed if re.match(r"(A|L)?GPL-", lic)], allowed
+    own = (REPO_ROOT / ".github" / "dependency-review-config.yml").read_text()
+    assert own == template, "this repository runs the default it ships"
+
+
+def test_a_missing_licence_allowlist_is_announced_not_silent():
+    """Deleting the allowlist turns the licence check off; the run must say
+    so rather than pass as if licences had been checked."""
+    workflow = _text("ss-security-vulnerability-new-check.yml")
+    step = re.search(
+        r"- name: 'Warn when the licence allowlist is missing'\n"
+        r"\s+if: hashFiles\('\.github/dependency-review-config\.yml'\) == ''\n"
+        r"\s+run: \|\n((?:\s{10}.*\n)+)",
+        workflow,
+    )
+    assert step, "no warning step guarded on the missing allowlist"
+    assert "::warning" in step.group(1) and "GITHUB_STEP_SUMMARY" in step.group(1)
+    assert workflow.index("Warn when the licence allowlist") < workflow.index("name: 'Dependency Review'")
+
+
 def test_resolve_url_declares_the_outputs_the_workflows_read():
     action = (ACTIONS_DIR / "ss-resolve-url" / "action.yml").read_text(encoding="utf-8")
     # Only the `outputs:` block: an input name read as an output evaluates
