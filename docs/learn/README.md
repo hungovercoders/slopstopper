@@ -76,8 +76,8 @@ and the verdicts are the same.
 | 13 | [Core Web Vitals](13-core-web-vitals.md) | `reliability:cwv`, LCP, TBT and CLS, budgets you tighten to what you measure | coming soon |
 | 14 | [SEO and social share](14-seo.md) | `reliability:seo`, the tags search and previews read | coming soon |
 | 15 | [Discoverability: robots, sitemap, llms.txt and links](15-discoverability.md) | `reliability:robots-txt`, `reliability:sitemap`, `reliability:llms-txt`, `reliability:broken-links` | coming soon |
-| 16 | API checks | `reliability:api-health`, `reliability:api-latency`, `hygiene:openapi` | coming soon |
-| 17 | CI: the workflows and the PR feedback loop | `ss-*.yml`, the PR summary, auto-label, failure issues | coming soon |
+| 16 | [API checks](16-api-checks.md) | `reliability:api-health`, `reliability:api-latency`, `hygiene:openapi`, budgets from what you measured | coming soon |
+| 17 | [CI: the workflows and the PR feedback loop](17-ci.md) | `ss-*.yml`, pinned actions, the PR summary, the issue a red main raises, auto-label, the deploy trigger | coming soon |
 | 18 | Agents: the install and triage skills | The two Claude Code skills | coming soon |
 | 19 | Profiles and tailoring | `profile`, `workflows.disabled` and `enabled`, upgrading the pin | coming soon |
 | 20 | Inside slopstopper: add a check | The registry and the registration test | coming soon |

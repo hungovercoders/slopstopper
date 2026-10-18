@@ -39,7 +39,7 @@ task ss:hygiene:docs-structure
 
 ```
 🔍 Validating documentation structure…
-✅ Documentation structure is valid: all 33 docs are routed (14 excluded by hygiene.docs.exclude)
+✅ Documentation structure is valid: all 33 docs are routed (16 excluded by hygiene.docs.exclude)
 ```
 
 ### 2. Break it
@@ -101,7 +101,7 @@ task ss:hygiene:docs-structure
 ```
 
 ```
-✅ Documentation structure is valid: all 34 docs are routed (14 excluded by hygiene.docs.exclude)
+✅ Documentation structure is valid: all 34 docs are routed (16 excluded by hygiene.docs.exclude)
 ```
 
 ### 6. Read the report, then put the checkout back
@@ -129,7 +129,7 @@ slopstopper run hygiene:docs-structure | grep 'docs are routed'
 ```
 
 ```
-✅ Documentation structure is valid: all 33 docs are routed (14 excluded by hygiene.docs.exclude)
+✅ Documentation structure is valid: all 33 docs are routed (16 excluded by hygiene.docs.exclude)
 ```
 
 ## Exercise
