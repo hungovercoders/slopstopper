@@ -25,6 +25,7 @@ on:
       - 'cli/**'
       - 'scripts/shot.py'
       - 'scripts/learncheck.py'
+      - 'scripts/learntapes.py'
       - 'docs/learn/**'
       - 'Taskfile.yml'
       - 'Taskfile.ss.yml'
@@ -38,6 +39,7 @@ on:
       - 'cli/**'
       - 'scripts/shot.py'
       - 'scripts/learncheck.py'
+      - 'scripts/learntapes.py'
       - 'docs/learn/**'
       - 'Taskfile.yml'
       - 'Taskfile.ss.yml'
@@ -147,4 +149,15 @@ jobs:
           echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee /etc/apt/sources.list.d/trivy.list
           sudo apt-get update -qq && sudo apt-get install -y trivy
           trivy --version
+      - name: Install vhs (to validate the lesson tapes' syntax)
+        env:
+          VHS_VERSION: "0.10.0"
+        run: |
+          set -e
+          curl -sSfL "https://github.com/charmbracelet/vhs/releases/download/v${VHS_VERSION}/vhs_${VHS_VERSION}_Linux_x86_64.tar.gz" \
+            | tar -xz -C /tmp "vhs_${VHS_VERSION}_Linux_x86_64/vhs"
+          sudo mv "/tmp/vhs_${VHS_VERSION}_Linux_x86_64/vhs" /usr/local/bin/vhs
+          vhs --version
+      - name: The lesson tapes match their lessons
+        run: python scripts/learntapes.py --check
       - run: python scripts/learncheck.py

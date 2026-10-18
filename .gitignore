@@ -35,3 +35,5 @@ app/*.js
 demos/.frames/
 # Lighthouse CI output (reliability:cwv writes here; uploaded as an artifact)
 .lighthouseci/
+# Episode b-roll from the lesson tapes (demos/render.sh writes dist/learn/NN.mp4)
+dist/

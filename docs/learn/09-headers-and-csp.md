@@ -125,7 +125,7 @@ task: Failed to run task "ss:hygiene:csp-exceptions": exit status 1
 
 <!-- learn -->
 ```sh
-sed -n '/## ❌ Errors/,/Mismatched origins/p' .ss/reports/csp/csp-exceptions-report.md
+sed -n '/^## .* Errors/,/Mismatched origins/p' .ss/reports/csp/csp-exceptions-report.md
 ```
 
 ```

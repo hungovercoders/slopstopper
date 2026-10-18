@@ -150,11 +150,11 @@ site-specific rule, and the place for it is a test, not a check.
 ```sh
 kill "$(cat scratch/serve.pid)"
 rm -r scratch
-grep -c '^## ✅' .ss/reports/seo/seo-metatags-report.md
+grep '^\*\*Overall:\*\*' .ss/reports/seo/seo-metatags-report.md
 ```
 
 ```
-4
+**Overall:** ✅ PASS
 ```
 
 ## Exercise

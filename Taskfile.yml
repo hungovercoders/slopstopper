@@ -81,6 +81,20 @@ tasks:
     cmds:
       - '"{{.PYTHON}}" scripts/learncheck.py {{.CLI_ARGS}}'
 
+  contributing:learn:tapes:
+    desc: Write docs/learn/tapes/NN.tape from each lesson's marked blocks (scripts/learntapes.py); `-- --check` only reports stale tapes, `-- --page 08` for one
+    deps: [cli:install]
+    cmds:
+      - '"{{.PYTHON}}" scripts/learntapes.py {{.CLI_ARGS}}'
+
+  contributing:learn:record:
+    desc: Record the lesson tapes as episode b-roll into dist/learn/NN.mp4 (demos/render.sh; needs vhs, ttyd 1.7.7+, ffmpeg); `-- 08` for one
+    cmds:
+      - |
+        names="{{.CLI_ARGS}}"
+        [ -n "$names" ] || names=$(ls docs/learn/tapes/*.tape | xargs -n1 basename | sed 's/\.tape$//')
+        demos/render.sh $names
+
   contributing:lint:
     desc: markdownlint over docs/ and CONTRIBUTING.md (advisory, not a CI gate)
     cmds:

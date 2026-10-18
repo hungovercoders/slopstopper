@@ -135,7 +135,7 @@ do not move with the repo.
 
 <!-- learn -->
 ```sh
-slopstopper run hygiene:entry-files | grep '✅ Every entry file'
+slopstopper run hygiene:entry-files | grep 'Every entry file'
 ```
 
 ```

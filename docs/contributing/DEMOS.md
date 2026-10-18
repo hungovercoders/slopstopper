@@ -36,6 +36,7 @@ checkout. Nothing touches the working tree, and a tape can break things
 | `checks.tape` | `demos/checks.png` (still) | `slopstopper checks list` |
 | `doctor.tape` | `demos/doctor.png` (still) | `slopstopper doctor` |
 | `profile.tape` | `demos/profile.png` (still) | `slopstopper profile detect` and `profile show` |
+| `docs/learn/tapes/NN.tape` | `dist/learn/NN.mp4` (not committed) | a lesson's runnable blocks, as episode b-roll; see [Lesson tapes](#lesson-tapes) |
 
 A still keeps only its last frame; `render.sh` lists which names are
 stills. The shared look lives in `theme.json` (the site's brand tokens as
@@ -45,6 +46,38 @@ carries `Set Theme @theme.json` and nothing else about colour.
 `doctor` shows the recording machine's tools, so the hero GIF is a
 snapshot of whoever recorded it. A machine with a tool or two missing
 makes the better demo, because the hints are the point.
+
+## Lesson tapes
+
+The course under `docs/learn/` has a tape per lesson, `docs/learn/tapes/NN.tape`,
+for the terminal parts of its YouTube episode. They differ from the
+demo tapes in four ways:
+
+- **Generated, not written.** `task contributing:learn:tapes` runs
+  `scripts/learntapes.py`, which turns each lesson's marked blocks, in
+  order, into the tape: one shot per block with the step's heading as a
+  comment, `clear` between shots, a wait for the prompt to return after
+  each line and a beat on each shot's output, and heredoc bodies typed
+  fast. Edit the lesson, not the tape;
+  `-- --check` reports a stale one, and the `learn` job in `ci-cli.yml`
+  runs that check (with `vhs validate` on each tape) on every change to
+  the course.
+- **One size.** 100 columns by 30 rows at font size 16, the episode
+  convention in [docs/learn/EPISODES.md](../learn/EPISODES.md), so every
+  episode's terminal looks the same. The generator carries the pixel
+  size that gives it.
+- **MP4, not GIF, and not committed.** `task contributing:learn:record`
+  (`-- 08` for one) runs `render.sh` with the lesson numbers, which
+  records each tape in the scratch clone, with this checkout's
+  `node_modules` linked in as the course harness does, and writes
+  `dist/learn/NN.mp4` as b-roll for the video editor. `dist/` is
+  gitignored.
+- **The whole lesson, in order.** A tape plays every runnable block from
+  a clean clone, so it needs what the lesson needs: `gitleaks` for
+  lesson 6, `trivy` for lesson 8, `task contributing:setup` for the
+  browser lessons, and a `CHROME_PATH` for lesson 13. A block that the
+  harness runs but vhs cannot type (a character outside printable ASCII;
+  vhs sends keystrokes) fails the generator, which names the line.
 
 ## The site's demo
 
