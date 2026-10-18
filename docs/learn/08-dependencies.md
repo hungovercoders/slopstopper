@@ -149,7 +149,7 @@ you never touch still changes.
 <!-- learn -->
 ```sh
 printf 'requests==2.20.0\n' > scratch/requirements.txt
-task ss:security:vulnerability:all 2>&1 | grep -v INFO
+task ss:security:vulnerability:all 2>/dev/null
 ```
 
 ```
@@ -160,7 +160,9 @@ task ss:security:vulnerability:all 2>&1 | grep -v INFO
    • vulnerability-all-report.md
 ```
 
-Green, and honest about it: four findings remain, reported and not
+Trivy's log lines go to stderr, so dropping that stream leaves the
+check's own verdict and keeps its exit code, which a pipe into `grep`
+would replace. Green, and honest about it: four findings remain, reported and not
 blocking. The threshold is where it is because a MEDIUM is usually
 "needs a specific setup to exploit" and blocking on it would make the
 gate something people route around, which lesson 19 has more to say
@@ -171,16 +173,23 @@ about. It is still listed, so a reviewer who reads the comment sees it.
 <!-- learn -->
 ```sh
 printf 'requests==2.33.0\n' > scratch/requirements.txt
-task ss:security:vulnerability:all 2>&1 | grep -v INFO
+task ss:security:vulnerability:all 2>/dev/null
+grep 'No vulnerabilities detected' .ss/reports/vulnerability-all/vulnerability-all-report.md
 rm -r scratch
 ```
 
 ```
 🔍 Scanning dependencies for vulnerabilities…
 ✅ No vulnerabilities detected
+
+📁 Reports saved to: .ss/reports/vulnerability-all/
+   • vulnerability-all-report.md
+No vulnerabilities detected.
 ```
 
-The current release as this lesson was written. When a later one
+The `grep` is the assertion: exit 0 only says nothing blocking was
+found, so a clean report is the thing to check for. The current release
+as this lesson was written. When a later one
 carries a CVE the harness that checks this course goes red on this
 block, which is the lesson in miniature: the pin did not change, the
 world did.

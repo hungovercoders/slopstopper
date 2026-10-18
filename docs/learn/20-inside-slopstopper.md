@@ -126,10 +126,11 @@ suggest it or fix it.
 ```sh
 git checkout cli/slopstopper/checks/__init__.py
 rm cli/slopstopper/checks/probe.py
-task contributing:test -- -k registration -o addopts= -q | tail -1
+task contributing:test -- -k registration -o addopts= -q
 ```
 
 ```
+…
 185 passed, 1805 deselected in 0.54s
 ```
 
@@ -149,10 +150,11 @@ task contributing:test -- -k registration -o addopts= -q | tail -1
 
 <!-- learn -->
 ```sh
-task contributing:test -- -k registration -o addopts= -q | tail -1
+task contributing:test -- -k registration -o addopts= -q
 ```
 
 ```
+…
 185 passed, 1805 deselected in 0.54s
 ```
 
