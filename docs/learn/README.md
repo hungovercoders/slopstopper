@@ -83,7 +83,10 @@ and the verdicts are the same.
 | 20 | [Inside slopstopper: add a check](20-inside-slopstopper.md) | The registry, the registration test, the shape every check shares | coming soon |
 
 A lesson without a link is not written yet; issue #483 tracks each one.
-The episode column links the video once it is recorded.
+The episode column links the video once it is recorded. The title,
+thumbnail and description every episode follows are in
+[EPISODES.md](EPISODES.md), and `docs/learn/tapes/NN.tape` holds each
+lesson's terminal parts, generated from its runnable blocks.
 
 Start with [lesson 0](00-what-slop-is.md), or jump to
 [lesson 2](02-first-check-complexity.md) if you already know why you are

@@ -153,9 +153,9 @@ said: the diff that looks fine, the red line it causes.
 3. The checkpoint and what it proves.
 
 **Shot list.** One terminal, 100x30, font size 16, the site's theme
-(`demos/theme.json`). `docs/learn/tapes/NN.tape` drives it for b-roll
-when a recording is needed. Zoom on the line that changed after each
-step.
+(`demos/theme.json`). `docs/learn/tapes/NN.tape`, which
+`task contributing:learn:tapes` writes from the blocks above, drives it
+for b-roll. Zoom on the line that changed after each step.
 
 **Chapters.** `0:00 Why` · `1:00 Green` · `2:30 Break it` ·
 `4:00 The report` · `6:00 Fix` · `7:30 Exercise` · `8:40 Next lesson`.
