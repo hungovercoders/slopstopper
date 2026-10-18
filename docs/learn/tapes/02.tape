@@ -17,11 +17,12 @@ Set Framerate 50
 
 # 1. See it green
 Type "task ss:hygiene:complexity" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 2. Break it
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "mkdir -p scratch && cat > scratch/triage.py <<'PY'" Enter
 Type@8ms "def route(code):" Enter
 Type@8ms '    if code == 1: return "a"' Enter
@@ -42,36 +43,42 @@ Type@8ms '    if code == 15: return "o"' Enter
 Type@8ms '    if code == 16: return "p"' Enter
 Type@8ms '    return "z"' Enter
 Type@8ms "PY" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 3. See it red
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:hygiene:complexity" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 4. Read the report
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "sed -n '/High Complexity/,/Guidelines/p' .ss/reports/complexity/complexity-report.md" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 5. See the raw exit code
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'slopstopper run hygiene:complexity >/dev/null; echo "exit $?"' Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 6. Fix it
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "rm -r scratch" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:hygiene:complexity" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # Checkpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'slopstopper run hygiene:complexity >/dev/null; echo "exit $?"' Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s

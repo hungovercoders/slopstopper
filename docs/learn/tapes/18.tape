@@ -17,30 +17,36 @@ Set Framerate 50
 
 # 1. Install the skills into a repo
 Type "mkdir -p scratch/repo" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type `SLOPSTOPPER_REPO_RAW="file://$PWD" bash install-skill.sh scratch/repo | grep -A3 'Skills installed'` Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "find scratch/repo -type f | sort" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 2. Read the map of the triage skill
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "grep '^## ' scratch/repo/.claude/skills/slopstopper-triage/SKILL.md" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 4. Why the skills are a surface
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "grep -c 'task ss:' scratch/repo/.claude/skills/slopstopper-triage/references/reproduce.md" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "rm -r scratch" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # Checkpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "grep -c '^name: slopstopper-' .claude/skills/*/SKILL.md | tr '\n' ' '" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s

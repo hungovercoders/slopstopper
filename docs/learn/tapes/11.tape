@@ -17,55 +17,69 @@ Set Framerate 50
 
 # 1. Serve the site and see smoke green
 Type "mkdir -p scratch" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "PORT=8099 slopstopper serve >/dev/null 2>&1 & echo $! > scratch/serve.pid" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "sleep 2" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:reliability:smoke -- http://localhost:8099" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 2. Remove a page the list still names
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "rm app/tools.html" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:reliability:smoke -- http://localhost:8099" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "git checkout app/tools.html" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 3. See end-to-end green
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:reliability:e2e -- http://localhost:8099" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 4. Point a navigation link at a page that does not exist
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type `sed -i 's|href="tools.html"|href="nope.html"|' app/index.html` Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:reliability:e2e -- http://localhost:8099" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "git checkout app/index.html" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # Checkpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "out=$(task ss:reliability:smoke -- http://localhost:8099 2>&1)" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'kill "$(cat scratch/serve.pid)"' Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "rm -r scratch" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type `echo "$out" | grep 'passed'` Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s

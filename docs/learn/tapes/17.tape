@@ -17,36 +17,42 @@ Set Framerate 50
 
 # 1. Read one workflow
 Type "sed -n '/^    steps:/,$p' .github/workflows/ss-hygiene-entry-files-check.yml | grep -E 'name:|uses:|run:'" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 2. See every third-party action pinned to a commit
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type `grep -h "uses: " .github/workflows/ss-*.yml | grep -v "./.github/actions" | grep -v '@[0-9a-f]\{40\}' | wc -l` Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 3. The one summary comment
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type `grep -c '"SlopStopper' .github/workflows/ss-pr-summary.yml` Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 4. The issue a red check raises on main
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type `grep -n "conclusion == 'failure'" -A1 .github/workflows/ss-workflow-failure-issue.yml` Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 5. The rest of the loop
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'grep -l "cron:" .github/workflows/ss-*.yml | wc -l' Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'grep -n "cron:" .github/workflows/ss-reliability-smoke-tests.yml' Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # Checkpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type `grep -h "uses: " .github/workflows/ss-*.yml | grep -v "./.github/actions" | grep -v '@[0-9a-f]\{40\}' | wc -l` Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s

@@ -17,62 +17,76 @@ Set Framerate 50
 
 # You will need
 Type "gitleaks version" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 1. See it green
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:security:secrets" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 2. Write a fake key, and see that an uncommitted file is not scanned
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "mkdir -p scratch" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "printf 'AWS_ACCESS_KEY_ID=AKIA%s\n' LEARNSLOPSTOPPER > scratch/.env.example" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:security:secrets" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 3. Commit it, and see it red
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "git add scratch" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'git commit -q -m "wip: config"' Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:security:secrets" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 4. Read the report
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "sed -n '/| Rule/,/^$/p' .ss/reports/secrets/secrets-report.md" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 5. Delete the file in a new commit, and see it still red
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "git rm -q scratch/.env.example" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'git commit -q -m "remove the key"' Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:security:secrets" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 6. Fix it
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "git reset -q --hard HEAD~2" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:security:secrets" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # Checkpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'slopstopper run security:secrets >/dev/null; echo "exit $?"' Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s

@@ -53,11 +53,13 @@ HEIGHT = 620
 PADDING = 20
 TYPING = "40ms"
 HEREDOC_TYPING = "8ms"
-# After a block's last line, the tape waits for the prompt to come back
-# (render.sh's prompt is `$ `, which vhs reads back without its trailing
-# space; a check can take a minute or two, hence the long timeout) and
-# then holds the output on screen for a beat.
-WAIT = "Wait+Line@5m /^\\$$/"
+# After each line, the tape waits for the prompt to come back (render.sh's
+# prompt is `$ `, which vhs reads back without its trailing space; a check
+# can take a minute or two, hence the long timeout), and after a block's
+# last line it holds the output on screen for a beat. The prompt is at the end of
+# the line rather than alone on it, because a command whose output has no
+# trailing newline leaves the prompt on the same line as that output.
+WAIT = "Wait+Line@5m /(^|\\s)\\$$/"
 PAUSE = "2s"
 PAUSE_CHECK = "3s"
 
@@ -106,6 +108,7 @@ def shot(block: Block, text: str, heading: str | None, first: bool) -> tuple[lis
         out.append(f"# {heading}")
     if not first:
         out.append('Type "clear" Enter')
+        out.append(WAIT)
     terminator: str | None = None
     for raw in block.code.splitlines():
         line = raw.rstrip("\n")
@@ -121,13 +124,18 @@ def shot(block: Block, text: str, heading: str | None, first: bool) -> tuple[lis
         if terminator is not None:
             if line.strip() == terminator:
                 terminator = None
+                out.append(WAIT)
         elif (m := _HEREDOC.search(line)) is not None:
             terminator = m.group("tag")
+        else:
+            # Each top-level line runs to its prompt before the next is
+            # typed, or a slow command's successors are echoed over its
+            # output. Inside a heredoc the prompt is `> `, so no wait there.
+            out.append(WAIT)
     runs_check = any(
         line.lstrip().startswith(("task ", "slopstopper run ", "slopstopper "))
         for line in block.code.splitlines()
     )
-    out.append(WAIT)
     out.append(f"Sleep {PAUSE_CHECK if runs_check else PAUSE}")
     out.append("")
     return out, problems

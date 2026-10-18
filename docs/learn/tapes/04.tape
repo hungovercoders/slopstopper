@@ -17,46 +17,57 @@ Set Framerate 50
 
 # 1. See it green
 Type "task ss:hygiene:docs-structure" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 2. Break it
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "printf '# Hygiene notes\n\nScratch notes about the hygiene checks.\n' > docs/hygiene/NOTES.md" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 3. See it red
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:hygiene:docs-structure" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 4. Try a soft link, and see why it does not count
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "printf '\nSee also [NOTES.md](NOTES.md).\n' >> docs/hygiene/README.md" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:hygiene:docs-structure" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 5. Route it
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "git checkout docs/hygiene/README.md" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "printf '\nBefore you tune a hygiene threshold, read [NOTES.md](NOTES.md) for the reasoning behind each default.\n' >> docs/hygiene/README.md" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:hygiene:docs-structure" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 6. Read the report, then put the checkout back
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "grep NOTES .ss/reports/docs/docs-structure-report.md" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "git checkout docs/hygiene/README.md" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "rm docs/hygiene/NOTES.md" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # Checkpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "slopstopper run hygiene:docs-structure | grep 'docs are routed'" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s

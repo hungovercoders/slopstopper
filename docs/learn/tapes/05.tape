@@ -17,55 +17,66 @@ Set Framerate 50
 
 # 1. See docs-accuracy green
 Type "task ss:hygiene:docs-accuracy" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 2. Break it twice in one line
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "printf '\nRun `task ss:hygiene:tidy` after editing, then open [the tidy guide](TIDY.md).\n' >> docs/hygiene/README.md" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 3. See it red
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:hygiene:docs-accuracy" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 4. Read the report
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "sed -n '/## Issues/,/## Excluded/p' .ss/reports/docs/docs-accuracy-report.md" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 5. Fix it
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "git checkout docs/hygiene/README.md" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:hygiene:docs-accuracy" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 6. Read the size monitor
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:hygiene:docs-size" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 7. See the advisory fire, and the exit code not move
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "yes 'Notes on every default the hygiene checks ship with, and why.' | head -c 25000 > docs/hygiene/NOTES.md" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:hygiene:docs-size | sed -n '/Status/,/excluded/p'" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'slopstopper run hygiene:docs-size >/dev/null; echo "exit $?"' Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "rm docs/hygiene/NOTES.md" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # Checkpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'slopstopper run hygiene:docs-accuracy >/dev/null; echo "exit $?"' Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s

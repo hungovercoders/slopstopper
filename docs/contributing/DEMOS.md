@@ -57,7 +57,8 @@ demo tapes in four ways:
   `scripts/learntapes.py`, which turns each lesson's marked blocks, in
   order, into the tape: one shot per block with the step's heading as a
   comment, `clear` between shots, a wait for the prompt to return after
-  each shot and a beat on its output, and heredoc bodies typed fast. Edit the lesson, not the tape;
+  each line and a beat on each shot's output, and heredoc bodies typed
+  fast. Edit the lesson, not the tape;
   `-- --check` reports a stale one, and the `learn` job in `ci-cli.yml`
   runs that check (with `vhs validate` on each tape) on every change to
   the course.

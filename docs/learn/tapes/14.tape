@@ -17,40 +17,51 @@ Set Framerate 50
 
 # 1. Serve the site and see it green
 Type "mkdir -p scratch" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "PORT=8099 slopstopper serve >/dev/null 2>&1 & echo $! > scratch/serve.pid" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "sleep 2" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "SEO_VERIFY_OG_IMAGE=0 task ss:reliability:seo -- http://localhost:8099" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 2. Read what it found
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "sed -n '/Tags detected/,/og:url/p' .ss/reports/seo/seo-metatags-report.md | head -12" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 3. Remove the description from one page
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type `sed -i '/<meta name="description"/d' app/tools.html` Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "SEO_VERIFY_OG_IMAGE=0 task ss:reliability:seo -- http://localhost:8099" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 4. Fix it
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "git checkout app/tools.html" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "SEO_VERIFY_OG_IMAGE=0 task ss:reliability:seo -- http://localhost:8099 | grep 'All pages'" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # Checkpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'kill "$(cat scratch/serve.pid)"' Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "rm -r scratch" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "grep '^\*\*Overall:\*\*' .ss/reports/seo/seo-metatags-report.md" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s

@@ -17,36 +17,42 @@ Set Framerate 50
 
 # 1. See it green, and read the table
 Type "task ss:hygiene:entry-files" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 2. Break it
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "cat docs/README.md >> README.md" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 3. See it red
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:hygiene:entry-files" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 4. Read the report
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "sed -n '/How to fix/,$p' .ss/reports/entry-files/entry-file-size-report.md" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 5. Fix it
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "git checkout README.md" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:hygiene:entry-files" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # Checkpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "slopstopper run hygiene:entry-files | grep 'Every entry file'" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s

@@ -17,35 +17,46 @@ Set Framerate 50
 
 # 1. Serve the site and see it green
 Type "mkdir -p scratch" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "PORT=8099 slopstopper serve >/dev/null 2>&1 & echo $! > scratch/serve.pid" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "sleep 2" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:reliability:accessibility -- http://localhost:8099" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 2. Remove the alternative text from the homepage image
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type `sed -i 's/ alt="[^"]*"//' app/index.html` Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:reliability:accessibility -- http://localhost:8099" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 3. Fix it
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "git checkout app/index.html" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:reliability:accessibility -- http://localhost:8099" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # Checkpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "out=$(task ss:reliability:accessibility -- http://localhost:8099 2>&1)" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'kill "$(cat scratch/serve.pid)"' Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "rm -r scratch" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type `echo "$out" | grep 'passed'` Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s

@@ -17,6 +17,7 @@ Set Framerate 50
 
 # 1. Start a small API
 Type "mkdir -p scratch" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "cat > scratch/api.py <<'PY'" Enter
 Type@8ms "import json, os, time" Enter
 Type@8ms "from http.server import BaseHTTPRequestHandler, HTTPServer" Enter
@@ -49,31 +50,37 @@ Type@8ms "        pass" Enter
 Enter
 Type@8ms 'HTTPServer(("127.0.0.1", PORT), Api).serve_forever()' Enter
 Type@8ms "PY" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "python3 scratch/api.py >/dev/null 2>&1 & echo $! > scratch/api.pid" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "sleep 1" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 2. Audit the health endpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:reliability:api-health -- http://localhost:8765 --path /health --require-field status --require-field deps.db" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 3. Measure latency with no budget
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:reliability:api-latency -- http://localhost:8765 --path /health --path /v1/items" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 4. Set a budget the slow route cannot meet
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:reliability:api-latency -- http://localhost:8765 --path /v1/slow --median-ms 100" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 5. Commit a spec that describes one route too many
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "cat > scratch/openapi.json <<'JSON'" Enter
 Type@8ms "{" Enter
 Type@8ms '  "openapi": "3.0.0",' Enter
@@ -86,21 +93,24 @@ Type@8ms '    "/v1/reports": {"get": {}}' Enter
 Type@8ms "  }" Enter
 Type@8ms "}" Enter
 Type@8ms "JSON" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "sed -n '/Probed paths/,/details>/p' .ss/reports/openapi/openapi-report.md" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # 6. Fix the spec
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "python3 - <<'PY'" Enter
 Type@8ms "import json, pathlib" Enter
 Type@8ms 'path = pathlib.Path("scratch/openapi.json")' Enter
@@ -108,27 +118,35 @@ Type@8ms "spec = json.loads(path.read_text())" Enter
 Type@8ms 'del spec["paths"]["/v1/reports"]' Enter
 Type@8ms 'path.write_text(json.dumps(spec, indent=2) + "\n")' Enter
 Type@8ms "PY" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 7. Degrade the health endpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "HEALTH_STATUS=degraded PORT=8766 python3 scratch/api.py >/dev/null 2>&1 & echo $! > scratch/degraded.pid" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "sleep 1" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task ss:reliability:api-health -- http://localhost:8766 --path /health --require-field status --require-field deps.db" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # Checkpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "out=$(task ss:reliability:api-health -- http://localhost:8765 --path /health 2>&1)" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'kill "$(cat scratch/api.pid)" "$(cat scratch/degraded.pid)"' Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "rm -r scratch" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type `echo "$out" | grep 'matches its contract'` Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s

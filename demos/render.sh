@@ -67,10 +67,15 @@ exec "$real_ttyd" -t unicodeVersion=11 "\$@"
 WRAP
 chmod +x "$work/bin/ttyd"
 
-# ttyd starts "bash" from PATH; this one gives vhs's plain prompt the brand
-# accent and starts in the directory the tape expects (DEMO_CWD, below).
+# ttyd starts "bash" from PATH with vhs's own flags (--noprofile --norc,
+# a plain prompt); this wrapper replaces them with an rc file that gives
+# the prompt the brand accent and starts in the directory the tape
+# expects (DEMO_CWD, below). The rc file then drops this directory from
+# PATH, so a `bash script.sh` typed inside the recording runs the real
+# bash rather than opening another prompt.
 real_bash=$(command -v bash)
 printf '%s\n' "PS1='\\[\\e[38;2;232;81;43m\\]\$\\[\\e[0m\\] '" \
+  "PATH=\${PATH#\"$work/bin:\"}" \
   'cd "$DEMO_CWD"' > "$work/rc"
 printf '#!%s\nexec "%s" --noprofile --rcfile "%s" -i +o history\n' \
   "$real_bash" "$real_bash" "$work/rc" > "$work/bin/bash"
@@ -84,6 +89,11 @@ git clone --quiet "$root" "$work/repo"
 # the origin URL; the clone's origin is this checkout, so give it the real one.
 origin=$(git -C "$root" remote get-url origin 2>/dev/null || true)
 [ -z "$origin" ] || git -C "$work/repo" remote set-url origin "$origin"
+# The secrets lesson commits in the clone, which needs an identity; the
+# recording machine may have none configured globally, so the clone gets
+# its own, as scripts/learncheck.py gives its sandbox.
+git -C "$work/repo" config user.name learn
+git -C "$work/repo" config user.email learn@slopstopper.dev
 mkdir -p "$work/adopter"
 ln -s "$root" "$work/adopter/slopstopper"
 # The browser checks stage their specs next to node_modules, which the
@@ -124,7 +134,8 @@ for name in "${names[@]}"; do
     rm -rf "$work/adopter/demo-site"
   else
     export DEMO_CWD="$work/repo"
-    git -C "$work/repo" checkout --quiet -- . && git -C "$work/repo" clean --quiet -fdx
+    # -x also removes ignored files, which the node_modules link would be.
+    git -C "$work/repo" checkout --quiet -- . && git -C "$work/repo" clean --quiet -fdx -e node_modules
   fi
   # Fill in the shared theme, so theme.json is the only place it lives.
   awk -v theme="$theme" '$0 == "Set Theme @theme.json" { print "Set Theme " theme; next } { print }' \

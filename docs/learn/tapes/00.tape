@@ -17,28 +17,32 @@ Set Framerate 50
 
 # 1. See the whole suite once
 Type "slopstopper checks list" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 2. See the exit-code contract
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'slopstopper run hygiene:nope; echo "exit $?"' Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type 'slopstopper run hygiene:docs-structure; echo "exit $?"' Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 3. See the one surface
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "task --list | grep 'ss:hygiene'" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # Checkpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
 Type "slopstopper checks list | grep -c 'hygiene:'" Enter
-Wait+Line@5m /^\$$/
+Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
