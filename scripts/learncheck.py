@@ -6,11 +6,13 @@ comment on the line before the fence: `<!-- learn -->` for a block that
 must exit 0, `<!-- learn: fails -->` for one that must exit non-zero
 (the break-it step of most lessons). This script clones the repository
 into a scratch directory, which is the sandbox the syllabus gives a
-reader until `slopstopper demo` exists, puts the CLI that runs this
-script on PATH, and runs each page's marked blocks in order with
-`sh -e`, the way a reader would type them. A page must leave the clone
-clean (`git status --porcelain` empty), because the lessons promise the
-next one starts from a fresh checkout.
+reader until `slopstopper demo` exists, commits the working tree's
+uncommitted changes into that clone so a lesson is checked against the
+Taskfile and CLI you are about to commit rather than the ones you last
+did, puts the CLI that runs this script on PATH, and runs each page's
+marked blocks in order with `sh -e`, the way a reader would type them.
+A page must leave the clone clean (`git status --porcelain` empty),
+because the lessons promise the next one starts from a fresh checkout.
 
 Usage:
     python scripts/learncheck.py                 # every page under docs/learn/
@@ -95,14 +97,55 @@ def make_sandbox(keep: bool) -> Path:
     # git identity, so the clone gets one of its own.
     for key, value in (("user.name", "learn"), ("user.email", "learn@slopstopper.dev")):
         subprocess.run(["git", "-C", str(sandbox), "config", key, value], check=True)
+    snapshot_working_tree(sandbox)
     if keep:
         print(f"learncheck: scratch clone kept at {sandbox}")
     return sandbox
 
 
+def snapshot_working_tree(sandbox: Path) -> None:
+    """Commit this checkout's uncommitted changes into the clone.
+
+    `git clone` copies HEAD, but the lessons are read from the working
+    tree and the editable CLI runs working-tree code, so a lesson checked
+    before its commit would otherwise run against a stale Taskfile or
+    check. Tracked changes travel as a patch, untracked files (a new
+    lesson, say) are copied, and the result is one commit on top of HEAD,
+    so the clone starts clean and `git checkout <file>` in a lesson still
+    restores what the reader would see.
+    """
+    patch = subprocess.run(
+        ["git", "-C", str(ROOT), "diff", "--binary", "HEAD"], capture_output=True, check=True,
+    ).stdout
+    if patch:
+        subprocess.run(["git", "-C", str(sandbox), "apply", "--binary"], input=patch, check=True)
+    untracked = subprocess.run(
+        ["git", "-C", str(ROOT), "ls-files", "--others", "--exclude-standard", "-z"],
+        capture_output=True, text=True, check=True,
+    ).stdout.split("\0")
+    for rel in filter(None, untracked):
+        target = sandbox / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / rel, target)
+    subprocess.run(["git", "-C", str(sandbox), "add", "--all"], check=True)
+    staged = subprocess.run(["git", "-C", str(sandbox), "diff", "--cached", "--quiet"], check=False)
+    if staged.returncode != 0:
+        subprocess.run(
+            ["git", "-C", str(sandbox), "commit", "--quiet", "-m", "learncheck: snapshot of the working tree"],
+            check=True,
+        )
+
+
 def sandbox_env() -> dict[str, str]:
+    """The lessons' environment: the CLI this interpreter belongs to first.
+
+    `sys.executable` is kept as given, not resolved: in a venv it is a
+    symlink to the base interpreter, and resolving it would put that
+    interpreter's bin on PATH instead of the venv's, where `slopstopper`
+    actually is.
+    """
     env = dict(os.environ)
-    cli_bin = str(Path(sys.executable).resolve().parent)
+    cli_bin = str(Path(sys.executable).parent)
     env["PATH"] = cli_bin + os.pathsep + env.get("PATH", "")
     env["NO_COLOR"] = "1"
     return env
@@ -164,8 +207,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"learncheck: no runnable blocks under {LEARN.relative_to(ROOT)} (mark one with <!-- learn -->)", file=sys.stderr)
         return 2
 
-    sandbox = make_sandbox(args.keep)
     env = sandbox_env()
+    if shutil.which("slopstopper", path=env["PATH"]) is None:
+        print("learncheck: no `slopstopper` next to this interpreter or on PATH (pip install -e ./cli)", file=sys.stderr)
+        return 2
+    sandbox = make_sandbox(args.keep)
     print(f"learncheck: {total} blocks from {len(selected)} pages, in a clone at {sandbox}")
     failures = 0
     try:

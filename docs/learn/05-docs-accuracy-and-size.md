@@ -8,8 +8,9 @@ prints without ever failing a build.
 
 `hygiene:docs-accuracy` catches docs that describe last month's repo.
 Every reference a doc makes is a promise: that `task ss:hygiene:tidy`
-exists, that `ss-hygiene-tidy-check.yml` is a workflow, that `TIDY.md`
-is a file, that a link into the GitHub repo lands on a path. Generated
+exists, that `.github/workflows/ss-hygiene-tidy-check.yml` is there,
+that `TIDY.md` is a file, that a link into the GitHub repo lands on a
+path. Generated
 docs break these promises constantly, because they are written from a
 snapshot and nobody re-reads them when the task is renamed or the file
 moves. An agent that reads the stale doc then runs the stale command,
@@ -227,15 +228,20 @@ a link, then put it back.
 <summary>Solution</summary>
 
 ```sh
-printf '\nThe `ss-hygiene-tidy-check.yml` workflow runs it in CI.\n' >> docs/hygiene/README.md
+printf '\nThe `.github/workflows/ss-hygiene-tidy-check.yml` workflow runs it in CI.\n' >> docs/hygiene/README.md
 task ss:hygiene:docs-accuracy
 git checkout docs/hygiene/README.md
 ```
 
-A backticked `ss-*.yml` name is resolved against `.github/workflows/`,
-so the finding reads "Workflow reference … not found". The same goes
-for a backticked file path: it must exist somewhere `git ls-files`
-lists.
+Two findings again: "Workflow reference
+`.github/workflows/ss-hygiene-tidy-check.yml` does not exist", from the
+rule that resolves every `.github/workflows/<name>.yml` path, and
+"Possible stale file reference", from the rule that resolves any
+backticked path against what `git ls-files` lists. A bare
+`ss-hygiene-tidy-check.yml` with no directory would pass both: the
+workflow rule wants the prefix, and the file rule skips a bare YAML
+name on purpose, because prose names config files loosely. Write the
+path.
 
 </details>
 
