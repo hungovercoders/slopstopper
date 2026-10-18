@@ -34,6 +34,7 @@ import argparse
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -98,6 +99,16 @@ def make_sandbox(keep: bool) -> Path:
     for key, value in (("user.name", "learn"), ("user.email", "learn@slopstopper.dev")):
         subprocess.run(["git", "-C", str(sandbox), "config", key, value], check=True)
     snapshot_working_tree(sandbox)
+    # The browser checks stage their specs next to node_modules, which is
+    # gitignored; share this checkout's install rather than running npm
+    # in every clone. The link is untracked, so the clean check ignores it.
+    modules = ROOT / "node_modules"
+    if modules.is_dir():
+        (sandbox / "node_modules").symlink_to(modules, target_is_directory=True)
+        # `node_modules/` in .gitignore matches a directory, not a symlink,
+        # so the link is excluded here or every page would read as dirty.
+        with (sandbox / ".git" / "info" / "exclude").open("a", encoding="utf-8") as exclude:
+            exclude.write("node_modules\n")
     if keep:
         print(f"learncheck: scratch clone kept at {sandbox}")
     return sandbox
@@ -172,6 +183,26 @@ def indent(text: str) -> str:
     return "\n".join("    " + line for line in text.splitlines())
 
 
+def stop_leftovers(sandbox: Path) -> list[str]:
+    """Stop every process a page's pid files still name.
+
+    A lesson tracks a background server by a pid file under `scratch/`
+    and kills it in a later block. When a block fails first, `sh -e`
+    never reaches that kill, and the dirty-tree cleanup below would
+    delete the pid file while the server kept its port, so the next
+    lesson's server could not bind. Stop them here, before cleanup.
+    """
+    stopped = []
+    for pid_file in sorted((sandbox / "scratch").glob("*.pid")):
+        try:
+            pid = int(pid_file.read_text().strip())
+            os.kill(pid, signal.SIGTERM)
+        except (ValueError, ProcessLookupError, PermissionError):
+            continue
+        stopped.append(f"{pid_file.name} (pid {pid})")
+    return stopped
+
+
 def check_page(page: Path, blocks: list[Block], sandbox: Path, env: dict[str, str]) -> int:
     failures = 0
     for block in blocks:
@@ -182,6 +213,8 @@ def check_page(page: Path, blocks: list[Block], sandbox: Path, env: dict[str, st
             continue
         failures += 1
         print(f"✗ {block.where} (expected exit {want})\n{indent(detail)}")
+    for name in stop_leftovers(sandbox):
+        print(f"  stopped a server the page left running: {name}")
     left = dirty(sandbox)
     if left:
         failures += 1
@@ -221,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
         if not args.keep:
             shutil.rmtree(sandbox.parent, ignore_errors=True)
     if failures:
-        print(f"learncheck: {failures} of {total} blocks did not do what their marker says")
+        print(f"learncheck: {failures} problem(s) across {total} blocks: a block that did not do what its marker says, or a page that left the clone dirty")
         return 1
     print("learncheck: every block ran as its marker says, and every page left the clone clean")
     return 0
