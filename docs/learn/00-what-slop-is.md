@@ -49,9 +49,16 @@ pull request. Three rules make that work:
 3. **An exit-code contract.** Every check exits 0 when it ran and found
    nothing to fail on, 1 when it ran and the repo failed it, and 2 when
    it could not run: a tool is missing, an input is absent, the check
-   crashed. CI gates on 1. A 2 is something for the person running it
-   to fix first, and never opens a tracking issue, because a missing
-   tool is not a verdict on the repo.
+   crashed. Both 1 and 2 fail the CI job, because a gate that quietly
+   passed when its tool was missing would be worse than no gate. The
+   difference is what the suite does with the result. A 1 is a finding:
+   on `main`, the check's own issue emitter opens or updates a tracking
+   issue and closes it when the check goes green. A 2 is not a finding,
+   so that emitter stays silent, and the red run is something for the
+   person running it to fix first. The separate workflow-failure
+   tracker still files any failed run on `main`, so a 2 is never
+   invisible either; it is filed as a broken run, not as a verdict on
+   the repo.
 
 ## The five loops
 
@@ -121,7 +128,8 @@ so its profile leaves them without a workflow; lesson 19 is about that.
 ### 2. See the exit-code contract
 
 Ask for a check that does not exist. The CLI cannot run it, so this is
-a 2, not a 1: nothing about the repo failed.
+a 2, not a 1: nothing about the repo failed, and the check's issue
+emitter would not treat it as a finding.
 
 <!-- learn: fails -->
 ```sh

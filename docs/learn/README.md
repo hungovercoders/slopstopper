@@ -12,7 +12,12 @@ and the fix.
 
 Until `slopstopper demo` ships (issue #471), the lessons run in a checkout
 of this repo, which is the reference install and has every check
-configured. Clone it, install the toolchain, and put the CLI on your PATH:
+configured. Two things must be on your machine first: [mise](https://mise.jdx.dev),
+installed and activated in your shell, which reads `mise.toml` and
+installs the pinned `task` and `node`; and Python 3.11 or newer as
+`python3` on PATH, because the CLI's virtual environment is created with
+the system interpreter and `slopstopper-cli` requires 3.11+. Then clone,
+install the toolchain, and put the CLI on your PATH:
 
 ```sh
 git clone https://github.com/hungovercoders/slopstopper.git
