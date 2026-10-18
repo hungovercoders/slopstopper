@@ -66,7 +66,7 @@ and the verdicts are the same.
 | 3 | [Entry files: the AGENTS.md-first model](03-entry-files.md) | `hygiene:entry-files`, token budgets, explicit routes | coming soon |
 | 4 | [Docs structure: every doc has a route](04-docs-structure.md) | `hygiene:docs-structure`, hops, line caps | coming soon |
 | 5 | [Docs accuracy and docs size](05-docs-accuracy-and-size.md) | `hygiene:docs-accuracy`, `hygiene:docs-size`, why one gates and one advises | coming soon |
-| 6 | Secrets | `security:secrets` | coming soon |
+| 6 | [Secrets](06-secrets.md) | `security:secrets`, why history is what is scanned, revoke then rewrite | coming soon |
 | 7 | Static analysis | `security:sast` | coming soon |
 | 8 | Dependencies and licences | `security:vulnerability:all`, dependency review | coming soon |
 | 9 | Headers and CSP | `hygiene:csp-exceptions`, `security:api-headers` | coming soon |

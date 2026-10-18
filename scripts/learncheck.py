@@ -90,6 +90,11 @@ def make_sandbox(keep: bool) -> Path:
     ).stdout.strip()
     if origin:
         subprocess.run(["git", "-C", str(sandbox), "remote", "set-url", "origin", origin], check=True)
+    # Some lessons commit in the clone (the secrets lesson commits a fake
+    # key to show that history is what is scanned); a CI runner has no
+    # git identity, so the clone gets one of its own.
+    for key, value in (("user.name", "learn"), ("user.email", "learn@slopstopper.dev")):
+        subprocess.run(["git", "-C", str(sandbox), "config", key, value], check=True)
     if keep:
         print(f"learncheck: scratch clone kept at {sandbox}")
     return sandbox
