@@ -69,7 +69,7 @@ and the verdicts are the same.
 | 6 | [Secrets](06-secrets.md) | `security:secrets`, why history is what is scanned, revoke then rewrite | coming soon |
 | 7 | Static analysis | `security:sast` | coming soon |
 | 8 | Dependencies and licences | `security:vulnerability:all`, dependency review | coming soon |
-| 9 | Headers and CSP | `hygiene:csp-exceptions`, `security:api-headers` | coming soon |
+| 9 | [Headers and CSP](09-headers-and-csp.md) | `hygiene:csp-exceptions`, `security:api-headers`, the exceptions ledger, wildcard-plus-credentials | coming soon |
 | 10 | Dynamic scanning | `security:dast` | coming soon |
 | 11 | Smoke and end-to-end | `reliability:smoke`, `reliability:e2e` | coming soon |
 | 12 | Accessibility | `reliability:accessibility` | coming soon |
