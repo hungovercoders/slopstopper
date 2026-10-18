@@ -260,8 +260,11 @@ is not being allowed, and the next person "fixes" it by reflecting
 
 ### 8. Fix the API
 
-Validate `Origin` against an allowlist, echo the match, send `Vary:
-Origin` so caches keep origins apart, and add `nosniff`.
+Validate `Origin` against an allowlist and echo the match, add
+`nosniff`, and send `Vary: Origin` on every response, not only the
+allowed ones: a shared cache keys on the headers named in `Vary`, so a
+response without it, served to a request with no `Origin`, could be
+handed back to the allowed frontend without its CORS headers.
 
 <!-- learn -->
 ```sh
@@ -277,10 +280,10 @@ class Api(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Vary", "Origin")
         if origin in ALLOWED:
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Access-Control-Allow-Credentials", "true")
-            self.send_header("Vary", "Origin")
         self.end_headers()
         self.wfile.write(b'{"ok": true}')
 

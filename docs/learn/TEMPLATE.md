@@ -34,6 +34,13 @@ in the [syllabus](README.md).
   browser or a tool the harness does not have are left unmarked. Run
   `task contributing:learn:check -- --page NN` on a lesson before
   committing it.
+- **A background server is tracked by a pid file** under `scratch/`
+  (`PORT=8099 slopstopper serve >/dev/null 2>&1 & echo $! > scratch/serve.pid`),
+  stopped with `kill "$(cat scratch/serve.pid)"` in a later block, and
+  `scratch/` removed at the end. If a block fails before the kill, the
+  harness stops every process named by a pid file under `scratch/`
+  before it moves on, so one lesson's failure cannot hold a port for
+  the next; a reader does the same by hand.
 - **The checkpoint is one command** whose output settles whether the
   lesson took. Make it the last runnable block.
 - **The episode script lives on the page**, collapsed at the end, so the
