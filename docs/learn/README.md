@@ -71,9 +71,9 @@ and the verdicts are the same.
 | 8 | Dependencies and licences | `security:vulnerability:all`, dependency review | coming soon |
 | 9 | [Headers and CSP](09-headers-and-csp.md) | `hygiene:csp-exceptions`, `security:api-headers`, the exceptions ledger, wildcard-plus-credentials | coming soon |
 | 10 | Dynamic scanning | `security:dast` | coming soon |
-| 11 | Smoke and end-to-end | `reliability:smoke`, `reliability:e2e` | coming soon |
-| 12 | Accessibility | `reliability:accessibility` | coming soon |
-| 13 | Core Web Vitals | `reliability:cwv` | coming soon |
+| 11 | [Smoke and end-to-end](11-smoke-and-e2e.md) | `reliability:smoke`, `reliability:e2e`, does it serve and can a visitor get around | coming soon |
+| 12 | [Accessibility](12-accessibility.md) | `reliability:accessibility`, axe impact levels, the contrast rule | coming soon |
+| 13 | [Core Web Vitals](13-core-web-vitals.md) | `reliability:cwv`, LCP, TBT and CLS, budgets you tighten to what you measure | coming soon |
 | 14 | SEO and social share | `reliability:seo` | coming soon |
 | 15 | Discoverability: robots, sitemap, llms.txt and links | `reliability:robots-txt`, `reliability:sitemap`, `reliability:llms-txt`, `reliability:broken-links` | coming soon |
 | 16 | API checks | `reliability:api-health`, `reliability:api-latency`, `hygiene:openapi` | coming soon |

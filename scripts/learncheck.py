@@ -98,6 +98,16 @@ def make_sandbox(keep: bool) -> Path:
     for key, value in (("user.name", "learn"), ("user.email", "learn@slopstopper.dev")):
         subprocess.run(["git", "-C", str(sandbox), "config", key, value], check=True)
     snapshot_working_tree(sandbox)
+    # The browser checks stage their specs next to node_modules, which is
+    # gitignored; share this checkout's install rather than running npm
+    # in every clone. The link is untracked, so the clean check ignores it.
+    modules = ROOT / "node_modules"
+    if modules.is_dir():
+        (sandbox / "node_modules").symlink_to(modules, target_is_directory=True)
+        # `node_modules/` in .gitignore matches a directory, not a symlink,
+        # so the link is excluded here or every page would read as dirty.
+        with (sandbox / ".git" / "info" / "exclude").open("a", encoding="utf-8") as exclude:
+            exclude.write("node_modules\n")
     if keep:
         print(f"learncheck: scratch clone kept at {sandbox}")
     return sandbox
