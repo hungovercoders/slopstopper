@@ -45,6 +45,12 @@ smoke:
 # raised rather than removed; the per-file 20 KB cap is untouched, because
 # that one is about a single document staying readable.
 hygiene:
+  # The course under docs/learn/ is read in order by people, not routed
+  # to by agents, so the three docs checks leave it alone (the hygiene
+  # README reserves this knob for exactly that). Setting the key replaces
+  # the default, so the archive stays listed.
+  docs:
+    exclude: [docs/archive/**, docs/learn/**]
   docs_size:
     # Advisory totals, sized to this repo. Under AGENTS.md-first the
     # entry files stay small and docs/ holds the routed detail, so these

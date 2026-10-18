@@ -22,6 +22,7 @@ when, and each category README routes onward to its own detail.
 | touching the Cloudflare Worker, `wrangler.jsonc`, asking how deploys happen, or why checks did or didn't run after a deploy | Read [deployment/README.md](deployment/README.md) first |
 | recording or revisiting a significant decision                                 | Read [decisions/README.md](decisions/README.md) for the log and the note template            |
 | asking how to get help or escalate                                             | Read [support/README.md](support/README.md)                                                |
+| learning slopstopper from the start, or writing a lesson of the course         | Read [learn/README.md](learn/README.md), the syllabus and the lesson template              |
 
 ## The model
 

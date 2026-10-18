@@ -23,6 +23,7 @@ If the repo is an API or a library rather than a website, pass a profile through
 ## Docs
 
 - Adopting it: prerequisites, what gets installed, what each check needs, configure, update → [`docs/runbooks/INSTALL.md`](./docs/runbooks/INSTALL.md)
+- Learning it from zero, one check per lesson: [`docs/learn/README.md`](./docs/learn/README.md)
 - Working in this repo: [`AGENTS.md`](./AGENTS.md) carries the conventions and commands; [`docs/README.md`](./docs/README.md) routes to everything else
 - For Claude Code, `install.sh` lands two skills in `<repo>/.claude/skills/`: `slopstopper-install` and `slopstopper-triage`
 
