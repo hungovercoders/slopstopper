@@ -68,7 +68,7 @@ and the verdicts are the same.
 | 5 | [Docs accuracy and docs size](05-docs-accuracy-and-size.md) | `hygiene:docs-accuracy`, `hygiene:docs-size`, why one gates and one advises | coming soon |
 | 6 | [Secrets](06-secrets.md) | `security:secrets`, why history is what is scanned, revoke then rewrite | coming soon |
 | 7 | Static analysis | `security:sast` | coming soon |
-| 8 | Dependencies and licences | `security:vulnerability:all`, dependency review | coming soon |
+| 8 | [Dependencies and licences](08-dependencies.md) | `security:vulnerability:all`, dependency review | coming soon |
 | 9 | [Headers and CSP](09-headers-and-csp.md) | `hygiene:csp-exceptions`, `security:api-headers`, the exceptions ledger, wildcard-plus-credentials | coming soon |
 | 10 | Dynamic scanning | `security:dast` | coming soon |
 | 11 | [Smoke and end-to-end](11-smoke-and-e2e.md) | `reliability:smoke`, `reliability:e2e`, does it serve and can a visitor get around | coming soon |
@@ -76,11 +76,11 @@ and the verdicts are the same.
 | 13 | [Core Web Vitals](13-core-web-vitals.md) | `reliability:cwv`, LCP, TBT and CLS, budgets you tighten to what you measure | coming soon |
 | 14 | [SEO and social share](14-seo.md) | `reliability:seo`, the tags search and previews read | coming soon |
 | 15 | [Discoverability: robots, sitemap, llms.txt and links](15-discoverability.md) | `reliability:robots-txt`, `reliability:sitemap`, `reliability:llms-txt`, `reliability:broken-links` | coming soon |
-| 16 | API checks | `reliability:api-health`, `reliability:api-latency`, `hygiene:openapi` | coming soon |
-| 17 | CI: the workflows and the PR feedback loop | `ss-*.yml`, the PR summary, auto-label, failure issues | coming soon |
-| 18 | Agents: the install and triage skills | The two Claude Code skills | coming soon |
-| 19 | Profiles and tailoring | `profile`, `workflows.disabled` and `enabled`, upgrading the pin | coming soon |
-| 20 | Inside slopstopper: add a check | The registry and the registration test | coming soon |
+| 16 | [API checks](16-api-checks.md) | `reliability:api-health`, `reliability:api-latency`, `hygiene:openapi`, budgets from what you measured | coming soon |
+| 17 | [CI: the workflows and the PR feedback loop](17-ci.md) | `ss-*.yml`, pinned actions, the PR summary, the issue a red main raises, auto-label, the deploy trigger | coming soon |
+| 18 | [Agents: the install and triage skills](18-agents.md) | The two Claude Code skills | coming soon |
+| 19 | [Profiles and tailoring](19-profiles-and-tailoring.md) | `profile show`, `detect` and `list`, `workflows.enabled`, the pin in `mise.toml` | coming soon |
+| 20 | [Inside slopstopper: add a check](20-inside-slopstopper.md) | The registry, the registration test, the shape every check shares | coming soon |
 
 A lesson without a link is not written yet; issue #483 tracks each one.
 The episode column links the video once it is recorded.

@@ -48,7 +48,7 @@ task ss:hygiene:docs-accuracy
 
 ```
 🔍 Checking documentation accuracy…
-🚫 14 doc(s) excluded by hygiene.docs.exclude (listed in the report)
+🚫 20 doc(s) excluded by hygiene.docs.exclude (listed in the report)
 ✅ Documentation accuracy checks passed
 
 📁 Reports saved to: .ss/reports/docs/
@@ -78,7 +78,7 @@ task ss:hygiene:docs-accuracy
 
 ```
 🔍 Checking documentation accuracy…
-🚫 14 doc(s) excluded by hygiene.docs.exclude (listed in the report)
+🚫 20 doc(s) excluded by hygiene.docs.exclude (listed in the report)
 ⚠️  Found 2 accuracy issue(s)
   docs/hygiene/README.md:216: Broken link: [the tidy guide](TIDY.md) points to a path that does not exist
   docs/hygiene/README.md:216: Task reference `task ss:hygiene:tidy` not found in Taskfile.yml
@@ -189,7 +189,7 @@ task ss:hygiene:docs-size | sed -n '/Status/,/excluded/p'
 ⚠️  Files exceeding 20 KB:
      - NOTES.md
 
-🚫 14 doc(s) excluded by hygiene.docs.exclude (listed in the report)
+🚫 20 doc(s) excluded by hygiene.docs.exclude (listed in the report)
 ```
 
 The verdict is red in the output and in the report, and the exit code

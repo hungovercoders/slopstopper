@@ -152,7 +152,7 @@ slopstopper run hygiene:docs-structure; echo "exit $?"
 
 ```
 🔍 Validating documentation structure…
-✅ Documentation structure is valid: all 33 docs are routed (14 excluded by hygiene.docs.exclude)
+✅ Documentation structure is valid: all 33 docs are routed (20 excluded by hygiene.docs.exclude)
 
 📁 Reports saved to: .ss/reports/docs/
    • docs-structure-report.md
