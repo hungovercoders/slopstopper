@@ -50,9 +50,9 @@ you are:
 | **Going further** | Links into the docs for the depth the lesson skipped. |
 | **Episode script** | Collapsed at the end: what the video says and shows, with chapter timestamps. |
 
-Runnable blocks are marked for a harness that will run them in CI
-(issue #485), so a lesson cannot quietly stop working when the CLI
-changes. The sample output comes from the build the lesson was written
+Runnable blocks are marked, and `task contributing:learn:check` runs
+them in order in a scratch clone, locally and in CI, so a lesson cannot
+quietly stop working when the CLI changes. The sample output comes from the build the lesson was written
 against; a later release can word a hint differently, but the commands
 and the verdicts are the same.
 
@@ -65,7 +65,7 @@ and the verdicts are the same.
 | 2 | [Run your first check and read its report](02-first-check-complexity.md) | `hygiene:complexity`, the task → CLI → workflow chain, `.ss/reports/` | coming soon |
 | 3 | [Entry files: the AGENTS.md-first model](03-entry-files.md) | `hygiene:entry-files`, token budgets, explicit routes | coming soon |
 | 4 | [Docs structure: every doc has a route](04-docs-structure.md) | `hygiene:docs-structure`, hops, line caps | coming soon |
-| 5 | Docs accuracy and docs size | `hygiene:docs-accuracy`, `hygiene:docs-size` | coming soon |
+| 5 | [Docs accuracy and docs size](05-docs-accuracy-and-size.md) | `hygiene:docs-accuracy`, `hygiene:docs-size`, why one gates and one advises | coming soon |
 | 6 | Secrets | `security:secrets` | coming soon |
 | 7 | Static analysis | `security:sast` | coming soon |
 | 8 | Dependencies and licences | `security:vulnerability:all`, dependency review | coming soon |

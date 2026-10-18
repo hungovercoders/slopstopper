@@ -24,6 +24,10 @@ on:
     paths:
       - 'cli/**'
       - 'scripts/shot.py'
+      - 'scripts/learncheck.py'
+      - 'docs/learn/**'
+      - 'Taskfile.yml'
+      - 'Taskfile.ss.yml'
       - '.github/workflows/ci-cli.yml'
       # Every ss-* workflow calls `slopstopper run` / `slopstopper emit`,
       # so a change to any of them needs the CLI tests too.
@@ -33,6 +37,10 @@ on:
     paths:
       - 'cli/**'
       - 'scripts/shot.py'
+      - 'scripts/learncheck.py'
+      - 'docs/learn/**'
+      - 'Taskfile.yml'
+      - 'Taskfile.ss.yml'
       - '.github/workflows/ci-cli.yml'
       # Every ss-* workflow calls `slopstopper run` / `slopstopper emit`,
       # so a change to any of them needs the CLI tests too.
@@ -91,3 +99,22 @@ jobs:
         with:
           name: shots
           path: shots
+
+  # The course under docs/learn/ marks its runnable blocks, and
+  # scripts/learncheck.py runs them in order in a scratch clone with the
+  # CLI from this checkout, so a lesson cannot quietly stop working when
+  # a command's output or a task's name changes. The hygiene lessons need
+  # only the CLI; lessons that need an external tool (gitleaks, semgrep)
+  # or a running site will extend this job when they are written.
+  learn:
+    name: learn
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Set up toolchain (task)
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+      - run: pip install -e ./cli
+      - run: python scripts/learncheck.py
