@@ -26,11 +26,14 @@ in the [syllabus](README.md).
   fence. `<!-- learn -->` means the block must exit 0; `<!-- learn: fails -->`
   means it must exit non-zero: the break-it step of most lessons, and
   any `cmd; echo "exit $?"` block that shows a non-zero code, since
-  `sh -e` stops at the command. A harness (issue #485) runs the marked blocks of each lesson
-  in order with `sh -e` in a scratch checkout, so a lesson cannot rot.
-  Blocks that need credentials, an editor, a browser or a tool the
-  harness does not have are left unmarked. Until the harness lands, run
-  the lesson by hand from the top before committing it.
+  `sh -e` stops at the command. `task contributing:learn:check` runs the
+  marked blocks of each lesson in order with `sh -e` in a scratch clone,
+  and fails if a page leaves that clone dirty; the `learn` job in
+  `ci-cli.yml` runs the same on every change to the course or the CLI,
+  so a lesson cannot rot. Blocks that need credentials, an editor, a
+  browser or a tool the harness does not have are left unmarked. Run
+  `task contributing:learn:check -- --page NN` on a lesson before
+  committing it.
 - **The checkpoint is one command** whose output settles whether the
   lesson took. Make it the last runnable block.
 - **The episode script lives on the page**, collapsed at the end, so the

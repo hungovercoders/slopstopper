@@ -75,6 +75,12 @@ tasks:
     cmds:
       - '"{{.PYTHON}}" scripts/checktables.py {{.CLI_ARGS}}'
 
+  contributing:learn:check:
+    desc: Run every marked command block in the course (docs/learn) in a scratch clone; `-- --page 03` for one lesson, `-- --keep` to keep the clone
+    deps: [cli:install]
+    cmds:
+      - '"{{.PYTHON}}" scripts/learncheck.py {{.CLI_ARGS}}'
+
   contributing:lint:
     desc: markdownlint over docs/ and CONTRIBUTING.md (advisory, not a CI gate)
     cmds:
