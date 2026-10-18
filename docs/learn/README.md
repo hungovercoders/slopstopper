@@ -74,8 +74,8 @@ and the verdicts are the same.
 | 11 | [Smoke and end-to-end](11-smoke-and-e2e.md) | `reliability:smoke`, `reliability:e2e`, does it serve and can a visitor get around | coming soon |
 | 12 | [Accessibility](12-accessibility.md) | `reliability:accessibility`, axe impact levels, the contrast rule | coming soon |
 | 13 | [Core Web Vitals](13-core-web-vitals.md) | `reliability:cwv`, LCP, TBT and CLS, budgets you tighten to what you measure | coming soon |
-| 14 | SEO and social share | `reliability:seo` | coming soon |
-| 15 | Discoverability: robots, sitemap, llms.txt and links | `reliability:robots-txt`, `reliability:sitemap`, `reliability:llms-txt`, `reliability:broken-links` | coming soon |
+| 14 | [SEO and social share](14-seo.md) | `reliability:seo`, the tags search and previews read | coming soon |
+| 15 | [Discoverability: robots, sitemap, llms.txt and links](15-discoverability.md) | `reliability:robots-txt`, `reliability:sitemap`, `reliability:llms-txt`, `reliability:broken-links` | coming soon |
 | 16 | API checks | `reliability:api-health`, `reliability:api-latency`, `hygiene:openapi` | coming soon |
 | 17 | CI: the workflows and the PR feedback loop | `ss-*.yml`, the PR summary, auto-label, failure issues | coming soon |
 | 18 | Agents: the install and triage skills | The two Claude Code skills | coming soon |
