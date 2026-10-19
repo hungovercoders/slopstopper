@@ -37,7 +37,7 @@ jobs:
         # Installs node + task from mise.toml ([tools]) onto PATH, so both are
         # single-sourced from the pin (no curl-installed Taskfile, no hardcoded
         # Node version). The version follows the repo, same as CI and local.
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
 
       - name: Install slopstopper-cli from source
         # This repo runs the CLI from source (HEAD), so mise.toml carries no
