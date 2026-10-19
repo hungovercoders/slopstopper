@@ -45,10 +45,11 @@ slopstopper checks list [--category <c>] [--json]
 slopstopper doctor [--json]                    # verify external tools are installed
 slopstopper profile {list, show, expand <n>, disabled, detect} [--json]   # project-shape profile (ui / api / library)
 slopstopper cloudflare preview-url <sha>       # a commit's Workers Builds preview URL, from Cloudflare's PR comment on stdin
+slopstopper demo [--out <dir>] [--force] [--json]   # write a small demo repo that two checks fail on, to try the suite
 slopstopper --quiet …                          # suppress decorative output (CI logs)
 ```
 
-On `run`, `doctor`, `profile`, `config get` and `checks list`, `--json` prints one JSON value and nothing else on stdout (`run` sends the check's own output to stderr), so a script or an agent reads a verdict without parsing the decorated text. The shapes are a contract, documented with the exit codes in [`docs/contributing/README.md`](https://github.com/hungovercoders/slopstopper/blob/main/docs/contributing/README.md).
+On `run`, `doctor`, `profile`, `config get`, `checks list` and `demo`, `--json` prints one JSON value and nothing else on stdout (`run` sends the check's own output to stderr), so a script or an agent reads a verdict without parsing the decorated text. The shapes are a contract, documented with the exit codes in [`docs/contributing/README.md`](https://github.com/hungovercoders/slopstopper/blob/main/docs/contributing/README.md).
 
 `slopstopper` with no args prints a banner of the commands above plus a quick-start block.
 

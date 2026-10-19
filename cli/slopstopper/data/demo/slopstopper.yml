@@ -1,0 +1,31 @@
+# .slopstopper.yml for the Lantern demo repo, which `slopstopper demo`
+# writes. The keys most repos set; every other knob has a default and is
+# documented in the schema reference:
+#   https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example
+
+# A site that serves HTML: every check applies.
+profile: ui
+
+urls:
+  production:
+  preview:
+
+# The page has one route.
+pages:
+  smoke:         /
+  e2e:           /
+  accessibility: /
+  seo:           /
+  broken_links:  /
+
+# No share image, so the smoke test does not assert one.
+smoke:
+  og_image_path: ''
+
+# No headers file, so the CSP-drift check is skipped.
+headers:
+  source: null
+
+workflows:
+  disabled: []
+  enabled: []

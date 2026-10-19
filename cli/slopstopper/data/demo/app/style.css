@@ -1,0 +1,5 @@
+body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 40rem; padding: 0 1rem; color: #1f1a17; background: #fbf5ec; }
+article { border: 1px solid #d9cdbb; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+.status { font-weight: 600; }
+.ok { color: #1f6b54; }
+.unknown { color: #6b5b47; }
