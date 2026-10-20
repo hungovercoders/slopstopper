@@ -71,6 +71,7 @@ import contextlib
 import importlib
 import json as _json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -1491,7 +1492,7 @@ def _dispatch_demo(out: str, force: bool = False, as_json: bool = False) -> int:
     for f in failures:
         output._emit(f"     slopstopper run {f['check']:<{width}}   {f['finding']}")
     output.blank()
-    output._emit(f"   cd {dest} && slopstopper run {failures[0]['check']}")
+    output._emit(f"   cd {shlex.quote(str(dest))} && slopstopper run {failures[0]['check']}")
     return 0
 
 

@@ -143,3 +143,26 @@ def test_renames_apply_at_the_root_only_and_junk_is_skipped(monkeypatch, tmp_pat
     (fake / ".DS_Store").write_bytes(b"")
     monkeypatch.setattr(demo, "DEMO_DIR", fake)
     assert sorted(n for n, _ in demo.files()) == [".slopstopper.yml", "docs/slopstopper.yml"]
+
+
+def test_a_symlink_is_never_written_through(tmp_path):
+    outside = tmp_path / "outside.md"
+    dest = tmp_path / "lantern"
+    dest.mkdir()
+    (dest / "README.md").symlink_to(outside)          # dangling: exists() is False
+    written, skipped = demo.write(dest)
+    assert str(dest / "README.md") in skipped and str(dest / "README.md") not in written
+    assert not outside.exists()
+
+    outside.write_text("mine\n")
+    written, _ = demo.write(dest, force=True)
+    assert str(dest / "README.md") in written
+    assert not (dest / "README.md").is_symlink()
+    assert (dest / "README.md").read_text().startswith("# Lantern")
+    assert outside.read_text() == "mine\n"
+
+
+def test_the_hint_shell_quotes_the_destination(tmp_path, capsys):
+    out_dir = tmp_path / "my demo"
+    assert cli.main(["demo", "--out", str(out_dir)]) == 0
+    assert f"cd '{out_dir}' && slopstopper run" in capsys.readouterr().out

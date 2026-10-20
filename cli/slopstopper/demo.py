@@ -85,18 +85,27 @@ def write(dest: Path, force: bool = False) -> tuple[list[str], list[str]]:
 
     Returns the paths written and the paths skipped. A file that already
     exists is left alone unless `force` is set, so a demo repo someone
-    has started editing is not wiped by a second run. A directory where
-    a fixture file belongs, a file where a directory belongs, or a
-    destination that cannot be written raises OSError; the caller turns
-    that into the exit-2 message.
+    has started editing is not wiped by a second run, and a symlink is
+    never written through. A directory where a fixture file belongs, a
+    file where a directory belongs, or a destination that cannot be
+    written raises OSError; the caller turns that into the exit-2 message.
     """
     written: list[str] = []
     skipped: list[str] = []
     for published, source in files():
         target = dest / published
-        if target.is_dir():
+        # A symlink is never written through: that would land the file
+        # wherever the link points, outside the demo. Without force it
+        # counts as already there (a dangling one included); with force
+        # the link itself is replaced by the file.
+        if target.is_symlink():
+            if not force:
+                skipped.append(str(target))
+                continue
+            target.unlink()
+        elif target.is_dir():
             raise IsADirectoryError(f"{target} is a directory, where the demo needs a file")
-        if target.exists() and not force:
+        elif target.exists() and not force:
             skipped.append(str(target))
             continue
         target.parent.mkdir(parents=True, exist_ok=True)
