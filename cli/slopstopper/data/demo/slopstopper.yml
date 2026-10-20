@@ -18,7 +18,9 @@ pages:
   seo:           /
   broken_links:  /
 
-# No share image, so the smoke test does not assert one.
+# The share image is an SVG, and the smoke test's share-image assertion
+# wants a PNG, so that one assertion is off. The SEO check still fetches
+# the image the page names.
 smoke:
   og_image_path: ''
 

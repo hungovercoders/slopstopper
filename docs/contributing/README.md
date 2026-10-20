@@ -72,7 +72,7 @@ instead of parsing the decorated text. The others (`discover`,
 `templates`, `badges`, `cloudflare preview-url`) already print a single
 plain value a shell can use. These shapes are a contract like the exit
 codes: add a key freely, never rename or remove one without a note in the
-CLI README. `cli/tests/test_cli.py` pins them.
+CLI README. `cli/tests/test_cli.py` pins them, and `cli/tests/test_demo.py` the `demo` row.
 
 | Command | Prints |
 |---|---|

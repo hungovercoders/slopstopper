@@ -26,13 +26,14 @@ given, so a demo someone has started editing survives a second run.
 | `docs/README.md` | The map, routing `architecture.md` and `contributing.md` |
 | `docs/architecture.md`, `docs/contributing.md` | Two routed topic docs |
 | `docs/runbooks/RELEASE.md` | A doc nothing routes to |
-| `.slopstopper.yml` | `profile: ui`, one page, no share image, no headers file |
+| `.slopstopper.yml` | `profile: ui`, one page, no headers file; the smoke share-image assertion is off because the image is an SVG and it wants a PNG |
 | `app/index.html`, `app/style.css`, `app/og-image.svg` | The page: three services, a stylesheet, a share image and the meta tags the SEO check wants, which `slopstopper serve` serves |
 | `.gitignore` | `.ss/reports/` |
 
 The two dotfiles are stored without their dot (`slopstopper.yml`,
 `gitignore`) so the packaged tree carries none; `demo.write` renames
-them.
+them, and the command's help and output are built from `demo.FAILURES`,
+so a third finding needs no copy edited by hand.
 
 ## The two findings it must keep
 

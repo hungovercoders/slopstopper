@@ -2,7 +2,7 @@
 
 A static status page for a small team: which services exist, who owns
 each one, and where to look when one is down. One HTML page under
-`app/`, no build step, served by any static host.
+`app/` with its stylesheet, no build step, served by any static host.
 
 This repository is the demo fixture that `slopstopper demo` writes. It
 is deliberately a little slopped: two hygiene checks fail on it out of
@@ -37,8 +37,9 @@ instead of a wall.
 `app/index.html` is hand-written. Every service is one `<article>` with
 a name, an owner, a status badge and a link to its runbook. There is no
 templating and no JavaScript; a change to the list is a change to the
-HTML, reviewed like any other. Styles live in a `<style>` block at the
-top of the page so the page is one file and the CSP needs nothing.
+HTML, reviewed like any other. Styles live in `app/style.css`, the one
+stylesheet, so the page needs no JavaScript and the CSP needs nothing
+beyond its own origin.
 
 ### Adding a service
 

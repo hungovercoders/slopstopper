@@ -110,3 +110,36 @@ def test_cli_refuses_a_file_as_out(tmp_path, capsys):
     target.write_text("x")
     assert cli.main(["demo", "--out", str(target)]) == 2
     assert "not a directory" in capsys.readouterr().err
+    assert cli.main(["demo", "--out", str(target), "--json"]) == 2
+    assert set(json.loads(capsys.readouterr().out)) == {"error"}
+
+
+def test_cli_refuses_a_directory_where_a_file_belongs(tmp_path, capsys):
+    dest = tmp_path / "lantern"
+    (dest / "README.md").mkdir(parents=True)
+    assert cli.main(["demo", "--out", str(dest)]) == 2
+    assert "README.md is a directory" in capsys.readouterr().err
+    assert cli.main(["demo", "--out", str(dest), "--force"]) == 2
+    (dest / "docs").mkdir()
+    (dest / "docs" / "runbooks").write_text("x")
+    (dest / "README.md").rmdir()
+    assert cli.main(["demo", "--out", str(dest), "--json"]) == 2
+    assert "error" in json.loads(capsys.readouterr().out)
+
+
+def test_quiet_keeps_only_the_result(tmp_path, capsys):
+    assert cli.main(["--quiet", "demo", "--out", str(tmp_path / "q")]) == 0
+    assert capsys.readouterr().out.strip() == ""
+
+
+def test_renames_apply_at_the_root_only_and_junk_is_skipped(monkeypatch, tmp_path):
+    fake = tmp_path / "demo"
+    (fake / "docs").mkdir(parents=True)
+    (fake / "__pycache__").mkdir()
+    (fake / "slopstopper.yml").write_text("profile: ui\n")
+    (fake / "docs" / "slopstopper.yml").write_text("sample\n")
+    (fake / "docs" / "notes.md~").write_text("backup\n")
+    (fake / "__pycache__" / "x.pyc").write_bytes(b"")
+    (fake / ".DS_Store").write_bytes(b"")
+    monkeypatch.setattr(demo, "DEMO_DIR", fake)
+    assert sorted(n for n, _ in demo.files()) == [".slopstopper.yml", "docs/slopstopper.yml"]

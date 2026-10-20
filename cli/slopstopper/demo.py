@@ -22,7 +22,8 @@ to the fixture that loses either fails the suite.
 
 Files whose published name starts with a dot are stored without the dot
 (`slopstopper.yml`, `gitignore`), so the packaged tree carries no
-dotfiles; `write` renames them.
+dotfiles; `write` renames them, and skips anything an editor or a
+Python run leaves behind.
 """
 
 from __future__ import annotations
@@ -34,11 +35,18 @@ from slopstopper.templates import PACKAGE_DATA_DIR
 DEMO_DIR = PACKAGE_DATA_DIR / "demo"
 DEFAULT_OUT = "slopstopper-demo"
 
-# Stored name → published name, for the files a repo keeps hidden.
+# Stored path → published path, for the files a repo keeps hidden. Keyed
+# by the whole relative path, so a nested file that happens to share a
+# name is published as is.
 RENAMES = {
     "slopstopper.yml": ".slopstopper.yml",
     "gitignore": ".gitignore",
 }
+
+# What an editor or a Python run can leave under data/demo/ and must never
+# be written into a demo repo.
+_JUNK_PARTS = {"__pycache__", ".DS_Store"}
+_JUNK_SUFFIXES = ("~", ".swp", ".pyc", ".orig")
 
 # The deliberate findings, as `slopstopper demo` prints them: the check,
 # what it reports, and the fix. test_demo.py runs each check and asserts
@@ -63,8 +71,12 @@ def files() -> list[tuple[str, Path]]:
     out: list[tuple[str, Path]] = []
     for source in sorted(p for p in DEMO_DIR.rglob("*") if p.is_file()):
         relative = source.relative_to(DEMO_DIR)
-        name = RENAMES.get(relative.name, relative.name)
-        out.append((str(relative.with_name(name)), source))
+        if any(part in _JUNK_PARTS or part.startswith(".") for part in relative.parts):
+            continue
+        if relative.name.endswith(_JUNK_SUFFIXES):
+            continue
+        stored = relative.as_posix()
+        out.append((RENAMES.get(stored, stored), source))
     return out
 
 
@@ -73,12 +85,17 @@ def write(dest: Path, force: bool = False) -> tuple[list[str], list[str]]:
 
     Returns the paths written and the paths skipped. A file that already
     exists is left alone unless `force` is set, so a demo repo someone
-    has started editing is not wiped by a second run.
+    has started editing is not wiped by a second run. A directory where
+    a fixture file belongs, a file where a directory belongs, or a
+    destination that cannot be written raises OSError; the caller turns
+    that into the exit-2 message.
     """
     written: list[str] = []
     skipped: list[str] = []
     for published, source in files():
         target = dest / published
+        if target.is_dir():
+            raise IsADirectoryError(f"{target} is a directory, where the demo needs a file")
         if target.exists() and not force:
             skipped.append(str(target))
             continue

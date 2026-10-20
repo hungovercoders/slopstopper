@@ -6,7 +6,7 @@ comment on the line before the fence: `<!-- learn -->` for a block that
 must exit 0, `<!-- learn: fails -->` for one that must exit non-zero
 (the break-it step of most lessons). This script clones the repository
 into a scratch directory, which is the sandbox the syllabus gives a
-reader until `slopstopper demo` exists, commits the working tree's
+reader until the lessons move onto `slopstopper demo` (#486), commits the working tree's
 uncommitted changes into that clone so a lesson is checked against the
 Taskfile and CLI you are about to commit rather than the ones you last
 did, puts the CLI that runs this script on PATH, and runs each page's
