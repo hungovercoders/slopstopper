@@ -4,6 +4,20 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.23.0](https://github.com/hungovercoders/slopstopper/compare/v0.22.0...v0.23.0) (2026-10-24)
+
+
+### Features
+
+* **security:** a seeded licence allowlist for dependency review ([#482](https://github.com/hungovercoders/slopstopper/issues/482)) ([7a14ece](https://github.com/hungovercoders/slopstopper/commit/7a14ece7a94c32932ee12029ce2e73b475594fd0)), closes [#481](https://github.com/hungovercoders/slopstopper/issues/481)
+* **sitemap:** llms_ignore_paths leaves a section out of the llms.txt diff only ([#522](https://github.com/hungovercoders/slopstopper/issues/522)) ([12f4853](https://github.com/hungovercoders/slopstopper/commit/12f4853ea7a7a505e80a279cc73a387c28546df0)), closes [#456](https://github.com/hungovercoders/slopstopper/issues/456)
+
+
+### Bug Fixes
+
+* **cloudflare:** read the preview URL from the bot's Markdown table too ([#523](https://github.com/hungovercoders/slopstopper/issues/523)) ([ca3dc46](https://github.com/hungovercoders/slopstopper/commit/ca3dc46bdb14690f627b545d045eb972f2fc1765)), closes [#459](https://github.com/hungovercoders/slopstopper/issues/459)
+* what installing on apic surfaced (nested wrangler, SEO env var, licence ids, workflow hardening, ignore_refs) ([#478](https://github.com/hungovercoders/slopstopper/issues/478)) ([7e3debc](https://github.com/hungovercoders/slopstopper/commit/7e3debc4bcc1547cc55cc151a39b26da2a863d49))
+
 ## [0.22.0](https://github.com/hungovercoders/slopstopper/compare/v0.21.0...v0.22.0) (2026-10-12)
 
 
