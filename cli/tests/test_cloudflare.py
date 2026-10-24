@@ -16,6 +16,21 @@ COMMENT = """## Deploying with Cloudflare Workers
 <td><a href='https://9f8e7d6c-site.acct.workers.dev'>Commit Preview URL</a></td></tr>
 </table>"""
 
+# The Markdown form the bot posts (#459): pipe-delimited rows, the short SHA in
+# its own cell, commit and branch links in one cell.
+MARKDOWN_COMMENT = """## Deploying with Cloudflare Workers
+| Status | Name | Commit | Preview URL | Updated |
+| :--- | :--- | :--- | :--- | :--- |
+| ✅ Deployment successful! <br>[View logs](https://dash.cloudflare.com/x) | site | 1f7a4c97 | <a href='https://36664209-site.acct.workers.dev'>Commit Preview URL</a><br><br><a href='https://chore-x-site.acct.workers.dev'>Branch Preview URL</a> | Oct 11 2026, 08:24 AM |
+| ✅ Deployment successful! <br>[View logs](https://dash.cloudflare.com/y) | site | 9f8e7d6c | <a href='https://9f8e7d6c-site.acct.workers.dev'>Commit Preview URL</a> | Oct 10 2026, 08:00 AM |
+"""
+
+
+def test_the_markdown_table_row_for_the_deployed_commit_gives_its_commit_preview():
+    assert cloudflare.preview_url(MARKDOWN_COMMENT, "1f7a4c97abcd") == "https://36664209-site.acct.workers.dev/"
+    assert cloudflare.preview_url(MARKDOWN_COMMENT, "9f8e7d6c5b4a") == "https://9f8e7d6c-site.acct.workers.dev/"
+    assert cloudflare.preview_url(MARKDOWN_COMMENT, "0000000aaaa") is None
+
 
 def test_the_row_for_the_deployed_commit_gives_its_preview():
     assert cloudflare.preview_url(COMMENT, "9f8e7d6c5b4a") == "https://9f8e7d6c-site.acct.workers.dev/"
