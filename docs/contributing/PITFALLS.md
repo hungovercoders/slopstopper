@@ -35,6 +35,12 @@ before; the rule is "do the obvious thing the obvious way."
   in [`docs/security/CSP_EXCEPTIONS.md`](../security/CSP_EXCEPTIONS.md),
   because the `ss:hygiene:csp-exceptions` check fails the build if they
   drift apart.
+- **Adding a third-party script, form or analytics snippet without
+  updating the privacy page.** `app/privacy.html` and the footer line on
+  every page state what the site collects and which services its pages
+  reach. They are only true while that list matches `worker/headers.json`
+  and the pages; a new origin, embed or form is a change to both, in the
+  same PR, with the page's "last checked" date moved.
 
 ## Site (`app/`)
 

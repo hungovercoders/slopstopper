@@ -657,6 +657,13 @@ footer a {
     color: var(--accent-deep);
     font-weight: 700;
 }
+.footer-privacy {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+}
 
 /* ─── Steps ─────────────────────────────────────────────── */
 .steps {
