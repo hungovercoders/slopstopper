@@ -261,6 +261,25 @@ installed_cli_version() {
   slopstopper --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
 }
 
+# The checks the shipped shims call that the CLI on PATH does not know,
+# comma-separated; empty when every one resolves or when no CLI answers.
+# The shims and workflows come from this checkout, the CLI from the pin,
+# so after a new check ships upstream a plain refresh can hand a repo a
+# `task ss:<check>` whose `slopstopper run` exits 2 ("unknown check") until
+# the pin moves. `hygiene:test` is the pre-push hook, so that 2 blocks
+# every push; this names the gap so it is a known step, not a surprise.
+shipped_checks_unknown_to_cli() {
+  local known shipped c missing=""
+  known="$(slopstopper checks list --json 2>/dev/null \
+    | python3 -c 'import sys,json; print("\n".join(c["name"] for c in json.load(sys.stdin)))' 2>/dev/null)" || true
+  [ -n "$known" ] || return 0
+  shipped="$(grep -oE 'slopstopper run [a-z][a-z0-9:-]+' "$TARGET_DIR/Taskfile.ss.yml" 2>/dev/null | awk '{print $3}' | sort -u)"
+  for c in $shipped; do
+    printf '%s\n' "$known" | grep -qx "$c" || missing="${missing:+$missing, }$c"
+  done
+  printf '%s' "$missing"
+}
+
 # version_lt A B → exit 0 if A is strictly older than B (semver ordering).
 version_lt() {
   [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$1" ]
@@ -1504,6 +1523,16 @@ if [ -n "$ss_installed" ]; then
     echo "     or run: eval \"\$(mise activate bash)\"   (zsh/fish: swap the shell name)"
     echo "     Until then, use: mise exec -- slopstopper …"
   fi
+  echo ""
+fi
+SS_UNKNOWN_CHECKS="$(shipped_checks_unknown_to_cli)"
+if [ -n "$SS_UNKNOWN_CHECKS" ]; then
+  warn "The pinned slopstopper-cli${ss_installed:+ $ss_installed} does not know: $SS_UNKNOWN_CHECKS."
+  echo "     The shims and workflows just installed come from a newer slopstopper."
+  echo "     Until the pin moves, those checks exit 2 ('unknown check') locally and in CI,"
+  echo "     and 'task ss:hygiene:test' (the pre-push hook) fails on the hygiene ones."
+  echo "     Run: bash install.sh --upgrade-cli   (once a release carries them;"
+  echo "     ${REPO_URL%.git}/releases lists what each one adds)"
   echo ""
 fi
 echo "  ── SlopStopper status for this repo ──────────────────────────────"

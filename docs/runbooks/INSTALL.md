@@ -37,7 +37,7 @@ Everything SlopStopper owns lives under the `ss` namespace so it can't clash wit
 | `Taskfile.ss.yml` | Thin `task ss:*` shims that call the CLI, for the local dev loop |
 | `Taskfile.yml` | Created if missing (else: prints the include block to paste in) |
 | `.githooks/pre-push` | Pre-push hygiene gate (`--no-hooks` opts out; defers to husky/lefthook/pre-commit) |
-| `mise.toml` | Toolchain pin (`slopstopper-cli`, `task`), read locally and in CI; moved by `--upgrade-cli`/`--cli-version` |
+| `mise.toml` | Toolchain pin (`slopstopper-cli`, `task`), read locally and in CI; moved by `--upgrade-cli`/`--cli-version`. A refresh never moves it, so the installer warns when the shims it just wrote name a check the pinned CLI lacks |
 | `.slopstopper.yml` | Config starter with profile, URLs, headers and page lists (never overwritten) |
 | `README.md`, `AGENTS.md`, `CLAUDE.md`, `docs/README.md` | AGENTS.md-first entry-file scaffolds, seeded only when absent |
 | `.claude/skills/slopstopper-*/` | The `slopstopper-install` and `slopstopper-triage` Claude Code skills (`--no-skills` opts out) |
