@@ -40,6 +40,7 @@ Exit codes:
 from __future__ import annotations
 
 from slopstopper import config
+from slopstopper.checks import privacy
 from slopstopper.checks import _playwright
 
 CHECK = _playwright.Check(
@@ -73,6 +74,9 @@ def _build_env(url: str, ci_mode: bool) -> dict[str, str]:
     env = _playwright.base_env(CHECK, url, ci_mode)
     env.setdefault("SMOKE_OG_IMAGE_PATH", str(config.get("smoke.og_image_path", "/og-image.png")))
     env.setdefault("SMOKE_PAGES", str(config.get("pages.smoke", "/")))
+    privacy_url = privacy.page_url()
+    if privacy_url:
+        env.setdefault("SMOKE_PRIVACY_URL", privacy_url)
     return env
 
 

@@ -49,6 +49,7 @@ This repo hosts the CLI (under [`cli/`](./cli)) and [slopstopper.dev](https://sl
 [![Docs Structure](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-docs-structure-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-docs-structure-check.yml)
 [![Entry Files](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-entry-files-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-entry-files-check.yml)
 [![OpenAPI Drift](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-openapi-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-openapi-check.yml)
+[![Privacy Statement](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-privacy-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-hygiene-privacy-check.yml)
 
 ### ✅ Reliability
 [![Accessibility](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-accessibility-check.yml/badge.svg?branch=main)](https://github.com/hungovercoders/slopstopper/actions/workflows/ss-reliability-accessibility-check.yml)

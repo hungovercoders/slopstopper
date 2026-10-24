@@ -20,7 +20,7 @@ Run the two static aggregates first. They cover every static workflow that ships
 
 ```bash
 npm install                  # pulls merged devDeps once
-task ss:hygiene:test         # docs-size + docs-structure + docs-accuracy + entry-files + csp-exceptions + complexity
+task ss:hygiene:test         # docs-size + docs-structure + docs-accuracy + entry-files + csp-exceptions + privacy + complexity
 task ss:security:scan        # SAST + secrets + dependency CVEs + DAST (DAST needs a URL; skip or run it after Pass B)
 ```
 
@@ -36,6 +36,7 @@ task ss:hygiene:docs-structure     # every doc under docs/ has an explicit route
 task ss:hygiene:docs-size          # docs/ size budget
 task ss:hygiene:entry-files        # token budgets + explicit routes on AGENTS.md / README.md / CLAUDE.md / the map
 task ss:hygiene:csp-exceptions     # if headers.source is configured
+task ss:hygiene:privacy            # ui repos with hosting config: the privacy page names the host and every CSP origin
 ```
 
 For each failure: fix the root cause locally, re-run **just that one check** to confirm, and only move on once green. Anticipated issues during Pass A are covered in `slopstopper-triage`.
