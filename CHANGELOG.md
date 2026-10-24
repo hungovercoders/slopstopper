@@ -4,6 +4,20 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.25.0](https://github.com/hungovercoders/slopstopper/compare/v0.24.0...v0.25.0) (2026-10-24)
+
+
+### Features
+
+* **site:** privacy page and footer note for slopstopper.dev ([#539](https://github.com/hungovercoders/slopstopper/issues/539)) ([f20bd89](https://github.com/hungovercoders/slopstopper/commit/f20bd892cacd7c91752f062c392112a97fa8722f)), closes [#533](https://github.com/hungovercoders/slopstopper/issues/533)
+* **site:** Workers Logs off and Giscus loads on click ([#540](https://github.com/hungovercoders/slopstopper/issues/540)) ([f9e923c](https://github.com/hungovercoders/slopstopper/commit/f9e923cdd47a696b9a36081e7ad3975fa5d6ebeb))
+* **skills:** adopter feedback loop: repo topic, label, upstream issues, workaround markers ([#534](https://github.com/hungovercoders/slopstopper/issues/534)) ([d1020e1](https://github.com/hungovercoders/slopstopper/commit/d1020e13086537b4c5a2a1e79d184184d8024c7c))
+
+
+### Bug Fixes
+
+* **ci:** run Playwright's apt phase outside the timed retry loop ([#532](https://github.com/hungovercoders/slopstopper/issues/532)) ([c2df019](https://github.com/hungovercoders/slopstopper/commit/c2df01986a56fb1ec7ba7204d71be14aad84be25))
+
 ## [0.24.0](https://github.com/hungovercoders/slopstopper/compare/v0.23.0...v0.24.0) (2026-10-24)
 
 
