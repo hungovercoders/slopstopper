@@ -37,7 +37,7 @@ cli/slopstopper/
 ├── checks/               # One module per check; `_` modules are shared helpers
 ├── data/                 # Bundled Playwright specs, lighthouserc dev/prod, server.js, profiles.json
 └── templates.py / emit.py / discovery.py / config.py / profiles.py
-app/                      # index, features, tools, feedback (Giscus, per-path CSP exception); shared.css, copy.js
+app/                      # index, features, tools, feedback (Giscus on click, per-path CSP exception), privacy; shared.css, copy.js, feedback.js
 worker/                   # index.ts (fetch handler) + headers.json (the canonical header map)
 mise.toml                 # Pins `"pipx:slopstopper-cli"`, `task` and `node`; read locally and by jdx/mise-action
 Taskfile.yml              # Thin root, `includes: { ss: ./Taskfile.ss.yml }`

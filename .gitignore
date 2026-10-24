@@ -28,6 +28,7 @@ cli/.pytest_cache/
 # TypeScript compiled output (copy.js is hand-written runtime JS, not a tsc artefact)
 app/*.js
 !app/copy.js
+!app/feedback.js
 # Local Claude Code state, but ship shared skills with the repo
 .claude/*
 !.claude/skills/

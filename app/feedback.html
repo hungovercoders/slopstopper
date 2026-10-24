@@ -76,32 +76,24 @@
         <section class="section comments-section" id="comments">
             <span class="kicker">Discussion</span>
             <h2>Comments</h2>
-            <p class="lede">Sign in with GitHub. Your comment goes straight to <a href="https://github.com/hungovercoders/slopstopper/discussions/categories/feedback" rel="noopener noreferrer">our Discussions tab</a>. Comments go through Giscus and GitHub, so both see your visit and, if you comment, your GitHub identity; <a href="privacy.html">the privacy page</a> has the detail.</p>
+            <p class="lede">Comments are loaded from Giscus only when you ask. Pressing the button fetches the widget from <code>giscus.app</code>, which then sees your visit, and signing in to comment shares your GitHub identity with Giscus and GitHub; <a href="privacy.html">the privacy page</a> has the detail. Your comment lands in <a href="https://github.com/hungovercoders/slopstopper/discussions/categories/feedback" rel="noopener noreferrer">our Discussions tab</a>.</p>
+
+            <p class="comments-load">
+                <button type="button" id="load-comments" class="btn btn--primary">Load comments from Giscus</button>
+            </p>
 
             <!--
-                Giscus embed. This page (and ONLY this page) has a relaxed
-                CSP: see worker/headers.json's entry for /feedback.html
-                and the full rationale in docs/security/CSP_EXCEPTIONS.md.
-                The ss:hygiene:csp-exceptions check keeps the two in sync.
-                The integrity= attribute pins the exact bundle hash served
-                by giscus.app; the refresh procedure is in CSP_EXCEPTIONS.md.
+                Giscus embed, click-to-load. feedback.js inserts the
+                giscus.app loader (with its integrity pin) only when the
+                visitor presses the button above, so reading this page sends
+                nothing to giscus.app. This page (and ONLY this page) has a
+                relaxed CSP: see worker/headers.json's entry for
+                /feedback.html and the rationale in
+                docs/security/CSP_EXCEPTIONS.md, which also holds the SRI
+                refresh procedure. ss:hygiene:csp-exceptions keeps the
+                header and the doc in sync.
             -->
             <div class="giscus"></div>
-            <script src="https://giscus.app/client.js"
-                    data-repo="hungovercoders/slopstopper"
-                    data-repo-id="R_kgDOQ0Psbg"
-                    data-category="Feedback"
-                    data-category-id="DIC_kwDOQ0Psbs4C-oQh"
-                    data-mapping="pathname"
-                    data-strict="0"
-                    data-reactions-enabled="1"
-                    data-emit-metadata="0"
-                    data-input-position="bottom"
-                    data-theme="light"
-                    data-lang="en"
-                    integrity="sha384-UwLZGbJGvkTzz0719+xEzUm/idqwzs0yZN8aB9Se5vUXHbyRyDWw9yqZTIsOsJ7x"
-                    crossorigin="anonymous"
-                    async></script>
 
             <noscript>
                 <p class="details__hint">JavaScript is required to load comments. <a href="https://github.com/hungovercoders/slopstopper/discussions/categories/feedback" rel="noopener noreferrer">Open a discussion directly →</a></p>
@@ -135,7 +127,8 @@
     </main>
     <footer>
         <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
-        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics and the short-lived request logs needed to serve the site. No cookies, no tracking scripts. <a href="privacy.html">Privacy</a></p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="privacy.html">Privacy</a></p>
     </footer>
+    <script src="feedback.js" defer></script>
 </body>
 </html>
