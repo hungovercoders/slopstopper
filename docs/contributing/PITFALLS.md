@@ -25,6 +25,12 @@ before; the rule is "do the obvious thing the obvious way."
   clash when they install. Always name new workflows
   `ss-<category>-<action>.yml`. The single exception is
   `copilot-setup-steps.yml`, whose name is fixed by the platform.
+- **Inlining `npx playwright install` in a workflow step.** The apt phase,
+  the time-boxed download and the browser cache live once in
+  `.github/actions/ss-playwright`; a workflow that needs Chromium runs
+  `npm ci` and then `uses:` that action with `timeout-minutes` on the
+  step, because composite steps carry no timeout of their own. A shape
+  test fails on any copy.
 
 ## CSP and headers
 
