@@ -27,7 +27,7 @@ scale-out mechanism past the 50k-URL / 50MB limit.
 CLI surface:
   slopstopper run reliability:sitemap -- --url URL [--path /sitemap.xml]
         [--llms-path /llms.txt] [--max-pages N] [--ignore GLOB ...]
-        [--strict-orphans] [--require-llms-complete]
+        [--llms-ignore GLOB ...] [--strict-orphans] [--require-llms-complete]
 
 Stdlib-only (urllib + html.parser + ElementTree). Writes
 .ss/reports/sitemap/sitemap-report.{md,json}.
@@ -38,6 +38,7 @@ Configuration (.slopstopper.yml, all optional):
       sitemap:
         max_pages: 200              # crawl bound; hitting it is logged, not silent
         ignore_paths: []             # globs excluded from crawl + diff
+        llms_ignore_paths: []        # globs excluded from the llms.txt diff only
         allow_orphans: true          # sitemap entries not internally linked → advisory
         require_llms_complete: false # escalate llms.txt page gaps to hard-fail
         sitemap_path: /sitemap.xml
@@ -369,26 +370,55 @@ def _diff_extra(
     return dead, orphans
 
 
+# Advisory llms.txt gaps sharing a first path segment collapse into one
+# note from this many pages: taxonomy and listing pages come in dozens.
+LLMS_COLLAPSE_AT = 5
+
+
+def _llms_gap_notes(gaps: list[str]) -> list[str]:
+    """One note per gap, except a section of LLMS_COLLAPSE_AT+ pages, which gets one line."""
+    by_section: dict[str, list[str]] = {}
+    for path in gaps:
+        section = path.split("/", 2)[1] if path.count("/") >= 2 else ""
+        by_section.setdefault(section, []).append(path)
+    notes: list[str] = []
+    for section, paths in by_section.items():
+        if section and len(paths) >= LLMS_COLLAPSE_AT:
+            notes.append(
+                f"{len(paths)} reachable pages under /{section}/ are not listed in llms.txt "
+                f"(llms.txt is curated; `llms_ignore_paths: ['/{section}/*']` silences a listing section)"
+            )
+        else:
+            notes.extend(f"Reachable page not listed in llms.txt: {path}" for path in paths)
+    return notes
+
+
 def _diff_llms(
     base: str,
     llms_path: str,
     crawled: set[str],
+    llms_ignore_paths: list[str],
     require_llms_complete: bool,
     issues: list[str],
     notes: list[str],
 ) -> list[str]:
-    """Advisory (unless required) diff of crawled pages against llms.txt links."""
+    """Advisory (unless required) diff of crawled pages against llms.txt links.
+
+    `llms_ignore_paths` drops pages from this diff only, so a taxonomy
+    section can be left out of the curated llms.txt without losing its
+    sitemap coverage.
+    """
     llms_paths, llms_err = _llms_paths(base, llms_path)
     if llms_err:
         notes.append(llms_err)
         return []
     if llms_paths is None:
         return []
-    gaps = sorted(crawled - llms_paths)
-    for path in gaps:
-        (issues if require_llms_complete else notes).append(
-            f"Reachable page not listed in llms.txt: {path}"
-        )
+    gaps = sorted(p for p in crawled - llms_paths if not _ignored(p, llms_ignore_paths))
+    if require_llms_complete:
+        issues.extend(f"Reachable page not listed in llms.txt: {path}" for path in gaps)
+    else:
+        notes.extend(_llms_gap_notes(gaps))
     return gaps
 
 
@@ -398,6 +428,7 @@ def _audit(
     llms_path: str,
     max_pages: int,
     ignore_paths: list[str],
+    llms_ignore_paths: list[str],
     allow_orphans: bool,
     require_llms_complete: bool,
 ) -> dict:
@@ -424,7 +455,9 @@ def _audit(
         issues.append(f"Reachable page missing from sitemap.xml: {path}")
 
     dead_entries, orphan_entries = _diff_extra(base, sitemap_paths - crawled, allow_orphans, issues, notes)
-    llms_gaps = _diff_llms(base, llms_path, crawled, require_llms_complete, issues, notes)
+    llms_gaps = _diff_llms(
+        base, llms_path, crawled, llms_ignore_paths, require_llms_complete, issues, notes
+    )
 
     return _result(
         base, sitemap_url, crawled, len(sitemap_paths), issues, notes,
@@ -503,6 +536,10 @@ def _parse_args(args: list[str] | None) -> argparse.Namespace:
     p.add_argument("--max-pages", type=int, default=None, help="Crawl bound (default: 200)")
     p.add_argument("--ignore", action="append", default=None, help="Glob to exclude (repeatable)")
     p.add_argument(
+        "--llms-ignore", action="append", default=None,
+        help="Glob to leave out of the llms.txt diff only (repeatable)",
+    )
+    p.add_argument(
         "--strict-orphans",
         action="store_true",
         help="Fail on sitemap entries that nothing links to",
@@ -536,6 +573,9 @@ def _resolve_opts(parsed: argparse.Namespace) -> dict:
         "llms_path": parsed.llms_path or config.get("reliability.sitemap.llms_path") or DEFAULT_LLMS_PATH,
         "max_pages": parsed.max_pages or config.get_int("reliability.sitemap.max_pages", DEFAULT_MAX_PAGES),
         "ignore_paths": list(parsed.ignore or config.get("reliability.sitemap.ignore_paths", []) or []),
+        "llms_ignore_paths": list(
+            parsed.llms_ignore or config.get("reliability.sitemap.llms_ignore_paths", []) or []
+        ),
         "allow_orphans": not parsed.strict_orphans
         and config.get_bool("reliability.sitemap.allow_orphans", True),
         "require_llms_complete": parsed.require_llms_complete

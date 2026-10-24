@@ -375,6 +375,10 @@ reliability:
     max_pages: 200
     # Globs excluded from both the crawl and the diff (e.g. /api/*, paginated routes).
     ignore_paths: []
+    # Globs left out of the llms.txt cross-check only. llms.txt is curated,
+    # so taxonomy and listing pages (/tags/*, /page/*) don't belong in it;
+    # listing them here keeps their sitemap coverage.
+    llms_ignore_paths: []
     # Sitemap entries that nothing internally links to are advisory (set
     # false to hard-fail on such orphans).
     allow_orphans: true

@@ -75,6 +75,7 @@ def _audit(monkeypatch, pages, heads=None, **kw):
         llms_path="/llms.txt",
         max_pages=200,
         ignore_paths=[],
+        llms_ignore_paths=[],
         allow_orphans=True,
         require_llms_complete=False,
     )
@@ -97,13 +98,15 @@ def test_parse_args_defaults():
 def test_parse_args_explicit():
     parsed = sitemap._parse_args(
         ["--url", "https://e.com", "--path", "/s.xml", "--llms-path", "/l.txt",
-         "--max-pages", "5", "--ignore", "/api/*", "--strict-orphans", "--require-llms-complete"]
+         "--max-pages", "5", "--ignore", "/api/*", "--llms-ignore", "/tags/*",
+         "--strict-orphans", "--require-llms-complete"]
     )
     assert parsed.url == "https://e.com"
     assert parsed.path == "/s.xml"
     assert parsed.llms_path == "/l.txt"
     assert parsed.max_pages == 5
     assert parsed.ignore == ["/api/*"]
+    assert parsed.llms_ignore == ["/tags/*"]
     assert parsed.strict_orphans is True
     assert parsed.require_llms_complete is True
 
@@ -319,6 +322,30 @@ def test_audit_llms_gap_hard_fails_when_required(monkeypatch):
     result = _audit(monkeypatch, _site(llms_body=llms), require_llms_complete=True)
     assert result["status"] == "fail"
     assert any("not listed in llms.txt" in i for i in result["issues"])
+
+
+def test_llms_ignore_paths_drops_a_page_from_the_llms_diff_only(monkeypatch):
+    """A taxonomy section left out of the curated llms.txt keeps its sitemap coverage (#456)."""
+    llms = "# Site\n- [Home](https://prod.example/)\n- [A](/a.html)\n"
+    sm = URLSET.replace("<url><loc>https://prod.example/b.html</loc></url>", "")
+    result = _audit(monkeypatch, _site(sitemap_body=sm, llms_body=llms), llms_ignore_paths=["/b.html"])
+    assert result["llms_gaps"] == []
+    assert not any("llms.txt" in n for n in result["notes"])
+    assert any("missing from sitemap.xml: /b.html" in i for i in result["issues"])
+
+
+def test_llms_gaps_under_one_section_collapse_into_one_note():
+    gaps = [f"/tags/{i}" for i in range(sitemap.LLMS_COLLAPSE_AT)] + ["/about", "/blog/x"]
+    notes = sitemap._llms_gap_notes(gaps)
+    assert len(notes) == 3
+    assert any(n.startswith(f"{sitemap.LLMS_COLLAPSE_AT} reachable pages under /tags/") and "llms_ignore_paths" in n for n in notes)
+    assert "Reachable page not listed in llms.txt: /about" in notes
+    assert "Reachable page not listed in llms.txt: /blog/x" in notes
+
+
+def test_a_few_llms_gaps_in_a_section_stay_individual():
+    gaps = [f"/tags/{i}" for i in range(sitemap.LLMS_COLLAPSE_AT - 1)]
+    assert len(sitemap._llms_gap_notes(gaps)) == sitemap.LLMS_COLLAPSE_AT - 1
 
 
 def test_audit_missing_llms_is_note_only(monkeypatch):
