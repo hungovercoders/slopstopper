@@ -36,6 +36,14 @@ a new dependency under a licence outside the allowlist in
 `.github/dependency-review-config.yml` fails the PR. The two split the
 job between "everything you have" and "what this change brings in".
 
+Neither looks at a build tool's own dependencies: Trivy scans production
+scope, and the review sees only the diff. A pre-existing advisory in a
+transitive devDependency reaches GitHub's Dependabot alerts and nothing
+else, which is the intended division (the runtime is what ships), so
+keep Dependabot's alerts and security updates on. The
+[vulnerability doc](../security/VULNERABILITY.md#what-it-does-not-cover-and-who-does)
+has the three-way table.
+
 ## You will need
 
 - The checkout from the [syllabus](README.md), with the CLI on PATH.
