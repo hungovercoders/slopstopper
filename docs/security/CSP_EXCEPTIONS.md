@@ -89,13 +89,14 @@ Re-run when the widget breaks after a third-party release.
 - **Why:** Embedded GitHub Discussions comments via [Giscus](https://giscus.app) so visitors can leave feedback directly on the page without leaving the site
 - **Approved by:** PR introducing the feedback page (see `git log app/feedback.html`)
 - **Data leaving site:**
-  - For passive viewers: visitor IP, User-Agent and referrer go to `giscus.app` when the iframe is fetched
+  - Nothing until the visitor presses "Load comments from Giscus": `app/feedback.js` inserts the loader on that click, so reading the page sends nothing to `giscus.app`
+  - After the click: visitor IP, User-Agent and referrer go to `giscus.app` when the iframe is fetched
   - For commenters: GitHub identity (login, avatar URL) goes to `giscus.app` and back to `github.com` when posting
   - No analytics or telemetry from us, since Giscus is the only third-party
 - **Refresh policy:**
   - The SRI hash above must be refreshed when Giscus publishes a new release of their loader script. Refresh procedure:
     1. Recompute the hash with the `curl … openssl` command above
-    2. Update the `integrity=` attribute in `app/feedback.html`
+    2. Update the `integrity` value in `app/feedback.js` (the loader is inserted from there, not from a `<script>` tag in the page)
     3. Update the `**Loader SRI:**` line above to match
     4. Open a PR, and the `ss:hygiene:csp-exceptions` check will green-light when both sides match
   - The COOP/COEP overrides on this path (`same-origin-allow-popups` / `unsafe-none`) are also part of this exception, so the GitHub OAuth popup can communicate back during sign-in

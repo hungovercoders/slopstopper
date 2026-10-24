@@ -70,7 +70,7 @@ one page-specific CSS file; there is no build step and no framework.
 | Home | `app/index.html` | **Copy** buttons on the install code blocks (`app/copy.js`); `<details>` collapsibles |
 | Features | `app/features.html` | `<details>` workflow excerpt per check; an "On this page" jump row under the hero and two Back-to-top pills |
 | Tools | `app/tools.html` | `<details>` config or workflow excerpt per tool |
-| Feedback | `app/feedback.html` | GitHub Discussions comments via the Giscus embed |
+| Feedback | `app/feedback.html` | GitHub Discussions comments via the Giscus embed, loaded on a button press (`app/feedback.js`) |
 | Privacy | `app/privacy.html` | None. States what the site collects (nothing), what Cloudflare keeps, and which services the pages reach; linked from every footer rather than the nav |
 
 Every page includes the same `<nav aria-label="Main">` in its header linking
@@ -91,7 +91,8 @@ app/shared.css      ← Brand tokens, header/nav/footer, cards, code blocks
 app/assets/demo.svg ← The hero's terminal demo, drawn from real CLI output by
                        scripts/shot.py (`task contributing:shots`); re-render
                        when a command's output changes
-app/copy.js         ← The only script: copy buttons, opt-in via data-copyable
+app/copy.js         ← Copy buttons, opt-in via data-copyable
+app/feedback.js     ← Inserts the Giscus loader when the visitor asks; holds its SRI pin
 app/llms.txt, robots.txt, sitemap.xml, manifest.webmanifest, og-image.png,
 favicon.svg, apple-touch-icon.png
                     ← Discoverability and share assets the reliability checks audit
@@ -126,7 +127,8 @@ on Features and Tools are deliberately not copyable.
 
 ### Feedback via GitHub Discussions
 
-The page embeds [Giscus](https://giscus.app/) to surface GitHub Discussions
-comments directly on the page. The embed requires a per-path CSP relaxation
+The page offers [Giscus](https://giscus.app/) comments from GitHub Discussions,
+loaded by `app/feedback.js` only when the visitor presses the button, so reading
+the page sends nothing to giscus.app. The embed requires a per-path CSP relaxation
 (see [`docs/security/CSP_EXCEPTIONS.md`](../security/CSP_EXCEPTIONS.md)) and
 serves as the reference example of the documented CSP exceptions pattern.

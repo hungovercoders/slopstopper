@@ -10,7 +10,11 @@
     "html_handling": "none",
     "run_worker_first": true
   },
+  // Workers Logs stay off: the Worker only redirects and serves files, and
+  // off means Cloudflare keeps no per-request records (IP included) that
+  // we can read. app/privacy.html and every footer say so; turning this on
+  // is a change to both.
   "observability": {
-    "enabled": true
+    "enabled": false
   }
 }

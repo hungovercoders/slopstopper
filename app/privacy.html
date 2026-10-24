@@ -64,20 +64,20 @@
             <span class="kicker">What this site collects</span>
             <h2>Nothing of its own.</h2>
             <p class="lede">There are no accounts, no forms, no cookies, and no analytics or tracking scripts.</p>
-            <p>The pages are static. The only script they load is the site's own <code>copy.js</code>, which powers the copy buttons on code blocks. The Content-Security-Policy on every path allows scripts and styles from this origin alone and none inline, so an analytics snippet or beacon cannot run even if one were injected. One page relaxes that policy for a comments widget, described below.</p>
+            <p>The pages are static. The only scripts they load are the site's own: <code>copy.js</code>, which powers the copy buttons on code blocks, and <code>feedback.js</code>, which loads the comments widget on the feedback page when you ask for it. The Content-Security-Policy on every path allows scripts and styles from this origin alone and none inline, so an analytics snippet or beacon cannot run even if one were injected. One page relaxes that policy for the comments widget, described below.</p>
         </section>
 
         <section class="section privacy-section" id="hosting">
             <span class="kicker">Hosting</span>
             <h2>Cloudflare serves the pages.</h2>
-            <p>Like any host, <a href="https://www.cloudflare.com/" rel="noopener noreferrer">Cloudflare</a> processes your IP address and browser details to deliver each page. It keeps aggregate traffic statistics (how many requests, from which countries, with which status codes) and, because Workers Logs are switched on for this site, short-lived per-request records that the maintainers use to keep it working. The Worker that serves the site only redirects and serves files; it logs nothing of its own. Cloudflare's handling of that data is described in <a href="https://www.cloudflare.com/privacypolicy/" rel="noopener noreferrer">its privacy policy</a>. Nothing from it is combined with anything else or used to identify you.</p>
+            <p>Like any host, <a href="https://www.cloudflare.com/" rel="noopener noreferrer">Cloudflare</a> processes your IP address and browser details to deliver each page. It keeps aggregate traffic statistics (how many requests, from which countries, with which status codes). Per-request logging (Cloudflare's Workers Logs) is switched off for this site, so no record of your individual visit is kept for the maintainers to read. The Worker that serves the site only redirects and serves files; it logs nothing of its own. Cloudflare's handling of that data is described in <a href="https://www.cloudflare.com/privacypolicy/" rel="noopener noreferrer">its privacy policy</a>. Nothing from it is combined with anything else or used to identify you.</p>
         </section>
 
         <section class="section privacy-section" id="services">
             <span class="kicker">Other services the pages reach</span>
             <h2>One, on one page.</h2>
             <ul class="privacy-list">
-                <li><strong>Giscus, on the feedback page only.</strong> <a href="feedback.html">The feedback page</a> embeds comments from <a href="https://giscus.app" rel="noopener noreferrer">Giscus</a>, which loads a script from <code>giscus.app</code> in an iframe under a page-scoped exception to the site's Content-Security-Policy. Viewing that page sends your IP address, browser details and the page address to Giscus. Commenting means signing in to GitHub, so GitHub and Giscus both see that visit and your GitHub identity, and the comment itself is stored as a GitHub Discussion on the SlopStopper repository. See <a href="https://github.com/giscus/giscus/blob/main/PRIVACY-POLICY.md" rel="noopener noreferrer">Giscus's privacy policy</a> and <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener noreferrer">GitHub's privacy statement</a>. The exception, what leaves the site through it, and how the loader is pinned are written up in <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">the CSP exceptions doc</a>.</li>
+                <li><strong>Giscus, on the feedback page only, and only when you ask.</strong> <a href="feedback.html">The feedback page</a> offers comments from <a href="https://giscus.app" rel="noopener noreferrer">Giscus</a>. Nothing is fetched from <code>giscus.app</code> until you press "Load comments"; pressing it loads a script from Giscus in an iframe under a page-scoped exception to the site's Content-Security-Policy, and sends your IP address, browser details and the page address to Giscus. Reading the page without pressing it sends nothing to anyone but Cloudflare. Commenting means signing in to GitHub, so GitHub and Giscus both see that visit and your GitHub identity, and the comment itself is stored as a GitHub Discussion on the SlopStopper repository. See <a href="https://github.com/giscus/giscus/blob/main/PRIVACY-POLICY.md" rel="noopener noreferrer">Giscus's privacy policy</a> and <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener noreferrer">GitHub's privacy statement</a>. The exception, what leaves the site through it, and how the loader is pinned are written up in <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">the CSP exceptions doc</a>.</li>
                 <li><strong>Fonts</strong> are served from this site, not from a font service.</li>
                 <li><strong>Links</strong> go to GitHub and hungovercoders.com. Following one is a visit to that site, under its own policy.</li>
             </ul>
@@ -97,7 +97,7 @@
     </main>
     <footer>
         <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
-        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics and the short-lived request logs needed to serve the site. No cookies, no tracking scripts. <a href="privacy.html" aria-current="page">Privacy</a></p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="privacy.html" aria-current="page">Privacy</a></p>
     </footer>
 </body>
 </html>
