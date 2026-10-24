@@ -34,6 +34,9 @@ unhelpful. The honest answer is a pattern:
    page, what data leaves, who approved it, and how to refresh the SRI
    hash. The hygiene check verifies that what's in `worker/headers.json`
    matches what's documented here.
+   Say it to visitors too: `app/privacy.html` lists every service the
+   pages reach and what leaves the site, so a new exception is a new
+   entry there as well, with the page's "last checked" date moved.
 5. **Let DAST keep flagging the relaxed pages.** A scanner flagging a
    documented exception is correct behaviour, because that's how you find
    *un*documented relaxations later. The DAST workflow on this repo

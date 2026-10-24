@@ -45,7 +45,9 @@ the CSP needs no font-src exception; do not add external font links.
 - Each HTML page links `app/shared.css` first, then its page-specific CSS.
 - Header / nav / footer markup is duplicated across pages because
   there is no build step or SSI. Accept the duplication; if you change
-  one, change all four.
+  one, change all five. The footer carries the privacy line, which must
+  stay true: see `app/privacy.html` and the CSP pitfall in
+  `docs/contributing/PITFALLS.md`.
 - Every external link uses `rel="noopener noreferrer"`. Avoid
   `target="_blank"` for predictable screen-reader behaviour.
 - `aria-current="page"` marks the active nav link.
@@ -60,7 +62,7 @@ the CSP needs no font-src exception; do not add external font links.
 
 ## Pages
 
-Four static pages with shared navigation. Each page is one HTML file plus
+Five static pages with shared navigation. Each page is one HTML file plus
 one page-specific CSS file; there is no build step and no framework.
 
 | Page | File | Interactive element |
@@ -69,9 +71,10 @@ one page-specific CSS file; there is no build step and no framework.
 | Features | `app/features.html` | `<details>` workflow excerpt per check; an "On this page" jump row under the hero and two Back-to-top pills |
 | Tools | `app/tools.html` | `<details>` config or workflow excerpt per tool |
 | Feedback | `app/feedback.html` | GitHub Discussions comments via the Giscus embed |
+| Privacy | `app/privacy.html` | None. States what the site collects (nothing), what Cloudflare keeps, and which services the pages reach; linked from every footer rather than the nav |
 
 Every page includes the same `<nav aria-label="Main">` in its header linking
-to all four pages. Features carries a second `<nav aria-label="On this page">`
+to the four main pages (Privacy is reached from the footer). Features carries a second `<nav aria-label="On this page">`
 for its jump row; the header rules in `app/shared.css` are scoped to
 `header nav` so it styles itself, and the distinct labels keep the two
 landmarks unique for the accessibility audit.
@@ -83,6 +86,7 @@ app/index.html      ← Home page            app/index.css      ← Home styles
 app/features.html   ← Features page        app/features.css   ← Features styles
 app/tools.html      ← Tools page           app/tools.css      ← Tools styles
 app/feedback.html   ← Feedback page        app/feedback.css   ← Feedback styles
+app/privacy.html   ← Privacy page         app/privacy.css    ← Privacy styles
 app/shared.css      ← Brand tokens, header/nav/footer, cards, code blocks
 app/assets/demo.svg ← The hero's terminal demo, drawn from real CLI output by
                        scripts/shot.py (`task contributing:shots`); re-render
