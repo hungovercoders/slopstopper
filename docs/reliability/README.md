@@ -258,5 +258,5 @@ For assertions beyond "page returns 200 and loads cleanly" (e.g. specific elemen
 
 ### Troubleshooting
 
-- CI installs the Playwright browsers with `npx playwright install --with-deps chromium`, five minutes per attempt and one retry, so a stalled download fails the job instead of holding it. Locally, run that once (or let the spec install on demand).
+- CI installs the Playwright system packages with `npx playwright install-deps chromium` (one plain retry, since a transient apt error exits cleanly), then the browser with `npx playwright install chromium`, five minutes per attempt and one retry, so a stalled download fails the job instead of holding it. apt stays outside the timeout because a killed `apt-get` keeps the dpkg lock and the retry fails on it. Locally, run `npx playwright install --with-deps chromium` once (or let the spec install on demand).
 - Timeouts and retries live in the bundled Playwright config: `slopstopper templates eject playwright.config.js` and edit the copy under `.ss/`.
