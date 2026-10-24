@@ -41,6 +41,7 @@ Everything SlopStopper owns lives under the `ss` namespace so it can't clash wit
 | `.slopstopper.yml` | Config starter with profile, URLs, headers and page lists (never overwritten) |
 | `README.md`, `AGENTS.md`, `CLAUDE.md`, `docs/README.md` | AGENTS.md-first entry-file scaffolds, seeded only when absent |
 | `.claude/skills/slopstopper-*/` | The `slopstopper-install` and `slopstopper-triage` Claude Code skills (`--no-skills` opts out) |
+| `slopstopper` repo topic | Added via `gh` when it can reach the repo, so adopters can be found with `gh search repos --topic slopstopper` (`--no-topic` opts out) |
 | `.ss/reports/` | The `.gitignore`d directory the CLI writes reports to |
 | `package.json` | Created (or `devDependencies` merged into an existing file) |
 

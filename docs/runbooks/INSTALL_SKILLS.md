@@ -9,7 +9,7 @@ After install, Claude Code auto-picks the right skill for any SlopStopper-relate
 | Skill | Triggered by prompts like… |
 | ----- | -------------------------- |
 | [`slopstopper-install`](../../.claude/skills/slopstopper-install/SKILL.md) | "add slopstopper to this repo", "install the slopstopper quality suite", "refresh slopstopper", "upgrade slopstopper", "pull in new slopstopper checks" |
-| [`slopstopper-triage`](../../.claude/skills/slopstopper-triage/SKILL.md) | "fix this failing slopstopper check", "the complexity check is failing", "diagnose this DAST alert" |
+| [`slopstopper-triage`](../../.claude/skills/slopstopper-triage/SKILL.md) | "fix this failing slopstopper check", "the complexity check is failing", "diagnose this DAST alert", "this check is wrong, raise it upstream" |
 
 `slopstopper-install` covers both first install and refresh. Its mode-detection branch checks for `.slopstopper.yml` + `.ss/.workflows-installed` and routes to the right subset of steps. There's no separate `slopstopper-update` skill; the previous version was folded into `slopstopper-install` because install.sh is idempotent and the two flows shared 80% of their steps.
 

@@ -282,3 +282,23 @@ def test_every_url_driven_check_is_dispatched_after_a_cloudflare_deploy():
         and re.search(r"workflow_dispatch:\n\s+inputs:\n\s+url:", _text(w))
     }
     assert url_driven <= _dispatched_by_cloudflare(), sorted(url_driven - _dispatched_by_cloudflare())
+
+
+# ── everything the suite raises carries the `slopstopper` label (#526) ──
+#
+# `slopstopper emit --target issue` already labels its issues; the two
+# workflows that open issues or PRs without going through emit must too,
+# so `gh issue list --label slopstopper` finds all of the suite's output.
+
+
+def test_the_failure_tracker_labels_its_issues_slopstopper():
+    text = _text("ss-workflow-failure-issue.yml")
+    assert "labels: [label, 'slopstopper']" in text
+
+
+def test_the_doc_updater_labels_its_prs_slopstopper():
+    frontmatter = DOC_UPDATER.read_text().split("\n---\n", 1)[0]
+    labels = re.search(r"^\s+labels: \[([^\]]*)\]", frontmatter, re.M)
+    assert labels and "slopstopper" in [l.strip() for l in labels.group(1).split(",")]
+    # The lock is what runs; it must have been recompiled from the .md.
+    assert '"labels":["documentation","automation","slopstopper"]' in DOC_UPDATER_LOCK.read_text()

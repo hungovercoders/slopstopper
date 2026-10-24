@@ -149,3 +149,26 @@ The line to draw before deleting:
 - **Adopter-added content under `.claude/skills/` with a non-`slopstopper-` prefix** → not slopstopper's, never touch.
 
 When a clean-up surfaces something the installer should've handled automatically, the fix is to add it to `OBSOLETE_SKILLS` (or the equivalent list for the artefact type) upstream (`OBSOLETE_SKILLS` lives in `install-skill.sh`; the workflow and action lists in `install.sh`). See the AGENTS.md change-impact table's "Removing a slopstopper-shipped artefact" row. The next adopter then gets the cleanup for free.
+
+### Remove workarounds whose upstream issue is closed
+
+When `slopstopper-triage` works around a bug in slopstopper itself, it leaves a marker on the workaround that names the upstream issue, `slopstopper-workaround: hungovercoders/slopstopper#<N>`, in the file's own comment syntax (`upstream.md` in that skill has the convention). A refresh is the moment to collect on those: the pin moved, so fixes may have shipped, and a workaround that outlives its bug keeps a check degraded for no reason.
+
+List every marker and ask GitHub for each issue's state:
+
+```bash
+grep -rhoE --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.ss \
+  'slopstopper-workaround: hungovercoders/slopstopper#[0-9]+' . \
+  | grep -oE '[0-9]+$' | sort -un | while read -r n; do
+    printf '#%s  %s\n' "$n" "$(gh issue view "$n" -R hungovercoders/slopstopper --json state,title,closedAt \
+      --jq '"\(.state)  \(.title)  \(.closedAt // "")"' 2>/dev/null || echo 'UNKNOWN  gh could not reach hungovercoders/slopstopper')"
+  done
+```
+
+Then, per issue:
+
+- **CLOSED.** First check the fix is in the version this repo runs: the CLI pin in `mise.toml` must be a release cut after `closedAt` (the slopstopper changelog names the issue), and for a workflow or installer bug the refresh you just ran is what carries it. If the pin is behind, move it (`install.sh --upgrade-cli`, above) before touching the workaround. Then `grep -rn 'slopstopper#<N>'` for every marker, remove the **workaround** (the disabled workflow, the exclude glob, the raised threshold, the `nosemgrep`), not just the comment, and re-run the check it was protecting (`task ss:<category>:<check>`). Green: keep the removal in the refresh commit, one line in its message per issue. Still red: the fix did not cover this repo's case. Put the workaround back, comment on the closed issue with the reproduction, and keep the marker pointing at it.
+- **OPEN.** Leave it. List it in the refresh summary to the user ("still working around #N: <title>") so the cost stays visible.
+- **UNKNOWN.** `gh` could not reach the repo. Leave every workaround in place and say so; never remove one on a guess.
+
+An unmarked workaround is invisible to this step. If you find one while reading the diff (a `workflows.disabled` entry or a threshold with a `# why` that describes a slopstopper fault rather than a repo decision), file the issue through `slopstopper-triage`'s `upstream.md` and add the marker, so the next refresh can retire it.

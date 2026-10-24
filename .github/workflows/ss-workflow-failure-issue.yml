@@ -127,12 +127,15 @@ jobs:
                 ].join('\n')
               });
             } else {
+              // `workflow-failure` is what this workflow finds its own issues
+              // by; `slopstopper` is what everything the suite raises carries,
+              // so `gh issue list --label slopstopper` finds these too.
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: title,
                 body: body,
-                labels: [label]
+                labels: [label, 'slopstopper']
               });
             }
 

@@ -79,6 +79,16 @@ if [ -n "${SLOPSTOPPER_NO_HOOKS:-}" ]; then
   INSTALL_HOOKS=false
 fi
 
+# The `slopstopper` repo topic marks the repo as an adopter, so the set of
+# repos running the suite can be found (`gh search repos --topic
+# slopstopper`), the way the `slopstopper` label finds the issues and PRs
+# the suite raises inside each one. Set through gh when it can reach the
+# repo; a no-op otherwise.
+ADD_TOPIC=true
+if [ -n "${SLOPSTOPPER_NO_TOPIC:-}" ]; then
+  ADD_TOPIC=false
+fi
+
 # Project-shape profile. A profile is a preset for `workflows.disabled`
 # that switches off the checks a repo of that shape has no use for (an API
 # has no Core Web Vitals; a library has no URL at all). The flag writes
@@ -108,6 +118,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --no-hooks)
       INSTALL_HOOKS=false
+      shift
+      ;;
+    --no-topic)
+      ADD_TOPIC=false
       shift
       ;;
     --profile)
@@ -143,6 +157,7 @@ Usage:
   bash install.sh --no-task [TARGET_DIR]       # CLI-driven workflows (no Task install)
   bash install.sh --no-skills [TARGET_DIR]     # Skip installing Claude Code skills
   bash install.sh --no-hooks [TARGET_DIR]      # Skip installing the pre-push hygiene hook
+  bash install.sh --no-topic [TARGET_DIR]      # Don't add the `slopstopper` repo topic via gh
   bash install.sh --profile api [TARGET_DIR]   # Install the check set for a repo of that shape
   bash install.sh --upgrade-cli [TARGET_DIR]   # Bump the pinned CLI to the latest on PyPI
   bash install.sh --cli-version X.Y.Z [TARGET] # Pin the CLI to an exact version
@@ -151,6 +166,7 @@ Env var equivalents:
   SLOPSTOPPER_NO_TASK=1 bash install.sh
   SLOPSTOPPER_NO_SKILLS=1 bash install.sh
   SLOPSTOPPER_NO_HOOKS=1 bash install.sh
+  SLOPSTOPPER_NO_TOPIC=1 bash install.sh
   SLOPSTOPPER_PROFILE=api bash install.sh
 
 Profiles (--profile) tailor the suite to the repo's shape:
@@ -196,6 +212,11 @@ before every push, so the first CI run confirms rather than discovers. It won't
 touch an existing hook manager (husky / lefthook / pre-commit) or a custom
 core.hooksPath. In that case it drops the hook file in and prints how to opt in.
 Pass --no-hooks to skip. Bypass a single push with 'git push --no-verify'.
+
+When gh is installed and can reach the repo, the installer also adds the
+`slopstopper` repository topic, so adopter repos can be found as a set
+(`gh search repos --topic slopstopper`). Issues and PRs the suite raises
+carry the `slopstopper` label for the same reason. Pass --no-topic to skip.
 USAGE
       exit 0
       ;;
@@ -1322,6 +1343,25 @@ fi
 # A skill failure is non-fatal for the suite install: the rest is in place,
 # and install-skill.sh can be re-run on its own.
 
+# Adds the `slopstopper` repo topic through gh. Prints one of: added,
+# present, skipped (gh missing, unauthenticated, or not a GitHub repo).
+# Never fails the install.
+ensure_repo_topic() {
+  command -v gh >/dev/null 2>&1 || { echo skipped; return 0; }
+  local topics
+  topics="$(cd "$TARGET_DIR" && gh repo view --json repositoryTopics --jq '.repositoryTopics[].name' 2>/dev/null)" \
+    || { echo skipped; return 0; }
+  if printf '%s\n' "$topics" | grep -qx "slopstopper"; then
+    echo present
+    return 0
+  fi
+  if (cd "$TARGET_DIR" && gh repo edit --add-topic slopstopper >/dev/null 2>&1); then
+    echo added
+  else
+    echo skipped
+  fi
+}
+
 install_claude_skills() {
   if [ "$INSTALL_SKILLS" = "false" ]; then
     info "Skipping Claude Code skill install (--no-skills / SLOPSTOPPER_NO_SKILLS)."
@@ -1515,6 +1555,21 @@ if [ -n "$DISABLED_WORKFLOWS" ]; then
     echo "       $wf_name ($wf_state) → $wf_enable"
   done <<< "$DISABLED_WORKFLOWS"
   echo "     GitHub disables scheduled workflows after 60 days without repo activity."
+  echo ""
+fi
+if [ "$ADD_TOPIC" = "true" ]; then
+  case "$(ensure_repo_topic)" in
+    added)
+      echo "  🏷  Repo topic 'slopstopper' added, so this repo is discoverable as an adopter."
+      ;;
+    present)
+      echo "  🏷  Repo topic 'slopstopper' already set."
+      ;;
+    *)
+      echo "  🏷  Repo topic 'slopstopper' not set: gh can't reach this repo. Add it with:"
+      echo "       gh repo edit --add-topic slopstopper"
+      ;;
+  esac
   echo ""
 fi
 echo "  ✅ Active now on any code, with no config needed:"
