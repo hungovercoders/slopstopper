@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Lantern: service status">
+  <rect width="1200" height="630" fill="#fbf5ec"/>
+  <text x="80" y="300" font-family="system-ui, sans-serif" font-size="120" font-weight="700" fill="#1f1a17">Lantern</text>
+  <text x="84" y="390" font-family="system-ui, sans-serif" font-size="44" fill="#6b5b47">Which services exist, and who owns each one.</text>
+</svg>

@@ -10,8 +10,8 @@ and the fix.
 
 ## You will need
 
-Until `slopstopper demo` ships (issue #471), the lessons run in a checkout
-of this repo, which is the reference install and has every check
+Until the lessons move onto the repo `slopstopper demo` writes (issue
+#486), they run in a checkout of this repo, which is the reference install and has every check
 configured. Two things must be on your machine first: [mise](https://mise.jdx.dev),
 installed and activated in your shell, which reads `mise.toml` and
 installs the pinned `task` and `node`; and Python 3.11 or newer as

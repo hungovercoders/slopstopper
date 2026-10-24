@@ -50,8 +50,12 @@ Subcommands:
                                     `detect` suggests one from repo contents.
   cloudflare preview-url <sha>      Print a commit's Workers Builds preview URL
                                     from Cloudflare's PR comment on stdin.
+  demo [--out <dir>] [--force]      Write the bundled demo repo: a small static
+        [--json]                    site with the AGENTS.md-first layout on
+                                    which a few hygiene checks fail on purpose,
+                                    for the course, the tapes and the evals.
 
-`run`, `doctor`, `profile`, `config get` and `checks list` take `--json`
+`run`, `doctor`, `profile`, `config get`, `checks list` and `demo` take `--json`
 and then print one JSON value and nothing else on stdout, so a skill, a
 workflow or a script can read it without parsing the decorated text. The
 shapes are a public contract, documented next to the exit codes in
@@ -67,6 +71,7 @@ import contextlib
 import importlib
 import json as _json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -79,6 +84,7 @@ from slopstopper import (
     cloudflare,
     comment,
     config,
+    demo as demo_mod,
     discovery,
     emit as emit_mod,
     output,
@@ -112,6 +118,7 @@ Commands:
   checks     List available checks
   doctor     Verify install + required tools
   profile    Inspect the repo's project-shape profile (ui / api / library)
+  demo       Write a small demo repo that some checks fail on, to try the suite
 
 Quick start:
   slopstopper checks list             # see what's available
@@ -171,6 +178,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_doctor(sub)
     _add_profile(sub)
     _add_cloudflare(sub)
+    _add_demo(sub)
 
     return parser
 
@@ -643,7 +651,42 @@ _DISPATCHERS = {
     "doctor":    lambda a: _dispatch_doctor(as_json=a.json),
     "profile":   lambda a: _dispatch_profile(a.profile_action, getattr(a, "name", None), as_json=a.json),
     "cloudflare": lambda a: _dispatch_cloudflare(a.cloudflare_action, a.sha),
+    "demo":      lambda a: _dispatch_demo(a.out, force=a.force, as_json=a.json),
 }
+
+
+def _add_demo(sub) -> None:
+    failures = demo_mod.FAILURES
+    width = max(len(f["check"]) for f in failures)
+    listing = "".join(f"  {f['check']:<{width}}   {f['finding']}\n" for f in failures)
+    p = sub.add_parser(
+        "demo",
+        help="Write a small demo repo that some checks fail on, to try the suite",
+        description=(
+            "Write the bundled demo repo into --out: a static status page with\n"
+            "the AGENTS.md-first layout (README, AGENTS.md, CLAUDE.md, docs/ with\n"
+            f"its map, .slopstopper.yml, one page under app/). {len(failures)} hygiene\n"
+            "checks fail on it on purpose, each with one finding and a real fix:\n"
+            + listing
+            + "Files already in --out are left alone unless --force is given.\n"
+        ),
+        epilog=(
+            "Examples:\n"
+            "  slopstopper demo\n"
+            f"  cd {demo_mod.DEFAULT_OUT} && slopstopper run {failures[0]['check']}\n"
+            "  slopstopper demo --out /tmp/lantern --force\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument(
+        "-o", "--out", default=demo_mod.DEFAULT_OUT, metavar="DIR",
+        help=f"directory to write into (default: {demo_mod.DEFAULT_OUT})",
+    )
+    p.add_argument("--force", action="store_true", help="overwrite files that already exist in --out")
+    p.add_argument(
+        "--json", action="store_true",
+        help="print one JSON object ({out, written, skipped, failures}, or {error}) on stdout",
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1415,6 +1458,42 @@ def _cloudflare_preview_url(sha: str) -> int:
 _CLOUDFLARE_ACTIONS = {
     "preview-url": _cloudflare_preview_url,
 }
+
+
+def _dispatch_demo(out: str, force: bool = False, as_json: bool = False) -> int:
+    """Write the demo repo and say which checks to run on it."""
+    dest = Path(out)
+    failures = demo_mod.FAILURES
+    try:
+        if dest.exists() and not dest.is_dir():
+            raise NotADirectoryError(f"{dest} exists and is not a directory")
+        written, skipped = demo_mod.write(dest, force=force)
+    except OSError as exc:
+        if as_json:
+            print(_json.dumps({"error": str(exc)}))
+        else:
+            print(f"❌ {exc}", file=sys.stderr)
+        return 2
+    if as_json:
+        print(_json.dumps({
+            "out": str(dest),
+            "written": written,
+            "skipped": skipped,
+            "failures": [dict(f) for f in failures],
+        }, indent=2))
+        return 0
+    if written:
+        output.success(f"Demo repo written to {dest}/ ({len(written)} file(s))")
+    if skipped:
+        output.info(f"{len(skipped)} file(s) already there were left alone (--force overwrites)")
+    output.blank()
+    output._emit(f"   {len(failures)} checks fail on it on purpose; each report names the fix:")
+    width = max(len(f["check"]) for f in failures)
+    for f in failures:
+        output._emit(f"     slopstopper run {f['check']:<{width}}   {f['finding']}")
+    output.blank()
+    output._emit(f"   cd {shlex.quote(str(dest))} && slopstopper run {failures[0]['check']}")
+    return 0
 
 
 def _dispatch_cloudflare(action: str, sha: str) -> int:
