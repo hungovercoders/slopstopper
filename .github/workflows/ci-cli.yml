@@ -133,6 +133,10 @@ jobs:
           curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
             | tar -xz -C /usr/local/bin gitleaks
           gitleaks version
+      - name: Install Semgrep (lesson 7)
+        # The same pip install as ss-security-sast-check.yml. Lesson 10's
+        # ZAP runs from Docker, which the runner already has.
+        run: pip install semgrep
       - name: Install Trivy (lesson 8)
         # The same apt repository as ss-security-vulnerability-all-check.yml.
         run: |
