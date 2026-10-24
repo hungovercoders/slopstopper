@@ -50,17 +50,20 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        # Same guard as the ss-reliability-* workflows: five minutes per
-        # attempt, one retry, and a step timeout over both.
+        # Same guard as the ss-reliability-* workflows: apt once, then five
+        # minutes per download attempt, one retry, and a step timeout over
+        # both. A killed apt-get holds the dpkg lock, so it stays out of the
+        # timed loop (#527).
         timeout-minutes: 12
         run: |
+          npx playwright install-deps chromium || npx playwright install-deps chromium
           for attempt in 1 2; do
-            if timeout --kill-after=30s 5m npx playwright install --with-deps chromium; then
+            if timeout --kill-after=30s 5m npx playwright install chromium; then
               exit 0
             fi
-            echo "::warning::Playwright browser install attempt ${attempt} failed or stalled after 5 minutes"
+            echo "::warning::Playwright browser download attempt ${attempt} failed or stalled after 5 minutes"
           done
-          echo "::error::Playwright browser install failed twice. Re-run the job; if it keeps failing, check the runner's network."
+          echo "::error::Playwright browser download failed twice. Re-run the job; if it keeps failing, check the runner's network."
           exit 1
 
       # The action and the CLI version it installs move together: Dependabot
