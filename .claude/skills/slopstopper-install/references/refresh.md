@@ -157,7 +157,7 @@ When `slopstopper-triage` works around a bug in slopstopper itself, it leaves a 
 List every marker and ask GitHub for each issue's state:
 
 ```bash
-grep -rhoE --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.ss \
+grep -rhoE --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.ss --exclude-dir=.claude \
   'slopstopper-workaround: hungovercoders/slopstopper#[0-9]+' . \
   | grep -oE '[0-9]+$' | sort -un | while read -r n; do
     printf '#%s  %s\n' "$n" "$(gh issue view "$n" -R hungovercoders/slopstopper --json state,title,closedAt \
@@ -171,4 +171,4 @@ Then, per issue:
 - **OPEN.** Leave it. List it in the refresh summary to the user ("still working around #N: <title>") so the cost stays visible.
 - **UNKNOWN.** `gh` could not reach the repo. Leave every workaround in place and say so; never remove one on a guess.
 
-An unmarked workaround is invisible to this step. If you find one while reading the diff (a `workflows.disabled` entry or a threshold with a `# why` that describes a slopstopper fault rather than a repo decision), file the issue through `slopstopper-triage`'s `upstream.md` and add the marker, so the next refresh can retire it.
+`--exclude-dir=.claude` keeps the shipped skills out of it, since `upstream.md` spells the convention out. An unmarked workaround is invisible to this step. If you find one while reading the diff (a `workflows.disabled` entry or a threshold with a `# why` that describes a slopstopper fault rather than a repo decision), file the issue through `slopstopper-triage`'s `upstream.md` and add the marker, so the next refresh can retire it.

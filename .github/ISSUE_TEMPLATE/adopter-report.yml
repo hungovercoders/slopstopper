@@ -1,0 +1,51 @@
+name: Adopter report
+description: A slopstopper check, workflow, template or the installer is wrong in a repo that runs the suite. The slopstopper-triage skill drafts this for you; file it here when gh cannot.
+title: "<category>:<check>: <symptom in one line>"
+labels: ["slopstopper"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when the fault is slopstopper's rather than your repo's: a false positive no suppression can scope, a traceback, a workflow that fails before the check runs. The `slopstopper-triage` skill's `references/upstream.md` has the test and the same fields. Search open issues first; a known bug wants your reproduction as a comment, not a duplicate.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What the check did, in one paragraph.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: slopstopper-cli version
+      description: "`slopstopper --version`, which should equal the pin in mise.toml."
+      placeholder: "0.24.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: profile
+    attributes:
+      label: Profile
+      options: [ui, api, library]
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: The command, its output trimmed to the relevant lines, and what you expected instead. The repo name if it is public.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround applied
+      description: File and line, or "none". Mark it `slopstopper-workaround: hungovercoders/slopstopper#<this issue>` once you have the number, so a refresh removes it when the fix ships.
+    validations:
+      required: false

@@ -294,6 +294,8 @@ def test_every_url_driven_check_is_dispatched_after_a_cloudflare_deploy():
 def test_the_failure_tracker_labels_its_issues_slopstopper():
     text = _text("ss-workflow-failure-issue.yml")
     assert "labels: [label, 'slopstopper']" in text
+    # A pre-existing issue is relabelled on its next failure, not left behind.
+    assert "issues.addLabels" in text and "labels: ['slopstopper']" in text
 
 
 def test_the_doc_updater_labels_its_prs_slopstopper():

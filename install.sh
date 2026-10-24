@@ -1344,8 +1344,9 @@ fi
 # and install-skill.sh can be re-run on its own.
 
 # Adds the `slopstopper` repo topic through gh. Prints one of: added,
-# present, skipped (gh missing, unauthenticated, or not a GitHub repo).
-# Never fails the install.
+# present, denied (gh sees the repo but can't edit it: topics need admin),
+# skipped (gh missing, unauthenticated, or not a GitHub repo). Never fails
+# the install.
 ensure_repo_topic() {
   command -v gh >/dev/null 2>&1 || { echo skipped; return 0; }
   local topics
@@ -1358,7 +1359,7 @@ ensure_repo_topic() {
   if (cd "$TARGET_DIR" && gh repo edit --add-topic slopstopper >/dev/null 2>&1); then
     echo added
   else
-    echo skipped
+    echo denied
   fi
 }
 
@@ -1564,6 +1565,10 @@ if [ "$ADD_TOPIC" = "true" ]; then
       ;;
     present)
       echo "  🏷  Repo topic 'slopstopper' already set."
+      ;;
+    denied)
+      echo "  🏷  Repo topic 'slopstopper' not set: gh sees the repo but can't edit it (topics need admin)."
+      echo "       Ask a repo admin to run: gh repo edit --add-topic slopstopper"
       ;;
     *)
       echo "  🏷  Repo topic 'slopstopper' not set: gh can't reach this repo. Add it with:"

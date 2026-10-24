@@ -21,7 +21,7 @@ Fixing it locally and moving on leaves the bug for the next adopter, and leaves 
 1. **Check it is not already known.** Search open issues and PRs first; a known bug gets a comment with this repo's reproduction, not a duplicate:
 
    ```bash
-   gh issue list -R hungovercoders/slopstopper --label slopstopper --state all --search "<check> <symptom>"
+   gh issue list -R hungovercoders/slopstopper --state all --search "<check> <symptom>"
    gh pr list -R hungovercoders/slopstopper --search "<check> <symptom>"
    ```
 
@@ -32,7 +32,7 @@ Fixing it locally and moving on leaves the bug for the next adopter, and leaves 
 3. **Open it.** One issue per bug, titled `<check>: <symptom in one line>`:
 
    ```bash
-   gh issue create -R hungovercoders/slopstopper --label slopstopper \
+   gh issue create -R hungovercoders/slopstopper \
      --title "<category>:<check>: <symptom in one line>" --body-file - <<'BODY'
    ## Problem statement
 
@@ -59,9 +59,9 @@ Fixing it locally and moving on leaves the bug for the next adopter, and leaves 
    BODY
    ```
 
-   The `slopstopper` label is the one every issue the suite raises carries, so the maintainer's `gh issue list --label slopstopper` finds adopter reports in the same place.
+   Don't pass `--label`: only collaborators on `hungovercoders/slopstopper` can set labels there, and `gh issue create --label` fails outright on a label it can't apply. The title prefix is the discovery contract for adopter reports; the maintainers label them `slopstopper` on triage. The `slopstopper` label on issues *inside* the adopter repo is a different thing: every workflow that raises one there creates it on first use.
 
-4. **If `gh` cannot reach `hungovercoders/slopstopper`** (no auth, a locked-down runner), print the filled-in body and ask the user to file it at https://github.com/hungovercoders/slopstopper/issues/new. Do not skip the issue because the tool is missing.
+4. **If `gh` cannot reach `hungovercoders/slopstopper`** (no auth, a locked-down runner), print the filled-in body and ask the user to file it through the "Adopter report" form at https://github.com/hungovercoders/slopstopper/issues/new/choose, which asks for the same facts and applies the label itself. Do not skip the issue because the tool is missing.
 
 5. **Tell the user the issue number** and put it in the marker.
 
@@ -79,11 +79,11 @@ That is `# ` in `.slopstopper.yml`, `Taskfile.yml`, Python, shell, `.gitleaks.to
 # .slopstopper.yml
 workflows:
   disabled:
-    # slopstopper-workaround: hungovercoders/slopstopper#412 tracker closes the wrong issue on a repo with two failing checks
+    # slopstopper-workaround: hungovercoders/slopstopper#NNN tracker closes the wrong issue on a repo with two failing checks
     - ss-workflow-failure-issue.yml
 hygiene:
   complexity:
-    # slopstopper-workaround: hungovercoders/slopstopper#404 lizard counts gitignored build output
+    # slopstopper-workaround: hungovercoders/slopstopper#MMM lizard counts gitignored build output
     exclude: [dist/**]
 ```
 
@@ -101,6 +101,6 @@ Rules:
 To list what this repo is currently working around:
 
 ```bash
-grep -rn --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.ss \
+grep -rn --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.ss --exclude-dir=.claude \
   'slopstopper-workaround: hungovercoders/slopstopper#' .
 ```
