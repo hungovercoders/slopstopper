@@ -190,6 +190,15 @@ def test_playwright_install_is_time_boxed(workflow):
         assert "timeout " in step, (
             f"{workflow}: the Playwright install step does not bound each attempt with `timeout`"
         )
+        # `timeout` kills npx but not the apt-get it spawned, which keeps the
+        # dpkg lock, so the retry fails on the lock instead of downloading
+        # (#527). apt runs once, un-timed; only the browser download retries.
+        assert "--with-deps" not in step, (
+            f"{workflow}: run `playwright install-deps` outside the timed loop, not `--with-deps` inside it"
+        )
+        assert re.search(r"(?m)^\s+npx playwright install-deps chromium\s*$", step), (
+            f"{workflow}: the Playwright install step has no un-timed `install-deps` line"
+        )
 
 
 # ── the doc updater ships to adopters (#411) ─────────────────────
