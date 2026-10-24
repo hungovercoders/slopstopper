@@ -64,7 +64,7 @@ jobs:
       - name: Set up toolchain (task)
         # Installs the mise-pinned `task` (mise.toml [tools]), the same
         # version locally and in CI. Replaces a `curl | sh` bootstrap.
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
       - name: Install Playwright
         # test_specs_subpath.py runs the bundled specs in a real browser and
         # skips without this. Each attempt is bounded so a stalled browser
@@ -97,7 +97,7 @@ jobs:
           python-version: '3.11'
       - run: pip install -e ./cli
       - run: python scripts/shot.py --out shots
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: shots
           path: shots
@@ -117,7 +117,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Set up toolchain (task)
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
       - run: pip install -e ./cli
       - name: Install the browser checks' dependencies (lessons 11 to 13)
         # The same install as the pytest job: npm deps and Playwright's
