@@ -17,7 +17,7 @@ The check performs one BFS crawl from `/` (following same-origin `<a href>` link
 **Advisory (notes only, unless escalated via config):**
 
 - **Orphans.** A sitemap entry that resolves (HTTP 200) but nothing internally links to. Escalate with `allow_orphans: false` / `--strict-orphans`.
-- **llms.txt gaps.** A reachable page not listed in `llms.txt`. `llms.txt` is a *curated* map, so this is advisory; escalate with `require_llms_complete` / `--require-llms-complete`.
+- **llms.txt gaps.** A reachable page not listed in `llms.txt`. `llms.txt` is a *curated* map, so this is advisory; escalate with `require_llms_complete` / `--require-llms-complete`. Five or more gaps under one section collapse into one note, and `llms_ignore_paths` leaves a taxonomy or listing section out of this diff without touching its sitemap coverage.
 - **Crawl cap.** Hitting `max_pages` is logged and noted (never silent), so a truncated crawl can't masquerade as full coverage.
 
 > **Scope note.** The crawler sees only server-rendered `<a href>` links, so a JS-rendered SPA will under-crawl. Use `ignore_paths` / `max_pages` to bound noisy sections, or point the check at your built static output.
@@ -50,6 +50,7 @@ Read from environment variables or `.slopstopper.yml`'s `reliability.sitemap` bl
 | `SITEMAP_PATH` | `/sitemap.xml` | Path to the sitemap (`--path`) |
 | `reliability.sitemap.max_pages` | `200` | Crawl bound; hitting it is logged, not silent (`--max-pages`) |
 | `reliability.sitemap.ignore_paths` | `[]` | Globs excluded from crawl + diff (`--ignore`) |
+| `reliability.sitemap.llms_ignore_paths` | `[]` | Globs left out of the llms.txt diff only, e.g. `/tags/*` (`--llms-ignore`) |
 | `reliability.sitemap.allow_orphans` | `true` | Sitemap entries nothing links to are advisory (`--strict-orphans` to fail) |
 | `reliability.sitemap.require_llms_complete` | `false` | Fail if a reachable page is absent from llms.txt (`--require-llms-complete`) |
 | `reliability.sitemap.llms_path` | `/llms.txt` | Path to llms.txt for the cross-check (`--llms-path`) |
