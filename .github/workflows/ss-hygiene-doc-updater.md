@@ -23,7 +23,7 @@ safe-outputs:
   create-pull-request:
     expires: 1d
     title-prefix: "[docs] "
-    labels: [documentation, automation]
+    labels: [documentation, automation, slopstopper]
     reviewers: [copilot]
     draft: false
     auto-merge: true

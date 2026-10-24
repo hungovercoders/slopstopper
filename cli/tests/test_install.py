@@ -48,8 +48,12 @@ def _run_install(
     """
     env = os.environ.copy()
     env["SKIP_CLI_INSTALL"] = "1"
+    # The repo-topic step shells out to the real `gh`; the topic tests below
+    # put a fake one on PATH and unset this.
+    env["SLOPSTOPPER_NO_TOPIC"] = "1"
     if env_extra:
         env.update(env_extra)
+    env = {k: v for k, v in env.items() if v is not None}
     return subprocess.run(
         ["bash", str(INSTALL_SH), *(args or []), str(target)],
         capture_output=True,
@@ -1223,3 +1227,89 @@ def test_the_starter_describes_the_ui_api_holdback():
     starter = (REPO_ROOT / "templates" / "slopstopper.yml.starter").read_text()
     assert "ship inert" not in starter
     assert "re-run install.sh" in starter and "format: meta" in starter
+
+
+# ── the `slopstopper` repo topic (#526) ──────────────────────────
+
+
+def _fake_gh_on_path(tmp_path: Path, topics: str | None, *, edit_ok: bool = True) -> dict[str, str]:
+    """A `gh` stub first on PATH. `repo view` prints `topics` (one per line,
+    the shape `--jq '.repositoryTopics[].name'` gives) or fails when `topics`
+    is None (no remote, no auth); `repo edit` fails when `edit_ok` is False
+    (no admin). Every call is appended to gh-calls.log so a test can assert
+    what the installer asked for. Never the real gh: it also resolves the
+    repo from GH_REPO, and a test must not edit a real repository."""
+    bin_dir = tmp_path / "fakebin"
+    bin_dir.mkdir(exist_ok=True)
+    log = tmp_path / "gh-calls.log"
+    stub = bin_dir / "gh"
+    stub.write_text(
+        "#!/usr/bin/env bash\n"
+        f"echo \"$*\" >> '{log}'\n"
+        "case \"$1 $2\" in\n"
+        + (f"  'repo view') printf '%s' '{topics}'; exit 0 ;;\n" if topics is not None else "  'repo view') exit 1 ;;\n")
+        + ("  'repo edit') exit 0 ;;\n" if edit_ok else "  'repo edit') exit 1 ;;\n")
+        + 
+        "  'workflow list') echo '[]'; exit 0 ;;\n"
+        "esac\n"
+        "exit 1\n"
+    )
+    stub.chmod(stub.stat().st_mode | stat.S_IXUSR)
+    return {"PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}", "SLOPSTOPPER_NO_TOPIC": None}
+
+
+def _gh_calls(tmp_path: Path) -> list[str]:
+    log = tmp_path / "gh-calls.log"
+    return log.read_text().splitlines() if log.exists() else []
+
+
+def test_install_adds_the_slopstopper_repo_topic_when_gh_can_reach_the_repo(tmp_path):
+    target = tmp_path / "repo"
+    target.mkdir()
+    result = _run_install(target, args=["--no-hooks", "--no-skills"], env_extra=_fake_gh_on_path(tmp_path, ""))
+    assert result.returncode == 0, result.stderr
+    assert "repo edit --add-topic slopstopper" in _gh_calls(tmp_path)
+    assert "Repo topic 'slopstopper' added" in result.stdout
+
+
+def test_install_leaves_an_existing_topic_alone(tmp_path):
+    target = tmp_path / "repo"
+    target.mkdir()
+    result = _run_install(
+        target, args=["--no-hooks", "--no-skills"], env_extra=_fake_gh_on_path(tmp_path, "python\nslopstopper\n")
+    )
+    assert result.returncode == 0, result.stderr
+    assert not [c for c in _gh_calls(tmp_path) if c.startswith("repo edit")]
+    assert "Repo topic 'slopstopper' already set" in result.stdout
+
+
+def test_no_topic_flag_skips_gh_entirely(tmp_path):
+    target = tmp_path / "repo"
+    target.mkdir()
+    result = _run_install(target, args=["--no-hooks", "--no-skills", "--no-topic"], env_extra=_fake_gh_on_path(tmp_path, ""))
+    assert result.returncode == 0, result.stderr
+    assert not [c for c in _gh_calls(tmp_path) if c.startswith("repo")]
+    assert "Repo topic" not in result.stdout
+
+
+def test_install_says_how_to_add_the_topic_when_gh_cannot_reach_the_repo(tmp_path):
+    """The first-install case before `git remote add`: `gh repo view` fails."""
+    target = tmp_path / "repo"
+    target.mkdir()
+    result = _run_install(target, args=["--no-hooks", "--no-skills"], env_extra=_fake_gh_on_path(tmp_path, None))
+    assert result.returncode == 0, result.stderr
+    assert not [c for c in _gh_calls(tmp_path) if c.startswith("repo edit")]
+    assert "gh can't reach this repo" in result.stdout
+    assert "gh repo edit --add-topic slopstopper" in result.stdout
+
+
+def test_install_says_topics_need_admin_when_gh_sees_the_repo_but_cannot_edit_it(tmp_path):
+    target = tmp_path / "repo"
+    target.mkdir()
+    result = _run_install(
+        target, args=["--no-hooks", "--no-skills"], env_extra=_fake_gh_on_path(tmp_path, "", edit_ok=False)
+    )
+    assert result.returncode == 0, result.stderr
+    assert "repo edit --add-topic slopstopper" in _gh_calls(tmp_path)
+    assert "topics need admin" in result.stdout
+    assert "gh can't reach this repo" not in result.stdout

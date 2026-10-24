@@ -94,7 +94,10 @@ CLI are updated in place instead of duplicated.
 
 **Issues follow the same rule.** `emit --target issue` runs only for a
 non-PR run on `main`, so a preview or a branch dispatch never opens a
-production issue. The issue carries the `slopstopper` label plus the
+production issue. The issue carries the `slopstopper` label (as does every issue or PR
+the suite raises: the workflow-failure tracker's and the doc updater's
+too, so `gh issue list --label slopstopper` finds all of them, and the
+`slopstopper` repo topic the installer sets finds the repos) plus the
 check's own labels (created when the repo lacks them; if one still
 can't be applied the issue is created unlabelled, and the body marker
 finds it next time), the `slopstopper:check=` marker and a
