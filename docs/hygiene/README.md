@@ -20,6 +20,7 @@ Every hygiene check, generated from the CLI's registry by `task contributing:tab
 | `hygiene:docs-structure` | `task ss:hygiene:docs-structure` | `ss-hygiene-docs-structure-check.yml` | Documentation structure validator. Every doc must have an explicit route. |
 | `hygiene:entry-files` | `task ss:hygiene:entry-files` | `ss-hygiene-entry-files-check.yml` | Entry-file budget + AGENTS.md-first routing check. |
 | `hygiene:openapi` | `task ss:hygiene:openapi` | `ss-hygiene-openapi-check.yml` | OpenAPI spec drift audit (in-CLI implementation). |
+| `hygiene:privacy` | `task ss:hygiene:privacy` | `ss-hygiene-privacy-check.yml` | Privacy statement check. |
 <!-- checks:end -->
 
 ### Code Complexity Analysis
@@ -125,6 +126,59 @@ task ss:hygiene:csp-exceptions
 The workflow `ss-hygiene-csp-exceptions-check.yml` runs on PRs/pushes touching
 anything: the source is whatever `headers.source` names, and under `format: meta` the workflow builds the site first and reads every page's `<meta>` CSP.
 
+### Privacy Statement
+
+A site with no cookies and no analytics script still has a privacy
+statement to make: the host processes every visitor's IP (Cloudflare keeps
+aggregate traffic analytics for every zone, and per-request logs when
+`observability.enabled` is on in `wrangler.jsonc`), and so does every
+third-party origin the CSP lets a page reach. Three hungovercoders sites
+shipped without one and nothing noticed. This check reads what the repo
+says about its hosting and asks the page to say the same.
+
+It runs when the repo has a browser surface (profile `ui`) and host
+evidence: a wrangler config at the root or one directory down, a Netlify
+or Vercel config file, or `urls.production`. `api` and `library` drop it;
+with no evidence it skips. **Fails unless:**
+
+- a privacy page exists: `privacy.page`, else the first file named
+  privacy.html, privacy.md or privacy/index.* in any source directory
+  (this repo's is `app/privacy.html`; a Starlight content page or a
+  templated site page counts the same)
+- it names the host the config file implies (Cloudflare, Netlify, Vercel)
+  and every name in `privacy.hosts`
+- when wrangler turns Workers Logs on, it mentions logs
+- every third-party origin a fetch directive in `headers.source` allows
+  (the same parse as the CSP exceptions check) is named: its hostname, or
+  its distinguishing label (`cdnjs` for `cdnjs.cloudflare.com`, `GitHub`
+  for `api.github.com`). This is what turns boilerplate into a true
+  statement, and why a new embed is a change to the page in the same PR
+- it carries a date, ISO or long form, so a stale statement shows its age
+
+The matching footer rule lives in the smoke test: every audited page must
+link to the statement (`SMOKE_PRIVACY_URL`, derived from `privacy.page`
+or set with `privacy.url`; `privacy.require_link: false` drops it).
+
+```yaml
+# .slopstopper.yml
+privacy:
+  page: auto            # repo path; '' opts out visibly, with the reason in a comment
+  url: auto             # privacy.html → /privacy.html, anything else → /privacy/
+  require_link: true
+  hosts: []             # extra names the page must carry
+```
+
+```bash
+task ss:hygiene:privacy
+```
+
+Report: `.ss/reports/privacy/privacy-report.{md,json}`, each issue with
+the sentence to add. [terminalofterror.com's page](https://terminalofterror.com/privacy.html)
+is the worked example of a cookieless site naming its host and the two
+origins its CSP allows; [slopstopper.dev's](https://slopstopper.dev/privacy.html)
+adds a click-to-load embed. The workflow `ss-hygiene-privacy-check.yml`
+runs on every PR and push, since the inputs can live anywhere.
+
 ### OpenAPI Drift
 
 The API-shaped analogue of the documentation-accuracy check. That one catches a
@@ -198,6 +252,7 @@ task ss:hygiene:entry-files       # Token budgets + explicit routes on AGENTS.md
 task ss:hygiene:docs-structure    # Every doc under docs/ has an explicit route
 task ss:hygiene:docs-accuracy     # Check for broken links and stale refs
 task ss:hygiene:csp-exceptions    # Validate CSP exceptions are fully documented
+task ss:hygiene:privacy           # The privacy page names the host and every third party the CSP allows
 ```
 
 `task ss:hygiene:test` runs everything above **except** `hygiene:openapi`, which

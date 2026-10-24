@@ -359,6 +359,21 @@ person to touch the page will trust it.
   including `meta` for hosts that cannot send headers
 - Lesson 10, where DAST looks at the same headers from the outside
 
+### Why a cookieless site still needs a privacy statement
+
+The CSP you just tightened limits where scripts come from, not what
+they do or who sees the request. The host processes every visitor's
+IP before your code runs (Cloudflare keeps aggregate analytics for the
+zone, and per-request logs if `observability.enabled` is on in
+`wrangler.jsonc`), and every origin the policy allows sees that IP too
+the moment a page fetches from it. So the honest statement for a site
+with no cookies and no analytics is short, and it is a function of two
+files: the hosting config and the headers source. `hygiene:privacy`
+reads both and asks the page to name the host, every allowed origin
+and a date; `task ss:hygiene:privacy` is the lesson's checkpoint for
+the ledger entry you added in step 5, because the new origin has to
+appear on the privacy page as well.
+
 <details>
 <summary>Episode script</summary>
 

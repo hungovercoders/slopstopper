@@ -840,6 +840,7 @@ GENERIC_WORKFLOWS=(
   "ss-hygiene-docs-size-check.yml"
   "ss-hygiene-docs-structure-check.yml"
   "ss-hygiene-entry-files-check.yml"
+  "ss-hygiene-privacy-check.yml"
   "ss-hygiene-auto-label-pr.yml"
   "ss-security-sast-check.yml"
   "ss-security-secrets-check.yml"

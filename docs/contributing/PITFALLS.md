@@ -40,7 +40,8 @@ before; the rule is "do the obvious thing the obvious way."
   every page state what the site collects and which services its pages
   reach. They are only true while that list matches `worker/headers.json`
   and the pages; a new origin, embed or form is a change to both, in the
-  same PR, with the page's "last checked" date moved.
+  same PR, with the page's "last checked" date moved. `ss:hygiene:privacy`
+  fails until the page names the new origin.
 
 ## Site (`app/`)
 

@@ -67,6 +67,7 @@ hygiene:
       - 'cli/slopstopper/checks/docs_structure.py'
       - 'cli/slopstopper/checks/entry_files.py'
       - 'cli/slopstopper/checks/openapi.py'
+      - 'cli/slopstopper/checks/privacy.py'
       - 'cli/slopstopper/data/templates/entry-files/**'
 
 # ── Operational: the plumbing around the checks ──

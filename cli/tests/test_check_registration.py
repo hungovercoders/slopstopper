@@ -54,6 +54,7 @@ DOC_HEADINGS: dict[str, str] = {
     "hygiene:docs-structure": "Documentation Structure",
     "hygiene:entry-files": "Entry-File Budget",
     "hygiene:openapi": "OpenAPI Drift",
+    "hygiene:privacy": "Privacy Statement",
     "reliability:accessibility": "Accessibility",
     "reliability:api-health": "API Health",
     "reliability:api-latency": "API Latency",
@@ -215,10 +216,10 @@ def test_check_is_documented_under_its_category(check):
 # PROSE_SITES below is that list, and the count test reads each file so a
 # stale number fails here rather than surviving in a playbook.
 
-EXPECTED_CHECKS = 25
+EXPECTED_CHECKS = 26
 # every ss-*.yml except ss-release.yml and ss-cloudflare-deployed.yml,
 # which install.sh adds only to a repo with Cloudflare config
-EXPECTED_INSTALLED_WORKFLOWS = 28
+EXPECTED_INSTALLED_WORKFLOWS = 29
 
 # Files that quote the counts, and the numbers each may pair with the word
 # "check(s)" / "workflow(s)". A number outside the set is drift.
@@ -227,16 +228,16 @@ EXPECTED_INSTALLED_WORKFLOWS = 28
 # `ui` holds back the API checks until the repo shows one, so the install
 # skill quotes two numbers for it: the full set and what a no-API repo gets.
 UI_CHECKS_WITHOUT_API = EXPECTED_CHECKS - len(profiles.without_api("ui"))
-_SKILL_COUNTS = {"checks": {25, 16, 10, UI_CHECKS_WITHOUT_API}, "workflows": {28}}
+_SKILL_COUNTS = {"checks": {26, 16, 10, UI_CHECKS_WITHOUT_API}, "workflows": {29}}
 PROSE_SITES = {
     **{
         str(p.relative_to(REPO_ROOT)): _SKILL_COUNTS
         for p in sorted((REPO_ROOT / ".claude/skills").glob("slopstopper-*/**/*.md"))
     },
-    "app/tools.html": {"checks": {25}, "workflows": {28}},
-    # 23: the worked example reads "2 of 25 checks failed … The other 23 checks".
-    "docs/architecture/PR_FEEDBACK.md": {"checks": {25, 23}, "workflows": {25}},
-    ".slopstopper.yml": {"checks": {25}, "workflows": set()},
+    "app/tools.html": {"checks": {26}, "workflows": {29}},
+    # 24: the worked example reads "2 of 26 checks failed … The other 24 checks".
+    "docs/architecture/PR_FEEDBACK.md": {"checks": {26, 24}, "workflows": {26}},
+    ".slopstopper.yml": {"checks": {26}, "workflows": set()},
 }
 # "24 checks", "27 new `ss-*.yml` workflows", "~21 GitHub Actions workflows":
 # a number, at most one qualifier, then the noun. Nothing looser, or
@@ -281,7 +282,7 @@ def test_prose_quotes_the_current_counts(site):
 
 @pytest.mark.parametrize(
     "profile,expected",
-    [("ui", 25), ("api", 16), ("library", 10)],
+    [("ui", 26), ("api", 16), ("library", 10)],
 )
 def test_the_per_profile_check_count(profile, expected):
     """The install skill's shape table quotes these three numbers."""
@@ -291,7 +292,7 @@ def test_the_per_profile_check_count(profile, expected):
 
 
 def test_the_ui_count_without_an_api():
-    """The install skill says a `ui` repo with no API gets 21 checks (#460)."""
+    """The install skill says a `ui` repo with no API gets 22 checks (#460)."""
     held = set(profiles.without_api("ui"))
     assert held <= _installed_workflows(), "ui holds back a workflow that doesn't exist"
-    assert UI_CHECKS_WITHOUT_API == 21
+    assert UI_CHECKS_WITHOUT_API == 22

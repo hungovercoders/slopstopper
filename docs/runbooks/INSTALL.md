@@ -54,7 +54,7 @@ There are five feedback loops. The first four run on every PR and push to `main`
 | Loop | What it does | Tools | Docs |
 | ---- | ------------ | ----- | ---- |
 | 🔒 **Security** | SAST, DAST, secrets detection, dependency CVEs, API header + CORS audit | Semgrep, OWASP ZAP, Gitleaks, Trivy | [Security →](../security/README.md) |
-| 🧹 **Hygiene** | Complexity caps, docs structure/accuracy/size and entry-file checks, OpenAPI drift, auto-labelled PRs | Lizard, stdlib Python | [Hygiene →](../hygiene/README.md) |
+| 🧹 **Hygiene** | Complexity caps, docs structure/accuracy/size and entry-file checks, CSP drift, the privacy statement, OpenAPI drift, auto-labelled PRs | Lizard, stdlib Python | [Hygiene →](../hygiene/README.md) |
 | ✅ **Reliability** | E2E + smoke tests, broken-link audits, accessibility (WCAG 2.1 AA), Core Web Vitals, SEO metatags, llms.txt, robots.txt, sitemap.xml, API health + latency | Playwright, axe-core, Lighthouse CI, stdlib Python | [Reliability →](../reliability/README.md) |
 | 🤖 **Runbooks** | One rolling PR comment summarises every check; failed workflows auto-raise issues; an agentic doc updater opens weekly sync PRs | GitHub Actions, gh-aw | [Runbooks →](./README.md) |
 | 🚀 **Deployment** | How slopstopper.dev ships: preview deploys per PR, automated production releases, automatic preview cleanup. `install.sh` installs no deploy, only the post-deploy check trigger on a Cloudflare repo | Cloudflare Workers Builds (Git integration) | [Deployment →](../deployment/README.md) |
