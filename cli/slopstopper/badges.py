@@ -43,6 +43,7 @@ WORKFLOW_DISPLAY: dict[str, tuple[str, str]] = {
     "ss-security-api-headers-check.yml": ("security", "API Headers"),
     "ss-hygiene-complexity-check.yml": ("hygiene", "Complexity"),
     "ss-hygiene-csp-exceptions-check.yml": ("hygiene", "CSP Exceptions"),
+    "ss-hygiene-privacy-check.yml": ("hygiene", "Privacy Statement"),
     "ss-hygiene-docs-accuracy-check.yml": ("hygiene", "Docs Accuracy"),
     "ss-hygiene-docs-size-check.yml": ("hygiene", "Docs Size"),
     "ss-hygiene-docs-structure-check.yml": ("hygiene", "Docs Structure"),

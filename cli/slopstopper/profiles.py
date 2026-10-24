@@ -199,6 +199,7 @@ CHECK_WORKFLOWS: dict[str, str] = {
     "hygiene:docs-structure": "ss-hygiene-docs-structure-check.yml",
     "hygiene:entry-files": "ss-hygiene-entry-files-check.yml",
     "hygiene:openapi": "ss-hygiene-openapi-check.yml",
+    "hygiene:privacy": "ss-hygiene-privacy-check.yml",
     "reliability:accessibility": "ss-reliability-accessibility-check.yml",
     "reliability:api-health": "ss-reliability-api-health-check.yml",
     "reliability:api-latency": "ss-reliability-api-latency-check.yml",

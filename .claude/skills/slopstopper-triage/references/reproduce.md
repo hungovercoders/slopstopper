@@ -16,6 +16,7 @@
 | `ss-security-api-headers-check.yml` | `task ss:security:api-headers -- <URL>` | `slopstopper run security:api-headers <URL>` | ✓ | – (probe a deployed origin) | – |
 | `ss-hygiene-complexity-check.yml` | `task ss:hygiene:complexity` | `slopstopper run hygiene:complexity` | – | – | – |
 | `ss-hygiene-csp-exceptions-check.yml` | `task ss:hygiene:csp-exceptions` | `slopstopper run hygiene:csp-exceptions` | – | – | – |
+| `ss-hygiene-privacy-check.yml` | `task ss:hygiene:privacy` | `slopstopper run hygiene:privacy` | – | – | – |
 | `ss-hygiene-docs-accuracy-check.yml` | `task ss:hygiene:docs-accuracy` | `slopstopper run hygiene:docs-accuracy` | – | – | – |
 | `ss-hygiene-docs-size-check.yml` | `task ss:hygiene:docs-size` | `slopstopper run hygiene:docs-size` | – | – | – |
 | `ss-hygiene-docs-structure-check.yml` | `task ss:hygiene:docs-structure` | `slopstopper run hygiene:docs-structure` | – | – | – |
