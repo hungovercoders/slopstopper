@@ -224,7 +224,10 @@ EXPECTED_INSTALLED_WORKFLOWS = 28
 # "check(s)" / "workflow(s)". A number outside the set is drift.
 # Every skill file is a site: the split into SKILL.md + references/ moved
 # count-bearing prose into files nobody would think to list by hand.
-_SKILL_COUNTS = {"checks": {25, 16, 10}, "workflows": {28}}
+# `ui` holds back the API checks until the repo shows one, so the install
+# skill quotes two numbers for it: the full set and what a no-API repo gets.
+UI_CHECKS_WITHOUT_API = EXPECTED_CHECKS - len(profiles.without_api("ui"))
+_SKILL_COUNTS = {"checks": {25, 16, 10, UI_CHECKS_WITHOUT_API}, "workflows": {28}}
 PROSE_SITES = {
     **{
         str(p.relative_to(REPO_ROOT)): _SKILL_COUNTS
@@ -285,3 +288,10 @@ def test_the_per_profile_check_count(profile, expected):
     dropped = set(profiles.expand(profile) or [])
     assert dropped <= _installed_workflows(), f"{profile} drops a workflow that doesn't exist"
     assert EXPECTED_CHECKS - len(dropped) == expected
+
+
+def test_the_ui_count_without_an_api():
+    """The install skill says a `ui` repo with no API gets 21 checks (#460)."""
+    held = set(profiles.without_api("ui"))
+    assert held <= _installed_workflows(), "ui holds back a workflow that doesn't exist"
+    assert UI_CHECKS_WITHOUT_API == 21
