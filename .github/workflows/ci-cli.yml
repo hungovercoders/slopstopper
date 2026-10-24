@@ -65,22 +65,14 @@ jobs:
         # Installs the mise-pinned `task` (mise.toml [tools]), the same
         # version locally and in CI. Replaces a `curl | sh` bootstrap.
         uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+      - name: Install dependencies
+        run: npm ci
       - name: Install Playwright
         # test_specs_subpath.py runs the bundled specs in a real browser and
-        # skips without this. Each download attempt is bounded so a stalled
-        # browser download can't hold the job; apt runs once outside the
-        # timeout because a killed apt-get holds the dpkg lock (#527).
+        # skips without this. Composite steps carry no timeout, so the bound
+        # over both download attempts sits here.
+        uses: ./.github/actions/ss-playwright
         timeout-minutes: 12
-        run: |
-          npm ci
-          npx playwright install-deps chromium || npx playwright install-deps chromium
-          for attempt in 1 2; do
-            if timeout --kill-after=30s 5m npx playwright install chromium; then
-              exit 0
-            fi
-            echo "::warning::Playwright browser download attempt ${attempt} failed or stalled after 5 minutes"
-          done
-          exit 1
       - name: Run CLI tests
         run: task -t cli/Taskfile.yml test
 
@@ -121,20 +113,13 @@ jobs:
       - name: Set up toolchain (task)
         uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
       - run: pip install -e ./cli
+      - name: Install dependencies
+        run: npm ci
       - name: Install the browser checks' dependencies (lessons 11 to 13)
-        # The same install as the pytest job: npm deps and Playwright's
-        # Chromium, bounded so a stalled download fails rather than hangs.
+        # The same install as the pytest job; the cache and the bounded
+        # download live in the action.
+        uses: ./.github/actions/ss-playwright
         timeout-minutes: 12
-        run: |
-          npm ci
-          npx playwright install-deps chromium || npx playwright install-deps chromium
-          for attempt in 1 2; do
-            if timeout --kill-after=30s 5m npx playwright install chromium; then
-              exit 0
-            fi
-            echo "::warning::Playwright browser download attempt ${attempt} failed or stalled after 5 minutes"
-          done
-          exit 1
       - name: Install Gitleaks (lesson 6)
         # The same pinned release as ss-security-secrets-check.yml.
         env:
