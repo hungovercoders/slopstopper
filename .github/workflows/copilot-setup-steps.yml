@@ -56,7 +56,7 @@ jobs:
         # timed loop (#527).
         timeout-minutes: 12
         run: |
-          npx playwright install-deps chromium
+          npx playwright install-deps chromium || npx playwright install-deps chromium
           for attempt in 1 2; do
             if timeout --kill-after=30s 5m npx playwright install chromium; then
               exit 0
