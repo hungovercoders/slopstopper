@@ -427,14 +427,16 @@ def _prepare_localhost_target(target: str) -> tuple[str | None, subprocess.Popen
     """For a localhost target, ensure a server is running and rewrite the URL
     to be reachable from inside the ZAP container.
 
-    Returns (rewritten_target, owned_server_proc). If a server we don't own
-    was already listening, owned_server_proc is None. If we can't bring a
-    server up, returns (None, None).
+    The probe hits the target as given, so a server on any port counts;
+    only the `server.js` fallback is tied to :8080, because that is where
+    it listens. Returns (rewritten_target, owned_server_proc). If a server
+    we don't own was already listening, owned_server_proc is None. If we
+    can't bring a server up, returns (None, None).
     """
     server_proc: subprocess.Popen | None = None
-    if not _localhost_responding():
+    if not _localhost_responding(target):
         server_proc = _start_local_server()
-        if server_proc is None and not _localhost_responding():
+        if server_proc is None and not _localhost_responding(target):
             return None, None
     rewritten = _docker_host_target(target)
     output.status("📍", f"Using Docker-compatible target: {rewritten}")

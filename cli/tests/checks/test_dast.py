@@ -210,6 +210,26 @@ def test_run_returns_two_for_localhost_with_no_server(monkeypatch, isolated_cwd,
     assert "Nothing listening" in capsys.readouterr().out
 
 
+def test_localhost_probe_uses_the_target_port(monkeypatch, isolated_cwd):
+    """A server on :8099 counts when that is the target. The probe used to
+    hit :8080 whatever the URL said, so `-- http://localhost:8099` exited 2
+    with a server listening on 8099 (the course serves there, since 8080
+    is often taken)."""
+    probed: list[str] = []
+
+    def responding(url="http://localhost:8080"):
+        probed.append(url)
+        return url == "http://localhost:8099"
+
+    monkeypatch.setattr(dast, "_localhost_responding", responding)
+    monkeypatch.setattr(dast, "_start_local_server", lambda: pytest.fail("server.js must not be tried while 8099 answers"))
+    monkeypatch.setattr(dast.platform, "system", lambda: "Linux")
+    target, proc = dast._prepare_localhost_target("http://localhost:8099")
+    assert probed == ["http://localhost:8099"]
+    assert target == "http://172.17.0.1:8099"
+    assert proc is None
+
+
 def test_run_clean_when_no_alerts(monkeypatch, isolated_cwd, capsys):
     def fake_zap(_target, **_kwargs):
         dast.REPORT_DIR.mkdir(parents=True, exist_ok=True)
