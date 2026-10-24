@@ -30,6 +30,7 @@ const github = { rest: { issues: {
   listForRepo: async () => ({ data: issues }),
   create: async (args) => { calls.push(['create', args.title]); },
   createComment: async (args) => { calls.push(['comment', args.issue_number]); },
+  addLabels: async (args) => { calls.push(['label', args.issue_number, ...args.labels]); },
 }}};
 const context = {
   repo: { owner: 'o', repo: 'r' },
@@ -95,4 +96,5 @@ def test_a_repeat_failure_comments_on_its_existing_failure_issue(tmp_path):
                 "labels": [{"name": "workflow-failure"}], "body": "earlier run"}
     calls = _fail(tmp_path, "ss-reliability-smoke-tests.yml", "SlopStopper · Reliability Smoke Tests",
                   [CWV_ISSUE, existing])
-    assert calls == [["comment", 9]]
+    # An issue from before the label shipped is relabelled, then commented on.
+    assert calls == [["label", 9, "slopstopper"], ["comment", 9]]
