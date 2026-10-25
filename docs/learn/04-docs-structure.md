@@ -31,7 +31,7 @@ The demo repo from the [syllabus](README.md), with the CLI on PATH.
 
 ### 1. See it red
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run hygiene:docs-structure
 ```
@@ -54,7 +54,7 @@ read it, because nothing says when to.
 
 Add a "see also" to the map. This is what most people do first.
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 printf '\nSee also [runbooks/RELEASE.md](runbooks/RELEASE.md).\n' >> docs/README.md
 slopstopper run hygiene:docs-structure

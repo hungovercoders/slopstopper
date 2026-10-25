@@ -38,7 +38,7 @@ Sleep 3s
 # 4. Switch the repo to the API profile
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "sed -i 's/^profile: ui$/profile: api/' .slopstopper.yml" Enter
+Type "sed -i.bak 's/^profile: ui$/profile: api/' .slopstopper.yml && rm .slopstopper.yml.bak" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "slopstopper profile show" Enter
 Wait+Line@5m /(^|\s)\$$/

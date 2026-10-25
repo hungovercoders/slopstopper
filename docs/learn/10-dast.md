@@ -187,7 +187,7 @@ scan is red.
 git checkout docs/security/CSP_EXCEPTIONS.md
 ```
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run security:dast -- http://localhost:8099
 ```

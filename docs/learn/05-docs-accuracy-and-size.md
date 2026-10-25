@@ -42,7 +42,7 @@ checks are stdlib Python, so nothing else.
 
 ### 1. See docs-accuracy red
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run hygiene:docs-accuracy
 ```
@@ -200,7 +200,7 @@ The last line puts the demo back for the next lesson.
 
 ## Checkpoint
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run hygiene:docs-accuracy >/dev/null; echo "exit $?"
 ```

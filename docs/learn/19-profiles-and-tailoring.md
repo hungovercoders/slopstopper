@@ -111,7 +111,7 @@ whole mechanism, so write it yourself.
 
 <!-- learn -->
 ```sh
-sed -i 's/^profile: ui$/profile: api/' .slopstopper.yml
+sed -i.bak 's/^profile: ui$/profile: api/' .slopstopper.yml && rm .slopstopper.yml.bak
 slopstopper profile show
 ```
 
@@ -188,8 +188,8 @@ grep -A3 '^\[tools\]' mise.toml
 
 This repo is the CLI, so its `mise.toml` pins only `task` and `node`
 and the workflows install the CLI from source. An adopter's `mise.toml`
-carries a third line, `"pipx:slopstopper-cli" = "0.22.0"` or whatever
-the installer recorded, and that one line is what both a laptop and CI
+carries a third line, `"pipx:slopstopper-cli" = "<the version the
+installer recorded>"`, and that one line is what both a laptop and CI
 install, per directory, so the active `slopstopper` always matches the
 repo you are in. A plain `install.sh` re-run never bumps it; the
 installer prints a nudge when it is behind PyPI, and

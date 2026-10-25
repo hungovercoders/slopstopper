@@ -140,7 +140,7 @@ steady state a budget is about.
 
 ### 4. Set a budget the slow route cannot meet
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run reliability:api-latency -- http://localhost:8765 --path /v1/slow --median-ms 100
 ```
@@ -173,7 +173,7 @@ cat > scratch/openapi.json <<'JSON'
 JSON
 ```
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json
 ```
@@ -254,7 +254,7 @@ HEALTH_STATUS=degraded PORT=8766 python3 scratch/api.py >/dev/null 2>&1 & echo $
 sleep 1
 ```
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run reliability:api-health -- http://localhost:8766 --path /health --require-field status --require-field deps.db
 ```

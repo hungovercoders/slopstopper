@@ -55,7 +55,7 @@ semgrep --version
 
 ### 1. See it red
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run security:sast
 ```
@@ -175,7 +175,7 @@ git checkout scripts/status.py
 
 ## Checkpoint
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run security:sast >/dev/null 2>&1; echo "exit $?"
 ```

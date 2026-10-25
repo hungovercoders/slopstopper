@@ -26,10 +26,15 @@ in the [syllabus](README.md).
   Steps that edit the sandbox end by putting it back
   (`git checkout <file>`, `rm`), so the next lesson starts clean.
 - **Mark runnable blocks** with an HTML comment on the line before the
-  fence. `<!-- learn -->` means the block must exit 0; `<!-- learn: fails -->`
-  means it must exit non-zero: the break-it step of most lessons, and
-  any `cmd; echo "exit $?"` block that shows a non-zero code, since
-  `sh -e` stops at the command. `task contributing:learn:check` runs the
+  fence. `<!-- learn -->` means the block must exit 0;
+  `<!-- learn: fails N -->` means it must exit exactly N (`fails 1` for
+  the break-it step of most lessons, and any `cmd; echo "exit $?"` block
+  that shows a non-zero code, since `sh -e` stops at the command;
+  `fails 2` where the point is a check that could not run). Name the code,
+  because a bare `<!-- learn: fails -->` accepts any non-zero exit and
+  a 2 (the check could not run) would pass as the red step you promised.
+  The bare form is for a block whose last command is a `task` target,
+  which maps every failure to 201. `task contributing:learn:check` runs the
   marked blocks of each lesson in order with `sh -e` in a scratch clone,
   and fails if a page leaves that clone dirty; the `learn` shards in
   `ci-cli.yml` run the same on every push to main, nightly, and on a pull

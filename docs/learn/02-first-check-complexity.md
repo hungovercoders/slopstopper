@@ -40,7 +40,7 @@ Lizard is a Python dependency of the CLI, so nothing else.
 The demo ships with this finding in it. Run the check and read the
 three parts of what it prints.
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run hygiene:complexity
 ```
@@ -89,7 +89,7 @@ The verdict is also an exit code, which is what the hook and CI gate
 on. This is the contract from lesson 0: a 1, because the check ran and
 the repo failed it.
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run hygiene:complexity >/dev/null; echo "exit $?"
 ```
@@ -148,7 +148,7 @@ git checkout scripts/status.py
 
 ## Checkpoint
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run hygiene:complexity >/dev/null; echo "exit $?"
 ```
