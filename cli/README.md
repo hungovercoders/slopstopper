@@ -40,7 +40,7 @@ slopstopper emit <c>:<n> --target {pr-comment,issue}
 slopstopper discover <check> --event <e>       # resolve pages.<check> from sitemap / changed / list
 slopstopper config get <key> [<default>] [--json]   # read .slopstopper.yml
 slopstopper templates {list, path <n>, eject <n>}   # inspect / customise bundled templates
-slopstopper serve                              # bundled static server (auto-detects worker/headers.json)
+slopstopper serve                              # bundled static server, with the headers from headers.source
 slopstopper checks list [--category <c>] [--json]
 slopstopper doctor [--json]                    # verify external tools are installed
 slopstopper profile {list, show, expand <n>, disabled, detect} [--json]   # project-shape profile (ui / api / library)

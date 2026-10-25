@@ -1,6 +1,8 @@
 # Lesson 13: Core Web Vitals
 
-**Goal.** Run Lighthouse against the site, read the budget it enforces,
+<!-- learn-sandbox: demo -->
+
+**Goal.** Run Lighthouse against the demo, read the budget it enforces,
 add one blocking script, and watch the numbers move.
 
 ## Why this check
@@ -31,15 +33,16 @@ Lighthouse could not run: no Chrome, no `npx`, the URL unreachable.
 
 ## You will need
 
-- The checkout from the [syllabus](README.md), with the CLI on PATH.
-- `node` and the npm dependencies from `task contributing:setup`.
+- The demo repo from the [syllabus](README.md), with the CLI on PATH.
+- `node`, and in the demo `npm install` (its `package.json` lists
+  Lighthouse CI alongside Playwright).
 - A Chrome or Chromium that Lighthouse can launch. It finds an
   installed Chrome on its own; `CHROME_PATH` points it at another, such
   as the Chromium Playwright installed.
 
 ## Steps
 
-### 1. Serve the site and see it green
+### 1. Serve the demo and see it green
 
 Three Lighthouse runs take about a minute.
 
@@ -48,7 +51,7 @@ Three Lighthouse runs take about a minute.
 mkdir -p scratch
 PORT=8099 slopstopper serve >/dev/null 2>&1 & echo $! > scratch/serve.pid
 sleep 2
-task ss:reliability:cwv -- http://localhost:8099
+slopstopper run reliability:cwv -- http://localhost:8099
 ```
 
 ```
@@ -79,15 +82,15 @@ sed -n '/| Metric/,/CLS/p' .ss/reports/cwv/cwv-report.md
 | Metric | Threshold | Status |
 |--------|-----------|--------|
 | Performance score | ≥ 70 | ✅ 100/100 |
-| LCP | ≤ 4 s | ✅ 1728 ms |
+| LCP | ≤ 4 s | ✅ 901 ms |
 | TBT | ≤ 600 ms | ✅ 0 ms |
 | CLS | ≤ 0.25 | ✅ 0.000 |
 ```
 
-The site paints its main content in under two seconds, blocks the
-main thread for no time at all, and nothing shifts. The full Lighthouse
-HTML reports, one per run, are under `.ss/reports/cwv/lighthouse/`,
-and CI uploads them as an artifact.
+The status page paints its main content in under a second, blocks the
+main thread for no time at all, and nothing shifts. The full
+Lighthouse HTML reports, one per run, are under
+`.ss/reports/cwv/lighthouse/`, and CI uploads them as an artifact.
 
 ### 3. Add one blocking script
 
@@ -99,12 +102,12 @@ what to load.
 <!-- learn -->
 ```sh
 printf 'const until = Date.now() + 1500;\nwhile (Date.now() < until) {}\n' > app/slow.js
-sed -i 's|<link rel="stylesheet" href="shared.css">|<script src="slow.js"></script>\n    <link rel="stylesheet" href="shared.css">|' app/index.html
+sed -i.bak 's|<link rel="stylesheet" href="style.css">|<script src="slow.js"></script>\n  <link rel="stylesheet" href="style.css">|' app/index.html && rm app/index.html.bak
 ```
 
 <!-- learn: fails -->
 ```sh
-task ss:reliability:cwv -- http://localhost:8099
+slopstopper run reliability:cwv -- http://localhost:8099
 ```
 
 ```
@@ -112,10 +115,9 @@ task ss:reliability:cwv -- http://localhost:8099
        Largest Contentful Paint
        https://developer.chrome.com/docs/lighthouse/performance/lighthouse-largest-contentful-paint/
         expected: <=4000
-           found: 7115.1494
-      all values: 7115.1494, 7146.7868, 7127.7963
+           found: 6900.44
+      all values: 6905.4663, 6900.44, 6903.2413
 Assertion failed. Exiting with status code 1.
-task: Failed to run task "ss:reliability:cwv": exit status 1
 ```
 
 Lighthouse names the audit, links its explanation, and shows all three
@@ -130,17 +132,17 @@ sed -n '/| Metric/,/CLS/p' .ss/reports/cwv/cwv-report.md
 ```
 | Metric | Threshold | Status |
 |--------|-----------|--------|
-| Performance score | ≥ 70 | ❌ 59/100 |
-| LCP | ≤ 4 s | ❌ 7128 ms |
-| TBT | ≤ 600 ms | ✅ 12 ms |
+| Performance score | ≥ 70 | ❌ 60/100 |
+| LCP | ≤ 4 s | ❌ 6903 ms |
+| TBT | ≤ 600 ms | ✅ 0 ms |
 | CLS | ≤ 0.25 | ✅ 0.000 |
 ```
 
-One script, and the main content takes four times as long to appear.
-TBT barely moved, because the spin happened before anything painted;
-it is LCP that paid for it. That is the point of measuring more than
-one thing: the same change shows up in a different metric depending on
-where in the load it lands.
+One script, and the main content takes seven times as long to appear.
+TBT did not move at all, because the spin happened before anything
+painted; it is LCP that paid for it. That is the point of measuring
+more than one thing: the same change shows up in a different metric
+depending on where in the load it lands.
 
 ### 4. Fix it
 
@@ -152,7 +154,7 @@ it and run again.
 ```sh
 git checkout app/index.html
 rm app/slow.js
-task ss:reliability:cwv -- http://localhost:8099 >/dev/null
+slopstopper run reliability:cwv -- http://localhost:8099 >/dev/null 2>&1
 sed -n '/| Metric/,/CLS/p' .ss/reports/cwv/cwv-report.md
 ```
 
@@ -160,7 +162,7 @@ sed -n '/| Metric/,/CLS/p' .ss/reports/cwv/cwv-report.md
 | Metric | Threshold | Status |
 |--------|-----------|--------|
 | Performance score | ≥ 70 | ✅ 100/100 |
-| LCP | ≤ 4 s | ✅ 1728 ms |
+| LCP | ≤ 4 s | ✅ 901 ms |
 | TBT | ≤ 600 ms | ✅ 0 ms |
 | CLS | ≤ 0.25 | ✅ 0.000 |
 ```
@@ -190,26 +192,26 @@ grep 'Core Web Vitals' .ss/reports/cwv/cwv-report.md
 
 ## Exercise
 
-Tighten one budget until the site, unchanged, fails it. Then put the
+Tighten one budget until the demo, unchanged, fails it. Then put the
 budget back.
 
 <details>
 <summary>Solution</summary>
 
-Eject the dev config and lower the LCP budget below what the site
+Eject the dev config and lower the LCP budget below what the page
 achieves:
 
 ```sh
 slopstopper templates eject lighthouserc.json
-sed -i 's/"maxNumericValue": 4000/"maxNumericValue": 1000/' .ss/lighthouserc.json
-task ss:reliability:cwv -- http://localhost:8099
+sed -i.bak 's/"maxNumericValue": 4000/"maxNumericValue": 500/' .ss/lighthouserc.json && rm .ss/lighthouserc.json.bak
+slopstopper run reliability:cwv -- http://localhost:8099
 rm .ss/lighthouserc.json
 ```
 
-LCP at around 1.7 s now fails a 1 s budget. The exercise is the honest
-way to raise the bar: tighten one budget to just above what you have
-measured for a few weeks, then another, rather than guessing at the
-numbers on day one.
+LCP at around 900 ms now fails a 500 ms budget. The exercise is the
+honest way to raise the bar: tighten one budget to just above what you
+have measured for a few weeks, then another, rather than guessing at
+the numbers on day one.
 
 </details>
 
@@ -236,13 +238,13 @@ seconds. Cut to the diff: one `<script>` tag.
    number with a threshold.
 2. Serve; three runs; the report table and what each metric means.
 3. The spinning script; red; the assertion with all three values.
-4. LCP paid, TBT barely moved; why measuring several things matters.
+4. LCP paid, TBT did not move; why measuring several things matters.
 5. Remove it; green. The knobs: eject, `--prod`, public reports off by
    default.
 6. Exercise: tighten a budget to what you measure.
 
 **Shot list.** One terminal, 100x30, font size 16, the site's theme.
-`docs/learn/tapes/13.tape`. Zoom on "found: 7115" and on "59/100".
+`docs/learn/tapes/13.tape`. Zoom on "found: 6900" and on "60/100".
 
 **Chapters.** `0:00 Why` · `1:30 Green` · `3:00 The budget` ·
 `4:00 One script` · `6:30 Fix` · `8:00 The knobs` · `9:30 Next

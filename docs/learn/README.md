@@ -27,8 +27,9 @@ on a red check already in it, reads the report, fixes the finding, and
 puts the demo back with `git checkout`. The commit is what lesson 6
 scans. Each lesson says which external tool it needs beyond the CLI
 (lesson 6 `gitleaks`, lesson 7 `semgrep`, lesson 8 `trivy`, lesson 10
-Docker, lessons 11 to 15 `node`); `slopstopper doctor` lists what is
-missing.
+Docker, lessons 9 to 15 `node`, and for the browser checks in 11 to 15
+one `npm install` in the demo followed by `npx playwright install
+chromium`); `slopstopper doctor` lists what is missing.
 
 The lessons about the suite itself (1, 17, 18, 19 and 20: the
 installer, the workflows, the skills, profiles and the source) run in a

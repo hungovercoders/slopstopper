@@ -3,9 +3,9 @@
 # runnable blocks by scripts/learntapes.py: edit the lesson, then
 # `task contributing:learn:tapes`. Record it with
 # `task contributing:learn:record -- 09` (demos/render.sh), which
-# starts the shell in a scratch clone of this repo with the CLI on PATH, fills
+# starts the shell in the demo repo `slopstopper demo` writes with the CLI on PATH, fills
 # in the theme from demos/theme.json, and writes dist/learn/09.mp4.
-# Sandbox: checkout
+# Sandbox: demo
 Output demos/.frames/09/
 Set Shell bash
 Set FontSize 16
@@ -23,86 +23,66 @@ Type "PORT=8099 slopstopper serve >/dev/null 2>&1 & echo $! > scratch/serve.pid"
 Wait+Line@5m /(^|\s)\$$/
 Type "sleep 2" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "curl -sI http://localhost:8099/ | grep -iE 'content-security|x-frame|nosniff|cross-origin'" Enter
+Type "curl -sI http://localhost:8099/ | grep -iE 'content-security|x-frame|nosniff|referrer'" Enter
+Wait+Line@5m /(^|\s)\$$/
+Type "curl -sI http://localhost:8099/history.html | grep -iE 'content-security'" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
-# 2. See the drift check green
+# 2. See the drift check red
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:hygiene:csp-exceptions" Enter
+Type "slopstopper run hygiene:csp-exceptions" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
-# 3. Relax one page without saying so
-Type "clear" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "python3 - <<'PY'" Enter
-Type@8ms "import json, pathlib" Enter
-Type@8ms 'path = pathlib.Path("worker/headers.json")' Enter
-Type@8ms "rules = json.loads(path.read_text())" Enter
-Type@8ms 'rules.append({"for": "/tools.html", "values": {' Enter
-Type@8ms `    "Content-Security-Policy": "default-src 'self'; script-src 'self' https://widgets.example.com; style-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"}})` Enter
-Type@8ms 'path.write_text(json.dumps(rules, indent=2) + "\n")' Enter
-Type@8ms "PY" Enter
-Wait+Line@5m /(^|\s)\$$/
-Sleep 2s
-
-Type "clear" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "task ss:hygiene:csp-exceptions" Enter
-Wait+Line@5m /(^|\s)\$$/
-Sleep 3s
-
-# 4. Read the report
+# 3. Read the report
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "sed -n '/^## .* Errors/,/Mismatched origins/p' .ss/reports/csp/csp-exceptions-report.md" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
-# 5. Document it
+# 4. Document it
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "python3 - <<'PY'" Enter
 Type@8ms "import pathlib" Enter
-Type@8ms 'doc = pathlib.Path("docs/security/CSP_EXCEPTIONS.md")' Enter
+Type@8ms "doc = pathlib.Path('docs/security/CSP_EXCEPTIONS.md')" Enter
 Type@8ms "text = doc.read_text()" Enter
-Type@8ms 'entry = """### `/tools.html`' Enter
+Type@8ms "entry = '''### `/history.html`" Enter
 Enter
-Type@8ms "- **Origin allowed:** `https://widgets.example.com`" Enter
-Type@8ms "- **Directives added:** `script-src https://widgets.example.com`" Enter
+Type@8ms "- **Origin allowed:** `https://charts.example.com`" Enter
+Type@8ms "- **Directives added:** `img-src https://charts.example.com`" Enter
 Type@8ms "- **Loader SRI:** `n/a`" Enter
-Type@8ms "- **Why:** A worked example for lesson 9 of the course" Enter
+Type@8ms "- **Why:** the uptime chart on the history page is rendered by the charts service" Enter
 Type@8ms "- **Approved by:** nobody yet" Enter
-Type@8ms "- **Data leaving site:** visitor IP and User-Agent when the script is fetched" Enter
+Type@8ms "- **Data leaving site:** visitor IP and User-Agent when the chart image is fetched" Enter
 Type@8ms "- **Refresh policy:** n/a" Enter
-Enter
-Type@8ms '"""' Enter
-Type@8ms 'marker = "---\n\n## Adopters"' Enter
-Type@8ms "doc.write_text(text.replace(marker, entry + marker, 1))" Enter
+Type@8ms "'''" Enter
+Type@8ms "doc.write_text(text.replace('None yet: every path serves the baseline policy.\n', entry, 1))" Enter
 Type@8ms "PY" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:hygiene:csp-exceptions" Enter
+Type "slopstopper run hygiene:csp-exceptions" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "git checkout worker/headers.json docs/security/CSP_EXCEPTIONS.md" Enter
+Type "git checkout docs/security/CSP_EXCEPTIONS.md" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
-# 6. Audit the site's headers as an API would be audited
+# 5. Audit the site's headers as an API would be audited
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:security:api-headers -- http://localhost:8099 --path /" Enter
+Type "slopstopper run security:api-headers -- http://localhost:8099 --path /" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type 'kill "$(cat scratch/serve.pid)"' Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
-# 7. Build an API with the commonest CORS mistake
+# 6. Build an API with the commonest CORS mistake
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "cat > scratch/api.py <<'PY'" Enter
@@ -131,11 +111,11 @@ Sleep 2s
 
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:security:api-headers -- http://localhost:8765 --path /health" Enter
+Type "slopstopper run security:api-headers -- http://localhost:8765 --path /health" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
-# 8. Fix the API
+# 7. Fix the API
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type 'kill "$(cat scratch/api.pid)"' Enter
@@ -168,7 +148,7 @@ Type "python3 scratch/api.py >/dev/null 2>&1 & echo $! > scratch/api.pid" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "sleep 1" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:security:api-headers -- http://localhost:8765 --path /health --allowed-origin https://app.example.com" Enter
+Type "slopstopper run security:api-headers -- http://localhost:8765 --path /health --allowed-origin https://app.example.com" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type 'kill "$(cat scratch/api.pid)"' Enter
 Wait+Line@5m /(^|\s)\$$/
@@ -179,6 +159,6 @@ Sleep 3s
 # Checkpoint
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "slopstopper run hygiene:csp-exceptions | grep 'No drift'" Enter
+Type 'slopstopper run hygiene:csp-exceptions >/dev/null; echo "exit $?"' Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s

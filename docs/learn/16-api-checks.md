@@ -1,5 +1,7 @@
 # Lesson 16: API checks: health, latency and OpenAPI drift
 
+<!-- learn-sandbox: demo -->
+
 **Goal.** Point the three API checks at a small API, see each one fail
 on its own kind of drift, and understand why they exist alongside the
 browser checks.
@@ -40,8 +42,9 @@ API: a spec, a server framework or an `api.*` key.
 
 ## You will need
 
-The checkout from the [syllabus](README.md), with the CLI on PATH.
-The lesson's API is twenty lines of stdlib Python.
+The demo repo from the [syllabus](README.md), with the CLI on PATH, or
+any directory at all: the lesson's API is twenty lines of stdlib
+Python and the checks read nothing from the repo.
 
 ## Steps
 
@@ -96,7 +99,7 @@ and two fields the body must carry, one of them nested.
 
 <!-- learn -->
 ```sh
-task ss:reliability:api-health -- http://localhost:8765 --path /health --require-field status --require-field deps.db
+slopstopper run reliability:api-health -- http://localhost:8765 --path /health --require-field status --require-field deps.db
 ```
 
 ```
@@ -116,7 +119,7 @@ set the budget from what you measured.
 
 <!-- learn -->
 ```sh
-task ss:reliability:api-latency -- http://localhost:8765 --path /health --path /v1/items
+slopstopper run reliability:api-latency -- http://localhost:8765 --path /health --path /v1/items
 ```
 
 ```
@@ -139,7 +142,7 @@ steady state a budget is about.
 
 <!-- learn: fails -->
 ```sh
-task ss:reliability:api-latency -- http://localhost:8765 --path /v1/slow --median-ms 100
+slopstopper run reliability:api-latency -- http://localhost:8765 --path /v1/slow --median-ms 100
 ```
 
 ```
@@ -147,7 +150,6 @@ task ss:reliability:api-latency -- http://localhost:8765 --path /v1/slow --media
       - `http://localhost:8765/v1/slow` median 301.5ms is over the 100ms budget
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ Failures detected. See .ss/reports/api-latency/api-latency-report.md for full details.
-task: Failed to run task "ss:reliability:api-latency": exit status 1
 ```
 
 ### 5. Commit a spec that describes one route too many
@@ -173,7 +175,7 @@ JSON
 
 <!-- learn: fails -->
 ```sh
-task ss:hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json
+slopstopper run hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json
 ```
 
 ```
@@ -184,7 +186,6 @@ task ss:hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --s
       - `/v1/reports` is documented but the API returns 404, so the route is gone
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ Drift detected. See .ss/reports/openapi/openapi-report.md for full details.
-task: Failed to run task "ss:hygiene:openapi": exit status 1
 ```
 
 Two findings for one route, from the two directions the check can
@@ -228,7 +229,7 @@ spec = json.loads(path.read_text())
 del spec["paths"]["/v1/reports"]
 path.write_text(json.dumps(spec, indent=2) + "\n")
 PY
-task ss:hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json
+slopstopper run hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json
 ```
 
 ```
@@ -255,7 +256,7 @@ sleep 1
 
 <!-- learn: fails -->
 ```sh
-task ss:reliability:api-health -- http://localhost:8766 --path /health --require-field status --require-field deps.db
+slopstopper run reliability:api-health -- http://localhost:8766 --path /health --require-field status --require-field deps.db
 ```
 
 ```
@@ -264,7 +265,6 @@ task ss:reliability:api-health -- http://localhost:8766 --path /health --require
       ⚠️  responded in 41ms (no api.health.max_response_ms budget set)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ Failures detected. See .ss/reports/api-health/api-health-report.md for full details.
-task: Failed to run task "ss:reliability:api-health": exit status 1
 ```
 
 In a real repo these flags live in `.slopstopper.yml` under `api`, and
@@ -275,7 +275,7 @@ with a 200 fails as well.
 
 <!-- learn -->
 ```sh
-out=$(task ss:reliability:api-health -- http://localhost:8765 --path /health 2>&1)
+out=$(slopstopper run reliability:api-health -- http://localhost:8765 --path /health 2>&1)
 kill "$(cat scratch/api.pid)" "$(cat scratch/degraded.pid)"
 rm -r scratch
 echo "$out" | grep 'matches its contract'
@@ -295,7 +295,7 @@ Make the latency check fail on size rather than time.
 Start the API again and give the items route a budget it cannot meet:
 
 ```sh
-task ss:reliability:api-latency -- http://localhost:8765 --path /v1/items --max-bytes 10
+slopstopper run reliability:api-latency -- http://localhost:8765 --path /v1/items --max-bytes 10
 ```
 
 The route answers in under a millisecond and still fails, because its

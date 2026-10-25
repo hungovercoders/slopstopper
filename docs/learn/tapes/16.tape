@@ -3,9 +3,9 @@
 # runnable blocks by scripts/learntapes.py: edit the lesson, then
 # `task contributing:learn:tapes`. Record it with
 # `task contributing:learn:record -- 16` (demos/render.sh), which
-# starts the shell in a scratch clone of this repo with the CLI on PATH, fills
+# starts the shell in the demo repo `slopstopper demo` writes with the CLI on PATH, fills
 # in the theme from demos/theme.json, and writes dist/learn/16.mp4.
-# Sandbox: checkout
+# Sandbox: demo
 Output demos/.frames/16/
 Set Shell bash
 Set FontSize 16
@@ -61,21 +61,21 @@ Sleep 2s
 # 2. Audit the health endpoint
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:reliability:api-health -- http://localhost:8765 --path /health --require-field status --require-field deps.db" Enter
+Type "slopstopper run reliability:api-health -- http://localhost:8765 --path /health --require-field status --require-field deps.db" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 3. Measure latency with no budget
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:reliability:api-latency -- http://localhost:8765 --path /health --path /v1/items" Enter
+Type "slopstopper run reliability:api-latency -- http://localhost:8765 --path /health --path /v1/items" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 4. Set a budget the slow route cannot meet
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:reliability:api-latency -- http://localhost:8765 --path /v1/slow --median-ms 100" Enter
+Type "slopstopper run reliability:api-latency -- http://localhost:8765 --path /v1/slow --median-ms 100" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
@@ -99,7 +99,7 @@ Sleep 2s
 
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json" Enter
+Type "slopstopper run hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
@@ -120,7 +120,7 @@ Type@8ms 'del spec["paths"]["/v1/reports"]' Enter
 Type@8ms 'path.write_text(json.dumps(spec, indent=2) + "\n")' Enter
 Type@8ms "PY" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json" Enter
+Type "slopstopper run hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
@@ -135,14 +135,14 @@ Sleep 2s
 
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:reliability:api-health -- http://localhost:8766 --path /health --require-field status --require-field deps.db" Enter
+Type "slopstopper run reliability:api-health -- http://localhost:8766 --path /health --require-field status --require-field deps.db" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # Checkpoint
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "out=$(task ss:reliability:api-health -- http://localhost:8765 --path /health 2>&1)" Enter
+Type "out=$(slopstopper run reliability:api-health -- http://localhost:8765 --path /health 2>&1)" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type 'kill "$(cat scratch/api.pid)" "$(cat scratch/degraded.pid)"' Enter
 Wait+Line@5m /(^|\s)\$$/

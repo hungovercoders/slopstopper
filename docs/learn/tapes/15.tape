@@ -3,9 +3,9 @@
 # runnable blocks by scripts/learntapes.py: edit the lesson, then
 # `task contributing:learn:tapes`. Record it with
 # `task contributing:learn:record -- 15` (demos/render.sh), which
-# starts the shell in a scratch clone of this repo with the CLI on PATH, fills
+# starts the shell in the demo repo `slopstopper demo` writes with the CLI on PATH, fills
 # in the theme from demos/theme.json, and writes dist/learn/15.mp4.
-# Sandbox: checkout
+# Sandbox: demo
 Output demos/.frames/15/
 Set Shell bash
 Set FontSize 16
@@ -16,33 +16,48 @@ Set TypingSpeed 40ms
 Set Theme @theme.json
 Set Framerate 50
 
-# 1. Serve the site and see all four green
+# 1. Serve the demo and run all four
 Type "mkdir -p scratch" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "PORT=8099 slopstopper serve >/dev/null 2>&1 & echo $! > scratch/serve.pid" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "sleep 2" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:reliability:robots-txt -- http://localhost:8099" Enter
+Type "slopstopper run reliability:robots-txt -- http://localhost:8099" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:reliability:sitemap -- http://localhost:8099" Enter
+Type "slopstopper run reliability:llms-txt -- http://localhost:8099" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:reliability:llms-txt -- http://localhost:8099" Enter
+Type "slopstopper run reliability:broken-links -- http://localhost:8099" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:reliability:broken-links -- http://localhost:8099" Enter
+Type "slopstopper run reliability:sitemap -- http://localhost:8099" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
-# 2. De-index the site with one word
+# 2. List it
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "sed -i 's|^Allow: /|Disallow: /|' app/robots.txt" Enter
+Type "sed -i.bak 's|</urlset>|  <url><loc>https://lantern.example.com/history.html</loc></url>\n</urlset>|' app/sitemap.xml && rm app/sitemap.xml.bak" Enter
+Wait+Line@5m /(^|\s)\$$/
+Type "slopstopper run reliability:sitemap -- http://localhost:8099" Enter
+Wait+Line@5m /(^|\s)\$$/
+Sleep 3s
+
+Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
+Type "git checkout app/sitemap.xml" Enter
+Wait+Line@5m /(^|\s)\$$/
+Sleep 2s
+
+# 3. De-index the site with one word
+Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
+Type "sed -i.bak 's|^Allow: /|Disallow: /|' app/robots.txt && rm app/robots.txt.bak" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:reliability:robots-txt -- http://localhost:8099" Enter
+Type "slopstopper run reliability:robots-txt -- http://localhost:8099" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
@@ -52,60 +67,16 @@ Type "git checkout app/robots.txt" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
-# 3. Add a page and link to it, but do not list it
+# 4. Take the title off llms.txt
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "cp app/tools.html app/new.html" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "python3 - <<'PY'" Enter
-Type@8ms "import pathlib, re" Enter
-Type@8ms 'path = pathlib.Path("app/index.html")' Enter
-Type@8ms "text = path.read_text()" Enter
-Type@8ms `end = re.search(r'<a [^>]*href="tools.html"[^>]*>.*?</a>', text).end()` Enter
-Type@8ms `path.write_text(text[:end] + ' <a href="new.html">New</a>' + text[end:])` Enter
-Type@8ms "PY" Enter
+Type "sed -i.bak '1d' app/llms.txt && rm app/llms.txt.bak" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:reliability:sitemap -- http://localhost:8099" Enter
-Wait+Line@5m /(^|\s)\$$/
-Sleep 3s
-
-Type "clear" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "sed -n '/Notes/,/---/p' .ss/reports/sitemap/sitemap-report.md" Enter
-Wait+Line@5m /(^|\s)\$$/
-Sleep 2s
-
-# 4. List it
-Type "clear" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "sed -i 's|</urlset>|  <url><loc>https://slopstopper.dev/new.html</loc></url>\n</urlset>|' app/sitemap.xml" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "task ss:reliability:sitemap -- http://localhost:8099" Enter
-Wait+Line@5m /(^|\s)\$$/
-Sleep 3s
-
-Type "clear" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "git checkout app/index.html app/sitemap.xml" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "rm app/new.html" Enter
-Wait+Line@5m /(^|\s)\$$/
-Sleep 2s
-
-# 5. Take the title off llms.txt
-Type "clear" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "sed -i '1d' app/llms.txt" Enter
-Wait+Line@5m /(^|\s)\$$/
-Sleep 2s
-
-Type "clear" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "task ss:reliability:llms-txt -- http://localhost:8099" Enter
+Type "slopstopper run reliability:llms-txt -- http://localhost:8099" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
@@ -115,34 +86,36 @@ Type "git checkout app/llms.txt" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
-# 6. Point a link at a page that is not there
+# 5. Point a link at a page that is not there
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type `sed -i 's|href="features.html"|href="missing.html"|' app/tools.html` Enter
+Type `sed -i.bak 's|href="history.html"|href="missing.html"|' app/index.html && rm app/index.html.bak` Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:reliability:broken-links -- http://localhost:8099" Enter
+Type "slopstopper run reliability:broken-links -- http://localhost:8099" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "git checkout app/tools.html" Enter
+Type "git checkout app/index.html" Enter
+Wait+Line@5m /(^|\s)\$$/
+Type "rm -rf test-results" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # Checkpoint
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "out=$(task ss:reliability:sitemap -- http://localhost:8099 2>&1)" Enter
+Type "out=$(slopstopper run reliability:sitemap -- http://localhost:8099 2>&1 || true)" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type 'kill "$(cat scratch/serve.pid)"' Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "rm -r scratch" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type `echo "$out" | grep 'complete'` Enter
+Type `echo "$out" | grep 'missing from sitemap'` Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s

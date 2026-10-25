@@ -1,6 +1,8 @@
 # Lesson 11: Smoke and end-to-end
 
-**Goal.** Serve the site, run the two browser checks that prove it
+<!-- learn-sandbox: demo -->
+
+**Goal.** Serve the demo, run the two browser checks that prove it
 works for a visitor, break each one the way a real change would, and
 read what the browser saw.
 
@@ -15,10 +17,11 @@ static checks, because all of it is about what a browser gets back.
 `reliability:smoke` answers the first question after any deploy: does
 it serve? For every path in `pages.smoke` it loads the page in a real
 browser and asserts a 200, no JavaScript errors, and a load under five
-seconds, then checks the homepage links a stylesheet and the share
-image answers with the one header that lets another site embed it.
-It is the check that runs hourly against production, because "it
-worked when we deployed" has a short shelf life.
+seconds, then checks the homepage links a stylesheet and, when the
+site has one, that the share image answers with the header that lets
+another site embed it. It is the check that runs hourly against
+production, because "it worked when we deployed" has a short shelf
+life.
 
 `reliability:e2e` answers the second: can a visitor get around? From
 every path in `pages.e2e` it walks the primary navigation and asserts
@@ -35,37 +38,37 @@ test failed, and 2 is the suite never ran to a verdict: no browser, no
 
 ## You will need
 
-- The checkout from the [syllabus](README.md), with the CLI on PATH.
-- `node`, the npm dependencies and Playwright's Chromium, which
-  `task contributing:setup` installs in one go.
+- The demo repo from the [syllabus](README.md), with the CLI on PATH.
+- `node`, and in the demo: `npm install` (its `package.json` lists the
+  three packages the browser checks need) then
+  `npx playwright install chromium`, once.
 
 ## Steps
 
-### 1. Serve the site and see smoke green
+### 1. Serve the demo and see smoke green
 
 <!-- learn -->
 ```sh
 mkdir -p scratch
 PORT=8099 slopstopper serve >/dev/null 2>&1 & echo $! > scratch/serve.pid
 sleep 2
-task ss:reliability:smoke -- http://localhost:8099
+slopstopper run reliability:smoke -- http://localhost:8099
 ```
 
 ```
-  ✓  1 [chromium] › .ss/.run/tests/smoke.spec.ts:46:9 › Smoke Tests › /features.html returns 200 and loads cleanly (953ms)
-  ✓  2 [chromium] › .ss/.run/tests/smoke.spec.ts:46:9 › Smoke Tests › / returns 200 and loads cleanly (1.1s)
-  ✓  3 [chromium] › .ss/.run/tests/smoke.spec.ts:46:9 › Smoke Tests › /tools.html returns 200 and loads cleanly (678ms)
-  ✓  5 [chromium] › .ss/.run/tests/smoke.spec.ts:67:7 › Smoke Tests › homepage has at least one stylesheet linked (210ms)
-  ✓  6 [chromium] › .ss/.run/tests/smoke.spec.ts:80:9 › Smoke Tests › og image (/og-image.png) is publicly shareable (22ms)
-  ✓  4 [chromium] › .ss/.run/tests/smoke.spec.ts:46:9 › Smoke Tests › /feedback.html returns 200 and loads cleanly (853ms)
+  ✓  3 [chromium] › .ss/.run/tests/smoke.spec.ts:102:7 › Smoke Tests › homepage has at least one stylesheet linked (288ms)
+  ✓  2 [chromium] › .ss/.run/tests/smoke.spec.ts:71:9 › Smoke Tests › / returns 200 and loads cleanly (747ms)
+  ✓  1 [chromium] › .ss/.run/tests/smoke.spec.ts:71:9 › Smoke Tests › /history.html returns 200 and loads cleanly (750ms)
 
-  6 passed (3.5s)
+  3 passed (1.4s)
 ```
 
-Four pages from `pages.smoke` in `.slopstopper.yml`, plus the
-stylesheet and the share image. The `.ss/.run/` path is where the
-bundled spec was staged for this run; the spec itself lives in the
-wheel.
+Two pages from `pages.smoke` in `.slopstopper.yml`, plus the
+stylesheet. There is no share-image test because the demo's
+`smoke.og_image_path` is empty: its image is an SVG, and the assertion
+is about the PNG a preview card can embed. The `.ss/.run/` path is
+where the bundled spec was staged for this run; the spec itself lives
+in the wheel.
 
 ### 2. Remove a page the list still names
 
@@ -74,28 +77,22 @@ not.
 
 <!-- learn -->
 ```sh
-rm app/tools.html
+rm app/history.html
 ```
 
 <!-- learn: fails -->
 ```sh
-task ss:reliability:smoke -- http://localhost:8099
+slopstopper run reliability:smoke -- http://localhost:8099
 ```
 
 ```
-    Error: /tools.html should return 200
-
+  ✘  1 [chromium] › .ss/.run/tests/smoke.spec.ts:71:9 › Smoke Tests › /history.html returns 200 and loads cleanly (105ms)
+    Error: /history.html should return 200
     Expected: 200
     Received: 404
 
-      53 |
-      54 |       expect(response, `${path}: navigation returned no response`).not.toBeNull();
-    > 55 |       expect(response!.status(), `${path} should return 200`).toBe(200);
-
   1 failed
-    [chromium] › .ss/.run/tests/smoke.spec.ts:46:9 › Smoke Tests › /tools.html returns 200 and loads cleanly
-  5 passed (3.2s)
-task: Failed to run task "ss:reliability:smoke": exit status 1
+  2 passed (1.2s)
 ```
 
 Playwright names the assertion and shows the line of the spec that
@@ -106,63 +103,58 @@ failing test.
 
 <!-- learn -->
 ```sh
-git checkout app/tools.html
+git checkout app/history.html
+rm -rf test-results
 ```
 
 ### 3. See end-to-end green
 
 <!-- learn -->
 ```sh
-task ss:reliability:e2e -- http://localhost:8099
+slopstopper run reliability:e2e -- http://localhost:8099
 ```
 
 ```
-  ✓  2 [chromium] › .ss/.run/tests/e2e.spec.ts:181:9 › E2E Journeys › /: in-page anchors resolve (220ms)
-  ✓  3 [chromium] › .ss/.run/tests/e2e.spec.ts:210:9 › E2E Journeys › /: disclosure widgets open and close (1.1s)
-  ✓  1 [chromium] › .ss/.run/tests/e2e.spec.ts:152:9 › E2E Journeys › /: primary navigation round trip (1.5s)
-  ✓  4 [chromium] › .ss/.run/tests/e2e.spec.ts:243:9 › E2E Journeys › /: browser back returns to the start (385ms)
-  ✓  6 [chromium] › .ss/.run/tests/e2e.spec.ts:181:9 › E2E Journeys › /features.html: in-page anchors resolve (200ms)
-  ✓  5 [chromium] › .ss/.run/tests/e2e.spec.ts:152:9 › E2E Journeys › /features.html: primary navigation round trip (1.5s)
-  ✓  8 [chromium] › .ss/.run/tests/e2e.spec.ts:243:9 › E2E Journeys › /features.html: browser back returns to the start (347ms)
-  ✓  7 [chromium] › .ss/.run/tests/e2e.spec.ts:210:9 › E2E Journeys › /features.html: disclosure widgets open and close (3.6s)
+  ✓  3 [chromium] › .ss/.run/tests/e2e.spec.ts:243:9 › E2E Journeys › /: browser back returns to the start (207ms)
+  ✓  2 [chromium] › .ss/.run/tests/e2e.spec.ts:152:9 › E2E Journeys › /: primary navigation round trip (279ms)
 
-  8 passed (6.6s)
+  2 passed (710ms)
 ```
 
-Two start paths from `pages.e2e`, four journeys each. The disclosure
-journey on the features page takes longest because that page has a
-collapsible per check, and the spec clicks every one twice.
+One start path from `pages.e2e`, and two of the four journeys: the
+demo has no in-page anchors and no disclosure widgets, so those two
+are skipped rather than failed, which is the spec's rule for a journey
+the page gives it nothing to do.
 
 ### 4. Point a navigation link at a page that does not exist
 
 <!-- learn -->
 ```sh
-sed -i 's|href="tools.html"|href="nope.html"|' app/index.html
+sed -i.bak 's|href="history.html"|href="nope.html"|' app/index.html && rm app/index.html.bak
 ```
 
 <!-- learn: fails -->
 ```sh
-task ss:reliability:e2e -- http://localhost:8099
+slopstopper run reliability:e2e -- http://localhost:8099
 ```
 
 ```
-  ✘  1 [chromium] › .ss/.run/tests/e2e.spec.ts:152:9 › E2E Journeys › /: primary navigation round trip (890ms)
+  ✘  1 [chromium] › .ss/.run/tests/e2e.spec.ts:152:9 › E2E Journeys › /: primary navigation round trip (275ms)
     Error: nope.html: primary navigation should still be present
-      172 |         await expect(page.locator('h1').first(), `${href}: page should have a heading`).toBeVisible();
-      173 |         expect(await page.locator('nav a[href]').count(), `${href}: primary navigation should still be present`)
   1 failed
-  7 passed (6.9s)
+  1 passed (644ms)
 ```
 
-The other seven journeys still pass, including the round trip from the
-features page, because its nav is a separate copy of the markup. That
-is the slop this check exists for: a site with no build step has the
-nav duplicated on every page, and a link fixed on one page stays
-broken on the others until something walks all of them.
+The round trip fails at the destination: the page the link reaches has
+no nav, because it is a 404 page. The other journey still passes. On a
+site with no build step the nav is duplicated on every page, so a link
+fixed on one page stays broken on the others until something walks
+all of them; that is the slop this check exists for.
 
 <!-- learn -->
 ```sh
 git checkout app/index.html
+rm -rf test-results
 ```
 
 ### 5. Know the knobs
@@ -172,10 +164,10 @@ Both checks take the URL positionally and read their page lists from
 
 ```yaml
 pages:
-  smoke: /,/features.html,/tools.html,/feedback.html
-  e2e:   /,/features.html
+  smoke: /,/history.html
+  e2e:   /
 smoke:
-  og_image_path: /og-image.png
+  og_image_path: ''
 ```
 
 `--ci` adds retries, a single worker and the HTML report, and is what
@@ -189,14 +181,14 @@ there.
 
 <!-- learn -->
 ```sh
-out=$(task ss:reliability:smoke -- http://localhost:8099 2>&1)
+out=$(slopstopper run reliability:smoke -- http://localhost:8099 2>&1)
 kill "$(cat scratch/serve.pid)"
 rm -r scratch
 echo "$out" | grep 'passed'
 ```
 
 ```
-  6 passed (3.5s)
+  3 passed (1.4s)
 ```
 
 ## Exercise
@@ -207,10 +199,10 @@ the site does not serve.
 <details>
 <summary>Solution</summary>
 
-Serve the site again, then override the list for one run:
+Serve the demo again, then override the list for one run:
 
 ```sh
-SMOKE_PAGES='/,/pricing.html' task ss:reliability:smoke -- http://localhost:8099
+SMOKE_PAGES='/,/pricing.html' slopstopper run reliability:smoke -- http://localhost:8099
 ```
 
 `/pricing.html should return 200` fails with a 404. The same happens
@@ -241,12 +233,13 @@ page and a console error.
 
 1. Why: a green build is not a working site; the two questions, does
    it serve and can a visitor get around.
-2. Serve; smoke green; what the six tests are.
-3. Remove the tools page; red; Playwright names the assertion and the
-   line; the HTML report.
-4. E2E green; the four journeys.
-5. Break one nav link; one journey fails, seven pass; why the nav is
-   duplicated and why that is the slop.
+2. Serve; smoke green; what the three tests are and why there is no
+   share-image test here.
+3. Remove the history page; red; Playwright names the assertion and
+   the line; the HTML report.
+4. E2E green; two journeys run, two skipped.
+5. Break the nav link; the round trip fails at the destination; why
+   the nav is duplicated and why that is the slop.
 6. The page lists, `--ci`, ejecting the spec for your own journeys.
 
 **Shot list.** One terminal, 100x30, font size 16, the site's theme.

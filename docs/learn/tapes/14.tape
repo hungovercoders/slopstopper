@@ -3,9 +3,9 @@
 # runnable blocks by scripts/learntapes.py: edit the lesson, then
 # `task contributing:learn:tapes`. Record it with
 # `task contributing:learn:record -- 14` (demos/render.sh), which
-# starts the shell in a scratch clone of this repo with the CLI on PATH, fills
+# starts the shell in the demo repo `slopstopper demo` writes with the CLI on PATH, fills
 # in the theme from demos/theme.json, and writes dist/learn/14.mp4.
-# Sandbox: checkout
+# Sandbox: demo
 Output demos/.frames/14/
 Set Shell bash
 Set FontSize 16
@@ -16,14 +16,14 @@ Set TypingSpeed 40ms
 Set Theme @theme.json
 Set Framerate 50
 
-# 1. Serve the site and see it green
+# 1. Serve the demo and see it red
 Type "mkdir -p scratch" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "PORT=8099 slopstopper serve >/dev/null 2>&1 & echo $! > scratch/serve.pid" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "sleep 2" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "SEO_VERIFY_OG_IMAGE=0 task ss:reliability:seo -- http://localhost:8099" Enter
+Type "SEO_VERIFY_OG_IMAGE=0 slopstopper run reliability:seo -- http://localhost:8099" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
@@ -34,30 +34,19 @@ Type "sed -n '/Tags detected/,/og:url/p' .ss/reports/seo/seo-metatags-report.md 
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
-# 3. Remove the description from one page
+# 3. Fix it
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type `sed -i '/<meta name="description"/d' app/tools.html` Enter
+Type `sed -i.bak 's|  <link rel="canonical" href="https://lantern.example.com/history.html">|  <meta name="description" content="Every incident in the last ninety days, which service it hit and how long it lasted.">\n  <link rel="canonical" href="https://lantern.example.com/history.html">|' app/history.html && rm app/history.html.bak` Enter
 Wait+Line@5m /(^|\s)\$$/
-Sleep 2s
-
-Type "clear" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "SEO_VERIFY_OG_IMAGE=0 task ss:reliability:seo -- http://localhost:8099" Enter
-Wait+Line@5m /(^|\s)\$$/
-Sleep 2s
-
-# 4. Fix it
-Type "clear" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "git checkout app/tools.html" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "SEO_VERIFY_OG_IMAGE=0 task ss:reliability:seo -- http://localhost:8099 | grep 'All pages'" Enter
+Type "SEO_VERIFY_OG_IMAGE=0 slopstopper run reliability:seo -- http://localhost:8099 | grep 'All pages'" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # Checkpoint
 Type "clear" Enter
+Wait+Line@5m /(^|\s)\$$/
+Type "git checkout app/history.html" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type 'kill "$(cat scratch/serve.pid)"' Enter
 Wait+Line@5m /(^|\s)\$$/

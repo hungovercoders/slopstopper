@@ -453,7 +453,8 @@ def _add_serve(sub) -> None:
         description=(
             "Run the bundled static server. Auto-detects SERVE_ROOT\n"
             "(the first match of dist/client, dist, build, out, public, app) and\n"
-            "optionally applies headers from worker/headers.json if present.\n\n"
+            "applies the headers from headers.source in .slopstopper.yml, else\n"
+            "from worker/headers.json or public/_headers if present.\n\n"
             "Replaces the slopstopper process via execvp(node), so a backgrounded\n"
             "`slopstopper serve &` gives bash the right PID via `$!` for later kill.\n"
         ),
@@ -461,7 +462,7 @@ def _add_serve(sub) -> None:
             "Environment:\n"
             "  PORT                    default 8080\n"
             "  SERVE_ROOT              explicit build-output dir\n"
-            "  SS_SERVER_HEADERS       explicit JSON headers file\n\n"
+            "  SS_SERVER_HEADERS       explicit headers file (JSON rules or _headers), over headers.source\n\n"
             "Examples:\n"
             "  slopstopper serve\n"
             "  PORT=8000 SERVE_ROOT=dist/client slopstopper serve\n"
@@ -924,6 +925,13 @@ def _dispatch_serve() -> int:
     if not server_path.exists():
         print(f"❌ Bundled server.js not found at {server_path}", file=sys.stderr)
         return 1
+    # The headers the host sends, from the same `headers.source` the CSP
+    # checks read, so a local run carries the real policy. An explicit
+    # SS_SERVER_HEADERS still wins, and the server's own auto-detect
+    # (worker/headers.json, public/_headers) covers an unconfigured repo.
+    source = config.get("headers.source")
+    if source and not os.environ.get("SS_SERVER_HEADERS") and Path(str(source)).is_file():
+        os.environ["SS_SERVER_HEADERS"] = str(source)
     os.execvp("node", ["node", str(server_path)])
     return 1  # unreachable, because execvp doesn't return on success
 

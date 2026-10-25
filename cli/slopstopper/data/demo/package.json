@@ -1,0 +1,14 @@
+{
+  "name": "lantern",
+  "private": true,
+  "description": "The devDependencies the browser checks need: npm install, then npx playwright install chromium.",
+  "scripts": {
+    "start": "slopstopper serve",
+    "test": "slopstopper run reliability:smoke -- http://localhost:8080"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
+    "@lhci/cli": "^0.14.0",
+    "@playwright/test": "^1.40.0"
+  }
+}
