@@ -182,10 +182,10 @@ PLAYWRIGHT_CALLERS = [w for w in ALL_WORKFLOWS if "uses: ./.github/actions/ss-pl
 
 
 def _steps(text: str) -> list[str]:
-    """Each step block, from the line that opens it (`- name:`, `- uses:`
-    or `- run:`) to the next step; the file header is dropped. An unnamed
-    step after the one under test must not fold into it."""
-    return re.split(r"(?m)^(?=\s+- (?:name|uses|run): )", text)[1:]
+    """Each step block, from the line that opens it (`- <any key>:`) to
+    the next step; the file header is dropped. A step after the one under
+    test must not fold into it, whatever key it opens with."""
+    return re.split(r"(?m)^(?=[ \t]+- [A-Za-z-]+: )", text)[1:]
 
 
 def test_the_fixture_finds_playwright_callers():
@@ -259,8 +259,9 @@ def test_playwright_caller_bounds_the_step_and_follows_npm_ci(workflow):
     for job in re.split(r"(?m)^  [A-Za-z0-9_-]+:\n", text)[1:]:
         if "uses: ./.github/actions/ss-playwright" not in job:
             continue
-        # The step itself, not a comment that mentions it.
-        npm_ci = re.search(r"(?m)^\s+(?:- )?run: npm ci\s*$", job)
+        # The step itself (`run: npm ci`, with flags, or a line of a `run: |`
+        # block), not a comment that mentions it.
+        npm_ci = re.search(r"(?m)^[ \t]+(?:- )?(?:run: )?npm ci(?: [^\n#]*)?$", job)
         assert npm_ci, f"{workflow}: no `run: npm ci` step in the job that calls ss-playwright"
         assert npm_ci.start() < job.index("uses: ./.github/actions/ss-playwright"), (
             f"{workflow}: ss-playwright runs before `npm ci`"
