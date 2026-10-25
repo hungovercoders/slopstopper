@@ -86,7 +86,7 @@ task contributing:test -- -k registration -q
 E       AssertionError: add a DOC_HEADINGS row for: ['reliability:probe']; remove: []
 E       AssertionError: reliability:probe is not in profiles.CHECK_WORKFLOWS
 E       AssertionError: Taskfile.ss.yml has no `reliability:probe:` target
-E       AssertionError: None is not in install.sh's GENERIC_WORKFLOWS, so adopters never get reliability:probe
+E       AssertionError: None is not in suite.GENERIC_WORKFLOWS, so adopters never get reliability:probe
 E       AssertionError: None has no badges.WORKFLOW_DISPLAY entry; its README badge would fall back to a title-cased filename
 E       AssertionError: reliability:probe: add 'cli/slopstopper/checks/probe.py' under the `reliability:` label in .github/labeler.yml
 E       AssertionError: reliability:probe (probe.py) has no cli/tests/checks/test_probe.py
