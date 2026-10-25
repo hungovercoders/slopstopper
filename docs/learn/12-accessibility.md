@@ -1,8 +1,10 @@
 # Lesson 12: Accessibility
 
-**Goal.** Audit every page with axe-core, remove one attribute that a
-screen reader depends on, watch the audit fail at the strictest
-threshold, and fix it.
+<!-- learn-sandbox: demo -->
+
+**Goal.** Audit both of the demo's pages with axe-core, find the one
+attribute a screen reader depends on that the history page is missing,
+and fix it.
 
 ## Why this check
 
@@ -24,88 +26,71 @@ cover roughly a third of WCAG, so a green run means "nothing a machine
 can find", not "accessible"; it is the floor, and the point of a floor
 is that nothing gets under it.
 
-The site has one rule of its own that axe enforces for it: the tomato
-accent is below 4.5:1 against the cream background, so it is for
-shapes only, and text on light backgrounds uses the deeper tomato. The
-exercise shows what happens when that rule is broken.
-
 ## You will need
 
-- The checkout from the [syllabus](README.md), with the CLI on PATH.
-- `node`, the npm dependencies and Playwright's Chromium, from
-  `task contributing:setup`.
+- The demo repo from the [syllabus](README.md), with the CLI on PATH.
+- `node`, and in the demo `npm install` then
+  `npx playwright install chromium` (as in lesson 11).
 
 ## Steps
 
-### 1. Serve the site and see it green
+### 1. Serve the demo and see it red
 
-<!-- learn -->
+<!-- learn: fails -->
 ```sh
 mkdir -p scratch
 PORT=8099 slopstopper serve >/dev/null 2>&1 & echo $! > scratch/serve.pid
 sleep 2
-task ss:reliability:accessibility -- http://localhost:8099
+slopstopper run reliability:accessibility -- http://localhost:8099
 ```
 
 ```
-♿ Running accessibility audit against: http://localhost:8099
-📜 pages.accessibility (4 path(s))
-
-Running 4 tests using 2 workers
-
-  ✓  2 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › homepage meets accessibility threshold (1.7s)
-  ✓  1 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › /features.html meets accessibility threshold (2.2s)
-  ✓  3 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › /tools.html meets accessibility threshold (1.5s)
-  ✓  4 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › /feedback.html meets accessibility threshold (1.4s)
-
-  4 passed (4.8s)
-```
-
-### 2. Remove the alternative text from the homepage image
-
-The hero's terminal demo is an image with a long `alt` describing what
-the terminal shows. Strip it, the way a template that "cleans up"
-attributes would.
-
-<!-- learn -->
-```sh
-sed -i 's/ alt="[^"]*"//' app/index.html
-```
-
-<!-- learn: fails -->
-```sh
-task ss:reliability:accessibility -- http://localhost:8099
-```
-
-```
-♿ Accessibility violations on homepage (1 at or above "serious" impact):
+♿ Accessibility violations on /history.html (1 at or above "serious" impact):
 [CRITICAL] image-alt: Ensure <img> elements have alternative text or a role of none or presentation
   - img
-  ✘  2 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › homepage meets accessibility threshold (1.5s)
-    Error: homepage: expected ≤0 violations at "serious" impact or above, but found 1
+  ✓  2 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › homepage meets accessibility threshold (944ms)
+  ✘  1 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › /history.html meets accessibility threshold (957ms)
+    Error: /history.html: expected ≤0 violations at "serious" impact or above, but found 1
   1 failed
-  3 passed (5.2s)
-task: Failed to run task "ss:reliability:accessibility": exit status 1
+  1 passed (1.2s)
 ```
 
 The check prints each violation with its impact, its axe rule id and
 the selector of each offending element before Playwright reports the
-failed test. `image-alt` is critical: a screen reader user gets
-nothing at all for the one thing the page is showing off.
+failed test. `image-alt` is critical: the history page's one image is
+the uptime chart, and a screen reader user gets nothing at all for it.
+
+### 2. Read the element
+
+<!-- learn -->
+```sh
+grep -n '<img' app/history.html
+```
+
+```
+26:    <img src="uptime.svg" width="480" height="60">
+```
+
+Dimensions, so the page does not jump when it loads, and no `alt`. It
+is the shape a template that "cleans up" attributes leaves behind, and
+the shape most image tags written in a hurry have.
 
 ### 3. Fix it
 
 The fix is the attribute, with text that says what the image shows,
-not that it is an image. Here that is the text that was there:
+not that it is an image.
 
 <!-- learn -->
 ```sh
-git checkout app/index.html
-task ss:reliability:accessibility -- http://localhost:8099
+sed -i.bak 's|<img src="uptime.svg" width="480" height="60">|<img src="uptime.svg" width="480" height="60" alt="Uptime over the last ninety days: a flat line at 100% with two dips">|' app/history.html && rm app/history.html.bak
+slopstopper run reliability:accessibility -- http://localhost:8099
 ```
 
 ```
-  4 passed (4.8s)
+  ✓  1 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › /history.html meets accessibility threshold (784ms)
+  ✓  2 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › homepage meets accessibility threshold (794ms)
+
+  2 passed (1.1s)
 ```
 
 ### 4. Know the knobs
@@ -122,38 +107,43 @@ open, gets its own ejected copy.
 
 <!-- learn -->
 ```sh
-out=$(task ss:reliability:accessibility -- http://localhost:8099 2>&1)
+git checkout app/history.html
+rm -rf test-results
+out=$(slopstopper run reliability:accessibility -- http://localhost:8099 2>&1 || true)
 kill "$(cat scratch/serve.pid)"
-rm -r scratch
-echo "$out" | grep 'passed'
+rm -rf scratch test-results
+echo "$out" | grep 'CRITICAL'
 ```
 
 ```
-  4 passed (4.8s)
+[CRITICAL] image-alt: Ensure <img> elements have alternative text or a role of none or presentation
 ```
+
+Red again, with the demo as it shipped, and the fix is one attribute
+whose text you have now written once.
 
 ## Exercise
 
-Break the site's own contrast rule and see which impact level axe
-gives it.
+Find out what impact level axe gives a contrast failure, which is the
+most common real-world violation.
 
 <details>
 <summary>Solution</summary>
 
-Serve the site again, then use the accent for text everywhere the
-stylesheet uses the deeper tomato:
+Serve the demo again and make the body text the same colour as the
+page's muted grey:
 
 ```sh
-sed -i 's/color: var(--accent-deep);/color: var(--accent);/' app/shared.css
-task ss:reliability:accessibility -- http://localhost:8099
-git checkout app/shared.css
+sed -i.bak 's|color: #1d1d1b;|color: #9a9a94;|' app/style.css && rm app/style.css.bak
+slopstopper run reliability:accessibility -- http://localhost:8099
+git checkout app/style.css
 ```
 
 `color-contrast` fires at `serious`, which is why the default threshold
-is set there: contrast is the most common real-world violation and the
-one most often argued away as a design choice. The fix is the one the
-brand tokens already encode: `--accent` for shapes, `--accent-deep` for
-text.
+is set there: contrast is the violation most often argued away as a
+design choice. If the stylesheet's colours differ from the ones above,
+pick any text colour close to the background; the rule, not the
+value, is the point.
 
 </details>
 
@@ -164,30 +154,30 @@ text.
   event
 - [axe-core's rule descriptions](https://dequeuniversity.com/rules/axe/4.10),
   one page per rule id
-- The contrast rule and the brand tokens in [the app README](../app/README.md)
 
 <details>
 <summary>Episode script</summary>
 
 **Length.** 8 to 10 minutes.
 
-**Cold open (0:00).** The homepage with a screen reader voicing it:
-"image". Nothing else.
+**Cold open (0:00).** The history page with a screen reader voicing
+it: "image". Nothing else.
 
 **Talking points.**
 
 1. Why: the failures are ordinary and invisible to a mouse; a third of
    WCAG is automatable, and that third is the floor.
-2. Serve; four pages green.
-3. Strip the alt; critical `image-alt`, with the rule and the
-   selector; the threshold at serious and why.
-4. Put it back; green. The knobs are for seeing the long tail.
-5. Exercise: break the contrast rule; `color-contrast` at serious.
+2. Serve; red on the history page; critical `image-alt`, with the rule
+   and the selector; the threshold at serious and why.
+3. The element: dimensions, no alt.
+4. The attribute, with text that says what the chart shows; green.
+5. Put the demo back. The knobs are for seeing the long tail.
+6. Exercise: a contrast failure and its impact level.
 
 **Shot list.** One terminal, 100x30, font size 16, the site's theme.
 `docs/learn/tapes/12.tape`. Zoom on `[CRITICAL] image-alt`.
 
-**Chapters.** `0:00 Why` · `1:30 Green` · `2:30 No alt` ·
-`4:30 Fix` · `5:30 The knobs` · `6:30 Exercise` · `8:00 Next lesson`.
+**Chapters.** `0:00 Why` · `1:30 Red` · `3:00 The element` ·
+`4:00 Fix` · `5:30 The knobs` · `6:30 Exercise` · `8:00 Next lesson`.
 
 </details>

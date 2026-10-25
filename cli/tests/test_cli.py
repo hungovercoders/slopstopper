@@ -349,6 +349,28 @@ def test_serve_execs_node_with_resolved_server_js(monkeypatch, isolated_cwd):
     assert captured["args"][1].endswith("server.js")
 
 
+def test_serve_applies_the_configured_headers_source(monkeypatch, isolated_cwd, write_config):
+    """`headers.source` is the host's headers file, so the local server
+    sends the same policy the CSP checks read; an explicit
+    SS_SERVER_HEADERS still wins."""
+    (isolated_cwd / "app").mkdir()
+    (isolated_cwd / "app/_headers").write_text("/*\n  X-Frame-Options: DENY\n")
+    write_config("headers:\n  source: app/_headers\n  format: cloudflare-text\n")
+    seen: dict = {}
+    monkeypatch.setattr(cli.shutil, "which", lambda _: "/usr/bin/node")
+    monkeypatch.setattr(cli.os, "execvp", lambda file, args: seen.update(env=dict(cli.os.environ)))
+    monkeypatch.delenv("SS_SERVER_HEADERS", raising=False)
+    cli.main(["serve"])
+    assert seen["env"]["SS_SERVER_HEADERS"] == "app/_headers"
+    monkeypatch.setenv("SS_SERVER_HEADERS", "other.json")
+    cli.main(["serve"])
+    assert seen["env"]["SS_SERVER_HEADERS"] == "other.json"
+    monkeypatch.delenv("SS_SERVER_HEADERS", raising=False)
+    (isolated_cwd / "app/_headers").unlink()
+    cli.main(["serve"])
+    assert "SS_SERVER_HEADERS" not in seen["env"]
+
+
 def test_serve_prefers_ss_override(monkeypatch, isolated_cwd):
     override = isolated_cwd / ".ss" / "server.js"
     override.parent.mkdir(parents=True, exist_ok=True)

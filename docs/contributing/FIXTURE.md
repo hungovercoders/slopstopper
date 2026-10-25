@@ -30,7 +30,8 @@ given, so a demo someone has started editing survives a second run.
 | `app/index.html`, `app/history.html`, `app/style.css`, `app/og-image.svg`, `app/uptime.svg` | The two pages with a nav between them, the stylesheet, the share image and the uptime chart |
 | `app/_headers` | The host's headers: a strict baseline for `/*` and one relaxation for `/history.html` |
 | `app/sitemap.xml`, `app/robots.txt`, `app/llms.txt` | The discovery files |
-| `.gitignore` | `.ss/reports/` and `.env` |
+| `.gitignore` | `.ss/reports/`, `.env` and `node_modules/` |
+| `package.json` | The devDependencies the browser checks need (Playwright, axe, Lighthouse CI); `npm install` once, then `npx playwright install chromium` |
 
 Dotfiles are stored without the dot and renamed by `demo.write`; the
 command's help and output come from `demo.FAILURES`.

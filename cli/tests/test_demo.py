@@ -58,7 +58,7 @@ def test_the_fixture_has_the_agents_first_layout():
         "docs/runbooks/RELEASE.md", "docs/security/CSP_EXCEPTIONS.md",
         ".slopstopper.yml", ".gitignore", ".env.example",
         "app/index.html", "app/history.html", "app/_headers", "app/sitemap.xml",
-        "scripts/status.py", "scripts/requirements.txt",
+        "scripts/status.py", "scripts/requirements.txt", "package.json",
     ):
         assert expected in names
     assert not any(n in demo.RENAMES for n in names), "stored names are published renamed"

@@ -1,7 +1,10 @@
 # Lesson 15: Discoverability: robots, sitemap, llms.txt and links
 
-**Goal.** Break each of the four files and links that tell crawlers,
-agents and visitors a page exists, and see which check catches which.
+<!-- learn-sandbox: demo -->
+
+**Goal.** Run the four checks that decide whether anyone finds a page,
+fix the one the demo ships red, and break the other three to see which
+catches what.
 
 ## Why these checks
 
@@ -36,46 +39,79 @@ they were.
 
 ## You will need
 
-- The checkout from the [syllabus](README.md), with the CLI on PATH.
-- `node`, the npm dependencies and Playwright's Chromium, from
-  `task contributing:setup`, for the server and the link check.
+- The demo repo from the [syllabus](README.md), with the CLI on PATH.
+- `node`, and in the demo `npm install` then
+  `npx playwright install chromium` (as in lesson 11), for the server
+  and the link check.
 
 ## Steps
 
-### 1. Serve the site and see all four green
+### 1. Serve the demo and run all four
 
-<!-- learn -->
+<!-- learn: fails -->
 ```sh
 mkdir -p scratch
 PORT=8099 slopstopper serve >/dev/null 2>&1 & echo $! > scratch/serve.pid
 sleep 2
-task ss:reliability:robots-txt -- http://localhost:8099
-task ss:reliability:sitemap -- http://localhost:8099
-task ss:reliability:llms-txt -- http://localhost:8099
-task ss:reliability:broken-links -- http://localhost:8099
+slopstopper run reliability:robots-txt -- http://localhost:8099
+slopstopper run reliability:llms-txt -- http://localhost:8099
+slopstopper run reliability:broken-links -- http://localhost:8099
+slopstopper run reliability:sitemap -- http://localhost:8099
 ```
 
 ```
   ✅ http://localhost:8099/robots.txt
 ✅ robots.txt is present and healthy.
-  ✅ http://localhost:8099 (4 pages crawled)
-✅ sitemap.xml is complete and free of dead entries.
   ✅ http://localhost:8099/llms.txt
 ✅ llms.txt is present and well-formed.
-  ✓  1 [chromium] › .ss/.run/tests/broken-links.spec.ts:27:7 › Broken Link Checks › internal links return successful responses (422ms)
-  1 passed (1.4s)
+  ✓  1 [chromium] › .ss/.run/tests/broken-links.spec.ts:27:7 › Broken Link Checks › internal links return successful responses (82ms)
+  1 passed (407ms)
+🗺️ sitemap completeness audit against: http://localhost:8099
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ❌ http://localhost:8099 (2 pages crawled)
+      - Reachable page missing from sitemap.xml: /history.html
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ Failures detected. See .ss/reports/sitemap/sitemap-report.md for full details.
 ```
 
-### 2. De-index the site with one word
+Three green, one red. The crawler followed the nav from `/` and found
+two pages; the sitemap lists one. The history page was added, linked
+from the nav, and the file that describes the site was left as it
+was. That is the whole lesson in one finding.
+
+### 2. List it
 
 <!-- learn -->
 ```sh
-sed -i 's|^Allow: /|Disallow: /|' app/robots.txt
+sed -i.bak 's|</urlset>|  <url><loc>https://lantern.example.com/history.html</loc></url>\n</urlset>|' app/sitemap.xml && rm app/sitemap.xml.bak
+slopstopper run reliability:sitemap -- http://localhost:8099
+```
+
+```
+  ✅ http://localhost:8099 (2 pages crawled)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ sitemap.xml is complete and free of dead entries.
+```
+
+The report's own advice is the durable fix: generate the sitemap from
+the page list at build time, so it cannot drift. A hand-edited list is
+what you have when the site has two pages.
+
+<!-- learn -->
+```sh
+git checkout app/sitemap.xml
+```
+
+### 3. De-index the site with one word
+
+<!-- learn -->
+```sh
+sed -i.bak 's|^Allow: /|Disallow: /|' app/robots.txt && rm app/robots.txt.bak
 ```
 
 <!-- learn: fails -->
 ```sh
-task ss:reliability:robots-txt -- http://localhost:8099
+slopstopper run reliability:robots-txt -- http://localhost:8099
 ```
 
 ```
@@ -83,7 +119,6 @@ task ss:reliability:robots-txt -- http://localhost:8099
       - `User-agent: *` has a blanket `Disallow: /`, which de-indexes the entire site
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ Failures detected. See .ss/reports/robots-txt/robots-txt-report.md for full details.
-task: Failed to run task "ss:reliability:robots-txt": exit status 1
 ```
 
 Lighthouse checks that the file parses; this check reads what it says.
@@ -93,84 +128,16 @@ Lighthouse checks that the file parses; this check reads what it says.
 git checkout app/robots.txt
 ```
 
-### 3. Add a page and link to it, but do not list it
+### 4. Take the title off llms.txt
 
 <!-- learn -->
 ```sh
-cp app/tools.html app/new.html
-python3 - <<'PY'
-import pathlib, re
-path = pathlib.Path("app/index.html")
-text = path.read_text()
-end = re.search(r'<a [^>]*href="tools.html"[^>]*>.*?</a>', text).end()
-path.write_text(text[:end] + ' <a href="new.html">New</a>' + text[end:])
-PY
+sed -i.bak '1d' app/llms.txt && rm app/llms.txt.bak
 ```
 
 <!-- learn: fails -->
 ```sh
-task ss:reliability:sitemap -- http://localhost:8099
-```
-
-```
-  ❌ http://localhost:8099 (5 pages crawled)
-      - Reachable page missing from sitemap.xml: /new.html
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ Failures detected. See .ss/reports/sitemap/sitemap-report.md for full details.
-task: Failed to run task "ss:reliability:sitemap": exit status 1
-```
-
-The crawler found five pages by following links and the sitemap lists
-four. The report also carries the two advisory notes:
-
-<!-- learn -->
-```sh
-sed -n '/Notes/,/---/p' .ss/reports/sitemap/sitemap-report.md
-```
-
-```
-**Notes:**
-- ⚠️  Sitemap entry not internally linked (orphan): /llms.txt
-- ⚠️  Reachable page not listed in llms.txt: /new.html
----
-```
-
-### 4. List it
-
-<!-- learn -->
-```sh
-sed -i 's|</urlset>|  <url><loc>https://slopstopper.dev/new.html</loc></url>\n</urlset>|' app/sitemap.xml
-task ss:reliability:sitemap -- http://localhost:8099
-```
-
-```
-  ✅ http://localhost:8099 (5 pages crawled)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ sitemap.xml is complete and free of dead entries.
-```
-
-Green, and the `llms.txt` gap is still a note, because that file is a
-curated map and not every page belongs in it. The report's own advice
-is the durable fix: generate the sitemap from the route inventory at
-build time, so it cannot drift. A hand-edited list is what you have
-when the site has four pages.
-
-<!-- learn -->
-```sh
-git checkout app/index.html app/sitemap.xml
-rm app/new.html
-```
-
-### 5. Take the title off llms.txt
-
-<!-- learn -->
-```sh
-sed -i '1d' app/llms.txt
-```
-
-<!-- learn: fails -->
-```sh
-task ss:reliability:llms-txt -- http://localhost:8099
+slopstopper run reliability:llms-txt -- http://localhost:8099
 ```
 
 ```
@@ -178,7 +145,6 @@ task ss:reliability:llms-txt -- http://localhost:8099
       - Missing H1 title (first line should be `# <name>`)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ Failures detected. See .ss/reports/llms-txt/llms-txt-report.md for full details.
-task: Failed to run task "ss:reliability:llms-txt": exit status 1
 ```
 
 The bar is deliberately low, because the convention is young: the
@@ -190,63 +156,67 @@ one is a site an assistant summarises from its HTML, badly.
 git checkout app/llms.txt
 ```
 
-### 6. Point a link at a page that is not there
+### 5. Point a link at a page that is not there
 
 <!-- learn -->
 ```sh
-sed -i 's|href="features.html"|href="missing.html"|' app/tools.html
+sed -i.bak 's|href="history.html"|href="missing.html"|' app/index.html && rm app/index.html.bak
 ```
 
 <!-- learn: fails -->
 ```sh
-task ss:reliability:broken-links -- http://localhost:8099
+slopstopper run reliability:broken-links -- http://localhost:8099
 ```
 
 ```
-  ✘  1 [chromium] › .ss/.run/tests/broken-links.spec.ts:27:7 › Broken Link Checks › internal links return successful responses (460ms)
+  ✘  1 [chromium] › .ss/.run/tests/broken-links.spec.ts:27:7 › Broken Link Checks › internal links return successful responses (89ms)
     Error: /missing.html returned 404
   1 failed
-task: Failed to run task "ss:reliability:broken-links": exit status 1
 ```
 
 <!-- learn -->
 ```sh
-git checkout app/tools.html
+git checkout app/index.html
+rm -rf test-results
 ```
 
 ## Checkpoint
 
 <!-- learn -->
 ```sh
-out=$(task ss:reliability:sitemap -- http://localhost:8099 2>&1)
+out=$(slopstopper run reliability:sitemap -- http://localhost:8099 2>&1 || true)
 kill "$(cat scratch/serve.pid)"
 rm -r scratch
-echo "$out" | grep 'complete'
+echo "$out" | grep 'missing from sitemap'
 ```
 
 ```
-✅ sitemap.xml is complete and free of dead entries.
+      - Reachable page missing from sitemap.xml: /history.html
 ```
+
+Red again, with the demo as it shipped, and the fix is one `<url>`
+line.
 
 ## Exercise
 
-Make the sitemap check fail without changing a single file.
+Make the sitemap check pass without listing the history page.
 
 <details>
 <summary>Solution</summary>
 
-Serve the site again and escalate the advisory note about orphans:
+Serve the demo again and take the page out of the nav instead:
 
 ```sh
-task ss:reliability:sitemap -- http://localhost:8099 --strict-orphans
+sed -i.bak 's| · <a href="history.html">History</a>||' app/index.html && rm app/index.html.bak
+slopstopper run reliability:sitemap -- http://localhost:8099
+git checkout app/index.html
 ```
 
-`/llms.txt` is in the sitemap and nothing on the site links to it, so
-with orphans escalated it is a failure. The same knob is
-`reliability.sitemap.allow_orphans: false` in `.slopstopper.yml`, and
-`--require-llms-complete` does the same for the `llms.txt` gaps. Both
-are off by default because a curated map is allowed to leave things
-out; turn them on when you want the files to mirror the site exactly.
+Green: the crawler only finds what links reach, so an unlinked page is
+not a missing sitemap entry. It is also not a page anyone will find,
+which is why the fix in step 2 is the right one and this is the
+exercise. `--strict-orphans` and `--require-llms-complete` escalate the
+two advisory notes when you want the files to mirror the site exactly.
 
 </details>
 
@@ -271,20 +241,20 @@ out; turn them on when you want the files to mirror the site exactly.
 
 1. Why: live, fast, accessible and invisible; four files and links,
    who reads each.
-2. Serve; four green runs.
-3. One word in robots.txt; red; Lighthouse parses, this reads.
-4. A new page, linked but unlisted; red; the two notes; list it; why
-   generating beats editing.
+2. Serve; three green, the sitemap red; a page added and a list left
+   alone.
+3. List it; green; why generating beats editing. Put it back.
+4. One word in robots.txt; red; Lighthouse parses, this reads.
 5. llms.txt without its title; the deliberately low bar.
 6. A broken link; red.
-7. Exercise: escalate the orphan note.
+7. Exercise: unlink the page and see why that is the wrong fix.
 
 **Shot list.** One terminal, 100x30, font size 16, the site's theme.
-`docs/learn/tapes/15.tape`. Zoom on "5 pages crawled" against four
-sitemap entries.
+`docs/learn/tapes/15.tape`. Zoom on "2 pages crawled" against one
+sitemap entry.
 
-**Chapters.** `0:00 Why` · `1:30 Green` · `2:30 robots.txt` ·
-`4:00 The sitemap` · `6:30 llms.txt` · `7:30 Links` ·
+**Chapters.** `0:00 Why` · `1:30 Four runs` · `3:00 The sitemap` ·
+`4:30 robots.txt` · `6:00 llms.txt` · `7:00 Links` ·
 `8:30 Exercise` · `9:30 Next lesson`.
 
 </details>

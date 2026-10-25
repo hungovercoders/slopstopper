@@ -2,3 +2,8 @@
 .ss/reports/
 # The real values behind .env.example never leave the machine.
 .env
+# The browser checks' dependencies (npm install).
+node_modules/
+# What the browser checks leave behind on a failed run and a Lighthouse run.
+test-results/
+.lighthouseci/
