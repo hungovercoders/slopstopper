@@ -1,14 +1,15 @@
 # Lantern
 
 A static status page for a small team: which services exist, who owns
-each one, and where to look when one is down. One HTML page under
-`app/` with its stylesheet, no build step, served by any static host.
+each one, and where to look when one is down. Two HTML pages under
+`app/` with a stylesheet, a script that refreshes the badges, no build
+step, served by any static host.
 
 This repository is the demo fixture that `slopstopper demo` writes. It
-is deliberately a little slopped: two hygiene checks fail on it out of
-the box, and the fix for each is the kind of edit a real repo needs. Run
-`slopstopper run hygiene:entry-files` and `slopstopper run
-hygiene:docs-structure` to see them.
+is deliberately a little slopped: a handful of checks fail on it out of
+the box, one finding each, and the fix for each is the kind of edit a
+real repo needs. `slopstopper demo` lists them as it writes; run any
+check with `slopstopper run <check>` to see its finding.
 
 ## Quick start
 

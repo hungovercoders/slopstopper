@@ -61,7 +61,7 @@ def test_the_fixture_has_the_agents_first_layout():
         "scripts/status.py", "scripts/requirements.txt",
     ):
         assert expected in names
-    assert not any(Path(n).name in demo.RENAMES for n in names), "stored names are published renamed"
+    assert not any(n in demo.RENAMES for n in names), "stored names are published renamed"
 
 
 def test_write_creates_every_file_and_skips_existing_ones(tmp_path):
@@ -366,17 +366,19 @@ def test_quiet_keeps_only_the_result(tmp_path, capsys):
     assert capsys.readouterr().out.strip() == ""
 
 
-def test_renames_apply_at_the_root_only_and_junk_is_skipped(monkeypatch, tmp_path):
+def test_renames_are_keyed_by_whole_path_and_junk_is_skipped(monkeypatch, tmp_path):
     fake = tmp_path / "demo"
     (fake / "docs").mkdir(parents=True)
+    (fake / "scripts").mkdir()
     (fake / "__pycache__").mkdir()
     (fake / "slopstopper.yml").write_text("profile: ui\n")
     (fake / "docs" / "slopstopper.yml").write_text("sample\n")
+    (fake / "scripts" / "requirements.demo").write_text("requests==2.19.1\n")
     (fake / "docs" / "notes.md~").write_text("backup\n")
     (fake / "__pycache__" / "x.pyc").write_bytes(b"")
     (fake / ".DS_Store").write_bytes(b"")
     monkeypatch.setattr(demo, "DEMO_DIR", fake)
-    assert sorted(n for n, _ in demo.files()) == [".slopstopper.yml", "docs/slopstopper.yml"]
+    assert sorted(n for n, _ in demo.files()) == [".slopstopper.yml", "docs/slopstopper.yml", "scripts/requirements.txt"]
 
 
 def test_a_symlink_is_never_written_through(tmp_path):

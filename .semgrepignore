@@ -1,12 +1,35 @@
-# Semgrep's built-in ignore list, then this repo's one addition: the demo
-# fixture carries a deliberate shell=True for the course (lesson 7). See
-# docs/contributing/FIXTURE.md.
-:include .gitignore
+# Semgrep's default ignore template, verbatim (what Semgrep applies when
+# this file is absent), plus this repo's one addition at the end: the
+# demo fixture carries a deliberate shell=True for the course (lesson 7).
+# See docs/contributing/FIXTURE.md.
+
+# Ignore git items
+.gitignore
 .git/
+:include .gitignore
+
+# Common large paths
 node_modules/
 build/
 dist/
 vendor/
+.env/
 .venv/
+.tox/
 *.min.js
+.npm/
+.yarn/
+
+# Common test paths
+test/
+tests/
+*_test.go
+
+# Semgrep rules folder
+.semgrep
+
+# Semgrep-action log folder
+.semgrep_logs/
+
+# This repo: the demo fixture's deliberate findings
 cli/slopstopper/data/demo/

@@ -25,7 +25,7 @@ given, so a demo someone has started editing survives a second run.
 | `docs/runbooks/RELEASE.md` | A doc nothing routes to |
 | `docs/security/CSP_EXCEPTIONS.md` | The CSP ledger: the schema and an empty `## Exceptions` section |
 | `.slopstopper.yml` | `profile: ui`, two pages, `headers.source: app/_headers`; the smoke share-image assertion is off because the image is an SVG |
-| `.env.example` | The values the script needs, with an AWS-shaped example key that is not a credential |
+| `.env.example` | The values the script needs, blank; lesson 6 adds the fake key itself |
 | `scripts/status.py`, `scripts/requirements.txt` | A script that refreshes the badges, and its one pinned dependency |
 | `app/index.html`, `app/history.html`, `app/style.css`, `app/og-image.svg`, `app/uptime.svg` | The two pages with a nav between them, the stylesheet, the share image and the uptime chart |
 | `app/_headers` | The host's headers: a strict baseline for `/*` and one relaxation for `/history.html` |
@@ -47,8 +47,8 @@ Every other check passes or skips.
 | `hygiene:entry-files` | `README.md` is over its 600-token budget (the manual under "Everything you need to know"); every rule passes | Move that section into `docs/` and route it; never raise the budget |
 | `hygiene:docs-structure` | `docs/runbooks/RELEASE.md` has no route | One row in `docs/README.md`: a trigger, then "read", then the link |
 | `hygiene:docs-accuracy` | `docs/contributing.md` says to run a `task` target (`ss:hygiene:docs`) and the repo has no Taskfile | Name the `slopstopper run` commands that exist |
-| `hygiene:complexity` | `badge()` in `scripts/status.py` maps sixteen HTTP statuses with sixteen `if`s: CCN 17 against the cap of 15 | A dict lookup: one line, CCN 1 |
-| `security:sast` | `scripts/status.py` builds a `git commit` command from a string and runs it with `shell=True`: `subprocess-shell-true`, at ERROR | A list, and no shell |
+| `hygiene:complexity` | `badge()` in `scripts/status.py` maps sixteen HTTP statuses with sixteen `if`s: CCN 17 against the cap of 15 | A dict of the sixteen statuses and a one-line lookup, CCN 1 |
+| `security:sast` | `scripts/status.py` builds a `git commit` command from a string and runs it with `shell=True`: `subprocess-shell-true`, at ERROR (two `missing-integrity` WARNINGs on the stylesheet links are reported and do not block) | A list, and no shell |
 | `security:vulnerability:all` | `scripts/requirements.txt` pins `requests==2.19.1`: CVE-2018-18074 (HIGH), plus four MEDIUMs that are reported and do not block | The version the Fixed In column names, or the current release |
 | `hygiene:csp-exceptions` | `app/_headers` lets `/history.html` load images from `https://charts.example.com`; the ledger has no entry | The entry with all seven fields, or drop the relaxation |
 | `reliability:accessibility` | The uptime chart on `app/history.html` is an `<img>` with no `alt`: `image-alt`, critical | An `alt` that says what the chart shows |

@@ -9,7 +9,7 @@ Read only the doc whose trigger matches; each row says when.
 
 | When you are…                                | Do this                                                                 |
 | -------------------------------------------- | ----------------------------------------------------------------------- |
-| changing the page, or asking why it is one file | Read [architecture.md](architecture.md) for the page's shape and the service table |
+| changing a page, or asking why there is no build step | Read [architecture.md](architecture.md) for the page's shape and the service table |
 | opening a pull request, or reviewing one     | Read [contributing.md](contributing.md) for the review rules and the checks that run |
 | relaxing the Content-Security-Policy for a page | Read [security/CSP_EXCEPTIONS.md](security/CSP_EXCEPTIONS.md) for the ledger every exception goes in |
 

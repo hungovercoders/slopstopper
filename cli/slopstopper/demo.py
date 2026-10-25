@@ -6,7 +6,7 @@ walkthrough and the skill evals can all run slopstopper against with no
 network and no clone of this repository. It is a static status page
 ("Lantern") with the AGENTS.md-first layout: a README, an AGENTS.md,
 `CLAUDE.md` as `@AGENTS.md`, a `docs/` tree with its map, a
-`.slopstopper.yml` and one page under `app/`.
+`.slopstopper.yml`, two pages under `app/` and a script under `scripts/`.
 
 It is deliberately a little slopped: one finding per check in
 `FAILURES`, each the kind of edit a real repo needs, so the course has a
