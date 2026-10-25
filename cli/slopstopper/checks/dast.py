@@ -159,16 +159,33 @@ def _localhost_responding(url: str = "http://localhost:8080") -> bool:
         return False
 
 
-def _start_local_server() -> subprocess.Popen | None:
+def _target_port(target: str) -> str:
+    """The explicit port in a URL, else 8080: where `slopstopper serve` and the
+    bundled server.js listen, and what a portless localhost target has always
+    meant here."""
+    m = re.match(r"https?://[^:/]+:(\d+)", target)
+    return m.group(1) if m else "8080"
+
+
+def _with_port(target: str) -> str:
+    """The target with its port made explicit, so the probe, the fallback
+    server and the Docker rewrite all agree on one."""
+    if re.match(r"https?://[^:/]+:\d+", target):
+        return target
+    return re.sub(r"^(https?://[^:/]+)", rf"\1:{_target_port(target)}", target)
+
+
+def _start_local_server(target: str = DEFAULT_TARGET) -> subprocess.Popen | None:
     if not Path("server.js").exists():
         return None
     proc = subprocess.Popen(
         ["node", "server.js"],
+        env={**os.environ, "PORT": _target_port(target)},
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
     for _ in range(30):
-        if _localhost_responding():
+        if _localhost_responding(target):
             output.success("Server is ready")
             return proc
         time.sleep(1)
@@ -180,16 +197,14 @@ def _start_local_server() -> subprocess.Popen | None:
 def _docker_host_target(target: str) -> str:
     """Translate a localhost URL to one routable from inside the ZAP container.
 
-    Linux Docker uses the bridge gateway 172.17.0.1; Docker Desktop on
-    macOS (and Windows) routes via the magic host.docker.internal name.
+    Docker Desktop on macOS routes via the magic host.docker.internal name;
+    everywhere else uses the Linux bridge gateway 172.17.0.1.
     """
     if platform.system() == "Darwin":
         host = "host.docker.internal"
     else:
         host = "172.17.0.1"
-    m = re.match(r"https?://[^:/]+:?(\d+)?", target)
-    port = (m.group(1) if m else None) or "8080"
-    return f"http://{host}:{port}"
+    return f"http://{host}:{_target_port(target)}"
 
 
 # ── OpenAPI spec resolution ──────────────────────────────────────
@@ -427,14 +442,18 @@ def _prepare_localhost_target(target: str) -> tuple[str | None, subprocess.Popen
     """For a localhost target, ensure a server is running and rewrite the URL
     to be reachable from inside the ZAP container.
 
-    Returns (rewritten_target, owned_server_proc). If a server we don't own
-    was already listening, owned_server_proc is None. If we can't bring a
-    server up, returns (None, None).
+    The probe, the `server.js` fallback and the rewrite all use the target's
+    port (8080 when the URL names none), so a server on any port counts and
+    the fallback listens where ZAP will look. Returns (rewritten_target,
+    owned_server_proc). If a server we don't own was already listening,
+    owned_server_proc is None. If we can't bring a server up, returns
+    (None, None).
     """
+    target = _with_port(target)
     server_proc: subprocess.Popen | None = None
-    if not _localhost_responding():
-        server_proc = _start_local_server()
-        if server_proc is None and not _localhost_responding():
+    if not _localhost_responding(target):
+        server_proc = _start_local_server(target)
+        if server_proc is None:
             return None, None
     rewritten = _docker_host_target(target)
     output.status("📍", f"Using Docker-compatible target: {rewritten}")

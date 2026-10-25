@@ -204,10 +204,78 @@ def test_run_returns_two_when_docker_missing(monkeypatch, isolated_cwd, capsys):
 def test_run_returns_two_for_localhost_with_no_server(monkeypatch, isolated_cwd, capsys):
     monkeypatch.setattr(dast, "_docker_available", lambda: True)
     monkeypatch.setattr(dast, "_localhost_responding", lambda url="http://localhost:8080": False)
-    monkeypatch.setattr(dast, "_start_local_server", lambda: None)
+    monkeypatch.setattr(dast, "_start_local_server", lambda target: None)
     rc = dast.run(["--target", "http://localhost:8080"])
     assert rc == 2
     assert "Nothing listening" in capsys.readouterr().out
+
+
+def test_localhost_probe_uses_the_target_port(monkeypatch, isolated_cwd):
+    """A server on :8099 counts when that is the target. The probe used to
+    hit :8080 whatever the URL said, so `-- http://localhost:8099` exited 2
+    with a server listening on 8099 (the course serves there, since 8080
+    is often taken)."""
+    probed: list[str] = []
+
+    def responding(url="http://localhost:8080"):
+        probed.append(url)
+        return url == "http://localhost:8099"
+
+    monkeypatch.setattr(dast, "_localhost_responding", responding)
+    monkeypatch.setattr(dast, "_start_local_server", lambda target: pytest.fail("server.js must not be tried while 8099 answers"))
+    monkeypatch.setattr(dast.platform, "system", lambda: "Linux")
+    target, proc = dast._prepare_localhost_target("http://localhost:8099")
+    assert probed == ["http://localhost:8099"]
+    assert target == "http://172.17.0.1:8099"
+    assert proc is None
+
+
+def test_portless_localhost_probes_and_rewrites_to_8080(monkeypatch, isolated_cwd):
+    """`http://localhost` means :8080 here, for the probe as much as for the
+    Docker rewrite; the two used to disagree (probe :80, rewrite :8080), so a
+    server on 8080 read as "nothing listening"."""
+    probed: list[str] = []
+
+    def responding(url="http://localhost:8080"):
+        probed.append(url)
+        return True
+
+    monkeypatch.setattr(dast, "_localhost_responding", responding)
+    monkeypatch.setattr(dast.platform, "system", lambda: "Linux")
+    target, proc = dast._prepare_localhost_target("http://localhost")
+    assert probed == ["http://localhost:8080"]
+    assert target == "http://172.17.0.1:8080"
+    assert proc is None
+
+
+def test_fallback_server_listens_on_the_target_port(monkeypatch, isolated_cwd):
+    """With nothing on the target port and a server.js present, the fallback
+    must come up on that port, not :8080, or ZAP is pointed at a closed port."""
+    dast.Path("server.js").write_text("")
+    probed: list[str] = []
+    popen_env: dict = {}
+
+    class FakeProc:
+        def terminate(self):
+            pass
+
+    def fake_popen(cmd, env=None, **_kwargs):
+        popen_env.update(env or {})
+        return FakeProc()
+
+    def responding(url="http://localhost:8080"):
+        probed.append(url)
+        return len(probed) > 1
+
+    monkeypatch.setattr(dast.subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(dast, "_localhost_responding", responding)
+    monkeypatch.setattr(dast.time, "sleep", lambda _s: None)
+    monkeypatch.setattr(dast.platform, "system", lambda: "Linux")
+    target, proc = dast._prepare_localhost_target("http://localhost:8099")
+    assert popen_env["PORT"] == "8099"
+    assert set(probed) == {"http://localhost:8099"}
+    assert target == "http://172.17.0.1:8099"
+    assert isinstance(proc, FakeProc)
 
 
 def test_run_clean_when_no_alerts(monkeypatch, isolated_cwd, capsys):
