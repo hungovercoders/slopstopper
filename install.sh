@@ -261,6 +261,15 @@ installed_cli_version() {
   slopstopper --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
 }
 
+# has_line LIST LINE → exit 0 if LINE is one whole line of the newline-separated
+# LIST. In-shell on purpose: this script runs under pipefail, and piping a
+# list into `grep -q` lets grep exit on the first match while the writer is
+# still writing, which fails the pipeline and reports the line missing.
+has_line() {
+  local nl=$'\n'
+  [[ "$nl$1$nl" == *"$nl$2$nl"* ]]
+}
+
 # Run the pinned slopstopper-cli: through mise in the target when mise did
 # the install, else whatever `slopstopper` is on PATH (the SKIP_CLI_INSTALL
 # test seam, which has no mise). A bare `slopstopper` is wrong right after
@@ -288,7 +297,7 @@ shipped_checks_unknown_to_cli() {
   [ -n "$known" ] || return 0
   shipped="$(grep -oE 'slopstopper run [a-z][a-z0-9:-]+' "$TARGET_DIR/Taskfile.ss.yml" 2>/dev/null | awk '{print $3}' | sort -u)"
   for c in $shipped; do
-    printf '%s\n' "$known" | grep -qx "$c" || missing="${missing:+$missing, }$c"
+    has_line "$known" "$c" || missing="${missing:+$missing, }$c"
   done
   printf '%s' "$missing"
 }
@@ -947,7 +956,7 @@ if [ -z "$PROFILE_ACTIVE" ]; then
 fi
 
 workflow_is_disabled() {
-  [ -n "$DISABLED_WORKFLOWS" ] && printf '%s\n' "$DISABLED_WORKFLOWS" | grep -Fxq "$1"
+  [ -n "$DISABLED_WORKFLOWS" ] && has_line "$DISABLED_WORKFLOWS" "$1"
 }
 
 # Load the set of workflows we installed last time (if any). If a workflow
@@ -1386,7 +1395,7 @@ ensure_repo_topic() {
   local topics
   topics="$(cd "$TARGET_DIR" && gh repo view --json repositoryTopics --jq '.repositoryTopics[].name' 2>/dev/null)" \
     || { echo skipped; return 0; }
-  if printf '%s\n' "$topics" | grep -qx "slopstopper"; then
+  if has_line "$topics" "slopstopper"; then
     echo present
     return 0
   fi
