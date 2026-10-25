@@ -66,6 +66,16 @@ def test_policy_lists_are_read_with_comments_and_quotes_stripped(repo):
     ("(Apache-2.0 AND MIT) OR GPL-2.0-only", True),
     ("GPL-2.0-only WITH Classpath-exception-2.0", False),
     ("MIT WITH LLVM-exception", True),
+    ("GPL-3.0", False),
+    ("AGPL-3.0", False),
+    ("GPL-2.0+", False),
+    ("lgpl-2.1+", False),
+    ("GPL-2.0 WITH Classpath-exception-2.0", False),
+    ("(MIT OR GPL-2.0)", True),
+    ("UNLICENSED", False),
+    ("GNU General Public License v3 (GPLv3)", False),
+    ("Apache Software License", True),
+    ("Python Software Foundation License", False),
     ("Apache License 2.0", True),
     ("Apache License, Version 2.0", True),
     ("3-Clause BSD License", True),
@@ -79,6 +89,37 @@ def test_policy_lists_are_read_with_comments_and_quotes_stripped(repo):
 def test_spdx_expressions_against_the_allowlist(repo, expression, expected):
     policy = licences._read_policy(repo / ".github/dependency-review-config.yml")
     assert licences._allowed(expression, policy) is expected
+
+
+def test_deprecated_gnu_ids_canonicalise_to_the_current_form():
+    assert licences._canonical("GPL-3.0") == "GPL-3.0-only"
+    assert licences._canonical("LGPL-2.1+") == "LGPL-2.1-or-later"
+    assert licences._canonical("agpl-3.0") == "AGPL-3.0-only"
+    assert licences._canonical("GPL-3.0-or-later") == "GPL-3.0-or-later"
+
+
+@pytest.mark.parametrize("text", [
+    "allow-licenses: [MIT, ISC]\n",
+    "allow-licenses: ['MIT', \"ISC\"]  # flow\n",
+    "allow-licenses:\n- MIT\n- ISC\n",
+    "fail-on-severity: low\nallow-licenses:\n    - MIT # one\n    - ISC\n",
+])
+def test_every_list_shape_the_action_accepts_is_read(repo, text):
+    (repo / ".github/dependency-review-config.yml").write_text(text)
+    assert licences._read_policy(repo / ".github/dependency-review-config.yml")["allow"] == {"mit", "isc"}
+
+
+def test_a_policy_with_no_list_cannot_run_and_says_so_in_the_report(repo, capsys):
+    (repo / ".github/dependency-review-config.yml").write_text("fail-on-severity: moderate\n")
+    (repo / "package-lock.json").write_text(_lock({"node_modules/a": _pkg()}))
+    assert licences.run() == 2
+    assert "neither `allow-licenses` nor `deny-licenses`" in Path(".ss/reports/licences/licences-report.md").read_text()
+
+
+def test_purl_qualifiers_and_subpaths_are_ignored():
+    assert licences._purl_key("pkg:npm/foo?type=x") == "npm:foo"
+    assert licences._purl_key("pkg:npm/%40s/foo@1.2#sub") == "npm:@s/foo"
+    assert licences._purl_key("pkg:pypi/Name_With.Dots@2") == "pypi:name-with-dots"
 
 
 def test_a_deny_list_inverts_the_rule(repo):
@@ -140,10 +181,22 @@ def test_unknown_and_missing_licences_are_reported_not_failed(repo, capsys):
     assert sorted(p["name"] for p in _report()["unknown"]) == ["none", "odd"]
 
 
-def test_a_version_one_lockfile_cannot_run(repo, capsys):
+def test_a_version_one_lockfile_cannot_run_and_writes_a_report(repo, capsys):
     (repo / "package-lock.json").write_text(json.dumps({"lockfileVersion": 1, "dependencies": {"a": {"version": "1.0.0"}}}))
     assert licences.run() == 2
     assert "lockfile version 1" in capsys.readouterr().out
+    assert "did not complete" in Path(".ss/reports/licences/licences-report.md").read_text()
+
+
+def test_workspace_packages_are_the_repos_own_code_not_dependencies(repo):
+    (repo / "package-lock.json").write_text(_lock({
+        "packages/site": {"name": "@mono/site", "version": "1.0.0", "license": "GPL-3.0-only"},
+        "packages/private": {"name": "@mono/private", "version": "1.0.0"},
+        "node_modules/@mono/site": {"resolved": "packages/site", "link": True},
+        "node_modules/dep": _pkg(),
+    }))
+    assert licences.run() == 0
+    assert _report()["judged"] == 1
 
 
 def test_a_lockfile_one_directory_down_counts_and_yarn_is_noted(repo, capsys):
@@ -185,11 +238,32 @@ def test_python_packages_are_judged_from_pip_inspect(repo, monkeypatch, capsys):
     assert "copyleft (GPL-3.0-only)" in capsys.readouterr().out
 
 
+def test_poetry_dependencies_count_as_declared(repo, monkeypatch, capsys):
+    (repo / "pyproject.toml").write_text(
+        '[tool.poetry]\nname = "poet"\n[tool.poetry.dependencies]\npython = "^3.11"\nhttpx = "*"\n[tool.poetry.group.dev.dependencies]\npytest = "*"\n'
+    )
+    _fake_pip(monkeypatch, [{"name": "poet", "version": "0.1", "license": "MIT"}, {"name": "httpx", "version": "0.27", "license": "GPL-3.0"}])
+    assert licences.run() == 1
+    assert [p["name"] for p in _report()["denied"]] == ["httpx"]
+    assert "Python packages read from" in Path(".ss/reports/licences/licences-report.md").read_text()
+
+
+def test_a_manifest_declaring_nothing_judges_no_environment(repo, monkeypatch, capsys):
+    """A tool-config-only pyproject must not make the check judge whatever
+    python3 on PATH happens to have installed."""
+    (repo / "pyproject.toml").write_text("[tool.ruff]\nline-length = 100\n")
+    _fake_pip(monkeypatch, [{"name": "stray", "version": "1.0", "license": "GPL-3.0"}])
+    assert licences.run() == 0
+    assert _report()["judged"] == 0
+    assert "declare no dependencies the check can read" in capsys.readouterr().out
+
+
 def test_an_environment_without_the_declared_dependencies_cannot_run(repo, monkeypatch, capsys):
     (repo / "requirements.txt").write_text("# deps\nrequests>=2\n-r other.txt\n")
     _fake_pip(monkeypatch, [{"name": "pip", "version": "24.0", "license": "MIT"}])
     assert licences.run() == 2
     assert "none of the dependencies declared in `requirements.txt` is installed" in capsys.readouterr().out
+    assert "did not complete" in Path(".ss/reports/licences/licences-report.md").read_text()
 
 
 def test_an_old_pip_without_inspect_cannot_run(repo, monkeypatch, capsys):
@@ -213,10 +287,10 @@ def test_a_venv_beside_the_manifest_is_inspected_first(repo, monkeypatch):
 # ── the contract ─────────────────────────────────────────────────
 
 
-def test_no_policy_file_cannot_run(isolated_cwd, capsys):
+def test_no_policy_file_cannot_run_and_writes_a_report(isolated_cwd, capsys):
     (isolated_cwd / "package-lock.json").write_text(_lock({}))
     assert licences.run() == 2
-    assert "No licence policy" in capsys.readouterr().out
+    assert "No licence policy" in Path(".ss/reports/licences/licences-report.md").read_text()
 
 
 def test_nothing_to_inventory_passes(repo, capsys):

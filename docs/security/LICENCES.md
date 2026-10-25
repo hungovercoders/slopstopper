@@ -16,8 +16,8 @@ cat .ss/reports/licences/licences-report.md
 
 | Ecosystem | Source of the tree | Needs |
 | --------- | ------------------ | ----- |
-| npm | `package-lock.json` (lockfile version 2 or 3), at the root or one directory down | nothing installed: the lockfile records each package's `license` |
-| Python | `python3 -m pip inspect` of the interpreter the project is installed into | the project's dependencies installed there (a `.venv/` beside `pyproject.toml` or `requirements.txt` is used first, then `python3` on PATH) |
+| npm | `package-lock.json` (lockfile version 2 or 3), at the root or one directory down; workspace packages are the repo's own code and are not judged | nothing installed: the lockfile records each package's `license` |
+| Python | `python3 -m pip inspect` of the interpreter the project is installed into; the report names which | the project's dependencies (from `[project]`, Poetry's tables or `requirements.txt`) installed there (a `.venv/` beside the manifest is used first, then `python3` on PATH). A manifest that declares nothing readable judges no environment |
 
 `yarn.lock` and `pnpm-lock.yaml` carry no licence data and are reported
 as not judged. A repo with no manifest at all passes with nothing to say.
@@ -41,12 +41,15 @@ allow-dependencies-licenses:
 ```
 
 A licence is judged as an SPDX expression (`MIT`, `(MIT OR Apache-2.0)`,
-`GPL-2.0-only WITH Classpath-exception-2.0`). Common free-text names in
-Python metadata (`Apache License 2.0`, `3-Clause BSD License`) are read
-as their SPDX id. Anything else, and a package that states no licence,
-is **reported as unknown and never fails the run**, which is also how
-the dependency review treats a licence it cannot detect. The report
-lists them so a reader can look.
+`GPL-2.0-only WITH Classpath-exception-2.0`). The deprecated GNU forms
+most lockfiles still carry (`GPL-3.0`, `GPL-2.0+`) are read as their
+current ids, common free-text names in Python metadata (`Apache License
+2.0`, `3-Clause BSD License`) as their SPDX id, and npm's `UNLICENSED`
+as an explicit refusal. Anything else, and a package that states no
+licence, is **reported as unknown and never fails the run**, which is
+also how the dependency review treats a licence it cannot detect. The
+report lists them so a reader can look. The policy's lists may be block
+or flow form; a file with neither an allow nor a deny list is exit 2.
 
 ## Exit codes
 

@@ -46,9 +46,10 @@ jobs:
         # instruction while the declared dependencies are absent.
         if: hashFiles('requirements.txt', 'pyproject.toml') != ''
         run: |
-          [ -f requirements.txt ] && python3 -m pip install -q -r requirements.txt
-          [ -f pyproject.toml ] && python3 -m pip install -q .
-          true
+          if [ -f requirements.txt ]; then python3 -m pip install -q -r requirements.txt; fi
+          # Only a pyproject that declares a build backend is installable;
+          # a tool-config-only one (ruff, black) is left alone.
+          if [ -f pyproject.toml ] && grep -q '^\[build-system\]' pyproject.toml; then python3 -m pip install -q .; fi
 
       - name: Judge dependency licences
         id: licences

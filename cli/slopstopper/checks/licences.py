@@ -55,7 +55,7 @@ from urllib.parse import unquote
 
 from slopstopper import config, output
 from slopstopper.checks import _report
-from slopstopper.checks._contract import reject_extra_args
+from slopstopper.checks._contract import reject_extra_args, scan_incomplete
 
 CHECK_NAME = "security:licences"
 REPORT_DIR = Path(".ss/reports/licences")
@@ -113,8 +113,8 @@ KNOWN_SPDX = {x.lower() for x in (
 # Free-text licence names metadata often carries, canonicalised (lower, no
 # "license"/"version"/punctuation) → SPDX. Ambiguous ones ("BSD") are left out.
 LICENCE_ALIASES = {
-    "mit": "MIT", "apache 2": "Apache-2.0", "apache 20": "Apache-2.0", "apache2": "Apache-2.0", "apache software": "Apache-2.0",
-    "asl 2": "Apache-2.0", "3 clause bsd": "BSD-3-Clause", "new bsd": "BSD-3-Clause", "modified bsd": "BSD-3-Clause",
+    "mit": "MIT", "apache 2": "Apache-2.0", "apache 20": "Apache-2.0", "apache2": "Apache-2.0", "apache": "Apache-2.0",
+    "asl 2": "Apache-2.0", "python foundation": "PSF-2.0", "3 clause bsd": "BSD-3-Clause", "new bsd": "BSD-3-Clause", "modified bsd": "BSD-3-Clause",
     "bsd 3 clause": "BSD-3-Clause", "bsd 2 clause": "BSD-2-Clause", "simplified bsd": "BSD-2-Clause", "isc": "ISC",
     "mpl 2": "MPL-2.0", "mpl 20": "MPL-2.0", "mozilla public 2": "MPL-2.0", "psf": "PSF-2.0", "python software foundation": "PSF-2.0",
     "zlib": "Zlib", "zlib libpng": "Zlib", "unlicense": "Unlicense", "public domain": "CC0-1.0", "cc0": "CC0-1.0",
@@ -126,15 +126,24 @@ LICENCE_ALIASES = {
 }
 
 
+_DEPRECATED_GNU_RE = re.compile(r"^((?:A|L)?GPL-\d\.\d)(\+)?$", re.I)
+
+
 def _canonical(licence_id: str) -> str:
     """An SPDX id for a licence string: itself when it already is one, the
-    alias table's answer for a known free-text name, else the string."""
-    low = licence_id.strip().lower()
+    current id for a deprecated GNU form (`GPL-3.0` → `GPL-3.0-only`,
+    `GPL-2.0+` → `GPL-2.0-or-later`), the alias table's answer for a known
+    free-text name, else the string."""
+    raw = licence_id.strip()
+    low = raw.lower()
     if low in KNOWN_SPDX:
-        return licence_id.strip()
-    words = re.sub(r"[^a-z0-9 ]+", " ", re.sub(r"\b(the|license|licence|version|v|only|software)\b", " ", low.replace(".", "")))
+        return raw
+    gnu = _DEPRECATED_GNU_RE.match(raw)
+    if gnu:
+        return f"{gnu.group(1).upper()}{'-or-later' if gnu.group(2) else '-only'}"
+    words = re.sub(r"[^a-z0-9 ]+", " ", re.sub(r"\b(the|license|licence|version|only|software)\b|\bv(?=\d)", " ", low.replace(".", "")))
     words = re.sub(r"\s+", " ", words).strip()
-    return LICENCE_ALIASES.get(words, licence_id.strip())
+    return LICENCE_ALIASES.get(words, raw)
 
 
 # ── the policy ──────────────────────────────────────────────────────
@@ -144,31 +153,48 @@ def _policy_path() -> Path:
     return Path(str(config.get("security.licences.policy", DEFAULT_POLICY) or DEFAULT_POLICY))
 
 
+def _unquote(item: str) -> str:
+    return item.strip().strip("'\"")
+
+
+def _flow_list(rest: str) -> list[str] | None:
+    """`[a, b]` as a list; None when `rest` is not a flow list."""
+    if rest.startswith("[") and rest.endswith("]"):
+        return [_unquote(x) for x in rest[1:-1].split(",") if x.strip()]
+    return None
+
+
 def _yaml_lists(text: str) -> dict[str, list[str]]:
-    """The top-level `key:` → `- item` lists of a flat YAML file, comments
+    """The top-level `key:` lists of a flat YAML file, as block lists
+    (`- item`, at any indentation) or flow lists (`[a, b]`), comments
     stripped. The config has no nesting, so a line reader is enough (the
     CLI carries no YAML parser)."""
     lists: dict[str, list[str]] = {}
     current: str | None = None
     for raw in text.splitlines():
-        line = re.sub(r"\s#.*$", "", raw).rstrip()
-        if not line.strip() or line.lstrip().startswith("#"):
+        line = re.sub(r"(^|\s)#.*$", "", raw).rstrip()
+        if not line.strip():
             continue
-        key = re.match(r"^([A-Za-z0-9_-]+):\s*$", line)
+        key = re.match(r"^([A-Za-z0-9_-]+):\s*(.*)$", line)
         if key:
-            current = key.group(1)
-            lists[current] = []
+            flow = _flow_list(key.group(2).strip())
+            lists[key.group(1)] = flow if flow is not None else []
+            current = None if flow is not None else key.group(1)
             continue
-        item = re.match(r"^\s+-\s+(.+)$", line)
+        item = re.match(r"^\s*-\s+(.+)$", line)
         if item and current:
-            lists[current].append(item.group(1).strip().strip("'\""))
+            lists[current].append(_unquote(item.group(1)))
         else:
             current = None
     return lists
 
 
-def _read_policy(path: Path) -> dict:
+def _read_policy(path: Path) -> dict | None:
+    """The policy, or None when the file carries neither an allow nor a
+    deny list (nothing to judge against)."""
     lists = _yaml_lists(path.read_text(encoding="utf-8"))
+    if "allow-licenses" not in lists and "deny-licenses" not in lists:
+        return None
     return {
         "allow": {x.lower() for x in lists.get("allow-licenses", [])},
         "deny": {x.lower() for x in lists.get("deny-licenses", [])},
@@ -178,7 +204,7 @@ def _read_policy(path: Path) -> dict:
 
 def _purl_key(purl: str) -> str:
     """`pkg:npm/%40scope/name@1.2` → `npm:@scope/name`."""
-    body = purl.split(":", 1)[-1]
+    body = re.split(r"[?#]", purl.split(":", 1)[-1], maxsplit=1)[0]
     ecosystem, _, name = body.partition("/")
     name = unquote(name)
     if "@" in name[1:]:
@@ -243,7 +269,9 @@ def _parse_atom(tokens: list[str], policy: dict) -> tuple[bool | None, list[str]
         licence_id, rest = f"{licence_id} WITH {rest[1]}", rest[2:]
     if not _SPDX_ID_RE.match(licence_id.split(" ")[0]):
         raise ValueError("not an id")
-    return _id_allowed(licence_id, policy), rest
+    base, _, exception = licence_id.partition(" WITH ")
+    base = _canonical(base)
+    return _id_allowed(f"{base} WITH {exception}" if exception else base, policy), rest
 
 
 def _id_allowed(licence_id: str, policy: dict) -> bool | None:
@@ -257,7 +285,8 @@ def _id_allowed(licence_id: str, policy: dict) -> bool | None:
         return True if base in KNOWN_SPDX or low in policy["allow"] else None
     if low in policy["allow"] or base in policy["allow"]:
         return True
-    return False if base in KNOWN_SPDX else None
+    # npm's UNLICENSED is an explicit "no grant", not a metadata gap.
+    return False if base in KNOWN_SPDX or base == "unlicensed" else None
 
 
 def _combine(a: bool | None, b: bool | None, how) -> bool | None:
@@ -302,7 +331,9 @@ def _npm_packages(lockfile: Path, include_dev: bool) -> list[dict] | str:
         return f"`{lockfile}` is lockfile version {data.get('lockfileVersion', '?')}, which carries no licence data; run `npm install` with npm 7 or newer to rewrite it"
     out = []
     for path, entry in packages.items():
-        if not path or not isinstance(entry, dict) or entry.get("link"):
+        # The root and workspace packages (no `node_modules/` in the path)
+        # are the repo's own code, not dependencies.
+        if not path or "node_modules/" not in path or not isinstance(entry, dict) or entry.get("link"):
             continue
         if entry.get("dev") and not include_dev:
             out.append({"ecosystem": "npm", "name": path.rsplit("node_modules/", 1)[-1], "dev_skipped": True})
@@ -324,24 +355,39 @@ def _python_manifests(root: Path) -> list[Path]:
     return [d / m for d in _manifest_dirs(root) for m in PYTHON_MANIFESTS if (d / m).is_file()]
 
 
+def _pyproject_specs(data: dict) -> tuple[list[str], set[str]]:
+    """(dependency specs, project names) a parsed pyproject declares, from
+    `[project]` and from Poetry's tables."""
+    project = data.get("project") or {}
+    poetry = (data.get("tool") or {}).get("poetry") or {}
+    projects = {_normalise_name("pypi", str(n)) for n in (project.get("name"), poetry.get("name")) if n}
+    specs = list(project.get("dependencies", []))
+    for extra in (project.get("optional-dependencies") or {}).values():
+        specs += list(extra)
+    poetry_deps = dict(poetry.get("dependencies") or {})
+    for group in (poetry.get("group") or {}).values():
+        poetry_deps.update(group.get("dependencies") or {})
+    specs += [name for name in poetry_deps if name.lower() != "python"]
+    return specs, projects
+
+
+def _requirements_specs(text: str) -> list[str]:
+    specs = [line.split("#", 1)[0].strip() for line in text.splitlines()]
+    return [s for s in specs if s and not s.startswith("-")]
+
+
 def _declared(manifest: Path) -> tuple[set[str], set[str]]:
     """(dependency names, project names) a manifest declares, normalised."""
-    deps: set[str] = set()
-    projects: set[str] = set()
     text = manifest.read_text(encoding="utf-8", errors="replace")
+    projects: set[str] = set()
     if manifest.name == "pyproject.toml":
         try:
-            project = tomllib.loads(text).get("project", {})
+            specs, projects = _pyproject_specs(tomllib.loads(text))
         except tomllib.TOMLDecodeError:
-            return deps, projects
-        if project.get("name"):
-            projects.add(_normalise_name("pypi", project["name"]))
-        specs = list(project.get("dependencies", []))
-        for extra in (project.get("optional-dependencies") or {}).values():
-            specs += list(extra)
+            return set(), projects
     else:
-        specs = [line.split("#", 1)[0].strip() for line in text.splitlines()]
-        specs = [s for s in specs if s and not s.startswith("-")]
+        specs = _requirements_specs(text)
+    deps = set()
     for spec in specs:
         m = re.match(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)", spec)
         if m:
@@ -359,7 +405,7 @@ def _python_licence(metadata: dict) -> str | None:
     licence = str(metadata.get("license") or "").strip()
     short = licence and "\n" not in licence and len(licence) <= 60 and licence.upper() not in {"UNKNOWN", "LICENSE", "LICENSE.TXT", "SEE LICENSE"}
     if short and _canonical(licence).lower() in KNOWN_SPDX:
-        return licence
+        return _canonical(licence)
     for classifier in metadata.get("classifier") or []:
         if classifier in CLASSIFIER_SPDX:
             return CLASSIFIER_SPDX[classifier]
@@ -398,7 +444,9 @@ def _python_interpreter(root: Path, manifests: list[Path]) -> str | None:
 
 def _python_packages(root: Path, manifests: list[Path]) -> list[dict] | str:
     """The packages installed in the configured interpreter, once the
-    manifests' declared dependencies are among them."""
+    manifests' declared dependencies are among them. A manifest that
+    declares nothing the check can read judges nothing, rather than
+    whatever environment happens to be on PATH."""
     python = _python_interpreter(root, manifests)
     if not python:
         return "no `python3` on PATH to inspect; set security.licences.python to the interpreter whose environment holds the project's dependencies"
@@ -412,7 +460,9 @@ def _python_packages(root: Path, manifests: list[Path]) -> list[dict] | str:
         declared |= d
         projects |= p
     installed = {_normalise_name("pypi", str(m.get("name", ""))): m for m in metadata if m.get("name")}
-    if declared and not (declared & set(installed)):
+    if not declared:
+        return []
+    if not (declared & set(installed)):
         return (
             f"none of the dependencies declared in {', '.join(f'`{m.relative_to(root)}`' for m in manifests)} is installed in "
             f"`{python}`'s environment, so there is no resolved tree to inventory; install the project there first "
@@ -493,9 +543,19 @@ def _inventory(root: Path, include_dev: bool) -> tuple[list[dict], list[str], li
         found = _python_packages(root, manifests)
         if isinstance(found, str):
             failures.append(found)
+        elif not found:
+            skipped.append(f"{', '.join(f'`{m.relative_to(root)}`' for m in manifests)} declare no dependencies the check can read, so no Python environment was judged")
         else:
             packages += found
+            skipped.append(f"Python packages read from `{found[0]['source']}`")
     return packages, skipped, failures
+
+
+def _cannot_run(reasons: list[str]) -> int:
+    """Say why on stdout, record it in the report, exit 2."""
+    for reason in reasons:
+        output.error(reason)
+    return scan_incomplete(REPORT_DIR, REPORT_MD, "Licence Inventory Report", "\n\n".join(f"- {r}" for r in reasons))
 
 
 def run(args: list[str] | None = None) -> int:
@@ -504,15 +564,14 @@ def run(args: list[str] | None = None) -> int:
     output.running("Judging every resolved dependency's licence against the policy…")
     policy_path = _policy_path()
     if not policy_path.is_file():
-        output.error(f"No licence policy at `{policy_path}`. install.sh seeds it; `security.licences.policy` can point elsewhere.")
-        return 2
+        return _cannot_run([f"No licence policy at `{policy_path}`. install.sh seeds it; `security.licences.policy` can point elsewhere."])
     policy = _read_policy(policy_path)
+    if policy is None:
+        return _cannot_run([f"`{policy_path}` carries neither `allow-licenses` nor `deny-licenses`, so there is nothing to judge against."])
     root = Path.cwd()
     packages, skipped, failures = _inventory(root, config.get_bool("security.licences.include_dev", False))
     if failures:
-        for reason in failures:
-            output.error(reason)
-        return 2
+        return _cannot_run(failures)
     denied, unknown = _judge(packages, policy)
     per_ecosystem: dict[str, int] = {}
     for pkg in packages:
