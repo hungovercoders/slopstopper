@@ -20,7 +20,8 @@ change that affects adopters usually touches both layers and the docs.
    implementation each shim calls. Run `task --list` before writing a
    one-off command.
 2. **One definition of green.** `task ss:hygiene:test` (docs-size,
-   docs-structure, docs-accuracy, entry-files, CSP drift, complexity) is
+   docs-structure, docs-accuracy, entry-files, CSP drift, privacy,
+   complexity) is
    what the pre-push hook and CI run. Run it before committing; run the
    CLI tests when `cli/` changes.
 3. **Every check keeps the exit-code contract:** 0 ran clean, 1 ran and

@@ -428,6 +428,7 @@ jobs:
                     <li><strong>Doc Accuracy.</strong> Documentation reflects the actual code</li>
                     <li><strong>Doc Size.</strong> Prevents documentation from going stale or unwieldy</li>
                     <li><strong>CSP Exceptions Drift.</strong> Keeps <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> in sync so per-page CSP relaxations stay documented</li>
+                    <li><strong>Privacy Statement.</strong> A site on a host that keeps traffic data has a privacy page that names the host, every third-party origin the CSP allows, Workers Logs when they are on, and a date. The statement is only true while it matches <code>wrangler.jsonc</code> and the headers source, so the check reads both</li>
                     <li><strong>OpenAPI Drift.</strong> Compares your committed spec against the one the live API serves, and probes every documented path that takes no parameters. The doc-accuracy check for an API: a spec that stopped describing reality</li>
                     <li><strong>Auto-label PRs.</strong> PRs labelled from the paths changed</li>
                     <li><strong>Local pre-push gate.</strong> A pre-push git hook runs the fast hygiene checks before every push, so the first CI run confirms rather than discovers</li>
@@ -493,6 +494,29 @@ jobs:
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-csp-exceptions-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
                         <br>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">View the exceptions doc →</a>
+                    </div>
+                </details>
+
+                <details class="details">
+                    <summary>Privacy Statement</summary>
+                    <div class="details__body">
+                        <!-- sync this excerpt if the workflow's first job step changes -->
+                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Privacy Statement Check
+on:
+  pull_request:
+  push: { branches: [main] }
+jobs:
+  check-privacy:
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: ./.github/actions/ss-setup
+      - run: task ss:hygiene:privacy
+      - if: github.event_name == 'pull_request'
+        run: slopstopper emit hygiene:privacy --target pr-comment</code></pre></div>
+                        <p class="details__hint">No cookies and no analytics is not the same as nothing to say: the host processes every visitor's IP, and so does every origin the CSP lets a page reach. This check finds <code>privacy.html</code> (or <code>privacy.md</code>, anywhere in the tree) and fails unless it names the host, each allowed origin and a date. The smoke test adds the footer rule: every audited page links to it. <code>api</code> and <code>library</code> repos skip it.</p>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-privacy-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        <br>
+                        <a class="details__source" href="privacy.html">See this site's statement →</a>
                     </div>
                 </details>
 
@@ -631,7 +655,7 @@ safe-outputs:
         <section class="section" id="profiles">
             <span class="kicker">Other project shapes</span>
             <h2>A profile picks the loops.</h2>
-            <p class="lede">Every reliability check except API Health and API Latency assumes HTML and a served site. <code>--profile api</code> drops those nine and keeps DAST and the four API checks (which <code>ui</code> holds back until the repo shows an API); <code>--profile library</code> also drops everything else that needs a URL: DAST, API Headers, CSP Exceptions and OpenAPI Drift. Pick one on <a href="index.html#get-started">Get Started</a>; the full mapping is in <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PROFILES.md" rel="noopener noreferrer">project-shape profiles</a>.</p>
+            <p class="lede">Every reliability check except API Health and API Latency assumes HTML and a served site. <code>--profile api</code> drops those nine and the privacy statement check, and keeps DAST and the four API checks (which <code>ui</code> holds back until the repo shows an API); <code>--profile library</code> also drops everything else that needs a URL: DAST, API Headers, CSP Exceptions and OpenAPI Drift. Pick one on <a href="index.html#get-started">Get Started</a>; the full mapping is in <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PROFILES.md" rel="noopener noreferrer">project-shape profiles</a>.</p>
         </section>
 
         <!-- ─── What feedback looks like ────────────────────────── -->

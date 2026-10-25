@@ -14,6 +14,9 @@ import { test, expect } from '@playwright/test';
  *   SMOKE_PAGES     comma-separated list of paths to check, default '/'
  *                     e.g. '/,/about,/pricing'
  *   SMOKE_TIMEOUT   per-request timeout in ms, default 5000
+ *   SMOKE_PRIVACY_URL  path of the privacy statement (the CLI derives it from
+ *                     `privacy.page` / `privacy.url` in .slopstopper.yml);
+ *                     when set, every page must link to it. Unset = no check.
  *
  * Usage:
  *   SMOKE_TEST_URL=https://your-site task ss:reliability:smoke
@@ -39,6 +42,28 @@ const pagesToCheck = (process.env.SMOKE_PAGES ?? '/')
 
 const maxLoadMs = parseInt(process.env.SMOKE_TIMEOUT || '5000', 10);
 
+// `/privacy/`, `/privacy`, `/privacy.html` and `/privacy/index.html` are the
+// same page (clean-URL hosts serve one as the other); so is `/privacy.html`
+// under a subpath base (`/project/privacy.html` on GitHub Pages).
+function privacyKey(url: string): string {
+  return new URL(url, targetUrl).pathname
+    .replace(/\/index\.html?$/, '')
+    .replace(/\.html?$/, '')
+    .replace(/\/+$/, '');
+}
+const privacyRaw = (process.env.SMOKE_PRIVACY_URL ?? '').trim();
+const privacyPath = privacyRaw ? privacyKey(privacyRaw) : '';
+function linksToPrivacy(hrefs: string[]): boolean {
+  return hrefs.some((href) => {
+    try {
+      const pathname = privacyKey(href);
+      return pathname === privacyPath || pathname.endsWith(privacyPath);
+    } catch {
+      return false;
+    }
+  });
+}
+
 test.describe('Smoke Tests', () => {
   test.use({ baseURL: targetUrl });
 
@@ -61,6 +86,16 @@ test.describe('Smoke Tests', () => {
 
       expect(loadTime, `${path}: load took ${loadTime}ms (limit ${maxLoadMs}ms)`)
         .toBeLessThan(maxLoadMs);
+
+      if (privacyPath) {
+        const hrefs = await page.locator('a[href]').evaluateAll((anchors) =>
+          anchors.map((a) => (a as HTMLAnchorElement).getAttribute('href') ?? ''),
+        );
+        expect(
+          linksToPrivacy(hrefs),
+          `${path}: no link to the privacy statement (${privacyPath}). Every page's footer should link it; set privacy.require_link: false in .slopstopper.yml to drop this.`,
+        ).toBe(true);
+      }
     });
   }
 

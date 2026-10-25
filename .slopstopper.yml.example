@@ -122,6 +122,32 @@ headers:
   #   auto              infer: directory→meta, .json→json, else cloudflare-text
   format: auto
 
+# ── Privacy statement (hygiene:privacy) ──────────────────────────────
+# A site hosted somewhere that keeps traffic data has a privacy statement
+# to make even with no cookies and no analytics script: the host processes
+# every visitor's IP, and so does every third-party origin the CSP lets a
+# page reach. The check runs when the repo has a browser surface (profile
+# ui) and host evidence (wrangler.*, netlify.toml, vercel.json, or
+# urls.production). It fails unless the page names the host, every
+# third-party origin in headers.source's fetch directives (its hostname
+# or a label that identifies the service: `cdnjs`, `cloudflare`, `giscus`), Workers Logs when
+# wrangler turns them on, and a date.
+privacy:
+  # Repo path of the statement. `auto` takes the first privacy.<ext> or
+  # privacy/index.<ext> outside dependency and build directories. '' opts out visibly: the check
+  # prints why and passes, so put the reason in a comment here.
+  page: auto
+  # URL path it is served at. `auto` derives it from the page's name
+  # (privacy.html → /privacy.html, anything else → /privacy/). The smoke
+  # test asserts every audited page links to it, in any of its spellings
+  # (/privacy, /privacy/, /privacy.html), wherever this check applies.
+  url: auto
+  # false drops that smoke assertion.
+  require_link: true
+  # Extra names the page must carry, beyond the host the config file
+  # implies (Cloudflare, Netlify, Vercel): a CDN in front, a form service.
+  hosts: []
+
 # ── Dynamic-check URLs ───────────────────────────────────────────────
 # Which URL each URL-driven check audits, by event (the one copy of this
 # table is .github/actions/ss-resolve-url):

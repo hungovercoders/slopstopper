@@ -24,6 +24,13 @@ Configuration (.slopstopper.yml, all optional):
       smoke: /,/blog,/about       # which paths to smoke-test
     smoke:
       og_image_path: /og-image.png  # '' to skip the og-image assertion
+    privacy:                        # read through checks/privacy.page_url()
+      page: auto                    # the statement; '' opts out of the link rule too
+      url: auto                     # the path every audited page must link to
+      require_link: true            # false drops that assertion
+
+The privacy link assertion applies only where `hygiene:privacy` does
+(profile ui, host evidence); see checks/privacy.py.
 
 See .slopstopper.yml.example for the canonical schema.
 
@@ -40,6 +47,7 @@ Exit codes:
 from __future__ import annotations
 
 from slopstopper import config
+from slopstopper.checks import privacy
 from slopstopper.checks import _playwright
 
 CHECK = _playwright.Check(
@@ -73,6 +81,9 @@ def _build_env(url: str, ci_mode: bool) -> dict[str, str]:
     env = _playwright.base_env(CHECK, url, ci_mode)
     env.setdefault("SMOKE_OG_IMAGE_PATH", str(config.get("smoke.og_image_path", "/og-image.png")))
     env.setdefault("SMOKE_PAGES", str(config.get("pages.smoke", "/")))
+    privacy_url = privacy.page_url()
+    if privacy_url:
+        env.setdefault("SMOKE_PRIVACY_URL", privacy_url)
     return env
 
 
