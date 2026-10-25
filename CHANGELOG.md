@@ -4,6 +4,22 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.26.0](https://github.com/hungovercoders/slopstopper/compare/v0.25.0...v0.26.0) (2026-10-25)
+
+
+### Features
+
+* **demo:** one deliberate finding per lesson in the fixture repo ([#553](https://github.com/hungovercoders/slopstopper/issues/553)) ([9474fc1](https://github.com/hungovercoders/slopstopper/commit/9474fc1efa7485a5c761cac81a4cf65e66ff28cb))
+* **security:** licence inventory over the full resolved dependency tree ([#551](https://github.com/hungovercoders/slopstopper/issues/551)) ([516ef14](https://github.com/hungovercoders/slopstopper/commit/516ef1478b5611cd7cec19fa407c0fcdffd09f70))
+* **serve:** apply the file headers.source names, so a local run sends the host's policy ([#559](https://github.com/hungovercoders/slopstopper/issues/559)) ([ca27ae7](https://github.com/hungovercoders/slopstopper/commit/ca27ae72dcb3d36c7514408904c552a120519077))
+
+
+### Bug Fixes
+
+* **learn:** a fails block names the exit it promises, and a release refreshes lesson samples ([#561](https://github.com/hungovercoders/slopstopper/issues/561)) ([7322bf1](https://github.com/hungovercoders/slopstopper/commit/7322bf1ef99bc5f8052f8e3559673db7bc676bbc))
+* **privacy:** judge visible text and real dates, exit 2 on a bad headers source, find router pages ([#563](https://github.com/hungovercoders/slopstopper/issues/563)) ([f1316ba](https://github.com/hungovercoders/slopstopper/commit/f1316ba7b93fbf8175ec68e534f04596de364a1a))
+* **privacy:** skip hidden directories when discovering the page and the host config ([#552](https://github.com/hungovercoders/slopstopper/issues/552)) ([c91f279](https://github.com/hungovercoders/slopstopper/commit/c91f2793a7e2c1bdc606cf001bfc3b8694a1d1f3))
+
 ## [0.25.0](https://github.com/hungovercoders/slopstopper/compare/v0.24.0...v0.25.0) (2026-10-25)
 
 
