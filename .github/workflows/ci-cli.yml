@@ -52,6 +52,11 @@ on:
       # The shape tests read the composite actions the workflows call.
       - '.github/actions/**'
   workflow_dispatch:
+  # The course runs nightly as well as on every push to main, so a CLI
+  # change that breaks a lesson is caught within a day even when the PR
+  # that made it never touched docs/learn/.
+  schedule:
+    - cron: '0 4 * * *'
 
 permissions:
   contents: read
@@ -113,14 +118,64 @@ jobs:
           path: shots
 
   # The course under docs/learn/ marks its runnable blocks, and
-  # scripts/learncheck.py runs them in order in a scratch clone with the
-  # CLI from this checkout, so a lesson cannot quietly stop working when
-  # a command's output or a task's name changes. The hygiene lessons need
-  # only the CLI; each lesson that needs an external tool adds its install
-  # step here, pinned the way the check's own workflow pins it.
-  learn:
-    name: learn
+  # scripts/learncheck.py runs them in order in a sandbox with the CLI
+  # from this checkout, so a lesson cannot quietly stop working when a
+  # command's output or a task's name changes. The full course takes a
+  # quarter of an hour (four ZAP scans, a browser, three scanners), so it
+  # runs on a pull request only when the course or its harness changed;
+  # every push to main and the nightly schedule run it regardless, and a
+  # red there raises the workflow-failure issue. The lessons are split
+  # across shards, each installing only the tools its lessons need.
+  learn-gate:
+    name: learn gate
     runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.gate.outputs.run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: gate
+        shell: bash
+        # Context values reach the script through env, never interpolated
+        # into it (Semgrep's run-shell-injection rule, and the right habit).
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          changed="$(git diff --name-only "origin/${BASE_REF}...HEAD")"
+          if echo "$changed" | grep -qE '^(docs/learn/|scripts/learncheck\.py|scripts/learntapes\.py|\.github/workflows/ci-cli\.yml)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::The course did not change, so the learn shards are skipped on this pull request; they run on main and nightly."
+          fi
+
+  learn:
+    name: learn ${{ matrix.name }}
+    needs: learn-gate
+    if: needs.learn-gate.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "hygiene and agents (0-5, 17-20)"
+            pages: "00,01,02,03,04,05,17,18,19,20"
+            tools: "vhs"
+          - name: "scanners (6-8)"
+            pages: "06,07,08"
+            tools: "gitleaks semgrep trivy"
+          - name: "headers and DAST (9-10)"
+            pages: "09,10"
+            tools: ""
+          - name: "browser (11-16)"
+            pages: "11,12,13,14,15,16"
+            tools: "playwright"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -131,13 +186,15 @@ jobs:
       - run: pip install -e ./cli
       - name: Install dependencies
         run: npm ci
-      - name: Install the browser checks' dependencies (lessons 11 to 13)
+      - name: Install the browser checks' dependencies (lessons 11 to 16)
         # The same install as the pytest job; the cache and the bounded
         # download live in the action.
+        if: contains(matrix.tools, 'playwright')
         uses: ./.github/actions/ss-playwright
         timeout-minutes: 12
       - name: Install Gitleaks (lesson 6)
         # The same pinned release as ss-security-secrets-check.yml.
+        if: contains(matrix.tools, 'gitleaks')
         env:
           GITLEAKS_VERSION: "8.30.1"
         run: |
@@ -148,9 +205,11 @@ jobs:
       - name: Install Semgrep (lesson 7)
         # The same pip install as ss-security-sast-check.yml. Lesson 10's
         # ZAP runs from Docker, which the runner already has.
+        if: contains(matrix.tools, 'semgrep')
         run: pip install semgrep
       - name: Install Trivy (lesson 8)
         # The same apt repository as ss-security-vulnerability-all-check.yml.
+        if: contains(matrix.tools, 'trivy')
         run: |
           set -e
           wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
@@ -158,6 +217,7 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y trivy
           trivy --version
       - name: Install vhs (to validate the lesson tapes' syntax)
+        if: contains(matrix.tools, 'vhs')
         env:
           VHS_VERSION: "0.10.0"
         run: |
@@ -167,5 +227,6 @@ jobs:
           sudo mv "/tmp/vhs_${VHS_VERSION}_Linux_x86_64/vhs" /usr/local/bin/vhs
           vhs --version
       - name: The lesson tapes match their lessons
+        if: contains(matrix.tools, 'vhs')
         run: python scripts/learntapes.py --check
-      - run: python scripts/learncheck.py
+      - run: python scripts/learncheck.py --page "${{ matrix.pages }}"

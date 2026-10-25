@@ -28,9 +28,9 @@ in the [syllabus](README.md).
   any `cmd; echo "exit $?"` block that shows a non-zero code, since
   `sh -e` stops at the command. `task contributing:learn:check` runs the
   marked blocks of each lesson in order with `sh -e` in a scratch clone,
-  and fails if a page leaves that clone dirty; the `learn` job in
-  `ci-cli.yml` runs the same on every change to the course or the CLI,
-  so a lesson cannot rot. Blocks that need credentials, an editor, a
+  and fails if a page leaves that clone dirty; the `learn` shards in
+  `ci-cli.yml` run the same on every push to main, nightly, and on a pull
+  request that changes the course, so a lesson cannot rot. Blocks that need credentials, an editor, a
   browser or a tool the harness does not have are left unmarked. Run
   `task contributing:learn:check -- --page NN` on a lesson before
   committing it.

@@ -17,11 +17,12 @@ because the lessons promise the next one starts from a fresh checkout.
 Usage:
     python scripts/learncheck.py                 # every page under docs/learn/
     python scripts/learncheck.py --page 03       # pages whose name starts with 03
+    python scripts/learncheck.py --page 06,07,08 # a few pages (what a CI shard runs)
     python scripts/learncheck.py --keep          # keep the scratch clone for a look
 
 `task contributing:learn:check` runs it from the repo's venv; the `learn`
-job in `.github/workflows/ci-cli.yml` runs it on every change to the
-course or the CLI.
+shards in `.github/workflows/ci-cli.yml` run it on every push to main,
+nightly, and on a pull request that changes the course or this script.
 
 Exit codes follow the suite's contract: 0 every block did what its
 marker says, 1 a block did not (or a page left the clone dirty), 2 the
@@ -74,10 +75,13 @@ def extract(page: Path) -> list[Block]:
     return blocks
 
 
-def pages(prefix: str | None) -> list[Path]:
+def pages(prefixes: str | None) -> list[Path]:
+    """The lesson pages, or only those whose file name starts with one of
+    the comma-separated `prefixes` (`03`, or `06,07,08` for a CI shard)."""
     found = sorted(p for p in LEARN.glob("*.md") if p.name[0].isdigit())
-    if prefix:
-        found = [p for p in found if p.name.startswith(prefix)]
+    wanted = [x.strip() for x in (prefixes or "").split(",") if x.strip()]
+    if wanted:
+        found = [p for p in found if any(p.name.startswith(w) for w in wanted)]
     return found
 
 
@@ -226,7 +230,7 @@ def check_page(page: Path, blocks: list[Block], sandbox: Path, env: dict[str, st
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--page", help="only pages whose file name starts with this (e.g. 03)")
+    parser.add_argument("--page", help="only pages whose file name starts with one of these, comma-separated (e.g. 03, or 06,07,08)")
     parser.add_argument("--keep", action="store_true", help="keep the scratch clone for inspection")
     args = parser.parse_args(argv)
 
