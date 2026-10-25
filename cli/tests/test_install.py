@@ -829,15 +829,28 @@ def test_no_warning_when_the_pinned_cli_knows_every_shipped_check(tmp_path):
 
 
 def test_the_guard_reads_a_long_listing_whole(tmp_path):
-    """The guard once piped the known list through `grep -q` under pipefail;
-    grep exits on the first match while printf is still writing, so a check
-    early in a long listing was reported unknown (#564). Thousands of extra
-    names after the shipped ones make that race near-certain on the old code."""
+    """A shipped check early in a long listing is still found (#564): the
+    thousands of names after it must not be able to lose the match."""
     target = _make_minimal_target(tmp_path)
     known = _shipped_check_keys() + [f"zz:check-{n}" for n in range(4000)]
     result = _run_install(target, args=["--no-hooks", "--no-skills"], env_extra=_fake_cli_listing_on_path(tmp_path, known))
     assert result.returncode == 0, result.stderr
     assert "does not know" not in result.stdout, result.stdout
+
+
+def test_a_disabled_workflow_early_in_a_long_list_stays_out(tmp_path):
+    """Same invariant for the disabled set (#564). The closing sweep removes
+    a disabled workflow from disk whatever the loop did, so the marker is
+    what shows whether the loop saw it: one recorded there would read as a
+    deliberate deletion once the adopter enables the workflow again."""
+    target = _make_minimal_target(tmp_path)
+    names = ["ss-reliability-seo-check.yml"] + [f"zz-{n}.yml" for n in range(4000)]
+    (target / ".slopstopper.yml").write_text("workflows:\n  disabled: [" + ", ".join(names) + "]\n")
+    result = _run_install(target, args=["--no-hooks", "--no-skills"])
+    assert result.returncode == 0, result.stderr
+    assert "ss-reliability-seo-check.yml" not in _installed(target)
+    assert "ss-reliability-seo-check.yml" not in (target / ".ss/.workflows-installed").read_text().split()
+    assert "ss-reliability-smoke-tests.yml" in _installed(target)
 
 
 def test_the_guard_asks_the_pinned_cli_through_mise_not_the_shell(tmp_path):
@@ -1401,6 +1414,18 @@ def test_install_leaves_an_existing_topic_alone(tmp_path):
     result = _run_install(
         target, args=["--no-hooks", "--no-skills"], env_extra=_fake_gh_on_path(tmp_path, "python\nslopstopper\n")
     )
+    assert result.returncode == 0, result.stderr
+    assert not [c for c in _gh_calls(tmp_path) if c.startswith("repo edit")]
+    assert "Repo topic 'slopstopper' already set" in result.stdout
+
+
+def test_an_existing_topic_early_in_a_long_list_is_seen(tmp_path):
+    """Same invariant as the shipped-checks guard (#564): the topics after
+    `slopstopper` must not be able to lose the match."""
+    target = tmp_path / "repo"
+    target.mkdir()
+    topics = "slopstopper\n" + "".join(f"topic-{n}\n" for n in range(4000))
+    result = _run_install(target, args=["--no-hooks", "--no-skills"], env_extra=_fake_gh_on_path(tmp_path, topics))
     assert result.returncode == 0, result.stderr
     assert not [c for c in _gh_calls(tmp_path) if c.startswith("repo edit")]
     assert "Repo topic 'slopstopper' already set" in result.stdout

@@ -262,13 +262,12 @@ installed_cli_version() {
 }
 
 # has_line LIST LINE → exit 0 if LINE is one whole line of the newline-separated
-# LIST. Pure bash on purpose: `printf LIST | grep -qx LINE` under pipefail is
-# a race, because the builtin printf writes a long list in several chunks and
-# grep -q exits on the first match, so printf can take SIGPIPE and the
-# pipeline report the line missing (#564).
+# LIST. In-shell on purpose: this script runs under pipefail, and piping a
+# list into `grep -q` lets grep exit on the first match while the writer is
+# still writing, which fails the pipeline and reports the line missing.
 has_line() {
   local nl=$'\n'
-  case "$nl$1$nl" in *"$nl$2$nl"*) return 0 ;; *) return 1 ;; esac
+  [[ "$nl$1$nl" == *"$nl$2$nl"* ]]
 }
 
 # Run the pinned slopstopper-cli: through mise in the target when mise did
@@ -957,7 +956,7 @@ if [ -z "$PROFILE_ACTIVE" ]; then
 fi
 
 workflow_is_disabled() {
-  [ -n "$DISABLED_WORKFLOWS" ] && printf '%s\n' "$DISABLED_WORKFLOWS" | grep -Fxq "$1"
+  [ -n "$DISABLED_WORKFLOWS" ] && has_line "$DISABLED_WORKFLOWS" "$1"
 }
 
 # Load the set of workflows we installed last time (if any). If a workflow

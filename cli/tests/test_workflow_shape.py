@@ -346,7 +346,7 @@ def test_the_cloudflare_trigger_skips_workflows_the_repo_disables():
     text = _text("ss-cloudflare-deployed.yml")
     loop = text[text.index('for wf in "${checks[@]}"'):]
     assert "slopstopper profile disabled" in text
-    assert loop.index("grep -Fxq") < loop.index("gh workflow run")
+    assert loop.index('[[ "$disabled" == *"$nl$wf$nl"* ]]') < loop.index("gh workflow run")
 
 
 def test_every_url_driven_check_is_dispatched_after_a_cloudflare_deploy():
