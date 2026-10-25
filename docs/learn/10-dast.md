@@ -56,8 +56,8 @@ Docker version 29.5.3, build d1c06ef
 The site is served on a port of its own, tracked by a pid file so a
 later step can stop it. ZAP runs in a container, so the check rewrites
 `localhost` to the address the container can reach the host on
-(`host.docker.internal` on macOS and Windows, the bridge gateway
-`172.17.0.1` on Linux) and tells you.
+(`host.docker.internal` on macOS, the bridge gateway `172.17.0.1`
+everywhere else) and tells you.
 
 <!-- learn -->
 ```sh

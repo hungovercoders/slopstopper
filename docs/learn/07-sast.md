@@ -65,10 +65,10 @@ task ss:security:sast
 ✅ Scan completed successfully.
  • Findings: 15 (15 blocking)
  • Rules run: 508
- • Targets scanned: 283
+ • Targets scanned: 286
 🔍 Running SAST analysis…
 ⚠️  Found 15 finding(s): 0 error(s), 15 warning(s)
-✅ No finding(s) at or above `fail_on: error`, so the check passes
+ℹ️  none at or above `fail_on: error`, so the check does not fail
 
 📁 Reports saved to: .ss/reports/sast/
    • sast-report.md

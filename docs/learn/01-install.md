@@ -269,7 +269,7 @@ bash ../slopstopper/install.sh --profile library
 mise trust && slopstopper profile show
 ```
 
-The installer line reads `10 workflow(s) installed`, and `profile show`
+The installer line reads `14 workflow(s) installed`, and `profile show`
 lists fifteen disabled workflows with the reason `(profile)`: the nine
 browser checks, DAST, CSP exceptions and the four API checks, which is
 everything that needs a URL. What remains is the static layer: SAST,
