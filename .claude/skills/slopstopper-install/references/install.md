@@ -11,7 +11,7 @@ git status                              # must show clean
 git checkout -b chore/slopstopper-install   # or chore/slopstopper-refresh for a refresh
 ```
 
-`install.sh` adds up to 30 workflow files, the three composite actions, a `Taskfile.ss.yml` and a `.slopstopper.yml` to the repo in one shot. On `main` that's an awkward 29+-file commit; on a dedicated branch the diff is reviewable and the rollback is `git checkout main && git branch -D <branch>`. If `git status` is dirty, stop and reconcile first, because the installer doesn't ask before writing into `ss-*.yml` or `Taskfile.ss.yml`. On a refresh, the wipe-and-replace behaviour will clobber anything sitting in the tracked files it rewrites, so commit or stash first.
+`install.sh` adds up to 30 workflow files, the three composite actions, a `Taskfile.ss.yml` and a `.slopstopper.yml` to the repo in one shot. On `main` that's an awkward 30+-file commit; on a dedicated branch the diff is reviewable and the rollback is `git checkout main && git branch -D <branch>`. If `git status` is dirty, stop and reconcile first, because the installer doesn't ask before writing into `ss-*.yml` or `Taskfile.ss.yml`. On a refresh, the wipe-and-replace behaviour will clobber anything sitting in the tracked files it rewrites, so commit or stash first.
 
 From the target repo root, download-review-run in two steps:
 

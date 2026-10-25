@@ -8,7 +8,7 @@
 
 | Shape | Profile | Install with | Gets |
 | ----- | ------- | ------------ | ---- |
-| Serves HTML to a browser | `ui` (default) | `bash install.sh` | everything (27 checks; 22 until the repo has an API) |
+| Serves HTML to a browser | `ui` (default) | `bash install.sh` | everything (27 checks; 23 until the repo has an API) |
 | JSON/gRPC API, no browser surface | `api` | `bash install.sh --profile api` | the static layer, the four API checks (`api-health`, `api-latency`, `api-headers`, `openapi`) and DAST via ZAP's OpenAPI mode; no browser checks (17 checks) |
 | Library, CLI or package, nothing deployed | `library` | `bash install.sh --profile library` | the static layer only (11 checks) |
 
