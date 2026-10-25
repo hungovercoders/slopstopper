@@ -31,8 +31,8 @@ slopstopper --version
 The `task ss:*` shims call whichever `slopstopper` is on PATH; that last
 `export` points them at the editable install so a lesson runs HEAD. Each
 lesson says which external tools it needs beyond that (lesson 6 needs
-`gitleaks`, lesson 10 needs Docker); `slopstopper doctor` lists what is
-missing.
+`gitleaks`, lesson 7 `semgrep`, lesson 10 Docker); `slopstopper doctor`
+lists what is missing.
 
 ## How the lessons work
 
@@ -61,16 +61,16 @@ and the verdicts are the same.
 | # | Lesson | You will learn | Episode |
 |---|---|---|---|
 | 0 | [What slop is, and the five loops](00-what-slop-is.md) | The problem, the thesis, the exit-code contract, the five loops | coming soon |
-| 1 | Install slopstopper into a repo | `install.sh`, profiles, what landed, `doctor` | coming soon |
+| 1 | [Install slopstopper into a repo](01-install.md) | `install.sh`, profiles, what landed, `doctor` | coming soon |
 | 2 | [Run your first check and read its report](02-first-check-complexity.md) | `hygiene:complexity`, the task → CLI → workflow chain, `.ss/reports/` | coming soon |
 | 3 | [Entry files: the AGENTS.md-first model](03-entry-files.md) | `hygiene:entry-files`, token budgets, explicit routes | coming soon |
 | 4 | [Docs structure: every doc has a route](04-docs-structure.md) | `hygiene:docs-structure`, hops, line caps | coming soon |
 | 5 | [Docs accuracy and docs size](05-docs-accuracy-and-size.md) | `hygiene:docs-accuracy`, `hygiene:docs-size`, why one gates and one advises | coming soon |
 | 6 | [Secrets](06-secrets.md) | `security:secrets`, why history is what is scanned, revoke then rewrite | coming soon |
-| 7 | Static analysis | `security:sast` | coming soon |
+| 7 | [Static analysis](07-sast.md) | `security:sast`, shape not text, the finding, fix the code not the rule | coming soon |
 | 8 | [Dependencies and licences](08-dependencies.md) | `security:vulnerability:all`, dependency review | coming soon |
 | 9 | [Headers and CSP](09-headers-and-csp.md) | `hygiene:csp-exceptions`, `security:api-headers`, the exceptions ledger, wildcard-plus-credentials | coming soon |
-| 10 | Dynamic scanning | `security:dast` | coming soon |
+| 10 | [Dynamic scanning](10-dast.md) | `security:dast`, the running thing, the gate, the ledger versus `rules.tsv` | coming soon |
 | 11 | [Smoke and end-to-end](11-smoke-and-e2e.md) | `reliability:smoke`, `reliability:e2e`, does it serve and can a visitor get around | coming soon |
 | 12 | [Accessibility](12-accessibility.md) | `reliability:accessibility`, axe impact levels, the contrast rule | coming soon |
 | 13 | [Core Web Vitals](13-core-web-vitals.md) | `reliability:cwv`, LCP, TBT and CLS, budgets you tighten to what you measure | coming soon |
