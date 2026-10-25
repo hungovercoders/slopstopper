@@ -59,9 +59,9 @@ demo tapes in four ways:
   comment, `clear` between shots, a wait for the prompt to return after
   each line and a beat on each shot's output, and heredoc bodies typed
   fast. Edit the lesson, not the tape;
-  `-- --check` reports a stale one, and the `learn` job in `ci-cli.yml`
-  runs that check (with `vhs validate` on each tape) on every change to
-  the course.
+  `-- --check` reports a stale one, and the first `learn` shard in
+  `ci-cli.yml` runs that check (with `vhs validate` on each tape) on every
+  push to main and on a pull request that changes the course.
 - **One size.** 100 columns by 30 rows at font size 16, the episode
   convention in [docs/learn/EPISODES.md](../learn/EPISODES.md), so every
   episode's terminal looks the same. The generator carries the pixel

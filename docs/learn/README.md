@@ -51,8 +51,9 @@ you are:
 | **Episode script** | Collapsed at the end: what the video says and shows, with chapter timestamps. |
 
 Runnable blocks are marked, and `task contributing:learn:check` runs
-them in order in a scratch clone, locally and in CI, so a lesson cannot
-quietly stop working when the CLI changes. The sample output comes from the build the lesson was written
+them in order in a scratch clone, locally and in CI (on every push to
+main, nightly, and on a pull request that changes the course), so a
+lesson cannot quietly stop working when the CLI changes. The sample output comes from the build the lesson was written
 against; a later release can word a hint differently, but the commands
 and the verdicts are the same.
 
