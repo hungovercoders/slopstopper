@@ -131,7 +131,7 @@ Ask for a check that does not exist. The CLI cannot run it, so this is
 a 2, not a 1: nothing about the repo failed, and the check's issue
 emitter would not treat it as a finding.
 
-<!-- learn: fails -->
+<!-- learn: fails 2 -->
 ```sh
 slopstopper run hygiene:nope; echo "exit $?"
 ```

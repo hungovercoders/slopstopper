@@ -48,7 +48,7 @@ they were.
 
 ### 1. Serve the demo and run all four
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 mkdir -p scratch
 PORT=8099 slopstopper serve >/dev/null 2>&1 & echo $! > scratch/serve.pid
@@ -109,7 +109,7 @@ git checkout app/sitemap.xml
 sed -i.bak 's|^Allow: /|Disallow: /|' app/robots.txt && rm app/robots.txt.bak
 ```
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run reliability:robots-txt -- http://localhost:8099
 ```
@@ -135,7 +135,7 @@ git checkout app/robots.txt
 sed -i.bak '1d' app/llms.txt && rm app/llms.txt.bak
 ```
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run reliability:llms-txt -- http://localhost:8099
 ```
@@ -163,7 +163,7 @@ git checkout app/llms.txt
 sed -i.bak 's|href="history.html"|href="missing.html"|' app/index.html && rm app/index.html.bak
 ```
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run reliability:broken-links -- http://localhost:8099
 ```

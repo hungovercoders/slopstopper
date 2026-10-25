@@ -111,7 +111,7 @@ git add deploy.pem
 git commit -q -m "wip: deploy key"
 ```
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run security:secrets
 ```
@@ -154,7 +154,7 @@ git rm -q deploy.pem
 git commit -q -m "remove the key"
 ```
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run security:secrets
 ```

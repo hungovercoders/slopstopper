@@ -63,9 +63,9 @@ bash ../slopstopper/install.sh --profile ui
   ✅ Taskfile.yml installed
   ✅ .slopstopper.yml: seeded demo-site/.slopstopper.yml as a starter. Every other key is in …/.slopstopper.yml.example
   ✅ .slopstopper.yml: profile set to 'ui'
-  ℹ  Pinning slopstopper-cli@0.24.0 (+ task) in mise.toml via mise…
-  ✅ slopstopper-cli installed (0.24.0, pinned in mise.toml)
-  ✅ 25 workflow(s) installed, 0 refreshed, 0 previously-deleted skipped
+  ℹ  Pinning slopstopper-cli@0.25.0 (+ task) in mise.toml via mise…
+  ✅ slopstopper-cli installed (0.25.0, pinned in mise.toml)
+  ✅ 27 workflow(s) installed, 0 refreshed, 0 previously-deleted skipped
   ✅ composite actions refreshed under .github/actions/ (ss-resolve-url, ss-setup)
   ℹ  profile 'ui': 4 workflow(s) not installed for this repo shape (0 removed from a previous install)
   ✅ package.json created (devDependencies only; add scripts.build if your site needs building)
@@ -136,7 +136,7 @@ cat mise.toml
 ```
 [tools]
 node = "20"
-"pipx:slopstopper-cli" = "0.24.0"
+"pipx:slopstopper-cli" = "0.25.0"
 task = "3"
 ```
 
@@ -269,11 +269,12 @@ bash ../slopstopper/install.sh --profile library
 mise trust && slopstopper profile show
 ```
 
-The installer line reads `14 workflow(s) installed`, and `profile show`
-lists fifteen disabled workflows with the reason `(profile)`: the nine
-browser checks, DAST, CSP exceptions and the four API checks, which is
-everything that needs a URL. What remains is the static layer: SAST,
-secrets, dependency CVEs and review, complexity, the four docs checks.
+The installer line reads `15 workflow(s) installed`, and `profile show`
+lists sixteen disabled workflows with the reason `(profile)`: the nine
+browser checks, DAST, CSP exceptions, the privacy statement and the four
+API checks, which is everything that needs a URL or a served page. What
+remains is the static layer: SAST, secrets, dependency CVEs, review and
+licences, complexity, the four docs checks.
 `cd .. && rm -rf demo-lib` afterwards.
 
 </details>

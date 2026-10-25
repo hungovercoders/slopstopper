@@ -64,7 +64,7 @@ Version: 0.74.0
 
 ### 1. See it red
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run security:vulnerability:all
 ```
@@ -197,7 +197,7 @@ Treat CI as the verdict.
 
 ## Checkpoint
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run security:vulnerability:all >/dev/null 2>&1; echo "exit $?"
 ```

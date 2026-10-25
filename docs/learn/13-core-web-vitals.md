@@ -105,7 +105,7 @@ printf 'const until = Date.now() + 1500;\nwhile (Date.now() < until) {}\n' > app
 sed -i.bak 's|<link rel="stylesheet" href="style.css">|<script src="slow.js"></script>\n  <link rel="stylesheet" href="style.css">|' app/index.html && rm app/index.html.bak
 ```
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run reliability:cwv -- http://localhost:8099
 ```

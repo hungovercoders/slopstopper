@@ -39,7 +39,7 @@ The demo repo from the [syllabus](README.md), with the CLI on PATH.
 
 ### 1. See it red, and read the table
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run hygiene:entry-files
 ```

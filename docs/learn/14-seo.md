@@ -47,7 +47,7 @@ is drawn from the live site, not from your laptop. Against a local
 server, tell the check not to fetch it; the workflow does the same for
 a local build.
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 mkdir -p scratch
 PORT=8099 slopstopper serve >/dev/null 2>&1 & echo $! > scratch/serve.pid

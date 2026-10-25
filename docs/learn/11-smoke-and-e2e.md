@@ -80,7 +80,7 @@ not.
 rm app/history.html
 ```
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run reliability:smoke -- http://localhost:8099
 ```
@@ -133,7 +133,7 @@ the page gives it nothing to do.
 sed -i.bak 's|href="history.html"|href="nope.html"|' app/index.html && rm app/index.html.bak
 ```
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run reliability:e2e -- http://localhost:8099
 ```

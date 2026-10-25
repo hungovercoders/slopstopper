@@ -36,7 +36,7 @@ is that nothing gets under it.
 
 ### 1. Serve the demo and see it red
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 mkdir -p scratch
 PORT=8099 slopstopper serve >/dev/null 2>&1 & echo $! > scratch/serve.pid

@@ -3,8 +3,10 @@
 
 The lessons under docs/learn/ mark their runnable blocks with an HTML
 comment on the line before the fence: `<!-- learn -->` for a block that
-must exit 0, `<!-- learn: fails -->` for one that must exit non-zero
-(the break-it step of most lessons). Each page names its sandbox with
+must exit 0, `<!-- learn: fails -->` for one that must exit non-zero,
+and `<!-- learn: fails 1 -->` for one that must exit exactly that code
+(the break-it step of most lessons promises a 1, a verdict, and would
+otherwise pass on a 2, a check that could not run). Each page names its sandbox with
 `<!-- learn-sandbox: demo -->` or `<!-- learn-sandbox: checkout -->` near
 the top: `demo` is the repo `slopstopper demo` writes, committed once,
 which is what the check lessons run in; `checkout` (the default) is a
@@ -52,7 +54,7 @@ LEARN = ROOT / "docs" / "learn"
 # marker is on its own line directly before the fence, as the template
 # says; a marker anywhere else is not a marker.
 _BLOCK = re.compile(
-    r"^<!-- learn(?:: (?P<mode>fails))? -->\n```sh\n(?P<code>.*?)^```",
+    r"^<!-- learn(?:: (?P<mode>fails)(?: (?P<expect>\d+))?)? -->\n```sh\n(?P<code>.*?)^```",
     re.M | re.S,
 )
 _SANDBOX = re.compile(r"^<!-- learn-sandbox: (?P<kind>demo|checkout) -->$", re.M)
@@ -64,6 +66,7 @@ class Block:
     line: int
     code: str
     must_fail: bool
+    expect: int | None = None  # the exact non-zero exit a `fails N` block promises
 
     @property
     def where(self) -> str:
@@ -81,7 +84,8 @@ def extract(page: Path) -> list[Block]:
     blocks = []
     for m in _BLOCK.finditer(text):
         line = text.count("\n", 0, m.start()) + 1
-        blocks.append(Block(page, line, m.group("code"), m.group("mode") == "fails"))
+        expect = int(m.group("expect")) if m.group("expect") else None
+        blocks.append(Block(page, line, m.group("code"), m.group("mode") == "fails", expect))
     return blocks
 
 
@@ -200,7 +204,10 @@ def run_block(block: Block, sandbox: Path, env: dict[str, str]) -> tuple[bool, s
         capture_output=True, text=True, check=False,
     )
     failed = result.returncode != 0
-    ok = failed if block.must_fail else not failed
+    if block.must_fail and block.expect is not None:
+        ok = result.returncode == block.expect
+    else:
+        ok = failed if block.must_fail else not failed
     output = (result.stdout + result.stderr).rstrip("\n")
     return ok, f"exit {result.returncode}\n{output}"
 
@@ -239,7 +246,7 @@ def check_page(page: Path, blocks: list[Block], sandbox: Path, env: dict[str, st
     failures = 0
     for block in blocks:
         ok, detail = run_block(block, sandbox, env)
-        want = "non-zero" if block.must_fail else "0"
+        want = str(block.expect) if block.expect is not None else ("non-zero" if block.must_fail else "0")
         if ok:
             print(f"✓ {block.where}")
             continue

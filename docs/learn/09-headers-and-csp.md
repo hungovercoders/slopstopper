@@ -76,7 +76,7 @@ one path, and the question the check asks is "did you say so?"
 
 ### 2. See the drift check red
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run hygiene:csp-exceptions
 ```
@@ -211,7 +211,7 @@ python3 scratch/api.py >/dev/null 2>&1 & echo $! > scratch/api.pid
 sleep 1
 ```
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run security:api-headers -- http://localhost:8765 --path /health
 ```
@@ -291,7 +291,7 @@ come from the proxy in front of the app, not the app.
 
 ## Checkpoint
 
-<!-- learn: fails -->
+<!-- learn: fails 1 -->
 ```sh
 slopstopper run hygiene:csp-exceptions >/dev/null; echo "exit $?"
 ```
