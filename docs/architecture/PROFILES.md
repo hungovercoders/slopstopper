@@ -62,10 +62,9 @@ and keep that one check. A profile only ever subtracts.
 
 **One mapping, two readers.** The profile → workflow table lives in
 [`cli/slopstopper/data/profiles.json`](../../cli/slopstopper/data/profiles.json).
-The CLI reads it through `slopstopper.profiles`; `install.sh` imports that same
-module from the source tree with `python3` (a hard prereq) rather than requiring
-the installed wheel, so the installer can resolve the workflow set before the
-mise/CLI step has run and there's no bash-side copy of the mapping to drift.
+The CLI reads it through `slopstopper.profiles`, and `slopstopper install` (what
+`install.sh` hands over to) resolves the workflow set through the same module,
+so there is no second copy of the mapping to drift.
 
 **Detection suggests, never applies.** `slopstopper profile detect` sniffs for
 framework configs, HTML, OpenAPI specs and server-framework dependencies, and

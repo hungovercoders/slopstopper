@@ -13,9 +13,8 @@ shape should not carry:
     # .slopstopper.yml
     profile: api
 
-The mapping lives in `data/profiles.json` so `install.sh` can read the
-same file with python3 and delete the same workflows at install time,
-so there is one source of truth with two readers.
+The mapping lives in `data/profiles.json`; the installer resolves the
+workflow set through this module, so there is one source of truth.
 
 Profiles only ever SUBTRACT, and explicit config always wins:
 
@@ -237,7 +236,7 @@ def check_is_disabled(check_name: str, disabled: set[str] | None = None) -> bool
 
 # ── shape detection (advisory only) ──────────────────────────────
 #
-# `install.sh` and the install skill use this to SUGGEST a profile. It
+# The installer and the install skill use this to SUGGEST a profile. It
 # never picks one: a curl-piped install is non-interactive, and a wrong
 # silent pick (checks quietly off) is worse than the default superset
 # (checks visibly red). When signals conflict, UI wins, because the

@@ -1,6 +1,6 @@
 # Adopting SlopStopper
 
-Everything an adopter needs once: prerequisites, what `install.sh` writes,
+Everything an adopter needs once: prerequisites, what the installer writes,
 what each check needs from you, how to run the suite, configure it and
 move the CLI pin. The [README](../../README.md) holds the two install
 commands; this is the rest.
@@ -23,7 +23,7 @@ Per-check tools (skip any check your profile drops):
 | `trivy` | `security:vulnerability:all` | `brew install aquasecurity/trivy/trivy` |
 | `docker` | `security:dast` | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |
 
-Optional: **bash + git** (if using `install.sh`), **Task v3.x** (for the `task ss:*` shim layer).
+Optional: **bash** (for `install.sh`, which pins the CLI through mise and then runs `slopstopper install`; with the CLI already installed, `slopstopper install` alone writes the suite), **Task v3.x** (for the `task ss:*` shim layer).
 `security:licences` needs no tool: it reads `package-lock.json` and `pip inspect`.
 
 The installer never writes a `LICENSE` or `NOTICE` file. Which licence a
@@ -115,7 +115,7 @@ Refresh workflows + shims and reinstall the **pinned** `slopstopper-cli` (config
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 ```
 
-`slopstopper install [--profile …]` writes the same suite from the files the installed CLI ships (the `ss-*.yml` workflows, shims, seeds, hook and skills), seeding the pin with its own version when the repo has none; `install.sh` additionally pins and installs the CLI through mise. Run it from the pinned CLI (`mise exec -- slopstopper install`) so the shims match the version CI runs.
+`install.sh` pins and installs the CLI through mise, then hands over to `slopstopper install [--profile …]`, which writes the suite from the files that version ships (the `ss-*.yml` workflows, shims, seeds, hook and skills). With the CLI already installed, `slopstopper install` alone does the same and seeds the pin with its own version when the repo has none; run it from the pinned CLI (`mise exec -- slopstopper install`) so the shims match the version CI runs.
 
 Move the pin when ready (rewrites `mise.toml`; commit so CI matches). See [UPGRADE_CLI.md](./UPGRADE_CLI.md):
 

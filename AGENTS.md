@@ -58,7 +58,7 @@ cli/slopstopper/     the CLI: checks/<check>.py, data/ (templates, specs), profi
 cli/tests/           pytest; test_check_registration.py enforces every surface a check needs
 .github/workflows/   ss-*.yml, each `uses: ./.github/actions/ss-setup` then one task
 Taskfile.ss.yml      the `task ss:*` shims  ·  Taskfile.yml includes them under `ss`
-install.sh           adopter installer (seeds templates, pins the CLI via mise)
+install.sh           adopter bootstrap: pins the CLI via mise, then `slopstopper install`
 .claude/skills/      slopstopper-install + slopstopper-triage, shipped to adopters
 app/  worker/        the site and the Cloudflare Worker that serves it (headers.json = CSP)
 demos/               VHS tapes and the GIFs/PNGs they render (task contributing:demos)

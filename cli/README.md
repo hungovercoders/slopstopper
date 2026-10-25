@@ -23,7 +23,7 @@ For a repo you'll keep, install the pinned suite so local and CI run the same ve
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 ```
 
-> Requires [mise](https://mise.jdx.dev). `install.sh` pins `slopstopper-cli` + `task` in `mise.toml` (the single source of truth both local runs and CI read) and seeds the `ss-*.yml` workflows. Move the pin with `install.sh --upgrade-cli` / `--cli-version`.
+> Requires [mise](https://mise.jdx.dev). `install.sh` pins `slopstopper-cli` + `task` in `mise.toml` (the single source of truth both local runs and CI read), installs that version, and hands over to `slopstopper install`, which writes the `ss-*.yml` workflows, shims, seeds, hook and skills from the files that version ships. Move the pin with `install.sh --upgrade-cli` / `--cli-version`.
 
 Development (editable, from a clone of this repo):
 
@@ -79,7 +79,7 @@ This workflow is slopstopper-internal. It is **not** part of the distributed `ss
 - `slopstopper/templates.py` resolves bundled templates and backs the `templates {list, path, eject}` API
 - `slopstopper/emit.py` wraps the `gh` CLI to post PR comments and main-branch issues
 - `slopstopper/discovery.py` resolves the pages to audit for reliability checks
-- `slopstopper/profiles.py` holds the project-shape profiles. It resolves which workflows a repo carries with `(profile.disables − workflows.enabled) ∪ workflows.disabled` (explicit `workflows.disabled` wins if the same workflow is listed in both), plus the check → workflow map. `install.sh` imports this module directly, so it is the only implementation
+- `slopstopper/profiles.py` holds the project-shape profiles. It resolves which workflows a repo carries with `(profile.disables − workflows.enabled) ∪ workflows.disabled` (explicit `workflows.disabled` wins if the same workflow is listed in both), plus the check → workflow map. `slopstopper install` resolves the workflow set through it, so it is the only implementation
 - `slopstopper/suite.py` names every file the suite ships (workflows, actions, shims, seeds, hook, skills); `hatch_build.py` copies them from the repository root into the sdist and the wheel under `slopstopper/data/suite/`, and an editable install reads the checkout
 - `slopstopper/installer.py` is `slopstopper install`: it writes that suite into a repo, seeds the mise pin with its own version when there is none, and refreshes slopstopper-owned files on a re-run
 - `slopstopper/checks/` holds one module per check; the registry is in `__init__.py`

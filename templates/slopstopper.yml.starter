@@ -1,15 +1,15 @@
 # .slopstopper.yml: slopstopper's per-repo config.
 #
-# This is the starter install.sh seeds: the handful of keys most repos
+# This is the starter the installer seeds: the handful of keys most repos
 # actually set. Every other knob has a sensible default and is documented,
 # with its default, in the schema reference:
 #   https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example
-# Copy a block from there when you need it. Re-running install.sh never
+# Copy a block from there when you need it. Re-running the installer never
 # overwrites this file.
 #
-# That link tracks main; .ss/.installed-from names the commit you installed
-# from (put it in place of `main` to see that version). A knob the CLI reads
-# takes effect once the slopstopper-cli pinned in mise.toml has it.
+# That link tracks main; .ss/.installed-from names the slopstopper-cli version
+# that wrote this install (put v<version> for `main` to see that release's
+# schema). A knob the CLI reads takes effect once the pinned CLI has it.
 
 # This repo's shape. ui (the default) is a site or app that serves HTML;
 # api has JSON/gRPC endpoints and no browser surface, so it drops the nine
