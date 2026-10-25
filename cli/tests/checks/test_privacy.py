@@ -107,6 +107,19 @@ def test_auto_discovery_finds_nested_pages_in_any_framework(isolated_cwd, write_
     assert privacy.run() == 0
 
 
+def test_auto_discovery_skips_hidden_directories(site):
+    """A worktree or cache under a dot-directory can hold a copy of the
+    whole repo; its privacy page is not this repo's page."""
+    copy = site / ".claude/worktrees/agent-1/app/privacy.html"
+    copy.parent.mkdir(parents=True)
+    copy.write_text(GOOD_PAGE)
+    page, _ = privacy.resolve_page(site)
+    assert page == site / "app/privacy.html"
+    (site / ".tool/wrangler.toml").parent.mkdir()
+    (site / ".tool/wrangler.toml").write_text("[observability]\nenabled = true\n")
+    assert privacy._host_config(site) == (site / "wrangler.jsonc", "Cloudflare")
+
+
 def test_auto_discovery_skips_build_output(isolated_cwd, write_config):
     (isolated_cwd / "vercel.json").write_text("{}\n")
     built = isolated_cwd / "dist/privacy.html"

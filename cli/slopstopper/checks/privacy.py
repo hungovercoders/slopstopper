@@ -117,18 +117,19 @@ LOGS_RE = re.compile(r"\blogs?\b|\blogging\b", re.I)
 
 
 def _source_files(root: Path) -> list[Path]:
-    """Every file under the root, pruning dependency and build directories
-    so a page only in `dist/` is not mistaken for the source."""
+    """Every file under the root, pruning dependency, build and hidden
+    directories so a page only in `dist/`, or a copy under a tool's
+    `.claude/worktrees/`, is not mistaken for the source."""
     out: list[Path] = []
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS)
+        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS and not d.startswith("."))
         out.extend(Path(dirpath) / f for f in filenames)
     return out
 
 
 def _host_config(root: Path) -> tuple[Path, str] | None:
     """The first host config file at the root or one directory down."""
-    for depth in (root, *sorted(p for p in root.iterdir() if p.is_dir() and p.name not in SKIP_DIRS)):
+    for depth in (root, *sorted(p for p in root.iterdir() if p.is_dir() and p.name not in SKIP_DIRS and not p.name.startswith("."))):
         for name, host in HOST_FILES:
             candidate = depth / name
             if candidate.is_file():
