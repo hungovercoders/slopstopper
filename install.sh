@@ -234,8 +234,7 @@ target_has_node_pin() {
 # slopstopper-cli version active in the target per mise (independent of whether
 # mise is activated in this shell). Empty if mise can't resolve it.
 mise_active_cli_version() {
-  ( cd "$TARGET_DIR" 2>/dev/null && mise exec -- slopstopper --version 2>/dev/null ) \
-    | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
+  pinned_cli --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
 }
 
 # slopstopper-cli version the caller's shell resolves from the target, i.e.
@@ -270,6 +269,7 @@ preflight() {
 preflight
 
 [ -d "$TARGET_DIR" ] || error "Target directory does not exist: $TARGET_DIR"
+TARGET_DIR="$(cd "$TARGET_DIR" && pwd)"
 
 sep
 echo "  🛠  SlopStopper: pinning and installing slopstopper-cli"
@@ -284,6 +284,8 @@ sep
 #   mise pin already set → honour it (a plain refresh never moves the pin)
 #   legacy cli_version   → migrate it (first move off the old mechanism)
 #   nothing yet          → latest on PyPI (first install records it)
+SS_LATEST="$(latest_pypi_version)"
+
 resolve_pinned_version() {
   local existing legacy
   existing="$(read_mise_cli_version "$(mise_config_path)")"
@@ -291,13 +293,13 @@ resolve_pinned_version() {
   if [ -n "$CLI_VERSION_FLAG" ]; then
     echo "$CLI_VERSION_FLAG"
   elif [ "$UPGRADE_CLI" = "true" ]; then
-    latest_pypi_version
+    echo "$SS_LATEST"
   elif [ -n "$existing" ]; then
     echo "$existing"
   elif [ -n "$legacy" ]; then
     echo "$legacy"
   else
-    latest_pypi_version
+    echo "$SS_LATEST"
   fi
 }
 
@@ -332,7 +334,8 @@ sync_mise_cli() {
     mise use --path "$mcfg" "pipx:slopstopper-cli@$pinned" "task@3" $node_arg >/dev/null \
       || error "mise use failed. Check the version exists on PyPI and your network, then retry."
   else
-    error "Could not determine a slopstopper-cli version (offline?). Pass --cli-version X.Y.Z, or retry with the network."
+    warn "Could not determine a slopstopper-cli version (offline?). Only task and node are pinned; pass --cli-version X.Y.Z, or retry with the network, to pin and install the CLI."
+    mise use --path "$mcfg" "task@3" $node_arg >/dev/null || true
   fi
 
   # In shims mode a reshim points `slopstopper` at the new pin straight away.
@@ -343,6 +346,7 @@ sync_mise_cli() {
   # activated in this shell, which it may not be. Validate via `mise exec`
   # within the target so the check is activation-independent.
   if ! ( cd "$TARGET_DIR" 2>/dev/null && mise which slopstopper >/dev/null 2>&1 ); then
+    [ -n "$pinned" ] || error "No slopstopper-cli is pinned, so there is nothing to run 'slopstopper install'. Pass --cli-version X.Y.Z, or retry with the network."
     error "mise installed slopstopper-cli but can't resolve the 'slopstopper' binary. Ensure mise is set up and activated: https://mise.jdx.dev/getting-started.html"
   fi
 
@@ -380,20 +384,18 @@ pinned_cli install ${PASSTHROUGH[@]+"${PASSTHROUGH[@]}"} "$TARGET_DIR" \
 
 # ── the pin, in closing ───────────────────────────────────────────────────────
 #
-# Being behind latest is a deliberate choice (the pin), so it is an
+# The CLI's banner has named the pin; these are the three things it cannot
+# know. Being behind latest is a deliberate choice (the pin), so it is an
 # informational nudge rather than an alarm, naming the one command that moves it.
 ss_installed="${SLOPSTOPPER_CLI_VERSION:-}"
-ss_latest="$(latest_pypi_version)"
+ss_latest="$SS_LATEST"
 ss_previous="${SLOPSTOPPER_CLI_PREVIOUS:-}"
 if [ -n "$ss_installed" ]; then
   echo ""
   if [ -n "$ss_latest" ] && version_lt "$ss_installed" "$ss_latest"; then
-    echo "  📦 slopstopper-cli $ss_installed (pinned in mise.toml)"
     info "PyPI latest is $ss_latest. Run 'install.sh --upgrade-cli' when you're ready to move the pin."
   elif [ -n "$ss_latest" ]; then
-    echo "  📦 slopstopper-cli $ss_installed (pinned, latest on PyPI)"
-  else
-    echo "  📦 slopstopper-cli $ss_installed (pinned in mise.toml)"
+    info "slopstopper-cli $ss_installed is the latest on PyPI."
   fi
   # On an actual upgrade, surface old → new and where to read what changed,
   # so an adopter (or agent) isn't left guessing the new feature set.

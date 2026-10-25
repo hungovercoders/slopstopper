@@ -27,10 +27,11 @@ VENV_BIN = Path(sys.executable).parent
 
 
 def _run_install(
-    target: Path,
+    target: Path | str,
     *,
     args: list[str] | None = None,
     env_extra: dict[str, str] | None = None,
+    cwd: Path = REPO_ROOT,
 ) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env["SKIP_CLI_INSTALL"] = "1"
@@ -41,7 +42,7 @@ def _run_install(
     env = {k: v for k, v in env.items() if v is not None}
     return subprocess.run(
         ["bash", str(INSTALL_SH), *(args or []), str(target)],
-        capture_output=True, text=True, env=env, cwd=REPO_ROOT,
+        capture_output=True, text=True, env=env, cwd=cwd,
     )
 
 
@@ -90,18 +91,49 @@ def test_a_plain_run_pins_the_cli_and_writes_the_suite(tmp_path):
     assert "ss-security-sast-check.yml" in _installed(target)
     assert (target / ".ss/.installed-from").read_text() == f"{__version__}\n"
     assert "Installation complete" in result.stdout
-    assert "(pinned, latest on PyPI)" in result.stdout
+    assert f"slopstopper-cli {__version__} is the latest on PyPI" in result.stdout
+    assert result.stdout.count("📦") == 1
+
+
+def test_a_relative_target_works(tmp_path):
+    """The hand-over runs inside the target, so the path it is given must
+    already be absolute."""
+    target = _make_minimal_target(tmp_path)
+    result = _run_install("adopter", args=["--cli-version", "9.9.9", "--no-skills"], cwd=tmp_path)
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert (target / "Taskfile.ss.yml").is_file()
+    assert _read_pin(target) == "9.9.9"
+
+
+def _fake_gh_on_path(tmp_path: Path) -> dict[str, str]:
+    """A `gh` stub that logs every call and answers nothing, so a test can
+    see whether the installer asked it anything."""
+    bin_dir = tmp_path / "fakebin-gh"
+    bin_dir.mkdir(exist_ok=True)
+    log = tmp_path / "gh-calls.log"
+    stub = bin_dir / "gh"
+    stub.write_text(f"#!/bin/sh\necho \"$*\" >> '{log}'\nexit 1\n")
+    stub.chmod(0o755)
+    return {"PATH": f"{bin_dir}{os.pathsep}{VENV_BIN}{os.pathsep}{os.environ['PATH']}", "SLOPSTOPPER_NO_TOPIC": None}
 
 
 def test_the_cli_flags_pass_through(tmp_path):
     target = _make_minimal_target(tmp_path)
-    result = _run_install(target, args=["--profile", "api", "--no-task", "--no-hooks", "--no-skills", "--cli-version", "9.9.9"])
+    assert _run_install(target, args=["--cli-version", "9.9.9"], env_extra=_fake_gh_on_path(tmp_path)).returncode == 0
+    assert (target / ".claude/skills/slopstopper-install").is_dir(), "sanity: without the flags the skills land"
+    assert [c for c in (tmp_path / "gh-calls.log").read_text().splitlines() if c.startswith("repo")]
+    (tmp_path / "gh-calls.log").unlink()
+    result = _run_install(
+        target, args=["--profile", "api", "--no-task", "--no-hooks", "--no-skills", "--no-topic"],
+        env_extra=_fake_gh_on_path(tmp_path),
+    )
     assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
     assert "profile: api" in (target / ".slopstopper.yml").read_text().splitlines()
     assert "ss-reliability-seo-check.yml" not in _installed(target)
     assert "task ss:" not in (target / ".github/workflows/ss-security-sast-check.yml").read_text()
-    assert not (target / ".githooks").exists()
-    assert not (target / ".claude").exists()
+    assert "Skipping pre-push hook install" in result.stdout
+    assert "Skipping Claude Code skill install" in result.stdout
+    assert not (tmp_path / "gh-calls.log").exists()
 
 
 def test_a_refusal_from_the_cli_fails_the_install(tmp_path):

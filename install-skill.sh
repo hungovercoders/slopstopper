@@ -46,9 +46,8 @@
 
 set -euo pipefail
 
-# Override to fetch from a mirror or a local checkout (file:///path/to/slopstopper).
-# install.sh runs this script against its own checkout that way, with
-# SLOPSTOPPER_SKILLS_QUIET=1 to drop the banner and closing guidance.
+# Override to fetch from a mirror or a local checkout (file:///path/to/slopstopper);
+# the CLI's tests point it at this checkout.
 REPO_RAW="${SLOPSTOPPER_REPO_RAW:-https://raw.githubusercontent.com/hungovercoders/slopstopper/main}"
 SKILLS=(
   "slopstopper-install"
@@ -83,13 +82,11 @@ if [ ! -d "${TARGET_DIR}" ]; then
   error "Target directory does not exist: ${TARGET_DIR}"
 fi
 
-if [ -z "${SLOPSTOPPER_SKILLS_QUIET:-}" ]; then
-  sep
-  echo "  🧠  SlopStopper: installing the Claude Code skills (project level)"
-  echo "  Source : ${REPO_RAW}/.claude/skills/<skill>/  (SKILL.md + references/)"
-  echo "  Target : ${TARGET_DIR}/.claude/skills/<skill>/"
-  sep
-fi
+sep
+echo "  🧠  SlopStopper: installing the Claude Code skills (project level)"
+echo "  Source : ${REPO_RAW}/.claude/skills/<skill>/  (SKILL.md + references/)"
+echo "  Target : ${TARGET_DIR}/.claude/skills/<skill>/"
+sep
 
 # ── install each skill ──────────────────────────────────────────────────────
 
@@ -209,8 +206,6 @@ if [ "${#FAILED_SKILLS[@]}" -gt 0 ]; then
   echo "  ❌ Not installed: ${FAILED_SKILLS[*]} (see the warnings above). Any installed copy was left as it was." >&2
   exit 1
 fi
-
-[ -n "${SLOPSTOPPER_SKILLS_QUIET:-}" ] && exit 0
 
 sep
 echo ""
