@@ -590,7 +590,7 @@ def _add_profile(sub) -> None:
         description=(
             "Print this repo's effective disabled set, one filename per line: the\n"
             "profile's workflows (and its no-API holdbacks) minus workflows.enabled,\n"
-            "plus workflows.disabled. The set install.sh leaves out; workflows read it\n"
+            "plus workflows.disabled. The set the installer leaves out; workflows read it\n"
             "to skip checks the repo has turned off.\n"
         ),
         epilog="Example:\n  slopstopper profile disabled\n",
@@ -1443,7 +1443,7 @@ def _print_profile_show(as_json: bool = False) -> int:
 
 
 def _print_profile_expand(name: str | None, as_json: bool = False) -> int:
-    """The profile's unconditional list, one per line. install.sh reads this
+    """The profile's unconditional list, one per line. The installer reads this
     repo's effective set via `profile disabled` instead."""
     workflows = profiles.expand(name or "")
     if workflows is None:
@@ -1481,7 +1481,7 @@ def _print_profile_detect(as_json: bool = False) -> int:
     output._emit("")
     output._emit("  To adopt the suggestion, in .slopstopper.yml:")
     output._emit(f"      profile: {suggested}")
-    output._emit("  then re-run install.sh so the workflow set follows.")
+    output._emit("  then re-run slopstopper install so the workflow set follows.")
     return 0
 
 

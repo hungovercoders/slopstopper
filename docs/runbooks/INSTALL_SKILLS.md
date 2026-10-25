@@ -16,7 +16,7 @@ After install, Claude Code auto-picks the right skill for any SlopStopper-relate
 ## What you need
 
 - **Claude Code**, from [claude.com/claude-code](https://claude.com/claude-code). Skills land at project level regardless of whether Claude Code is installed on the machine running the install; any contributor who has Claude Code will pick them up when they open the repo.
-- **curl**, because `install-skill.sh` fetches each skill file from this repo. `install.sh` runs the same script against its own checkout and needs no network for this step.
+- **curl**, because `install-skill.sh` fetches each skill file from this repo. `install.sh` needs no network for this step: the `slopstopper install` it hands over to writes the skills its wheel carries.
 - **Write access to the target repo**, since the scripts create `.claude/skills/` under the repo root.
 
 ## Install
@@ -65,7 +65,7 @@ Each skill's map file (SKILL.md) is short (about the ~2,000-token budget this re
 
 Nothing outside `<repo>/.claude/skills/slopstopper-*/` is touched. Per skill, the script fetches the map, checks it looks like a Claude Code skill (frontmatter present), then fetches every reference it links. Only linked files come across, so nothing else in the source tree ships. The result is copied next to the installed skill and then moved into place, so a failed download or copy leaves the installed copy as it was. A skill that fails is named at the end and the script exits non-zero; `install.sh` reports that as a warning and carries on.
 
-`install-skill.sh` is the only implementation: `install.sh` runs it against the checkout `install.sh` itself is running from (`SLOPSTOPPER_REPO_RAW=file://…`), so the skills always match the workflows and templates installed beside them.
+`install-skill.sh` fetches the skills on `main`. `slopstopper install` (what `install.sh` hands over to) writes the same two skills from the files the pinned `slopstopper-cli` ships, with the same rule (the map plus only the references it links, swapped in as a whole directory), so they always match the workflows and templates installed beside them.
 
 **Commit the resulting files** alongside the workflows that `install.sh` lands. The `.gitignore` block that `install.sh` appends already includes a carve-out for `.claude/skills/` so repos with a blanket `.claude/*` ignore don't silently shadow them.
 
