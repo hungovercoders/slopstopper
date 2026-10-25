@@ -16,8 +16,11 @@ evidence.
 Rules, each reported with what to add and where:
 
   1. A privacy page exists: `privacy.page` when set, else the first file
-     named `privacy.<ext>` or `privacy/index.<ext>` outside dependency,
-     build and hidden directories.
+     named `privacy.<ext>`, `privacy/index.<ext>`, `privacy/page.<ext>`
+     (Next), `privacy/+page.svelte` or `privacy/+page.md` (SvelteKit)
+     outside dependency, build and hidden directories. The rules read
+     the page's visible text: comments, tags and attributes are
+     stripped first, a `<time datetime>` excepted.
   2. The page names the host (Cloudflare, Netlify or Vercel, from the
      config file found) and every name in `privacy.hosts`.
   3. When the wrangler config turns Workers Logs on
@@ -51,6 +54,7 @@ Exit codes:
 
 from __future__ import annotations
 
+import datetime
 import json
 import os
 import re
@@ -58,7 +62,8 @@ import tomllib
 from pathlib import Path
 
 from slopstopper import config, headers_adapters, output, profiles
-from slopstopper.checks._contract import reject_extra_args
+from slopstopper.checks._contract import reject_extra_args, scan_incomplete
+from slopstopper.checks.csp_exceptions import _meta_source
 
 CHECK_NAME = "hygiene:privacy"
 REPORT_DIR = Path(".ss/reports/privacy")
@@ -76,8 +81,15 @@ META = {
 }
 
 PAGE_EXTENSIONS = ("html", "htm", "md", "mdx", "astro", "njk", "liquid", "hbs", "ejs", "vue", "svelte")
-PAGE_CANDIDATES = tuple(f"privacy.{ext}" for ext in PAGE_EXTENSIONS) + tuple(
-    f"privacy/index.{ext}" for ext in PAGE_EXTENSIONS
+# Script extensions count only in a router directory (`privacy/page.tsx`,
+# `privacy/index.tsx`): a bare `privacy.ts` is more often a helper module
+# than a page, and would win discovery over the real one.
+ROUTER_EXTENSIONS = PAGE_EXTENSIONS + ("tsx", "jsx", "ts", "js")
+PAGE_CANDIDATES = (
+    tuple(f"privacy.{ext}" for ext in PAGE_EXTENSIONS)
+    + tuple(f"privacy/index.{ext}" for ext in ROUTER_EXTENSIONS)
+    + tuple(f"privacy/page.{ext}" for ext in ROUTER_EXTENSIONS)
+    + ("privacy/+page.svelte", "privacy/+page.md")
 )
 # Non-hidden directories the walk never enters; every dot-directory is
 # skipped as well (`.git`, `.venv`, `.next`, a tool's worktrees).
@@ -104,11 +116,19 @@ GENERIC_LABELS = {"www", "api", "cdn", "static", "assets", "fonts", "js", "css",
 # Service hostnames whose labels never say who runs them.
 SERVICE_ALIASES = {"gstatic": "google", "googleapis": "google", "googletagmanager": "google", "google-analytics": "google", "ggpht": "google"}
 
-MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
+MONTH_NAMES = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+# Full names and the usual abbreviations (`Sept` included), longest first so `September` is not read as `Sep` + `tember`.
+MONTHS = "|".join(sorted({*MONTH_NAMES, *(m[:3] for m in MONTH_NAMES), "Sept"}, key=len, reverse=True))
 DATE_RE = re.compile(
-    rf"\b\d{{4}}-\d{{2}}-\d{{2}}\b|\b\d{{1,2}}(?:st|nd|rd|th)?\s+(?:{MONTHS})\s+\d{{4}}\b|\b(?:{MONTHS})\s+\d{{1,2}},?\s+\d{{4}}\b",
+    rf"(?<![\w-])(?P<iso>\d{{4}}-\d{{2}}-\d{{2}})(?![\w-])"
+    rf"|\b(?P<d1>\d{{1,2}})(?:st|nd|rd|th)?(?:\s+of)?\s+(?P<m1>{MONTHS})\.?\s+(?P<y1>\d{{4}})\b"
+    rf"|\b(?P<m2>{MONTHS})\.?\s+(?P<d2>\d{{1,2}}),?\s+(?P<y2>\d{{4}})\b",
     re.I,
 )
+# A `<time datetime="2026-10-24">` is a date the page states, however the visible text spells it.
+DATETIME_ATTR_RE = re.compile(r'datetime\s*=\s*["\'](\d{4}-\d{2}-\d{2})')
+# A tag, as opposed to an autolink (`<https://…>`), an address (`<mail@…>`) or a `<` in prose.
+TAG_RE = re.compile(r"</?[A-Za-z][A-Za-z0-9-]*(?:\s[^<>]*)?/?>", re.S)
 LOGS_RE = re.compile(r"\blogs?\b|\blogging\b", re.I)
 
 
@@ -203,21 +223,27 @@ def _logs_enabled(host_config: Path) -> bool | None:
     return isinstance(logs, dict) and logs.get("enabled") is True
 
 
-def _csp_rules() -> list[dict]:
-    """The parsed headers source, or nothing when it is unset or unreadable."""
+def _csp_rules() -> tuple[list[dict], str | None, str | None]:
+    """(rules, note, failure), with the same semantics as csp-exceptions:
+    no `headers.source` or a missing one is a skip of the third-party rule
+    (the note says so), except a built-HTML source missing in CI, which
+    is a failure to run; an unknown format or a file the adapter cannot
+    parse is a failure to run."""
     source = config.get("headers.source")
     if not source:
-        return []
+        return [], None, None
     path = Path(str(source))
-    if not path.exists():
-        return []
     fmt = config.get("headers.format", "auto") or "auto"
+    if not path.exists():
+        if _meta_source(path, fmt) and os.environ.get("GITHUB_ACTIONS") == "true":
+            return [], None, f"headers.source `{path}` is the built HTML and does not exist; build the site before this check runs"
+        return [], f"headers.source `{path}` does not exist, so the third-party rule was not applied", None
     if fmt not in {*headers_adapters.ADAPTERS, "auto"}:
-        return []
+        return [], None, f"headers.format `{fmt}` is not one of {', '.join(sorted(headers_adapters.ADAPTERS))} or auto"
     try:
-        return headers_adapters.parse(path, fmt)
-    except Exception:  # noqa: BLE001 - csp-exceptions reports a bad source; here it is one input of five
-        return []
+        return headers_adapters.parse(path, fmt), None, None
+    except Exception as exc:  # noqa: BLE001 - whatever the adapter raises is the reason
+        return [], None, f"headers.source `{path}` could not be parsed as {fmt}: {exc}"
 
 
 def _third_party_origins(rules: list[dict]) -> set[str]:
@@ -269,8 +295,10 @@ def resolve_page(root: Path | None = None) -> tuple[Path | None, str | None]:
     """(page, note). `privacy.page` verbatim when set; '' is an opt-out
     (page None, note says so); `auto` finds the first source candidate."""
     root = root or Path.cwd()
-    configured = config.get("privacy.page", "auto")
-    if configured is None or str(configured).strip() == "":
+    section = config.get("privacy") or {}
+    configured = section.get("page", "auto") if isinstance(section, dict) else config.get("privacy.page", "auto")
+    # A bare `page:` parses as an empty value ({} or None); both opt out.
+    if configured is None or configured in ({}, []) or str(configured).strip() == "":
         return None, "privacy.page is empty in .slopstopper.yml, so the check is opted out"
     configured = str(configured).strip()
     if configured != "auto":
@@ -304,9 +332,40 @@ def page_url(root: Path | None = None) -> str | None:
 
 
 def _page_text(page: Path) -> str:
+    """What a visitor reads: scripts, styles, comments and tags (with their
+    attributes) stripped, so a `<!-- Cloudflare -->` or a `data-host=`
+    attribute does not satisfy a rule the visible words do not. A
+    `<time datetime>` is kept as a date, since it is one the page states.
+    Only tag-shaped text is stripped: a markdown autolink or a `<` in
+    prose stays."""
     text = page.read_text(encoding="utf-8", errors="replace")
     text = re.sub(r"(?s)<script\b.*?</script>|<style\b.*?</style>", " ", text)
-    return text
+    text = re.sub(r"(?s)<!--.*?-->", " ", text)
+    dates = " ".join(DATETIME_ATTR_RE.findall(text))
+    text = TAG_RE.sub(" ", text)
+    return f"{text}\n{dates}" if dates else text
+
+
+def _month_number(name: str) -> int:
+    for i, month in enumerate(MONTH_NAMES, start=1):
+        if month.lower().startswith(name.lower()[:3]):
+            return i
+    raise ValueError(name)
+
+
+def _has_date(text: str) -> bool:
+    """A date a calendar accepts, not any date-shaped token."""
+    for m in DATE_RE.finditer(text):
+        try:
+            if m.group("iso"):
+                datetime.date.fromisoformat(m.group("iso"))
+            else:
+                day = int(m.group("d1") or m.group("d2"))
+                datetime.date(int(m.group("y1") or m.group("y2")), _month_number(m.group("m1") or m.group("m2")), day)
+            return True
+        except ValueError:
+            continue
+    return False
 
 
 # ── the rules ───────────────────────────────────────────────────────
@@ -316,12 +375,20 @@ def _issue(rule: str, message: str, fix: str) -> dict:
     return {"rule": rule, "message": message, "fix": fix}
 
 
+def _names_page(text: str, name: str) -> bool:
+    """The name as a whole word or phrase: not inside another word, any
+    whitespace between its words, punctuation around it allowed."""
+    words = [re.escape(w) for w in name.lower().split()]
+    if not words:
+        return True
+    return re.search(r"(?<!\w)" + r"\s+".join(words) + r"(?!\w)", text.lower()) is not None
+
+
 def _check_names(text: str, names: list[str], page: Path) -> list[dict]:
-    low = text.lower()
     return [
         _issue("host", f"`{page}` does not name {name}", f"Say that {name} hosts the site and what it keeps (traffic statistics, request logs) in `{page}`.")
         for name in names
-        if name.lower() not in low
+        if not _names_page(text, name)
     ]
 
 
@@ -355,7 +422,7 @@ def _check_logs(text: str, logs_on: bool | None, host_config: Path, page: Path) 
 
 
 def _check_date(text: str, page: Path) -> list[dict]:
-    if DATE_RE.search(text):
+    if _has_date(text):
         return []
     return [_issue(
         "date",
@@ -364,11 +431,10 @@ def _check_date(text: str, page: Path) -> list[dict]:
     )]
 
 
-def _evaluate(root: Path, page: Path, host_config: tuple[Path, str] | None) -> tuple[list[dict], dict]:
+def _evaluate(root: Path, page: Path, host_config: tuple[Path, str] | None, rules: list[dict]) -> tuple[list[dict], dict]:
     text = _page_text(page)
     names = [host_config[1]] if host_config else []
     names += [str(n) for n in (config.get("privacy.hosts", []) or [])]
-    rules = _csp_rules()
     origins = _third_party_origins(rules)
     logs_on = _logs_enabled(host_config[0]) if host_config else False
     rel = page.relative_to(root) if page.is_absolute() else page
@@ -441,13 +507,17 @@ def _print_results(issues: list[dict], summary: dict) -> None:
     output.separator()
 
 
-def _missing_page(root: Path, host_config: tuple[Path, str] | None, configured: bool) -> int:
-    where = "the path privacy.page names" if configured else "any of " + ", ".join(f"`{c}`" for c in PAGE_CANDIDATES[:3]) + " (any directory except dependency, build and hidden ones)"
+def _missing_page(root: Path, host_config: tuple[Path, str] | None, configured: Path | None) -> int:
+    if configured is not None:
+        where = f"`{configured.relative_to(root) if configured.is_absolute() else configured}`, the path privacy.page names"
+    else:
+        where = "any of `privacy.<ext>`, `privacy/index.<ext>`, `privacy/page.<ext>`, `privacy/+page.svelte` or `privacy/+page.md` (any directory except dependency, build and hidden ones)"
     host = host_config[1] if host_config else "the host"
     issues = [_issue(
         "page",
         f"no privacy page found at {where}",
-        f"Add one (`app/privacy.html`, `src/content/docs/privacy.md`, …) that names {host}, every third party the CSP allows, and a date; link it from every page's footer. Or set `privacy.page: ''` with a comment saying why.",
+        f"Add one (`app/privacy.html`, `src/content/docs/privacy.md`, …) that names {host}, every third party the CSP allows, and a date, and link it from every page's footer; "
+        "set `privacy.page` to its repo path if it lives under another name. Or set `privacy.page: ''` with a comment saying why.",
     )]
     summary = {"page": None, "host": host_config[1] if host_config else None,
                "host_config": str(host_config[0].relative_to(root)) if host_config else None,
@@ -474,9 +544,16 @@ def run(args: list[str] | None = None) -> int:
         output.info(f"Privacy statement check: {note}.")
         return 0
     if page is None or not page.is_file():
-        return _missing_page(root, host_config, configured=page is not None)
+        return _missing_page(root, host_config, configured=page)
+    rules, note, failure = _csp_rules()
+    if failure:
+        REPORT_JSON.unlink(missing_ok=True)
+        return scan_incomplete(REPORT_DIR, REPORT_MD, "🔏 Privacy Statement Report",
+                               f"{failure}. The third-party rule cannot be judged without the headers source; `headers.source` / `headers.format` in .slopstopper.yml are the keys hygiene:csp-exceptions reads too.")
+    if note:
+        output.info(note)
 
-    issues, summary = _evaluate(root, page, host_config)
+    issues, summary = _evaluate(root, page, host_config, rules)
     _write_reports(issues, summary)
     _print_results(issues, summary)
     if issues:
