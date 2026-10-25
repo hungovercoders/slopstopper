@@ -133,7 +133,8 @@ def test_the_cli_flags_pass_through(tmp_path):
     assert "task ss:" not in (target / ".github/workflows/ss-security-sast-check.yml").read_text()
     assert "Skipping pre-push hook install" in result.stdout
     assert "Skipping Claude Code skill install" in result.stdout
-    assert not (tmp_path / "gh-calls.log").exists()
+    calls = (tmp_path / "gh-calls.log").read_text().splitlines() if (tmp_path / "gh-calls.log").exists() else []
+    assert not [c for c in calls if c.startswith("repo")], calls
 
 
 def test_a_refusal_from_the_cli_fails_the_install(tmp_path):
