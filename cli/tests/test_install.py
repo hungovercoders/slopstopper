@@ -814,7 +814,7 @@ def test_composite_actions_land_under_every_profile(tmp_path, profile):
     target = _make_minimal_target(tmp_path)
     result = _run_install(target, args=["--profile", profile, "--no-hooks", "--no-skills"])
     assert result.returncode == 0, result.stderr
-    for action in ("ss-setup", "ss-resolve-url"):
+    for action in ("ss-setup", "ss-resolve-url", "ss-playwright"):
         assert (target / ".github/actions" / action / "action.yml").is_file(), action
     marker = (target / ".ss/.workflows-installed").read_text()
     assert "ss-setup" not in marker

@@ -26,7 +26,7 @@ Notation: C4 (Context + Container).
 `AGENTS.md` carries the top-level layout. What it leaves out:
 
 ```
-.github/actions/          # Composite steps every ss-* workflow shares (ss-setup, ss-resolve-url)
+.github/actions/          # Composite steps the ss-* workflows share (ss-setup, ss-resolve-url, ss-playwright)
 .ss/                      # SlopStopper-owned, adopter side
 ├── reports/              # The CLI writes here (.gitignored)
 ├── .workflows-installed  # Manifest of installed workflows (commit this)

@@ -43,7 +43,7 @@ def _text(name: str) -> str:
 
 
 def test_the_composite_actions_exist():
-    for action in ("ss-setup", "ss-resolve-url"):
+    for action in ("ss-setup", "ss-resolve-url", "ss-playwright"):
         assert (ACTIONS_DIR / action / "action.yml").is_file(), action
 
 
@@ -169,39 +169,89 @@ def test_local_build_steps_follow_the_resolved_url(workflow):
     assert not hand_rolled, f"{workflow}: gate {hand_rolled} on steps.<id>.outputs.use_local"
 
 
-def _playwright_install_steps(text: str) -> list[str]:
-    """Each step block (from `- name:` to the next step) that installs Playwright browsers."""
-    steps = re.split(r"(?m)^(?=\s+- name: )", text)
-    return [step for step in steps if "playwright install" in step]
+# ── the Playwright install lives in one composite action (#535) ──
+#
+# The apt phase, the time-boxed browser download and the browser cache were
+# once copied into seven workflow steps; #386 and #527 each edited all seven
+# in lockstep. They live in .github/actions/ss-playwright now, and a
+# workflow that needs Chromium `uses:` it after `npm ci`.
+
+PLAYWRIGHT_ACTION = ACTIONS_DIR / "ss-playwright" / "action.yml"
+ALL_WORKFLOWS = sorted(p.name for p in WORKFLOWS_DIR.glob("*.yml"))
+PLAYWRIGHT_CALLERS = [w for w in ALL_WORKFLOWS if "uses: ./.github/actions/ss-playwright" in _text(w)]
 
 
-@pytest.mark.parametrize(
-    "workflow", sorted(p.name for p in WORKFLOWS_DIR.glob("*.yml") if "playwright install" in p.read_text(encoding="utf-8"))
-)
-def test_playwright_install_is_time_boxed(workflow):
+def _steps(text: str) -> list[str]:
+    """Each step block, from its `- name:` to the next step (the file header dropped)."""
+    return re.split(r"(?m)^(?=\s+- name: )", text)[1:]
+
+
+def test_the_fixture_finds_playwright_callers():
+    # The four browser checks, both ci-cli jobs and the Copilot environment.
+    assert len(PLAYWRIGHT_CALLERS) >= 6, PLAYWRIGHT_CALLERS
+
+
+def test_playwright_install_is_time_boxed():
     # A stalled browser download once held two PR jobs for hours, because
     # nothing bounded the step short of GitHub's six-hour job limit (#386).
-    steps = _playwright_install_steps(_text(workflow))
-    assert steps, f"{workflow}: mentions `playwright install` but no step runs it"
-    for step in steps:
+    action = PLAYWRIGHT_ACTION.read_text(encoding="utf-8")
+    steps = [s for s in _steps(action) if "playwright install" in s]
+    assert len(steps) == 1, "one install step in the action"
+    step = steps[0]
+    assert "timeout " in step, "each download attempt is bounded with `timeout`"
+    # `timeout` kills npx but not the apt-get it spawned, which keeps the
+    # dpkg lock, so the retry fails on the lock instead of downloading
+    # (#527). apt runs once, un-timed; only the browser download retries.
+    assert "--with-deps" not in step, "run `playwright install-deps` outside the timed loop, not `--with-deps` inside it"
+    # apt gets one un-timed retry of its own: a transient mirror error
+    # exits cleanly and leaves no lock, so a second try is safe.
+    assert re.search(
+        r'(?m)^\s+npx playwright install-deps "\$BROWSER" \|\| npx playwright install-deps "\$BROWSER"\s*$', step
+    ), "the install step has no un-timed `install-deps || install-deps` line"
+
+
+def test_playwright_browsers_are_cached_before_the_install():
+    # A warm run never touches the download CDN (#536): the browser directory
+    # is cached on the Playwright version resolved from node_modules, so a
+    # lockfile bump misses and a repeat on the same version is a no-op.
+    action = PLAYWRIGHT_ACTION.read_text(encoding="utf-8")
+    names = re.findall(r"^\s+- name: (.+)$", action, re.M)
+    cache = next(i for i, n in enumerate(names) if n.startswith("Cache Playwright"))
+    install = next(i for i, n in enumerate(names) if n.startswith("Install Playwright"))
+    assert cache < install, names
+    cache_step = [s for s in _steps(action) if "actions/cache@" in s][0]
+    assert "path: ~/.cache/ms-playwright" in cache_step
+    assert "steps.pw.outputs.version" in cache_step, "the key carries the resolved Playwright version"
+    assert "restore-keys" not in cache_step, "a partial match would mask a lockfile bump"
+    assert "npx --no-install playwright --version" in action, "the version comes from node_modules, never the registry"
+    assert "${{ runner.arch }}" in action, "one cache per architecture, or an x64 Chromium is restored on arm"
+
+
+@pytest.mark.parametrize("workflow", ALL_WORKFLOWS)
+def test_no_workflow_inlines_the_playwright_install(workflow):
+    assert "playwright install" not in _text(workflow), (
+        f"{workflow} inlines `playwright install`, but that step lives in .github/actions/ss-playwright"
+    )
+
+
+@pytest.mark.parametrize("workflow", PLAYWRIGHT_CALLERS)
+def test_playwright_caller_bounds_the_step_and_follows_npm_ci(workflow):
+    """Composite steps cannot carry `timeout-minutes`, so the calling step
+    does; and the action reads the Playwright version from node_modules, so
+    `npm ci` has to come first."""
+    text = _text(workflow)
+    for step in _steps(text):
+        if "uses: ./.github/actions/ss-playwright" not in step:
+            continue
         assert re.search(r"(?m)^\s+timeout-minutes:\s*\d+", step), (
-            f"{workflow}: the Playwright install step has no `timeout-minutes`"
+            f"{workflow}: the ss-playwright step has no `timeout-minutes`"
         )
-        assert "timeout " in step, (
-            f"{workflow}: the Playwright install step does not bound each attempt with `timeout`"
+    for job in re.split(r"(?m)^  [A-Za-z0-9_-]+:\n", text)[1:]:
+        if "uses: ./.github/actions/ss-playwright" not in job:
+            continue
+        assert job.index("npm ci") < job.index("uses: ./.github/actions/ss-playwright"), (
+            f"{workflow}: ss-playwright runs before `npm ci`"
         )
-        # `timeout` kills npx but not the apt-get it spawned, which keeps the
-        # dpkg lock, so the retry fails on the lock instead of downloading
-        # (#527). apt runs once, un-timed; only the browser download retries.
-        assert "--with-deps" not in step, (
-            f"{workflow}: run `playwright install-deps` outside the timed loop, not `--with-deps` inside it"
-        )
-        # apt gets one un-timed retry of its own: a transient mirror error
-        # exits cleanly and leaves no lock, so a second try is safe and was
-        # what the old combined loop gave it.
-        assert re.search(
-            r"(?m)^\s+npx playwright install-deps chromium \|\| npx playwright install-deps chromium\s*$", step
-        ), f"{workflow}: the Playwright install step has no un-timed `install-deps || install-deps` line"
 
 
 # ── the doc updater ships to adopters (#411) ─────────────────────
