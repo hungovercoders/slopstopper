@@ -87,6 +87,7 @@ from slopstopper import (
     demo as demo_mod,
     discovery,
     emit as emit_mod,
+    installer,
     output,
     profiles,
     templates,
@@ -119,6 +120,7 @@ Commands:
   doctor     Verify install + required tools
   profile    Inspect the repo's project-shape profile (ui / api / library)
   demo       Write a small demo repo that some checks fail on, to try the suite
+  install    Write the suite into a repo: workflows, shims, seeds, hook, skills
 
 Quick start:
   slopstopper checks list             # see what's available
@@ -179,6 +181,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_profile(sub)
     _add_cloudflare(sub)
     _add_demo(sub)
+    _add_install(sub)
 
     return parser
 
@@ -652,6 +655,10 @@ _DISPATCHERS = {
     "doctor":    lambda a: _dispatch_doctor(as_json=a.json),
     "profile":   lambda a: _dispatch_profile(a.profile_action, getattr(a, "name", None), as_json=a.json),
     "cloudflare": lambda a: _dispatch_cloudflare(a.cloudflare_action, a.sha),
+    "install":    lambda a: installer.install(installer.Options(
+        target=Path(a.target), profile=a.profile, use_task=not a.no_task,
+        skills=not a.no_skills, hooks=not a.no_hooks, topic=not a.no_topic,
+    )),
     "demo":      lambda a: _dispatch_demo(a.out, force=a.force, as_json=a.json),
 }
 
@@ -688,6 +695,56 @@ def _add_demo(sub) -> None:
         "--json", action="store_true",
         help="print one JSON object ({out, written, skipped, failures}, or {error}) on stdout",
     )
+
+
+def _add_install(sub) -> None:
+    p = sub.add_parser(
+        "install",
+        help="Install or refresh the suite in a repo: workflows, shims, seeds, hook, skills",
+        description=(
+            "Write the SlopStopper suite into TARGET (default: the current directory):\n"
+            "the ss-*.yml workflows and the composite actions they build on, the\n"
+            "task ss:* shims, a starter .slopstopper.yml, the seeds a green first PR\n"
+            "needs (labeler, licence policy, headers baseline, ZAP rules, markdownlint\n"
+            "config, entry-file scaffolds), the pre-push hygiene hook and the two\n"
+            "Claude Code skills. Every file comes from this CLI's own wheel, so the\n"
+            "shims and the CLI agree; the pin in mise.toml is seeded with this version\n"
+            "when the repo has none and never moved by a re-run (install.sh\n"
+            "--upgrade-cli / --cli-version move it).\n\n"
+            "A re-run refreshes slopstopper-owned files and leaves adopter-owned ones\n"
+            "(.slopstopper.yml, package.json, the seeds) alone. A workflow you deleted\n"
+            "stays deleted: .ss/.workflows-installed lists every workflow the installer\n"
+            "has placed, so remove its line there to have it back. A profile drops\n"
+            "whole sets.\n\n"
+            "Profiles (--profile) tailor the suite to the repo's shape:\n"
+            "  ui       a site or app that serves HTML. Every check applies (default);\n"
+            "           the four API checks once the repo shows an API.\n"
+            "  api      JSON/gRPC endpoints with no browser surface. Drops the nine\n"
+            "           browser-and-SEO reliability checks.\n"
+            "  library  a library, CLI or package with no deployed surface. Also drops\n"
+            "           DAST, CSP exceptions and the four API checks.\n"
+            "The flag writes `profile:` into .slopstopper.yml; omitting it leaves an\n"
+            "existing key untouched. `slopstopper profile list` has the full mapping.\n"
+        ),
+        epilog=(
+            "Env var equivalents: SLOPSTOPPER_PROFILE, SLOPSTOPPER_NO_TASK,\n"
+            "SLOPSTOPPER_NO_SKILLS, SLOPSTOPPER_NO_HOOKS, SLOPSTOPPER_NO_TOPIC.\n\n"
+            "Examples:\n"
+            "  slopstopper install\n"
+            "  slopstopper install --profile api\n"
+            "  slopstopper install --no-task ../other-repo\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p.add_argument("target", nargs="?", default=".", metavar="TARGET", help="the repo to install into (default: .)")
+    p.add_argument(
+        "--profile", default=os.environ.get("SLOPSTOPPER_PROFILE") or None, metavar="NAME",
+        help=f"write this profile into .slopstopper.yml and install its check set ({' | '.join(profiles.names())})",
+    )
+    p.add_argument("--no-task", action="store_true", default=bool(os.environ.get("SLOPSTOPPER_NO_TASK")), help="workflows call slopstopper-cli directly instead of task ss:*")
+    p.add_argument("--no-skills", action="store_true", default=bool(os.environ.get("SLOPSTOPPER_NO_SKILLS")), help="skip the Claude Code skills")
+    p.add_argument("--no-hooks", action="store_true", default=bool(os.environ.get("SLOPSTOPPER_NO_HOOKS")), help="skip the pre-push hygiene hook")
+    p.add_argument("--no-topic", action="store_true", default=bool(os.environ.get("SLOPSTOPPER_NO_TOPIC")), help="don't add the `slopstopper` repo topic via gh")
 
 
 def main(argv: list[str] | None = None) -> int:

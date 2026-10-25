@@ -46,6 +46,7 @@ slopstopper doctor [--json]                    # verify external tools are insta
 slopstopper profile {list, show, expand <n>, disabled, detect} [--json]   # project-shape profile (ui / api / library)
 slopstopper cloudflare preview-url <sha>       # a commit's Workers Builds preview URL, from Cloudflare's PR comment on stdin
 slopstopper demo [--out <dir>] [--force] [--json]   # write a small demo repo that two checks fail on, to try the suite
+slopstopper install [<dir>] [--profile <n>] [--no-task] [--no-skills] [--no-hooks] [--no-topic]   # write the suite into a repo from this CLI's own wheel
 slopstopper --quiet …                          # suppress decorative output (CI logs)
 ```
 
@@ -79,6 +80,8 @@ This workflow is slopstopper-internal. It is **not** part of the distributed `ss
 - `slopstopper/emit.py` wraps the `gh` CLI to post PR comments and main-branch issues
 - `slopstopper/discovery.py` resolves the pages to audit for reliability checks
 - `slopstopper/profiles.py` holds the project-shape profiles. It resolves which workflows a repo carries with `(profile.disables − workflows.enabled) ∪ workflows.disabled` (explicit `workflows.disabled` wins if the same workflow is listed in both), plus the check → workflow map. `install.sh` imports this module directly, so it is the only implementation
+- `slopstopper/suite.py` names every file the suite ships (workflows, actions, shims, seeds, hook, skills); `hatch_build.py` copies them from the repository root into the sdist and the wheel under `slopstopper/data/suite/`, and an editable install reads the checkout
+- `slopstopper/installer.py` is `slopstopper install`: it writes that suite into a repo, seeds the mise pin with its own version when there is none, and refreshes slopstopper-owned files on a re-run
 - `slopstopper/checks/` holds one module per check; the registry is in `__init__.py`
 - `slopstopper/data/` holds the bundled Playwright specs, lighthouserc dev/prod, server.js and `profiles.json`
 
