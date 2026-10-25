@@ -422,6 +422,17 @@ security:
     # what the workflow used to enforce in a separate step. `warning`
     # makes warnings block too; `none` reports without ever failing.
     fail_on: error
+  # security:licences judges every resolved dependency's licence (npm from
+  # package-lock.json, Python from `pip inspect`) against the allowlist the
+  # dependency review also reads. A licence it cannot read as SPDX is
+  # reported, never failed.
+  licences:
+    policy: .github/dependency-review-config.yml
+    # npm devDependencies do not ship, so they are not judged unless this is true.
+    include_dev: false
+    # Interpreter whose environment holds the project's Python dependencies.
+    # Unset: a .venv/ or venv/ beside the manifest, else python3 on PATH.
+    # python: cli/.venv/bin/python
 
 # ── Hygiene-check thresholds ─────────────────────────────────────────
 # Every hygiene check reads its own thresholds from here. Values shown

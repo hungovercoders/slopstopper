@@ -30,6 +30,7 @@ Or invoke each shim individually:
 task ss:security:secrets           # Gitleaks (fast, usually surfaces something)
 task ss:security:sast              # Semgrep
 task ss:security:vulnerability:all # Trivy (CVE scan of dependencies)
+task ss:security:licences          # every resolved dependency's licence against .github/dependency-review-config.yml (no tool)
 task ss:hygiene:complexity         # lizard
 task ss:hygiene:docs-accuracy      # repo-relative link resolver
 task ss:hygiene:docs-structure     # every doc under docs/ has an explicit route

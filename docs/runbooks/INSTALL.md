@@ -24,6 +24,12 @@ Per-check tools (skip any check your profile drops):
 | `docker` | `security:dast` | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |
 
 Optional: **bash + git** (if using `install.sh`), **Task v3.x** (for the `task ss:*` shim layer).
+`security:licences` needs no tool: it reads `package-lock.json` and `pip inspect`.
+
+The installer never writes a `LICENSE` or `NOTICE` file. Which licence a
+repo carries is the owner's legal choice, not a default a tool should
+pick, and the two licence checks judge dependencies, not the repo itself;
+`.github/dependency-review-config.yml` is the only licence file it seeds.
 
 ## What gets installed
 

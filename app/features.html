@@ -175,6 +175,26 @@ jobs:
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-vulnerability-new-check.yml" rel="noopener noreferrer">View dependency-review workflow →</a>
                     </div>
                 </details>
+
+                <details class="details">
+                    <summary>Licences (the whole resolved tree)</summary>
+                    <div class="details__body">
+                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Licence Inventory
+on:
+  pull_request: { branches: [ main ] }
+  push:         { branches: [ main ] }
+jobs:
+  licences:
+    name: Judge dependency licences
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: ./.github/actions/ss-setup
+      - run: task ss:security:licences   # package-lock.json + pip inspect, no tool
+      - if: github.event_name == 'pull_request'
+        run: slopstopper emit security:licences --target pr-comment</code></pre></div>
+                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-licences-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                    </div>
+                </details>
             </div>
 
             <!-- ─── Reliability ─────────────────────────────────── -->

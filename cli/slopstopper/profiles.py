@@ -216,6 +216,7 @@ CHECK_WORKFLOWS: dict[str, str] = {
     "security:sast": "ss-security-sast-check.yml",
     "security:secrets": "ss-security-secrets-check.yml",
     "security:vulnerability:all": "ss-security-vulnerability-all-check.yml",
+    "security:licences": "ss-security-licences-check.yml",
 }
 
 

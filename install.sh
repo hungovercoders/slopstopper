@@ -877,6 +877,7 @@ GENERIC_WORKFLOWS=(
   "ss-security-sast-check.yml"
   "ss-security-secrets-check.yml"
   "ss-security-vulnerability-all-check.yml"
+  "ss-security-licences-check.yml"
   "ss-security-vulnerability-new-check.yml"
   "ss-workflow-failure-issue.yml"
   "ss-pr-summary.yml"

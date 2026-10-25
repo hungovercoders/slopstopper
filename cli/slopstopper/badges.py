@@ -39,6 +39,7 @@ WORKFLOW_DISPLAY: dict[str, tuple[str, str]] = {
     "ss-security-secrets-check.yml": ("security", "Secrets"),
     "ss-security-vulnerability-all-check.yml": ("security", "Dependency CVEs"),
     "ss-security-vulnerability-new-check.yml": ("security", "Dependency Review"),
+    "ss-security-licences-check.yml": ("security", "Licences"),
     "ss-security-dast-check.yml": ("security", "DAST"),
     "ss-security-api-headers-check.yml": ("security", "API Headers"),
     "ss-hygiene-complexity-check.yml": ("hygiene", "Complexity"),
