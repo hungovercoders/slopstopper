@@ -1,0 +1,12 @@
+# Semgrep's built-in ignore list, then this repo's one addition: the demo
+# fixture carries a deliberate shell=True for the course (lesson 7). See
+# docs/contributing/FIXTURE.md.
+:include .gitignore
+.git/
+node_modules/
+build/
+dist/
+vendor/
+.venv/
+*.min.js
+cli/slopstopper/data/demo/

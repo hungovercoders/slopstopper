@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lantern: incident history</title>
+  <link rel="canonical" href="https://lantern.example.com/history.html">
+  <link rel="stylesheet" href="style.css">
+  <meta property="og:title" content="Lantern: incident history">
+  <meta property="og:description" content="Every incident in the last ninety days, which service it hit and how long it lasted.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lantern.example.com/history.html">
+  <meta property="og:image" content="/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Lantern: incident history">
+  <meta name="twitter:description" content="Every incident in the last ninety days, which service it hit and how long it lasted.">
+  <meta name="twitter:image" content="/og-image.svg">
+</head>
+<body>
+  <header>
+    <nav><a href="index.html">Status</a> · <a href="history.html">History</a></nav>
+    <h1>Incident history</h1>
+    <p>Every incident in the last ninety days, which service it hit and how long it lasted.</p>
+  </header>
+  <main>
+    <img src="uptime.svg" width="480" height="60">
+    <article>
+      <h2>2026-10-12: search returned stale results</h2>
+      <p>Service: search. Duration: 40 minutes. The index rebuild ran against the wrong shard; the runbook now says which.</p>
+    </article>
+    <article>
+      <h2>2026-09-30: billing timeouts</h2>
+      <p>Service: billing. Duration: 12 minutes. A dependency's certificate expired; it is now on the renewal calendar.</p>
+    </article>
+  </main>
+  <footer>
+    <p>Served as static files; the page is the whole app.</p>
+  </footer>
+</body>
+</html>

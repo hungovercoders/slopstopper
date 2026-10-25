@@ -1,0 +1,9 @@
+# Lantern
+
+> A static status page: which services exist, who owns each one, and
+> where to look when one is down.
+
+## Pages
+
+- [Status](https://lantern.example.com/): every service, its owner and its badge
+- [Incident history](https://lantern.example.com/history.html): the last ninety days

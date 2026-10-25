@@ -1,0 +1,13 @@
+# Headers the host sends with every response, in the Cloudflare Pages /
+# Netlify `_headers` format. The first block is the site-wide baseline;
+# a block for one path is an exception the hygiene:csp-exceptions check
+# expects to find documented in docs/security/CSP_EXCEPTIONS.md.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/history.html
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https://charts.example.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'

@@ -13,3 +13,6 @@ against the served page, SEO on its meta tags, and the two docs checks,
 `hygiene:entry-files` and `hygiene:docs-structure`, on this repository's
 entry files and `docs/`. A red check blocks the merge; its report under
 `.ss/reports/<check>/` names the finding and the fix.
+
+Run `task ss:hygiene:docs` before you push; it is the two docs checks in
+one, and the pull request will not be looked at until it is green.

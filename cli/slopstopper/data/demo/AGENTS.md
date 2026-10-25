@@ -28,7 +28,8 @@ the end say when to open anything else.
 
 ```
 AGENTS.md         this file (CLAUDE.md is @AGENTS.md)
-app/index.html    the page
+app/              the pages, their stylesheet and the host's `_headers`
+scripts/status.py refreshes the badges from each service's health URL
 docs/             topic docs; docs/README.md is the map
 .slopstopper.yml  slopstopper config: profile, pages, thresholds
 ```

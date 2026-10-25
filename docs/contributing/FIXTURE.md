@@ -1,11 +1,10 @@
 # The demo repo
 
-`slopstopper demo` writes a small fixture repository, shipped inside the
-CLI wheel under `cli/slopstopper/data/demo/`, that anything needing a
-repo to run slopstopper against can use with no network and no clone of
-this one: the course, the demo tapes, a triage walkthrough, the skill
-evals. It is "Lantern", a static status page, laid out the AGENTS.md-first
-way.
+`slopstopper demo` writes a small fixture repository, shipped in the CLI
+wheel under `cli/slopstopper/data/demo/`, for anything that needs a repo
+to run slopstopper against with no network and no clone of this one: the
+course, the demo tapes, a triage walkthrough, the skill evals. It is
+"Lantern", a static status page, laid out the AGENTS.md-first way.
 
 ```bash
 slopstopper demo                 # writes slopstopper-demo/
@@ -21,52 +20,69 @@ given, so a demo someone has started editing survives a second run.
 | Path | Role |
 | ---- | ---- |
 | `README.md` | Orientation and a quick start, plus a pasted-in manual that puts it over budget |
-| `AGENTS.md` | The working layer: ground rules, commands, layout, explicit routes |
-| `CLAUDE.md` | `@AGENTS.md` |
-| `docs/README.md` | The map, routing `architecture.md` and `contributing.md` |
-| `docs/architecture.md`, `docs/contributing.md` | Two routed topic docs |
+| `AGENTS.md`, `CLAUDE.md` | The working layer with explicit routes; `@AGENTS.md` |
+| `docs/README.md` | The map, routing `architecture.md`, `contributing.md` and `security/CSP_EXCEPTIONS.md` |
 | `docs/runbooks/RELEASE.md` | A doc nothing routes to |
-| `.slopstopper.yml` | `profile: ui`, one page, no headers file; the smoke share-image assertion is off because the image is an SVG and it wants a PNG |
-| `app/index.html`, `app/style.css`, `app/og-image.svg` | The page: three services, a stylesheet, a share image and the meta tags the SEO check wants, which `slopstopper serve` serves |
-| `.gitignore` | `.ss/reports/` |
+| `docs/security/CSP_EXCEPTIONS.md` | The CSP ledger: the schema and an empty `## Exceptions` section |
+| `.slopstopper.yml` | `profile: ui`, two pages, `headers.source: app/_headers`; the smoke share-image assertion is off because the image is an SVG |
+| `.env.example` | The values the script needs, with an AWS-shaped example key that is not a credential |
+| `scripts/status.py`, `scripts/requirements.txt` | A script that refreshes the badges, and its one pinned dependency |
+| `app/index.html`, `app/history.html`, `app/style.css`, `app/og-image.svg`, `app/uptime.svg` | The two pages with a nav between them, the stylesheet, the share image and the uptime chart |
+| `app/_headers` | The host's headers: a strict baseline for `/*` and one relaxation for `/history.html` |
+| `app/sitemap.xml`, `app/robots.txt`, `app/llms.txt` | The discovery files |
+| `.gitignore` | `.ss/reports/` and `.env` |
 
-The two dotfiles are stored without their dot (`slopstopper.yml`,
-`gitignore`) so the packaged tree carries none; `demo.write` renames
-them, and the command's help and output are built from `demo.FAILURES`,
-so a third finding needs no copy edited by hand.
+Dotfiles are stored without the dot and renamed by `demo.write`; the
+command's help and output come from `demo.FAILURES`.
 
-## The two findings it must keep
+## The findings it must keep
 
-Two hygiene checks fail on the fresh fixture, each with exactly one
-finding whose fix is the edit a real repo would make. They are the
-point: a reader sees a red check, reads the report, fixes the real
-thing, and sees it green.
+One check per lesson fails on the fresh fixture, each with exactly one
+finding whose fix is the edit a real repo would make: a reader sees a
+red check, reads the report, fixes the real thing, and sees it green.
+Every other check passes or skips.
 
 | Check | Finding | The fix |
 | ----- | ------- | ------- |
-| `hygiene:entry-files` | `README.md` is over its 600-token budget (the manual pasted under "Everything you need to know"); every rule passes | Move that section into `docs/` and route it from the map; never raise the budget |
+| `hygiene:entry-files` | `README.md` is over its 600-token budget (the manual under "Everything you need to know"); every rule passes | Move that section into `docs/` and route it; never raise the budget |
 | `hygiene:docs-structure` | `docs/runbooks/RELEASE.md` has no route | One row in `docs/README.md`: a trigger, then "read", then the link |
+| `hygiene:docs-accuracy` | `docs/contributing.md` says to run a `task` target (`ss:hygiene:docs`) and the repo has no Taskfile | Name the `slopstopper run` commands that exist |
+| `hygiene:complexity` | `badge()` in `scripts/status.py` maps sixteen HTTP statuses with sixteen `if`s: CCN 17 against the cap of 15 | A dict lookup: one line, CCN 1 |
+| `security:sast` | `scripts/status.py` builds a `git commit` command from a string and runs it with `shell=True`: `subprocess-shell-true`, at ERROR | A list, and no shell |
+| `security:vulnerability:all` | `scripts/requirements.txt` pins `requests==2.19.1`: CVE-2018-18074 (HIGH), plus four MEDIUMs that are reported and do not block | The version the Fixed In column names, or the current release |
+| `hygiene:csp-exceptions` | `app/_headers` lets `/history.html` load images from `https://charts.example.com`; the ledger has no entry | The entry with all seven fields, or drop the relaxation |
+| `reliability:accessibility` | The uptime chart on `app/history.html` is an `<img>` with no `alt`: `image-alt`, critical | An `alt` that says what the chart shows |
+| `reliability:seo` | `app/history.html` has no `<meta name="description">`; every other tag is present | The one line in its `<head>` |
+| `reliability:sitemap` | `app/sitemap.xml` lists `/` only, and the status page links to `/history.html` | A `<url>` entry, or generate the file from the page list |
 
-`cli/tests/test_demo.py` runs both checks on a written copy, asserts
-each reports its one finding and nothing else, applies the fix, and
-asserts green. `slopstopper/demo.py`'s `FAILURES` is what the command
+The last three need the page served (`slopstopper serve` in the demo,
+then the check against `http://localhost:8080`). `index.html` passes
+every browser check on its own; smoke, e2e, broken-links, robots-txt and
+llms-txt pass on both pages, so a lesson that breaks one starts green.
+
+`cli/tests/test_demo.py` runs every check on a written copy, asserts it
+reports its one finding and nothing else, applies the fix, and asserts
+green. The scanner-backed tests run the real tool and skip where it is
+not on PATH; the Playwright-backed tests skip without the repo's
+`node_modules`. `slopstopper/demo.py`'s `FAILURES` is what the command
 prints after writing; keep it true to the fixture.
+
+## The fixture's slop and this repo's own checks
+
+The fixture lives inside this repository, so two of its findings are
+excluded from slopstopper's own runs by path, with the reason beside
+the exclusion: `.slopstopper.yml` (`hygiene.complexity.exclude`) and
+`.semgrepignore`. The vulnerable pin is stored as
+`scripts/requirements.demo` and becomes `requirements.txt` only when the
+demo is written, so neither Trivy nor the dependency review reads it as
+ours. The fixture carries no secret: a key-shaped string in this
+repository's history would be found on every branch and reported to the
+vendor whose shape it borrows, so lesson 6 adds its own fake private key.
 
 ## Changing it
 
 Edit the files under `cli/slopstopper/data/demo/` and run
-`task contributing:test -- -k demo`. A change that drops a finding, adds
-a second one, or breaks a rule the fixture is meant to pass (AGENTS.md
-under budget with explicit routes, `CLAUDE.md` a pure include) fails
-there. The browser checks are not pinned by a test, but the page is
-meant to pass smoke, accessibility and SEO when served (`slopstopper
-serve` in the demo, then each check against `http://localhost:8080`),
-so keep it valid: a title, a meta description, `lang`, one `h1`,
-landmarks, a linked stylesheet, the canonical, Open Graph and Twitter
-tags, and the share image they name.
-
-Adding a deliberate finding for another check (a function past the
-complexity cap, a stale reference for docs-accuracy, a pinned dependency
-with a CVE, a page with an axe violation) is how the course moves onto
-the fixture; each one gets a row in the table above and a test beside
-the two that exist.
+`task contributing:test -- -k demo`; a change that drops a finding, adds
+a second, or breaks a rule the fixture should pass fails there. A new
+finding is a row in `FAILURES`, a row in the table above, a test beside
+the others and, if this repo's own run would see it, an exclusion.

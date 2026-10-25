@@ -63,6 +63,11 @@ hygiene:
   # file the docs/-only scan never read. Scan those surfaces too.
   docs_accuracy:
     extra_paths: [app/*.html, .claude/skills/**/*.md]
+  # The demo fixture carries a function over the cap on purpose (lesson
+  # 2); .semgrepignore carries the same exclusion for Semgrep. See
+  # docs/contributing/FIXTURE.md.
+  complexity:
+    exclude: [cli/slopstopper/data/demo/*]
 
 workflows:
   disabled: []
