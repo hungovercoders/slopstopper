@@ -9,9 +9,9 @@ and `<!-- learn: fails 1 -->` for one that must exit exactly that code
 otherwise pass on a 2, a check that could not run). Each page names its sandbox with
 `<!-- learn-sandbox: demo -->` or `<!-- learn-sandbox: checkout -->` near
 the top: `demo` is the repo `slopstopper demo` writes, committed once,
-which is what the check lessons run in; `checkout` (the default) is a
-clone of this repository, for the lessons about the installer, the
-workflows and the source. The clone carries the working tree's
+which is what every lesson but the last runs in (the suite lessons
+install into it with `slopstopper install`); `checkout` (the default) is
+a clone of this repository, for the lesson that edits the source. The clone carries the working tree's
 uncommitted changes, so a lesson is checked against the Taskfile and CLI
 you are about to commit rather than the ones you last did. The CLI that
 runs this script goes on PATH, and each page's marked blocks run in

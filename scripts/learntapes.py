@@ -13,9 +13,10 @@ its lesson, and `--check` fails when one is stale, so a lesson edit
 without `task contributing:learn:tapes` is caught in CI.
 
 The tapes are recorded by demos/render.sh (`task contributing:learn:record`)
-in the lesson's sandbox with the CLI on PATH, the demo repo for a check
-lesson or a scratch clone for the rest (the `# Sandbox:` line in each
-tape's header, from the lesson's `<!-- learn-sandbox -->` marker), the
+in the lesson's sandbox with the CLI on PATH, the demo repo for every
+lesson but the one that edits the source, which gets a scratch clone
+(the `# Sandbox:` line in each tape's header, from the lesson's
+`<!-- learn-sandbox -->` marker), the
 same sandboxes the harness uses, so the terminal in an episode shows
 what a reader sees.
 

@@ -10,9 +10,9 @@ and the fix.
 
 ## You will need
 
-The lessons about the checks (2 to 16) run in a small repo the CLI
-writes for you, so they need the CLI and nothing of this repository.
-Python 3.11 or newer, then:
+Every lesson but the last runs in a small repo the CLI writes for you,
+so they need the CLI and nothing of this repository. Python 3.11 or
+newer, then:
 
 ```sh
 pipx install slopstopper-cli       # or: pip install --user slopstopper-cli
@@ -25,17 +25,19 @@ The demo is "Lantern", a two-page status page laid out the way the
 suite expects, deliberately a little slopped: each check lesson opens
 on a red check already in it, reads the report, fixes the finding, and
 puts the demo back with `git checkout`. The commit is what lesson 6
-scans. Each lesson says which external tool it needs beyond the CLI
-(lesson 6 `gitleaks`, lesson 7 `semgrep`, lesson 8 `trivy`, lesson 10
-Docker, lessons 9 to 15 `node`, and for the browser checks in 11 to 15
-one `npm install` in the demo followed by `npx playwright install
-chromium`); `slopstopper doctor` lists what is missing.
+scans. The lessons about the suite itself (1, 17, 18 and 19: the
+installer, the workflows, the skills and profiles) install the suite
+into the same demo with `slopstopper install`, which writes it from the
+files the CLI ships, and put it back afterwards. Each lesson says which
+external tool it needs beyond the CLI (lesson 6 `gitleaks`, lesson 7
+`semgrep`, lesson 8 `trivy`, lesson 10 Docker, lessons 9 to 15 `node`,
+and for the browser checks in 11 to 15 one `npm install` in the demo
+followed by `npx playwright install chromium`); `slopstopper doctor`
+lists what is missing.
 
-The lessons about the suite itself (1, 17, 18, 19 and 20: the
-installer, the workflows, the skills, profiles and the source) run in a
-checkout of this repository, which is the reference install. For those,
-[mise](https://mise.jdx.dev) must be installed and activated in your
-shell, then:
+Lesson 20 edits the CLI's source, so it alone runs in a checkout of
+this repository. For that one, [mise](https://mise.jdx.dev) must be
+installed and activated in your shell, then:
 
 ```sh
 git clone https://github.com/hungovercoders/slopstopper.git
@@ -47,7 +49,7 @@ slopstopper --version
 ```
 
 The `task ss:*` shims call whichever `slopstopper` is on PATH; that last
-`export` points them at the editable install so a lesson runs HEAD.
+`export` points them at the editable install so the lesson runs HEAD.
 Lesson 0 reads from either.
 
 ## How the lessons work
@@ -79,7 +81,7 @@ and the verdicts are the same.
 | # | Lesson | You will learn | Episode |
 |---|---|---|---|
 | 0 | [What slop is, and the five loops](00-what-slop-is.md) | The problem, the thesis, the exit-code contract, the five loops | coming soon |
-| 1 | [Install slopstopper into a repo](01-install.md) | `install.sh`, profiles, what landed, `doctor` | coming soon |
+| 1 | [Install slopstopper into a repo](01-install.md) | `slopstopper install`, the `install.sh` bootstrap, profiles, what landed, `doctor` | coming soon |
 | 2 | [Run your first check and read its report](02-first-check-complexity.md) | `hygiene:complexity`, the task → CLI → workflow chain, `.ss/reports/` | coming soon |
 | 3 | [Entry files: the AGENTS.md-first model](03-entry-files.md) | `hygiene:entry-files`, token budgets, explicit routes | coming soon |
 | 4 | [Docs structure: every doc has a route](04-docs-structure.md) | `hygiene:docs-structure`, hops, line caps | coming soon |
