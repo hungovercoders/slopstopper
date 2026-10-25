@@ -182,13 +182,23 @@ PLAYWRIGHT_CALLERS = [w for w in ALL_WORKFLOWS if "uses: ./.github/actions/ss-pl
 
 
 def _steps(text: str) -> list[str]:
-    """Each step block, from its `- name:` to the next step (the file header dropped)."""
-    return re.split(r"(?m)^(?=\s+- name: )", text)[1:]
+    """Each step block, from the line that opens it (`- <any key>:`) to
+    the next step; the file header is dropped. A step after the one under
+    test must not fold into it, whatever key it opens with."""
+    return re.split(r"(?m)^(?=[ \t]+- [A-Za-z-]+: )", text)[1:]
 
 
 def test_the_fixture_finds_playwright_callers():
-    # The four browser checks, both ci-cli jobs and the Copilot environment.
-    assert len(PLAYWRIGHT_CALLERS) >= 6, PLAYWRIGHT_CALLERS
+    """The four browser checks, the CLI's own CI and the Copilot environment,
+    exactly: a caller added or dropped is a deliberate change to this list."""
+    assert PLAYWRIGHT_CALLERS == [
+        "ci-cli.yml",
+        "copilot-setup-steps.yml",
+        "ss-reliability-accessibility-check.yml",
+        "ss-reliability-broken-links-check.yml",
+        "ss-reliability-e2e-check.yml",
+        "ss-reliability-smoke-tests.yml",
+    ]
 
 
 def test_playwright_install_is_time_boxed():
@@ -249,7 +259,11 @@ def test_playwright_caller_bounds_the_step_and_follows_npm_ci(workflow):
     for job in re.split(r"(?m)^  [A-Za-z0-9_-]+:\n", text)[1:]:
         if "uses: ./.github/actions/ss-playwright" not in job:
             continue
-        assert job.index("npm ci") < job.index("uses: ./.github/actions/ss-playwright"), (
+        # The step itself (`run: npm ci`, with flags, or a line of a `run: |`
+        # block), not a comment that mentions it.
+        npm_ci = re.search(r"(?m)^[ \t]+(?:- )?(?:run: )?npm ci(?: [^\n#]*)?$", job)
+        assert npm_ci, f"{workflow}: no `run: npm ci` step in the job that calls ss-playwright"
+        assert npm_ci.start() < job.index("uses: ./.github/actions/ss-playwright"), (
             f"{workflow}: ss-playwright runs before `npm ci`"
         )
 
