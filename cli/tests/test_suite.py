@@ -2,13 +2,11 @@
 
 `slopstopper.suite` names the files once; the build hook copies them into
 the sdist and the wheel, and an editable install reads the checkout. These
-tests hold the three in step, and hold the list against the bash
-installer's, which still carries its own copy.
+tests hold the three in step.
 """
 
 from __future__ import annotations
 
-import re
 import subprocess
 import sys
 import tarfile
@@ -56,13 +54,6 @@ def test_a_skill_ships_only_the_references_its_map_links(tmp_path):
         ".claude/skills/slopstopper-install/references/install.md",
         ".claude/skills/slopstopper-install/references/verify.md",
     ]
-
-
-def test_install_sh_ships_the_same_workflows():
-    """Until install.sh hands over to the CLI, the two lists must agree."""
-    text = (REPO_ROOT / "install.sh").read_text()
-    block = re.search(r"^GENERIC_WORKFLOWS=\((.*?)^\)", text, re.S | re.M).group(1)
-    assert tuple(re.findall(r'"(ss-[^"]+)"', block)) == suite.GENERIC_WORKFLOWS
 
 
 @pytest.fixture(scope="module")

@@ -23,7 +23,7 @@ For a repo you'll keep, install the pinned suite so local and CI run the same ve
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 ```
 
-> Requires [mise](https://mise.jdx.dev). `install.sh` pins `slopstopper-cli` + `task` in `mise.toml` (the single source of truth both local runs and CI read) and seeds the `ss-*.yml` workflows. Move the pin with `install.sh --upgrade-cli` / `--cli-version`.
+> Requires [mise](https://mise.jdx.dev). `install.sh` pins `slopstopper-cli` + `task` in `mise.toml` (the single source of truth both local runs and CI read), installs that version, and hands over to `slopstopper install`, which writes the `ss-*.yml` workflows, shims, seeds, hook and skills from the files that version ships. Move the pin with `install.sh --upgrade-cli` / `--cli-version`.
 
 Development (editable, from a clone of this repo):
 

@@ -30,7 +30,7 @@ Notation: C4 (Context + Container).
 .ss/                      # SlopStopper-owned, adopter side
 ├── reports/              # The CLI writes here (.gitignored)
 ├── .workflows-installed  # Manifest of installed workflows (commit this)
-└── .installed-from       # slopstopper commit the install came from (commit this)
+└── .installed-from       # slopstopper-cli version that wrote the install (commit this)
 cli/slopstopper/
 ├── cli.py                # argparse dispatcher + bare-invocation banner
 ├── output.py             # Shared formatters + `--quiet` toggle

@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pytest
 
-from slopstopper import badges, profiles
+from slopstopper import badges, profiles, suite
 from slopstopper.checks import REGISTRY
 from slopstopper.checks.docs_accuracy import _TASKFILE_TASK_RE
 
@@ -35,7 +35,6 @@ from tests.test_workflow_triggers import NON_CHECK_WORKFLOWS, _expected_workflow
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS_DIR = REPO_ROOT / ".github/workflows"
 TASKFILE = REPO_ROOT / "Taskfile.ss.yml"
-INSTALL_SH = REPO_ROOT / "install.sh"
 DOCS_DIR = REPO_ROOT / "docs"
 TESTS_DIR = Path(__file__).resolve().parent / "checks"
 
@@ -89,9 +88,7 @@ def _taskfile_targets() -> set[str]:
 
 
 def _generic_workflows() -> set[str]:
-    text = INSTALL_SH.read_text(encoding="utf-8")
-    block = text[text.index("GENERIC_WORKFLOWS=(") : text.index("\n)\n", text.index("GENERIC_WORKFLOWS=("))]
-    return set(re.findall(r'"(ss-[^"]+)"', block))
+    return set(suite.GENERIC_WORKFLOWS)
 
 
 def _headings_under(category: str) -> list[str]:
@@ -134,10 +131,10 @@ def test_check_has_a_taskfile_shim(check):
 
 
 @pytest.mark.parametrize("check", CHECKS)
-def test_check_workflow_is_installed_by_install_sh(check):
+def test_check_workflow_is_installed_by_the_installer(check):
     workflow = profiles.workflow_for(check)
     assert workflow in _generic_workflows(), (
-        f"{workflow} is not in install.sh's GENERIC_WORKFLOWS, so adopters never get {check}"
+        f"{workflow} is not in suite.GENERIC_WORKFLOWS, so adopters never get {check}"
     )
 
 
@@ -219,7 +216,7 @@ def test_check_is_documented_under_its_category(check):
 
 EXPECTED_CHECKS = 27
 # every ss-*.yml except ss-release.yml and ss-cloudflare-deployed.yml,
-# which install.sh adds only to a repo with Cloudflare config
+# which the installer adds only to a repo with Cloudflare config
 EXPECTED_INSTALLED_WORKFLOWS = 30
 
 # Files that quote the counts, and the numbers each may pair with the word
