@@ -143,6 +143,7 @@ with no evidence it skips. **Fails unless:**
 
 - a privacy page exists: `privacy.page`, else the first file named
   privacy.html, privacy.md or privacy/index.* in any source directory
+  (dependency, build and hidden directories are never searched)
   (this repo's is `app/privacy.html`; a Starlight content page or a
   templated site page counts the same)
 - it names the host the config file implies (Cloudflare, Netlify, Vercel)

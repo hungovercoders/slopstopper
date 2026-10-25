@@ -16,8 +16,8 @@ evidence.
 Rules, each reported with what to add and where:
 
   1. A privacy page exists: `privacy.page` when set, else the first file
-     named `privacy.<ext>` or `privacy/index.<ext>` outside dependency
-     and build directories.
+     named `privacy.<ext>` or `privacy/index.<ext>` outside dependency,
+     build and hidden directories.
   2. The page names the host (Cloudflare, Netlify or Vercel, from the
      config file found) and every name in `privacy.hosts`.
   3. When the wrangler config turns Workers Logs on
@@ -79,10 +79,9 @@ PAGE_EXTENSIONS = ("html", "htm", "md", "mdx", "astro", "njk", "liquid", "hbs", 
 PAGE_CANDIDATES = tuple(f"privacy.{ext}" for ext in PAGE_EXTENSIONS) + tuple(
     f"privacy/index.{ext}" for ext in PAGE_EXTENSIONS
 )
-SKIP_DIRS = {
-    "node_modules", ".git", ".ss", "dist", "build", ".next", ".astro", "out", ".venv",
-    "_site", ".svelte-kit", ".nuxt", ".output", ".vercel", ".netlify", "coverage", "target", "vendor",
-}
+# Non-hidden directories the walk never enters; every dot-directory is
+# skipped as well (`.git`, `.venv`, `.next`, a tool's worktrees).
+SKIP_DIRS = {"node_modules", "dist", "build", "out", "_site", "coverage", "target", "vendor"}
 
 # Host evidence: the config file a host reads, and what the page must call it.
 HOST_FILES: tuple[tuple[str, str], ...] = (
@@ -443,7 +442,7 @@ def _print_results(issues: list[dict], summary: dict) -> None:
 
 
 def _missing_page(root: Path, host_config: tuple[Path, str] | None, configured: bool) -> int:
-    where = "the path privacy.page names" if configured else "any of " + ", ".join(f"`{c}`" for c in PAGE_CANDIDATES[:3]) + " (any directory; see the report)"
+    where = "the path privacy.page names" if configured else "any of " + ", ".join(f"`{c}`" for c in PAGE_CANDIDATES[:3]) + " (any directory except dependency, build and hidden ones)"
     host = host_config[1] if host_config else "the host"
     issues = [_issue(
         "page",
