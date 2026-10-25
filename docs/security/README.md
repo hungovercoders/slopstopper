@@ -69,6 +69,10 @@ Trivy scans the project filesystem for known CVEs in your packages and lock
 files. CRITICAL and HIGH block. A companion GitHub-native workflow
 (`ss-security-vulnerability-new-check.yml`) reviews newly-added dependencies
 on PRs and fails on a licence outside the allowlist in `.github/dependency-review-config.yml`.
+Neither gates on a devDependency advisory: Trivy scans production scope
+and dependency review fails on runtime scope only.
+That is Dependabot's job, by design; keep its alerts and security updates
+enabled. [VULNERABILITY.md](VULNERABILITY.md) has the three-way table.
 
 ## Secrets Detection
 
