@@ -1,12 +1,14 @@
 # Lesson 1: Install slopstopper into a repo
 
-**Goal.** Install the suite into an empty repo, pick a profile, know
-what every file it wrote is for, and see the pre-push gate pass on the
-fresh repo.
+<!-- learn-sandbox: demo -->
+
+**Goal.** Install the suite into a repo, pick a profile, know what
+every file it wrote is for, and see which checks the repo is now
+carrying.
 
 ## Why this lesson
 
-Adopters meet `install.sh` first, and an installer that drops thirty
+Adopters meet the installer first, and an installer that drops thirty
 files into a repo is itself a kind of slop unless every one of them can
 be explained. The suite earns the files by making each one answer a
 question you will ask later: where does a check run (the workflow), how
@@ -15,13 +17,15 @@ this repo configure (one YAML file), and where did the output go (one
 report directory). This lesson is the tour, so nothing in the repo is a
 mystery afterwards.
 
-Three prerequisites, each for a reason. [mise](https://mise.jdx.dev)
-pins the CLI per repo in `mise.toml`, so two repos can run two versions
-and CI runs the same one you do. Python 3.11 or newer, because mise
-installs the CLI through its pipx backend and `slopstopper-cli` needs
-3.11. And `task`, because `task ss:<category>:<check>` is the one
-surface humans, agents and CI all call; mise installs it from the same
-pin file.
+The installer is the CLI: `slopstopper install` writes the suite from
+the files its own wheel carries, so the shims and workflows a repo gets
+are the ones the CLI that wrote them knows. The `install.sh` one-liner
+on the README does one thing on top: it pins `slopstopper-cli` in
+`mise.toml` and installs that version through [mise](https://mise.jdx.dev),
+then hands over to the same command. mise pins the CLI per repo, so two
+repos can run two versions and CI runs the same one you do; `task` comes
+from the same pin file, because `task ss:<category>:<check>` is the one
+surface humans, agents and CI all call.
 
 A **profile** names the repo's shape and switches off the checks that
 shape has no use for: `ui` (a site, every check), `api` (no browser
@@ -32,126 +36,123 @@ deeper; here you pick `ui` and look at what it means.
 
 ## You will need
 
-- The checkout from the [syllabus](README.md), with the CLI on PATH.
-- mise activated in your shell (`mise --version` prints a version), and
-  the network: the installer pins and installs the published CLI from
-  PyPI. For that reason the blocks in this lesson are not run by the
-  course harness; `demos/install.tape` records the same flow.
+- The demo repo from the [syllabus](README.md), with the CLI on PATH.
+  Lantern is a repo that already has content, which is the common
+  case: the suite is added to something, not the other way round.
+- mise, if you want the pin to install anything. Without it the
+  installer still writes `mise.toml` and says so.
 
 ## Steps
 
-### 1. Make an empty repo beside the checkout
+### 1. Run the installer with a profile
 
-The installer runs from a checkout (the README's `curl | bash` one-liner
-fetches the same script from GitHub). A sibling directory keeps the
-checkout clean and the lesson disposable.
+`--no-topic` skips the one step that talks to GitHub (adding the
+`slopstopper` repo topic through `gh`), which a demo has no remote for.
 
+<!-- learn -->
 ```sh
-cd ..
-git init -q demo-site && cd demo-site
-```
-
-### 2. Run the installer with a profile
-
-```sh
-bash ../slopstopper/install.sh --profile ui
+slopstopper install --profile ui --no-topic | grep -v '^ ' | grep -E 'installed|pinned|refreshed|seeded|skipping|already|Added|appended'
 ```
 
 ```
-  🛠  SlopStopper: installing tooling
-  ✅ Taskfile.ss.yml installed
-  ✅ Taskfile.yml installed
-  ✅ .slopstopper.yml: seeded demo-site/.slopstopper.yml as a starter. Every other key is in …/.slopstopper.yml.example
-  ✅ .slopstopper.yml: profile set to 'ui'
-  ℹ  Pinning slopstopper-cli@<latest on PyPI> (+ task) in mise.toml via mise…
-  ✅ slopstopper-cli installed (<latest on PyPI>, pinned in mise.toml)
-  ✅ 27 workflow(s) installed, 0 refreshed, 0 previously-deleted skipped
-  ✅ composite actions refreshed under .github/actions/ (ss-resolve-url, ss-setup)
-  ℹ  profile 'ui': 4 workflow(s) not installed for this repo shape (0 removed from a previous install)
-  ✅ package.json created (devDependencies only; add scripts.build if your site needs building)
-  ✅ .github/labeler.yml: seeded
-  ✅ .github/dependency-review-config.yml: seeded
-  ✅ .zap/rules.tsv: seeded
-  ✅ README.md: seeded
-  ✅ AGENTS.md: seeded
-  ✅ CLAUDE.md: seeded
-  ✅ docs/README.md: seeded
-  ✅ .gitignore: appended slopstopper block
-  ✅ slopstopper-install: installed
-  ✅ slopstopper-triage: installed
-  ✅ pre-push hook installed (core.hooksPath → .githooks)
-
-  🎉 Installation complete!
+✅ Taskfile.ss.yml installed (refreshed)
+✅ Taskfile.yml installed
+ℹ️  .slopstopper.yml: profile already 'ui'
+✅ slopstopper-cli <this CLI's version> pinned in mise.toml
+✅ 27 workflow(s) installed, 0 refreshed, 0 previously-deleted skipped
+✅ composite actions refreshed under .github/actions/ (ss-playwright, ss-resolve-url, ss-setup)
+ℹ️  profile 'ui': 4 workflow(s) not installed for this repo shape (0 removed from a previous install)
+✅ Added devDependencies: markdownlint-cli
+✅ .github/labeler.yml: seeded
+✅ .github/dependency-review-config.yml: seeded
+ℹ️  public/_headers: no public/ directory in target, so skipping. Add one and re-run if you want the baseline.
+✅ .zap/rules.tsv: seeded
+✅ .markdownlint.json: seeded
+ℹ️  README.md: already exists, so leaving it alone
+ℹ️  AGENTS.md: already exists, so leaving it alone
+ℹ️  CLAUDE.md: already exists, so leaving it alone
+ℹ️  docs/README.md: already exists, so leaving it alone
+✅ .gitignore: appended slopstopper block
+✅ slopstopper-install: installed
+✅ slopstopper-triage: installed
+✅ pre-push hook installed (core.hooksPath → .githooks)
 ```
 
-Trimmed to the lines that name a file. Two things to notice before the
-tour. The CLI version is **pinned**: a later run installs that same
-version and never moves it, so a release upstream cannot reach this
-repo unannounced (`--upgrade-cli` moves the pin, on purpose, in a
-commit). And four workflows were **not installed**: the `ui` profile
-holds back the API checks until the repo shows an API, so a static site
-does not run four jobs that check nothing.
+Trimmed to the lines that name a file. Three things to notice before
+the tour. The CLI version is **pinned**: the installer wrote its own
+version into `mise.toml`, a later run installs that same version and
+never moves it, so a release upstream cannot reach this repo
+unannounced (`install.sh --upgrade-cli` moves the pin, on purpose, in a
+commit). Four workflows were **not installed**: the `ui` profile holds
+back the API checks until the repo shows an API, so a static site does
+not run four jobs that check nothing. And every file Lantern already
+had (its config, its README, its `AGENTS.md`) was **left alone**: the
+installer seeds what is missing and never overwrites what is yours.
 
-### 3. Tour what landed
+### 2. Tour what landed
 
+<!-- learn -->
 ```sh
 git status --short
 ```
 
 ```
+ M .gitignore
+ M package.json
 ?? .claude/
 ?? .githooks/
 ?? .github/
-?? .gitignore
 ?? .markdownlint.json
-?? .slopstopper.yml
 ?? .ss/
 ?? .zap/
-?? AGENTS.md
-?? CLAUDE.md
-?? README.md
 ?? Taskfile.ss.yml
 ?? Taskfile.yml
-?? docs/
 ?? mise.toml
-?? package.json
 ```
 
-Sixteen entries, in five groups:
+Two files changed and nine added, in four groups:
 
 | Files | What they are for |
 |---|---|
-| `.github/workflows/ss-*.yml`, `.github/actions/ss-*/` | One workflow per check (lesson 17), each a handful of steps built on the two composite actions. The installer owns these; a refresh rewrites them. |
-| `Taskfile.ss.yml`, `Taskfile.yml`, `mise.toml`, `package.json` | The shims (`task ss:*`), a root Taskfile that includes them under `ss`, the version pins, and the browser checks' npm dependencies. |
-| `.slopstopper.yml`, `.zap/rules.tsv`, `.github/labeler.yml`, `.github/dependency-review-config.yml`, `.markdownlint.json` | Config that is **yours**: seeded once, never overwritten. Every key the checks read is in `.slopstopper.yml.example` upstream. |
-| `README.md`, `AGENTS.md`, `CLAUDE.md`, `docs/README.md` | The entry-file scaffolds for the AGENTS.md-first model (lessons 3 and 4). Seeded only when absent. |
-| `.claude/skills/slopstopper-*/`, `.githooks/pre-push`, `.ss/` | The two Claude Code skills (lesson 18), the pre-push gate, and the directory every check writes its reports under. |
+| `.github/workflows/ss-*.yml`, `.github/actions/ss-*/` | One workflow per check (lesson 17), each a handful of steps built on the three composite actions. The installer owns these; a refresh rewrites them. |
+| `Taskfile.ss.yml`, `Taskfile.yml`, `mise.toml`, `package.json` | The shims (`task ss:*`), a root Taskfile that includes them under `ss`, the version pins, and the browser checks' npm dependencies merged into the manifest Lantern already had. |
+| `.zap/rules.tsv`, `.github/labeler.yml`, `.github/dependency-review-config.yml`, `.markdownlint.json` | Config that is **yours**: seeded once, never overwritten. `.slopstopper.yml` is the same kind of file, and Lantern already had one, so nothing was seeded there. Every key the checks read is in `.slopstopper.yml.example` upstream. |
+| `.claude/skills/slopstopper-*/`, `.githooks/pre-push`, `.ss/`, the block in `.gitignore` | The two Claude Code skills (lesson 18), the pre-push gate, the directory every check writes its reports under, and the ignore rules for what the checks leave behind. |
 
 The pin is the whole of `mise.toml`:
 
+<!-- learn -->
 ```sh
 cat mise.toml
 ```
 
 ```
 [tools]
-node = "20"
-"pipx:slopstopper-cli" = "<latest on PyPI>"
-task = "3"
+"node" = "20"
+"task" = "3"
+"pipx:slopstopper-cli" = "<this CLI's version>"
 ```
 
 And `.ss/.workflows-installed` is the installer's memory: it lists the
 workflows it wrote, so a workflow you delete on purpose stays deleted
-on the next refresh.
+on the next refresh (remove its line there to have it back).
+`.ss/.installed-from` names the version that wrote everything.
 
-### 4. See what the profile decided
-
-mise activates the pinned tools per directory. The first time you enter
-a directory with a new `mise.toml` it asks you to trust the file; after
-that `slopstopper` and `task` resolve to this repo's pins.
-
+<!-- learn -->
 ```sh
-mise trust
+wc -l < .ss/.workflows-installed
+cat .ss/.installed-from
+```
+
+```
+27
+<this CLI's version>
+```
+
+### 3. See what the profile decided
+
+<!-- learn -->
+```sh
 slopstopper profile show
 ```
 
@@ -169,7 +170,7 @@ slopstopper profile show
 Every workflow that is missing is named, with the reason. Nothing is
 quietly off.
 
-### 5. Ask which tools are missing
+### 4. Ask which tools are missing
 
 Most checks subprocess-invoke a tool the CLI does not ship: Semgrep,
 Gitleaks, Trivy, Docker for ZAP. `doctor` says which are on PATH, and
@@ -197,7 +198,11 @@ run" and never as a verdict about your code; exit 1 is reserved for "the
 repo failed it". Lesson 0 covered the contract; `doctor` is how you clear
 the 2s before the first PR.
 
-### 6. See everything runnable
+### 5. See everything runnable
+
+Once mise has installed the pin (`mise install`, or just entering the
+directory with mise activated), `task` resolves to this repo's and the
+shims are the map of the suite:
 
 ```sh
 task --list
@@ -218,64 +223,67 @@ task: Available tasks for this project:
 …
 ```
 
-One line per check, the same names the workflows call. This list is the
-map of the suite in any repo that has it; every later lesson starts from
-a line on it.
+One line per check, the same names the workflows call. The CLI lists
+the checks it knows without `task`, and marks the ones this repo
+carries no workflow for, which here are the four the profile held back;
+they still run locally through `slopstopper run`:
+
+<!-- learn -->
+```sh
+slopstopper checks list --json | grep -c '"disabled": true'
+```
+
+```
+4
+```
 
 ## Checkpoint
 
-The pre-push hook runs the static hygiene suite before every push. Run
-it by hand on the fresh repo:
+The pre-push hook runs the static hygiene suite before every push,
+through `task ss:hygiene:test`. On Lantern that gate is red on purpose:
+the demo carries one finding per check, and lessons 2 to 5 fix the
+hygiene ones. One of them is green already, and it proves the install
+took: the entry-file check reads the `AGENTS.md`, `README.md` and
+`CLAUDE.md` the demo shipped, under the budgets the suite enforces.
 
+<!-- learn -->
 ```sh
-task ss:hygiene:test; echo "exit $?"
+slopstopper run hygiene:entry-files | tail -1
 ```
 
 ```
-task: [ss:hygiene:docs-size] slopstopper run hygiene:docs-size
-✅ Status: Within acceptable limits
-task: [ss:hygiene:docs-structure] slopstopper run hygiene:docs-structure
-✅ Documentation structure is valid: all 0 docs are routed
-task: [ss:hygiene:docs-accuracy] slopstopper run hygiene:docs-accuracy
-✅ Documentation accuracy checks passed
-task: [ss:hygiene:entry-files] slopstopper run hygiene:entry-files
 ✅ Every entry file is within budget, CLAUDE.md is a pure include, and every route is explicit.
-task: [ss:hygiene:csp-exceptions] slopstopper run hygiene:csp-exceptions
-ℹ️  CSP exceptions check: no headers.source configured in .slopstopper.yml, so skipping.
-task: [ss:hygiene:complexity] slopstopper run hygiene:complexity
-✅ No high-complexity functions found (all CCN ≤ 15).
-exit 0
 ```
 
-Green on an empty repo, with one check saying it has nothing configured
-and skipping: an unconfigured check is not a failing check. Clean up
-when you are done:
+Put the demo back, so the next lesson starts from the repo as shipped:
 
+<!-- learn -->
 ```sh
-cd .. && rm -rf demo-site
+git checkout .gitignore package.json
+git clean -fdq
 ```
 
 ## Exercise
 
-Install again with `--profile library` into a second empty repo and find
-out, without reading the docs, which checks a library does not get.
+Install again with `--profile library` and find out, without reading
+the docs, which checks a library does not get.
 
 <details>
 <summary>Solution</summary>
 
 ```sh
-git init -q demo-lib && cd demo-lib
-bash ../slopstopper/install.sh --profile library
-mise trust && slopstopper profile show
+slopstopper install --profile library --no-topic | grep 'workflow(s)'
+slopstopper profile show
+git checkout .gitignore .slopstopper.yml package.json && git clean -fdq
 ```
 
-The installer line reads `15 workflow(s) installed`, and `profile show`
+The installer line reads `11 workflow(s) installed`, and `profile show`
 lists sixteen disabled workflows with the reason `(profile)`: the nine
 browser checks, DAST, CSP exceptions, the privacy statement and the four
 API checks, which is everything that needs a URL or a served page. What
 remains is the static layer: SAST, secrets, dependency CVEs, review and
-licences, complexity, the four docs checks.
-`cd .. && rm -rf demo-lib` afterwards.
+licences, complexity, the four docs checks. The last line puts the demo
+back, including the `profile: library` the flag wrote into its config.
 
 </details>
 
@@ -303,19 +311,22 @@ same list with a reason beside every line.
 **Talking points.**
 
 1. Why: an installer earns its files by making each answer a question;
-   mise, Python, task, and what each one is for.
-2. The empty repo; the install line; the pin and the four workflows
-   held back.
-3. The tour: five groups, which are the installer's and which are
+   the CLI writes its own suite; mise, Python, task, and what each one
+   is for.
+2. The demo repo; the install line; the pin, the four workflows held
+   back, the files left alone.
+3. The tour: four groups, which are the installer's and which are
    yours.
 4. `profile show`: nothing quietly off. `doctor`: a missing tool is a
    2, not a failure.
-5. `task --list` as the map; the checkpoint on an empty repo.
+5. `task --list` and `checks list` as the map; the checkpoint: one
+   green check on a demo that is red on purpose.
 6. Exercise: the library profile and what "needs a URL" removes.
 
 **Shot list.** One terminal, 100x30, font size 16, the site's theme.
-`demos/install.tape` drives the install itself. Zoom on the pin line,
-on "4 workflow(s) not installed", and on `exit 0`.
+`docs/learn/tapes/01.tape`; `demos/install.tape` drives the `install.sh`
+one-liner. Zoom on the pin line, on "4 workflow(s) not installed", and
+on "already exists, so leaving it alone".
 
 **Chapters.** `0:00 Why` · `1:00 Install` · `2:30 What landed` ·
 `4:30 Profile and doctor` · `6:30 The map` · `7:30 Checkpoint` ·

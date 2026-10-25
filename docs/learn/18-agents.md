@@ -1,5 +1,7 @@
 # Lesson 18: Agents: the install and triage skills
 
+<!-- learn-sandbox: demo -->
+
 **Goal.** Install the two Claude Code skills into a repo, read how they
 are shaped, and see how an agent uses them to install the suite or
 fix a red check without being told the steps.
@@ -37,64 +39,53 @@ know a check exists will never suggest it or fix it.
 
 ## You will need
 
-The checkout from the [syllabus](README.md). Claude Code, from
-[claude.com/claude-code](https://claude.com/claude-code), for the agent
-steps, which are not run by the harness.
+The demo repo from the [syllabus](README.md), with the CLI on PATH.
+Claude Code, from [claude.com/claude-code](https://claude.com/claude-code),
+for the agent steps, which are not run by the harness.
 
 ## Steps
 
 ### 1. Install the skills into a repo
 
-The installer fetches each skill file from this repository; pointed at
-a local checkout it copies instead, which is how `install.sh` runs it.
-Install into a scratch directory standing in for an adopter's repo.
+The skills ship inside the CLI's wheel, and `slopstopper install`
+writes them with the rest of the suite: the map, plus only the
+references the map links, swapped in as a whole directory so a refresh
+never leaves a stale file behind.
 
 <!-- learn -->
 ```sh
-mkdir -p scratch/repo
-SLOPSTOPPER_REPO_RAW="file://$PWD" bash install-skill.sh scratch/repo | grep -A3 'Skills installed'
+slopstopper install --no-topic --no-hooks | grep -A2 'Installing the SlopStopper Claude Code skills' | tail -1
+find .claude -type f | sort
 ```
 
 ```
-  🎉 Skills installed at project level!
-
-  Claude Code auto-discovers the skills under .claude/skills/ for any
-  contributor working in this repo. Commit them alongside the workflows.
-```
-
-<!-- learn -->
-```sh
-find scratch/repo -type f | sort
-```
-
-```
-scratch/repo/.claude/skills/slopstopper-install/SKILL.md
-scratch/repo/.claude/skills/slopstopper-install/references/configure.md
-scratch/repo/.claude/skills/slopstopper-install/references/install.md
-scratch/repo/.claude/skills/slopstopper-install/references/maintaining.md
-scratch/repo/.claude/skills/slopstopper-install/references/map-pattern.md
-scratch/repo/.claude/skills/slopstopper-install/references/preflight.md
-scratch/repo/.claude/skills/slopstopper-install/references/refresh.md
-scratch/repo/.claude/skills/slopstopper-install/references/verify.md
-scratch/repo/.claude/skills/slopstopper-triage/SKILL.md
-scratch/repo/.claude/skills/slopstopper-triage/references/broader-fixes.md
-scratch/repo/.claude/skills/slopstopper-triage/references/categorise.md
-scratch/repo/.claude/skills/slopstopper-triage/references/gotchas.md
-scratch/repo/.claude/skills/slopstopper-triage/references/maintaining.md
-scratch/repo/.claude/skills/slopstopper-triage/references/reproduce.md
+✅ slopstopper-install: installed
+.claude/skills/slopstopper-install/SKILL.md
+.claude/skills/slopstopper-install/references/configure.md
+.claude/skills/slopstopper-install/references/install.md
+.claude/skills/slopstopper-install/references/maintaining.md
+.claude/skills/slopstopper-install/references/map-pattern.md
+.claude/skills/slopstopper-install/references/preflight.md
+.claude/skills/slopstopper-install/references/refresh.md
+.claude/skills/slopstopper-install/references/verify.md
+.claude/skills/slopstopper-triage/SKILL.md
+.claude/skills/slopstopper-triage/references/broader-fixes.md
+.claude/skills/slopstopper-triage/references/categorise.md
+.claude/skills/slopstopper-triage/references/gotchas.md
+.claude/skills/slopstopper-triage/references/maintaining.md
+.claude/skills/slopstopper-triage/references/reproduce.md
 ```
 
 Project level, under the repo's own `.claude/skills/`, so every
 contributor who clones the repo gets them, and they are committed
-alongside the workflows. `install.sh` does this step itself; the
-standalone script is for refreshing the playbooks without re-running
-the whole installer.
+alongside the workflows. `install-skill.sh` upstream refreshes just the
+playbooks without re-running the whole installer.
 
 ### 2. Read the map of the triage skill
 
 <!-- learn -->
 ```sh
-grep '^## ' scratch/repo/.claude/skills/slopstopper-triage/SKILL.md
+grep '^## ' .claude/skills/slopstopper-triage/SKILL.md
 ```
 
 ```
@@ -132,7 +123,7 @@ over budget, and moves the pasted map out rather than raising the
 budget, because the skill's Step 4 says a threshold is the fix only
 when the check is right and the config is wrong, and the report's own
 fix says the same. Then it reruns the check and shows it green. Put
-the checkout back when you are done:
+the demo back when you are done:
 
 ```sh
 git checkout README.md
@@ -151,8 +142,7 @@ in the skills is stale.
 
 <!-- learn -->
 ```sh
-grep -c 'task ss:' scratch/repo/.claude/skills/slopstopper-triage/references/reproduce.md
-rm -r scratch
+grep -c 'task ss:' .claude/skills/slopstopper-triage/references/reproduce.md
 ```
 
 ```
@@ -170,6 +160,14 @@ grep -c '^name: slopstopper-' .claude/skills/*/SKILL.md | tr '\n' ' '
 .claude/skills/slopstopper-install/SKILL.md:1 .claude/skills/slopstopper-triage/SKILL.md:1 
 ```
 
+Put the demo back:
+
+<!-- learn -->
+```sh
+git checkout .gitignore package.json
+git clean -fdq
+```
+
 ## Exercise
 
 Find where the install skill decides whether it is installing or
@@ -184,10 +182,12 @@ grep -n -A6 '^## Mode detection' .claude/skills/slopstopper-install/SKILL.md
 
 It checks for `.slopstopper.yml` and the `.ss/.workflows-installed`
 marker. Both present means a refresh, which routes to the
-refresh-only steps: diff what upstream changed, re-apply the
-customisations a re-run wipes, and look for new knobs. Neither means a
-first install. The installer is idempotent either way; the skill's job
-is to know which questions to ask.
+refresh-only steps: confirm the installed set is the pinned release's,
+re-apply the customisations a re-run wipes, and look for new knobs.
+Neither means a first install. The installer is idempotent either way;
+the skill's job is to know which questions to ask. (The demo has the
+config but not the marker until you install, so on it the answer is a
+first install.)
 
 </details>
 
