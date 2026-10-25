@@ -24,6 +24,13 @@ Configuration (.slopstopper.yml, all optional):
       smoke: /,/blog,/about       # which paths to smoke-test
     smoke:
       og_image_path: /og-image.png  # '' to skip the og-image assertion
+    privacy:                        # read through checks/privacy.page_url()
+      page: auto                    # the statement; '' opts out of the link rule too
+      url: auto                     # the path every audited page must link to
+      require_link: true            # false drops that assertion
+
+The privacy link assertion applies only where `hygiene:privacy` does
+(profile ui, host evidence); see checks/privacy.py.
 
 See .slopstopper.yml.example for the canonical schema.
 

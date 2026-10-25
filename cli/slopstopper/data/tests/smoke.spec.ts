@@ -42,13 +42,21 @@ const pagesToCheck = (process.env.SMOKE_PAGES ?? '/')
 
 const maxLoadMs = parseInt(process.env.SMOKE_TIMEOUT || '5000', 10);
 
-// `/privacy/` and `/privacy` are the same page; so are `/privacy.html` under
-// a subpath base (`/project/privacy.html` on GitHub Pages).
-const privacyPath = (process.env.SMOKE_PRIVACY_URL ?? '').trim().replace(/\/+$/, '');
+// `/privacy/`, `/privacy`, `/privacy.html` and `/privacy/index.html` are the
+// same page (clean-URL hosts serve one as the other); so is `/privacy.html`
+// under a subpath base (`/project/privacy.html` on GitHub Pages).
+function privacyKey(url: string): string {
+  return new URL(url, targetUrl).pathname
+    .replace(/\/index\.html?$/, '')
+    .replace(/\.html?$/, '')
+    .replace(/\/+$/, '');
+}
+const privacyRaw = (process.env.SMOKE_PRIVACY_URL ?? '').trim();
+const privacyPath = privacyRaw ? privacyKey(privacyRaw) : '';
 function linksToPrivacy(hrefs: string[]): boolean {
   return hrefs.some((href) => {
     try {
-      const pathname = new URL(href, targetUrl).pathname.replace(/\/+$/, '');
+      const pathname = privacyKey(href);
       return pathname === privacyPath || pathname.endsWith(privacyPath);
     } catch {
       return false;

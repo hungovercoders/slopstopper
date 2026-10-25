@@ -24,13 +24,16 @@ Rules, each reported with what to add and where:
      (`observability.enabled: true`), the page mentions logs.
   4. Every third-party origin a fetch directive in the CSP source allows
      (`headers.source`, the same parse as `hygiene:csp-exceptions`) is
-     named on the page: its hostname, or its distinguishing label
-     (`cdnjs` for cdnjs.cloudflare.com, `giscus` for giscus.app).
+     named on the page: its hostname, or any label of it that identifies
+     a service (`cdnjs` or `cloudflare` for cdnjs.cloudflare.com, `giscus`
+     for giscus.app, `google` for fonts.gstatic.com).
   5. The page carries a date (ISO or long form), so a stale statement
      shows its age.
 
 The matching smoke-test rule, that every audited page links to it, is
-`SMOKE_PRIVACY_URL` in the smoke spec; `page_url()` below derives it.
+`SMOKE_PRIVACY_URL` in the smoke spec; `page_url()` below derives it and
+is None whenever this check would not run (profile, no host evidence,
+opt-out), so the smoke rule never applies where the check does not.
 
 Configuration (.slopstopper.yml):
 
@@ -51,6 +54,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import tomllib
 from pathlib import Path
 
 from slopstopper import config, headers_adapters, output, profiles
@@ -75,7 +79,10 @@ PAGE_EXTENSIONS = ("html", "htm", "md", "mdx", "astro", "njk", "liquid", "hbs", 
 PAGE_CANDIDATES = tuple(f"privacy.{ext}" for ext in PAGE_EXTENSIONS) + tuple(
     f"privacy/index.{ext}" for ext in PAGE_EXTENSIONS
 )
-SKIP_DIRS = {"node_modules", ".git", ".ss", "dist", "build", ".next", ".astro", "out", ".venv"}
+SKIP_DIRS = {
+    "node_modules", ".git", ".ss", "dist", "build", ".next", ".astro", "out", ".venv",
+    "_site", ".svelte-kit", ".nuxt", ".output", ".vercel", ".netlify", "coverage", "target", "vendor",
+}
 
 # Host evidence: the config file a host reads, and what the page must call it.
 HOST_FILES: tuple[tuple[str, str], ...] = (
@@ -95,6 +102,8 @@ FETCH_DIRECTIVES = {
 }
 # Labels that don't identify a service, so `api.github.com` is known by `github`.
 GENERIC_LABELS = {"www", "api", "cdn", "static", "assets", "fonts", "js", "css", "img", "images", "media", "s", "m", "app", "apps", "edge"}
+# Service hostnames whose labels never say who runs them.
+SERVICE_ALIASES = {"gstatic": "google", "googleapis": "google", "googletagmanager": "google", "google-analytics": "google", "ggpht": "google"}
 
 MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
 DATE_RE = re.compile(
@@ -127,29 +136,71 @@ def _host_config(root: Path) -> tuple[Path, str] | None:
     return None
 
 
+def _string_end(text: str, i: int) -> int:
+    """Index just past the string that opens at `i`, honouring escapes."""
+    i += 1
+    while i < len(text) and text[i] != '"':
+        i += 2 if text[i] == "\\" else 1
+    return i + 1
+
+
+def _comment_end(text: str, i: int) -> int:
+    """Index just past the comment that opens at `i`, or -1 if none does."""
+    if text.startswith("//", i):
+        nl = text.find("\n", i)
+        return len(text) if nl < 0 else nl
+    if text.startswith("/*", i):
+        close = text.find("*/", i + 2)
+        return len(text) if close < 0 else close + 2
+    return -1
+
+
+def _trailing_comma(text: str, i: int) -> bool:
+    j = i + 1
+    while j < len(text) and text[j] in " \t\r\n":
+        j += 1
+    return j < len(text) and text[j] in "}]"
+
+
 def _strip_jsonc(text: str) -> str:
-    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
-    text = re.sub(r"(?m)^\s*//.*$", "", text)
-    text = re.sub(r"(?m)(?<=[,{\[\s])//[^\"\n]*$", "", text)
-    return re.sub(r",(\s*[}\]])", r"\1", text)
+    """JSONC to JSON: comments and trailing commas go, string contents stay
+    (a URL's `//` or a quote inside a comment must not confuse it)."""
+    out: list[str] = []
+    i = 0
+    while i < len(text):
+        c = text[i]
+        if c == '"':
+            end = _string_end(text, i)
+            out.append(text[i:end])
+            i = end
+            continue
+        skip_to = _comment_end(text, i)
+        if skip_to >= 0:
+            i = skip_to
+            continue
+        if c != "," or not _trailing_comma(text, i):
+            out.append(c)
+        i += 1
+    return "".join(out)
 
 
-def _logs_enabled(host_config: Path) -> bool:
-    """Whether the wrangler config turns Workers Logs on."""
+def _logs_enabled(host_config: Path) -> bool | None:
+    """Whether the wrangler config turns Workers Logs on; None when the
+    file cannot be parsed, so the caller can say so instead of assuming off."""
     text = host_config.read_text(encoding="utf-8", errors="replace")
-    if host_config.suffix == ".toml":
-        section = re.search(r"(?ms)^\[observability(?:\.logs)?\]\s*$(.*?)(?=^\[|\Z)", text)
-        return bool(section and re.search(r"(?m)^\s*enabled\s*=\s*true", section.group(1)))
-    if host_config.name.startswith("wrangler"):
-        try:
-            data = json.loads(_strip_jsonc(text))
-        except ValueError:
-            return False
-        obs = data.get("observability") or {}
-        if obs.get("enabled") is True:
-            return True
-        return bool((obs.get("logs") or {}).get("enabled") is True)
-    return False
+    if not host_config.name.startswith("wrangler"):
+        return False
+    try:
+        data = tomllib.loads(text) if host_config.suffix == ".toml" else json.loads(_strip_jsonc(text))
+    except (ValueError, tomllib.TOMLDecodeError):
+        return None
+    obs = data.get("observability") if isinstance(data, dict) else None
+    if not isinstance(obs, dict):
+        return False
+    if obs.get("enabled") is True:
+        return True
+    logs = obs.get("logs")
+    return isinstance(logs, dict) and logs.get("enabled") is True
 
 
 def _csp_rules() -> list[dict]:
@@ -184,18 +235,34 @@ def _third_party_origins(rules: list[dict]) -> set[str]:
 
 
 def _hostname(origin: str) -> str:
-    return re.sub(r"^https?://", "", origin).split("/")[0].split(":")[0].lower()
+    host = re.sub(r"^https?://", "", origin).split("/")[0].split(":")[0].lower()
+    return host.removeprefix("*.")
+
+
+def _service_names(hostname: str) -> list[str]:
+    """The words a page can use for a hostname: every label that is not
+    generic and not the TLD, plus the operator an alias names. The first is
+    the most specific (`cdnjs` before `cloudflare`)."""
+    labels = hostname.split(".")[:-1]
+    names = [label for label in labels if label not in GENERIC_LABELS] or labels[:1]
+    names += [SERVICE_ALIASES[n] for n in names if n in SERVICE_ALIASES]
+    return names
 
 
 def _short_name(hostname: str) -> str:
-    labels = hostname.split(".")
-    for label in labels[:-1]:
-        if label not in GENERIC_LABELS:
-            return label
-    return labels[0]
+    return _service_names(hostname)[0]
 
 
 # ── the page ────────────────────────────────────────────────────────
+
+
+def applies(root: Path | None = None) -> bool:
+    """Whether the check runs here: the profile keeps it and there is host
+    evidence (a host config file or `urls.production`)."""
+    if profiles.check_is_disabled(CHECK_NAME):
+        return False
+    root = root or Path.cwd()
+    return _host_config(root) is not None or bool(config.get("urls.production"))
 
 
 def resolve_page(root: Path | None = None) -> tuple[Path | None, str | None]:
@@ -221,9 +288,9 @@ def page_url(root: Path | None = None) -> str | None:
     """The URL path the statement is served at, for the smoke-test link
     assertion: `privacy.url` when set, else derived from the page's name
     (`privacy.html` → `/privacy.html`, anything else → `/privacy/`).
-    None when opted out, when there is no page, or when
-    `privacy.require_link` is false."""
-    if not config.get_bool("privacy.require_link", True):
+    None when the check does not apply here (see `applies`), when opted
+    out, when there is no page, or when `privacy.require_link` is false."""
+    if not config.get_bool("privacy.require_link", True) or not applies(root):
         return None
     configured = config.get("privacy.url", "auto")
     if configured and str(configured).strip() not in {"", "auto"}:
@@ -263,18 +330,21 @@ def _check_origins(text: str, origins: set[str], page: Path) -> list[dict]:
     issues = []
     for origin in sorted(origins):
         host = _hostname(origin)
-        short = _short_name(host)
-        if host in low or re.search(rf"\b{re.escape(short)}\b", low):
+        names = _service_names(host)
+        if host in low or any(re.search(rf"\b{re.escape(n)}\b", low) for n in names):
             continue
         issues.append(_issue(
             "third-party",
             f"`{page}` does not name `{host}`, which the CSP lets pages reach",
-            f"Name `{host}` (or `{short}`) in `{page}` and say what reaches it; the visitor's IP does, at least.",
+            f"Name `{host}` (or {' / '.join(f'`{n}`' for n in names)}) in `{page}` and say what reaches it; the visitor's IP does, at least.",
         ))
     return issues
 
 
-def _check_logs(text: str, logs_on: bool, host_config: Path, page: Path) -> list[dict]:
+def _check_logs(text: str, logs_on: bool | None, host_config: Path, page: Path) -> list[dict]:
+    if logs_on is None:
+        output.warn(f"{host_config} could not be parsed, so whether Workers Logs are on is unknown; the logs rule was not applied.")
+        return []
     if logs_on and not LOGS_RE.search(text):
         return [_issue(
             "logs",
@@ -300,7 +370,7 @@ def _evaluate(root: Path, page: Path, host_config: tuple[Path, str] | None) -> t
     names += [str(n) for n in (config.get("privacy.hosts", []) or [])]
     rules = _csp_rules()
     origins = _third_party_origins(rules)
-    logs_on = bool(host_config and _logs_enabled(host_config[0]))
+    logs_on = _logs_enabled(host_config[0]) if host_config else False
     rel = page.relative_to(root) if page.is_absolute() else page
     issues = _check_names(text, names, rel)
     issues += _check_logs(text, logs_on, host_config[0].relative_to(root) if host_config else Path("-"), rel)
@@ -396,7 +466,7 @@ def run(args: list[str] | None = None) -> int:
         return 0
     root = Path.cwd()
     host_config = _host_config(root)
-    if host_config is None and not config.get("urls.production"):
+    if not applies(root):
         output.info("Privacy statement check: no hosting config (wrangler, netlify.toml, vercel.json) and no urls.production, so skipping.")
         return 0
     page, note = resolve_page(root)

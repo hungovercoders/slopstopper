@@ -150,8 +150,9 @@ with no evidence it skips. **Fails unless:**
 - when wrangler turns Workers Logs on, it mentions logs
 - every third-party origin a fetch directive in `headers.source` allows
   (the same parse as the CSP exceptions check) is named: its hostname, or
-  its distinguishing label (`cdnjs` for `cdnjs.cloudflare.com`, `GitHub`
-  for `api.github.com`). This is what turns boilerplate into a true
+  any label of it that identifies a service (`cdnjs` or `Cloudflare` for
+  `cdnjs.cloudflare.com`, `GitHub` for `api.github.com`, `Google` for
+  `fonts.gstatic.com`). This is what turns boilerplate into a true
   statement, and why a new embed is a change to the page in the same PR
 - it carries a date, ISO or long form, so a stale statement shows its age
 

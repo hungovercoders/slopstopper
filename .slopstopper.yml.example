@@ -130,7 +130,7 @@ headers:
 # ui) and host evidence (wrangler.*, netlify.toml, vercel.json, or
 # urls.production). It fails unless the page names the host, every
 # third-party origin in headers.source's fetch directives (its hostname
-# or its distinguishing label: `cdnjs`, `giscus`), Workers Logs when
+# or a label that identifies the service: `cdnjs`, `cloudflare`, `giscus`), Workers Logs when
 # wrangler turns them on, and a date.
 privacy:
   # Repo path of the statement. `auto` takes the first privacy.<ext> or
@@ -139,7 +139,8 @@ privacy:
   page: auto
   # URL path it is served at. `auto` derives it from the page's name
   # (privacy.html → /privacy.html, anything else → /privacy/). The smoke
-  # test asserts every audited page links to it.
+  # test asserts every audited page links to it, in any of its spellings
+  # (/privacy, /privacy/, /privacy.html), wherever this check applies.
   url: auto
   # false drops that smoke assertion.
   require_link: true

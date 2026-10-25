@@ -159,6 +159,18 @@ def test_the_distinguishing_label_is_enough(site):
     assert privacy.run() == 0
 
 
+def test_any_service_label_or_its_operator_is_enough(site):
+    page = site / "app/privacy.html"
+    page.write_text(GOOD_PAGE.replace("Cloudflare,", "Cloudflare (which also serves the Turnstile challenge and fonts via Google),"))
+    (site / "worker/headers.json").write_text(json.dumps([{"for": "/*", "values": {"Content-Security-Policy":
+        "default-src 'self'; script-src https://challenges.cloudflare.com; font-src https://fonts.gstatic.com; connect-src https://*.sentry.io"}}]))
+    assert privacy.run() == 1
+    assert _issues() == ["third-party"]
+    assert json.loads(Path(".ss/reports/privacy/privacy-report.json").read_text())["issues"][0]["message"].count("sentry.io") == 1
+    page.write_text(page.read_text().replace("via Google)", "via Google; errors go to Sentry)"))
+    assert privacy.run() == 0
+
+
 def test_extra_hosts_from_config_are_required(site, write_config, capsys):
     write_config("profile: ui\nheaders:\n  source: worker/headers.json\n  format: json\nprivacy:\n  hosts: [Fastly]\n")
     assert privacy.run() == 1
@@ -179,6 +191,38 @@ def test_workers_logs_on_in_toml(site):
     assert privacy._logs_enabled(site / "wrangler.toml") is True
     (site / "wrangler.toml").write_text('name = "site"\n\n[observability]\nenabled = false\n')
     assert privacy._logs_enabled(site / "wrangler.toml") is False
+
+
+def test_jsonc_strings_and_comments_do_not_confuse_the_parse():
+    text = (
+        '{\n'
+        '  "name": "s", // see "docs"\n'
+        '  "url": "https://x.y/z", /* "quoted" */\n'
+        '  "observability": { "logs": { "enabled": true, }, },\n'
+        '}\n'
+    )
+    assert json.loads(privacy._strip_jsonc(text)) == {"name": "s", "url": "https://x.y/z", "observability": {"logs": {"enabled": True}}}
+
+
+@pytest.mark.parametrize("text, expected", [
+    ('[observability] # comment\nenabled = true\n', True),
+    ('observability = { enabled = true }\n', True),
+    ('[observability]\nenabled = false\n[observability.logs]\nenabled = true\n', True),
+    ('observability.enabled = true\n', True),
+    ('[observability]\nenabled = false\n', False),
+    ('name = "site"\n', False),
+])
+def test_workers_logs_in_every_toml_shape(site, text, expected):
+    (site / "wrangler.toml").write_text(text)
+    assert privacy._logs_enabled(site / "wrangler.toml") is expected
+
+
+def test_an_unparseable_wrangler_config_is_said_not_assumed_off(site, capsys):
+    (site / "wrangler.jsonc").write_text('{ "observability": { "enabled": true ')
+    assert privacy._logs_enabled(site / "wrangler.jsonc") is None
+    (site / "app/privacy.html").write_text(GOOD_PAGE.replace("and no per-request logs", ""))
+    assert privacy.run() == 0
+    assert "could not be parsed" in capsys.readouterr().out
 
 
 def test_wrangler_one_directory_down_counts(isolated_cwd, write_config):
@@ -236,6 +280,21 @@ def test_page_url_is_derived_from_the_page_name(site, write_config):
 def test_smoke_passes_the_privacy_url_to_the_spec(site):
     env = smoke._build_env("http://localhost:8099", ci_mode=False)
     assert env["SMOKE_PRIVACY_URL"] == "/privacy.html"
+
+
+def test_smoke_link_rule_applies_only_where_the_check_does(site, write_config):
+    """A `library` repo with a stray privacy.md, or a ui repo with no host
+    evidence, must not start failing smoke on every page after a CLI bump."""
+    write_config("profile: library\nheaders:\n  source: worker/headers.json\n  format: json\n")
+    config.reload()
+    assert privacy.page_url() is None
+    assert "SMOKE_PRIVACY_URL" not in smoke._build_env("http://localhost:8099", ci_mode=False)
+    write_config("profile: ui\n")
+    config.reload()
+    (site / "wrangler.jsonc").unlink()
+    assert privacy.page_url() is None
+    (site / "wrangler.jsonc").write_text(WRANGLER_LOGS_OFF)
+    assert privacy.page_url() == "/privacy.html"
 
 
 def test_smoke_omits_the_privacy_url_when_there_is_no_page(isolated_cwd, write_config):
