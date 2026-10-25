@@ -1,7 +1,10 @@
 # Lesson 4: Docs structure: every doc has a route
 
-**Goal.** Add a doc nobody routes to, watch it fail, route it, and
-understand the hop and line limits.
+<!-- learn-sandbox: demo -->
+
+**Goal.** Find the doc in the demo that nothing routes to, see why a
+"see also" link does not count, route it, and understand the hop and
+line limits.
 
 ## Why this check
 
@@ -20,117 +23,100 @@ reads to the end; the fix for both is to split by concern and route each
 part. It is stdlib Python, reads every `.md` under `docs/`, and writes a
 report listing every reachable doc with its hop count.
 
-The course you are reading lives under `docs/` but is listed in
-`hygiene.docs.exclude`, so this check leaves it alone. Lessons are read
-in order by people, not routed to by agents.
-
 ## You will need
 
-The checkout from the [syllabus](README.md), with the CLI on PATH.
+The demo repo from the [syllabus](README.md), with the CLI on PATH.
 
 ## Steps
 
-### 1. See it green
-
-<!-- learn -->
-```sh
-task ss:hygiene:docs-structure
-```
-
-```
-🔍 Validating documentation structure…
-✅ Documentation structure is valid: all 33 docs are routed (21 excluded by hygiene.docs.exclude)
-```
-
-### 2. Break it
-
-Write a doc and route it from nowhere.
-
-<!-- learn -->
-```sh
-printf '# Hygiene notes\n\nScratch notes about the hygiene checks.\n' > docs/hygiene/NOTES.md
-```
-
-### 3. See it red
+### 1. See it red
 
 <!-- learn: fails -->
 ```sh
-task ss:hygiene:docs-structure
+slopstopper run hygiene:docs-structure
 ```
 
 ```
 🔍 Validating documentation structure…
 ❌ Found 1 structure violation(s)
-  - Unrouted doc: docs/hygiene/NOTES.md is not linked from AGENTS.md, the map, or a README above it. Add a route to docs/hygiene/README.md: 'Before you <do X>, read <doc> for <what it holds>'
-task: Failed to run task "ss:hygiene:docs-structure": exit status 1
+  - Unrouted doc: docs/runbooks/RELEASE.md is not linked from AGENTS.md, the map, or a README above it. Add a route to docs/README.md: 'Before you <do X>, read <doc> for <what it holds>'
+
+📁 Reports saved to: .ss/reports/docs/
+   • docs-structure-report.md
 ```
 
-The red line names the file, says which README should route it, and
-gives the route form. That is most of the fix.
+The red line names the file, says which file should route it, and
+gives the route form. That is most of the fix. The runbook is a good
+doc: it says how to cut a release, in two commands. Nobody will ever
+read it, because nothing says when to.
 
-### 4. Try a soft link, and see why it does not count
+### 2. Try a soft link, and see why it does not count
 
-Add a "see also" to the hygiene README. This is what most people do
-first.
+Add a "see also" to the map. This is what most people do first.
 
 <!-- learn: fails -->
 ```sh
-printf '\nSee also [NOTES.md](NOTES.md).\n' >> docs/hygiene/README.md
-task ss:hygiene:docs-structure
+printf '\nSee also [runbooks/RELEASE.md](runbooks/RELEASE.md).\n' >> docs/README.md
+slopstopper run hygiene:docs-structure
 ```
 
 ```
-❌ Found 1 structure violation(s)
-  - Unrouted doc: docs/hygiene/NOTES.md is linked from docs/hygiene/README.md without a trigger or 'read'. Add a route to docs/hygiene/README.md: 'Before you <do X>, read <doc> for <what it holds>'
+🔍 Validating documentation structure…
+❌ Found 2 structure violation(s)
+  - Unrouted doc: docs/runbooks/RELEASE.md is linked from docs/README.md without a trigger or 'read'. Add a route to docs/README.md: 'Before you <do X>, read <doc> for <what it holds>'
+  - docs/README.md line 21 → docs/runbooks/RELEASE.md: "See also [runbooks/RELEASE.md](runbooks/RELEASE.md)." is a soft route. A route agents follow names its trigger and says read: 'Before you <do X>, read <doc> for <what it holds>'.
 ```
 
-Still unrouted, and the message changed: the check found the link and
-is telling you it is soft. A link says a doc exists; a route says when
-to read it.
+Still unrouted, and now two findings instead of one: the check found
+the link, is telling you it is soft, and quotes the line. A link says a
+doc exists; a route says when to read it.
 
-### 5. Route it
+### 3. Route it
 
 Replace the soft link with a route: a trigger, the word "read", the
 file, and what it holds.
 
 <!-- learn -->
 ```sh
-git checkout docs/hygiene/README.md
-printf '\nBefore you tune a hygiene threshold, read [NOTES.md](NOTES.md) for the reasoning behind each default.\n' >> docs/hygiene/README.md
-task ss:hygiene:docs-structure
+git checkout docs/README.md
+printf '\nBefore you cut a release, read [runbooks/RELEASE.md](runbooks/RELEASE.md) for the tag, the push and what the tag message is for.\n' >> docs/README.md
+slopstopper run hygiene:docs-structure
 ```
 
 ```
-✅ Documentation structure is valid: all 34 docs are routed (21 excluded by hygiene.docs.exclude)
+🔍 Validating documentation structure…
+✅ Documentation structure is valid: all 4 docs are routed
 ```
 
-### 6. Read the report, then put the checkout back
+### 4. Read the report, then put the demo back
 
-The report lists every doc and how many hops it costs. Your new doc is
-two hops from `AGENTS.md`: the hygiene README is routed directly from
-there, so anything it routes is one hop further.
+The report lists every doc and how many hops it costs. The runbook is
+two hops from `AGENTS.md`: the map is routed directly from there, so
+anything the map routes is one hop further.
 
 <!-- learn -->
 ```sh
-grep NOTES .ss/reports/docs/docs-structure-report.md
-git checkout docs/hygiene/README.md
-rm docs/hygiene/NOTES.md
+grep RELEASE .ss/reports/docs/docs-structure-report.md
+git checkout docs/README.md
 ```
 
 ```
-| `docs/hygiene/NOTES.md` | 2 | `docs/hygiene/README.md` |
+| `docs/runbooks/RELEASE.md` | 2 | `docs/README.md` |
 ```
 
 ## Checkpoint
 
 <!-- learn -->
 ```sh
-slopstopper run hygiene:docs-structure | grep 'docs are routed'
+slopstopper run hygiene:docs-structure | grep 'Unrouted doc'
 ```
 
 ```
-✅ Documentation structure is valid: all 33 docs are routed (21 excluded by hygiene.docs.exclude)
+  - Unrouted doc: docs/runbooks/RELEASE.md is not linked from AGENTS.md, the map, or a README above it. Add a route to docs/README.md: 'Before you <do X>, read <doc> for <what it holds>'
 ```
+
+Red again, with the demo as it shipped, and you can write the one line
+that fixes it from memory.
 
 ## Exercise
 
@@ -140,17 +126,17 @@ without adding a file.
 <details>
 <summary>Solution</summary>
 
-Pad an existing routed doc past 300 lines, run, and revert:
+Pad a routed doc past 300 lines, run, and revert:
 
 ```sh
-yes '' | head -300 >> docs/hygiene/DOC_UPDATER.md
-task ss:hygiene:docs-structure
-git checkout docs/hygiene/DOC_UPDATER.md
+yes '' | head -300 >> docs/architecture.md
+slopstopper run hygiene:docs-structure
+git checkout docs/architecture.md
 ```
 
-The violation names the doc and its line count. The real fix is a split
-by concern, with a route to each part, never a bigger
-`max_doc_lines`.
+The violation names the doc and its line count, beside the unrouted
+runbook. The real fix is a split by concern, with a route to each part,
+never a bigger `max_doc_lines`.
 
 </details>
 
@@ -159,7 +145,8 @@ by concern, with a route to each part, never a bigger
 - [Documentation structure validation](../hygiene/README.md#documentation-structure-validation)
   in the hygiene README: every violation kind
 - [Excluding docs from the docs checks](../hygiene/README.md#excluding-docs-from-the-docs-checks):
-  `hygiene.docs.exclude`, which is how this course sits under `docs/`
+  `hygiene.docs.exclude`, which is how this course sits under
+  slopstopper's own `docs/`
 - Lesson 5 for the two checks that keep routed docs accurate and sized
 
 <details>
@@ -167,26 +154,25 @@ by concern, with a route to each part, never a bigger
 
 **Length.** 8 to 10 minutes.
 
-**Cold open (0:00).** `ls docs/` showing thirty files. "Which of these
-would an agent ever open?"
+**Cold open (0:00).** `ls docs/` on a repo with thirty files. "Which of
+these would an agent ever open?"
 
 **Talking points.**
 
 1. Why routes: an agent reads what it is routed to; a soft link is
    skipped; three hops; 300 lines.
-2. Green run. Write `NOTES.md`; red; the message says which README and
-   gives the form.
-3. The soft link: still red, different message. A link says a doc
-   exists; a route says when to read it.
-4. The route; green; the report's hop count.
-5. Clean up. Exercise: `doc_over_lines`.
+2. Red on the demo: the message says which file and gives the form.
+3. The soft link: two findings now, and the line quoted. A link says a
+   doc exists; a route says when to read it.
+4. The route; green; the report's hop count. Put the demo back.
+5. Exercise: `doc_over_lines`.
 
 **Shot list.** One terminal, 100x30, font size 16, the site's theme.
 `docs/learn/tapes/04.tape`. Zoom on the two different violation
 messages.
 
-**Chapters.** `0:00 Why` · `1:30 Green` · `2:30 Unrouted` ·
-`4:00 The soft link` · `5:30 The route` · `7:00 Exercise` ·
+**Chapters.** `0:00 Why` · `1:30 Unrouted` · `3:00 The soft link` ·
+`4:30 The route` · `6:00 Put it back` · `7:00 Exercise` ·
 `8:30 Next lesson`.
 
 </details>

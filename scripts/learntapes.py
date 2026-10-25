@@ -13,8 +13,11 @@ its lesson, and `--check` fails when one is stale, so a lesson edit
 without `task contributing:learn:tapes` is caught in CI.
 
 The tapes are recorded by demos/render.sh (`task contributing:learn:record`)
-in a scratch clone with the CLI on PATH, the same sandbox the harness
-uses, so the terminal in an episode shows what a reader sees.
+in the lesson's sandbox with the CLI on PATH, the demo repo for a check
+lesson or a scratch clone for the rest (the `# Sandbox:` line in each
+tape's header, from the lesson's `<!-- learn-sandbox -->` marker), the
+same sandboxes the harness uses, so the terminal in an episode shows
+what a reader sees.
 
 Usage:
     python scripts/learntapes.py                 # (re)write every tape
@@ -145,14 +148,17 @@ def render(page: Path) -> tuple[str, list[str]]:
     text = page.read_text(encoding="utf-8")
     title = text.splitlines()[0].lstrip("# ").strip()
     number = page.name[:2]
+    demo = "<!-- learn-sandbox: demo -->" in text
+    where = "the demo repo `slopstopper demo` writes" if demo else "a scratch clone of this repo"
     lines = [
         f"# {title}.",
         "# The terminal parts of the episode, generated from the lesson's",
         "# runnable blocks by scripts/learntapes.py: edit the lesson, then",
         "# `task contributing:learn:tapes`. Record it with",
         f"# `task contributing:learn:record -- {number}` (demos/render.sh), which",
-        "# starts the shell in a scratch clone with the CLI on PATH, fills in",
-        f"# the theme from demos/theme.json, and writes dist/learn/{number}.mp4.",
+        f"# starts the shell in {where} with the CLI on PATH, fills",
+        f"# in the theme from demos/theme.json, and writes dist/learn/{number}.mp4.",
+        f"# Sandbox: {'demo' if demo else 'checkout'}",
         f"Output demos/.frames/{number}/",
         "Set Shell bash",
         f"Set FontSize {FONT_SIZE}",

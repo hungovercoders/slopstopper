@@ -10,14 +10,31 @@ and the fix.
 
 ## You will need
 
-Until the lessons move onto the repo `slopstopper demo` writes (issue
-#486), they run in a checkout of this repo, which is the reference install and has every check
-configured. Two things must be on your machine first: [mise](https://mise.jdx.dev),
-installed and activated in your shell, which reads `mise.toml` and
-installs the pinned `task` and `node`; and Python 3.11 or newer as
-`python3` on PATH, because the CLI's virtual environment is created with
-the system interpreter and `slopstopper-cli` requires 3.11+. Then clone,
-install the toolchain, and put the CLI on your PATH:
+The lessons about the checks (2 to 16) run in a small repo the CLI
+writes for you, so they need the CLI and nothing of this repository.
+Python 3.11 or newer, then:
+
+```sh
+pipx install slopstopper-cli       # or: pip install --user slopstopper-cli
+slopstopper demo                   # writes slopstopper-demo/, a status page with one finding per check
+cd slopstopper-demo
+git init -q -b main && git add -A && git commit -q -m "lantern"
+```
+
+The demo is "Lantern", a two-page status page laid out the way the
+suite expects, deliberately a little slopped: each check lesson opens
+on a red check already in it, reads the report, fixes the finding, and
+puts the demo back with `git checkout`. The commit is what lesson 6
+scans. Each lesson says which external tool it needs beyond the CLI
+(lesson 6 `gitleaks`, lesson 7 `semgrep`, lesson 8 `trivy`, lesson 10
+Docker, lessons 11 to 15 `node`); `slopstopper doctor` lists what is
+missing.
+
+The lessons about the suite itself (1, 17, 18, 19 and 20: the
+installer, the workflows, the skills, profiles and the source) run in a
+checkout of this repository, which is the reference install. For those,
+[mise](https://mise.jdx.dev) must be installed and activated in your
+shell, then:
 
 ```sh
 git clone https://github.com/hungovercoders/slopstopper.git
@@ -29,10 +46,8 @@ slopstopper --version
 ```
 
 The `task ss:*` shims call whichever `slopstopper` is on PATH; that last
-`export` points them at the editable install so a lesson runs HEAD. Each
-lesson says which external tools it needs beyond that (lesson 6 needs
-`gitleaks`, lesson 7 `semgrep`, lesson 10 Docker); `slopstopper doctor`
-lists what is missing.
+`export` points them at the editable install so a lesson runs HEAD.
+Lesson 0 reads from either.
 
 ## How the lessons work
 
@@ -43,17 +58,18 @@ you are:
 |---|---|
 | **Goal** | One sentence: what you can do when you finish. |
 | **Why this check** | The slop it stops and the tool behind it. |
-| **You will need** | Anything beyond the checkout above. |
-| **Steps** | Numbered, each with the command to type and the output to expect. Copy, paste, compare. Most lessons run the same loop: green, break it, red, read the report, fix, green. |
+| **You will need** | Which of the two sandboxes above, and any tool beyond the CLI. |
+| **Steps** | Numbered, each with the command to type and the output to expect. Copy, paste, compare. Most check lessons run the same loop: red on the demo as shipped, read the report, fix, green, put the demo back. |
 | **Checkpoint** | One command whose output proves the lesson took. |
 | **Exercise** | One task to do on your own, with a collapsed solution. |
 | **Going further** | Links into the docs for the depth the lesson skipped. |
 | **Episode script** | Collapsed at the end: what the video says and shows, with chapter timestamps. |
 
 Runnable blocks are marked, and `task contributing:learn:check` runs
-them in order in a scratch clone, locally and in CI (on every push to
-main, nightly, and on a pull request that changes the course), so a
-lesson cannot quietly stop working when the CLI changes. The sample output comes from the build the lesson was written
+them in order in a sandbox (the demo repo or a scratch clone, as each
+lesson's marker says), locally and in CI (on every push to main,
+nightly, and on a pull request that changes the course), so a lesson
+cannot quietly stop working when the CLI changes. The sample output comes from the build the lesson was written
 against; a later release can word a hint differently, but the commands
 and the verdicts are the same.
 
@@ -91,7 +107,7 @@ lesson's terminal parts, generated from its runnable blocks.
 
 Start with [lesson 0](00-what-slop-is.md), or jump to
 [lesson 2](02-first-check-complexity.md) if you already know why you are
-here and have the checkout above.
+here and have the demo above.
 
 ## Writing a lesson
 

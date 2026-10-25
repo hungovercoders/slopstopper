@@ -1,7 +1,9 @@
 # Lesson 7: Static analysis
 
-**Goal.** Write one unsafe line, watch Semgrep flag it, read the
-finding, and fix the code rather than the rule.
+<!-- learn-sandbox: demo -->
+
+**Goal.** Find the one unsafe line in the demo's script, read the
+finding Semgrep raised for it, and fix the code rather than the rule.
 
 ## Why this check
 
@@ -34,7 +36,7 @@ happened is not a clean scan.
 
 ## You will need
 
-- The checkout from the [syllabus](README.md), with the CLI on PATH.
+- The demo repo from the [syllabus](README.md), with the CLI on PATH.
 - `semgrep` on PATH. `pip install semgrep` or `brew install semgrep`;
   the check's own workflow installs it with pip, and this course's CI
   does the same. The first run fetches rules from the registry, so it
@@ -51,11 +53,11 @@ semgrep --version
 
 ## Steps
 
-### 1. See it green
+### 1. See it red
 
-<!-- learn -->
+<!-- learn: fails -->
 ```sh
-task ss:security:sast
+slopstopper run security:sast
 ```
 
 ```
@@ -63,74 +65,25 @@ task ss:security:sast
 │ Scan Summary │
 └──────────────┘
 ✅ Scan completed successfully.
- • Findings: 15 (15 blocking)
- • Rules run: 508
- • Targets scanned: 286
+ • Findings: 3 (3 blocking)
+ • Rules run: 338
+ • Targets scanned: 22
 🔍 Running SAST analysis…
-⚠️  Found 15 finding(s): 0 error(s), 15 warning(s)
-ℹ️  none at or above `fail_on: error`, so the check does not fail
-
-📁 Reports saved to: .ss/reports/sast/
-   • sast-report.md
-```
-
-Trimmed to the summary. Semgrep ran about five hundred rules over the
-whole checkout and found fifteen things, all warnings, so the check
-passes; Semgrep's own "15 blocking" is its word for "would fail at its
-default setting", and the check's line underneath is the one that
-counts. The warnings are real and worth a look later (the report lists
-them); none is above the line.
-
-### 2. Write the line that always looks fine
-
-A script that renders a file to PDF by shelling out. It takes the path
-from the command line, which is to say from wherever the command line
-came from.
-
-<!-- learn -->
-```sh
-mkdir -p scratch
-cat > scratch/report.py <<'EOF'
-import subprocess
-import sys
-
-
-def render(path):
-    cmd = "wkhtmltopdf " + path + " out.pdf"
-    subprocess.run(cmd, shell=True, check=True)
-
-
-if __name__ == "__main__":
-    render(sys.argv[1])
-EOF
-```
-
-Read it once as a reviewer would. It does what it says. Nothing in it
-is unusual. A path containing `; rm -rf ~` is also a path.
-
-### 3. See it red
-
-<!-- learn: fails -->
-```sh
-task ss:security:sast
-```
-
-```
-🔍 Running SAST analysis…
-⚠️  Found 16 finding(s): 1 error(s), 15 warning(s)
+⚠️  Found 3 finding(s): 1 error(s), 2 warning(s)
 ❌ 1 finding(s) at or above `fail_on: error`, so the check fails
 
 📁 Reports saved to: .ss/reports/sast/
    • sast-report.md
-task: Failed to run task "ss:security:sast": exit status 1
 ```
 
-One new finding, and it is an ERROR, so the count above the line went
-from zero to one and the check fails. The file was not committed; Semgrep
-scans what is on disk and not ignored, so the finding arrives before the
-commit does.
+Trimmed to the summary. Semgrep ran a few hundred rules over the
+twenty-two files git tracks and found three things: one ERROR, which is
+above the line and fails the check, and two WARNINGs, which are
+reported and do not. Semgrep's own "3 blocking" is its word for "would
+fail at its default setting"; the check's line underneath is the one
+that counts.
 
-### 4. Read the finding
+### 2. Read the finding
 
 <!-- learn -->
 ```sh
@@ -140,7 +93,7 @@ sed -n '/| Rule/,/^$/p' .ss/reports/sast/sast-report.md | head -3
 ```
 | Rule | Severity | Location | Message |
 |------|----------|----------|---------|
-| python.lang.security.audit.subprocess-shell-true.subprocess-shell-true | ERROR | `scratch/report.py:7` | Found 'subprocess' function 'run' with 'shell=True'. This is dangerous becaus... |
+| python.lang.security.audit.subprocess-shell-true.subprocess-shell-true | ERROR | `scripts/status.py:80` | Found 'subprocess' function 'run' with 'shell=True'. This is dangerous becaus... |
 ```
 
 Three things to read, in this order. The **rule id** is a path into
@@ -151,33 +104,60 @@ which is where you go to read the whole rule and its references. The
 the shell treats as syntax is executed. The full message in the report
 also says what to do instead, which is the next step.
 
-### 5. Fix the code, not the rule
-
-The fix the rule asks for: pass the command as a list and drop
-`shell=True`. There is no shell, so there is no shell syntax, and a path
-is only ever a path.
+### 3. Read the line as a reviewer would
 
 <!-- learn -->
 ```sh
-cat > scratch/report.py <<'EOF'
-import subprocess
-import sys
-
-
-def render(path):
-    subprocess.run(["wkhtmltopdf", path, "out.pdf"], check=True)
-
-
-if __name__ == "__main__":
-    render(sys.argv[1])
-EOF
+sed -n '76,80p' scripts/status.py
 ```
 
-The other way out, when a pattern is genuinely safe where it stands, is
-a suppression **with a reason** on the line itself:
+```
+        state = badge(probe(url))
+        page = update(page, name, state)
+        summary.append(f"{name}={state}")
+    PAGE.write_text(page)
+    subprocess.run("git commit -qam 'status: " + " ".join(summary) + "'", shell=True, check=False)
+```
+
+It does what it says: commit the refreshed page with a message built
+from each service's state. Nothing in it is unusual. The states come
+from `badge`, which today returns one of four words; the day it
+returns something with a quote in it, the commit message is shell
+syntax. A reviewer reading for intent passes this line every time.
+Semgrep reads for shape.
+
+### 4. Fix the code, not the rule
+
+The fix the rule asks for: pass the command as a list and drop
+`shell=True`. There is no shell, so there is no shell syntax, and a
+message is only ever a message.
+
+<!-- learn -->
+```sh
+python3 - <<'PY'
+import pathlib
+p = pathlib.Path('scripts/status.py'); s = p.read_text()
+old = '''    subprocess.run("git commit -qam 'status: " + " ".join(summary) + "'", shell=True, check=False)'''
+p.write_text(s.replace(old, '''    subprocess.run(["git", "commit", "-qam", "status: " + " ".join(summary)], check=False)'''))
+PY
+slopstopper run security:sast
+```
+
+```
+🔍 Running SAST analysis…
+⚠️  Found 2 finding(s): 0 error(s), 2 warning(s)
+ℹ️  none at or above `fail_on: error`, so the check does not fail
+
+📁 Reports saved to: .ss/reports/sast/
+   • sast-report.md
+```
+
+Green, and honest about it: the two warnings are still reported. The
+other way out, when a pattern is genuinely safe where it stands, is a
+suppression **with a reason** on the line itself:
 
 ```python
-subprocess.run(cmd, shell=True, check=True)  # nosemgrep: python.lang.security.audit.subprocess-shell-true.subprocess-shell-true -- cmd is a constant from the table above
+subprocess.run(cmd, shell=True, check=False)  # nosemgrep: python.lang.security.audit.subprocess-shell-true.subprocess-shell-true -- cmd is a constant from the table above
 ```
 
 The rule id is spelled out, so the suppression covers one rule on one
@@ -186,49 +166,58 @@ see it. That is the honest exception. Turning the rule off for the repo
 is not; neither is lowering `fail_on` because one finding was
 inconvenient.
 
-## Checkpoint
+### 5. Put the demo back
 
 <!-- learn -->
 ```sh
+git checkout scripts/status.py
+```
+
+## Checkpoint
+
+<!-- learn: fails -->
+```sh
 slopstopper run security:sast >/dev/null 2>&1; echo "exit $?"
-rm -rf scratch
 ```
 
 ```
-exit 0
+exit 1
 ```
 
-Back to the fifteen warnings and nothing above the line. The `rm` puts
-the checkout back for the next lesson.
+Red again, with the demo as it shipped: one ERROR on one line, and you
+know the fix is a list.
 
 ## Exercise
 
-Move the line. Make the fifteen warnings block, see the check fail on the
-checkout as it stands, and put the line back.
+Move the line. Make the two warnings block as well, read what they
+are, and put the line back.
 
 <details>
 <summary>Solution</summary>
 
 ```sh
 printf 'security:\n  sast:\n    fail_on: warning\n' >> .slopstopper.yml
-task ss:security:sast; echo "exit $?"
+slopstopper run security:sast; echo "exit $?"
+sed -n '/| Rule/,/^$/p' .ss/reports/sast/sast-report.md | tail -4
 git checkout .slopstopper.yml
 ```
 
-The run ends `❌ 15 finding(s) at or above `fail_on: warning`, so the
-check fails` and `exit 1`, with no change to the code. The knob is a
-policy decision, so it lives in the one config file you own, and the
-same line moves the pre-push hook and CI together, because the check is
-the gate in all three places. Before you raise the bar for real, read
-the fifteen: some want the suppression-with-a-reason from step 5, and
-the rest want fixing.
+The run ends `❌ 3 finding(s) at or above `fail_on: warning`, so the
+check fails` and `exit 1`, with no change to the code. The two warnings
+are `missing-integrity` on the two pages' stylesheet links: a
+`<link rel="stylesheet">` with no `integrity` hash. For a stylesheet
+served from the same origin that is noise; for one from a CDN it is
+the thing that stops a tampered file loading. The knob is a policy
+decision, so it lives in the one config file you own, and the same line
+moves the pre-push hook and CI together, because the check is the gate
+in all three places.
 
 </details>
 
 ## Going further
 
 - [SAST](../security/SAST.md): the severity table, `fail_on`, and the
-  suppressions this repo carries with the reason for each
+  suppressions slopstopper's own repo carries with the reason for each
 - [Semgrep's registry](https://semgrep.dev/r), where every rule id in a
   report resolves to the rule, its references and its fix guidance
 - Lesson 6, the other static security check, which scans history rather
@@ -241,27 +230,27 @@ the rest want fixing.
 
 **Length.** 8 to 10 minutes.
 
-**Cold open (0:00).** A ten-line script in a diff. "LGTM." Type a
-filename with a semicolon in it. Cut to the terminal doing something
-else.
+**Cold open (0:00).** The five-line commit function in a diff. "LGTM."
+Type a service state with a quote in it. Cut to the terminal doing
+something else.
 
 **Talking points.**
 
 1. Why: the patterns reviewers skim past; shape, not text; why
    generated code reproduces them.
-2. Green on the checkout; what "15 blocking" means and what the check's
-   line means.
-3. The script; read it as a reviewer; red.
-4. The finding: rule id, location, message; the registry.
-5. Fix the code; the suppression with a reason; what is not honest.
-6. Exercise: move the line, see the warnings block, put it back.
+2. Red on the demo; one error above the line, two warnings below it;
+   what "3 blocking" means and what the check's line means.
+3. The finding: rule id, location, message; the registry.
+4. The line as a reviewer reads it; the day the input changes.
+5. Fix the code; the warnings stay; the suppression with a reason;
+   what is not honest.
+6. Exercise: move the line, read the warnings, put it back.
 
 **Shot list.** One terminal, 100x30, font size 16, the site's theme.
-`docs/learn/tapes/07.tape`. Zoom on `0 error(s)` becoming `1 error(s)`,
+`docs/learn/tapes/07.tape`. Zoom on `1 error(s)` becoming `0 error(s)`,
 and on the rule id in the report row.
 
-**Chapters.** `0:00 Why` · `1:30 Green` · `2:30 The line` ·
-`3:30 Red` · `4:30 The finding` · `6:00 Fix` · `7:30 Exercise` ·
-`8:40 Next lesson`.
+**Chapters.** `0:00 Why` · `1:30 Red` · `2:30 The finding` ·
+`4:00 The line` · `5:00 Fix` · `7:00 Exercise` · `8:40 Next lesson`.
 
 </details>

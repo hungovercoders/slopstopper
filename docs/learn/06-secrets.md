@@ -1,7 +1,10 @@
 # Lesson 6: Secrets
 
-**Goal.** Commit a fake key, watch Gitleaks catch it, see why deleting
-it in a later commit does not help, and learn the fix that does.
+<!-- learn-sandbox: demo -->
+
+**Goal.** Commit a fake private key to the demo, watch Gitleaks catch
+it, see why deleting it in a later commit does not help, and learn the
+fix that does.
 
 ## Why this check
 
@@ -9,7 +12,7 @@ it in a later commit does not help, and learn the fix that does.
 credential in the repo. It arrives in ordinary ways. An agent writes a
 config file and fills the key field with something key-shaped "as an
 example". A person commits `.env` because it was not in `.gitignore`
-yet. A test fixture carries a token that was real once. The moment the
+yet. A deploy key is copied into the tree "for now". The moment the
 push lands, the credential is in a place it can be read from, and on a
 public repo it is being read within minutes. Rotation is the only
 remedy, and rotation is cheaper the sooner the leak is known. So the
@@ -33,7 +36,9 @@ which `slopstopper doctor` reports with an install hint.
 
 ## You will need
 
-- The checkout from the [syllabus](README.md), with the CLI on PATH.
+- The demo repo from the [syllabus](README.md), with the CLI on PATH,
+  committed as the syllabus shows: this lesson is about history, so the
+  demo needs some.
 - `gitleaks` on PATH. `brew install gitleaks`, or a release binary from
   [github.com/gitleaks/gitleaks](https://github.com/gitleaks/gitleaks/releases);
   the suite's own workflow pins one and this course's CI does the same.
@@ -51,16 +56,20 @@ gitleaks version
 
 ### 1. See it green
 
+The demo ships with no secret in it, on purpose: a key-shaped string in
+a repository is found by every scan of that repository, so this is the
+one finding you add yourself.
+
 <!-- learn -->
 ```sh
-task ss:security:secrets
+slopstopper run security:secrets
 ```
 
 ```
+4:52PM INF 1 commits scanned.
+4:52PM INF scanned ~20367 bytes (20.37 KB) in 75.3ms
+4:52PM INF no leaks found
 🔑 Running secrets detection…
-9:18AM INF 52 commits scanned.
-9:18AM INF scanned ~2854337 bytes (2.85 MB) in 516ms
-9:18AM INF no leaks found
 ✅ No secrets detected
 
 📁 Reports saved to: .ss/reports/secrets/
@@ -68,24 +77,25 @@ task ss:security:secrets
 ```
 
 Gitleaks says what it scanned: every commit, not the files on disk.
+One commit, because that is how many the demo has.
 
 ### 2. Write a fake key, and see that an uncommitted file is not scanned
 
-The key below is built from two halves so that this page itself does
-not trip the check when it is committed to this repository. The file
-it writes holds a twenty-character `AKIA…` string, which is what the
-`aws-access-token` rule matches. It is not a real key.
+The key below has the header and the shape of an RSA private key and
+nothing else; the body is filler. It is what the `private-key` rule
+matches, and it opens nothing. The header's `%s` is filled in by
+`printf`, so this page itself does not carry the shape and the course
+repository stays clean when the page is committed.
 
 <!-- learn -->
 ```sh
-mkdir -p scratch
-printf 'AWS_ACCESS_KEY_ID=AKIA%s\n' LEARNSLOPSTOPPER > scratch/.env.example
-task ss:security:secrets
+printf -- '-----BEGIN %s PRIVATE KEY-----\nMIIEowIBAAKCAQEAnotarealkeyjusttheshapeofonefortheslopstopperlesson0000\n0000000000000000000000000000000000000000000000000000000000000000000000\n-----END %s PRIVATE KEY-----\n' RSA RSA > deploy.pem
+slopstopper run security:secrets
 ```
 
 ```
-9:18AM INF 52 commits scanned.
-9:18AM INF no leaks found
+4:52PM INF 1 commits scanned.
+4:52PM INF no leaks found
 ✅ No secrets detected
 ```
 
@@ -97,23 +107,23 @@ committed, which is also the moment it starts to matter.
 
 <!-- learn -->
 ```sh
-git add scratch
-git commit -q -m "wip: config"
+git add deploy.pem
+git commit -q -m "wip: deploy key"
 ```
 
 <!-- learn: fails -->
 ```sh
-task ss:security:secrets
+slopstopper run security:secrets
 ```
 
 ```
-9:18AM INF 53 commits scanned.
-9:18AM WRN leaks found: 1
+4:53PM INF 2 commits scanned.
+4:53PM WRN leaks found: 1
+🔑 Running secrets detection…
 ⚠️  Found 1 secret(s). Revoke and remove them immediately
 
 📁 Reports saved to: .ss/reports/secrets/
    • secrets-report.md
-task: Failed to run task "ss:security:secrets": exit status 1
 ```
 
 ### 4. Read the report
@@ -126,7 +136,7 @@ sed -n '/| Rule/,/^$/p' .ss/reports/secrets/secrets-report.md
 ```
 | Rule | Location | Commit | Description |
 |------|----------|--------|-------------|
-| aws-access-token | `scratch/.env.example:1` | c0597f9c | Identified a pattern that may indicate AWS credentials, r... |
+| private-key | `deploy.pem:1` | bbc378cf | Identified a Private Key, which may compromise cryptograp... |
 ```
 
 The rule that matched, the file and line, and the commit. Not the
@@ -140,23 +150,25 @@ exists for.
 
 <!-- learn -->
 ```sh
-git rm -q scratch/.env.example
+git rm -q deploy.pem
 git commit -q -m "remove the key"
 ```
 
 <!-- learn: fails -->
 ```sh
-task ss:security:secrets
+slopstopper run security:secrets
 ```
 
 ```
-9:19AM WRN leaks found: 1
+4:53PM INF 2 commits scanned.
+4:53PM WRN leaks found: 1
 ⚠️  Found 1 secret(s). Revoke and remove them immediately
 ```
 
 The key is gone from the working tree and present in the repository.
 Anyone with a clone has it; `git log -p` shows it. The check is right
-to stay red.
+to stay red. (Gitleaks counts the commits that touch content, so the
+number is still two: the removal commit adds nothing to scan.)
 
 ### 6. Fix it
 
@@ -175,22 +187,23 @@ team knows about.
 <!-- learn -->
 ```sh
 git reset -q --hard HEAD~2
-task ss:security:secrets
+slopstopper run security:secrets
 ```
 
 ```
-9:19AM INF 52 commits scanned.
-9:19AM INF no leaks found
+4:53PM INF 1 commits scanned.
+4:53PM INF no leaks found
 ✅ No secrets detected
 ```
 
-Back to the commit count from step 1, and green.
+Back to the one commit from step 1, and green. The demo is exactly as
+it shipped.
 
 ## Checkpoint
 
 <!-- learn -->
 ```sh
-slopstopper run security:secrets >/dev/null; echo "exit $?"
+slopstopper run security:secrets >/dev/null 2>&1; echo "exit $?"
 ```
 
 ```
@@ -210,11 +223,10 @@ exception, and the honest way to say so is an allowlist in
 `.gitleaks.toml` at the repo root:
 
 ```sh
-mkdir -p scratch
-printf 'AWS_ACCESS_KEY_ID=AKIA%s\n' LEARNSLOPSTOPPER > scratch/.env.example
-git add scratch && git commit -q -m "wip: config"
-printf '[extend]\nuseDefault = true\n\n[allowlist]\ndescription = "Fixtures for the course"\npaths = [ """scratch/.*""" ]\n' > .gitleaks.toml
-task ss:security:secrets
+printf -- '-----BEGIN %s PRIVATE KEY-----\nMIIEowIBAAKCAQEAnotarealkeyjusttheshapeofonefortheslopstopperlesson0000\n0000000000000000000000000000000000000000000000000000000000000000000000\n-----END %s PRIVATE KEY-----\n' RSA RSA > deploy.pem
+git add deploy.pem && git commit -q -m "wip: deploy key"
+printf '[extend]\nuseDefault = true\n\n[allowlist]\ndescription = "The fixture key for the course"\npaths = [ """deploy\\.pem""" ]\n' > .gitleaks.toml
+slopstopper run security:secrets
 ```
 
 Green, with the key committed. Two things to notice. `[extend]
@@ -242,15 +254,15 @@ and `rm .gitleaks.toml`.
 
 **Length.** 9 to 11 minutes.
 
-**Cold open (0:00).** A config file with `AWS_ACCESS_KEY_ID=AKIA…` in
-a diff. "It's just an example." Cut to a cloud bill.
+**Cold open (0:00).** A `deploy.pem` in a diff. "It's just for
+staging." Cut to a cloud bill.
 
 **Talking points.**
 
 1. Why: ordinary ways a key lands in a repo; public within minutes;
    rotation is the only remedy; the earlier the cheaper.
-2. Gitleaks scans history, not disk. Green run; the fake key
-   uncommitted is still green.
+2. Gitleaks scans history, not disk. Green run on the demo's one
+   commit; the fake key uncommitted is still green.
 3. Commit; red; the report without the value, and why.
 4. Delete it in a new commit; still red; `git log -p` shows it.
 5. The fix in order: revoke, then rewrite. Reset locally; filter-repo
@@ -258,7 +270,7 @@ a diff. "It's just an example." Cut to a cloud bill.
 6. Exercise: the allowlist, `useDefault = true`, path not value.
 
 **Shot list.** One terminal, 100x30, font size 16, the site's theme.
-`docs/learn/tapes/06.tape`. Zoom on "52 commits scanned" versus "53",
+`docs/learn/tapes/06.tape`. Zoom on "1 commits scanned" versus "2",
 and on the redacted report row.
 
 **Chapters.** `0:00 Why` · `1:30 Green` · `2:30 Uncommitted` ·

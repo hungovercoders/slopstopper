@@ -3,8 +3,9 @@
 # runnable blocks by scripts/learntapes.py: edit the lesson, then
 # `task contributing:learn:tapes`. Record it with
 # `task contributing:learn:record -- 00` (demos/render.sh), which
-# starts the shell in a scratch clone with the CLI on PATH, fills in
-# the theme from demos/theme.json, and writes dist/learn/00.mp4.
+# starts the shell in a scratch clone of this repo with the CLI on PATH, fills
+# in the theme from demos/theme.json, and writes dist/learn/00.mp4.
+# Sandbox: checkout
 Output demos/.frames/00/
 Set Shell bash
 Set FontSize 16
