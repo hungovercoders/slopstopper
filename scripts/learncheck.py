@@ -4,21 +4,24 @@
 The lessons under docs/learn/ mark their runnable blocks with an HTML
 comment on the line before the fence: `<!-- learn -->` for a block that
 must exit 0, `<!-- learn: fails -->` for one that must exit non-zero
-(the break-it step of most lessons). This script clones the repository
-into a scratch directory, which is the sandbox the syllabus gives a
-reader until the lessons move onto `slopstopper demo` (#486), commits the working tree's
-uncommitted changes into that clone so a lesson is checked against the
-Taskfile and CLI you are about to commit rather than the ones you last
-did, puts the CLI that runs this script on PATH, and runs each page's
-marked blocks in order with `sh -e`, the way a reader would type them.
-A page must leave the clone clean (`git status --porcelain` empty),
-because the lessons promise the next one starts from a fresh checkout.
+(the break-it step of most lessons). Each page names its sandbox with
+`<!-- learn-sandbox: demo -->` or `<!-- learn-sandbox: checkout -->` near
+the top: `demo` is the repo `slopstopper demo` writes, committed once,
+which is what the check lessons run in; `checkout` (the default) is a
+clone of this repository, for the lessons about the installer, the
+workflows and the source. The clone carries the working tree's
+uncommitted changes, so a lesson is checked against the Taskfile and CLI
+you are about to commit rather than the ones you last did. The CLI that
+runs this script goes on PATH, and each page's marked blocks run in
+order with `sh -e`, the way a reader would type them. A page must leave
+its sandbox clean (`git status --porcelain` empty), because the lessons
+promise the next one starts from a fresh one.
 
 Usage:
     python scripts/learncheck.py                 # every page under docs/learn/
     python scripts/learncheck.py --page 03       # pages whose name starts with 03
     python scripts/learncheck.py --page 06,07,08 # a few pages (what a CI shard runs)
-    python scripts/learncheck.py --keep          # keep the scratch clone for a look
+    python scripts/learncheck.py --keep          # keep the sandboxes for a look
 
 `task contributing:learn:check` runs it from the repo's venv; the `learn`
 shards in `.github/workflows/ci-cli.yml` run it on every push to main,
@@ -52,6 +55,7 @@ _BLOCK = re.compile(
     r"^<!-- learn(?:: (?P<mode>fails))? -->\n```sh\n(?P<code>.*?)^```",
     re.M | re.S,
 )
+_SANDBOX = re.compile(r"^<!-- learn-sandbox: (?P<kind>demo|checkout) -->$", re.M)
 
 
 @dataclass(frozen=True)
@@ -64,6 +68,12 @@ class Block:
     @property
     def where(self) -> str:
         return f"{self.page.relative_to(ROOT)}:{self.line}"
+
+
+def sandbox_kind(page: Path) -> str:
+    """`demo` or `checkout`, from the page's marker; checkout when unmarked."""
+    m = _SANDBOX.search(page.read_text(encoding="utf-8"))
+    return m.group("kind") if m else "checkout"
 
 
 def extract(page: Path) -> list[Block]:
@@ -85,10 +95,43 @@ def pages(prefixes: str | None) -> list[Path]:
     return found
 
 
-def make_sandbox(keep: bool) -> Path:
+def git_identity(sandbox: Path) -> None:
+    # Some lessons commit in the sandbox (the secrets lesson commits a
+    # fake key to show that history is what is scanned); a CI runner has
+    # no git identity, so the sandbox gets one of its own.
+    for key, value in (("user.name", "learn"), ("user.email", "learn@slopstopper.dev")):
+        subprocess.run(["git", "-C", str(sandbox), "config", key, value], check=True)
+
+
+def link_node_modules(sandbox: Path) -> None:
+    # The browser checks stage their specs next to node_modules, which is
+    # gitignored; share this checkout's install rather than running npm
+    # in every sandbox. The link is untracked, so the clean check ignores it.
+    modules = ROOT / "node_modules"
+    if modules.is_dir() and not (sandbox / "node_modules").exists():
+        (sandbox / "node_modules").symlink_to(modules, target_is_directory=True)
+        # `node_modules/` in .gitignore matches a directory, not a symlink,
+        # so the link is excluded here or every page would read as dirty.
+        with (sandbox / ".git" / "info" / "exclude").open("a", encoding="utf-8") as exclude:
+            exclude.write("node_modules\n")
+
+
+def make_demo_sandbox(work: Path, env: dict[str, str]) -> Path:
+    """The repo `slopstopper demo` writes, as one commit, which is where
+    a reader runs the check lessons."""
+    sandbox = work / "lantern"
+    subprocess.run(["slopstopper", "--quiet", "demo", "--out", str(sandbox)], env=env, check=True)
+    subprocess.run(["git", "-C", str(sandbox), "init", "--quiet", "-b", "main"], check=True)
+    git_identity(sandbox)
+    subprocess.run(["git", "-C", str(sandbox), "add", "--all"], check=True)
+    subprocess.run(["git", "-C", str(sandbox), "commit", "--quiet", "-m", "lantern"], check=True)
+    link_node_modules(sandbox)
+    return sandbox
+
+
+def make_sandbox(work: Path) -> Path:
     """A fresh clone of this repo, with the real origin so the checks that
     read it (docs-accuracy's repo links) behave as they do for a reader."""
-    work = Path(tempfile.mkdtemp(prefix="learncheck-"))
     sandbox = work / "slopstopper"
     subprocess.run(["git", "clone", "--quiet", str(ROOT), str(sandbox)], check=True)
     origin = subprocess.run(
@@ -97,24 +140,9 @@ def make_sandbox(keep: bool) -> Path:
     ).stdout.strip()
     if origin:
         subprocess.run(["git", "-C", str(sandbox), "remote", "set-url", "origin", origin], check=True)
-    # Some lessons commit in the clone (the secrets lesson commits a fake
-    # key to show that history is what is scanned); a CI runner has no
-    # git identity, so the clone gets one of its own.
-    for key, value in (("user.name", "learn"), ("user.email", "learn@slopstopper.dev")):
-        subprocess.run(["git", "-C", str(sandbox), "config", key, value], check=True)
+    git_identity(sandbox)
     snapshot_working_tree(sandbox)
-    # The browser checks stage their specs next to node_modules, which is
-    # gitignored; share this checkout's install rather than running npm
-    # in every clone. The link is untracked, so the clean check ignores it.
-    modules = ROOT / "node_modules"
-    if modules.is_dir():
-        (sandbox / "node_modules").symlink_to(modules, target_is_directory=True)
-        # `node_modules/` in .gitignore matches a directory, not a symlink,
-        # so the link is excluded here or every page would read as dirty.
-        with (sandbox / ".git" / "info" / "exclude").open("a", encoding="utf-8") as exclude:
-            exclude.write("node_modules\n")
-    if keep:
-        print(f"learncheck: scratch clone kept at {sandbox}")
+    link_node_modules(sandbox)
     return sandbox
 
 
@@ -222,7 +250,7 @@ def check_page(page: Path, blocks: list[Block], sandbox: Path, env: dict[str, st
     left = dirty(sandbox)
     if left:
         failures += 1
-        print(f"✗ {page.relative_to(ROOT)} left the checkout dirty; a lesson puts it back\n{indent(left)}")
+        print(f"✗ {page.relative_to(ROOT)} left its sandbox dirty; a lesson puts it back\n{indent(left)}")
         subprocess.run(["git", "checkout", "--quiet", "."], cwd=sandbox, check=False)
         subprocess.run(["git", "clean", "--quiet", "-fd"], cwd=sandbox, check=False)
     return failures
@@ -231,7 +259,7 @@ def check_page(page: Path, blocks: list[Block], sandbox: Path, env: dict[str, st
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--page", help="only pages whose file name starts with one of these, comma-separated (e.g. 03, or 06,07,08)")
-    parser.add_argument("--keep", action="store_true", help="keep the scratch clone for inspection")
+    parser.add_argument("--keep", action="store_true", help="keep the sandboxes for inspection")
     args = parser.parse_args(argv)
 
     if shutil.which("task") is None:
@@ -248,15 +276,22 @@ def main(argv: list[str] | None = None) -> int:
     if shutil.which("slopstopper", path=env["PATH"]) is None:
         print("learncheck: no `slopstopper` next to this interpreter or on PATH (pip install -e ./cli)", file=sys.stderr)
         return 2
-    sandbox = make_sandbox(args.keep)
-    print(f"learncheck: {total} blocks from {len(selected)} pages, in a clone at {sandbox}")
+    work = Path(tempfile.mkdtemp(prefix="learncheck-"))
+    sandboxes: dict[str, Path] = {}
+    print(f"learncheck: {total} blocks from {len(selected)} pages, in sandboxes under {work}")
     failures = 0
     try:
         for page, blocks in per_page.items():
-            failures += check_page(page, blocks, sandbox, env)
+            kind = sandbox_kind(page)
+            if kind not in sandboxes:
+                sandboxes[kind] = make_demo_sandbox(work, env) if kind == "demo" else make_sandbox(work)
+                print(f"learncheck: {kind} sandbox at {sandboxes[kind]}")
+            failures += check_page(page, blocks, sandboxes[kind], env)
     finally:
-        if not args.keep:
-            shutil.rmtree(sandbox.parent, ignore_errors=True)
+        if args.keep:
+            print(f"learncheck: sandboxes kept under {work}")
+        else:
+            shutil.rmtree(work, ignore_errors=True)
     if failures:
         print(f"learncheck: {failures} problem(s) across {total} blocks: a block that did not do what its marker says, or a page that left the clone dirty")
         return 1

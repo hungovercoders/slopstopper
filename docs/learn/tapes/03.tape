@@ -3,8 +3,9 @@
 # runnable blocks by scripts/learntapes.py: edit the lesson, then
 # `task contributing:learn:tapes`. Record it with
 # `task contributing:learn:record -- 03` (demos/render.sh), which
-# starts the shell in a scratch clone with the CLI on PATH, fills in
-# the theme from demos/theme.json, and writes dist/learn/03.mp4.
+# starts the shell in the demo repo `slopstopper demo` writes with the CLI on PATH, fills
+# in the theme from demos/theme.json, and writes dist/learn/03.mp4.
+# Sandbox: demo
 Output demos/.frames/03/
 Set Shell bash
 Set FontSize 16
@@ -15,44 +16,49 @@ Set TypingSpeed 40ms
 Set Theme @theme.json
 Set Framerate 50
 
-# 1. See it green, and read the table
-Type "task ss:hygiene:entry-files" Enter
+# 1. See it red, and read the table
+Type "slopstopper run hygiene:entry-files" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
-# 2. Break it
+# 2. Read the report, then the file
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "cat docs/README.md >> README.md" Enter
+Type "sed -n '/How to fix/,$p' .ss/reports/entry-files/entry-file-size-report.md | head -6" Enter
+Wait+Line@5m /(^|\s)\$$/
+Type "grep -n '^## ' README.md" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
-# 3. See it red
+# 3. Fix it: move the content deeper and route it
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:hygiene:entry-files" Enter
+Type "python3 - <<'PY'" Enter
+Type@8ms "import pathlib" Enter
+Type@8ms "readme = pathlib.Path('README.md'); text = readme.read_text()" Enter
+Type@8ms "head, manual = text.split('## Everything you need to know\n', 1)" Enter
+Type@8ms "readme.write_text(head.rstrip() + '\n')" Enter
+Type@8ms "pathlib.Path('docs/manual.md').write_text('# The manual\n\n' + manual.lstrip())" Enter
+Type@8ms "PY" Enter
+Wait+Line@5m /(^|\s)\$$/
+Type "printf '\nBefore you look anything up beyond the quick start, read [manual.md](manual.md) for the whole manual.\n' >> docs/README.md" Enter
+Wait+Line@5m /(^|\s)\$$/
+Type "slopstopper run hygiene:entry-files" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
-# 4. Read the report
+# 4. Put the demo back
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "sed -n '/How to fix/,$p' .ss/reports/entry-files/entry-file-size-report.md" Enter
+Type "git checkout README.md docs/README.md" Enter
+Wait+Line@5m /(^|\s)\$$/
+Type "rm docs/manual.md" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
-
-# 5. Fix it
-Type "clear" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "git checkout README.md" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "task ss:hygiene:entry-files" Enter
-Wait+Line@5m /(^|\s)\$$/
-Sleep 3s
 
 # Checkpoint
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "slopstopper run hygiene:entry-files | grep 'Every entry file'" Enter
+Type "slopstopper run hygiene:entry-files | grep 'README.md'" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s

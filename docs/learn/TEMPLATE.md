@@ -18,9 +18,12 @@ in the [syllabus](README.md).
 - **Every command is copy-pasteable and shows its output.** A reader
   compares what they see with what the page shows; never make them
   guess. Trim output to the lines that matter and say so.
-- **Every step runs in the checkout from the syllabus** unless the
-  lesson is explicitly about a real deployment. Nobody gets stuck at a
-  login page. Steps that edit the checkout end by putting it back
+- **Every step runs in one of the two sandboxes from the syllabus**:
+  the demo repo (`<!-- learn-sandbox: demo -->` under the H1) for a
+  lesson about a check, or the checkout (`<!-- learn-sandbox: checkout -->`,
+  the default) for a lesson about the installer, the workflows or the
+  source. Never a real deployment: nobody gets stuck at a login page.
+  Steps that edit the sandbox end by putting it back
   (`git checkout <file>`, `rm`), so the next lesson starts clean.
 - **Mark runnable blocks** with an HTML comment on the line before the
   fence. `<!-- learn -->` means the block must exit 0; `<!-- learn: fails -->`

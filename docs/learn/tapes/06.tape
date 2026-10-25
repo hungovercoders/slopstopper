@@ -3,8 +3,9 @@
 # runnable blocks by scripts/learntapes.py: edit the lesson, then
 # `task contributing:learn:tapes`. Record it with
 # `task contributing:learn:record -- 06` (demos/render.sh), which
-# starts the shell in a scratch clone with the CLI on PATH, fills in
-# the theme from demos/theme.json, and writes dist/learn/06.mp4.
+# starts the shell in the demo repo `slopstopper demo` writes with the CLI on PATH, fills
+# in the theme from demos/theme.json, and writes dist/learn/06.mp4.
+# Sandbox: demo
 Output demos/.frames/06/
 Set Shell bash
 Set FontSize 16
@@ -23,33 +24,31 @@ Sleep 2s
 # 1. See it green
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:security:secrets" Enter
+Type "slopstopper run security:secrets" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 2. Write a fake key, and see that an uncommitted file is not scanned
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "mkdir -p scratch" Enter
+Type "printf -- '-----BEGIN %s PRIVATE KEY-----\nMIIEowIBAAKCAQEAnotarealkeyjusttheshapeofonefortheslopstopperlesson0000\n0000000000000000000000000000000000000000000000000000000000000000000000\n-----END %s PRIVATE KEY-----\n' RSA RSA > deploy.pem" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "printf 'AWS_ACCESS_KEY_ID=AKIA%s\n' LEARNSLOPSTOPPER > scratch/.env.example" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "task ss:security:secrets" Enter
+Type "slopstopper run security:secrets" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # 3. Commit it, and see it red
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "git add scratch" Enter
+Type "git add deploy.pem" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type 'git commit -q -m "wip: config"' Enter
+Type 'git commit -q -m "wip: deploy key"' Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:security:secrets" Enter
+Type "slopstopper run security:secrets" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
@@ -63,7 +62,7 @@ Sleep 2s
 # 5. Delete the file in a new commit, and see it still red
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "git rm -q scratch/.env.example" Enter
+Type "git rm -q deploy.pem" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type 'git commit -q -m "remove the key"' Enter
 Wait+Line@5m /(^|\s)\$$/
@@ -71,7 +70,7 @@ Sleep 2s
 
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:security:secrets" Enter
+Type "slopstopper run security:secrets" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
@@ -80,13 +79,13 @@ Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "git reset -q --hard HEAD~2" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:security:secrets" Enter
+Type "slopstopper run security:secrets" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
 # Checkpoint
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type 'slopstopper run security:secrets >/dev/null; echo "exit $?"' Enter
+Type 'slopstopper run security:secrets >/dev/null 2>&1; echo "exit $?"' Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s

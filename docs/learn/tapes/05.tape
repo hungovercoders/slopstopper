@@ -3,8 +3,9 @@
 # runnable blocks by scripts/learntapes.py: edit the lesson, then
 # `task contributing:learn:tapes`. Record it with
 # `task contributing:learn:record -- 05` (demos/render.sh), which
-# starts the shell in a scratch clone with the CLI on PATH, fills in
-# the theme from demos/theme.json, and writes dist/learn/05.mp4.
+# starts the shell in the demo repo `slopstopper demo` writes with the CLI on PATH, fills
+# in the theme from demos/theme.json, and writes dist/learn/05.mp4.
+# Sandbox: demo
 Output demos/.frames/05/
 Set Shell bash
 Set FontSize 16
@@ -15,54 +16,42 @@ Set TypingSpeed 40ms
 Set Theme @theme.json
 Set Framerate 50
 
-# 1. See docs-accuracy green
-Type "task ss:hygiene:docs-accuracy" Enter
+# 1. See docs-accuracy red
+Type "slopstopper run hygiene:docs-accuracy" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
-# 2. Break it twice in one line
-Type "clear" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "printf '\nRun `task ss:hygiene:tidy` after editing, then open [the tidy guide](TIDY.md).\n' >> docs/hygiene/README.md" Enter
-Wait+Line@5m /(^|\s)\$$/
-Sleep 2s
-
-# 3. See it red
-Type "clear" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "task ss:hygiene:docs-accuracy" Enter
-Wait+Line@5m /(^|\s)\$$/
-Sleep 3s
-
-# 4. Read the report
+# 2. Read the report, then the line
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "sed -n '/## Issues/,/## Excluded/p' .ss/reports/docs/docs-accuracy-report.md" Enter
 Wait+Line@5m /(^|\s)\$$/
+Type "sed -n '17,18p' docs/contributing.md" Enter
+Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
-# 5. Fix it
+# 3. Fix it
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "git checkout docs/hygiene/README.md" Enter
+Type "sed -i.bak 's/Run `task ss:hygiene:docs` before you push; it is the two docs checks in/Run `slopstopper run hygiene:entry-files` and `slopstopper run hygiene:docs-structure` before you push; they are the two docs checks,/' docs/contributing.md && rm docs/contributing.md.bak" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:hygiene:docs-accuracy" Enter
+Type "slopstopper run hygiene:docs-accuracy" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
-# 6. Read the size monitor
+# 4. Read the size monitor
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:hygiene:docs-size" Enter
+Type "slopstopper run hygiene:docs-size" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
-# 7. See the advisory fire, and the exit code not move
+# 5. See the advisory fire, and the exit code not move
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "yes 'Notes on every default the hygiene checks ship with, and why.' | head -c 25000 > docs/hygiene/NOTES.md" Enter
+Type "yes 'Notes on every default the checks ship with, and why each is what it is.' | head -c 160000 > docs/notes.md" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:hygiene:docs-size | sed -n '/Status/,/excluded/p'" Enter
+Type "slopstopper run hygiene:docs-size | sed -n '/Status/,/Reports/p'" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
@@ -70,7 +59,9 @@ Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type 'slopstopper run hygiene:docs-size >/dev/null; echo "exit $?"' Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "rm docs/hygiene/NOTES.md" Enter
+Type "rm docs/notes.md" Enter
+Wait+Line@5m /(^|\s)\$$/
+Type "git checkout docs/contributing.md" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 

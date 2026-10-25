@@ -3,8 +3,9 @@
 # runnable blocks by scripts/learntapes.py: edit the lesson, then
 # `task contributing:learn:tapes`. Record it with
 # `task contributing:learn:record -- 04` (demos/render.sh), which
-# starts the shell in a scratch clone with the CLI on PATH, fills in
-# the theme from demos/theme.json, and writes dist/learn/04.mp4.
+# starts the shell in the demo repo `slopstopper demo` writes with the CLI on PATH, fills
+# in the theme from demos/theme.json, and writes dist/learn/04.mp4.
+# Sandbox: demo
 Output demos/.frames/04/
 Set Shell bash
 Set FontSize 16
@@ -15,59 +16,43 @@ Set TypingSpeed 40ms
 Set Theme @theme.json
 Set Framerate 50
 
-# 1. See it green
-Type "task ss:hygiene:docs-structure" Enter
+# 1. See it red
+Type "slopstopper run hygiene:docs-structure" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
-# 2. Break it
+# 2. Try a soft link, and see why it does not count
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "printf '# Hygiene notes\n\nScratch notes about the hygiene checks.\n' > docs/hygiene/NOTES.md" Enter
+Type "printf '\nSee also [runbooks/RELEASE.md](runbooks/RELEASE.md).\n' >> docs/README.md" Enter
 Wait+Line@5m /(^|\s)\$$/
-Sleep 2s
-
-# 3. See it red
-Type "clear" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "task ss:hygiene:docs-structure" Enter
+Type "slopstopper run hygiene:docs-structure" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
-# 4. Try a soft link, and see why it does not count
+# 3. Route it
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "printf '\nSee also [NOTES.md](NOTES.md).\n' >> docs/hygiene/README.md" Enter
+Type "git checkout docs/README.md" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "task ss:hygiene:docs-structure" Enter
+Type "printf '\nBefore you cut a release, read [runbooks/RELEASE.md](runbooks/RELEASE.md) for the tag, the push and what the tag message is for.\n' >> docs/README.md" Enter
+Wait+Line@5m /(^|\s)\$$/
+Type "slopstopper run hygiene:docs-structure" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
-# 5. Route it
+# 4. Read the report, then put the demo back
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "git checkout docs/hygiene/README.md" Enter
+Type "grep RELEASE .ss/reports/docs/docs-structure-report.md" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "printf '\nBefore you tune a hygiene threshold, read [NOTES.md](NOTES.md) for the reasoning behind each default.\n' >> docs/hygiene/README.md" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "task ss:hygiene:docs-structure" Enter
-Wait+Line@5m /(^|\s)\$$/
-Sleep 3s
-
-# 6. Read the report, then put the checkout back
-Type "clear" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "grep NOTES .ss/reports/docs/docs-structure-report.md" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "git checkout docs/hygiene/README.md" Enter
-Wait+Line@5m /(^|\s)\$$/
-Type "rm docs/hygiene/NOTES.md" Enter
+Type "git checkout docs/README.md" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s
 
 # Checkpoint
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "slopstopper run hygiene:docs-structure | grep 'docs are routed'" Enter
+Type "slopstopper run hygiene:docs-structure | grep 'Unrouted doc'" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
