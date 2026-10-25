@@ -133,9 +133,10 @@ headers:
 # or a label that identifies the service: `cdnjs`, `cloudflare`, `giscus`), Workers Logs when
 # wrangler turns them on, and a date.
 privacy:
-  # Repo path of the statement. `auto` takes the first privacy.<ext> or
-  # privacy/index.<ext> outside dependency, build and hidden directories. '' opts out visibly: the check
-  # prints why and passes, so put the reason in a comment here.
+  # Repo path of the statement. `auto` takes the first privacy.<ext>,
+  # privacy/index.<ext>, privacy/page.<ext> or privacy/+page.svelte outside
+  # dependency, build and hidden directories. '' (or a bare `page:`) opts out
+  # visibly: the check prints why and passes, so put the reason in a comment here.
   page: auto
   # URL path it is served at. `auto` derives it from the page's name
   # (privacy.html → /privacy.html, anything else → /privacy/). The smoke

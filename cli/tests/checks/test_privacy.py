@@ -283,6 +283,77 @@ def test_every_issue_is_reported_together(site):
 # ── the smoke-test link rule ─────────────────────────────────────
 
 
+def test_rules_read_visible_text_only(site):
+    """A comment, a tag or an attribute is not a statement a visitor reads."""
+    page = site / "app/privacy.html"
+    page.write_text(
+        "<!doctype html><html><body><!-- hosted on Cloudflare, giscus.app, 2026-10-24 -->\n"
+        '<p data-host="Cloudflare" data-when="2026-10-24">This page says nothing a visitor can read about its host.</p>\n'
+        "</body></html>\n"
+    )
+    assert privacy.run() == 1
+    assert _issues() == ["host", "third-party", "third-party", "date"]
+    page.write_text(GOOD_PAGE)
+    assert privacy.run() == 0
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("last checked 2026-10-24", True),
+    ("ISBN 9999-99-99 only", False),
+    ("2026-02-30 is not a day", False),
+    ("31 February 2026", False),
+    ("29 February 2024", True),
+    ("October 24, 2026", True),
+])
+def test_only_a_real_date_counts(text, expected):
+    assert privacy._has_date(text) is expected
+
+
+def test_host_name_must_be_a_whole_word(site):
+    (site / "app/privacy.html").write_text(GOOD_PAGE.replace("hosted on Cloudflare, which", "hosted behind cloudflareinsights.com, which"))
+    assert privacy.run() == 1
+    assert "host" in _issues()
+
+
+def test_a_headers_source_that_cannot_be_read_is_exit_two(site, write_config, capsys):
+    write_config("profile: ui\nheaders:\n  source: worker/missing.json\n  format: json\n")
+    assert privacy.run() == 2
+    assert "does not exist" in capsys.readouterr().out
+    assert "did not complete" in Path(".ss/reports/privacy/privacy-report.md").read_text()
+    write_config("profile: ui\nheaders:\n  source: worker/headers.json\n  format: nope\n")
+    assert privacy.run() == 2
+
+
+def test_router_pages_are_discovered(isolated_cwd, write_config):
+    write_config("profile: ui\n")
+    (isolated_cwd / "wrangler.jsonc").write_text(WRANGLER_LOGS_OFF)
+    nxt = isolated_cwd / "app/privacy/page.tsx"
+    nxt.parent.mkdir(parents=True)
+    nxt.write_text("export default function Privacy() { return <p>Cloudflare hosts this, as of 2026-10-24.</p> }\n")
+    assert privacy.resolve_page(isolated_cwd)[0] == nxt
+    assert privacy.page_url(isolated_cwd) == "/privacy/"
+    nxt.unlink(); nxt.parent.rmdir()
+    sk = isolated_cwd / "src/routes/privacy/+page.svelte"
+    sk.parent.mkdir(parents=True)
+    sk.write_text("<p>Cloudflare hosts this, as of 2026-10-24.</p>\n")
+    assert privacy.resolve_page(isolated_cwd)[0] == sk
+
+
+def test_a_missing_configured_page_is_named(site, write_config, capsys):
+    write_config("profile: ui\nprivacy:\n  page: legal/privacy.md\n")
+    assert privacy.run() == 1
+    out = capsys.readouterr().out
+    assert "`legal/privacy.md`, the path privacy.page names" in out
+    assert "privacy.page" in out
+
+
+def test_a_bare_page_key_opts_out_like_an_empty_one(site, write_config, capsys):
+    write_config("profile: ui\nprivacy:\n  page:\n")
+    assert privacy.run() == 0
+    assert "opted out" in capsys.readouterr().out
+    assert privacy.page_url() is None
+
+
 def test_page_url_is_derived_from_the_page_name(site, write_config):
     assert privacy.page_url() == "/privacy.html"
     (site / "app/privacy.html").unlink()

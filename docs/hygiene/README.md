@@ -142,10 +142,11 @@ or Vercel config file, or `urls.production`. `api` and `library` drop it;
 with no evidence it skips. **Fails unless:**
 
 - a privacy page exists: `privacy.page`, else the first file named
-  privacy.html, privacy.md or privacy/index.* in any source directory
-  (dependency, build and hidden directories are never searched)
-  (this repo's is `app/privacy.html`; a Starlight content page or a
-  templated site page counts the same)
+  privacy.html, privacy.md, privacy/index.*, privacy/page.* (Next) or
+  privacy/+page.svelte in any source directory (dependency, build and
+  hidden directories are never searched); this repo's is
+  `app/privacy.html`, and a Starlight content page or a templated site
+  page counts the same. `page: ''` or a bare `page:` opts out visibly
 - it names the host the config file implies (Cloudflare, Netlify, Vercel)
   and every name in `privacy.hosts`
 - when wrangler turns Workers Logs on, it mentions logs
@@ -155,7 +156,13 @@ with no evidence it skips. **Fails unless:**
   `cdnjs.cloudflare.com`, `GitHub` for `api.github.com`, `Google` for
   `fonts.gstatic.com`). This is what turns boilerplate into a true
   statement, and why a new embed is a change to the page in the same PR
-- it carries a date, ISO or long form, so a stale statement shows its age
+- it carries a real date, ISO or long form, so a stale statement shows its
+  age
+
+Every rule reads the page's visible text: comments, tags and attributes
+are stripped first, so a `<!-- Cloudflare -->` or a `datetime=` does not
+count. A `headers.source` that is set but cannot be read is exit 2, as it
+is for the CSP exceptions check, rather than "no origins".
 
 The matching footer rule lives in the smoke test: every audited page must
 link to the statement (`SMOKE_PRIVACY_URL`, derived from `privacy.page`
