@@ -63,8 +63,8 @@ bash ../slopstopper/install.sh --profile ui
   ✅ Taskfile.yml installed
   ✅ .slopstopper.yml: seeded demo-site/.slopstopper.yml as a starter. Every other key is in …/.slopstopper.yml.example
   ✅ .slopstopper.yml: profile set to 'ui'
-  ℹ  Pinning slopstopper-cli@0.25.0 (+ task) in mise.toml via mise…
-  ✅ slopstopper-cli installed (0.25.0, pinned in mise.toml)
+  ℹ  Pinning slopstopper-cli@<latest on PyPI> (+ task) in mise.toml via mise…
+  ✅ slopstopper-cli installed (<latest on PyPI>, pinned in mise.toml)
   ✅ 27 workflow(s) installed, 0 refreshed, 0 previously-deleted skipped
   ✅ composite actions refreshed under .github/actions/ (ss-resolve-url, ss-setup)
   ℹ  profile 'ui': 4 workflow(s) not installed for this repo shape (0 removed from a previous install)
@@ -136,7 +136,7 @@ cat mise.toml
 ```
 [tools]
 node = "20"
-"pipx:slopstopper-cli" = "0.25.0"
+"pipx:slopstopper-cli" = "<latest on PyPI>"
 task = "3"
 ```
 

@@ -50,14 +50,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 LEARN = ROOT / "docs" / "learn"
 
-# `<!-- learn -->` or `<!-- learn: fails -->`, then a `sh` fence. The
-# marker is on its own line directly before the fence, as the template
-# says; a marker anywhere else is not a marker.
+# `<!-- learn -->`, `<!-- learn: fails -->` or `<!-- learn: fails N -->`,
+# then a `sh` fence. The marker is on its own line directly before the
+# fence, as the template says; a marker anywhere else is not a marker.
 _BLOCK = re.compile(
-    r"^<!-- learn(?:: (?P<mode>fails)(?: (?P<expect>\d+))?)? -->\n```sh\n(?P<code>.*?)^```",
+    r"^<!-- learn(?:: (?P<mode>fails)(?: (?P<expect>[1-9]\d*))?)? -->\n```sh\n(?P<code>.*?)^```",
     re.M | re.S,
 )
 _SANDBOX = re.compile(r"^<!-- learn-sandbox: (?P<kind>demo|checkout) -->$", re.M)
+# Any other line that starts like a marker is a typo (`fails: 1`, `fails 0`,
+# a trailing space), and a typo must be loud rather than an unrun block.
+_MARKER_LIKE = re.compile(r"^<!-- learn.*$", re.M)
 
 
 @dataclass(frozen=True)
@@ -77,6 +80,17 @@ def sandbox_kind(page: Path) -> str:
     """`demo` or `checkout`, from the page's marker; checkout when unmarked."""
     m = _SANDBOX.search(page.read_text(encoding="utf-8"))
     return m.group("kind") if m else "checkout"
+
+
+def malformed_markers(page: Path) -> list[str]:
+    """Marker-like lines the two patterns do not accept, with their line numbers."""
+    text = page.read_text(encoding="utf-8")
+    accepted = {m.start() for m in _BLOCK.finditer(text)} | {m.start() for m in _SANDBOX.finditer(text)}
+    return [
+        f"{page.relative_to(ROOT)}:{text.count(chr(10), 0, m.start()) + 1}: {m.group(0)}"
+        for m in _MARKER_LIKE.finditer(text)
+        if m.start() not in accepted
+    ]
 
 
 def extract(page: Path) -> list[Block]:
@@ -263,29 +277,26 @@ def check_page(page: Path, blocks: list[Block], sandbox: Path, env: dict[str, st
     return failures
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--page", help="only pages whose file name starts with one of these, comma-separated (e.g. 03, or 06,07,08)")
-    parser.add_argument("--keep", action="store_true", help="keep the sandboxes for inspection")
-    args = parser.parse_args(argv)
-
+def preflight(selected: list[Path], per_page: dict[Path, list[Block]], env: dict[str, str]) -> str | None:
+    """Why the harness cannot run, or None when it can."""
     if shutil.which("task") is None:
-        print("learncheck: `task` is not on PATH, and every lesson calls it (mise install)", file=sys.stderr)
-        return 2
-    selected = pages(args.page)
-    per_page = {page: extract(page) for page in selected}
-    total = sum(len(b) for b in per_page.values())
-    if total == 0:
-        print(f"learncheck: no runnable blocks under {LEARN.relative_to(ROOT)} (mark one with <!-- learn -->)", file=sys.stderr)
-        return 2
-
-    env = sandbox_env()
+        return "`task` is not on PATH, and every lesson calls it (mise install)"
+    bad = [line for page in selected for line in malformed_markers(page)]
+    if bad:
+        return "a marker-like line is not a marker (fix the typo, or it is a block that never runs):\n" + "\n".join("  " + b for b in bad)
+    if sum(len(b) for b in per_page.values()) == 0:
+        return f"no runnable blocks under {LEARN.relative_to(ROOT)} (mark one with <!-- learn -->)"
     if shutil.which("slopstopper", path=env["PATH"]) is None:
-        print("learncheck: no `slopstopper` next to this interpreter or on PATH (pip install -e ./cli)", file=sys.stderr)
-        return 2
+        return "no `slopstopper` next to this interpreter or on PATH (pip install -e ./cli)"
+    return None
+
+
+def run_pages(per_page: dict[Path, list[Block]], env: dict[str, str], keep: bool) -> int:
+    """Run every page in the sandbox its marker names; return the failure count."""
     work = Path(tempfile.mkdtemp(prefix="learncheck-"))
     sandboxes: dict[str, Path] = {}
-    print(f"learncheck: {total} blocks from {len(selected)} pages, in sandboxes under {work}")
+    total = sum(len(b) for b in per_page.values())
+    print(f"learncheck: {total} blocks from {len(per_page)} pages, in sandboxes under {work}")
     failures = 0
     try:
         for page, blocks in per_page.items():
@@ -295,10 +306,28 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"learncheck: {kind} sandbox at {sandboxes[kind]}")
             failures += check_page(page, blocks, sandboxes[kind], env)
     finally:
-        if args.keep:
+        if keep:
             print(f"learncheck: sandboxes kept under {work}")
         else:
             shutil.rmtree(work, ignore_errors=True)
+    return failures
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--page", help="only pages whose file name starts with one of these, comma-separated (e.g. 03, or 06,07,08)")
+    parser.add_argument("--keep", action="store_true", help="keep the sandboxes for inspection")
+    args = parser.parse_args(argv)
+
+    selected = pages(args.page)
+    per_page = {page: extract(page) for page in selected}
+    env = sandbox_env()
+    problem = preflight(selected, per_page, env)
+    if problem:
+        print(f"learncheck: {problem}", file=sys.stderr)
+        return 2
+    failures = run_pages(per_page, env, args.keep)
+    total = sum(len(b) for b in per_page.values())
     if failures:
         print(f"learncheck: {failures} problem(s) across {total} blocks: a block that did not do what its marker says, or a page that left the clone dirty")
         return 1
@@ -307,4 +336,4 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())
