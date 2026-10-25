@@ -137,11 +137,16 @@ jobs:
           fetch-depth: 0
       - id: gate
         shell: bash
+        # Context values reach the script through env, never interpolated
+        # into it (Semgrep's run-shell-injection rule, and the right habit).
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
+          if [ "$EVENT_NAME" != "pull_request" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          changed="$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")"
+          changed="$(git diff --name-only "origin/${BASE_REF}...HEAD")"
           if echo "$changed" | grep -qE '^(docs/learn/|scripts/learncheck\.py|scripts/learntapes\.py|\.github/workflows/ci-cli\.yml)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
