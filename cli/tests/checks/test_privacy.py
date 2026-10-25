@@ -107,6 +107,27 @@ def test_auto_discovery_finds_nested_pages_in_any_framework(isolated_cwd, write_
     assert privacy.run() == 0
 
 
+def test_auto_discovery_skips_hidden_directories(site):
+    """A worktree or cache under a dot-directory can hold a copy of the
+    whole repo; its privacy page is not this repo's page."""
+    copy = site / ".claude/worktrees/agent-1/app/privacy.html"
+    copy.parent.mkdir(parents=True)
+    copy.write_text(GOOD_PAGE)
+    page, _ = privacy.resolve_page(site)
+    assert page == site / "app/privacy.html"
+
+
+def test_host_config_ignores_hidden_directories_one_level_down(isolated_cwd, write_config):
+    """With no root config, a dot-directory that sorts first must not win."""
+    write_config("profile: ui\n")
+    (isolated_cwd / ".tool").mkdir()
+    (isolated_cwd / ".tool/wrangler.toml").write_text("[observability]\nenabled = true\n")
+    assert privacy._host_config(isolated_cwd) is None
+    (isolated_cwd / "website").mkdir()
+    (isolated_cwd / "website/netlify.toml").write_text("[build]\n")
+    assert privacy._host_config(isolated_cwd) == (isolated_cwd / "website/netlify.toml", "Netlify")
+
+
 def test_auto_discovery_skips_build_output(isolated_cwd, write_config):
     (isolated_cwd / "vercel.json").write_text("{}\n")
     built = isolated_cwd / "dist/privacy.html"
