@@ -11,6 +11,7 @@ is the map, so read only the doc whose trigger matches.
 | tuning what SAST blocks, or suppressing a Semgrep finding            | Read [SAST.md](SAST.md) for the quick start, severity table, `security.sast.fail_on`, the suppression pattern and this repo's suppressions |
 | configuring or debugging the OWASP ZAP scan (baseline or OpenAPI mode), or a static host with a `<meta>` CSP | Read [DAST.md](DAST.md) for local commands, CI wiring, risk levels, the gate (`rules.tsv` alert refs, CSP exceptions), the static-host alerts and `api.openapi.spec` |
 | fixing a Trivy CVE finding, or when local and CI disagree on one      | Read [VULNERABILITY.md](VULNERABILITY.md) for the Trivy scan, the licence gate and local/CI parity (DB cache, binary version) |
+| judging a dependency's licence, exempting one, or when the inventory says the tree is not installed | Read [LICENCES.md](LICENCES.md) for what each ecosystem is read from, the purl exemptions, dev scope and the exit-2 cases |
 | handling a Gitleaks finding or allowlisting a false positive          | Read [SECRETS.md](SECRETS.md) for the quick start, the allowlist format and what to do the moment a real secret is detected |
 | adding a third-party script, widget or any external resource to a page | Read [CSP_EXCEPTIONS.md](CSP_EXCEPTIONS.md) first for the strict-default + per-path exception pattern and the live list |
 | auditing CORS, HSTS or `nosniff` on a JSON API                        | Read [API_HEADERS.md](API_HEADERS.md) for the findings, the hard-fail split, knobs and commands |
@@ -24,6 +25,7 @@ Generated from the CLI's registry by `task contributing:tables`:
 | ----- | ------ | -------- | ------------ |
 | `security:api-headers` | `task ss:security:api-headers` | `ss-security-api-headers-check.yml` | API response-header + CORS policy audit (in-CLI implementation). |
 | `security:dast` | `task ss:security:dast` | `ss-security-dast-check.yml` | Dynamic Application Security Testing (OWASP ZAP). |
+| `security:licences` | `task ss:security:licences` | `ss-security-licences-check.yml` | Licence inventory over the full resolved dependency tree. |
 | `security:sast` | `task ss:security:sast` | `ss-security-sast-check.yml` | Static Application Security Testing (Semgrep wrapper). |
 | `security:secrets` | `task ss:security:secrets` | `ss-security-secrets-check.yml` | Secrets detection (Gitleaks wrapper). |
 | `security:vulnerability:all` | `task ss:security:vulnerability:all` | `ss-security-vulnerability-all-check.yml` | Dependency vulnerability scanning (Trivy wrapper). |
@@ -36,6 +38,7 @@ What each one blocks on:
 | `security:sast` | Semgrep | findings at or above `security.sast.fail_on` (default ERROR) in your own code |
 | `security:dast` | OWASP ZAP | High / Medium alerts on the running site or API |
 | `security:vulnerability:all` | Trivy | CRITICAL / HIGH CVEs in dependencies |
+| `security:licences` | stdlib Python | a resolved dependency whose licence is outside `.github/dependency-review-config.yml` |
 | `security:secrets` | Gitleaks | any secret, in files or git history |
 | `security:api-headers` | stdlib Python | credentialed CORS wildcards, missing HSTS / `nosniff` |
 | `hygiene:csp-exceptions` | stdlib Python | drift between `worker/headers.json` and the exceptions doc |
@@ -47,7 +50,7 @@ target named after it (`task ss:security:sast`,
 blocking finding lands on `main`. Disable one by listing its workflow under
 `workflows.disabled` in `.slopstopper.yml` (or by choosing a
 [profile](../architecture/PROFILES.md) that drops it). `task ss:security:scan`
-runs SAST, secrets and the dependency scan in sequence.
+runs SAST, secrets, the dependency scan and the licence inventory in sequence.
 
 ## Static Application Security Testing (SAST)
 
@@ -73,6 +76,14 @@ Neither gates on a devDependency advisory: Trivy scans production scope
 and dependency review fails on runtime scope only.
 That is Dependabot's job, by design; keep its alerts and security updates
 enabled. [VULNERABILITY.md](VULNERABILITY.md) has the three-way table.
+
+## Licence Inventory
+
+`security:licences` applies the same allowlist to the whole resolved tree:
+npm from `package-lock.json`, Python from `pip inspect`, no tool to
+install. A transitive package under a denied licence fails it; a licence
+it cannot read as SPDX is reported, never failed. [LICENCES.md](LICENCES.md)
+has the sources, the exemptions and the exit codes.
 
 ## Secrets Detection
 

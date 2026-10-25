@@ -15,7 +15,7 @@ when, and each category README routes onward to its own detail.
 | contributing code: commands, exit codes, commit conventions, pitfalls          | Read [contributing/README.md](contributing/README.md) first                               |
 | asking how the repo is laid out, why mise + Task, profiles, or PR feedback      | Read [architecture/README.md](architecture/README.md) for the layout, C4, toolchain, and routes to profiles and PR feedback |
 | fixing a hygiene check (complexity, docs-*, entry-files, CSP drift, OpenAPI)   | Read [hygiene/README.md](hygiene/README.md) for what each check enforces, its knobs and how to read its report |
-| fixing a security check (SAST, DAST, secrets, dependencies, headers, CSP)      | Read [security/README.md](security/README.md) for the routes to each scanner's guide         |
+| fixing a security check (SAST, DAST, secrets, dependencies, licences, headers, CSP) | Read [security/README.md](security/README.md) for the routes to each scanner's guide         |
 | fixing a reliability check (smoke, accessibility, CWV, SEO, links, llms.txt, robots, sitemap, API health/latency) | Read [reliability/README.md](reliability/README.md) for the env-var contract and the routes to each audit |
 | cutting a release, moving the CLI pin, or installing the Claude Code skills    | Read [runbooks/README.md](runbooks/README.md) for the operational procedures                 |
 | editing the site under `app/`: brand tokens, pages, nav, content rules         | Read [app/README.md](app/README.md) first                                                  |

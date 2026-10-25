@@ -47,6 +47,7 @@ from slopstopper.checks import (
     entry_files,
     llms_txt,
     openapi,
+    licences,
     privacy,
     robots_txt,
     sast,
@@ -81,5 +82,6 @@ REGISTRY: dict[str, Callable[[Optional[list[str]]], int]] = {
     "security:dast": dast.run,
     "security:sast": sast.run,
     "security:secrets": secrets.run,
+    "security:licences": licences.run,
     "security:vulnerability:all": vulnerability_all.run,
 }

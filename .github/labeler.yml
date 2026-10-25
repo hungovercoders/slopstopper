@@ -27,6 +27,7 @@ security:
       - 'cli/slopstopper/checks/dast.py'
       - 'cli/slopstopper/checks/secrets.py'
       - 'cli/slopstopper/checks/vulnerability_all.py'
+      - 'cli/slopstopper/checks/licences.py'
       - 'cli/slopstopper/checks/api_headers.py'
       - 'worker/headers.json'
 

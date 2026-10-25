@@ -12,6 +12,7 @@
 | `ss-security-secrets-check.yml` | `task ss:security:secrets` | `slopstopper run security:secrets` | – | – | – |
 | `ss-security-vulnerability-all-check.yml` | `task ss:security:vulnerability:all` | `slopstopper run security:vulnerability:all` | – | – | – |
 | `ss-security-vulnerability-new-check.yml` | (CI-only, the Dependency Review action) | – | – | – | – |
+| `ss-security-licences-check.yml` | `task ss:security:licences` | `slopstopper run security:licences` | – | – | – |
 | `ss-security-dast-check.yml` | `task ss:security:dast -- <URL>` | `slopstopper run security:dast <URL>` | ✓ | ✓ (site mode only) | ✓ |
 | `ss-security-api-headers-check.yml` | `task ss:security:api-headers -- <URL>` | `slopstopper run security:api-headers <URL>` | ✓ | – (probe a deployed origin) | – |
 | `ss-hygiene-complexity-check.yml` | `task ss:hygiene:complexity` | `slopstopper run hygiene:complexity` | – | – | – |

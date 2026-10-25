@@ -15,14 +15,14 @@ Feedback now arrives in two layers.
 renders a single rolling comment covering every check:
 
 ```
-## ❌ SlopStopper: 2 of 26 checks failed
+## ❌ SlopStopper: 2 of 27 checks failed
 
 | | Check | |
 |---|---|---|
 | ❌ | **Complexity** | logs → |
 | ❌ | **SEO**        | logs → |
 
-<details><summary>The other 24 checks</summary>…</details>
+<details><summary>The other 25 checks</summary>…</details>
 ```
 
 A green PR gets three lines and a group listing; a red one leads with
@@ -50,7 +50,7 @@ green PR the summary is the only thing there.
 **The summary reads GitHub, not the checks.** It is built from the
 workflow runs already recorded against the head commit
 (`GET /repos/{repo}/actions/runs?head_sha=…`), so it needs no
-coordination with the 26 check workflows and cannot race them into a
+coordination with the 27 check workflows and cannot race them into a
 half-written comment. The alternative is for each check to edit its own
 section of one shared comment. That is a read-modify-write on a single
 resource from 25 concurrent jobs, where a lost update silently drops a
