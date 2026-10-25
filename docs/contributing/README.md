@@ -85,7 +85,7 @@ CLI README. `cli/tests/test_cli.py` pins them, and `cli/tests/test_demo.py` the 
 | `profile disabled --json` | `{disabled}` |
 | `config get <key> [<default>] --json` | the value as JSON: a list stays a list, an unset key prints the default (an explicit `""` included), or `null` when none was given |
 | `checks list --json` | a list of `{name, summary, workflow, disabled}` |
-| `demo --json` | `{out, written, skipped, failures}`: the directory, the files written and the ones left alone, and the two deliberate findings as `{check, finding, fix}` |
+| `demo --json` | `{out, written, skipped, failures}`: the directory, the files written and the ones left alone, and every deliberate finding as `{check, finding, fix}` |
 
 ## Quick verification checklist
 
@@ -163,4 +163,4 @@ Every third-party action in the hand-written workflows is pinned to a commit as 
 | changing anything that ships to adopters (a check, workflow, skill, config key, template, page) | Read [CHANGE_MAP.md](CHANGE_MAP.md) before you start. It lists every surface each kind of change must touch |
 | about to add a workflow, task, report path or external resource            | Read [PITFALLS.md](PITFALLS.md) first for workflow naming, the task namespace, CSP and brand contrast |
 | re-recording the README demos, or adding a tape for a new command          | Read [DEMOS.md](DEMOS.md) for the tapes, the render pipeline and what each recording needs |
-| changing the demo repo `slopstopper demo` writes, or pointing a lesson, a tape or an eval at it | Read [FIXTURE.md](FIXTURE.md) for what it contains, the two findings it must keep, and the test that pins them |
+| changing the demo repo `slopstopper demo` writes, or pointing a lesson, a tape or an eval at it | Read [FIXTURE.md](FIXTURE.md) for what it contains, the findings it must keep, and the test that pins them |

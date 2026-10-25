@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="60" viewBox="0 0 480 60" role="img" aria-label="Ninety days of uptime: two incidents">
+  <rect width="480" height="60" fill="#fbf5ec"/>
+  <rect x="8" y="20" width="464" height="20" rx="4" fill="#1f6b54"/>
+  <rect x="120" y="20" width="6" height="20" fill="#b3261e"/>
+  <rect x="396" y="20" width="6" height="20" fill="#b3261e"/>
+</svg>

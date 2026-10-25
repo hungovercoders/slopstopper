@@ -665,8 +665,8 @@ def _add_demo(sub) -> None:
         description=(
             "Write the bundled demo repo into --out: a static status page with\n"
             "the AGENTS.md-first layout (README, AGENTS.md, CLAUDE.md, docs/ with\n"
-            f"its map, .slopstopper.yml, one page under app/). {len(failures)} hygiene\n"
-            "checks fail on it on purpose, each with one finding and a real fix:\n"
+            f"its map, .slopstopper.yml, two pages under app/). {len(failures)} checks\n"
+            "fail on it on purpose, each with one finding and a real fix:\n"
             + listing
             + "Files already in --out are left alone unless --force is given.\n"
         ),

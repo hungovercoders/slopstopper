@@ -3,3 +3,5 @@ article { border: 1px solid #d9cdbb; border-radius: 0.5rem; padding: 1rem; margi
 .status { font-weight: 600; }
 .ok { color: #1f6b54; }
 .unknown { color: #6b5b47; }
+nav { margin-bottom: 1rem; }
+img { display: block; max-width: 100%; height: auto; margin: 0 0 1rem; }

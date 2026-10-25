@@ -10,13 +10,13 @@ urls:
   production:
   preview:
 
-# The page has one route.
+# The status page and the incident history.
 pages:
-  smoke:         /
+  smoke:         /,/history.html
   e2e:           /
-  accessibility: /
-  seo:           /
-  broken_links:  /
+  accessibility: /,/history.html
+  seo:           /,/history.html
+  broken_links:  /,/history.html
 
 # The share image is an SVG, and the smoke test's share-image assertion
 # wants a PNG, so that one assertion is off. The SEO check still fetches
@@ -24,9 +24,11 @@ pages:
 smoke:
   og_image_path: ''
 
-# No headers file, so the CSP-drift check is skipped.
+# The host's headers file; the CSP-drift check reads it against
+# docs/security/CSP_EXCEPTIONS.md.
 headers:
-  source: null
+  source: app/_headers
+  format: cloudflare-text
 
 workflows:
   disabled: []

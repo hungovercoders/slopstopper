@@ -77,6 +77,18 @@ jobs:
         # over both download attempts sits here.
         uses: ./.github/actions/ss-playwright
         timeout-minutes: 12
+      - name: Install Semgrep (test_demo.py's SAST finding)
+        # The same pip install as ss-security-sast-check.yml. Lesson 10's
+        # ZAP runs from Docker, which the runner already has.
+        run: pip install semgrep
+      - name: Install Trivy (test_demo.py's dependency finding)
+        # The same apt repository as ss-security-vulnerability-all-check.yml.
+        run: |
+          set -e
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update -qq && sudo apt-get install -y trivy
+          trivy --version
       - name: Run CLI tests
         run: task -t cli/Taskfile.yml test
 
