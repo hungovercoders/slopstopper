@@ -176,7 +176,7 @@ Update `ACCESSIBILITY_THRESHOLD` in the workflow `workflow_dispatch` default and
 **Tests fail locally but pass in CI (or vice versa):**
 - Ensure `ACCESSIBILITY_TEST_URL` (or the positional URL) points to the correct target
 - Verify the URL is actually reachable (`curl -I "$URL"`), starting your dev server first if you're auditing a local build
-- The CI workflow installs the Playwright browsers via `npx playwright install --with-deps chromium`; locally, run the same command once before your first invocation
+- The CI workflow installs Chromium through the `ss-playwright` composite action; locally, run `npx playwright install --with-deps chromium` once before your first invocation
 
 **False positives:**
 - Suppress specific rules with `axeBuilder.disableRules(['rule-id'])` in the test file

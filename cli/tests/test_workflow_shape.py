@@ -223,7 +223,8 @@ def test_playwright_browsers_are_cached_before_the_install():
     assert "path: ~/.cache/ms-playwright" in cache_step
     assert "steps.pw.outputs.version" in cache_step, "the key carries the resolved Playwright version"
     assert "restore-keys" not in cache_step, "a partial match would mask a lockfile bump"
-    assert "npx playwright --version" in action, "the version comes from node_modules, not package.json"
+    assert "npx --no-install playwright --version" in action, "the version comes from node_modules, never the registry"
+    assert "${{ runner.arch }}" in action, "one cache per architecture, or an x64 Chromium is restored on arm"
 
 
 @pytest.mark.parametrize("workflow", ALL_WORKFLOWS)

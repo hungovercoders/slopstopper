@@ -33,6 +33,8 @@ on:
       # Every ss-* workflow calls `slopstopper run` / `slopstopper emit`,
       # so a change to any of them needs the CLI tests too.
       - '.github/workflows/ss-*.yml'
+      # The shape tests read the composite actions the workflows call.
+      - '.github/actions/**'
   push:
     branches: [ main ]
     paths:
@@ -47,6 +49,8 @@ on:
       # Every ss-* workflow calls `slopstopper run` / `slopstopper emit`,
       # so a change to any of them needs the CLI tests too.
       - '.github/workflows/ss-*.yml'
+      # The shape tests read the composite actions the workflows call.
+      - '.github/actions/**'
   workflow_dispatch:
 
 permissions:
