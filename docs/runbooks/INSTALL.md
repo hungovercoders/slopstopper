@@ -115,6 +115,8 @@ Refresh workflows + shims and reinstall the **pinned** `slopstopper-cli` (config
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
 ```
 
+`slopstopper install [--profile …]` writes the same suite from the files the installed CLI ships (the `ss-*.yml` workflows, shims, seeds, hook and skills), seeding the pin with its own version when the repo has none; `install.sh` additionally pins and installs the CLI through mise. Run it from the pinned CLI (`mise exec -- slopstopper install`) so the shims match the version CI runs.
+
 Move the pin when ready (rewrites `mise.toml`; commit so CI matches). See [UPGRADE_CLI.md](./UPGRADE_CLI.md):
 
 ```bash

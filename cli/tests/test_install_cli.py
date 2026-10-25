@@ -136,15 +136,31 @@ def test_a_repo_without_a_pin_gets_this_cli_task_and_node(tmp_path):
     assert '"node" = "20"' in text
 
 
-def test_an_existing_pin_is_never_moved(tmp_path):
+def test_an_existing_pin_is_never_moved_and_a_different_one_is_named(tmp_path):
     target = _make_minimal_target(tmp_path)
     (target / "mise.toml").write_text('[tools]\n"pipx:slopstopper-cli" = "0.5.0"\n"node" = "18"\n')
-    assert _run_install(target).returncode == 0
+    result = _run_install(target)
+    assert result.returncode == 0
     text = (target / "mise.toml").read_text()
     assert _read_pin(target) == "0.5.0"
     assert text.count("pipx:slopstopper-cli") == 1
     assert '"node" = "18"' in text and '"node" = "20"' not in text
     assert '"task" = "3"' in text
+    assert f"The pin in mise.toml is 0.5.0, but slopstopper-cli {__version__} wrote this suite." in result.stdout
+    assert "mise exec -- slopstopper install" in result.stdout
+
+
+def test_a_matching_pin_gets_no_warning(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target)
+    assert "wrote this suite." not in result.stdout.replace(f"slopstopper-cli {__version__} wrote this suite;", "")
+
+
+def test_a_tools_header_without_a_trailing_newline_still_takes_the_pin(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    (target / "mise.toml").write_text("[tools]")
+    assert _run_install(target).returncode == 0
+    assert _read_pin(target) == __version__
 
 
 def test_a_node_version_file_suppresses_the_node_seed(tmp_path):
@@ -196,16 +212,22 @@ def test_stale_marker_with_zero_workflows_on_disk_is_ignored(tmp_path):
     assert "stale" in result.stdout.lower()
 
 
-def test_genuine_user_deletion_is_still_respected(tmp_path):
+def test_a_deleted_workflow_stays_deleted_until_its_marker_line_goes(tmp_path):
     target = _make_minimal_target(tmp_path)
     assert _run_install(target).returncode == 0
     deleted = target / ".github/workflows/ss-security-secrets-check.yml"
     deleted.unlink()
-    second = _run_install(target)
-    assert second.returncode == 0, second.stderr
-    assert not deleted.exists()
-    assert "stale" not in second.stdout.lower()
-    assert "1 previously-deleted skipped" in second.stdout
+    for _ in range(2):
+        result = _run_install(target)
+        assert result.returncode == 0, result.stderr
+        assert not deleted.exists()
+        assert "stale" not in result.stdout.lower()
+        assert "1 previously-deleted skipped" in result.stdout
+    marker = target / ".ss/.workflows-installed"
+    assert "ss-security-secrets-check.yml" in marker.read_text().split()
+    marker.write_text(marker.read_text().replace("ss-security-secrets-check.yml\n", ""))
+    assert _run_install(target).returncode == 0
+    assert deleted.exists()
 
 
 API_DROPPED = {
@@ -533,18 +555,23 @@ def test_a_repo_without_package_json_gets_a_minimal_one_of_its_own(tmp_path):
 def test_dev_dependencies_merge_into_an_existing_package_json_and_the_adopters_version_wins(tmp_path):
     target = _make_minimal_target(tmp_path)
     (target / "package.json").write_text(json.dumps({
-        "name": "site", "scripts": {"build": "vite build"},
+        "name": "site", "author": "José", "scripts": {"build": "vite build"},
         "devDependencies": {"@playwright/test": "^1.0.0", "vite": "^5"},
-    }, indent=2) + "\n")
+    }, indent=2, ensure_ascii=False) + "\n")
     result = _run_install(target, args=["--no-hooks", "--no-skills"])
     assert result.returncode == 0, result.stderr
-    pkg = json.loads((target / "package.json").read_text())
+    raw = (target / "package.json").read_text()
+    pkg = json.loads(raw)
     assert pkg["scripts"] == {"build": "vite build"}
     assert pkg["devDependencies"]["@playwright/test"] == "^1.0.0"
     assert pkg["devDependencies"]["vite"] == "^5"
     assert "@lhci/cli" in pkg["devDependencies"]
+    assert "José" in raw
     assert "Added devDependencies" in result.stdout
     assert "Version conflicts (your version kept): @playwright/test" in result.stdout
+    second = _run_install(target, args=["--no-hooks", "--no-skills"])
+    assert "No new devDependencies to add" in second.stdout
+    assert (target / "package.json").read_text() == raw
 
 
 def test_gitignore_block_covers_the_run_dir_and_node_modules(tmp_path):
@@ -625,6 +652,20 @@ def test_skills_are_refreshed_as_a_whole_directory(tmp_path):
     assert "slopstopper-install: already up to date" in third.stdout
 
 
+def test_an_interrupted_swap_is_recovered_and_nothing_is_staged_beside_the_skills(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    skills = target / ".claude/skills"
+    stranded = skills / "slopstopper-install.outgoing.123"
+    (stranded / "references").mkdir(parents=True)
+    (stranded / "SKILL.md").write_text("---\nname: old\n---\n")
+    (skills / "slopstopper-triage.incoming.999").mkdir()
+    result = _run_install(target, args=["--no-hooks"])
+    assert result.returncode == 0, result.stderr
+    assert {p.name for p in skills.iterdir()} == {"slopstopper-install", "slopstopper-triage"}
+    assert "slopstopper-install: refreshed" in result.stdout
+    assert not list((target / ".ss").glob(".skill-*"))
+
+
 def test_installed_skill_directories_follow_the_umask(tmp_path):
     target = _make_minimal_target(tmp_path)
     result = subprocess.run(
@@ -684,6 +725,18 @@ def test_custom_hookspath_is_not_overridden(tmp_path):
     subprocess.run(["git", "config", "core.hooksPath", ".my-hooks"], cwd=target, check=True)
     assert _run_install(target).returncode == 0
     assert _hooks_path(target) == ".my-hooks"
+
+
+def test_a_machine_without_git_or_node_still_completes(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    empty = tmp_path / "empty-path"
+    empty.mkdir()
+    result = _run_install(target, env_extra={"PATH": str(empty)})
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert "git not found" in result.stdout
+    assert not (target / ".githooks").exists()
+    assert "node (Playwright" in result.stdout
+    assert (target / "Taskfile.ss.yml").is_file()
 
 
 def test_a_target_that_is_not_a_git_repo_gets_no_hook(tmp_path):

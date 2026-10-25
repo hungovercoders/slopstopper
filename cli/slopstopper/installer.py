@@ -10,9 +10,11 @@ runs them agree by construction.
 A re-run is a refresh. Slopstopper-owned files (the shims, the workflows,
 the actions, the hook, the skills, the block in `.gitignore`) are replaced;
 adopter-owned files (`.slopstopper.yml`, `package.json`, the seeds, the
-headers file) are seeded only when absent. Deleting a workflow is respected
-on the next run through `.ss/.workflows-installed`; a profile drops whole
-sets and `workflows.enabled` takes one back.
+headers file) are seeded only when absent. A workflow the adopter deleted
+stays deleted: `.ss/.workflows-installed` lists every workflow the installer
+has placed, so one listed there and missing from disk is a choice, and
+removing its line is how to have it back. A profile drops whole sets and
+`workflows.enabled` takes one back.
 
 Configuration (.slopstopper.yml, read from the target):
 
@@ -29,10 +31,11 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from slopstopper import __version__, config, output, profiles, suite, workflow_state
+from slopstopper import __version__, config, emit, output, profiles, suite, workflow_state
 from slopstopper.templates import PACKAGE_DATA_DIR
 
 REPO_URL = "https://github.com/hungovercoders/slopstopper"
@@ -89,6 +92,7 @@ class State:
     refreshed: int = 0
     deleted_respected: int = 0
     disabled: set[str] = field(default_factory=set)
+    pinned: str = __version__
 
 
 class InstallError(Exception):
@@ -219,22 +223,32 @@ def has_mise_tool(cfg: Path, key: str) -> bool:
     return cfg.is_file() and bool(_tool_pattern(key).search(_read(cfg)))
 
 
-def write_mise_tool(cfg: Path, key: str, version: str) -> None:
-    """Set a [tools] entry: the file and section are created when absent,
-    an existing entry is replaced, other entries are left as they are."""
+def read_mise_tool(cfg: Path, key: str) -> str | None:
+    """The version a [tools] entry pins, or None when there is no entry."""
+    if not cfg.is_file():
+        return None
+    match = re.search(rf'^\s*"?{re.escape(key)}"?\s*=\s*"([^"]*)"', _read(cfg), re.M)
+    return match.group(1) if match else None
+
+
+def seed_mise_tool(cfg: Path, key: str, version: str) -> bool:
+    """Add a [tools] entry when there is none: the file and the section are
+    created when absent, other entries are left as they are. Returns whether
+    the entry was written."""
+    if has_mise_tool(cfg, key):
+        return False
     line = f'"{key}" = "{version}"'
     if not cfg.is_file():
         _write(cfg, f"[tools]\n{line}\n")
-        return
+        return True
     text = _read(cfg)
-    pattern = _tool_pattern(key)
-    if pattern.search(text):
-        lines = [line if pattern.match(entry) else entry for entry in text.splitlines()]
-        _write(cfg, "\n".join(lines) + "\n")
-    elif re.search(r"^\[tools\]", text, re.M):
+    if not text.endswith("\n"):
+        text += "\n"
+    if re.search(r"^\[tools\]", text, re.M):
         _write(cfg, re.sub(r"^\[tools\]\n", f"[tools]\n{line}\n", text, count=1, flags=re.M))
     else:
-        _write(cfg, text.rstrip("\n") + f"\n\n[tools]\n{line}\n")
+        _write(cfg, text + f"\n[tools]\n{line}\n")
+    return True
 
 
 def read_legacy_key(cfg: Path, key: str) -> str | None:
@@ -266,23 +280,22 @@ def target_has_node_pin(target: Path, cfg: Path) -> bool:
     return (target / ".node-version").is_file() or (target / ".nvmrc").is_file() or has_mise_tool(cfg, "node")
 
 
-def seed_toolchain_pin(target: Path) -> None:
+def seed_toolchain_pin(target: Path) -> str:
     """Pin this CLI, task and node in the mise config when the repo has no
-    pin yet. An existing pin is never moved: `install.sh --upgrade-cli` and
-    `--cli-version` are the two commands that do that."""
+    pin yet, and return the pinned CLI version. An existing pin is never
+    moved: `install.sh --upgrade-cli` and `--cli-version` are the two
+    commands that do that."""
     cfg = target / ".slopstopper.yml"
     mcfg = mise_config_path(target)
     legacy = read_legacy_key(cfg, "cli_version")
     strip_legacy_key(cfg, "cli_version", "# ── slopstopper-cli version pin")
     strip_legacy_key(cfg, "node_version", "# ── Node version pin")
-    if not has_mise_tool(mcfg, "pipx:slopstopper-cli"):
-        pinned = legacy or __version__
-        write_mise_tool(mcfg, "pipx:slopstopper-cli", pinned)
-        output.success(f"slopstopper-cli {pinned} pinned in {mcfg.name}")
-    if not has_mise_tool(mcfg, "task"):
-        write_mise_tool(mcfg, "task", "3")
+    if seed_mise_tool(mcfg, "pipx:slopstopper-cli", legacy or __version__):
+        output.success(f"slopstopper-cli {legacy or __version__} pinned in {mcfg.name}")
+    seed_mise_tool(mcfg, "task", "3")
     if not target_has_node_pin(target, mcfg):
-        write_mise_tool(mcfg, "node", DEFAULT_NODE_VERSION)
+        seed_mise_tool(mcfg, "node", DEFAULT_NODE_VERSION)
+    return read_mise_tool(mcfg, "pipx:slopstopper-cli") or __version__
 
 
 # ── the .ss/ overlay ─────────────────────────────────────────────
@@ -365,6 +378,7 @@ def install_workflows(root: Path, target: Path, state: State) -> None:
             continue
         if name in previous and not dst.is_file():
             state.deleted_respected += 1
+            marker.append(name)
             continue
         if dst.is_file():
             state.refreshed += 1
@@ -449,10 +463,10 @@ def install_package_json(root: Path, target: Path) -> None:
     existing = manifest.setdefault("devDependencies", {})
     added = [k for k in dev if k not in existing]
     conflicts = [f"{k}: existing={existing[k]} template={v}" for k, v in dev.items() if k in existing and existing[k] != v]
-    for k in added:
-        existing[k] = dev[k]
-    _write(pkg, json.dumps(manifest, indent=2) + "\n")
     if added:
+        for k in added:
+            existing[k] = dev[k]
+        _write(pkg, json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
         output.success(f"Added devDependencies: {', '.join(added)}")
     else:
         output.info("No new devDependencies to add")
@@ -578,26 +592,47 @@ def _installed_contents(directory: Path) -> dict[str, bytes]:
     return {p.relative_to(directory).as_posix(): p.read_bytes() for p in directory.rglob("*") if p.is_file()}
 
 
+def _recover_skill_swap(dest: Path, skill: str) -> None:
+    """A run interrupted mid-swap leaves `<skill>.outgoing.<pid>` beside a
+    missing skill, and an older installer could leave `.incoming.<pid>`
+    too; Claude Code reads every directory there as a skill, so put the
+    outgoing copy back when nothing replaced it and drop the rest."""
+    for leftover in sorted(dest.parent.glob(f"{skill}.outgoing.*")):
+        if dest.exists():
+            shutil.rmtree(leftover)
+        else:
+            leftover.rename(dest)
+    for leftover in dest.parent.glob(f"{skill}.incoming.*"):
+        shutil.rmtree(leftover)
+
+
 def install_skill(root: Path, target: Path, skill: str) -> bool:
-    """Write one skill as a whole directory, swapped into place only once
-    every file is staged, so a failure leaves the installed copy as it was."""
+    """Write one skill as a whole directory, staged under .ss/ and swapped
+    into place only once every file is there, so a failure leaves the
+    installed copy as it was."""
     contents = _skill_contents(root, skill)
     if contents is None:
         return False
     dest = target / suite.SKILLS_DIR / skill
+    if dest.parent.is_dir():
+        _recover_skill_swap(dest, skill)
     if dest.is_dir() and _installed_contents(dest) == contents:
         output.info(f"{skill}: already up to date")
         return True
-    incoming, outgoing = dest.with_name(f"{skill}.incoming.{os.getpid()}"), dest.with_name(f"{skill}.outgoing.{os.getpid()}")
-    for rel, data in contents.items():
-        (incoming / rel).parent.mkdir(parents=True, exist_ok=True)
-        (incoming / rel).write_bytes(data)
-    had_it = dest.is_dir()
-    if had_it:
-        dest.rename(outgoing)
-    incoming.rename(dest)
-    if had_it:
-        shutil.rmtree(outgoing)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=".skill-", dir=target / ".ss"))
+    try:
+        incoming = staging / skill
+        for rel, data in contents.items():
+            (incoming / rel).parent.mkdir(parents=True, exist_ok=True)
+            (incoming / rel).write_bytes(data)
+        had_it = dest.is_dir()
+        outgoing = staging / f"{skill}.outgoing"
+        if had_it:
+            dest.rename(outgoing)
+        incoming.rename(dest)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
     output.success(f"{skill}: refreshed" if had_it else f"{skill}: installed")
     return True
 
@@ -640,6 +675,9 @@ def install_hook(root: Path, target: Path) -> None:
     src = root / suite.HOOK
     if not src.is_file():
         return
+    if shutil.which("git") is None:
+        output.info("git not found, so skipping the pre-push hook.")
+        return
     if _run(["git", "rev-parse", "--git-dir"], target).returncode != 0:
         output.info("Target is not a git repository, so skipping the pre-push hook.")
         return
@@ -661,23 +699,22 @@ def install_hook(root: Path, target: Path) -> None:
 # ── the banner ───────────────────────────────────────────────────
 
 
-def ensure_repo_topic(target: Path) -> str:
+def ensure_repo_topic() -> str:
     """Add the `slopstopper` topic through gh: added, present, denied (gh
     sees the repo but can't edit it) or skipped (gh missing, unauthenticated
     or not a GitHub repo). Never fails the install."""
     if shutil.which("gh") is None:
         return "skipped"
-    view = _run(["gh", "repo", "view", "--json", "repositoryTopics", "--jq", ".repositoryTopics[].name"], target)
+    view = emit._gh("repo", "view", "--json", "repositoryTopics", "--jq", ".repositoryTopics[].name", capture=True)
     if view.returncode != 0:
         return "skipped"
     if "slopstopper" in view.stdout.split():
         return "present"
-    edit = _run(["gh", "repo", "edit", "--add-topic", "slopstopper"], target)
-    return "added" if edit.returncode == 0 else "denied"
+    return "added" if emit._gh("repo", "edit", "--add-topic", "slopstopper", capture=True).returncode == 0 else "denied"
 
 
 def _print_topic(target: Path) -> None:
-    outcome = ensure_repo_topic(target)
+    outcome = ensure_repo_topic()
     if outcome == "added":
         _line("  🏷  Repo topic 'slopstopper' added, so this repo is discoverable as an adopter.")
     elif outcome == "present":
@@ -836,7 +873,13 @@ def print_banner(target: Path, opts: Options, state: State) -> None:
     _line()
     _line("  🎉 Installation complete!")
     _line()
-    _line(f"  📦 slopstopper-cli {__version__} wrote this suite; the pin in {mise_config_path(target).name} is what runs it.")
+    mcfg = mise_config_path(target).name
+    _line(f"  📦 slopstopper-cli {__version__} wrote this suite; the pin in {mcfg} is what runs it.")
+    if state.pinned != __version__:
+        output.warn(f"The pin in {mcfg} is {state.pinned}, but slopstopper-cli {__version__} wrote this suite.")
+        _line("     CI and the pre-push hook run the pin, so a check it does not know exits 2 ('unknown check') there.")
+        _line(f"     Move the pin:  bash install.sh --cli-version {__version__}   (or: mise use pipx:slopstopper-cli@{__version__})")
+        _line("     or write the pinned version's suite instead:  mise exec -- slopstopper install")
     _line()
     _print_profile(target, opts, state)
     _print_github_disabled()
@@ -909,7 +952,7 @@ def _install_steps(root: Path, target: Path, opts: Options) -> None:
     seed_config(root, target)
     if opts.profile:
         apply_profile_flag(target, opts.profile)
-    seed_toolchain_pin(target)
+    state.pinned = seed_toolchain_pin(target)
     scrub_legacy_overlay(target)
     _resolve_profile(target, state)
     install_workflows(root, target, state)
