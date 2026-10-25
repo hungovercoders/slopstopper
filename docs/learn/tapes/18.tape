@@ -19,7 +19,7 @@ Set Framerate 50
 # 1. Install the skills into a repo
 Type "slopstopper install --no-topic --no-hooks | grep -A2 'Installing the SlopStopper Claude Code skills' | tail -1" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "find .claude -type f | sort" Enter
+Type "find .claude -type f | LC_ALL=C sort" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 

@@ -59,7 +59,7 @@ Sleep 3s
 # Checkpoint
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "slopstopper run hygiene:entry-files | tail -1" Enter
+Type "slopstopper run hygiene:docs-size | grep 'Status:'" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
@@ -68,5 +68,7 @@ Wait+Line@5m /(^|\s)\$$/
 Type "git checkout .gitignore package.json" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "git clean -fdq" Enter
+Wait+Line@5m /(^|\s)\$$/
+Type "git config --unset core.hooksPath" Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 2s

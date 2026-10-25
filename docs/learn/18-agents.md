@@ -55,7 +55,7 @@ never leaves a stale file behind.
 <!-- learn -->
 ```sh
 slopstopper install --no-topic --no-hooks | grep -A2 'Installing the SlopStopper Claude Code skills' | tail -1
-find .claude -type f | sort
+find .claude -type f | LC_ALL=C sort
 ```
 
 ```
@@ -74,6 +74,7 @@ find .claude -type f | sort
 .claude/skills/slopstopper-triage/references/gotchas.md
 .claude/skills/slopstopper-triage/references/maintaining.md
 .claude/skills/slopstopper-triage/references/reproduce.md
+.claude/skills/slopstopper-triage/references/upstream.md
 ```
 
 Project level, under the repo's own `.claude/skills/`, so every

@@ -48,7 +48,7 @@ Sleep 3s
 
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
-Type "slopstopper install --no-topic --no-hooks --no-skills | grep 'profile'" Enter
+Type "slopstopper install --no-topic --no-hooks --no-skills | grep 'not installed for this repo shape'" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "ls .github/workflows | wc -l" Enter
 Wait+Line@5m /(^|\s)\$$/
@@ -61,7 +61,7 @@ Type "python3 - <<'PY'" Enter
 Type@8ms "import pathlib" Enter
 Type@8ms 'path = pathlib.Path(".slopstopper.yml")' Enter
 Type@8ms "text = path.read_text()" Enter
-Type@8ms 'path.write_text(text.replace("workflows:\n  disabled: []", "workflows:\n  disabled: []\n  enabled: [ss-reliability-broken-links-check.yml]"))' Enter
+Type@8ms 'path.write_text(text.replace("  enabled: []", "  enabled: [ss-reliability-broken-links-check.yml]"))' Enter
 Type@8ms "PY" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "slopstopper profile show" Enter

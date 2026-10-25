@@ -29,8 +29,9 @@ surface humans, agents and CI all call.
 
 A **profile** names the repo's shape and switches off the checks that
 shape has no use for: `ui` (a site, every check), `api` (no browser
-surface, so the nine browser checks are dropped), `library` (nothing
-deployed, so everything that needs a URL goes). The installer only ever
+surface, so the nine browser checks and the privacy statement are
+dropped), `library` (nothing deployed, so everything that needs a URL
+goes). The installer only ever
 subtracts, and `workflows.enabled` takes one check back. Lesson 19 goes
 deeper; here you pick `ui` and look at what it means.
 
@@ -242,25 +243,29 @@ slopstopper checks list --json | grep -c '"disabled": true'
 The pre-push hook runs the static hygiene suite before every push,
 through `task ss:hygiene:test`. On Lantern that gate is red on purpose:
 the demo carries one finding per check, and lessons 2 to 5 fix the
-hygiene ones. One of them is green already, and it proves the install
-took: the entry-file check reads the `AGENTS.md`, `README.md` and
-`CLAUDE.md` the demo shipped, under the budgets the suite enforces.
+hygiene ones. The one hygiene check the demo passes as shipped is the
+advisory docs-size monitor, and it proves the install took: it reads
+the `docs/` tree Lantern shipped against the thresholds in the config
+the installer left alone.
 
 <!-- learn -->
 ```sh
-slopstopper run hygiene:entry-files | tail -1
+slopstopper run hygiene:docs-size | grep 'Status:'
 ```
 
 ```
-✅ Every entry file is within budget, CLAUDE.md is a pure include, and every route is explicit.
+✅ Status: Within acceptable limits
 ```
 
-Put the demo back, so the next lesson starts from the repo as shipped:
+Put the demo back, so the next lesson starts from the repo as shipped.
+The installer pointed git at the hook directory too, and `git clean`
+does not undo config, so unset that as well:
 
 <!-- learn -->
 ```sh
 git checkout .gitignore package.json
 git clean -fdq
+git config --unset core.hooksPath
 ```
 
 ## Exercise
@@ -274,11 +279,12 @@ the docs, which checks a library does not get.
 ```sh
 slopstopper install --profile library --no-topic | grep 'workflow(s)'
 slopstopper profile show
-git checkout .gitignore .slopstopper.yml package.json && git clean -fdq
+git checkout .gitignore .slopstopper.yml package.json && git clean -fdq && git config --unset core.hooksPath
 ```
 
-The installer line reads `11 workflow(s) installed`, and `profile show`
-lists sixteen disabled workflows with the reason `(profile)`: the nine
+The installer line reads `15 workflow(s) installed` and `16 workflow(s)
+not installed`, and `profile show` lists those sixteen with the reason
+`(profile)`: the nine
 browser checks, DAST, CSP exceptions, the privacy statement and the four
 API checks, which is everything that needs a URL or a served page. What
 remains is the static layer: SAST, secrets, dependency CVEs, review and
@@ -319,8 +325,8 @@ same list with a reason beside every line.
    yours.
 4. `profile show`: nothing quietly off. `doctor`: a missing tool is a
    2, not a failure.
-5. `task --list` and `checks list` as the map; the checkpoint: one
-   green check on a demo that is red on purpose.
+5. `task --list` and `checks list` as the map; the checkpoint: the
+   one green hygiene check on a demo that is red on purpose.
 6. Exercise: the library profile and what "needs a URL" removes.
 
 **Shot list.** One terminal, 100x30, font size 16, the site's theme.

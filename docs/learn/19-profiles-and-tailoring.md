@@ -99,7 +99,7 @@ slopstopper profile list
   api
       An HTTP API: JSON/gRPC endpoints with no browser-rendered surface.
       …
-      disables 9 workflow(s):
+      disables 10 workflow(s):
         · ss-reliability-smoke-tests.yml
         · ss-reliability-e2e-check.yml
         …
@@ -107,7 +107,7 @@ slopstopper profile list
   library
       A library, CLI or package with no deployed surface of any kind.
       …
-      disables 15 workflow(s):
+      disables 16 workflow(s):
 ```
 
 ### 4. Switch the repo to the API profile
@@ -125,7 +125,8 @@ slopstopper profile show
   Profile: api  (from .slopstopper.yml)
       An HTTP API: JSON/gRPC endpoints with no browser-rendered surface.
 
-  Disabled workflows (9):
+  Disabled workflows (10):
+    · ss-hygiene-privacy-check.yml               (profile)
     · ss-reliability-accessibility-check.yml     (profile)
     · ss-reliability-broken-links-check.yml      (profile)
     · ss-reliability-core-web-vitals.yml         (profile)
@@ -138,23 +139,23 @@ slopstopper profile show
 ```
 
 The four API checks are back, because the `api` profile keeps them,
-and the nine browser checks are gone from the resolved set. The files
-are still on disk until the installer runs again, which is what
-`install.sh` does on a refresh:
+and the nine browser checks and the privacy statement check (a page
+nobody serves) are gone from the resolved set. The files are still on
+disk until the installer runs again, which is what `install.sh` does on
+a refresh:
 
 <!-- learn -->
 ```sh
-slopstopper install --no-topic --no-hooks --no-skills | grep 'profile'
+slopstopper install --no-topic --no-hooks --no-skills | grep 'not installed for this repo shape'
 ls .github/workflows | wc -l
 ```
 
 ```
-ℹ️  profile 'api': 9 workflow(s) not installed for this repo shape (9 removed from a previous install)
-ℹ️    see 'slopstopper profile show'; list one under workflows.enabled in .slopstopper.yml to keep it
-22
+ℹ️  profile 'api': 10 workflow(s) not installed for this repo shape (10 removed from a previous install)
+21
 ```
 
-Nine removed, four API ones added: twenty-two workflows where lesson 1
+Ten removed, four API ones added: twenty-one workflows where lesson 1
 had twenty-seven. The deploy trigger stops dispatching the nine too;
 `slopstopper profile disabled` prints the resolved set one per line,
 which is what both of them read.
@@ -169,7 +170,7 @@ python3 - <<'PY'
 import pathlib
 path = pathlib.Path(".slopstopper.yml")
 text = path.read_text()
-path.write_text(text.replace("workflows:\n  disabled: []", "workflows:\n  disabled: []\n  enabled: [ss-reliability-broken-links-check.yml]"))
+path.write_text(text.replace("  enabled: []", "  enabled: [ss-reliability-broken-links-check.yml]"))
 PY
 slopstopper profile show
 ```
@@ -178,8 +179,8 @@ slopstopper profile show
   Profile: api  (from .slopstopper.yml)
       An HTTP API: JSON/gRPC endpoints with no browser-rendered surface.
 
-  Disabled workflows (8):
-    · ss-reliability-accessibility-check.yml     (profile)
+  Disabled workflows (9):
+    · ss-hygiene-privacy-check.yml               (profile)
     …
     · ss-reliability-smoke-tests.yml             (profile)
 
@@ -240,7 +241,7 @@ git clean -fdq
 ## Exercise
 
 How many workflows does the `library` profile drop, and which hygiene
-check is among them?
+checks are among them?
 
 <details>
 <summary>Solution</summary>
@@ -250,12 +251,14 @@ slopstopper profile expand library | wc -l
 slopstopper profile expand library | grep hygiene
 ```
 
-Fifteen: the nine browser checks, DAST, CSP exceptions and the four API
-checks. The hygiene one is `ss-hygiene-openapi-check.yml`, because
-drift means the spec against the live API it documents, and a library
-serves nothing. What remains for a library is the static-analysis
-layer: complexity, the docs checks, secrets, SAST and dependencies,
-which is the whole of what applies to code nothing serves.
+Sixteen: the nine browser checks, the privacy statement, DAST, CSP
+exceptions and the four API checks. Three are hygiene checks: CSP
+exceptions and the privacy statement, which read headers and a page
+nothing serves, and `ss-hygiene-openapi-check.yml`, because drift means
+the spec against the live API it documents. What remains for a library
+is the static-analysis layer: complexity, the docs checks, secrets, SAST
+and dependencies, which is the whole of what applies to code nothing
+serves.
 
 </details>
 
@@ -282,8 +285,8 @@ checks, every one of them auditing nothing.
    ignored; a profile only subtracts.
 2. `show`, `detect`, `list`: what this repo resolves to and why each
    line is off.
-3. Switch to `api`; nine gone, four back; the installer deleting the
-   nine; what it and the deploy trigger read.
+3. Switch to `api`; ten gone, four back; the installer deleting the
+   ten; what it and the deploy trigger read.
 4. The escape hatch; the one-line arithmetic.
 5. The pin in `mise.toml`; per directory; moved by one command.
 
