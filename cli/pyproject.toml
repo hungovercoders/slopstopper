@@ -52,6 +52,9 @@ dependencies = [
 [project.optional-dependencies]
 test = [
   "pytest>=7",
+  # test_suite.py builds the wheel and the sdist to prove the suite ships.
+  "build>=1",
+  "hatchling>=1.25",
 ]
 
 [project.scripts]
@@ -70,6 +73,11 @@ Acknowledgements = "https://github.com/hungovercoders/slopstopper/blob/main/ATTR
 # data files) automatically, so no `force-include` is needed; that block
 # caused a double-include error when building the wheel under hatchling.
 packages = ["slopstopper"]
+
+# hatch_build.py copies the suite (workflows, shims, seeds, hook, skills)
+# from the repository root into the sdist and the wheel; see
+# slopstopper/suite.py for the list.
+[tool.hatch.build.hooks.custom]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
