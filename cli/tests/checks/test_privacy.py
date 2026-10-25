@@ -315,13 +315,67 @@ def test_host_name_must_be_a_whole_word(site):
     assert "host" in _issues()
 
 
-def test_a_headers_source_that_cannot_be_read_is_exit_two(site, write_config, capsys):
+def test_a_missing_headers_source_skips_the_third_party_rule_as_csp_exceptions_does(site, write_config, monkeypatch, capsys):
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     write_config("profile: ui\nheaders:\n  source: worker/missing.json\n  format: json\n")
+    assert privacy.run() == 0
+    assert "does not exist, so the third-party rule was not applied" in capsys.readouterr().out
+    # A built-HTML source: a skip locally, could-not-run in CI, as for csp-exceptions.
+    write_config("profile: ui\nheaders:\n  source: dist\n  format: meta\n")
+    assert privacy.run() == 0
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
     assert privacy.run() == 2
-    assert "does not exist" in capsys.readouterr().out
     assert "did not complete" in Path(".ss/reports/privacy/privacy-report.md").read_text()
+    assert not Path(".ss/reports/privacy/privacy-report.json").exists()
+
+
+def test_a_headers_source_that_cannot_be_read_is_exit_two(site, write_config):
     write_config("profile: ui\nheaders:\n  source: worker/headers.json\n  format: nope\n")
     assert privacy.run() == 2
+    (site / "worker/headers.json").write_text("{not json")
+    write_config("profile: ui\nheaders:\n  source: worker/headers.json\n  format: json\n")
+    assert privacy.run() == 2
+
+
+def test_visible_text_keeps_autolinks_prose_angles_and_time_datetimes(site):
+    page = site / "app/privacy.md"
+    (site / "app/privacy.html").unlink()
+    page.write_text(
+        "# Privacy\n\nHosted on Cloudflare. Comments load from <https://giscus.app>, which reaches GitHub; write to <mail@example.com>.\n"
+        "If a < b then Cloudflare > nothing. Last checked <time datetime=\"2026-10-24\">24 Oct 2026</time>.\n"
+    )
+    text = privacy._page_text(page)
+    assert "https://giscus.app" in text and "mail@example.com" in text and "a < b" in text
+    assert privacy.run() == 0
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("24 Oct 2026", True), ("Oct 24, 2026", True), ("24th of October 2026", True), ("Sept 3, 2026", True),
+    ("build-2026-10-24", False), ("2026-10-24-1", False), ("OCTOBER 24, 2026", True),
+])
+def test_more_date_forms(text, expected):
+    assert privacy._has_date(text) is expected
+
+
+@pytest.mark.parametrize("name, text, expected", [
+    ("Hetzner (EU)", "Hetzner (EU) hosts the site.", True),
+    ("Vercel ", "Deployed on Vercel.", True),
+    ("Amazon Web Services", "runs on Amazon\n  Web Services today", True),
+    ("Cloudflare", "cloudflareinsights.com", False),
+    ("Fly.io", "(Fly.io)", True),
+])
+def test_host_names_match_as_whole_words_or_phrases(name, text, expected):
+    assert privacy._names_page(text, name) is expected
+
+
+def test_a_bare_script_module_is_not_a_privacy_page(isolated_cwd, write_config):
+    write_config("profile: ui\n")
+    (isolated_cwd / "wrangler.jsonc").write_text(WRANGLER_LOGS_OFF)
+    (isolated_cwd / "src/lib").mkdir(parents=True)
+    (isolated_cwd / "src/lib/privacy.ts").write_text("export const consent = true;\n")
+    (isolated_cwd / "src/pages").mkdir()
+    (isolated_cwd / "src/pages/privacy.astro").write_text("<p>Cloudflare, 2026-10-24</p>\n")
+    assert privacy.resolve_page(isolated_cwd)[0] == isolated_cwd / "src/pages/privacy.astro"
 
 
 def test_router_pages_are_discovered(isolated_cwd, write_config):

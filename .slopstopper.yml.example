@@ -134,7 +134,7 @@ headers:
 # wrangler turns them on, and a date.
 privacy:
   # Repo path of the statement. `auto` takes the first privacy.<ext>,
-  # privacy/index.<ext>, privacy/page.<ext> or privacy/+page.svelte outside
+  # privacy/index.<ext>, privacy/page.<ext>, privacy/+page.svelte or +page.md outside
   # dependency, build and hidden directories. '' (or a bare `page:`) opts out
   # visibly: the check prints why and passes, so put the reason in a comment here.
   page: auto
