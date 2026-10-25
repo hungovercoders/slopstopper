@@ -827,6 +827,32 @@ def test_no_warning_when_the_pinned_cli_knows_every_shipped_check(tmp_path):
     assert "does not know" not in result.stdout
 
 
+def test_the_guard_asks_the_pinned_cli_through_mise_not_the_shell(tmp_path):
+    """After `--upgrade-cli` the shell still resolves the old binary; the
+    guard must describe the pin, not the shell, or it warns that the new CLI
+    lacks checks it knows. Here mise's CLI knows everything and the PATH one
+    lacks a check: no warning is the right answer."""
+    target = _make_minimal_target(tmp_path)
+    env = _fake_cli_listing_on_path(tmp_path, [k for k in _shipped_check_keys() if k != "hygiene:complexity"], version="1.0.0")
+    mise = _fake_mise_on_path(tmp_path, _shipped_check_keys(), version="2.0.0")
+    env.update(mise)
+    env["PATH"] = f"{tmp_path / 'fakebin-mise'}{os.pathsep}{tmp_path / 'fakebin-cli'}{os.pathsep}{os.environ['PATH']}"
+    result = _run_install(target, args=["--no-hooks", "--no-skills", "--cli-version", "2.0.0"], env_extra=env)
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert "This shell still runs slopstopper 1.0.0, not the pinned 2.0.0" in result.stdout
+    assert "does not know" not in result.stdout
+
+
+def test_the_guard_warns_from_the_pinned_cli_when_the_shell_has_none(tmp_path):
+    """A fresh install in a shell without mise activated has no `slopstopper`
+    on PATH at all; the guard still answers, from the pin."""
+    target = _make_minimal_target(tmp_path)
+    env = _fake_mise_on_path(tmp_path, [k for k in _shipped_check_keys() if k != "hygiene:complexity"], version="2.0.0")
+    result = _run_install(target, args=["--no-hooks", "--no-skills", "--cli-version", "2.0.0"], env_extra=env)
+    assert result.returncode == 0, f"{result.stdout}\n{result.stderr}"
+    assert "The pinned slopstopper-cli 2.0.0 does not know: hygiene:complexity." in result.stdout
+
+
 def test_no_warning_and_no_crash_when_no_cli_answers(tmp_path):
     """The offline test seam has no `slopstopper` at all; the guard stays quiet."""
     target = _make_minimal_target(tmp_path)
@@ -1310,6 +1336,32 @@ def _fake_cli_listing_on_path(tmp_path: Path, known: list[str], *, version: str 
     )
     stub.chmod(stub.stat().st_mode | stat.S_IXUSR)
     return {"PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"}
+
+
+def _fake_mise_on_path(tmp_path: Path, known: list[str], *, version: str) -> dict[str, str]:
+    """A `mise` stub first on PATH that stands in for the real install: `use`,
+    `reshim` and `which` succeed and do nothing, `exec -- slopstopper` answers
+    `--version` with `version` and `checks list --json` with `known`. With
+    SKIP_CLI_INSTALL unset the installer takes its real mise path against it,
+    offline, so the test can tell a pinned-CLI answer from a PATH one."""
+    bin_dir = tmp_path / "fakebin-mise"
+    bin_dir.mkdir(exist_ok=True)
+    stub = bin_dir / "mise"
+    listing = json.dumps([{"name": name, "summary": "", "workflow": "", "disabled": False} for name in known])
+    stub.write_text(
+        "#!/usr/bin/env bash\n"
+        "case \"$1\" in\n"
+        "  use|reshim|which) exit 0 ;;\n"
+        "  exec) shift; [ \"$1\" = -- ] && shift; shift  # slopstopper\n"
+        "    case \"$1 $2\" in\n"
+        f"      '--version ') echo 'slopstopper {version}'; exit 0 ;;\n"
+        f"      'checks list') printf '%s' '{listing}'; exit 0 ;;\n"
+        "    esac; exit 1 ;;\n"
+        "esac\n"
+        "exit 1\n"
+    )
+    stub.chmod(stub.stat().st_mode | stat.S_IXUSR)
+    return {"PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}", "SKIP_CLI_INSTALL": None, "SLOPSTOPPER_FORCE_LATEST": version}
 
 
 def _shipped_check_keys() -> list[str]:

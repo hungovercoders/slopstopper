@@ -261,7 +261,20 @@ installed_cli_version() {
   slopstopper --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
 }
 
-# The checks the shipped shims call that the CLI on PATH does not know,
+# Run the pinned slopstopper-cli: through mise in the target when mise did
+# the install, else whatever `slopstopper` is on PATH (the SKIP_CLI_INSTALL
+# test seam, which has no mise). A bare `slopstopper` is wrong right after
+# the pin moves: in PATH-activation mode the shell keeps the old binary
+# until it re-enters the directory, and without activation there is none.
+pinned_cli() {
+  if [ "${SKIP_CLI_INSTALL:-0}" != "1" ] && command -v mise >/dev/null 2>&1; then
+    ( cd "$TARGET_DIR" 2>/dev/null && mise exec -- slopstopper "$@" )
+  else
+    slopstopper "$@"
+  fi
+}
+
+# The checks the shipped shims call that the pinned CLI does not know,
 # comma-separated; empty when every one resolves or when no CLI answers.
 # The shims and workflows come from this checkout, the CLI from the pin,
 # so after a new check ships upstream a plain refresh can hand a repo a
@@ -270,7 +283,7 @@ installed_cli_version() {
 # every push; this names the gap so it is a known step, not a surprise.
 shipped_checks_unknown_to_cli() {
   local known shipped c missing=""
-  known="$(slopstopper checks list --json 2>/dev/null \
+  known="$(pinned_cli checks list --json 2>/dev/null \
     | python3 -c 'import sys,json; print("\n".join(c["name"] for c in json.load(sys.stdin)))' 2>/dev/null)" || true
   [ -n "$known" ] || return 0
   shipped="$(grep -oE 'slopstopper run [a-z][a-z0-9:-]+' "$TARGET_DIR/Taskfile.ss.yml" 2>/dev/null | awk '{print $3}' | sort -u)"
