@@ -822,9 +822,22 @@ def test_warns_when_the_pinned_cli_lacks_a_shipped_check(tmp_path):
 
 def test_no_warning_when_the_pinned_cli_knows_every_shipped_check(tmp_path):
     target = _make_minimal_target(tmp_path)
-    result = _run_install(target, args=["--no-hooks", "--no-skills"], env_extra=_fake_cli_listing_on_path(tmp_path, _shipped_check_keys()))
+    known = _shipped_check_keys()
+    result = _run_install(target, args=["--no-hooks", "--no-skills"], env_extra=_fake_cli_listing_on_path(tmp_path, known))
     assert result.returncode == 0, result.stderr
-    assert "does not know" not in result.stdout
+    assert "does not know" not in result.stdout, f"the stub listed {known}\n{result.stdout}"
+
+
+def test_the_guard_reads_a_long_listing_whole(tmp_path):
+    """The guard once piped the known list through `grep -q` under pipefail;
+    grep exits on the first match while printf is still writing, so a check
+    early in a long listing was reported unknown (#564). Thousands of extra
+    names after the shipped ones make that race near-certain on the old code."""
+    target = _make_minimal_target(tmp_path)
+    known = _shipped_check_keys() + [f"zz:check-{n}" for n in range(4000)]
+    result = _run_install(target, args=["--no-hooks", "--no-skills"], env_extra=_fake_cli_listing_on_path(tmp_path, known))
+    assert result.returncode == 0, result.stderr
+    assert "does not know" not in result.stdout, result.stdout
 
 
 def test_the_guard_asks_the_pinned_cli_through_mise_not_the_shell(tmp_path):

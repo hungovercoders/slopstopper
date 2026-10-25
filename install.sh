@@ -261,6 +261,16 @@ installed_cli_version() {
   slopstopper --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
 }
 
+# has_line LIST LINE → exit 0 if LINE is one whole line of the newline-separated
+# LIST. Pure bash on purpose: `printf LIST | grep -qx LINE` under pipefail is
+# a race, because the builtin printf writes a long list in several chunks and
+# grep -q exits on the first match, so printf can take SIGPIPE and the
+# pipeline report the line missing (#564).
+has_line() {
+  local nl=$'\n'
+  case "$nl$1$nl" in *"$nl$2$nl"*) return 0 ;; *) return 1 ;; esac
+}
+
 # Run the pinned slopstopper-cli: through mise in the target when mise did
 # the install, else whatever `slopstopper` is on PATH (the SKIP_CLI_INSTALL
 # test seam, which has no mise). A bare `slopstopper` is wrong right after
@@ -288,7 +298,7 @@ shipped_checks_unknown_to_cli() {
   [ -n "$known" ] || return 0
   shipped="$(grep -oE 'slopstopper run [a-z][a-z0-9:-]+' "$TARGET_DIR/Taskfile.ss.yml" 2>/dev/null | awk '{print $3}' | sort -u)"
   for c in $shipped; do
-    printf '%s\n' "$known" | grep -qx "$c" || missing="${missing:+$missing, }$c"
+    has_line "$known" "$c" || missing="${missing:+$missing, }$c"
   done
   printf '%s' "$missing"
 }
@@ -1386,7 +1396,7 @@ ensure_repo_topic() {
   local topics
   topics="$(cd "$TARGET_DIR" && gh repo view --json repositoryTopics --jq '.repositoryTopics[].name' 2>/dev/null)" \
     || { echo skipped; return 0; }
-  if printf '%s\n' "$topics" | grep -qx "slopstopper"; then
+  if has_line "$topics" "slopstopper"; then
     echo present
     return 0
   fi
