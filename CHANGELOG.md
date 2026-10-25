@@ -4,6 +4,24 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.25.0](https://github.com/hungovercoders/slopstopper/compare/v0.24.0...v0.25.0) (2026-10-25)
+
+
+### Features
+
+* **ci:** one ss-playwright composite action with a per-version browser cache ([#541](https://github.com/hungovercoders/slopstopper/issues/541)) ([cb718ab](https://github.com/hungovercoders/slopstopper/commit/cb718ab87ee00069c2359246bce7defda125486a))
+* **hygiene:** privacy statement check for sites on hosts that keep traffic data ([#543](https://github.com/hungovercoders/slopstopper/issues/543)) ([a55f92e](https://github.com/hungovercoders/slopstopper/commit/a55f92ed5403510da05774f5c723024abde0a9f9))
+* **site:** privacy page and footer note for slopstopper.dev ([#539](https://github.com/hungovercoders/slopstopper/issues/539)) ([f20bd89](https://github.com/hungovercoders/slopstopper/commit/f20bd892cacd7c91752f062c392112a97fa8722f)), closes [#533](https://github.com/hungovercoders/slopstopper/issues/533)
+* **site:** Workers Logs off and Giscus loads on click ([#540](https://github.com/hungovercoders/slopstopper/issues/540)) ([f9e923c](https://github.com/hungovercoders/slopstopper/commit/f9e923cdd47a696b9a36081e7ad3975fa5d6ebeb))
+* **skills:** adopter feedback loop: repo topic, label, upstream issues, workaround markers ([#534](https://github.com/hungovercoders/slopstopper/issues/534)) ([d1020e1](https://github.com/hungovercoders/slopstopper/commit/d1020e13086537b4c5a2a1e79d184184d8024c7c))
+
+
+### Bug Fixes
+
+* **ci:** run Playwright's apt phase outside the timed retry loop ([#532](https://github.com/hungovercoders/slopstopper/issues/532)) ([c2df019](https://github.com/hungovercoders/slopstopper/commit/c2df01986a56fb1ec7ba7204d71be14aad84be25))
+* **dast:** probe the target's port, not :8080, before a localhost scan ([#544](https://github.com/hungovercoders/slopstopper/issues/544)) ([3b0e646](https://github.com/hungovercoders/slopstopper/commit/3b0e646dd4e9f1577a09b8c49606ec53005e0b50))
+* **install:** warn when the pinned CLI lacks a check the shipped shims call ([#546](https://github.com/hungovercoders/slopstopper/issues/546)) ([2cc9b15](https://github.com/hungovercoders/slopstopper/commit/2cc9b150f02cb4624719bfd35960fad8061c53e4))
+
 ## [0.24.0](https://github.com/hungovercoders/slopstopper/compare/v0.23.0...v0.24.0) (2026-10-24)
 
 
