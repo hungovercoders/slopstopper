@@ -657,7 +657,7 @@ _DISPATCHERS = {
     "cloudflare": lambda a: _dispatch_cloudflare(a.cloudflare_action, a.sha),
     "install":    lambda a: installer.install(installer.Options(
         target=Path(a.target), profile=a.profile, use_task=not a.no_task,
-        skills=not a.no_skills, hooks=not a.no_hooks, topic=not a.no_topic,
+        skills=not a.no_skills, hooks=not a.no_hooks, topic=not a.no_topic, only=a.only,
     )),
     "demo":      lambda a: _dispatch_demo(a.out, force=a.force, as_json=a.json),
 }
@@ -733,6 +733,7 @@ def _add_install(sub) -> None:
             "  slopstopper install\n"
             "  slopstopper install --profile api\n"
             "  slopstopper install --no-task ../other-repo\n"
+            "  slopstopper install --only skills       # refresh the Claude Code skills, nothing else\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -745,6 +746,7 @@ def _add_install(sub) -> None:
     p.add_argument("--no-skills", action="store_true", default=bool(os.environ.get("SLOPSTOPPER_NO_SKILLS")), help="skip the Claude Code skills")
     p.add_argument("--no-hooks", action="store_true", default=bool(os.environ.get("SLOPSTOPPER_NO_HOOKS")), help="skip the pre-push hygiene hook")
     p.add_argument("--no-topic", action="store_true", default=bool(os.environ.get("SLOPSTOPPER_NO_TOPIC")), help="don't add the `slopstopper` repo topic via gh")
+    p.add_argument("--only", choices=["skills"], default=None, help="write only this part of the suite (skills: the two Claude Code skills) and touch nothing else")
 
 
 def main(argv: list[str] | None = None) -> int:

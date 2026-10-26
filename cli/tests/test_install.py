@@ -339,6 +339,47 @@ def test_the_bootstrap_needs_no_git_and_no_checkout(tmp_path):
 # ── install-skill.sh, the standalone skills refresher ────────────
 
 
+def test_install_skill_sh_hands_over_to_the_pinned_cli(tmp_path):
+    """With a pin that mise resolves in the target, the skills come from that
+    CLI's wheel, not from main."""
+    target = tmp_path / "adopter"
+    target.mkdir()
+    bin_dir = tmp_path / "fakebin-mise"
+    bin_dir.mkdir()
+    stub = bin_dir / "mise"
+    stub.write_text(
+        "#!/usr/bin/env bash\n"
+        "case \"$1\" in\n"
+        "  which) exit 0 ;;\n"
+        f"  exec) shift; [ \"$1\" = -- ] && shift; echo \"$*\" > '{tmp_path}/handed-over'; exit 0 ;;\n"
+        "esac\nexit 1\n"
+    )
+    stub.chmod(0o755)
+    env = {k: v for k, v in os.environ.items() if k != "SLOPSTOPPER_REPO_RAW"}
+    env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
+    result = subprocess.run(
+        ["bash", str(REPO_ROOT / "install-skill.sh"), "adopter"], capture_output=True, text=True, env=env, cwd=tmp_path,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (tmp_path / "handed-over").read_text().strip() == f"slopstopper install --only skills {target}"
+    assert not (target / ".claude").exists(), "nothing fetched from main"
+
+
+def test_install_skill_sh_fetches_when_no_cli_is_pinned(tmp_path):
+    """Pointed at a file:// source with no mise on PATH, it takes the fetch
+    path and says that a pin would change that."""
+    target = tmp_path / "adopter"
+    target.mkdir()
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    result = subprocess.run(
+        ["bash", str(REPO_ROOT / "install-skill.sh"), str(target)], capture_output=True, text=True,
+        env={**os.environ, "SLOPSTOPPER_REPO_RAW": f"file://{REPO_ROOT}", "PATH": f"{empty}{os.pathsep}/usr/bin:/bin"},
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (target / ".claude/skills/slopstopper-install/SKILL.md").is_file()
+
+
 def _run_install_skill(target, src, umask=None):
     cmd = f'bash "{REPO_ROOT / "install-skill.sh"}" "{target}"'
     if umask is not None:

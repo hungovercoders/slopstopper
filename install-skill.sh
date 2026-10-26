@@ -6,6 +6,13 @@
 # into a repo; this script just covers the skill subset, so you can refresh
 # just the playbooks without touching workflows, the Taskfile or the CLI.
 #
+# In a repo that pins slopstopper-cli (mise.toml, written by install.sh)
+# it hands over to `mise exec -- slopstopper install --only skills`, so the
+# skills come from the pinned version's wheel and match the shims and
+# workflows beside them. Without a pin it fetches the skills on main from
+# GitHub, which is the right answer for a repo that has not adopted the
+# suite yet.
+#
 # Skills are installed at *project level*, into the adopter repo's
 # ./.claude/skills/ directory, so every contributor that clones the repo
 # gets them automatically (Claude Code auto-discovers project-level skills
@@ -81,12 +88,27 @@ esac
 if [ ! -d "${TARGET_DIR}" ]; then
   error "Target directory does not exist: ${TARGET_DIR}"
 fi
+TARGET_DIR="$(cd "${TARGET_DIR}" && pwd)"
+
+# ── hand over to the pinned CLI ───────────────────────────────────────────────
+#
+# A target where mise resolves slopstopper has the suite installed and
+# pinned; its CLI carries the skills of that version. An explicit
+# SLOPSTOPPER_REPO_RAW asks for a particular source and is honoured instead.
+if [ -z "${SLOPSTOPPER_REPO_RAW:-}" ] && command -v mise >/dev/null 2>&1 \
+   && ( cd "${TARGET_DIR}" && mise which slopstopper >/dev/null 2>&1 ); then
+  cd "${TARGET_DIR}"
+  exec mise exec -- slopstopper install --only skills "${TARGET_DIR}"
+fi
 
 sep
 echo "  🧠  SlopStopper: installing the Claude Code skills (project level)"
 echo "  Source : ${REPO_RAW}/.claude/skills/<skill>/  (SKILL.md + references/)"
 echo "  Target : ${TARGET_DIR}/.claude/skills/<skill>/"
 sep
+if [ -z "${SLOPSTOPPER_REPO_RAW:-}" ]; then
+  info "No pinned slopstopper-cli in ${TARGET_DIR}, so these are the skills on main. Once install.sh has pinned the CLI, a re-run takes them from that version instead."
+fi
 
 # ── install each skill ──────────────────────────────────────────────────────
 

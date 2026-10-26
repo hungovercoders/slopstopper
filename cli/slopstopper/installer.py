@@ -79,6 +79,7 @@ class Options:
     skills: bool = True
     hooks: bool = True
     topic: bool = True
+    only: str | None = None
 
 
 @dataclass
@@ -637,11 +638,14 @@ def install_skill(root: Path, target: Path, skill: str) -> bool:
     return True
 
 
-def install_skills(root: Path, target: Path) -> None:
-    _line()
-    _sep()
-    _line("  🧠  Installing the SlopStopper Claude Code skills (project level)…")
-    _sep()
+def install_skills(root: Path, target: Path, banner: bool = True) -> list[str]:
+    """Write both skills and clean up obsolete ones; returns the skills
+    that could not be written."""
+    if banner:
+        _line()
+        _sep()
+        _line("  🧠  Installing the SlopStopper Claude Code skills (project level)…")
+        _sep()
     failed = [skill for skill in suite.SKILLS if not install_skill(root, target, skill)]
     for obsolete in suite.OBSOLETE_SKILLS:
         stale = target / suite.SKILLS_DIR / obsolete
@@ -654,7 +658,8 @@ def install_skills(root: Path, target: Path) -> None:
         output.info("They'll shadow the project-level copies you just installed. Clean up with:")
         output.info("  rm -rf " + " ".join(f"~/.claude/skills/{name}" for name in (*suite.SKILLS, *suite.OBSOLETE_SKILLS)))
     if failed:
-        output.warn(f"Claude Code skills not fully installed (non-fatal): {', '.join(failed)}. Any installed copy was left as it was; re-run to retry.")
+        output.warn(f"Claude Code skills not fully installed: {', '.join(failed)}. Any installed copy was left as it was; re-run to retry.")
+    return failed
 
 
 # ── the pre-push hook ────────────────────────────────────────────
@@ -931,6 +936,8 @@ def install(opts: Options) -> int:
         output.error(str(exc))
         return 1
     target = opts.target.resolve()
+    if opts.only == "skills":
+        return _install_only_skills(root, target)
     preflight()
     _sep()
     _line("  🛠  SlopStopper: installing tooling")
@@ -944,6 +951,20 @@ def install(opts: Options) -> int:
     finally:
         os.chdir(cwd)
     return 0
+
+
+def _install_only_skills(root: Path, target: Path) -> int:
+    """`--only skills`: refresh the two skills from this CLI's wheel and
+    touch nothing else, which is what install-skill.sh hands over to.
+    Exits 1 when one could not be written, since that is the whole job."""
+    _sep()
+    _line("  🧠  SlopStopper: installing the Claude Code skills (project level)")
+    _line(f"  Source : slopstopper-cli {__version__} ({root})")
+    _line(f"  Target : {target / suite.SKILLS_DIR}/<skill>/")
+    _sep()
+    (target / ".ss").mkdir(exist_ok=True)
+    failed = install_skills(root, target, banner=False)
+    return 1 if failed else 0
 
 
 def _install_steps(root: Path, target: Path, opts: Options) -> None:
