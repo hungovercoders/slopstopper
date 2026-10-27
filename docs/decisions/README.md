@@ -32,6 +32,7 @@ Running log of significant decisions for this project.
 | Date | Decision | Status | Rationale | Notes |
 | ---- | -------- | ------ | --------- | ----- |
 | TBD | Initialize decisions framework | accepted | Establish a lightweight, format-agnostic decision log as the source of truth for significant decisions. | none |
+| 2026-10-27 | Org-wide operation lives in a separate repo, slopstopper-steward, that consumes a written contract rather than slopstopper's code | accepted | slopstopper ships into every adopter and must stay small and per-repo; discovery, pin moves and cross-repo PRs need a token and a schedule no adopter should carry. The steward re-implements nothing: it reads the installer's files, `emit`'s markers and the shipped skills, and a contract test on both sides catches drift. | [architecture/STEWARD.md](../architecture/STEWARD.md) |
 
 ## Status Values
 
