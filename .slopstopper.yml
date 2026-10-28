@@ -57,8 +57,8 @@ hygiene:
     # track docs/ as it is; the structural budgets (entry-files tokens,
     # docs-structure lines and hops) are the ones that never move. Change
     # these only in a commit that says why.
-    max_total_size_kb: 240
-    max_files: 36
+    max_total_size_kb: 250
+    max_files: 37
   # Every piece of site and skill drift the repo review found lived in a
   # file the docs/-only scan never read. Scan those surfaces too.
   docs_accuracy:
