@@ -24,8 +24,9 @@ here, which the steward then gets for free in every adopter.
 
 ## What the steward reads from this repo
 
-These are the surfaces its [contract module](https://github.com/hungovercoders/slopstopper-steward/blob/main/steward/contract.py) names; its CI checks
-them nightly against this repo's `main`, and the steward row in
+These are the surfaces its [contract module](https://github.com/hungovercoders/slopstopper-steward/blob/main/steward/contract.py) names. The steward's CI
+checks them against this repo's `main` on every steward PR and nightly;
+nothing in this repo's own CI does, so the steward row in
 [`docs/contributing/CHANGE_MAP.md`](../contributing/CHANGE_MAP.md) lists
 them for anyone changing one:
 
@@ -38,11 +39,17 @@ them for anyone changing one:
 - **Method:** `.claude/skills/slopstopper-triage/` and
   `.claude/skills/slopstopper-install/`, and the
   `slopstopper-workaround: hungovercoders/slopstopper#N` marker.
-- **Commands:** `slopstopper install --no-topic`, `slopstopper run --json`
-  and `slopstopper checks list --json` (the shapes in
+- **Commands:** `slopstopper install --no-topic`, `slopstopper run --json`,
+  `slopstopper checks list --json`, `slopstopper profile expand <n> --json`
+  and `slopstopper doctor --json` with its `needed_by` (the shapes in
   [`docs/contributing/README.md`](../contributing/README.md)).
-- **Releases:** PyPI `slopstopper-cli` and the `v<version>` tag form, so
-  release notes and skills can be fetched for a pinned version.
+- **Checks that need an installed environment:** `security:licences`,
+  registered in `cli/slopstopper/checks/__init__.py`, inventories the
+  interpreter's packages (`pip inspect` in `checks/licences.py`), so the
+  steward reports it unverified in a bare clone instead of red.
+- **Releases:** PyPI `slopstopper-cli` and the `v<version>` tag form
+  (`include-v-in-tag` in `release-please-config.json`), so release notes
+  and skills can be fetched for a pinned version.
 
 Before merging a change to any of these, run `steward contract <path to
 this checkout>` from a steward checkout, and open the matching steward PR
