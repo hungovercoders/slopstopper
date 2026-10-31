@@ -179,6 +179,20 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
             <p class="docs-pointer">Full runbook: <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/runbooks/INSTALL_SKILLS.md" rel="noopener noreferrer">docs/runbooks/INSTALL_SKILLS.md →</a></p>
         </section>
 
+        <section class="section" id="steward">
+            <span class="kicker">Many repos?</span>
+            <h2>Let the steward keep them current.</h2>
+            <p class="lede"><a href="https://github.com/hungovercoders/slopstopper-steward" rel="noopener noreferrer">slopstopper-steward</a> runs across a GitHub organisation on a schedule. It finds every repo with slopstopper installed, moves a CLI pin that fell behind and rewrites the suite with that release's own <code>slopstopper install</code>, and works the issues the checks raised, one pull request each. Upgrades are code; the agent comes in only for judgement calls (a finding, a check that went red, a big jump between releases), boxed as its own OS user and following the same two skills.</p>
+            <details class="details">
+                <summary>What does it change, and what never?</summary>
+                <div class="details__body">
+                    <p>Every write is a pull request on a <code>steward/&lt;order&gt;</code> branch: never a push to a default branch, never a merge, never a repo setting. It verifies each change with the pinned CLI before it opens the PR, opens it as a draft when something is still red or unreviewed, and says in the PR what it could not check in a clone. It runs as a GitHub App you install on the organisation, starts in a plan-only mode, and carries no check logic of its own: everything it knows about slopstopper is a written contract that its CI checks against this repo every night.</p>
+                    <a class="details__source" href="https://github.com/hungovercoders/slopstopper-steward/blob/main/docs/runbooks/SETUP.md" rel="noopener noreferrer">Set it up for an organisation →</a>
+                </div>
+            </details>
+            <p class="docs-pointer">How the two fit together: <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/STEWARD.md" rel="noopener noreferrer">docs/architecture/STEWARD.md →</a></p>
+        </section>
+
         <section class="section">
             <span class="kicker">What you get</span>
             <h2>Five loops of feedback.</h2>

@@ -29,3 +29,4 @@ deployed with the same suite it advertises.
 
 - [slopstopper-install skill](https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-install/SKILL.md): install SlopStopper into a repo or refresh an existing install
 - [slopstopper-triage skill](https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-triage/SKILL.md): diagnose and fix a failing SlopStopper check
+- [slopstopper-steward](https://github.com/hungovercoders/slopstopper-steward): across a GitHub organisation, upgrades every adopter and works the issues the suite raised, one PR each
