@@ -79,6 +79,12 @@ a {
     text-underline-offset: 3px;
 }
 
+/* Inline code (a file path, a task name) breaks where it must on a narrow
+   screen rather than widening the page; code blocks keep their own scroll. */
+:not(pre) > code {
+    overflow-wrap: anywhere;
+}
+
 a:hover {
     color: var(--accent);
 }
@@ -768,7 +774,9 @@ footer a {
 /* ─── Mock report cards ──────────────────────────────────── */
 .reports-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    /* min() lets the one column shrink to the screen on a phone narrower
+       than 360px plus the page padding, instead of pushing the page wide. */
+    grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
     gap: 1.5rem;
     margin-top: 1.5rem;
 }
@@ -851,6 +859,15 @@ footer a {
     }
     .header-actions .btn--gh .btn__label {
         display: none;
+    }
+    /* Five nav links on one row down to a 360px phone; the touch target
+       keeps its height, only the side padding narrows. */
+    header nav {
+        gap: 0;
+    }
+    header nav a {
+        padding: 0.65rem 0.45rem;
+        font-size: 0.9rem;
     }
 }
 

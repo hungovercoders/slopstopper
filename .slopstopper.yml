@@ -29,11 +29,11 @@ urls:
   preview:
 
 pages:
-  smoke:         /,/features.html,/tools.html,/feedback.html,/privacy.html
+  smoke:         /,/features.html,/tools.html,/feedback.html,/privacy.html,/learn.html
   e2e:           /,/features.html
-  accessibility: /,/features.html,/tools.html,/feedback.html,/privacy.html
-  seo:           /,/features.html,/tools.html,/feedback.html,/privacy.html
-  broken_links:  /,/features.html,/tools.html,/privacy.html
+  accessibility: /,/features.html,/tools.html,/feedback.html,/privacy.html,/learn.html
+  seo:           /,/features.html,/tools.html,/feedback.html,/privacy.html,/learn.html
+  broken_links:  /,/features.html,/tools.html,/privacy.html,/learn.html
 
 smoke:
   og_image_path: /og-image.png

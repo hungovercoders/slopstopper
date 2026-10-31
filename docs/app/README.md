@@ -45,7 +45,7 @@ the CSP needs no font-src exception; do not add external font links.
 - Each HTML page links `app/shared.css` first, then its page-specific CSS.
 - Header / nav / footer markup is duplicated across pages because
   there is no build step or SSI. Accept the duplication; if you change
-  one, change all five. The footer carries the privacy line, which must
+  one, change all six. The footer carries the privacy line, which must
   stay true: see `app/privacy.html` and the CSP pitfall in
   `docs/contributing/PITFALLS.md`.
 - Every external link uses `rel="noopener noreferrer"`. Avoid
@@ -62,7 +62,7 @@ the CSP needs no font-src exception; do not add external font links.
 
 ## Pages
 
-Five static pages with shared navigation. Each page is one HTML file plus
+Six static pages with shared navigation. Each page is one HTML file plus
 one page-specific CSS file; there is no build step and no framework.
 
 | Page | File | Interactive element |
@@ -70,11 +70,12 @@ one page-specific CSS file; there is no build step and no framework.
 | Home | `app/index.html` | **Copy** buttons on the install code blocks (`app/copy.js`); `<details>` collapsibles |
 | Features | `app/features.html` | `<details>` workflow excerpt per check; an "On this page" jump row under the hero and two Back-to-top pills |
 | Tools | `app/tools.html` | `<details>` config or workflow excerpt per tool |
+| Learn | `app/learn.html` | **Copy** button on the demo setup block (`app/copy.js`). Lists the course's lessons and links each to its page on GitHub; `cli/tests/test_learn_page.py` keeps the list identical to `docs/learn/README.md` |
 | Feedback | `app/feedback.html` | GitHub Discussions comments via the Giscus embed, loaded on a button press (`app/feedback.js`) |
 | Privacy | `app/privacy.html` | None. States what the site collects (nothing), what Cloudflare keeps, and which services the pages reach; linked from every footer rather than the nav |
 
 Every page includes the same `<nav aria-label="Main">` in its header linking
-to the four main pages (Privacy is reached from the footer). Features carries a second `<nav aria-label="On this page">`
+to the five main pages (Privacy is reached from the footer). Features carries a second `<nav aria-label="On this page">`
 for its jump row; the header rules in `app/shared.css` are scoped to
 `header nav` so it styles itself, and the distinct labels keep the two
 landmarks unique for the accessibility audit.
@@ -85,6 +86,7 @@ landmarks unique for the accessibility audit.
 app/index.html      ← Home page            app/index.css      ← Home styles
 app/features.html   ← Features page        app/features.css   ← Features styles
 app/tools.html      ← Tools page           app/tools.css      ← Tools styles
+app/learn.html      ← Learn page           app/learn.css      ← Learn styles
 app/feedback.html   ← Feedback page        app/feedback.css   ← Feedback styles
 app/privacy.html   ← Privacy page         app/privacy.css    ← Privacy styles
 app/shared.css      ← Brand tokens, header/nav/footer, cards, code blocks
