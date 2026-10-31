@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/14-seo.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 14: SEO and social share | SlopStopper</title>
+    <meta name="description" content="Audit the tags a search engine and a link preview read, find the one the demo&#x27;s history page is missing, and see which surface it would have broken.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/14-seo.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/14-seo.html">
+    <meta property="og:title" content="Lesson 14: SEO and social share | SlopStopper">
+    <meta property="og:description" content="Audit the tags a search engine and a link preview read, find the one the demo&#x27;s history page is missing, and see which surface it would have broken.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 14: SEO and social share | SlopStopper">
+    <meta name="twitter:description" content="Audit the tags a search engine and a link preview read, find the one the demo&#x27;s history page is missing, and see which surface it would have broken.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 14</span>
+            <h1>SEO and social share</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> Audit the tags a search engine and a link preview read, find the one the demo's history page is missing, and see which surface it would have broken.</p>
+<h2 id="why-this-check">Why this check</h2>
+<p>Every page carries a second page nobody looks at: the <code>&lt;head&gt;</code>. A search engine reads the title, the description and the canonical URL to decide what the page is and whether it is a duplicate. Slack, LinkedIn and a dozen chat apps read the OpenGraph and Twitter Card tags to draw the preview card when someone pastes a link. Generated pages ship with a placeholder title, a description copied from another page, or no canonical at all, and the first anyone notices is a link that unfurls as "Untitled" in a channel, or two URLs for one page competing in search.</p>
+<p><code>reliability:seo</code> fetches each page in <code>pages.seo</code> and asserts the tags are present and non-empty: title, description, viewport and canonical for search; <code>og:title</code>, <code>og:description</code>, <code>og:type</code>, <code>og:url</code> and <code>og:image</code> for previews; <code>twitter:card</code>, title, description and image for the other preview format. It warns on a title over 70 characters or a description over 160, the lengths results pages truncate at, and by default it fetches the share image to prove it answers with an image content type. It is stdlib Python: one HTTP request per page and a parser, no browser.</p>
+<p>Lighthouse's SEO category, which lesson 13's check runs, covers the basics the search engine cares about. This check covers what Lighthouse does not look at: the preview tags, and whether the image behind them exists.</p>
+<h2 id="you-will-need">You will need</h2>
+<ul>
+  <li>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH.</li>
+  <li><code>node</code>, for <code>slopstopper serve</code>.</li>
+</ul>
+<h2 id="steps">Steps</h2>
+<h3 id="1-serve-the-demo-and-see-it-red">1. Serve the demo and see it red</h3>
+<p>The share image tags carry the production URL, because a preview card is drawn from the live site, not from your laptop. Against a local server, tell the check not to fetch it; the workflow does the same for a local build.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p scratch
+PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
+sleep 2
+SEO_VERIFY_OG_IMAGE=0 slopstopper run reliability:seo -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔎 SEO metatag audit against: http://localhost:8099
+   Pages: /, /history.html
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✅ http://localhost:8099/
+  ❌ http://localhost:8099/history.html: 1 issue(s)
+      - Missing &lt;meta name="description"&gt;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ Failures detected. See .ss/reports/seo/seo-metatags-report.md for full details.</code></pre></div>
+<p>The status page passes every tag. The history page has all of them but one: whoever copied the <code>&lt;head&gt;</code> across dropped the description. Without it, the search result for that page shows whatever sentence the engine picks from the body; with a copied one, it would show the wrong page's. Either is a page that reads as slop before anyone clicks it.</p>
+<h3 id="2-read-what-it-found">2. Read what it found</h3>
+<p>The report lists every tag it detected, per page, which is the quickest way to see what a preview card will say.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/Tags detected/,/og:url/p' .ss/reports/seo/seo-metatags-report.md | head -12</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>&lt;details&gt;&lt;summary&gt;Tags detected&lt;/summary&gt;
+
+| Tag | Value |
+|---|---|
+| `title` | Lantern: service status |
+| `description` | Which services exist, who owns each one, and where to look when one is down. |
+| `canonical` | https://lantern.example.com/ |
+| `viewport` | width=device-width, initial-scale=1 |
+| `og:type` | website |
+| `og:title` | Lantern: service status |
+| `og:description` | Which services exist, who owns each one, and where to look when one is down. |
+| `og:url` | https://lantern.example.com/ |</code></pre></div>
+<h3 id="3-fix-it">3. Fix it</h3>
+<p>One line in the history page's <code>&lt;head&gt;</code>, saying what the page is in the words a search result should show. The <code>og:description</code> already there is the right text.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's|  &lt;link rel="canonical" href="https://lantern.example.com/history.html"&gt;|  &lt;meta name="description" content="Every incident in the last ninety days, which service it hit and how long it lasted."&gt;\n  &lt;link rel="canonical" href="https://lantern.example.com/history.html"&gt;|' app/history.html &amp;&amp; rm app/history.html.bak
+SEO_VERIFY_OG_IMAGE=0 slopstopper run reliability:seo -- http://localhost:8099 | grep 'All pages'</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>✅ All pages pass.</code></pre></div>
+<h3 id="4-know-the-knobs">4. Know the knobs</h3>
+<p><code>pages.seo</code> in <code>.slopstopper.yml</code> is the page list, and <code>SEO_PAGES</code> overrides it for a run. <code>SEO_REQUIRE_OG_IMAGE=0</code> is for a site with no share image at all, and <code>SEO_VERIFY_OG_IMAGE=0</code> is for runs where the image URL cannot be fetched, as above. Against production the check fetches the image, so a share image that 404s fails the daily run and not a reader's feed.</p>
+<p>One tag the check cannot assert is consistency: that the description says the same thing everywhere it appears. A site whose identity sentence sits in the hero, the meta tags and <code>llms.txt</code> keeps them in step with a test of its own; that is a site-specific rule, and the place for it is a test, not a check.</p>
+<h2 id="checkpoint">Checkpoint</h2>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout app/history.html
+kill "$(cat scratch/serve.pid)"
+rm -r scratch
+grep '^\*\*Overall:\*\*' .ss/reports/seo/seo-metatags-report.md</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>**Overall:** ✅ PASS</code></pre></div>
+<p>The report is from the fixed run; the demo is back to how it shipped, one tag short.</p>
+<h2 id="exercise">Exercise</h2>
+<p>Make the check warn without failing.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<p>Serve the demo again and lengthen the status page's description past 160 characters:</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's|&lt;meta name="description" content="|&lt;meta name="description" content="A much longer opening sentence that says the same thing again and again until it is well past the length a search result shows. |' app/index.html &amp;&amp; rm app/index.html.bak
+SEO_VERIFY_OG_IMAGE=0 slopstopper run reliability:seo -- http://localhost:8099
+git checkout app/index.html</code></pre></div>
+<p>The page still passes, and the report under <code>.ss/reports/seo/</code> carries a warning that the description is over 160 characters. Length is advisory because the engines truncate rather than reject; a missing tag is a failure because there is nothing to truncate.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/SEO.md" rel="noopener noreferrer">SEO and social-share metatags</a>: every tag asserted, the warnings, and the env vars</li>
+  <li>Lesson 15, the files that tell crawlers and agents the pages exist at all</li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 7 to 9 minutes.</p>
+<p><strong>Cold open (0:00).</strong> A link pasted into a chat. The preview card: "Untitled", no image.</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Why: the second page nobody looks at; search and previews read it; placeholder titles and copied descriptions.</li>
+  <li>Serve; red on the history page; why the share image is not fetched locally.</li>
+  <li>The report's tag table: what the preview card will say.</li>
+  <li>The one line; green; what the search result would have shown.</li>
+  <li>Put the demo back. The knobs, and the one rule that belongs in a test.</li>
+  <li>Exercise: a warning without a failure.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/14.tape</code>. Zoom on the tag table.</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:30 Red</code> · <code>2:30 The tags</code> · <code>4:00 The line</code> · <code>5:30 Knobs</code> · <code>7:00 Exercise</code> · <code>8:00 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="13-core-web-vitals.html">← Lesson 13: Core Web Vitals</a>
+  <a class="lesson-nav__next" href="15-discoverability.html">Lesson 15: Discoverability: robots, sitemap, llms.txt and links →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/14-seo.md" rel="noopener noreferrer">docs/learn/14-seo.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+    <script src="../copy.js" defer></script>
+</body>
+</html>

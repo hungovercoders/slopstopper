@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/16-api-checks.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 16: API checks: health, latency and OpenAPI drift | SlopStopper</title>
+    <meta name="description" content="Point the three API checks at a small API, see each one fail on its own kind of drift, and understand why they exist alongside the browser checks.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/16-api-checks.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/16-api-checks.html">
+    <meta property="og:title" content="Lesson 16: API checks: health, latency and OpenAPI drift | SlopStopper">
+    <meta property="og:description" content="Point the three API checks at a small API, see each one fail on its own kind of drift, and understand why they exist alongside the browser checks.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 16: API checks: health, latency and OpenAPI drift | SlopStopper">
+    <meta name="twitter:description" content="Point the three API checks at a small API, see each one fail on its own kind of drift, and understand why they exist alongside the browser checks.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 16</span>
+            <h1>API checks: health, latency and OpenAPI drift</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> Point the three API checks at a small API, see each one fail on its own kind of drift, and understand why they exist alongside the browser checks.</p>
+<h2 id="why-these-checks">Why these checks</h2>
+<p>On an API repo the browser checks mean nothing: there is no DOM to audit for contrast, no page to score for layout shift. The <code>api</code> profile drops them and keeps three checks that ask the API-shaped versions of the same questions.</p>
+<ul>
+  <li><strong><code>reliability:api-health</code></strong> is the smoke test's analogue. It probes the one endpoint an API exposes for exactly this purpose and asserts the contract around it: the documented status code, a JSON content type, a body that parses, and the fields the repo says must be there. Pointing smoke at <code>/health</code> would not do: <code>{"status": "degraded"}</code> with HTTP 200 passes any reachability probe and is a failure here, which is the whole reason a health endpoint returns a body.</li>
+  <li><strong><code>reliability:api-latency</code></strong> is Core Web Vitals' analogue. Nothing renders, so the question narrows to how long an endpoint takes to answer and how much it sends back. It samples each path several times and reports the median, the slowest sample and the size. Budgets gate on the median, because one slow sample on a shared runner moves the maximum and not the middle, and it deliberately reports no p95: five samples cannot support one.</li>
+  <li><strong><code>hygiene:openapi</code></strong> is docs-accuracy's analogue. A spec that has stopped describing its API is documentation that became fiction, and an agent reading the spec will call routes that are not there. The check compares the committed spec against the one the running API serves, and probes every documented path that takes no parameters.</li>
+</ul>
+<p>All three are stdlib Python, skip gracefully when nothing is configured, and never build or serve the repo themselves: an API is not a static bundle, and guessing a start command would be worse than not guessing. The <code>ui</code> profile adds them only when the repo shows an API: a spec, a server framework or an <code>api.*</code> key.</p>
+<h2 id="you-will-need">You will need</h2>
+<p>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH, or any directory at all: the lesson's API is twenty lines of stdlib Python and the checks read nothing from the repo.</p>
+<h2 id="steps">Steps</h2>
+<h3 id="1-start-a-small-api">1. Start a small API</h3>
+<p>Three routes, a health endpoint, and the spec it serves for itself. <code>HEALTH_STATUS</code> and <code>PORT</code> are there for later steps.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p scratch
+cat &gt; scratch/api.py &lt;&lt;'PY'
+import json, os, time
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+STATUS = os.environ.get("HEALTH_STATUS", "ok")
+PORT = int(os.environ.get("PORT", "8765"))
+SPEC = {"openapi": "3.0.0", "info": {"title": "Lesson API", "version": "1"},
+        "paths": {"/health": {"get": {}}, "/v1/items": {"get": {}}, "/v1/slow": {"get": {}}}}
+ROUTES = {
+    "/health": (200 if STATUS == "ok" else 503, {"status": STATUS, "deps": {"db": "ok"}}),
+    "/v1/items": (200, [{"id": 1, "name": "widget"}, {"id": 2, "name": "gadget"}]),
+    "/v1/slow": (200, {"ok": True}),
+    "/openapi.json": (200, SPEC),
+}
+
+class Api(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/v1/slow":
+            time.sleep(0.3)
+        code, body = ROUTES.get(self.path, (404, {"error": "not found"}))
+        payload = json.dumps(body).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def log_message(self, *args):
+        pass
+
+HTTPServer(("127.0.0.1", PORT), Api).serve_forever()
+PY
+python3 scratch/api.py &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/api.pid
+sleep 1</code></pre></div>
+<h3 id="2-audit-the-health-endpoint">2. Audit the health endpoint</h3>
+<p>The flags are the <code>api.health</code> keys from the command line: the path, and two fields the body must carry, one of them nested.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:api-health -- http://localhost:8765 --path /health --require-field status --require-field deps.db</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🩺 API health audit against: http://localhost:8765/health
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✅ http://localhost:8765/health  (HTTP 200)
+      ⚠️  responded in 32ms (no api.health.max_response_ms budget set)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Health endpoint is reachable and matches its contract.</code></pre></div>
+<p>The timing is reported and not enforced, because no budget is set. That is the pattern for every number in this lesson: measure first, set the budget from what you measured.</p>
+<h3 id="3-measure-latency-with-no-budget">3. Measure latency with no budget</h3>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:api-latency -- http://localhost:8765 --path /health --path /v1/items</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>⏱ API latency audit against: http://localhost:8765
+   Paths: /health, /v1/items (5 sample(s) after 1 warmup)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✅ http://localhost:8765/health  median 0.9ms · slowest 1.0ms · 38 bytes
+      ⚠️  `http://localhost:8765/health` median 0.9ms, slowest 1.0ms, 38 bytes (no budget set, so nothing is enforced)
+  ✅ http://localhost:8765/v1/items  median 0.9ms · slowest 1.3ms · 58 bytes
+      ⚠️  `http://localhost:8765/v1/items` median 0.9ms, slowest 1.3ms, 58 bytes (no budget set, so nothing is enforced)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Every endpoint is reachable and within budget.</code></pre></div>
+<p>One warmup request is thrown away before the five that count, because the first hit pays for DNS, TLS and cold start, none of which is the steady state a budget is about.</p>
+<h3 id="4-set-a-budget-the-slow-route-cannot-meet">4. Set a budget the slow route cannot meet</h3>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:api-latency -- http://localhost:8765 --path /v1/slow --median-ms 100</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ❌ http://localhost:8765/v1/slow  median 301.5ms · slowest 302.0ms · 12 bytes
+      - `http://localhost:8765/v1/slow` median 301.5ms is over the 100ms budget
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ Failures detected. See .ss/reports/api-latency/api-latency-report.md for full details.</code></pre></div>
+<h3 id="5-commit-a-spec-that-describes-one-route-too-many">5. Commit a spec that describes one route too many</h3>
+<p>The committed spec is what a client or an agent reads. Give it a route the API does not serve.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>cat &gt; scratch/openapi.json &lt;&lt;'JSON'
+{
+  "openapi": "3.0.0",
+  "info": {"title": "Lesson API", "version": "1"},
+  "paths": {
+    "/health": {"get": {}},
+    "/v1/items": {"get": {}},
+    "/v1/slow": {"get": {}},
+    "/v1/reports": {"get": {}}
+  }
+}
+JSON</code></pre></div>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>📘 OpenAPI drift audit (spec: scratch/openapi.json)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ❌ 4 operation(s) declared
+      - `GET /v1/reports` is in the committed spec but the live API doesn't serve it
+      - `/v1/reports` is documented but the API returns 404, so the route is gone
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ Drift detected. See .ss/reports/openapi/openapi-report.md for full details.</code></pre></div>
+<p>Two findings for one route, from the two directions the check can answer honestly: the committed spec disagrees with the served one, and the documented path answers 404. The report lists every probe:</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/Probed paths/,/details&gt;/p' .ss/reports/openapi/openapi-report.md</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>&lt;details&gt;&lt;summary&gt;Probed paths&lt;/summary&gt;
+
+| Path | Status |
+|---|---|
+| `/health` | ✅ 200 |
+| `/v1/items` | ✅ 200 |
+| `/v1/reports` | ❌ 404 |
+| `/v1/slow` | ✅ 200 |
+
+&lt;/details&gt;</code></pre></div>
+<p>Paths with parameters, <code>/users/{id}</code>, are counted and never probed: a 404 from one could mean the route is missing or merely that no such record exists, and failing both would train people to ignore the check. Undocumented routes are the other half of drift and out of scope, because finding them needs framework-specific introspection.</p>
+<h3 id="6-fix-the-spec">6. Fix the spec</h3>
+<p>Drop the route that is gone, or ship it. Here it is gone.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+import json, pathlib
+path = pathlib.Path("scratch/openapi.json")
+spec = json.loads(path.read_text())
+del spec["paths"]["/v1/reports"]
+path.write_text(json.dumps(spec, indent=2) + "\n")
+PY
+slopstopper run hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✅ 3 operation(s) declared
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ The spec matches the API it documents.</code></pre></div>
+<p>When the framework generates the spec at build time, the durable fix is to point <code>api.openapi.spec</code> at the served URL, so there is no committed copy to drift.</p>
+<h3 id="7-degrade-the-health-endpoint">7. Degrade the health endpoint</h3>
+<p>A second copy of the API on its own port, reporting itself degraded with a 503. This is what a readiness endpoint does when a dependency is down, and it is what the health check is for.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>HEALTH_STATUS=degraded PORT=8766 python3 scratch/api.py &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/degraded.pid
+sleep 1</code></pre></div>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:api-health -- http://localhost:8766 --path /health --require-field status --require-field deps.db</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ❌ http://localhost:8766/health  (HTTP 503)
+      - returned HTTP 503, expected 200
+      ⚠️  responded in 41ms (no api.health.max_response_ms budget set)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ Failures detected. See .ss/reports/api-health/api-health-report.md for full details.</code></pre></div>
+<p>In a real repo these flags live in <code>.slopstopper.yml</code> under <code>api</code>, and <code>expect_fields</code> there pins a value too, so <code>{"status": "degraded"}</code> with a 200 fails as well.</p>
+<h2 id="checkpoint">Checkpoint</h2>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>out=$(slopstopper run reliability:api-health -- http://localhost:8765 --path /health 2&gt;&amp;1)
+kill "$(cat scratch/api.pid)" "$(cat scratch/degraded.pid)"
+rm -r scratch
+echo "$out" | grep 'matches its contract'</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>✅ Health endpoint is reachable and matches its contract.</code></pre></div>
+<h2 id="exercise">Exercise</h2>
+<p>Make the latency check fail on size rather than time.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<p>Start the API again and give the items route a budget it cannot meet:</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:api-latency -- http://localhost:8765 --path /v1/items --max-bytes 10</code></pre></div>
+<p>The route answers in under a millisecond and still fails, because its 58-byte body is over the 10-byte budget. Size is a budget for the same reason time is: a list endpoint that quietly grows from two items to two thousand is slop that no timing on a fast network will show.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md#api-health-check" rel="noopener noreferrer">API health</a>, <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md#api-latency-check" rel="noopener noreferrer">API latency</a> and <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md#openapi-drift" rel="noopener noreferrer">OpenAPI drift</a>: every assertion, knob and the workflow each runs under</li>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PROFILES.md" rel="noopener noreferrer">Profiles</a> for when the <code>ui</code> profile adds these checks and when <code>api</code> drops the browser ones; lesson 19 walks through it</li>
+  <li>Lesson 9 for <code>security:api-headers</code>, the fourth check of the API set</li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 9 to 11 minutes.</p>
+<p><strong>Cold open (0:00).</strong> <code>{"status": "degraded"}</code> with a 200 next to it. A green uptime badge.</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Why: the browser checks mean nothing on an API; three analogues, each asking the same question in API terms.</li>
+  <li>The twenty-line API; health green with its fields; timing reported, not enforced.</li>
+  <li>Latency with no budget; the warmup; one slow route against a 100 ms budget.</li>
+  <li>The committed spec with one route too many; two findings, two directions; the probe table; parameters are never probed.</li>
+  <li>Fix the spec; point at the served URL when it is generated.</li>
+  <li>The degraded copy; 503 fails; <code>expect_fields</code> for the 200 case.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/16.tape</code>. Zoom on "median 301.5ms is over the 100ms budget" and on the two drift findings.</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:30 The API</code> · <code>2:30 Health</code> · <code>3:30 Latency</code> · <code>5:30 Drift</code> · <code>8:00 Degraded</code> · <code>9:30 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="15-discoverability.html">← Lesson 15: Discoverability: robots, sitemap, llms.txt and links</a>
+  <a class="lesson-nav__next" href="17-ci.html">Lesson 17: CI: the workflows and the PR feedback loop →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/16-api-checks.md" rel="noopener noreferrer">docs/learn/16-api-checks.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+    <script src="../copy.js" defer></script>
+</body>
+</html>

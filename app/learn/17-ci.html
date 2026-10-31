@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/17-ci.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 17: CI: the workflows and the PR feedback loop | SlopStopper</title>
+    <meta name="description" content="Read one check workflow end to end, see that it is the same task line you have been typing, and follow a red check from the Actions log to the pull request comment to the issue it raises on main.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/17-ci.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/17-ci.html">
+    <meta property="og:title" content="Lesson 17: CI: the workflows and the PR feedback loop | SlopStopper">
+    <meta property="og:description" content="Read one check workflow end to end, see that it is the same task line you have been typing, and follow a red check from the Actions log to the pull request comment to the issue it raises on main.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 17: CI: the workflows and the PR feedback loop | SlopStopper">
+    <meta name="twitter:description" content="Read one check workflow end to end, see that it is the same task line you have been typing, and follow a red check from the Actions log to the pull request comment to the issue it raises on main.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 17</span>
+            <h1>CI: the workflows and the PR feedback loop</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> Read one check workflow end to end, see that it is the same <code>task</code> line you have been typing, and follow a red check from the Actions log to the pull request comment to the issue it raises on <code>main</code>.</p>
+<h2 id="why-this-lesson">Why this lesson</h2>
+<p>The checks are the same locally and in CI by design, so the workflows are thin: a checkout, a setup step, the one <code>task</code> line, and the plumbing that turns its exit code into something a reviewer sees. That plumbing is the operational loop, and it is where a suite of twenty-odd checks either stays usable or turns into noise. Twenty-five comment cards on every pull request is noise. One rolling comment that says "2 of 25 failed" and folds the rest away is a signal, and a red check on <code>main</code> that opens an issue and closes it on the next green run is a signal nobody has to remember to look for.</p>
+<p>This lesson is mostly reading. The runnable blocks are the greps that prove each claim against the workflows the installer wrote, which are the ones the CLI you are running ships.</p>
+<h2 id="you-will-need">You will need</h2>
+<p>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH. Nothing runs against a server.</p>
+<h2 id="steps">Steps</h2>
+<h3 id="1-read-one-workflow">1. Read one workflow</h3>
+<p>Install the suite into the demo first (lesson 1), quietly, so there are workflows to read. Then the entry-files check from lesson 3, as CI runs it. Every <code>ss-*.yml</code> has this shape.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper --quiet install --no-topic --no-hooks --no-skills
+sed -n '/^    steps:/,$p' .github/workflows/ss-hygiene-entry-files-check.yml | grep -E 'name:|uses:|run:'</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up slopstopper
+        uses: ./.github/actions/ss-setup
+      - name: Run entry-file budget check
+        run: task ss:hygiene:entry-files
+      - name: Upload report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Emit PR comment
+        run: slopstopper emit hygiene:entry-files --target pr-comment --status ${{ steps.check.outcome == 'success' &amp;&amp; 'pass' || 'fail' }} --on-pass=delete</code></pre></div>
+<p>Four things to notice:</p>
+<ul>
+  <li><strong>The check step is the <code>task</code> line from lesson 3.</strong> There is no CI-only threshold and no second implementation. <code>ss-setup</code> is a local composite action that installs Python and the mise-pinned toolchain, so the versions are the ones in <code>mise.toml</code>.</li>
+  <li><strong>The report is uploaded as an artifact</strong> before anything else is decided, so the file you read locally under <code>.ss/reports/</code> is the file a reviewer can download from the run.</li>
+  <li><strong>The verdict comes from the step's exit code</strong>, passed to the comment as <code>--status</code>. The emitter never parses the report to guess whether it passed, because <code>hygiene:docs-size</code> is advisory and its report can say THRESHOLDS EXCEEDED on a green run.</li>
+  <li><strong>A passing check deletes its own comment</strong> (<code>--on-pass=delete</code>), so a green pull request ends up with one comment, the summary.</li>
+</ul>
+<p>The security checks add one step: they run <code>task -x</code>, which passes the CLI's exit code through unchanged, so a later step can tell a finding (1) from a check that could not run (2) and never opens an issue for the second.</p>
+<h3 id="2-see-every-third-party-action-pinned-to-a-commit">2. See every third-party action pinned to a commit</h3>
+<p>A tag like <code>@v4</code> can be moved to point at different code. A forty character SHA cannot. The rule in <code>AGENTS.md</code> is that every third-party action is pinned to one.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -h "uses: " .github/workflows/ss-*.yml | grep -v "./.github/actions" | grep -v '@[0-9a-f]\{40\}' | wc -l</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>0</code></pre></div>
+<p>Zero unpinned. The local <code>./.github/actions/ss-setup</code> is excluded because it is slopstopper's own code, installed beside the workflows.</p>
+<h3 id="3-the-one-summary-comment">3. The one summary comment</h3>
+<p><code>ss-pr-summary.yml</code> renders one rolling comment per pull request. It does not run inside each check; it fires when any check workflow completes, reads the runs GitHub has already recorded for the head commit, and re-renders. That is why it needs no coordination with the checks, cannot race them into a half-written comment, and converges on the full picture whatever order they finish in.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -c '"SlopStopper' .github/workflows/ss-pr-summary.yml</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>27</code></pre></div>
+<p>The list is explicit because <code>workflow_run</code> cannot glob, so adding a check means adding a row here; a test in the CLI's suite fails when a check's workflow is missing from it.</p>
+<h3 id="4-the-issue-a-red-check-raises-on-main">4. The issue a red check raises on main</h3>
+<p>A check that fails on a pull request blocks the merge. A check that fails on <code>main</code> has nobody to block, so it opens an issue instead, and closes it on the next green run. Two mechanisms do this:</p>
+<ul>
+  <li><strong>The check's own emitter</strong>, <code>slopstopper emit &lt;check&gt; --target issue</code>, opens or updates a tracking issue on a finding, and <code>--on-pass=close</code> closes it. It stays silent on exit 2, because a missing tool is not a finding.</li>
+  <li><strong>The workflow-failure tracker</strong>, which files any failed run on <code>main</code>, whatever the cause, so a check that could not run is still visible as a broken run.</li>
+</ul>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -n "conclusion == 'failure'" -A1 .github/workflows/ss-workflow-failure-issue.yml</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>50:      github.event.workflow_run.conclusion == 'failure' &amp;&amp;
+51-      github.event.workflow_run.head_branch == 'main'</code></pre></div>
+<h3 id="5-the-rest-of-the-loop">5. The rest of the loop</h3>
+<ul>
+  <li><strong>Auto-label.</strong> <code>.github/labeler.yml</code> maps changed paths to labels, so a pull request touching a check's workflow, docs or module gets its category label without anyone choosing it. The workflow uses <code>pull_request_target</code> because only the base repository's token can label a pull request from a fork, and it runs nothing from the pull request's code.</li>
+  <li><strong>The doc updater.</strong> A weekly agentic workflow reads the pull requests merged in the last week, finds documentation that drifted, and opens a pull request with the fix for a human to review. Its source is a markdown file the gh-aw tool compiles to a lock file; you edit the markdown.</li>
+  <li><strong>The deploy trigger.</strong> Cloudflare Workers Builds deploys every push but raises no GitHub deployment, so nothing would run the URL checks against a preview. When Cloudflare's check run succeeds, this workflow works out the preview URL from the comment Cloudflare posts and dispatches each URL-driven check against it. Lesson 11's hourly smoke run against production is the same checks on a schedule.</li>
+</ul>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -l "cron:" .github/workflows/ss-*.yml | wc -l
+grep -n "cron:" .github/workflows/ss-reliability-smoke-tests.yml</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>12
+19:    - cron: '0 * * * *'</code></pre></div>
+<p>Twelve of the workflows this repo carries also run on a schedule, so a site that breaks between pushes is noticed; smoke is the hourly one.</p>
+<h2 id="checkpoint">Checkpoint</h2>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -h "uses: " .github/workflows/ss-*.yml | grep -v "./.github/actions" | grep -v '@[0-9a-f]\{40\}' | wc -l</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>0</code></pre></div>
+<p>Put the demo back:</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout .gitignore package.json
+git clean -fdq</code></pre></div>
+<h2 id="exercise">Exercise</h2>
+<p>Find the workflow that runs the local server before its check, and the line that starts it.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -l "slopstopper serve &amp;" .github/workflows/ss-*.yml</code></pre></div>
+<p>The browser checks build nothing when the site has no build step, and on a pull request they serve the repo on the runner and audit <code>localhost:8080</code>, the same thing you did in lessons 11 to 15; on a deploy or a schedule they audit the real URL instead. The API checks never do this, because an API is not a static bundle the CLI can serve, and guessing a start command would be worse than not guessing.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PR_FEEDBACK.md" rel="noopener noreferrer">PR feedback</a>: the two layers, the design decisions and the <code>--status</code> values</li>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/deployment/README.md" rel="noopener noreferrer">Deployment</a>: how the Cloudflare trigger finds the preview URL and which checks it dispatches</li>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/DOC_UPDATER.md" rel="noopener noreferrer">The doc updater</a>: the secret it needs and how to recompile it</li>
+  <li>The exit-code contract in <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/contributing/README.md#exit-codes" rel="noopener noreferrer">contributing</a>, which every step above is built on</li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 8 to 10 minutes.</p>
+<p><strong>Cold open (0:00).</strong> A pull request with twenty-five comment cards. Scroll. Scroll. "Did anything fail?"</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Why: thin workflows, because the check is the same line; the loop is where a suite stays usable.</li>
+  <li>One workflow top to bottom: setup, the task line, the artifact, <code>--status</code> from the exit code, delete on pass, <code>task -x</code> for 1 versus 2.</li>
+  <li>Every action pinned to a SHA; the grep says zero.</li>
+  <li>The summary: reads GitHub, converges, explicit list.</li>
+  <li>On main: the check's issue, the failure tracker, exit 2 is filed as a broken run and not a finding.</li>
+  <li>Labels, the weekly doc updater, the deploy trigger, the schedules.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/17.tape</code>, plus screenshots of a real summary comment and a tracking issue from the slopstopper repository.</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:00 One workflow</code> · <code>3:30 Pinned</code> · <code>4:30 The summary</code> · <code>6:00 On main</code> · <code>7:30 The rest</code> · <code>9:00 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="16-api-checks.html">← Lesson 16: API checks: health, latency and OpenAPI drift</a>
+  <a class="lesson-nav__next" href="18-agents.html">Lesson 18: Agents: the install and triage skills →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/17-ci.md" rel="noopener noreferrer">docs/learn/17-ci.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+    <script src="../copy.js" defer></script>
+</body>
+</html>

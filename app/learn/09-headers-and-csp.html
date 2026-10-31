@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/09-headers-and-csp.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 9: Headers and CSP | SlopStopper</title>
+    <meta name="description" content="See the headers the demo&#x27;s host sends, find the Content-Security-Policy relaxation nobody wrote down, document it properly, and then audit an API&#x27;s CORS headers and fix the commonest mistake.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/09-headers-and-csp.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/09-headers-and-csp.html">
+    <meta property="og:title" content="Lesson 9: Headers and CSP | SlopStopper">
+    <meta property="og:description" content="See the headers the demo&#x27;s host sends, find the Content-Security-Policy relaxation nobody wrote down, document it properly, and then audit an API&#x27;s CORS headers and fix the commonest mistake.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 9: Headers and CSP | SlopStopper">
+    <meta name="twitter:description" content="See the headers the demo&#x27;s host sends, find the Content-Security-Policy relaxation nobody wrote down, document it properly, and then audit an API&#x27;s CORS headers and fix the commonest mistake.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 9</span>
+            <h1>Headers and CSP</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> See the headers the demo's host sends, find the Content-Security-Policy relaxation nobody wrote down, document it properly, and then audit an API's CORS headers and fix the commonest mistake.</p>
+<h2 id="why-these-checks">Why these checks</h2>
+<p>A site's security headers are one of the few controls that work even after everything else has gone wrong. A strict Content-Security-Policy means an injected script does not run; <code>frame-ancestors 'none'</code> means the page cannot be framed for clickjacking; <code>nosniff</code> means a JSON response is never executed as HTML. The slop is the quiet relaxation: <code>'unsafe-inline'</code> added to make one widget render, a third-party origin allowed site-wide because it was quicker than scoping it to one page. Each one is a line in a diff that looks like configuration, and each one removes a layer of defence for every page.</p>
+<p><code>hygiene:csp-exceptions</code> makes relaxation a documented act. The headers live in one source (a Cloudflare or Netlify <code>_headers</code> file here, a JSON rules file or per-page meta tags elsewhere), and every per-path entry that admits an external origin must have a matching entry in <code>docs/security/CSP_EXCEPTIONS.md</code> with seven fields: what origin, which directives, the loader's integrity hash, why, who approved it, what data leaves the site and how the hash is refreshed. The check reads both sides and fails on drift in either direction. It is stdlib Python and needs no server.</p>
+<p><code>security:api-headers</code> is the same idea for an API, where CSP has no document to protect and CORS is the control that decides who may read a response. It probes live endpoints and hard-fails on the pair that browsers reject but servers happily send (<code>Access-Control-Allow-Origin: *</code> with credentials), on an arbitrary origin reflected back with credentials, on a missing <code>nosniff</code>, and on a configured origin that is no longer allowed. Version-leaking headers and a missing <code>Vary: Origin</code> are advisory.</p>
+<h2 id="you-will-need">You will need</h2>
+<ul>
+  <li>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH.</li>
+  <li><code>node</code>, which <code>slopstopper serve</code> uses to serve the site with its real headers.</li>
+</ul>
+<h2 id="steps">Steps</h2>
+<h3 id="1-see-the-headers-the-site-sends">1. See the headers the site sends</h3>
+<p>Serve the demo locally. The server applies <code>app/_headers</code>, the file the demo's <code>.slopstopper.yml</code> names as <code>headers.source</code>, exactly as the host does in production.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p scratch
+PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
+sleep 2
+curl -sI http://localhost:8099/ | grep -iE 'content-security|x-frame|nosniff|referrer'
+curl -sI http://localhost:8099/history.html | grep -iE 'content-security'</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https://charts.example.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'</code></pre></div>
+<p><code>'self'</code> everywhere on the status page: nothing loads from anywhere else. The history page is different: its <code>img-src</code> admits <code>https://charts.example.com</code>. That is the default policy relaxed for one path, and the question the check asks is "did you say so?"</p>
+<h3 id="2-see-the-drift-check-red">2. See the drift check red</h3>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:csp-exceptions</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔐 CSP exceptions check
+   source: app/_headers
+   CSP exceptions in source: 1
+   documented in CSP_EXCEPTIONS.md: 0
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ❌ /history.html: `/history.html` in app/_headers allows external origins (https://charts.example.com) but has no entry in CSP_EXCEPTIONS.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ Drift detected. See .ss/reports/csp/csp-exceptions-report.md for full details.</code></pre></div>
+<p>One exception in the headers, none in the ledger. This is exactly the diff a "make the chart show" commit contains: one line in a config file, reviewed as config.</p>
+<h3 id="3-read-the-report">3. Read the report</h3>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/^## .* Errors/,/Mismatched origins/p' .ss/reports/csp/csp-exceptions-report.md</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>## ❌ Errors
+
+- **/history.html**: `/history.html` in app/_headers allows external origins (https://charts.example.com) but has no entry in CSP_EXCEPTIONS.md
+
+## How to Fix
+
+- **Missing doc entry** → add a `### \`/path\`` heading under `## Exceptions` in `docs/security/CSP_EXCEPTIONS.md` with all required fields.
+- **Mismatched origins** → make `Origin allowed` / `Directives added` in the doc list every external origin in the corresponding `app/_headers` entry.</code></pre></div>
+<h3 id="4-document-it">4. Document it</h3>
+<p>The fix is not to remove the relaxation, unless the page no longer needs it. It is to write it down, with every field, under the <code>## Exceptions</code> heading. The demo's ledger says "None yet"; this replaces that line with the entry.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+import pathlib
+doc = pathlib.Path('docs/security/CSP_EXCEPTIONS.md')
+text = doc.read_text()
+entry = '''### `/history.html`
+
+- **Origin allowed:** `https://charts.example.com`
+- **Directives added:** `img-src https://charts.example.com`
+- **Loader SRI:** `n/a`
+- **Why:** the uptime chart on the history page is rendered by the charts service
+- **Approved by:** nobody yet
+- **Data leaving site:** visitor IP and User-Agent when the chart image is fetched
+- **Refresh policy:** n/a
+'''
+doc.write_text(text.replace('None yet: every path serves the baseline policy.\n', entry, 1))
+PY
+slopstopper run hygiene:csp-exceptions</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔐 CSP exceptions check
+   source: app/_headers
+   CSP exceptions in source: 1
+   documented in CSP_EXCEPTIONS.md: 1
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ No drift detected.</code></pre></div>
+<p>Both sides agree. Notice what the fields forced you to say: who approved it (nobody, yet), and what data leaves the site. A reviewer reading the diff now sees a decision, not a config change. Put the demo back before moving on:</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout docs/security/CSP_EXCEPTIONS.md</code></pre></div>
+<h3 id="5-audit-the-sites-headers-as-an-api-would-be-audited">5. Audit the site's headers as an API would be audited</h3>
+<p>The API check skips when nothing is configured, because an unconfigured check is not a failing check. Point it at the served site with a path and it probes for real:</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run security:api-headers -- http://localhost:8099 --path /
+kill "$(cat scratch/serve.pid)"</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🛡 API header + CORS audit against: http://localhost:8099
+   Paths: /
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✅ http://localhost:8099/
+      ⚠️  HSTS not asserted because the target is http, where the header has no effect
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Every probed endpoint passes the API header contract.</code></pre></div>
+<h3 id="6-build-an-api-with-the-commonest-cors-mistake">6. Build an API with the commonest CORS mistake</h3>
+<p>A ten-line server that sends the wildcard origin together with credentials, and forgets <code>nosniff</code>. Generated API scaffolds do both.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>cat &gt; scratch/api.py &lt;&lt;'PY'
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+class Api(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Credentials", "true")
+        self.end_headers()
+        self.wfile.write(b'{"ok": true}')
+
+    def log_message(self, *args):
+        pass
+
+HTTPServer(("127.0.0.1", 8765), Api).serve_forever()
+PY
+python3 scratch/api.py &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/api.pid
+sleep 1</code></pre></div>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run security:api-headers -- http://localhost:8765 --path /health</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ❌ http://localhost:8765/health
+      - `Access-Control-Allow-Origin: *` is sent with `Access-Control-Allow-Credentials: true`. Browsers reject this pair, so the policy you intended is not being enforced. Echo a specific allowed origin instead
+      - `X-Content-Type-Options: nosniff` is missing. A JSON response that a browser sniffs as HTML is an XSS vector. Or set api.headers.require_nosniff: false
+      ⚠️  HSTS not asserted because the target is http, where the header has no effect
+      ⚠️  `Server: BaseHTTP/0.6 Python/3.13.16` includes a version, so consider trimming it to the product name
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ Failures detected. See .ss/reports/api-headers/api-headers-report.md for full details.</code></pre></div>
+<p>Two hard failures and two notes. The first failure is the one to understand: the wildcard plus credentials is not a permissive policy, it is a policy browsers refuse, so whatever the author meant to allow is not being allowed, and the next person "fixes" it by reflecting <code>Origin</code>, which is the real leak.</p>
+<h3 id="7-fix-the-api">7. Fix the API</h3>
+<p>Validate <code>Origin</code> against an allowlist and echo the match, add <code>nosniff</code>, and send <code>Vary: Origin</code> on every response, not only the allowed ones: a shared cache keys on the headers named in <code>Vary</code>, so a response without it, served to a request with no <code>Origin</code>, could be handed back to the allowed frontend without its CORS headers.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>kill "$(cat scratch/api.pid)"
+cat &gt; scratch/api.py &lt;&lt;'PY'
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+ALLOWED = {"https://app.example.com"}
+
+class Api(BaseHTTPRequestHandler):
+    def do_GET(self):
+        origin = self.headers.get("Origin", "")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Vary", "Origin")
+        if origin in ALLOWED:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Access-Control-Allow-Credentials", "true")
+        self.end_headers()
+        self.wfile.write(b'{"ok": true}')
+
+    def log_message(self, *args):
+        pass
+
+HTTPServer(("127.0.0.1", 8765), Api).serve_forever()
+PY
+python3 scratch/api.py &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/api.pid
+sleep 1
+slopstopper run security:api-headers -- http://localhost:8765 --path /health --allowed-origin https://app.example.com
+kill "$(cat scratch/api.pid)"
+rm -r scratch</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✅ http://localhost:8765/health
+      ⚠️  HSTS not asserted because the target is http, where the header has no effect
+      ⚠️  `Server: BaseHTTP/0.6 Python/3.13.16` includes a version, so consider trimming it to the product name
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Every probed endpoint passes the API header contract.</code></pre></div>
+<p><code>--allowed-origin</code> is the <code>api.headers.allowed_origins</code> knob from the command line: the check sends that origin and insists it comes back allowed, which catches an allowlist that silently stopped matching after a frontend moved domains. In a real repo these live in <code>.slopstopper.yml</code> under <code>api.headers</code>, and the check runs after every deploy against the real edge, because the headers that matter usually come from the proxy in front of the app, not the app.</p>
+<h2 id="checkpoint">Checkpoint</h2>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:csp-exceptions &gt;/dev/null; echo "exit $?"</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>exit 1</code></pre></div>
+<p>Red again, with the demo as it shipped, and the entry that fixes it is seven lines you can now write.</p>
+<h2 id="exercise">Exercise</h2>
+<p>Make the drift check fail in the other direction: a documented exception with no matching entry in the headers source.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<p>Run the step 4 snippet, then take the relaxation out of <code>app/_headers</code> instead of the ledger:</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+import pathlib
+p = pathlib.Path('app/_headers'); text = p.read_text()
+p.write_text(text[:text.index('/history.html')].rstrip() + '\n')
+PY
+slopstopper run hygiene:csp-exceptions
+git checkout app/_headers docs/security/CSP_EXCEPTIONS.md</code></pre></div>
+<p>The error reads "documented in CSP_EXCEPTIONS.md but has no entry in app/_headers". A stale ledger entry is its own kind of drift: it says a page admits an origin that it no longer does, and the next person to touch the page will trust it.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">CSP exceptions</a>: the pattern, the schema, computing an SRI hash, and how DAST treats documented paths</li>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/API_HEADERS.md" rel="noopener noreferrer">API headers and CORS</a>: every finding, which are hard failures, and the <code>api.headers</code> knobs</li>
+  <li><code>headers.source</code> and <code>headers.format</code> in <code>.slopstopper.yml.example</code>, including <code>meta</code> for hosts that cannot send headers</li>
+  <li>Lesson 10, where DAST looks at the same headers from the outside</li>
+</ul>
+<h3 id="why-a-cookieless-site-still-needs-a-privacy-statement">Why a cookieless site still needs a privacy statement</h3>
+<p>The CSP you just documented limits where resources come from, not who sees the request. The host processes every visitor's IP before your code runs, and every origin the policy allows sees that IP too the moment a page fetches from it: here, the charts service, on every visit to the history page. So the honest statement for a site with no cookies and no analytics is short, and it is a function of two files: the hosting config and the headers source. <code>hygiene:privacy</code> reads both and asks the page to name the host, every allowed origin and a date. The demo has no hosting config, so the check skips there; on a repo with one, the ledger entry you wrote in step 4 is also a line on the privacy page.</p>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 10 to 12 minutes.</p>
+<p><strong>Cold open (0:00).</strong> A diff: one line in <code>_headers</code> adding <code>https://charts.example.com</code>. "LGTM, it's just config."</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Why headers: the control that works after everything else failed; the quiet relaxation is the slop.</li>
+  <li>The site's headers from <code>curl -I</code>; <code>'self'</code> everywhere, then the history page's one difference.</li>
+  <li>Red; one in the source, none in the ledger; the report's two fixes.</li>
+  <li>The ledger entry and what its fields force you to say; green; put the demo back.</li>
+  <li>The API half: the unconfigured skip, then the site passes.</li>
+  <li>The ten-line API with wildcard plus credentials; why browsers reject it and why "fixing" it by reflecting Origin is the real leak.</li>
+  <li>Allowlist, echo, Vary, nosniff; green; <code>--allowed-origin</code>.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/09.tape</code>. Zoom on "in source: 1 / documented: 0", and on the wildcard-plus-credentials line.</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:30 The headers</code> · <code>2:30 Drift</code> · <code>4:00 The ledger</code> · <code>6:00 The API check</code> · <code>7:30 Wildcard plus credentials</code> · <code>9:30 The fix</code> · <code>11:00 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="08-dependencies.html">← Lesson 8: Dependencies and licences</a>
+  <a class="lesson-nav__next" href="10-dast.html">Lesson 10: Dynamic scanning →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/09-headers-and-csp.md" rel="noopener noreferrer">docs/learn/09-headers-and-csp.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+    <script src="../copy.js" defer></script>
+</body>
+</html>

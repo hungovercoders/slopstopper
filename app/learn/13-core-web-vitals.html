@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/13-core-web-vitals.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 13: Core Web Vitals | SlopStopper</title>
+    <meta name="description" content="Run Lighthouse against the demo, read the budget it enforces, add one blocking script, and watch the numbers move.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/13-core-web-vitals.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/13-core-web-vitals.html">
+    <meta property="og:title" content="Lesson 13: Core Web Vitals | SlopStopper">
+    <meta property="og:description" content="Run Lighthouse against the demo, read the budget it enforces, add one blocking script, and watch the numbers move.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 13: Core Web Vitals | SlopStopper">
+    <meta name="twitter:description" content="Run Lighthouse against the demo, read the budget it enforces, add one blocking script, and watch the numbers move.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 13</span>
+            <h1>Core Web Vitals</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> Run Lighthouse against the demo, read the budget it enforces, add one blocking script, and watch the numbers move.</p>
+<h2 id="why-this-check">Why this check</h2>
+<p>Performance slop never looks like a performance change. It is a 400 KB web font added for one heading, an image without dimensions, an analytics snippet pasted into <code>&lt;head&gt;</code> because that is where the vendor's instructions put it. Each is one line in a PR. Nobody notices until the page feels slow on a phone, and by then there are a dozen such lines and no way to tell which one did it.</p>
+<p><code>reliability:cwv</code> turns the feeling into a number with a threshold. It runs <a href="https://developer.chrome.com/docs/lighthouse" rel="noopener noreferrer">Lighthouse</a> three times against each URL and asserts on the metrics Google calls Core Web Vitals: Largest Contentful Paint (how long until the main content is on screen), Total Blocking Time (how long the main thread is busy and cannot respond), and Cumulative Layout Shift (how much the page jumps around while loading), plus the overall performance and SEO scores. Each assertion is judged on the best of the three runs, so one slow run on a noisy CI machine does not fail the build.</p>
+<p>The budgets are deliberately loose: a static site clears them easily, and a budget that fires on runner noise is worse than none. They live in Lighthouse's own config, bundled in the wheel, with a dev set for local and pull-request runs and a stricter prod set for the live site. Exit 0 is every assertion within budget, 1 is a budget missed, 2 is Lighthouse could not run: no Chrome, no <code>npx</code>, the URL unreachable.</p>
+<h2 id="you-will-need">You will need</h2>
+<ul>
+  <li>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH.</li>
+  <li><code>node</code>, and in the demo <code>npm install</code> (its <code>package.json</code> lists Lighthouse CI alongside Playwright).</li>
+  <li>A Chrome or Chromium that Lighthouse can launch. It finds an installed Chrome on its own; <code>CHROME_PATH</code> points it at another, such as the Chromium Playwright installed.</li>
+</ul>
+<h2 id="steps">Steps</h2>
+<h3 id="1-serve-the-demo-and-see-it-green">1. Serve the demo and see it green</h3>
+<p>Three Lighthouse runs take about a minute.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p scratch
+PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
+sleep 2
+slopstopper run reliability:cwv -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🚦 Running Core Web Vitals audit against: http://localhost:8099
+✅  .lighthouseci/ directory writable
+✅  Configuration file found
+✅  Chrome installation found
+Healthcheck passed!
+Running Lighthouse 3 time(s) on http://localhost:8099
+Run #1...done.
+Run #2...done.
+Run #3...done.
+Done running Lighthouse!
+Checking assertions against 1 URL(s), 3 total run(s)
+All results processed!
+📁 Reports saved to: .ss/reports/cwv/
+   • cwv-report.md</code></pre></div>
+<h3 id="2-read-the-budget">2. Read the budget</h3>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/| Metric/,/CLS/p' .ss/reports/cwv/cwv-report.md</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>| Metric | Threshold | Status |
+|--------|-----------|--------|
+| Performance score | ≥ 70 | ✅ 100/100 |
+| LCP | ≤ 4 s | ✅ 901 ms |
+| TBT | ≤ 600 ms | ✅ 0 ms |
+| CLS | ≤ 0.25 | ✅ 0.000 |</code></pre></div>
+<p>The status page paints its main content in under a second, blocks the main thread for no time at all, and nothing shifts. The full Lighthouse HTML reports, one per run, are under <code>.ss/reports/cwv/lighthouse/</code>, and CI uploads them as an artifact.</p>
+<h3 id="3-add-one-blocking-script">3. Add one blocking script</h3>
+<p>A script in <code>&lt;head&gt;</code> without <code>defer</code> runs before the browser renders anything below it. This one does nothing but spin for a second and a half, which is what a badly written tag manager does while it decides what to load.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>printf 'const until = Date.now() + 1500;\nwhile (Date.now() &lt; until) {}\n' &gt; app/slow.js
+sed -i.bak 's|&lt;link rel="stylesheet" href="style.css"&gt;|&lt;script src="slow.js"&gt;&lt;/script&gt;\n  &lt;link rel="stylesheet" href="style.css"&gt;|' app/index.html &amp;&amp; rm app/index.html.bak</code></pre></div>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:cwv -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✘  largest-contentful-paint failure for maxNumericValue assertion
+       Largest Contentful Paint
+       https://developer.chrome.com/docs/lighthouse/performance/lighthouse-largest-contentful-paint/
+        expected: &lt;=4000
+           found: 6900.44
+      all values: 6905.4663, 6900.44, 6903.2413
+Assertion failed. Exiting with status code 1.</code></pre></div>
+<p>Lighthouse names the audit, links its explanation, and shows all three runs so you can see the miss is not noise. The report table says the same in one line each:</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/| Metric/,/CLS/p' .ss/reports/cwv/cwv-report.md</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>| Metric | Threshold | Status |
+|--------|-----------|--------|
+| Performance score | ≥ 70 | ❌ 60/100 |
+| LCP | ≤ 4 s | ❌ 6903 ms |
+| TBT | ≤ 600 ms | ✅ 0 ms |
+| CLS | ≤ 0.25 | ✅ 0.000 |</code></pre></div>
+<p>One script, and the main content takes seven times as long to appear. TBT did not move at all, because the spin happened before anything painted; it is LCP that paid for it. That is the point of measuring more than one thing: the same change shows up in a different metric depending on where in the load it lands.</p>
+<h3 id="4-fix-it">4. Fix it</h3>
+<p>The real fix for a script like this is <code>defer</code>, or loading it after the content, or not loading it at all. Here it was scratch, so remove it and run again.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout app/index.html
+rm app/slow.js
+slopstopper run reliability:cwv -- http://localhost:8099 &gt;/dev/null 2&gt;&amp;1
+sed -n '/| Metric/,/CLS/p' .ss/reports/cwv/cwv-report.md</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>| Metric | Threshold | Status |
+|--------|-----------|--------|
+| Performance score | ≥ 70 | ✅ 100/100 |
+| LCP | ≤ 4 s | ✅ 901 ms |
+| TBT | ≤ 600 ms | ✅ 0 ms |
+| CLS | ≤ 0.25 | ✅ 0.000 |</code></pre></div>
+<h3 id="5-know-the-knobs">5. Know the knobs</h3>
+<p>The budgets are in <code>lighthouserc.json</code> (dev) and <code>lighthouserc.prod.json</code> (prod) inside the wheel. <code>slopstopper templates eject lighthouserc.json</code> drops an editable copy into <code>.ss/</code>, which the check prefers. <code>--prod</code> selects the stricter set, which the daily run against production and the post-deploy trigger use. Nothing leaves your machine by default: publishing a report to Lighthouse's public storage is opt-in through <code>reliability.cwv.public_report</code>, and the report links it when on.</p>
+<h2 id="checkpoint">Checkpoint</h2>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>kill "$(cat scratch/serve.pid)"
+rm -r scratch
+grep 'Core Web Vitals' .ss/reports/cwv/cwv-report.md</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>## 🚦 Core Web Vitals ✅ PASSED</code></pre></div>
+<h2 id="exercise">Exercise</h2>
+<p>Tighten one budget until the demo, unchanged, fails it. Then put the budget back.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<p>Eject the dev config and lower the LCP budget below what the page achieves:</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper templates eject lighthouserc.json
+sed -i.bak 's/"maxNumericValue": 4000/"maxNumericValue": 500/' .ss/lighthouserc.json &amp;&amp; rm .ss/lighthouserc.json.bak
+slopstopper run reliability:cwv -- http://localhost:8099
+rm .ss/lighthouserc.json</code></pre></div>
+<p>LCP at around 900 ms now fails a 500 ms budget. The exercise is the honest way to raise the bar: tighten one budget to just above what you have measured for a few weeks, then another, rather than guessing at the numbers on day one.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/CWV.md" rel="noopener noreferrer">Core Web Vitals</a>: every metric and budget, the dev and prod configs, reading a failure, and what the workflow audits on each event</li>
+  <li><a href="https://developer.chrome.com/docs/lighthouse/overview" rel="noopener noreferrer">Lighthouse's own guide</a> for what each audit measures</li>
+  <li>Lesson 14, the metatag half of what Lighthouse's SEO score covers</li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 9 to 11 minutes.</p>
+<p><strong>Cold open (0:00).</strong> A phone, a page that stays blank for seven seconds. Cut to the diff: one <code>&lt;script&gt;</code> tag.</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Why: performance slop never looks like a performance change; a number with a threshold.</li>
+  <li>Serve; three runs; the report table and what each metric means.</li>
+  <li>The spinning script; red; the assertion with all three values.</li>
+  <li>LCP paid, TBT did not move; why measuring several things matters.</li>
+  <li>Remove it; green. The knobs: eject, <code>--prod</code>, public reports off by default.</li>
+  <li>Exercise: tighten a budget to what you measure.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/13.tape</code>. Zoom on "found: 6900" and on "60/100".</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:30 Green</code> · <code>3:00 The budget</code> · <code>4:00 One script</code> · <code>6:30 Fix</code> · <code>8:00 The knobs</code> · <code>9:30 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="12-accessibility.html">← Lesson 12: Accessibility</a>
+  <a class="lesson-nav__next" href="14-seo.html">Lesson 14: SEO and social share →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/13-core-web-vitals.md" rel="noopener noreferrer">docs/learn/13-core-web-vitals.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+    <script src="../copy.js" defer></script>
+</body>
+</html>

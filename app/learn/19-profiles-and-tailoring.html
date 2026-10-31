@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/19-profiles-and-tailoring.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 19: Profiles and tailoring | SlopStopper</title>
+    <meta name="description" content="Switch a repo between the ui, api and library profiles, keep one check a profile drops, and know where the CLI pin lives and how it moves.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/19-profiles-and-tailoring.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/19-profiles-and-tailoring.html">
+    <meta property="og:title" content="Lesson 19: Profiles and tailoring | SlopStopper">
+    <meta property="og:description" content="Switch a repo between the ui, api and library profiles, keep one check a profile drops, and know where the CLI pin lives and how it moves.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 19: Profiles and tailoring | SlopStopper">
+    <meta name="twitter:description" content="Switch a repo between the ui, api and library profiles, keep one check a profile drops, and know where the CLI pin lives and how it moves.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 19</span>
+            <h1>Profiles and tailoring</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> Switch a repo between the <code>ui</code>, <code>api</code> and <code>library</code> profiles, keep one check a profile drops, and know where the CLI pin lives and how it moves.</p>
+<h2 id="why-this-lesson">Why this lesson</h2>
+<p>A check that cannot apply is noise, and noise is how gates get ignored. The nine browser checks assume HTML, a DOM and a public web surface; on an API they do not quietly no-op, they build, serve and audit nothing and go red, and on a library there is nothing to serve at all. A profile is a named preset for <code>workflows.disabled</code> that says which workflows a repo of that shape should not carry. It only ever subtracts, and <code>workflows.enabled</code> takes an individual check back out of the profile's set, so an API that does serve a docs site can keep the broken-links check.</p>
+<p>The design has two rules worth knowing. The config is the home, not the flag: <code>install.sh --profile api</code> writes <code>profile: api</code> into <code>.slopstopper.yml</code>, and everything downstream (<code>doctor</code>, the installer, the badges, the deploy trigger) reads the same resolved set from the one mapping in <code>profiles.json</code>. And detection suggests, never applies: <code>profile detect</code> reads the repo's contents and prints a suggestion, because a wrong silent pick, with checks quietly off, is worse than the default superset, with checks visibly red.</p>
+<p>The other thing an adopter tailors is the CLI version, which is pinned per repo in <code>mise.toml</code> so a breaking upstream release cannot reach a repo until someone moves the pin.</p>
+<h2 id="you-will-need">You will need</h2>
+<p>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH.</p>
+<h2 id="steps">Steps</h2>
+<h3 id="1-see-what-this-repo-resolves-to-and-why">1. See what this repo resolves to, and why</h3>
+<p>Install the suite into the demo first (lesson 1), quietly, so the profile has workflows to act on.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper --quiet install --no-topic --no-hooks --no-skills
+slopstopper profile show</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  Profile: ui  (from .slopstopper.yml)
+      A web UI: a site or app that serves HTML to a browser.
+
+  Disabled workflows (4):
+    · ss-hygiene-openapi-check.yml               (profile, no API detected)
+    · ss-reliability-api-health-check.yml        (profile, no API detected)
+    · ss-reliability-api-latency-check.yml       (profile, no API detected)
+    · ss-security-api-headers-check.yml          (profile, no API detected)</code></pre></div>
+<p>Every check applies to a site, except the four API checks from lesson 16, which the <code>ui</code> profile holds back until the repo shows an API: a spec, a server framework or an <code>api.*</code> key. Each line says why it is off.</p>
+<h3 id="2-ask-for-a-suggestion">2. Ask for a suggestion</h3>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper profile detect</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  Suggested profile: ui  (found app/index.html)
+  Active profile:    ui (already a match, nothing to do).</code></pre></div>
+<p>The installer prints the same suggestion when it differs from the active profile, and still does not change anything.</p>
+<h3 id="3-read-the-whole-mapping">3. Read the whole mapping</h3>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper profile list</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ui  (default)
+      A web UI: a site or app that serves HTML to a browser.
+      …
+      holds back 4 workflow(s) until the repo shows an API:
+        · ss-reliability-api-health-check.yml
+        · ss-security-api-headers-check.yml
+        · ss-reliability-api-latency-check.yml
+        · ss-hygiene-openapi-check.yml
+
+  api
+      An HTTP API: JSON/gRPC endpoints with no browser-rendered surface.
+      …
+      disables 10 workflow(s):
+        · ss-reliability-smoke-tests.yml
+        · ss-reliability-e2e-check.yml
+        …
+
+  library
+      A library, CLI or package with no deployed surface of any kind.
+      …
+      disables 16 workflow(s):</code></pre></div>
+<h3 id="4-switch-the-repo-to-the-api-profile">4. Switch the repo to the API profile</h3>
+<p>The installer does this with <code>--profile api</code>; the key it writes is the whole mechanism, so write it yourself.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's/^profile: ui$/profile: api/' .slopstopper.yml &amp;&amp; rm .slopstopper.yml.bak
+slopstopper profile show</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  Profile: api  (from .slopstopper.yml)
+      An HTTP API: JSON/gRPC endpoints with no browser-rendered surface.
+
+  Disabled workflows (10):
+    · ss-hygiene-privacy-check.yml               (profile)
+    · ss-reliability-accessibility-check.yml     (profile)
+    · ss-reliability-broken-links-check.yml      (profile)
+    · ss-reliability-core-web-vitals.yml         (profile)
+    · ss-reliability-e2e-check.yml               (profile)
+    · ss-reliability-llms-txt-check.yml          (profile)
+    · ss-reliability-robots-txt-check.yml        (profile)
+    · ss-reliability-seo-check.yml               (profile)
+    · ss-reliability-sitemap-check.yml           (profile)
+    · ss-reliability-smoke-tests.yml             (profile)</code></pre></div>
+<p>The four API checks are back, because the <code>api</code> profile keeps them, and the nine browser checks and the privacy statement check (a page nobody serves) are gone from the resolved set. The files are still on disk until the installer runs again, which is what <code>install.sh</code> does on a refresh:</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper install --no-topic --no-hooks --no-skills | grep 'not installed for this repo shape'
+ls .github/workflows | wc -l</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>ℹ️  profile 'api': 10 workflow(s) not installed for this repo shape (10 removed from a previous install)
+21</code></pre></div>
+<p>Ten removed, four API ones added: twenty-one workflows where lesson 1 had twenty-seven. The deploy trigger stops dispatching the nine too; <code>slopstopper profile disabled</code> prints the resolved set one per line, which is what both of them read.</p>
+<h3 id="5-keep-one-of-them">5. Keep one of them</h3>
+<p>An API that serves its own docs pages still wants the link check.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+import pathlib
+path = pathlib.Path(".slopstopper.yml")
+text = path.read_text()
+path.write_text(text.replace("  enabled: []", "  enabled: [ss-reliability-broken-links-check.yml]"))
+PY
+slopstopper profile show</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  Profile: api  (from .slopstopper.yml)
+      An HTTP API: JSON/gRPC endpoints with no browser-rendered surface.
+
+  Disabled workflows (9):
+    · ss-hygiene-privacy-check.yml               (profile)
+    …
+    · ss-reliability-smoke-tests.yml             (profile)
+
+  Re-enabled by workflows.enabled despite the profile:
+    · ss-reliability-broken-links-check.yml</code></pre></div>
+<p>The arithmetic is one line in the CLI: the profile's set, minus <code>workflows.enabled</code>, plus <code>workflows.disabled</code>. Put the config back:</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout .slopstopper.yml</code></pre></div>
+<h3 id="6-find-the-pin">6. Find the pin</h3>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -A3 '^\[tools\]' mise.toml</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>[tools]
+"node" = "20"
+"task" = "3"
+"pipx:slopstopper-cli" = "&lt;this CLI's version&gt;"</code></pre></div>
+<p>That third line is what both a laptop and CI install, per directory, so the active <code>slopstopper</code> always matches the repo you are in. The installer seeded it with its own version because the demo had none; a plain <code>install.sh</code> re-run never bumps it, the bootstrap prints a nudge when it is behind PyPI, and <code>install.sh --upgrade-cli</code> (or <code>--cli-version X.Y.Z</code>) is the one command that moves it, by wrapping <code>mise use</code>. The suite a refresh writes is the pinned version's, so a new check arrives with the pin and never before it.</p>
+<h2 id="checkpoint">Checkpoint</h2>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper profile show | grep 'Profile: ui'</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  Profile: ui  (from .slopstopper.yml)</code></pre></div>
+<p>Put the demo back:</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout .gitignore package.json
+git clean -fdq</code></pre></div>
+<h2 id="exercise">Exercise</h2>
+<p>How many workflows does the <code>library</code> profile drop, and which hygiene checks are among them?</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper profile expand library | wc -l
+slopstopper profile expand library | grep hygiene</code></pre></div>
+<p>Sixteen: the nine browser checks, the privacy statement, DAST, CSP exceptions and the four API checks. Three are hygiene checks: CSP exceptions and the privacy statement, which read headers and a page nothing serves, and <code>ss-hygiene-openapi-check.yml</code>, because drift means the spec against the live API it documents. What remains for a library is the static-analysis layer: complexity, the docs checks, secrets, SAST and dependencies, which is the whole of what applies to code nothing serves.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PROFILES.md" rel="noopener noreferrer">Profiles</a>: the mapping, the design decisions and why DAST scans an API through ZAP's OpenAPI mode</li>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/runbooks/UPGRADE_CLI.md" rel="noopener noreferrer">Upgrade the pinned CLI</a>: how the pin behaves and the recommended flow for moving it</li>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/runbooks/INSTALL.md" rel="noopener noreferrer">Adopting slopstopper</a> for what a refresh overwrites and what it never touches</li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 7 to 9 minutes.</p>
+<p><strong>Cold open (0:00).</strong> An API repo's pull request: nine red browser checks, every one of them auditing nothing.</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Why: a check that cannot apply is noise, and noise is how gates get ignored; a profile only subtracts.</li>
+  <li><code>show</code>, <code>detect</code>, <code>list</code>: what this repo resolves to and why each line is off.</li>
+  <li>Switch to <code>api</code>; ten gone, four back; the installer deleting the ten; what it and the deploy trigger read.</li>
+  <li>The escape hatch; the one-line arithmetic.</li>
+  <li>The pin in <code>mise.toml</code>; per directory; moved by one command.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/19.tape</code>. Zoom on "(profile, no API detected)" and on "Re-enabled by workflows.enabled".</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:00 show, detect, list</code> · <code>3:00 Switch</code> · <code>4:30 Keep one</code> · <code>6:00 The pin</code> · <code>7:30 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="18-agents.html">← Lesson 18: Agents: the install and triage skills</a>
+  <a class="lesson-nav__next" href="20-inside-slopstopper.html">Lesson 20: Inside slopstopper: add a check →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/19-profiles-and-tailoring.md" rel="noopener noreferrer">docs/learn/19-profiles-and-tailoring.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+    <script src="../copy.js" defer></script>
+</body>
+</html>

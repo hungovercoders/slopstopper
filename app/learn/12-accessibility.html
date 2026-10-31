@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/12-accessibility.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 12: Accessibility | SlopStopper</title>
+    <meta name="description" content="Audit both of the demo&#x27;s pages with axe-core, find the one attribute a screen reader depends on that the history page is missing, and fix it.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/12-accessibility.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/12-accessibility.html">
+    <meta property="og:title" content="Lesson 12: Accessibility | SlopStopper">
+    <meta property="og:description" content="Audit both of the demo&#x27;s pages with axe-core, find the one attribute a screen reader depends on that the history page is missing, and fix it.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 12: Accessibility | SlopStopper">
+    <meta name="twitter:description" content="Audit both of the demo&#x27;s pages with axe-core, find the one attribute a screen reader depends on that the history page is missing, and fix it.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 12</span>
+            <h1>Accessibility</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> Audit both of the demo's pages with axe-core, find the one attribute a screen reader depends on that the history page is missing, and fix it.</p>
+<h2 id="why-this-check">Why this check</h2>
+<p>Generated markup fails accessibility constantly, and the failures are not exotic: an image without alternative text, a button that is a <code>&lt;div&gt;</code>, the brand colour used for body text, a form field with no label. Each is invisible to a sighted reviewer with a mouse and a barrier to someone with a screen reader, a keyboard or low vision. They are also cheap to catch before merge and expensive after, when the page has been copied four times.</p>
+<p><code>reliability:accessibility</code> loads each page in <code>pages.accessibility</code> in a real browser and runs <a href="https://github.com/dequelabs/axe-core" rel="noopener noreferrer">axe-core</a> against it, the same engine behind the browser extensions, checking the WCAG 2.1 AA rules. axe grades each violation by impact: critical, serious, moderate, minor. The check fails on any violation at or above <code>serious</code>, the default, with a threshold of zero. Automated checks cover roughly a third of WCAG, so a green run means "nothing a machine can find", not "accessible"; it is the floor, and the point of a floor is that nothing gets under it.</p>
+<h2 id="you-will-need">You will need</h2>
+<ul>
+  <li>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH.</li>
+  <li><code>node</code>, and in the demo <code>npm install</code> then <code>npx playwright install chromium</code> (as in lesson 11).</li>
+</ul>
+<h2 id="steps">Steps</h2>
+<h3 id="1-serve-the-demo-and-see-it-red">1. Serve the demo and see it red</h3>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p scratch
+PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
+sleep 2
+slopstopper run reliability:accessibility -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>♿ Accessibility violations on /history.html (1 at or above "serious" impact):
+[CRITICAL] image-alt: Ensure &lt;img&gt; elements have alternative text or a role of none or presentation
+  - img
+  ✓  2 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › homepage meets accessibility threshold (944ms)
+  ✘  1 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › /history.html meets accessibility threshold (957ms)
+    Error: /history.html: expected ≤0 violations at "serious" impact or above, but found 1
+  1 failed
+  1 passed (1.2s)</code></pre></div>
+<p>The check prints each violation with its impact, its axe rule id and the selector of each offending element before Playwright reports the failed test. <code>image-alt</code> is critical: the history page's one image is the uptime chart, and a screen reader user gets nothing at all for it.</p>
+<h3 id="2-read-the-element">2. Read the element</h3>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -n '&lt;img' app/history.html</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>26:    &lt;img src="uptime.svg" width="480" height="60"&gt;</code></pre></div>
+<p>Dimensions, so the page does not jump when it loads, and no <code>alt</code>. It is the shape a template that "cleans up" attributes leaves behind, and the shape most image tags written in a hurry have.</p>
+<h3 id="3-fix-it">3. Fix it</h3>
+<p>The fix is the attribute, with text that says what the image shows, not that it is an image.</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's|&lt;img src="uptime.svg" width="480" height="60"&gt;|&lt;img src="uptime.svg" width="480" height="60" alt="Uptime over the last ninety days: a flat line at 100% with two dips"&gt;|' app/history.html &amp;&amp; rm app/history.html.bak
+slopstopper run reliability:accessibility -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✓  1 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › /history.html meets accessibility threshold (784ms)
+  ✓  2 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › homepage meets accessibility threshold (794ms)
+
+  2 passed (1.1s)</code></pre></div>
+<h3 id="4-know-the-knobs">4. Know the knobs</h3>
+<p><code>ACCESSIBILITY_IMPACT</code> lowers the bar to <code>moderate</code> or <code>minor</code> for one run, and <code>ACCESSIBILITY_THRESHOLD</code> allows a number of violations through; both are for seeing the long tail, not for making a red run green. <code>pages.accessibility</code> in <code>.slopstopper.yml</code> is the page list. The spec is bundled and ejectable like the others; a page that needs to be audited in a particular state, after a login or with a dialog open, gets its own ejected copy.</p>
+<h2 id="checkpoint">Checkpoint</h2>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout app/history.html
+rm -rf test-results
+out=$(slopstopper run reliability:accessibility -- http://localhost:8099 2&gt;&amp;1 || true)
+kill "$(cat scratch/serve.pid)"
+rm -rf scratch test-results
+echo "$out" | grep 'CRITICAL'</code></pre></div>
+<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>[CRITICAL] image-alt: Ensure &lt;img&gt; elements have alternative text or a role of none or presentation</code></pre></div>
+<p>Red again, with the demo as it shipped, and the fix is one attribute whose text you have now written once.</p>
+<h2 id="exercise">Exercise</h2>
+<p>Find out what impact level axe gives a contrast failure, which is the most common real-world violation.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<p>Serve the demo again and make the body text the same colour as the page's muted grey:</p>
+<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's|color: #1d1d1b;|color: #9a9a94;|' app/style.css &amp;&amp; rm app/style.css.bak
+slopstopper run reliability:accessibility -- http://localhost:8099
+git checkout app/style.css</code></pre></div>
+<p><code>color-contrast</code> fires at <code>serious</code>, which is why the default threshold is set there: contrast is the violation most often argued away as a design choice. If the stylesheet's colours differ from the ones above, pick any text colour close to the background; the rule, not the value, is the point.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/ACCESSIBILITY.md" rel="noopener noreferrer">Accessibility monitoring</a>: the impact levels, every variable, and what the workflow audits on each event</li>
+  <li><a href="https://dequeuniversity.com/rules/axe/4.10" rel="noopener noreferrer">axe-core's rule descriptions</a>, one page per rule id</li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 8 to 10 minutes.</p>
+<p><strong>Cold open (0:00).</strong> The history page with a screen reader voicing it: "image". Nothing else.</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Why: the failures are ordinary and invisible to a mouse; a third of WCAG is automatable, and that third is the floor.</li>
+  <li>Serve; red on the history page; critical <code>image-alt</code>, with the rule and the selector; the threshold at serious and why.</li>
+  <li>The element: dimensions, no alt.</li>
+  <li>The attribute, with text that says what the chart shows; green.</li>
+  <li>Put the demo back. The knobs are for seeing the long tail.</li>
+  <li>Exercise: a contrast failure and its impact level.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/12.tape</code>. Zoom on <code>[CRITICAL] image-alt</code>.</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:30 Red</code> · <code>3:00 The element</code> · <code>4:00 Fix</code> · <code>5:30 The knobs</code> · <code>6:30 Exercise</code> · <code>8:00 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="11-smoke-and-e2e.html">← Lesson 11: Smoke and end-to-end</a>
+  <a class="lesson-nav__next" href="13-core-web-vitals.html">Lesson 13: Core Web Vitals →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/12-accessibility.md" rel="noopener noreferrer">docs/learn/12-accessibility.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+    <script src="../copy.js" defer></script>
+</body>
+</html>
