@@ -72,11 +72,11 @@
 <h2 id="steps">Steps</h2>
 <h3 id="1-serve-the-demo-and-see-it-red">1. Serve the demo and see it red</h3>
 <p>The share image tags carry the production URL, because a preview card is drawn from the live site, not from your laptop. Against a local server, tell the check not to fetch it; the workflow does the same for a local build.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p scratch
+<div class="codeblock codeblock--sh" data-copyable><pre><code>mkdir -p scratch
 PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
 sleep 2
 SEO_VERIFY_OG_IMAGE=0 slopstopper run reliability:seo -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔎 SEO metatag audit against: http://localhost:8099
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔎 SEO metatag audit against: http://localhost:8099
    Pages: /, /history.html
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ✅ http://localhost:8099/
@@ -87,8 +87,8 @@ SEO_VERIFY_OG_IMAGE=0 slopstopper run reliability:seo -- http://localhost:8099</
 <p>The status page passes every tag. The history page has all of them but one: whoever copied the <code>&lt;head&gt;</code> across dropped the description. Without it, the search result for that page shows whatever sentence the engine picks from the body; with a copied one, it would show the wrong page's. Either is a page that reads as slop before anyone clicks it.</p>
 <h3 id="2-read-what-it-found">2. Read what it found</h3>
 <p>The report lists every tag it detected, per page, which is the quickest way to see what a preview card will say.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/Tags detected/,/og:url/p' .ss/reports/seo/seo-metatags-report.md | head -12</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>&lt;details&gt;&lt;summary&gt;Tags detected&lt;/summary&gt;
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/Tags detected/,/og:url/p' .ss/reports/seo/seo-metatags-report.md | head -12</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>&lt;details&gt;&lt;summary&gt;Tags detected&lt;/summary&gt;
 
 | Tag | Value |
 |---|---|
@@ -102,18 +102,18 @@ SEO_VERIFY_OG_IMAGE=0 slopstopper run reliability:seo -- http://localhost:8099</
 | `og:url` | https://lantern.example.com/ |</code></pre></div>
 <h3 id="3-fix-it">3. Fix it</h3>
 <p>One line in the history page's <code>&lt;head&gt;</code>, saying what the page is in the words a search result should show. The <code>og:description</code> already there is the right text.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's|  &lt;link rel="canonical" href="https://lantern.example.com/history.html"&gt;|  &lt;meta name="description" content="Every incident in the last ninety days, which service it hit and how long it lasted."&gt;\n  &lt;link rel="canonical" href="https://lantern.example.com/history.html"&gt;|' app/history.html &amp;&amp; rm app/history.html.bak
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's|  &lt;link rel="canonical" href="https://lantern.example.com/history.html"&gt;|  &lt;meta name="description" content="Every incident in the last ninety days, which service it hit and how long it lasted."&gt;\n  &lt;link rel="canonical" href="https://lantern.example.com/history.html"&gt;|' app/history.html &amp;&amp; rm app/history.html.bak
 SEO_VERIFY_OG_IMAGE=0 slopstopper run reliability:seo -- http://localhost:8099 | grep 'All pages'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>✅ All pages pass.</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>✅ All pages pass.</code></pre></div>
 <h3 id="4-know-the-knobs">4. Know the knobs</h3>
 <p><code>pages.seo</code> in <code>.slopstopper.yml</code> is the page list, and <code>SEO_PAGES</code> overrides it for a run. <code>SEO_REQUIRE_OG_IMAGE=0</code> is for a site with no share image at all, and <code>SEO_VERIFY_OG_IMAGE=0</code> is for runs where the image URL cannot be fetched, as above. Against production the check fetches the image, so a share image that 404s fails the daily run and not a reader's feed.</p>
 <p>One tag the check cannot assert is consistency: that the description says the same thing everywhere it appears. A site whose identity sentence sits in the hero, the meta tags and <code>llms.txt</code> keeps them in step with a test of its own; that is a site-specific rule, and the place for it is a test, not a check.</p>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout app/history.html
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout app/history.html
 kill "$(cat scratch/serve.pid)"
 rm -r scratch
 grep '^\*\*Overall:\*\*' .ss/reports/seo/seo-metatags-report.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>**Overall:** ✅ PASS</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>**Overall:** ✅ PASS</code></pre></div>
 <p>The report is from the fixed run; the demo is back to how it shipped, one tag short.</p>
 <h2 id="exercise">Exercise</h2>
 <p>Make the check warn without failing.</p>
@@ -121,7 +121,7 @@ grep '^\*\*Overall:\*\*' .ss/reports/seo/seo-metatags-report.md</code></pre></di
   <summary>Solution</summary>
   <div class="details__body">
 <p>Serve the demo again and lengthen the status page's description past 160 characters:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's|&lt;meta name="description" content="|&lt;meta name="description" content="A much longer opening sentence that says the same thing again and again until it is well past the length a search result shows. |' app/index.html &amp;&amp; rm app/index.html.bak
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's|&lt;meta name="description" content="|&lt;meta name="description" content="A much longer opening sentence that says the same thing again and again until it is well past the length a search result shows. |' app/index.html &amp;&amp; rm app/index.html.bak
 SEO_VERIFY_OG_IMAGE=0 slopstopper run reliability:seo -- http://localhost:8099
 git checkout app/index.html</code></pre></div>
 <p>The page still passes, and the report under <code>.ss/reports/seo/</code> carries a warning that the description is over 160 characters. Length is advisory because the engines truncate rather than reject; a missing tag is a failure because there is nothing to truncate.</p>

@@ -69,12 +69,12 @@
   <li>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH, and <code>node</code> for <code>slopstopper serve</code>.</li>
   <li>Docker, running. <code>slopstopper doctor</code> says whether it is on PATH; the first scan pulls the ZAP image (about a gigabyte), so it needs the network once.</li>
 </ul>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>docker --version</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>Docker version 29.5.3, build d1c06ef</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>docker --version</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>Docker version 29.5.3, build d1c06ef</code></pre></div>
 <h2 id="steps">Steps</h2>
 <h3 id="1-relax-one-page-and-write-it-down">1. Relax one page, and write it down</h3>
 <p>The demo's policy is strict enough that ZAP's passive rules find nothing above Low on it, so this lesson makes the relaxation that lesson 9 only documented a little wider: the history page's chart sets inline styles, so <code>style-src</code> admits <code>'unsafe-inline'</code> there. Both halves at once, the header and the ledger entry, so the drift check stays green.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+<div class="codeblock codeblock--sh" data-copyable><pre><code>python3 - &lt;&lt;'PY'
 import pathlib
 p = pathlib.Path('app/_headers'); text = p.read_text()
 head, block = text.split('/history.html\n', 1)
@@ -94,14 +94,14 @@ entry = '''### `/history.html`
 doc.write_text(t.replace('None yet: every path serves the baseline policy.\n', entry, 1))
 PY
 slopstopper run hygiene:csp-exceptions | tail -1</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>✅ No drift detected.</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>✅ No drift detected.</code></pre></div>
 <h3 id="2-serve-the-demo-and-scan-it">2. Serve the demo and scan it</h3>
 <p>The site is served on a port of its own, tracked by a pid file so a later step can stop it. The server reads <code>app/_headers</code> when it starts, which is why the relaxation came first. ZAP runs in a container, so the check rewrites <code>localhost</code> to the address the container can reach the host on (<code>host.docker.internal</code> on macOS, the bridge gateway <code>172.17.0.1</code> everywhere else) and tells you.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p scratch
+<div class="codeblock codeblock--sh" data-copyable><pre><code>mkdir -p scratch
 PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
 sleep 2
 slopstopper run security:dast -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🌐 Running DAST baseline scan against http://localhost:8099…
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🌐 Running DAST baseline scan against http://localhost:8099…
 📍 Using Docker-compatible target: http://host.docker.internal:8099
 WARN-NEW: Storable and Cacheable Content [10049] x 3
 WARN-NEW: CSP: style-src unsafe-inline [10055] x 1
@@ -117,8 +117,8 @@ FAIL-NEW: 0	FAIL-INPROG: 0	WARN-NEW: 4	WARN-INPROG: 0	INFO: 0	IGNORE: 0	PASS: 64
 ✅ No blocking findings.</code></pre></div>
 <p>Trimmed to the alerts and the gate. Sixty-four rules passed. ZAP raised six alerts, one of them Medium: the history page's CSP allows inline styles. That is exactly the relaxation step 1 put in the ledger, and the gate found the entry and accepted the finding, naming the path that accepted it. Green, with the Medium still visible.</p>
 <h3 id="3-read-the-report">3. Read the report</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/^# DAST/,/Low Risk Alerts/p' .ss/reports/dast/dast-report.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code># DAST Analysis Report
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/^# DAST/,/Low Risk Alerts/p' .ss/reports/dast/dast-report.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code># DAST Analysis Report
 
 **Generated**: 2026-10-25 18:27:22 UTC
 
@@ -150,9 +150,9 @@ These do not block the build. They will block again if the entry is removed or i
 <p>The report opens with the accepted findings and the entry behind each, then the counts by risk, then a table per level. The Lows are the cross-origin isolation and permissions-policy headers the demo's host does not send; Low never blocks, so they are there to be read, not fixed today. The JSON beside it has every instance and ZAP's <code>alertRef</code> (<code>10055-6</code>), which is the id you will use in step 5.</p>
 <h3 id="4-take-the-ledger-away">4. Take the ledger away</h3>
 <p>The entry is what made the Medium acceptable. Remove it and the same scan is red.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout docs/security/CSP_EXCEPTIONS.md</code></pre></div>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run security:dast -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>⚠️  Found 1 high/medium alert(s) (total 6)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout docs/security/CSP_EXCEPTIONS.md</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run security:dast -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>⚠️  Found 1 high/medium alert(s) (total 6)
 🕷️  DAST gate
    blocking alerts (riskcode &gt;= 2): 1
    swallowed (rules.tsv IGNORE or documented CSP exceptions): 0
@@ -160,10 +160,10 @@ These do not block the build. They will block again if the entry is removed or i
 <p>Same site, same six alerts, one blocking; the report's Medium table names it. Nothing about the response changed; what changed is that nobody has said why it is acceptable. The gate blocks on a Medium until someone does, in a place a reviewer reads.</p>
 <h3 id="5-accept-it-with-a-reason-the-other-way">5. Accept it with a reason, the other way</h3>
 <p>For a finding that is not a CSP relaxation on one path (a header a static host cannot send, a rule that misreads a framework), the ledger is the wrong instrument. <code>.zap/rules.tsv</code> is the right one: one line per alert, tab-separated, with the reason as the third field.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p .zap
+<div class="codeblock codeblock--sh" data-copyable><pre><code>mkdir -p .zap
 printf '10055-6\tIGNORE\t# inline styles on /history.html: the chart container sets them; the page allows nothing else\n' &gt; .zap/rules.tsv
 slopstopper run security:dast -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🕷️  DAST gate
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🕷️  DAST gate
    blocking alerts (riskcode &gt;= 2): 0
    swallowed (rules.tsv IGNORE or documented CSP exceptions): 1
    🛡 /history.html: alert=10055-6 riskcode=2 'CSP: style-src unsafe-inline' ← .zap/rules.tsv entry `10055-6`
@@ -171,16 +171,16 @@ slopstopper run security:dast -- http://localhost:8099</code></pre></div>
 <p>Green again, and the gate names the line that did it. Two things about the id. <code>10055-6</code> is the <strong>alert ref</strong>: plugin 10055 is ZAP's whole CSP scanner and raises several unrelated alerts, so ignoring <code>10055</code> would also hide a missing <code>frame-ancestors</code>; the ref accepts exactly the inline-styles alert and nothing else. And the reason is not optional: the file is read in review, and "IGNORE" with no <code># why</code> is the quiet relaxation this course exists to stop.</p>
 <h3 id="6-put-the-demo-back">6. Put the demo back</h3>
 <p>Remove the rule, restore the headers, and stop the server: it read the relaxed headers when it started, so the clean run in the checkpoint needs a fresh one.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>rm -rf .zap
+<div class="codeblock codeblock--sh" data-copyable><pre><code>rm -rf .zap
 git checkout app/_headers
 kill "$(cat scratch/serve.pid)"</code></pre></div>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
+<div class="codeblock codeblock--sh" data-copyable><pre><code>PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
 sleep 2
 slopstopper run security:dast -- http://localhost:8099 2&gt;&amp;1 | grep -E 'Found|No blocking'
 kill "$(cat scratch/serve.pid)"
 rm -rf scratch</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>ℹ️  Found 4 alert(s), but none are high/medium
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>ℹ️  Found 4 alert(s), but none are high/medium
 ✅ No blocking findings.</code></pre></div>
 <p>The demo as it shipped: four Lows, nothing to accept, server stopped, pid file gone.</p>
 <h2 id="exercise">Exercise</h2>
@@ -188,7 +188,7 @@ rm -rf scratch</code></pre></div>
 <details class="details">
   <summary>Solution</summary>
   <div class="details__body">
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run security:dast -- https://slopstopper.dev</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run security:dast -- https://slopstopper.dev</code></pre></div>
 <p>No <code>📍</code> line, because there is nothing to rewrite. The response headers now come from the host's edge rather than from <code>slopstopper serve</code> reading a file, so this is the run that would catch a header the edge strips or adds. That is why the suite scans production after each deploy and daily, and why a local build is enough for a pull request: the two runs answer different questions.</p>
   </div>
 </details>

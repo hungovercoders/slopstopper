@@ -72,20 +72,20 @@
 <h2 id="steps">Steps</h2>
 <h3 id="1-see-the-headers-the-site-sends">1. See the headers the site sends</h3>
 <p>Serve the demo locally. The server applies <code>app/_headers</code>, the file the demo's <code>.slopstopper.yml</code> names as <code>headers.source</code>, exactly as the host does in production.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p scratch
+<div class="codeblock codeblock--sh" data-copyable><pre><code>mkdir -p scratch
 PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
 sleep 2
 curl -sI http://localhost:8099/ | grep -iE 'content-security|x-frame|nosniff|referrer'
 curl -sI http://localhost:8099/history.html | grep -iE 'content-security'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 Referrer-Policy: strict-origin-when-cross-origin
 Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https://charts.example.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'</code></pre></div>
 <p><code>'self'</code> everywhere on the status page: nothing loads from anywhere else. The history page is different: its <code>img-src</code> admits <code>https://charts.example.com</code>. That is the default policy relaxed for one path, and the question the check asks is "did you say so?"</p>
 <h3 id="2-see-the-drift-check-red">2. See the drift check red</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:csp-exceptions</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔐 CSP exceptions check
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:csp-exceptions</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔐 CSP exceptions check
    source: app/_headers
    CSP exceptions in source: 1
    documented in CSP_EXCEPTIONS.md: 0
@@ -95,8 +95,8 @@ Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'
 ❌ Drift detected. See .ss/reports/csp/csp-exceptions-report.md for full details.</code></pre></div>
 <p>One exception in the headers, none in the ledger. This is exactly the diff a "make the chart show" commit contains: one line in a config file, reviewed as config.</p>
 <h3 id="3-read-the-report">3. Read the report</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/^## .* Errors/,/Mismatched origins/p' .ss/reports/csp/csp-exceptions-report.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>## ❌ Errors
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/^## .* Errors/,/Mismatched origins/p' .ss/reports/csp/csp-exceptions-report.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>## ❌ Errors
 
 - **/history.html**: `/history.html` in app/_headers allows external origins (https://charts.example.com) but has no entry in CSP_EXCEPTIONS.md
 
@@ -106,7 +106,7 @@ Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'
 - **Mismatched origins** → make `Origin allowed` / `Directives added` in the doc list every external origin in the corresponding `app/_headers` entry.</code></pre></div>
 <h3 id="4-document-it">4. Document it</h3>
 <p>The fix is not to remove the relaxation, unless the page no longer needs it. It is to write it down, with every field, under the <code>## Exceptions</code> heading. The demo's ledger says "None yet"; this replaces that line with the entry.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+<div class="codeblock codeblock--sh" data-copyable><pre><code>python3 - &lt;&lt;'PY'
 import pathlib
 doc = pathlib.Path('docs/security/CSP_EXCEPTIONS.md')
 text = doc.read_text()
@@ -123,19 +123,19 @@ entry = '''### `/history.html`
 doc.write_text(text.replace('None yet: every path serves the baseline policy.\n', entry, 1))
 PY
 slopstopper run hygiene:csp-exceptions</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔐 CSP exceptions check
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔐 CSP exceptions check
    source: app/_headers
    CSP exceptions in source: 1
    documented in CSP_EXCEPTIONS.md: 1
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ No drift detected.</code></pre></div>
 <p>Both sides agree. Notice what the fields forced you to say: who approved it (nobody, yet), and what data leaves the site. A reviewer reading the diff now sees a decision, not a config change. Put the demo back before moving on:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout docs/security/CSP_EXCEPTIONS.md</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout docs/security/CSP_EXCEPTIONS.md</code></pre></div>
 <h3 id="5-audit-the-sites-headers-as-an-api-would-be-audited">5. Audit the site's headers as an API would be audited</h3>
 <p>The API check skips when nothing is configured, because an unconfigured check is not a failing check. Point it at the served site with a path and it probes for real:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run security:api-headers -- http://localhost:8099 --path /
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run security:api-headers -- http://localhost:8099 --path /
 kill "$(cat scratch/serve.pid)"</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🛡 API header + CORS audit against: http://localhost:8099
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🛡 API header + CORS audit against: http://localhost:8099
    Paths: /
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ✅ http://localhost:8099/
@@ -144,7 +144,7 @@ kill "$(cat scratch/serve.pid)"</code></pre></div>
 ✅ Every probed endpoint passes the API header contract.</code></pre></div>
 <h3 id="6-build-an-api-with-the-commonest-cors-mistake">6. Build an API with the commonest CORS mistake</h3>
 <p>A ten-line server that sends the wildcard origin together with credentials, and forgets <code>nosniff</code>. Generated API scaffolds do both.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>cat &gt; scratch/api.py &lt;&lt;'PY'
+<div class="codeblock codeblock--sh" data-copyable><pre><code>cat &gt; scratch/api.py &lt;&lt;'PY'
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 class Api(BaseHTTPRequestHandler):
@@ -163,8 +163,8 @@ HTTPServer(("127.0.0.1", 8765), Api).serve_forever()
 PY
 python3 scratch/api.py &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/api.pid
 sleep 1</code></pre></div>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run security:api-headers -- http://localhost:8765 --path /health</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ❌ http://localhost:8765/health
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run security:api-headers -- http://localhost:8765 --path /health</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ❌ http://localhost:8765/health
       - `Access-Control-Allow-Origin: *` is sent with `Access-Control-Allow-Credentials: true`. Browsers reject this pair, so the policy you intended is not being enforced. Echo a specific allowed origin instead
       - `X-Content-Type-Options: nosniff` is missing. A JSON response that a browser sniffs as HTML is an XSS vector. Or set api.headers.require_nosniff: false
       ⚠️  HSTS not asserted because the target is http, where the header has no effect
@@ -174,7 +174,7 @@ sleep 1</code></pre></div>
 <p>Two hard failures and two notes. The first failure is the one to understand: the wildcard plus credentials is not a permissive policy, it is a policy browsers refuse, so whatever the author meant to allow is not being allowed, and the next person "fixes" it by reflecting <code>Origin</code>, which is the real leak.</p>
 <h3 id="7-fix-the-api">7. Fix the API</h3>
 <p>Validate <code>Origin</code> against an allowlist and echo the match, add <code>nosniff</code>, and send <code>Vary: Origin</code> on every response, not only the allowed ones: a shared cache keys on the headers named in <code>Vary</code>, so a response without it, served to a request with no <code>Origin</code>, could be handed back to the allowed frontend without its CORS headers.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>kill "$(cat scratch/api.pid)"
+<div class="codeblock codeblock--sh" data-copyable><pre><code>kill "$(cat scratch/api.pid)"
 cat &gt; scratch/api.py &lt;&lt;'PY'
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -203,15 +203,15 @@ sleep 1
 slopstopper run security:api-headers -- http://localhost:8765 --path /health --allowed-origin https://app.example.com
 kill "$(cat scratch/api.pid)"
 rm -r scratch</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✅ http://localhost:8765/health
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✅ http://localhost:8765/health
       ⚠️  HSTS not asserted because the target is http, where the header has no effect
       ⚠️  `Server: BaseHTTP/0.6 Python/3.13.16` includes a version, so consider trimming it to the product name
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ Every probed endpoint passes the API header contract.</code></pre></div>
 <p><code>--allowed-origin</code> is the <code>api.headers.allowed_origins</code> knob from the command line: the check sends that origin and insists it comes back allowed, which catches an allowlist that silently stopped matching after a frontend moved domains. In a real repo these live in <code>.slopstopper.yml</code> under <code>api.headers</code>, and the check runs after every deploy against the real edge, because the headers that matter usually come from the proxy in front of the app, not the app.</p>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:csp-exceptions &gt;/dev/null; echo "exit $?"</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>exit 1</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:csp-exceptions &gt;/dev/null; echo "exit $?"</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>exit 1</code></pre></div>
 <p>Red again, with the demo as it shipped, and the entry that fixes it is seven lines you can now write.</p>
 <h2 id="exercise">Exercise</h2>
 <p>Make the drift check fail in the other direction: a documented exception with no matching entry in the headers source.</p>
@@ -219,7 +219,7 @@ rm -r scratch</code></pre></div>
   <summary>Solution</summary>
   <div class="details__body">
 <p>Run the step 4 snippet, then take the relaxation out of <code>app/_headers</code> instead of the ledger:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+<div class="codeblock codeblock--sh" data-copyable><pre><code>python3 - &lt;&lt;'PY'
 import pathlib
 p = pathlib.Path('app/_headers'); text = p.read_text()
 p.write_text(text[:text.index('/history.html')].rstrip() + '\n')

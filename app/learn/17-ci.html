@@ -68,9 +68,9 @@
 <h2 id="steps">Steps</h2>
 <h3 id="1-read-one-workflow">1. Read one workflow</h3>
 <p>Install the suite into the demo first (lesson 1), quietly, so there are workflows to read. Then the entry-files check from lesson 3, as CI runs it. Every <code>ss-*.yml</code> has this shape.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper --quiet install --no-topic --no-hooks --no-skills
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper --quiet install --no-topic --no-hooks --no-skills
 sed -n '/^    steps:/,$p' .github/workflows/ss-hygiene-entry-files-check.yml | grep -E 'name:|uses:|run:'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>      - name: Checkout code
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>      - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up slopstopper
         uses: ./.github/actions/ss-setup
@@ -90,13 +90,13 @@ sed -n '/^    steps:/,$p' .github/workflows/ss-hygiene-entry-files-check.yml | g
 <p>The security checks add one step: they run <code>task -x</code>, which passes the CLI's exit code through unchanged, so a later step can tell a finding (1) from a check that could not run (2) and never opens an issue for the second.</p>
 <h3 id="2-see-every-third-party-action-pinned-to-a-commit">2. See every third-party action pinned to a commit</h3>
 <p>A tag like <code>@v4</code> can be moved to point at different code. A forty character SHA cannot. The rule in <code>AGENTS.md</code> is that every third-party action is pinned to one.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -h "uses: " .github/workflows/ss-*.yml | grep -v "./.github/actions" | grep -v '@[0-9a-f]\{40\}' | wc -l</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>0</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep -h "uses: " .github/workflows/ss-*.yml | grep -v "./.github/actions" | grep -v '@[0-9a-f]\{40\}' | wc -l</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>0</code></pre></div>
 <p>Zero unpinned. The local <code>./.github/actions/ss-setup</code> is excluded because it is slopstopper's own code, installed beside the workflows.</p>
 <h3 id="3-the-one-summary-comment">3. The one summary comment</h3>
 <p><code>ss-pr-summary.yml</code> renders one rolling comment per pull request. It does not run inside each check; it fires when any check workflow completes, reads the runs GitHub has already recorded for the head commit, and re-renders. That is why it needs no coordination with the checks, cannot race them into a half-written comment, and converges on the full picture whatever order they finish in.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -c '"SlopStopper' .github/workflows/ss-pr-summary.yml</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>27</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep -c '"SlopStopper' .github/workflows/ss-pr-summary.yml</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>27</code></pre></div>
 <p>The list is explicit because <code>workflow_run</code> cannot glob, so adding a check means adding a row here; a test in the CLI's suite fails when a check's workflow is missing from it.</p>
 <h3 id="4-the-issue-a-red-check-raises-on-main">4. The issue a red check raises on main</h3>
 <p>A check that fails on a pull request blocks the merge. A check that fails on <code>main</code> has nobody to block, so it opens an issue instead, and closes it on the next green run. Two mechanisms do this:</p>
@@ -104,8 +104,8 @@ sed -n '/^    steps:/,$p' .github/workflows/ss-hygiene-entry-files-check.yml | g
   <li><strong>The check's own emitter</strong>, <code>slopstopper emit &lt;check&gt; --target issue</code>, opens or updates a tracking issue on a finding, and <code>--on-pass=close</code> closes it. It stays silent on exit 2, because a missing tool is not a finding.</li>
   <li><strong>The workflow-failure tracker</strong>, which files any failed run on <code>main</code>, whatever the cause, so a check that could not run is still visible as a broken run.</li>
 </ul>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -n "conclusion == 'failure'" -A1 .github/workflows/ss-workflow-failure-issue.yml</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>50:      github.event.workflow_run.conclusion == 'failure' &amp;&amp;
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep -n "conclusion == 'failure'" -A1 .github/workflows/ss-workflow-failure-issue.yml</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>50:      github.event.workflow_run.conclusion == 'failure' &amp;&amp;
 51-      github.event.workflow_run.head_branch == 'main'</code></pre></div>
 <h3 id="5-the-rest-of-the-loop">5. The rest of the loop</h3>
 <ul>
@@ -113,23 +113,23 @@ sed -n '/^    steps:/,$p' .github/workflows/ss-hygiene-entry-files-check.yml | g
   <li><strong>The doc updater.</strong> A weekly agentic workflow reads the pull requests merged in the last week, finds documentation that drifted, and opens a pull request with the fix for a human to review. Its source is a markdown file the gh-aw tool compiles to a lock file; you edit the markdown.</li>
   <li><strong>The deploy trigger.</strong> Cloudflare Workers Builds deploys every push but raises no GitHub deployment, so nothing would run the URL checks against a preview. When Cloudflare's check run succeeds, this workflow works out the preview URL from the comment Cloudflare posts and dispatches each URL-driven check against it. Lesson 11's hourly smoke run against production is the same checks on a schedule.</li>
 </ul>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -l "cron:" .github/workflows/ss-*.yml | wc -l
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep -l "cron:" .github/workflows/ss-*.yml | wc -l
 grep -n "cron:" .github/workflows/ss-reliability-smoke-tests.yml</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>12
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>12
 19:    - cron: '0 * * * *'</code></pre></div>
 <p>Twelve of the workflows this repo carries also run on a schedule, so a site that breaks between pushes is noticed; smoke is the hourly one.</p>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -h "uses: " .github/workflows/ss-*.yml | grep -v "./.github/actions" | grep -v '@[0-9a-f]\{40\}' | wc -l</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>0</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep -h "uses: " .github/workflows/ss-*.yml | grep -v "./.github/actions" | grep -v '@[0-9a-f]\{40\}' | wc -l</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>0</code></pre></div>
 <p>Put the demo back:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout .gitignore package.json
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout .gitignore package.json
 git clean -fdq</code></pre></div>
 <h2 id="exercise">Exercise</h2>
 <p>Find the workflow that runs the local server before its check, and the line that starts it.</p>
 <details class="details">
   <summary>Solution</summary>
   <div class="details__body">
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -l "slopstopper serve &amp;" .github/workflows/ss-*.yml</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep -l "slopstopper serve &amp;" .github/workflows/ss-*.yml</code></pre></div>
 <p>The browser checks build nothing when the site has no build step, and on a pull request they serve the repo on the runner and audit <code>localhost:8080</code>, the same thing you did in lessons 11 to 15; on a deploy or a schedule they audit the real URL instead. The API checks never do this, because an API is not a static bundle the CLI can serve, and guessing a start command would be worse than not guessing.</p>
   </div>
 </details>

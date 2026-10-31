@@ -70,11 +70,11 @@
 </ul>
 <h2 id="steps">Steps</h2>
 <h3 id="1-serve-the-demo-and-see-it-red">1. Serve the demo and see it red</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p scratch
+<div class="codeblock codeblock--sh" data-copyable><pre><code>mkdir -p scratch
 PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
 sleep 2
 slopstopper run reliability:accessibility -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>♿ Accessibility violations on /history.html (1 at or above "serious" impact):
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>♿ Accessibility violations on /history.html (1 at or above "serious" impact):
 [CRITICAL] image-alt: Ensure &lt;img&gt; elements have alternative text or a role of none or presentation
   - img
   ✓  2 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › homepage meets accessibility threshold (944ms)
@@ -84,27 +84,27 @@ slopstopper run reliability:accessibility -- http://localhost:8099</code></pre><
   1 passed (1.2s)</code></pre></div>
 <p>The check prints each violation with its impact, its axe rule id and the selector of each offending element before Playwright reports the failed test. <code>image-alt</code> is critical: the history page's one image is the uptime chart, and a screen reader user gets nothing at all for it.</p>
 <h3 id="2-read-the-element">2. Read the element</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -n '&lt;img' app/history.html</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>26:    &lt;img src="uptime.svg" width="480" height="60"&gt;</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep -n '&lt;img' app/history.html</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>26:    &lt;img src="uptime.svg" width="480" height="60"&gt;</code></pre></div>
 <p>Dimensions, so the page does not jump when it loads, and no <code>alt</code>. It is the shape a template that "cleans up" attributes leaves behind, and the shape most image tags written in a hurry have.</p>
 <h3 id="3-fix-it">3. Fix it</h3>
 <p>The fix is the attribute, with text that says what the image shows, not that it is an image.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's|&lt;img src="uptime.svg" width="480" height="60"&gt;|&lt;img src="uptime.svg" width="480" height="60" alt="Uptime over the last ninety days: a flat line at 100% with two dips"&gt;|' app/history.html &amp;&amp; rm app/history.html.bak
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's|&lt;img src="uptime.svg" width="480" height="60"&gt;|&lt;img src="uptime.svg" width="480" height="60" alt="Uptime over the last ninety days: a flat line at 100% with two dips"&gt;|' app/history.html &amp;&amp; rm app/history.html.bak
 slopstopper run reliability:accessibility -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✓  1 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › /history.html meets accessibility threshold (784ms)
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✓  1 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › /history.html meets accessibility threshold (784ms)
   ✓  2 [chromium] › .ss/.run/tests/accessibility.spec.ts:59:9 › Accessibility Audit › homepage meets accessibility threshold (794ms)
 
   2 passed (1.1s)</code></pre></div>
 <h3 id="4-know-the-knobs">4. Know the knobs</h3>
 <p><code>ACCESSIBILITY_IMPACT</code> lowers the bar to <code>moderate</code> or <code>minor</code> for one run, and <code>ACCESSIBILITY_THRESHOLD</code> allows a number of violations through; both are for seeing the long tail, not for making a red run green. <code>pages.accessibility</code> in <code>.slopstopper.yml</code> is the page list. The spec is bundled and ejectable like the others; a page that needs to be audited in a particular state, after a login or with a dialog open, gets its own ejected copy.</p>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout app/history.html
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout app/history.html
 rm -rf test-results
 out=$(slopstopper run reliability:accessibility -- http://localhost:8099 2&gt;&amp;1 || true)
 kill "$(cat scratch/serve.pid)"
 rm -rf scratch test-results
 echo "$out" | grep 'CRITICAL'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>[CRITICAL] image-alt: Ensure &lt;img&gt; elements have alternative text or a role of none or presentation</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>[CRITICAL] image-alt: Ensure &lt;img&gt; elements have alternative text or a role of none or presentation</code></pre></div>
 <p>Red again, with the demo as it shipped, and the fix is one attribute whose text you have now written once.</p>
 <h2 id="exercise">Exercise</h2>
 <p>Find out what impact level axe gives a contrast failure, which is the most common real-world violation.</p>
@@ -112,7 +112,7 @@ echo "$out" | grep 'CRITICAL'</code></pre></div>
   <summary>Solution</summary>
   <div class="details__body">
 <p>Serve the demo again and make the body text the same colour as the page's muted grey:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's|color: #1d1d1b;|color: #9a9a94;|' app/style.css &amp;&amp; rm app/style.css.bak
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's|color: #1d1d1b;|color: #9a9a94;|' app/style.css &amp;&amp; rm app/style.css.bak
 slopstopper run reliability:accessibility -- http://localhost:8099
 git checkout app/style.css</code></pre></div>
 <p><code>color-contrast</code> fires at <code>serious</code>, which is why the default threshold is set there: contrast is the violation most often argued away as a design choice. If the stylesheet's colours differ from the ones above, pick any text colour close to the background; the rule, not the value, is the point.</p>

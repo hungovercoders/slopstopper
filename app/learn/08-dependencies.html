@@ -69,12 +69,12 @@
   <li>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH.</li>
   <li><code>trivy</code> on PATH. <code>brew install trivy</code>, or a release binary from <a href="https://github.com/aquasecurity/trivy/releases" rel="noopener noreferrer">github.com/aquasecurity/trivy</a>; the suite's own workflow installs it from the Trivy apt repository and this course's CI does the same. The first run downloads the vulnerability database, which takes a minute.</li>
 </ul>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>trivy --version | head -1</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>Version: 0.74.0</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>trivy --version | head -1</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>Version: 0.74.0</code></pre></div>
 <h2 id="steps">Steps</h2>
 <h3 id="1-see-it-red">1. See it red</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run security:vulnerability:all</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔍 Scanning dependencies for vulnerabilities…
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run security:vulnerability:all</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Scanning dependencies for vulnerabilities…
 2026-10-25T16:52:46Z	INFO	Number of language-specific files	num=1
 2026-10-25T16:52:46Z	INFO	[pip] Detecting vulnerabilities...
 ⚠️  Found 1 CRITICAL/HIGH vulnerability(ies) (total 5)
@@ -82,12 +82,12 @@
 📁 Reports saved to: .ss/reports/vulnerability-all/
    • vulnerability-all-report.md</code></pre></div>
 <p>One manifest found, and it is red. The demo's script needs one package, and whoever wrote the requirements file pinned the version they remembered. It is from 2018.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>cat scripts/requirements.txt</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>requests==2.19.1</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>cat scripts/requirements.txt</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>requests==2.19.1</code></pre></div>
 <p>One line, five findings, none of them in anything you can read in this repo.</p>
 <h3 id="2-read-the-report">2. Read the report</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/^| Severity/,/^$/p; /^| CVE/,/^$/p' .ss/reports/vulnerability-all/vulnerability-all-report.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>| Severity | Count |
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/^| Severity/,/^$/p; /^| CVE/,/^$/p' .ss/reports/vulnerability-all/vulnerability-all-report.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>| Severity | Count |
 |----------|-------|
 | 🔴 Critical | 0 |
 | 🟠 High | 1 |
@@ -107,19 +107,19 @@
 | CVE-2026-25645 | `requests` | 2.19.1 | 2.33.0 | MEDIUM | requests: Requests: Security bypass due to predictable te... |</code></pre></div>
 <p>The column that matters is <strong>Fixed In</strong>. Every row names the first version without the hole, so the report is its own fix list: the HIGH needs 2.20.0, and the newest MEDIUM needs 2.33.0. The dates in the CVE ids tell the other story, which is that a pin that was clean in 2018 has had a finding added to it roughly every year since. A dependency you never touch still changes.</p>
 <h3 id="3-take-the-fix-the-gate-needs">3. Take the fix the gate needs</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>printf 'requests==2.20.0\n' &gt; scripts/requirements.txt
+<div class="codeblock codeblock--sh" data-copyable><pre><code>printf 'requests==2.20.0\n' &gt; scripts/requirements.txt
 slopstopper run security:vulnerability:all 2&gt;/dev/null</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔍 Scanning dependencies for vulnerabilities…
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Scanning dependencies for vulnerabilities…
 ℹ️  Found 4 vulnerability(ies), none CRITICAL/HIGH
 
 📁 Reports saved to: .ss/reports/vulnerability-all/
    • vulnerability-all-report.md</code></pre></div>
 <p>Trivy's log lines go to stderr, so dropping that stream leaves the check's own verdict and keeps its exit code, which a pipe into <code>grep</code> would replace. Green, and honest about it: four findings remain, reported and not blocking. The threshold is where it is because a MEDIUM is usually "needs a specific setup to exploit" and blocking on it would make the gate something people route around, which lesson 19 has more to say about. It is still listed, so a reviewer who reads the comment sees it.</p>
 <h3 id="4-then-take-the-fix-you-want">4. Then take the fix you want</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>printf 'requests==2.33.0\n' &gt; scripts/requirements.txt
+<div class="codeblock codeblock--sh" data-copyable><pre><code>printf 'requests==2.33.0\n' &gt; scripts/requirements.txt
 slopstopper run security:vulnerability:all 2&gt;/dev/null
 grep 'No vulnerabilities detected' .ss/reports/vulnerability-all/vulnerability-all-report.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔍 Scanning dependencies for vulnerabilities…
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Scanning dependencies for vulnerabilities…
 ✅ No vulnerabilities detected
 
 📁 Reports saved to: .ss/reports/vulnerability-all/
@@ -127,19 +127,19 @@ grep 'No vulnerabilities detected' .ss/reports/vulnerability-all/vulnerability-a
 No vulnerabilities detected.</code></pre></div>
 <p>The <code>grep</code> is the assertion: exit 0 only says nothing blocking was found, so a clean report is the thing to check for. 2.33.0 is the current release as this lesson was written. When a later one carries a CVE, the harness that checks this course goes red on this block, which is the lesson in miniature: the pin did not change, the world did.</p>
 <h3 id="5-put-the-demo-back">5. Put the demo back</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout scripts/requirements.txt</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout scripts/requirements.txt</code></pre></div>
 <h3 id="6-when-local-and-ci-disagree">6. When local and CI disagree</h3>
 <p>This is the one check where they legitimately can. Trivy caches its database for a day, and CI starts cold and pulls the newest one, so a CVE published this morning fails the PR and not your laptop. <code>trivy clean --vuln-db</code> then a rerun reproduces CI; the binary version in the workflow's "Install Trivy" step is the other thing to compare. Treat CI as the verdict.</p>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run security:vulnerability:all &gt;/dev/null 2&gt;&amp;1; echo "exit $?"</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>exit 1</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run security:vulnerability:all &gt;/dev/null 2&gt;&amp;1; echo "exit $?"</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>exit 1</code></pre></div>
 <p>Red again, with the demo as it shipped, and the fix is a version number the report hands you.</p>
 <h2 id="exercise">Exercise</h2>
 <p>The licence allowlist is a file <code>install.sh</code> seeds into every repo. Seed one into the demo by hand, with the GPL family left out, and run the licence inventory against the demo's one dependency.</p>
 <details class="details">
   <summary>Solution</summary>
   <div class="details__body">
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p .github
+<div class="codeblock codeblock--sh" data-copyable><pre><code>mkdir -p .github
 printf 'allow-licenses:\n  - MIT\n  - Apache-2.0\n  - BSD-3-Clause\n  - ISC\n' &gt; .github/dependency-review-config.yml
 slopstopper run security:licences; echo "exit $?"
 rm -r .github</code></pre></div>

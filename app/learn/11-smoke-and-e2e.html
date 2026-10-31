@@ -72,11 +72,11 @@
 </ul>
 <h2 id="steps">Steps</h2>
 <h3 id="1-serve-the-demo-and-see-smoke-green">1. Serve the demo and see smoke green</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p scratch
+<div class="codeblock codeblock--sh" data-copyable><pre><code>mkdir -p scratch
 PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
 sleep 2
 slopstopper run reliability:smoke -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✓  3 [chromium] › .ss/.run/tests/smoke.spec.ts:102:7 › Smoke Tests › homepage has at least one stylesheet linked (288ms)
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✓  3 [chromium] › .ss/.run/tests/smoke.spec.ts:102:7 › Smoke Tests › homepage has at least one stylesheet linked (288ms)
   ✓  2 [chromium] › .ss/.run/tests/smoke.spec.ts:71:9 › Smoke Tests › / returns 200 and loads cleanly (747ms)
   ✓  1 [chromium] › .ss/.run/tests/smoke.spec.ts:71:9 › Smoke Tests › /history.html returns 200 and loads cleanly (750ms)
 
@@ -84,9 +84,9 @@ slopstopper run reliability:smoke -- http://localhost:8099</code></pre></div>
 <p>Two pages from <code>pages.smoke</code> in <code>.slopstopper.yml</code>, plus the stylesheet. There is no share-image test because the demo's <code>smoke.og_image_path</code> is empty: its image is an SVG, and the assertion is about the PNG a preview card can embed. The <code>.ss/.run/</code> path is where the bundled spec was staged for this run; the spec itself lives in the wheel.</p>
 <h3 id="2-remove-a-page-the-list-still-names">2. Remove a page the list still names</h3>
 <p>The commonest smoke failure is a rename: the page moved, the list did not.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>rm app/history.html</code></pre></div>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:smoke -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✘  1 [chromium] › .ss/.run/tests/smoke.spec.ts:71:9 › Smoke Tests › /history.html returns 200 and loads cleanly (105ms)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>rm app/history.html</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:smoke -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✘  1 [chromium] › .ss/.run/tests/smoke.spec.ts:71:9 › Smoke Tests › /history.html returns 200 and loads cleanly (105ms)
     Error: /history.html should return 200
     Expected: 200
     Received: 404
@@ -94,46 +94,46 @@ slopstopper run reliability:smoke -- http://localhost:8099</code></pre></div>
   1 failed
   2 passed (1.2s)</code></pre></div>
 <p>Playwright names the assertion and shows the line of the spec that made it. The markdown report under <code>.ss/reports/reliability/</code> carries the verdict and points at Playwright's own HTML report, which CI uploads as an artifact, with a screenshot and the network log of the failing test.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout app/history.html
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout app/history.html
 rm -rf test-results</code></pre></div>
 <h3 id="3-see-end-to-end-green">3. See end-to-end green</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:e2e -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✓  3 [chromium] › .ss/.run/tests/e2e.spec.ts:243:9 › E2E Journeys › /: browser back returns to the start (207ms)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:e2e -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✓  3 [chromium] › .ss/.run/tests/e2e.spec.ts:243:9 › E2E Journeys › /: browser back returns to the start (207ms)
   ✓  2 [chromium] › .ss/.run/tests/e2e.spec.ts:152:9 › E2E Journeys › /: primary navigation round trip (279ms)
 
   2 passed (710ms)</code></pre></div>
 <p>One start path from <code>pages.e2e</code>, and two of the four journeys: the demo has no in-page anchors and no disclosure widgets, so those two are skipped rather than failed, which is the spec's rule for a journey the page gives it nothing to do.</p>
 <h3 id="4-point-a-navigation-link-at-a-page-that-does-not-exist">4. Point a navigation link at a page that does not exist</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's|href="history.html"|href="nope.html"|' app/index.html &amp;&amp; rm app/index.html.bak</code></pre></div>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:e2e -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✘  1 [chromium] › .ss/.run/tests/e2e.spec.ts:152:9 › E2E Journeys › /: primary navigation round trip (275ms)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's|href="history.html"|href="nope.html"|' app/index.html &amp;&amp; rm app/index.html.bak</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:e2e -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✘  1 [chromium] › .ss/.run/tests/e2e.spec.ts:152:9 › E2E Journeys › /: primary navigation round trip (275ms)
     Error: nope.html: primary navigation should still be present
   1 failed
   1 passed (644ms)</code></pre></div>
 <p>The round trip fails at the destination: the page the link reaches has no nav, because it is a 404 page. The other journey still passes. On a site with no build step the nav is duplicated on every page, so a link fixed on one page stays broken on the others until something walks all of them; that is the slop this check exists for.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout app/index.html
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout app/index.html
 rm -rf test-results</code></pre></div>
 <h3 id="5-know-the-knobs">5. Know the knobs</h3>
 <p>Both checks take the URL positionally and read their page lists from <code>.slopstopper.yml</code>:</p>
-<div class="codeblock codeblock--yaml" role="region" aria-label="YAML"><pre><code>pages:
+<div class="codeblock codeblock--yaml" tabindex="0"><pre><code>pages:
   smoke: /,/history.html
   e2e:   /
 smoke:
   og_image_path: ''</code></pre></div>
 <p><code>--ci</code> adds retries, a single worker and the HTML report, and is what the workflows pass. <code>SMOKE_PAGES</code> and <code>E2E_PAGES</code> override the lists for one run. Assertions specific to your site, a login or a basket, belong in an ejected copy of the spec: <code>slopstopper templates eject tests/e2e.spec.ts</code> drops one into <code>.ss/</code> and the CLI picks it up from there.</p>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>out=$(slopstopper run reliability:smoke -- http://localhost:8099 2&gt;&amp;1)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>out=$(slopstopper run reliability:smoke -- http://localhost:8099 2&gt;&amp;1)
 kill "$(cat scratch/serve.pid)"
 rm -r scratch
 echo "$out" | grep 'passed'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  3 passed (1.4s)</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  3 passed (1.4s)</code></pre></div>
 <h2 id="exercise">Exercise</h2>
 <p>Make smoke fail without touching a page: add a path to the list that the site does not serve.</p>
 <details class="details">
   <summary>Solution</summary>
   <div class="details__body">
 <p>Serve the demo again, then override the list for one run:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>SMOKE_PAGES='/,/pricing.html' slopstopper run reliability:smoke -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>SMOKE_PAGES='/,/pricing.html' slopstopper run reliability:smoke -- http://localhost:8099</code></pre></div>
 <p><code>/pricing.html should return 200</code> fails with a 404. The same happens when a page is added to <code>pages.smoke</code> before it ships, which is the right order: list it, watch it go red, then ship it and watch it go green.</p>
   </div>
 </details>

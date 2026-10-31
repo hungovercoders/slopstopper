@@ -71,13 +71,13 @@ slopstopper demo                   # writes slopstopper-demo/
 cd slopstopper-demo
 git init -q -b main &amp;&amp; git add -A &amp;&amp; git commit -q -m "lantern"</code></pre>
             </div>
-            <p class="learn-note">Each lesson says which tool it needs beyond the CLI, and <code>slopstopper doctor</code> lists what is missing. Lesson 20 edits the CLI itself, so it runs in a checkout of the repository; <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/README.md" rel="noopener noreferrer">the syllabus</a> has the setup for it.</p>
+            <p class="learn-note">Each lesson says which tool it needs beyond the CLI, and <code>slopstopper doctor</code> lists what is missing. Lesson 20 edits the CLI itself, so it runs in a checkout of the repository; <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/README.md" rel="noopener noreferrer">the syllabus</a> has the setup for it. Every lesson is also a markdown file in that directory, which is what the pages here are rendered from.</p>
         </section>
 
         <section class="section learn-section" id="lessons">
             <span class="kicker">The lessons</span>
             <h2>Read them in order, or jump to a check.</h2>
-            <p class="lede">Each lesson has the same shape: why the check exists, the commands to type and the output to expect, a checkpoint, and an exercise. The commands on every page run in CI, so they work as written.</p>
+            <p class="lede">Each lesson has the same shape: why the check exists, the commands to type and the output to expect, a checkpoint, and an exercise. The commands on every page run in CI, so they work as written. Start with lesson 0, or jump to the check you came for.</p>
             <div class="lesson-group" id="start">
                 <h3>Start here</h3>
                 <p class="lesson-group__lede">What slop is, putting the suite into a repo, and the loop every later lesson repeats.</p>
@@ -85,21 +85,21 @@ git init -q -b main &amp;&amp; git add -A &amp;&amp; git commit -q -m "lantern"<
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">0</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/00-what-slop-is.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 0: </span>What slop is, and the five loops</a></h4>
+                        <h4 class="lesson__title"><a href="learn/00-what-slop-is.html"><span class="visually-hidden">Lesson 0: </span>What slop is, and the five loops</a></h4>
                         <p class="lesson__learn">The problem, the thesis, the exit-code contract, the five loops</p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">1</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/01-install.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 1: </span>Install slopstopper into a repo</a></h4>
+                        <h4 class="lesson__title"><a href="learn/01-install.html"><span class="visually-hidden">Lesson 1: </span>Install slopstopper into a repo</a></h4>
                         <p class="lesson__learn"><code>slopstopper install</code>, the <code>install.sh</code> bootstrap, profiles, what landed, <code>doctor</code></p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">2</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/02-first-check-complexity.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 2: </span>Run your first check and read its report</a></h4>
+                        <h4 class="lesson__title"><a href="learn/02-first-check-complexity.html"><span class="visually-hidden">Lesson 2: </span>Run your first check and read its report</a></h4>
                         <p class="lesson__learn"><code>hygiene:complexity</code>, the task → CLI → workflow chain, <code>.ss/reports/</code></p>
                     </div>
                 </li>
@@ -112,21 +112,21 @@ git init -q -b main &amp;&amp; git add -A &amp;&amp; git commit -q -m "lantern"<
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">3</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/03-entry-files.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 3: </span>Entry files: the AGENTS.md-first model</a></h4>
+                        <h4 class="lesson__title"><a href="learn/03-entry-files.html"><span class="visually-hidden">Lesson 3: </span>Entry files: the AGENTS.md-first model</a></h4>
                         <p class="lesson__learn"><code>hygiene:entry-files</code>, token budgets, explicit routes</p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">4</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/04-docs-structure.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 4: </span>Docs structure: every doc has a route</a></h4>
+                        <h4 class="lesson__title"><a href="learn/04-docs-structure.html"><span class="visually-hidden">Lesson 4: </span>Docs structure: every doc has a route</a></h4>
                         <p class="lesson__learn"><code>hygiene:docs-structure</code>, hops, line caps</p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">5</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/05-docs-accuracy-and-size.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 5: </span>Docs accuracy and docs size</a></h4>
+                        <h4 class="lesson__title"><a href="learn/05-docs-accuracy-and-size.html"><span class="visually-hidden">Lesson 5: </span>Docs accuracy and docs size</a></h4>
                         <p class="lesson__learn"><code>hygiene:docs-accuracy</code>, <code>hygiene:docs-size</code>, why one gates and one advises</p>
                     </div>
                 </li>
@@ -139,35 +139,35 @@ git init -q -b main &amp;&amp; git add -A &amp;&amp; git commit -q -m "lantern"<
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">6</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/06-secrets.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 6: </span>Secrets</a></h4>
+                        <h4 class="lesson__title"><a href="learn/06-secrets.html"><span class="visually-hidden">Lesson 6: </span>Secrets</a></h4>
                         <p class="lesson__learn"><code>security:secrets</code>, why history is what is scanned, revoke then rewrite</p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">7</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/07-sast.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 7: </span>Static analysis</a></h4>
+                        <h4 class="lesson__title"><a href="learn/07-sast.html"><span class="visually-hidden">Lesson 7: </span>Static analysis</a></h4>
                         <p class="lesson__learn"><code>security:sast</code>, shape not text, the finding, fix the code not the rule</p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">8</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/08-dependencies.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 8: </span>Dependencies and licences</a></h4>
+                        <h4 class="lesson__title"><a href="learn/08-dependencies.html"><span class="visually-hidden">Lesson 8: </span>Dependencies and licences</a></h4>
                         <p class="lesson__learn"><code>security:vulnerability:all</code>, dependency review</p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">9</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/09-headers-and-csp.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 9: </span>Headers and CSP</a></h4>
+                        <h4 class="lesson__title"><a href="learn/09-headers-and-csp.html"><span class="visually-hidden">Lesson 9: </span>Headers and CSP</a></h4>
                         <p class="lesson__learn"><code>hygiene:csp-exceptions</code>, <code>security:api-headers</code>, the exceptions ledger, wildcard-plus-credentials</p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">10</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/10-dast.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 10: </span>Dynamic scanning</a></h4>
+                        <h4 class="lesson__title"><a href="learn/10-dast.html"><span class="visually-hidden">Lesson 10: </span>Dynamic scanning</a></h4>
                         <p class="lesson__learn"><code>security:dast</code>, the running thing, the gate, the ledger versus <code>rules.tsv</code></p>
                     </div>
                 </li>
@@ -180,42 +180,42 @@ git init -q -b main &amp;&amp; git add -A &amp;&amp; git commit -q -m "lantern"<
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">11</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/11-smoke-and-e2e.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 11: </span>Smoke and end-to-end</a></h4>
+                        <h4 class="lesson__title"><a href="learn/11-smoke-and-e2e.html"><span class="visually-hidden">Lesson 11: </span>Smoke and end-to-end</a></h4>
                         <p class="lesson__learn"><code>reliability:smoke</code>, <code>reliability:e2e</code>, does it serve and can a visitor get around</p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">12</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/12-accessibility.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 12: </span>Accessibility</a></h4>
+                        <h4 class="lesson__title"><a href="learn/12-accessibility.html"><span class="visually-hidden">Lesson 12: </span>Accessibility</a></h4>
                         <p class="lesson__learn"><code>reliability:accessibility</code>, axe impact levels, the contrast rule</p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">13</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/13-core-web-vitals.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 13: </span>Core Web Vitals</a></h4>
+                        <h4 class="lesson__title"><a href="learn/13-core-web-vitals.html"><span class="visually-hidden">Lesson 13: </span>Core Web Vitals</a></h4>
                         <p class="lesson__learn"><code>reliability:cwv</code>, LCP, TBT and CLS, budgets you tighten to what you measure</p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">14</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/14-seo.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 14: </span>SEO and social share</a></h4>
+                        <h4 class="lesson__title"><a href="learn/14-seo.html"><span class="visually-hidden">Lesson 14: </span>SEO and social share</a></h4>
                         <p class="lesson__learn"><code>reliability:seo</code>, the tags search and previews read</p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">15</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/15-discoverability.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 15: </span>Discoverability: robots, sitemap, llms.txt and links</a></h4>
+                        <h4 class="lesson__title"><a href="learn/15-discoverability.html"><span class="visually-hidden">Lesson 15: </span>Discoverability: robots, sitemap, llms.txt and links</a></h4>
                         <p class="lesson__learn"><code>reliability:robots-txt</code>, <code>reliability:sitemap</code>, <code>reliability:llms-txt</code>, <code>reliability:broken-links</code></p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">16</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/16-api-checks.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 16: </span>API checks</a></h4>
+                        <h4 class="lesson__title"><a href="learn/16-api-checks.html"><span class="visually-hidden">Lesson 16: </span>API checks</a></h4>
                         <p class="lesson__learn"><code>reliability:api-health</code>, <code>reliability:api-latency</code>, <code>hygiene:openapi</code>, budgets from what you measured</p>
                     </div>
                 </li>
@@ -228,28 +228,28 @@ git init -q -b main &amp;&amp; git add -A &amp;&amp; git commit -q -m "lantern"<
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">17</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/17-ci.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 17: </span>CI: the workflows and the PR feedback loop</a></h4>
+                        <h4 class="lesson__title"><a href="learn/17-ci.html"><span class="visually-hidden">Lesson 17: </span>CI: the workflows and the PR feedback loop</a></h4>
                         <p class="lesson__learn"><code>ss-*.yml</code>, pinned actions, the PR summary, the issue a red main raises, auto-label, the deploy trigger</p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">18</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/18-agents.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 18: </span>Agents: the install and triage skills</a></h4>
+                        <h4 class="lesson__title"><a href="learn/18-agents.html"><span class="visually-hidden">Lesson 18: </span>Agents: the install and triage skills</a></h4>
                         <p class="lesson__learn">The two Claude Code skills</p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">19</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/19-profiles-and-tailoring.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 19: </span>Profiles and tailoring</a></h4>
+                        <h4 class="lesson__title"><a href="learn/19-profiles-and-tailoring.html"><span class="visually-hidden">Lesson 19: </span>Profiles and tailoring</a></h4>
                         <p class="lesson__learn"><code>profile show</code>, <code>detect</code> and <code>list</code>, <code>workflows.enabled</code>, the pin in <code>mise.toml</code></p>
                     </div>
                 </li>
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">20</span>
                     <div class="lesson__body">
-                        <h4 class="lesson__title"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/20-inside-slopstopper.md" rel="noopener noreferrer"><span class="visually-hidden">Lesson 20: </span>Inside slopstopper: add a check</a></h4>
+                        <h4 class="lesson__title"><a href="learn/20-inside-slopstopper.html"><span class="visually-hidden">Lesson 20: </span>Inside slopstopper: add a check</a></h4>
                         <p class="lesson__learn">The registry, the registration test, the shape every check shares</p>
                     </div>
                 </li>

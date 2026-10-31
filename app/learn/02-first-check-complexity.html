@@ -69,8 +69,8 @@
 <h2 id="steps">Steps</h2>
 <h3 id="1-see-it-red">1. See it red</h3>
 <p>The demo ships with this finding in it. Run the check and read the three parts of what it prints.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:complexity</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔍 Analyzing code complexity…
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:complexity</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Analyzing code complexity…
 
 📁 Reports saved to: .ss/reports/complexity/
    • complexity-report.md
@@ -79,8 +79,8 @@
 <p>The first line says what is running. The middle says where the report went. The last line is the verdict: how many functions failed and what to do. It does not say which; that is the report's job.</p>
 <h3 id="2-read-the-report">2. Read the report</h3>
 <p>Every check writes under <code>.ss/reports/&lt;check&gt;/</code>, which is gitignored. The markdown report names the function, its CCN and where it is.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/High Complexity/,/Guidelines/p' .ss/reports/complexity/complexity-report.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>## ⚠️ High Complexity Items (CCN &gt; 15)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/High Complexity/,/Guidelines/p' .ss/reports/complexity/complexity-report.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>## ⚠️ High Complexity Items (CCN &gt; 15)
 
 | NLOC | CCN | Tokens | Params | Length | Location |
 |------|-----|--------|--------|--------|----------|
@@ -89,11 +89,11 @@
 <p>CCN 17: sixteen <code>if</code>s plus one. Open the function and you will recognise the shape. <code>badge</code> maps an HTTP status to a word, one <code>if</code> per status, which is the flat dispatch generated code falls into most often: correct, tested, and a maintenance trap. The CSV beside the report carries the same rows for anything that wants to chart them.</p>
 <h3 id="3-see-the-raw-exit-code">3. See the raw exit code</h3>
 <p>The verdict is also an exit code, which is what the hook and CI gate on. This is the contract from lesson 0: a 1, because the check ran and the repo failed it.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:complexity &gt;/dev/null; echo "exit $?"</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>exit 1</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:complexity &gt;/dev/null; echo "exit $?"</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>exit 1</code></pre></div>
 <h3 id="4-fix-it">4. Fix it</h3>
 <p>The fix the check asks for is a refactor, not a bigger threshold. A lookup table makes <code>badge</code> one line with a CCN of 1. This replaces the function in place:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+<div class="codeblock codeblock--sh" data-copyable><pre><code>python3 - &lt;&lt;'PY'
 import pathlib
 p = pathlib.Path('scripts/status.py'); s = p.read_text()
 start = s.index('def badge(status):'); end = s.index('\n\n\n', start)
@@ -107,7 +107,7 @@ def badge(status):
 p.write_text(s[:start] + new + s[end:])
 PY
 slopstopper run hygiene:complexity</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔍 Analyzing code complexity…
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Analyzing code complexity…
 
 📁 Reports saved to: .ss/reports/complexity/
    • complexity-report.md
@@ -116,10 +116,10 @@ slopstopper run hygiene:complexity</code></pre></div>
 <p>Same behaviour, one path through the function. When a function trips the ceiling and is genuinely well-factored, a flat dispatch or validation table, raising <code>max_ccn</code> with a note in <code>.slopstopper.yml</code> is honest. Doing it to silence noise is not; the threshold is the feature.</p>
 <h3 id="5-put-the-demo-back">5. Put the demo back</h3>
 <p>The lessons promise each one starts from the demo as written, so undo the fix with git. The next lesson's finding is a different file.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout scripts/status.py</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout scripts/status.py</code></pre></div>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:complexity &gt;/dev/null; echo "exit $?"</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>exit 1</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:complexity &gt;/dev/null; echo "exit $?"</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>exit 1</code></pre></div>
 <p>Red again, because the demo is back to how it shipped, and you know exactly which function and which line the 1 is about.</p>
 <h2 id="exercise">Exercise</h2>
 <p>Make the check pass without replacing the function and without touching <code>.slopstopper.yml</code>.</p>
@@ -127,7 +127,7 @@ slopstopper run hygiene:complexity</code></pre></div>
   <summary>Solution</summary>
   <div class="details__body">
 <p>Split the chain by outcome. Three small functions, each a handful of <code>if</code>s, and <code>badge</code> becomes a call to each in turn:</p>
-<div class="codeblock codeblock--python" role="region" aria-label="Python"><pre><code>def is_ok(status):
+<div class="codeblock codeblock--python" tabindex="0"><pre><code>def is_ok(status):
     return status in (200, 201, 202, 204, 301, 302, 304)
 
 def is_degraded(status):

@@ -1,9 +1,11 @@
 """The site's Learn page lists the course, and the course's syllabus is
-where lessons are added. Nothing renders one from the other (the site has
-no build step), so this test does the comparing: the page must list
-exactly the syllabus's lessons, in order, with the same titles, each
-linking to its page on GitHub. It also pins the one thing a new page most
-often breaks, the main nav, which is copied into every page by hand.
+where lessons are added. Nothing renders the list from the syllabus (the
+site has no build step), so this test does the comparing: the page must
+list exactly the syllabus's lessons, in order, with the same titles, each
+linking to the lesson's page under app/learn/, which must exist. It also
+pins the one thing a new page most often breaks, the main nav, which is
+copied into every hand-written page and read from the Learn page into
+every generated lesson page.
 """
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SYLLABUS = REPO_ROOT / "docs/learn/README.md"
 PAGE = REPO_ROOT / "app/learn.html"
-LESSON_BASE = "https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/"
+LESSON_PAGES = REPO_ROOT / "app/learn"
 
 _SYLLABUS_ROW = re.compile(r"^\| (\d+) \| \[([^\]]+)\]\(([^)]+\.md)\) \|", re.M)
 _PAGE_LESSON = re.compile(
@@ -41,13 +43,20 @@ def _plain(fragment: str) -> str:
 
 
 def test_the_page_lists_every_syllabus_lesson_in_order():
-    syllabus = [(int(n), title, LESSON_BASE + file) for n, title, file in _SYLLABUS_ROW.findall(_read(SYLLABUS))]
+    syllabus = [(int(n), title, f"learn/{file[:-3]}.html") for n, title, file in _SYLLABUS_ROW.findall(_read(SYLLABUS))]
     page = [(int(n), _plain(title), href) for n, href, title in _PAGE_LESSON.findall(_read(PAGE))]
     assert syllabus, "no linked lessons found in docs/learn/README.md"
     assert page == syllabus, (
         "app/learn.html's lesson list differs from docs/learn/README.md's syllabus; "
         "add, rename or reorder the lesson on the page to match"
     )
+
+
+def test_every_lesson_page_the_learn_page_links_exists():
+    for _, href, _ in _PAGE_LESSON.findall(_read(PAGE)):
+        assert (REPO_ROOT / "app" / href).is_file(), (
+            f"app/learn.html links {href}, which does not exist; run `task contributing:learn:site`"
+        )
 
 
 def test_every_linked_lesson_exists():
@@ -65,13 +74,16 @@ def _nav(page: Path) -> tuple[list[tuple[str, str, str]], list[str]]:
 
 
 def test_every_page_carries_the_same_main_nav():
-    pages = sorted((REPO_ROOT / "app").glob("*.html"))
+    pages = sorted((REPO_ROOT / "app").glob("*.html")) + sorted(LESSON_PAGES.glob("*.html"))
     expected, _ = _nav(REPO_ROOT / "app/index.html")
     assert ("learn.html", "nav-learn", "Learn") in expected
     for page in pages:
         links, current = _nav(page)
-        assert links == expected, f"{page.name}'s main nav differs from index.html's"
-        in_nav = page.name in {href for href, _, _ in links}
+        # A lesson page lives one directory down and reaches the nav's
+        # targets through `../`; the targets themselves must be the same.
+        links = [(href.removeprefix("../"), nav_id, label) for href, nav_id, label in links]
+        assert links == expected, f"{page.relative_to(REPO_ROOT)}'s main nav differs from index.html's"
+        in_nav = page.parent == REPO_ROOT / "app" and page.name in {href for href, _, _ in links}
         assert current == ([page.name] if in_nav else []), (
-            f"{page.name} must mark itself, and only itself, with aria-current"
+            f"{page.relative_to(REPO_ROOT)} must mark itself, and only itself, with aria-current"
         )

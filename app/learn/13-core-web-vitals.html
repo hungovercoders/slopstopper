@@ -73,11 +73,11 @@
 <h2 id="steps">Steps</h2>
 <h3 id="1-serve-the-demo-and-see-it-green">1. Serve the demo and see it green</h3>
 <p>Three Lighthouse runs take about a minute.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p scratch
+<div class="codeblock codeblock--sh" data-copyable><pre><code>mkdir -p scratch
 PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
 sleep 2
 slopstopper run reliability:cwv -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🚦 Running Core Web Vitals audit against: http://localhost:8099
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🚦 Running Core Web Vitals audit against: http://localhost:8099
 ✅  .lighthouseci/ directory writable
 ✅  Configuration file found
 ✅  Chrome installation found
@@ -92,8 +92,8 @@ All results processed!
 📁 Reports saved to: .ss/reports/cwv/
    • cwv-report.md</code></pre></div>
 <h3 id="2-read-the-budget">2. Read the budget</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/| Metric/,/CLS/p' .ss/reports/cwv/cwv-report.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>| Metric | Threshold | Status |
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/| Metric/,/CLS/p' .ss/reports/cwv/cwv-report.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>| Metric | Threshold | Status |
 |--------|-----------|--------|
 | Performance score | ≥ 70 | ✅ 100/100 |
 | LCP | ≤ 4 s | ✅ 901 ms |
@@ -102,10 +102,10 @@ All results processed!
 <p>The status page paints its main content in under a second, blocks the main thread for no time at all, and nothing shifts. The full Lighthouse HTML reports, one per run, are under <code>.ss/reports/cwv/lighthouse/</code>, and CI uploads them as an artifact.</p>
 <h3 id="3-add-one-blocking-script">3. Add one blocking script</h3>
 <p>A script in <code>&lt;head&gt;</code> without <code>defer</code> runs before the browser renders anything below it. This one does nothing but spin for a second and a half, which is what a badly written tag manager does while it decides what to load.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>printf 'const until = Date.now() + 1500;\nwhile (Date.now() &lt; until) {}\n' &gt; app/slow.js
+<div class="codeblock codeblock--sh" data-copyable><pre><code>printf 'const until = Date.now() + 1500;\nwhile (Date.now() &lt; until) {}\n' &gt; app/slow.js
 sed -i.bak 's|&lt;link rel="stylesheet" href="style.css"&gt;|&lt;script src="slow.js"&gt;&lt;/script&gt;\n  &lt;link rel="stylesheet" href="style.css"&gt;|' app/index.html &amp;&amp; rm app/index.html.bak</code></pre></div>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:cwv -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✘  largest-contentful-paint failure for maxNumericValue assertion
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:cwv -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✘  largest-contentful-paint failure for maxNumericValue assertion
        Largest Contentful Paint
        https://developer.chrome.com/docs/lighthouse/performance/lighthouse-largest-contentful-paint/
         expected: &lt;=4000
@@ -113,8 +113,8 @@ sed -i.bak 's|&lt;link rel="stylesheet" href="style.css"&gt;|&lt;script src="slo
       all values: 6905.4663, 6900.44, 6903.2413
 Assertion failed. Exiting with status code 1.</code></pre></div>
 <p>Lighthouse names the audit, links its explanation, and shows all three runs so you can see the miss is not noise. The report table says the same in one line each:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/| Metric/,/CLS/p' .ss/reports/cwv/cwv-report.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>| Metric | Threshold | Status |
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/| Metric/,/CLS/p' .ss/reports/cwv/cwv-report.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>| Metric | Threshold | Status |
 |--------|-----------|--------|
 | Performance score | ≥ 70 | ❌ 60/100 |
 | LCP | ≤ 4 s | ❌ 6903 ms |
@@ -123,11 +123,11 @@ Assertion failed. Exiting with status code 1.</code></pre></div>
 <p>One script, and the main content takes seven times as long to appear. TBT did not move at all, because the spin happened before anything painted; it is LCP that paid for it. That is the point of measuring more than one thing: the same change shows up in a different metric depending on where in the load it lands.</p>
 <h3 id="4-fix-it">4. Fix it</h3>
 <p>The real fix for a script like this is <code>defer</code>, or loading it after the content, or not loading it at all. Here it was scratch, so remove it and run again.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout app/index.html
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout app/index.html
 rm app/slow.js
 slopstopper run reliability:cwv -- http://localhost:8099 &gt;/dev/null 2&gt;&amp;1
 sed -n '/| Metric/,/CLS/p' .ss/reports/cwv/cwv-report.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>| Metric | Threshold | Status |
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>| Metric | Threshold | Status |
 |--------|-----------|--------|
 | Performance score | ≥ 70 | ✅ 100/100 |
 | LCP | ≤ 4 s | ✅ 901 ms |
@@ -136,17 +136,17 @@ sed -n '/| Metric/,/CLS/p' .ss/reports/cwv/cwv-report.md</code></pre></div>
 <h3 id="5-know-the-knobs">5. Know the knobs</h3>
 <p>The budgets are in <code>lighthouserc.json</code> (dev) and <code>lighthouserc.prod.json</code> (prod) inside the wheel. <code>slopstopper templates eject lighthouserc.json</code> drops an editable copy into <code>.ss/</code>, which the check prefers. <code>--prod</code> selects the stricter set, which the daily run against production and the post-deploy trigger use. Nothing leaves your machine by default: publishing a report to Lighthouse's public storage is opt-in through <code>reliability.cwv.public_report</code>, and the report links it when on.</p>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>kill "$(cat scratch/serve.pid)"
+<div class="codeblock codeblock--sh" data-copyable><pre><code>kill "$(cat scratch/serve.pid)"
 rm -r scratch
 grep 'Core Web Vitals' .ss/reports/cwv/cwv-report.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>## 🚦 Core Web Vitals ✅ PASSED</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>## 🚦 Core Web Vitals ✅ PASSED</code></pre></div>
 <h2 id="exercise">Exercise</h2>
 <p>Tighten one budget until the demo, unchanged, fails it. Then put the budget back.</p>
 <details class="details">
   <summary>Solution</summary>
   <div class="details__body">
 <p>Eject the dev config and lower the LCP budget below what the page achieves:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper templates eject lighthouserc.json
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper templates eject lighthouserc.json
 sed -i.bak 's/"maxNumericValue": 4000/"maxNumericValue": 500/' .ss/lighthouserc.json &amp;&amp; rm .ss/lighthouserc.json.bak
 slopstopper run reliability:cwv -- http://localhost:8099
 rm .ss/lighthouserc.json</code></pre></div>

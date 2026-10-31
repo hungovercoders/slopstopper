@@ -23,6 +23,13 @@ Links: another lesson becomes that lesson's page, `README.md` the Learn
 page, and a reference doc (`../hygiene/README.md`, `TEMPLATE.md`,
 `EPISODES.md`) its file on GitHub; absolute links are kept.
 
+`app/sitemap.xml` and `app/llms.txt` each carry a block between
+`<!-- learn:begin -->` and `<!-- learn:end -->` that this script owns:
+one `<url>` per page, and one line per lesson under the course heading.
+The rest of both files stays hand-written. `reliability:sitemap`
+hard-fails on a reachable page missing from the sitemap, so the block
+is what lets the Learn page link the lessons at all.
+
 Usage:
     python scripts/learnsite.py            # (re)write every page
     python scripts/learnsite.py --check    # report stale, missing or stray pages, write nothing
@@ -47,6 +54,9 @@ LEARN = ROOT / "docs" / "learn"
 SITE = ROOT / "app"
 OUT = SITE / "learn"
 INDEX = SITE / "learn.html"
+SITEMAP = SITE / "sitemap.xml"
+LLMS = SITE / "llms.txt"
+BEGIN, END = "<!-- learn:begin -->", "<!-- learn:end -->"
 SITE_URL = "https://slopstopper.dev/"
 BLOB = "https://github.com/hungovercoders/slopstopper/blob/main/"
 SERIES = "From zero to slopstopper"
@@ -298,15 +308,16 @@ def paragraph_block(lines: list[str], i: int, at: str) -> tuple[str, int]:
 
 
 def fence(lang: str, body: str) -> str:
+    """A command block gets the site's copy button, which is also what
+    makes the block reachable by keyboard when it scrolls sideways; any
+    other block is focusable itself for the same reason. Neither is a
+    landmark: a lesson has twenty of them, and axe wants landmarks named
+    uniquely."""
     escaped = html.escape(body, quote=False)
     if lang == "sh":
-        return (
-            '<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable>'
-            f"<pre><code>{escaped}</code></pre></div>"
-        )
+        return f'<div class="codeblock codeblock--sh" data-copyable><pre><code>{escaped}</code></pre></div>'
     kind = {"yaml": "yaml", "python": "python"}.get(lang, "out")
-    label = {"yaml": "YAML", "python": "Python", "out": "What it prints"}[kind]
-    return f'<div class="codeblock codeblock--{kind}" role="region" aria-label="{label}"><pre><code>{escaped}</code></pre></div>'
+    return f'<div class="codeblock codeblock--{kind}" tabindex="0"><pre><code>{escaped}</code></pre></div>'
 
 
 def table(head: list[str], rows: list[list[str]], at: str) -> str:
@@ -317,7 +328,7 @@ def table(head: list[str], rows: list[list[str]], at: str) -> str:
     th = "".join(f"<th>{inline(c, at)}</th>" for c in head)
     body = "\n".join("    <tr>" + "".join(f"<td>{inline(c, at)}</td>" for c in row) + "</tr>" for row in rows)
     return (
-        '<div class="lesson-table-wrap"><table class="lesson-table">\n'
+        '<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">\n'
         f"  <thead><tr>{th}</tr></thead>\n  <tbody>\n{body}\n  </tbody>\n</table></div>"
     )
 
@@ -429,6 +440,37 @@ def render(lesson: Lesson, all_lessons: list[Lesson]) -> str:
 """
 
 
+# ── the sitemap and llms.txt blocks ─────────────────────────────
+
+
+def with_block(text: str, block: str, where: str) -> str:
+    """`text` with the part between the markers replaced by `block`."""
+    begin, end = text.find(BEGIN), text.find(END)
+    if begin < 0 or end < 0 or end < begin:
+        raise RenderError(f"{where}: needs a `{BEGIN}` … `{END}` pair for the lesson entries")
+    return text[:begin] + BEGIN + "\n" + block + "\n" + text[end:]
+
+
+def sitemap_text(all_lessons: list[Lesson]) -> str:
+    entries = "\n".join(
+        "  <url>\n"
+        f"    <loc>{SITE_URL}learn/{lesson.page}</loc>\n"
+        "    <changefreq>monthly</changefreq>\n"
+        "    <priority>0.6</priority>\n"
+        "  </url>"
+        for lesson in all_lessons
+    )
+    return with_block(SITEMAP.read_text(encoding="utf-8"), "  " + entries.strip(), "app/sitemap.xml")
+
+
+def llms_text(all_lessons: list[Lesson]) -> str:
+    entries = "\n".join(
+        f"- [{lesson.heading}]({SITE_URL}learn/{lesson.page}): {goal(lesson.source.read_text(encoding='utf-8'))}"
+        for lesson in all_lessons
+    )
+    return with_block(LLMS.read_text(encoding="utf-8"), entries, "app/llms.txt")
+
+
 # ── main ─────────────────────────────────────────────────────────
 
 
@@ -474,6 +516,22 @@ def main() -> int:
         if stray.name not in wanted:
             print(f"✗ {stray.relative_to(ROOT)} has no lesson; delete it")
             problems += 1
+    for path, build in ((SITEMAP, sitemap_text), (LLMS, llms_text)):
+        rel = path.relative_to(ROOT)
+        try:
+            wanted_text = build(found)
+        except RenderError as exc:
+            print(f"✗ {exc}")
+            problems += 1
+            continue
+        if path.read_text(encoding="utf-8") == wanted_text:
+            print(f"✓ {rel}")
+        elif args.check:
+            print(f"✗ {rel}'s lesson entries are stale; run `task contributing:learn:site`")
+            problems += 1
+        else:
+            path.write_text(wanted_text, encoding="utf-8")
+            print(f"✓ {rel}")
     if problems:
         print(f"learnsite: {problems} problem(s)")
         return 1

@@ -72,8 +72,8 @@
 <h2 id="steps">Steps</h2>
 <h3 id="1-run-the-installer-with-a-profile">1. Run the installer with a profile</h3>
 <p><code>--no-topic</code> skips the one step that talks to GitHub (adding the <code>slopstopper</code> repo topic through <code>gh</code>), which a demo has no remote for.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper install --profile ui --no-topic | grep -v '^ ' | grep -E 'installed|pinned|refreshed|seeded|skipping|already|Added|appended'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>✅ Taskfile.ss.yml installed (refreshed)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper install --profile ui --no-topic | grep -v '^ ' | grep -E 'installed|pinned|refreshed|seeded|skipping|already|Added|appended'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>✅ Taskfile.ss.yml installed (refreshed)
 ✅ Taskfile.yml installed
 ℹ️  .slopstopper.yml: profile already 'ui'
 ✅ slopstopper-cli &lt;this CLI's version&gt; pinned in mise.toml
@@ -96,8 +96,8 @@
 ✅ pre-push hook installed (core.hooksPath → .githooks)</code></pre></div>
 <p>Trimmed to the lines that name a file. Three things to notice before the tour. The CLI version is <strong>pinned</strong>: the installer wrote its own version into <code>mise.toml</code>, a later run installs that same version and never moves it, so a release upstream cannot reach this repo unannounced (<code>install.sh --upgrade-cli</code> moves the pin, on purpose, in a commit). Four workflows were <strong>not installed</strong>: the <code>ui</code> profile holds back the API checks until the repo shows an API, so a static site does not run four jobs that check nothing. And every file Lantern already had (its config, its README, its <code>AGENTS.md</code>) was <strong>left alone</strong>: the installer seeds what is missing and never overwrites what is yours.</p>
 <h3 id="2-tour-what-landed">2. Tour what landed</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git status --short</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code> M .gitignore
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git status --short</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code> M .gitignore
  M package.json
 ?? .claude/
 ?? .githooks/
@@ -109,7 +109,7 @@
 ?? Taskfile.yml
 ?? mise.toml</code></pre></div>
 <p>Two files changed and nine added, in four groups:</p>
-<div class="lesson-table-wrap"><table class="lesson-table">
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
   <thead><tr><th>Files</th><th>What they are for</th></tr></thead>
   <tbody>
     <tr><td><code>.github/workflows/ss-*.yml</code>, <code>.github/actions/ss-*/</code></td><td>One workflow per check (lesson 17), each a handful of steps built on the three composite actions. The installer owns these; a refresh rewrites them.</td></tr>
@@ -119,19 +119,19 @@
   </tbody>
 </table></div>
 <p>The pin is the whole of <code>mise.toml</code>:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>cat mise.toml</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>[tools]
+<div class="codeblock codeblock--sh" data-copyable><pre><code>cat mise.toml</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>[tools]
 "node" = "20"
 "task" = "3"
 "pipx:slopstopper-cli" = "&lt;this CLI's version&gt;"</code></pre></div>
 <p>And <code>.ss/.workflows-installed</code> is the installer's memory: it lists the workflows it wrote, so a workflow you delete on purpose stays deleted on the next refresh (remove its line there to have it back). <code>.ss/.installed-from</code> names the version that wrote everything.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>wc -l &lt; .ss/.workflows-installed
+<div class="codeblock codeblock--sh" data-copyable><pre><code>wc -l &lt; .ss/.workflows-installed
 cat .ss/.installed-from</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>27
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>27
 &lt;this CLI's version&gt;</code></pre></div>
 <h3 id="3-see-what-the-profile-decided">3. See what the profile decided</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper profile show</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  Profile: ui  (from .slopstopper.yml)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper profile show</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  Profile: ui  (from .slopstopper.yml)
       A web UI: a site or app that serves HTML to a browser.
 
   Disabled workflows (4):
@@ -142,8 +142,8 @@ cat .ss/.installed-from</code></pre></div>
 <p>Every workflow that is missing is named, with the reason. Nothing is quietly off.</p>
 <h3 id="4-ask-which-tools-are-missing">4. Ask which tools are missing</h3>
 <p>Most checks subprocess-invoke a tool the CLI does not ship: Semgrep, Gitleaks, Trivy, Docker for ZAP. <code>doctor</code> says which are on PATH, and for each missing one, which check that affects and how to install it.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper doctor</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🩺 slopstopper doctor: checking external tools and workflows
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper doctor</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🩺 slopstopper doctor: checking external tools and workflows
 ✅ node       found at …/node (v20.20.2)
 ✅ gh         found at /opt/homebrew/bin/gh (gh version 2.101.0)
 ✅ semgrep    found at /opt/homebrew/bin/semgrep (1.176.0)
@@ -155,8 +155,8 @@ cat .ss/.installed-from</code></pre></div>
 <p>A missing tool is not a failing check. Every check exits <strong>2</strong> when it cannot run (tool absent, input missing), which CI reports as "could not run" and never as a verdict about your code; exit 1 is reserved for "the repo failed it". Lesson 0 covered the contract; <code>doctor</code> is how you clear the 2s before the first PR.</p>
 <h3 id="5-see-everything-runnable">5. See everything runnable</h3>
 <p>Once mise has installed the pin (<code>mise install</code>, or just entering the directory with mise activated), <code>task</code> resolves to this repo's and the shims are the map of the suite:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>task --list</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>task: Available tasks for this project:
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task --list</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>task: Available tasks for this project:
 * ss:hygiene:complexity:               Analyze code complexity using Lizard
 * ss:hygiene:csp-exceptions:           Validate per-page CSP relaxations match docs/security/CSP_EXCEPTIONS.md
 * ss:hygiene:docs-accuracy:            Check documentation for broken links + stale refs
@@ -169,14 +169,14 @@ cat .ss/.installed-from</code></pre></div>
 * ss:security:secrets:                 Run secrets detection using Gitleaks
 …</code></pre></div>
 <p>One line per check, the same names the workflows call. The CLI lists the checks it knows without <code>task</code>, and marks the ones this repo carries no workflow for, which here are the four the profile held back; they still run locally through <code>slopstopper run</code>:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper checks list --json | grep -c '"disabled": true'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>4</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper checks list --json | grep -c '"disabled": true'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>4</code></pre></div>
 <h2 id="checkpoint">Checkpoint</h2>
 <p>The pre-push hook runs the static hygiene suite before every push, through <code>task ss:hygiene:test</code>. On Lantern that gate is red on purpose: the demo carries one finding per check, and lessons 2 to 5 fix the hygiene ones. The one hygiene check the demo passes as shipped is the advisory docs-size monitor, and it proves the install took: it reads the <code>docs/</code> tree Lantern shipped against the thresholds in the config the installer left alone.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:docs-size | grep 'Status:'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>✅ Status: Within acceptable limits</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-size | grep 'Status:'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>✅ Status: Within acceptable limits</code></pre></div>
 <p>Put the demo back, so the next lesson starts from the repo as shipped. The installer pointed git at the hook directory too, and <code>git clean</code> does not undo config, so unset that as well:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout .gitignore package.json
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout .gitignore package.json
 git clean -fdq
 git config --unset core.hooksPath</code></pre></div>
 <h2 id="exercise">Exercise</h2>
@@ -184,7 +184,7 @@ git config --unset core.hooksPath</code></pre></div>
 <details class="details">
   <summary>Solution</summary>
   <div class="details__body">
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper install --profile library --no-topic | grep 'workflow(s)'
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper install --profile library --no-topic | grep 'workflow(s)'
 slopstopper profile show
 git checkout .gitignore .slopstopper.yml package.json &amp;&amp; git clean -fdq &amp;&amp; git config --unset core.hooksPath</code></pre></div>
 <p>The installer line reads <code>15 workflow(s) installed</code> and <code>16 workflow(s) not installed</code>, and <code>profile show</code> lists those sixteen with the reason <code>(profile)</code>: the nine browser checks, DAST, CSP exceptions, the privacy statement and the four API checks, which is everything that needs a URL or a served page. What remains is the static layer: SAST, secrets, dependency CVEs, review and licences, complexity, the four docs checks. The last line puts the demo back, including the <code>profile: library</code> the flag wrote into its config.</p>

@@ -67,8 +67,8 @@
 <p>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH.</p>
 <h2 id="steps">Steps</h2>
 <h3 id="1-see-it-red">1. See it red</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:docs-structure</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔍 Validating documentation structure…
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-structure</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Validating documentation structure…
 ❌ Found 1 structure violation(s)
   - Unrouted doc: docs/runbooks/RELEASE.md is not linked from AGENTS.md, the map, or a README above it. Add a route to docs/README.md: 'Before you &lt;do X&gt;, read &lt;doc&gt; for &lt;what it holds&gt;'
 
@@ -77,28 +77,28 @@
 <p>The red line names the file, says which file should route it, and gives the route form. That is most of the fix. The runbook is a good doc: it says how to cut a release, in two commands. Nobody will ever read it, because nothing says when to.</p>
 <h3 id="2-try-a-soft-link-and-see-why-it-does-not-count">2. Try a soft link, and see why it does not count</h3>
 <p>Add a "see also" to the map. This is what most people do first.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>printf '\nSee also [runbooks/RELEASE.md](runbooks/RELEASE.md).\n' &gt;&gt; docs/README.md
+<div class="codeblock codeblock--sh" data-copyable><pre><code>printf '\nSee also [runbooks/RELEASE.md](runbooks/RELEASE.md).\n' &gt;&gt; docs/README.md
 slopstopper run hygiene:docs-structure</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔍 Validating documentation structure…
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Validating documentation structure…
 ❌ Found 2 structure violation(s)
   - Unrouted doc: docs/runbooks/RELEASE.md is linked from docs/README.md without a trigger or 'read'. Add a route to docs/README.md: 'Before you &lt;do X&gt;, read &lt;doc&gt; for &lt;what it holds&gt;'
   - docs/README.md line 21 → docs/runbooks/RELEASE.md: "See also [runbooks/RELEASE.md](runbooks/RELEASE.md)." is a soft route. A route agents follow names its trigger and says read: 'Before you &lt;do X&gt;, read &lt;doc&gt; for &lt;what it holds&gt;'.</code></pre></div>
 <p>Still unrouted, and now two findings instead of one: the check found the link, is telling you it is soft, and quotes the line. A link says a doc exists; a route says when to read it.</p>
 <h3 id="3-route-it">3. Route it</h3>
 <p>Replace the soft link with a route: a trigger, the word "read", the file, and what it holds.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout docs/README.md
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout docs/README.md
 printf '\nBefore you cut a release, read [runbooks/RELEASE.md](runbooks/RELEASE.md) for the tag, the push and what the tag message is for.\n' &gt;&gt; docs/README.md
 slopstopper run hygiene:docs-structure</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔍 Validating documentation structure…
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Validating documentation structure…
 ✅ Documentation structure is valid: all 4 docs are routed</code></pre></div>
 <h3 id="4-read-the-report-then-put-the-demo-back">4. Read the report, then put the demo back</h3>
 <p>The report lists every doc and how many hops it costs. The runbook is two hops from <code>AGENTS.md</code>: the map is routed directly from there, so anything the map routes is one hop further.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep RELEASE .ss/reports/docs/docs-structure-report.md
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep RELEASE .ss/reports/docs/docs-structure-report.md
 git checkout docs/README.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>| `docs/runbooks/RELEASE.md` | 2 | `docs/README.md` |</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>| `docs/runbooks/RELEASE.md` | 2 | `docs/README.md` |</code></pre></div>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:docs-structure | grep 'Unrouted doc'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  - Unrouted doc: docs/runbooks/RELEASE.md is not linked from AGENTS.md, the map, or a README above it. Add a route to docs/README.md: 'Before you &lt;do X&gt;, read &lt;doc&gt; for &lt;what it holds&gt;'</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-structure | grep 'Unrouted doc'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  - Unrouted doc: docs/runbooks/RELEASE.md is not linked from AGENTS.md, the map, or a README above it. Add a route to docs/README.md: 'Before you &lt;do X&gt;, read &lt;doc&gt; for &lt;what it holds&gt;'</code></pre></div>
 <p>Red again, with the demo as it shipped, and you can write the one line that fixes it from memory.</p>
 <h2 id="exercise">Exercise</h2>
 <p>Make the check fail with <code>doc_over_lines</code> instead of <code>unrouted_doc</code>, without adding a file.</p>
@@ -106,7 +106,7 @@ git checkout docs/README.md</code></pre></div>
   <summary>Solution</summary>
   <div class="details__body">
 <p>Pad a routed doc past 300 lines, run, and revert:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>yes '' | head -300 &gt;&gt; docs/architecture.md
+<div class="codeblock codeblock--sh" data-copyable><pre><code>yes '' | head -300 &gt;&gt; docs/architecture.md
 slopstopper run hygiene:docs-structure
 git checkout docs/architecture.md</code></pre></div>
 <p>The violation names the doc and its line count, beside the unrouted runbook. The real fix is a split by concern, with a route to each part, never a bigger <code>max_doc_lines</code>.</p>

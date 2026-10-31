@@ -68,8 +68,8 @@
 <p>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH. Both checks are stdlib Python, so nothing else.</p>
 <h2 id="steps">Steps</h2>
 <h3 id="1-see-docs-accuracy-red">1. See docs-accuracy red</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:docs-accuracy</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔍 Checking documentation accuracy…
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-accuracy</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Checking documentation accuracy…
 ⚠️  Found 1 accuracy issue(s)
   docs/contributing.md:17: Task reference `task ss:hygiene:docs` not found in Taskfile.yml
 
@@ -77,9 +77,9 @@
    • docs-accuracy-report.md</code></pre></div>
 <p>The file, the line and the promise that was broken. The demo has no Taskfile at all, so there is no <code>task</code> target of any name, and the contributing guide is telling every new contributor to run one.</p>
 <h3 id="2-read-the-report-then-the-line">2. Read the report, then the line</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/## Issues/,/## Excluded/p' .ss/reports/docs/docs-accuracy-report.md
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/## Issues/,/## Excluded/p' .ss/reports/docs/docs-accuracy-report.md
 sed -n '17,18p' docs/contributing.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>## Issues
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>## Issues
 
 ### Stale Taskfile References
 
@@ -97,9 +97,9 @@ one, and the pull request will not be looked at until it is green.</code></pre><
 <p>The report groups findings by kind; a doc that also linked a missing file or named a missing workflow would get a section each. This one is a doc written from memory of another repo: the command was never installed here, and the sentence beside it is confidently wrong.</p>
 <h3 id="3-fix-it">3. Fix it</h3>
 <p>The fix is to make the doc true: name the commands that exist, link the file that exists, or delete the sentence. Here the two checks the sentence means do exist, as <code>slopstopper run</code> commands.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's/Run `task ss:hygiene:docs` before you push; it is the two docs checks in/Run `slopstopper run hygiene:entry-files` and `slopstopper run hygiene:docs-structure` before you push; they are the two docs checks,/' docs/contributing.md &amp;&amp; rm docs/contributing.md.bak
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's/Run `task ss:hygiene:docs` before you push; it is the two docs checks in/Run `slopstopper run hygiene:entry-files` and `slopstopper run hygiene:docs-structure` before you push; they are the two docs checks,/' docs/contributing.md &amp;&amp; rm docs/contributing.md.bak
 slopstopper run hygiene:docs-accuracy</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔍 Checking documentation accuracy…
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Checking documentation accuracy…
 ✅ Documentation accuracy checks passed
 
 📁 Reports saved to: .ss/reports/docs/
@@ -107,8 +107,8 @@ slopstopper run hygiene:docs-accuracy</code></pre></div>
 <p>A doc that names a file on purpose although no checkout holds it, such as a report written at run time, goes in <code>hygiene.docs_accuracy.ignore_refs</code> with a reason. That is the one honest exception.</p>
 <h3 id="4-read-the-size-monitor">4. Read the size monitor</h3>
 <p>Now the advisory check. Run it and read the three numbers and the three thresholds.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:docs-size</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>📊 Documentation Statistics:
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-size</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>📊 Documentation Statistics:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Total Files:        5
   Total Size:         4 KB
@@ -133,9 +133,9 @@ docs/runbooks/RELEASE.md (0 KB)
 <p>Five small docs against the defaults. A repo that documents a lot sits above them and raises the totals in its <code>.slopstopper.yml</code> with a comment saying why; the per-file cap stays, because that one is about a single doc staying readable.</p>
 <h3 id="5-see-the-advisory-fire-and-the-exit-code-not-move">5. See the advisory fire, and the exit code not move</h3>
 <p>Drop a 160 KB doc into the tree and run again.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>yes 'Notes on every default the checks ship with, and why each is what it is.' | head -c 160000 &gt; docs/notes.md
+<div class="codeblock codeblock--sh" data-copyable><pre><code>yes 'Notes on every default the checks ship with, and why each is what it is.' | head -c 160000 &gt; docs/notes.md
 slopstopper run hygiene:docs-size | sed -n '/Status/,/Reports/p'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>❌ Status: THRESHOLDS EXCEEDED
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>❌ Status: THRESHOLDS EXCEEDED
 
 ⚠️ Alerts:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -146,21 +146,21 @@ slopstopper run hygiene:docs-size | sed -n '/Status/,/Reports/p'</code></pre></d
 
 📁 Reports saved to: .ss/reports/docs/</code></pre></div>
 <p>The verdict is red in the output and in the report, and the exit code is still 0: the hook would let you push, CI would stay green. The PR summary comment carries the alert instead, where a reviewer sees it. That is the design: a size is a reason to look, a broken reference is a reason to stop.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:docs-size &gt;/dev/null; echo "exit $?"
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-size &gt;/dev/null; echo "exit $?"
 rm docs/notes.md
 git checkout docs/contributing.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>exit 0</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>exit 0</code></pre></div>
 <p>The last line puts the demo back for the next lesson.</p>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:docs-accuracy &gt;/dev/null; echo "exit $?"</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>exit 1</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-accuracy &gt;/dev/null; echo "exit $?"</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>exit 1</code></pre></div>
 <p>Red again, with the demo as it shipped: one stale command, one finding, and the fix is a sentence.</p>
 <h2 id="exercise">Exercise</h2>
 <p>Make docs-accuracy fail with a broken link and a workflow reference as well as the task, then put it back.</p>
 <details class="details">
   <summary>Solution</summary>
   <div class="details__body">
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>printf '\nThe `.github/workflows/ss-hygiene-tidy-check.yml` workflow runs it in CI; see [the tidy guide](TIDY.md).\n' &gt;&gt; docs/contributing.md
+<div class="codeblock codeblock--sh" data-copyable><pre><code>printf '\nThe `.github/workflows/ss-hygiene-tidy-check.yml` workflow runs it in CI; see [the tidy guide](TIDY.md).\n' &gt;&gt; docs/contributing.md
 slopstopper run hygiene:docs-accuracy
 git checkout docs/contributing.md</code></pre></div>
 <p>Three kinds of finding from two lines: the stale task from before, a "Broken link" because <code>TIDY.md</code> is not a file, and a "Workflow reference does not exist" from the rule that resolves every <code>.github/workflows/&lt;name&gt;.yml</code> path. A bare <code>ss-hygiene-tidy-check.yml</code> with no directory would pass that last rule, because prose names config files loosely; write the path.</p>

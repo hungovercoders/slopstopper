@@ -113,6 +113,13 @@
     text-align: right;
 }
 
+/* A block that can scroll sideways is a tab stop; show where focus is. */
+.lesson .codeblock:focus-visible,
+.lesson-table-wrap:focus-visible {
+    outline: 3px solid var(--accent-deep);
+    outline-offset: 3px;
+}
+
 .lesson-source {
     max-width: 760px;
     margin: 2rem auto 0;

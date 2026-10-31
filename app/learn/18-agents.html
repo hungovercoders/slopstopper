@@ -72,9 +72,9 @@
 <h2 id="steps">Steps</h2>
 <h3 id="1-install-the-skills-into-a-repo">1. Install the skills into a repo</h3>
 <p>The skills ship inside the CLI's wheel, and <code>slopstopper install</code> writes them with the rest of the suite: the map, plus only the references the map links, swapped in as a whole directory so a refresh never leaves a stale file behind.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper install --no-topic --no-hooks | grep -A2 'Installing the SlopStopper Claude Code skills' | tail -1
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper install --no-topic --no-hooks | grep -A2 'Installing the SlopStopper Claude Code skills' | tail -1
 find .claude -type f | LC_ALL=C sort</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>✅ slopstopper-install: installed
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>✅ slopstopper-install: installed
 .claude/skills/slopstopper-install/SKILL.md
 .claude/skills/slopstopper-install/references/configure.md
 .claude/skills/slopstopper-install/references/install.md
@@ -92,8 +92,8 @@ find .claude -type f | LC_ALL=C sort</code></pre></div>
 .claude/skills/slopstopper-triage/references/upstream.md</code></pre></div>
 <p>Project level, under the repo's own <code>.claude/skills/</code>, so every contributor who clones the repo gets them, and they are committed alongside the workflows. <code>install-skill.sh</code> upstream refreshes just the playbooks without re-running the whole installer.</p>
 <h3 id="2-read-the-map-of-the-triage-skill">2. Read the map of the triage skill</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep '^## ' .claude/skills/slopstopper-triage/SKILL.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>## Step 1: Identify which check is failing
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep '^## ' .claude/skills/slopstopper-triage/SKILL.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>## Step 1: Identify which check is failing
 ## Step 2: Reproduce locally
 ## Step 3: Read the report
 ## Step 4: Categorise the finding
@@ -103,26 +103,26 @@ find .claude -type f | LC_ALL=C sort</code></pre></div>
 <p>That is lesson 2's loop, written for an agent: name the check, reproduce it with the shim, read the report, decide what kind of finding it is, fix that. Step 1 starts from the pull request's summary comment, because it names the failing checks and nothing else. The hand-off section points at the other skill for anything that is really an install problem, and the install skill points back.</p>
 <h3 id="3-trigger-it">3. Trigger it</h3>
 <p>Break the entry-files check the way lesson 3 did, then ask Claude Code to fix it. The prompt is the only input; the skill's description is what makes it load.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>cat docs/README.md &gt;&gt; README.md
+<div class="codeblock codeblock--sh" data-copyable><pre><code>cat docs/README.md &gt;&gt; README.md
 claude "the entry-files check is failing on this repo, fix it"</code></pre></div>
 <p>What a good run looks like: the agent reads the skill's map, runs <code>task ss:hygiene:entry-files</code>, opens <code>.ss/reports/entry-files/entry-file-size-report.md</code>, sees the README over budget, and moves the pasted map out rather than raising the budget, because the skill's Step 4 says a threshold is the fix only when the check is right and the config is wrong, and the report's own fix says the same. Then it reruns the check and shows it green. Put the demo back when you are done:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout README.md</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout README.md</code></pre></div>
 <h3 id="4-why-the-skills-are-a-surface">4. Why the skills are a surface</h3>
 <p>Every task, report path and env var a skill names is a promise about the suite, and lesson 5's docs-accuracy check scans the skills for the ones it can verify: that each <code>task ss:*</code> and workflow they mention exists. The rest, the steps and the gotcha rows, is kept honest by the change map: a new check adds a row to the triage skill's reproduce and gotcha tables and an inventory line to the install skill, and the registration test from lesson 20 fails while the check's count quoted in the skills is stale.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -c 'task ss:' .claude/skills/slopstopper-triage/references/reproduce.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>24</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep -c 'task ss:' .claude/skills/slopstopper-triage/references/reproduce.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>24</code></pre></div>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -c '^name: slopstopper-' .claude/skills/*/SKILL.md | tr '\n' ' '</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>.claude/skills/slopstopper-install/SKILL.md:1 .claude/skills/slopstopper-triage/SKILL.md:1 </code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep -c '^name: slopstopper-' .claude/skills/*/SKILL.md | tr '\n' ' '</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>.claude/skills/slopstopper-install/SKILL.md:1 .claude/skills/slopstopper-triage/SKILL.md:1 </code></pre></div>
 <p>Put the demo back:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout .gitignore package.json
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout .gitignore package.json
 git clean -fdq</code></pre></div>
 <h2 id="exercise">Exercise</h2>
 <p>Find where the install skill decides whether it is installing or refreshing, and what it looks for.</p>
 <details class="details">
   <summary>Solution</summary>
   <div class="details__body">
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -n -A6 '^## Mode detection' .claude/skills/slopstopper-install/SKILL.md</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep -n -A6 '^## Mode detection' .claude/skills/slopstopper-install/SKILL.md</code></pre></div>
 <p>It checks for <code>.slopstopper.yml</code> and the <code>.ss/.workflows-installed</code> marker. Both present means a refresh, which routes to the refresh-only steps: confirm the installed set is the pinned release's, re-apply the customisations a re-run wipes, and look for new knobs. Neither means a first install. The installer is idempotent either way; the skill's job is to know which questions to ask. (The demo has the config but not the marker until you install, so on it the answer is a first install.)</p>
   </div>
 </details>

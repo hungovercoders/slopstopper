@@ -29,11 +29,11 @@ urls:
   preview:
 
 pages:
-  smoke:         /,/features.html,/tools.html,/feedback.html,/privacy.html,/learn.html
+  smoke:         /,/features.html,/tools.html,/feedback.html,/privacy.html,/learn.html,/learn/00-what-slop-is.html,/learn/01-install.html,/learn/02-first-check-complexity.html,/learn/03-entry-files.html,/learn/04-docs-structure.html,/learn/05-docs-accuracy-and-size.html,/learn/06-secrets.html,/learn/07-sast.html,/learn/08-dependencies.html,/learn/09-headers-and-csp.html,/learn/10-dast.html,/learn/11-smoke-and-e2e.html,/learn/12-accessibility.html,/learn/13-core-web-vitals.html,/learn/14-seo.html,/learn/15-discoverability.html,/learn/16-api-checks.html,/learn/17-ci.html,/learn/18-agents.html,/learn/19-profiles-and-tailoring.html,/learn/20-inside-slopstopper.html
   e2e:           /,/features.html
-  accessibility: /,/features.html,/tools.html,/feedback.html,/privacy.html,/learn.html
-  seo:           /,/features.html,/tools.html,/feedback.html,/privacy.html,/learn.html
-  broken_links:  /,/features.html,/tools.html,/privacy.html,/learn.html
+  accessibility: /,/features.html,/tools.html,/feedback.html,/privacy.html,/learn.html,/learn/00-what-slop-is.html,/learn/01-install.html,/learn/02-first-check-complexity.html,/learn/03-entry-files.html,/learn/04-docs-structure.html,/learn/05-docs-accuracy-and-size.html,/learn/06-secrets.html,/learn/07-sast.html,/learn/08-dependencies.html,/learn/09-headers-and-csp.html,/learn/10-dast.html,/learn/11-smoke-and-e2e.html,/learn/12-accessibility.html,/learn/13-core-web-vitals.html,/learn/14-seo.html,/learn/15-discoverability.html,/learn/16-api-checks.html,/learn/17-ci.html,/learn/18-agents.html,/learn/19-profiles-and-tailoring.html,/learn/20-inside-slopstopper.html
+  seo:           /,/features.html,/tools.html,/feedback.html,/privacy.html,/learn.html,/learn/00-what-slop-is.html,/learn/01-install.html,/learn/02-first-check-complexity.html,/learn/03-entry-files.html,/learn/04-docs-structure.html,/learn/05-docs-accuracy-and-size.html,/learn/06-secrets.html,/learn/07-sast.html,/learn/08-dependencies.html,/learn/09-headers-and-csp.html,/learn/10-dast.html,/learn/11-smoke-and-e2e.html,/learn/12-accessibility.html,/learn/13-core-web-vitals.html,/learn/14-seo.html,/learn/15-discoverability.html,/learn/16-api-checks.html,/learn/17-ci.html,/learn/18-agents.html,/learn/19-profiles-and-tailoring.html,/learn/20-inside-slopstopper.html
+  broken_links:  /,/features.html,/tools.html,/privacy.html,/learn.html,/learn/00-what-slop-is.html,/learn/01-install.html,/learn/02-first-check-complexity.html,/learn/03-entry-files.html,/learn/04-docs-structure.html,/learn/05-docs-accuracy-and-size.html,/learn/06-secrets.html,/learn/07-sast.html,/learn/08-dependencies.html,/learn/09-headers-and-csp.html,/learn/10-dast.html,/learn/11-smoke-and-e2e.html,/learn/12-accessibility.html,/learn/13-core-web-vitals.html,/learn/14-seo.html,/learn/15-discoverability.html,/learn/16-api-checks.html,/learn/17-ci.html,/learn/18-agents.html,/learn/19-profiles-and-tailoring.html,/learn/20-inside-slopstopper.html
 
 smoke:
   og_image_path: /og-image.png

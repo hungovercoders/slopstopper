@@ -69,12 +69,12 @@
   <li>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH.</li>
   <li><code>semgrep</code> on PATH. <code>pip install semgrep</code> or <code>brew install semgrep</code>; the check's own workflow installs it with pip, and this course's CI does the same. The first run fetches rules from the registry, so it needs the network.</li>
 </ul>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>semgrep --version</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>1.176.0</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>semgrep --version</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>1.176.0</code></pre></div>
 <h2 id="steps">Steps</h2>
 <h3 id="1-see-it-red">1. See it red</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run security:sast</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>┌──────────────┐
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run security:sast</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>┌──────────────┐
 │ Scan Summary │
 └──────────────┘
 ✅ Scan completed successfully.
@@ -89,14 +89,14 @@
    • sast-report.md</code></pre></div>
 <p>Trimmed to the summary. Semgrep ran a few hundred rules over the twenty-two files git tracks and found three things: one ERROR, which is above the line and fails the check, and two WARNINGs, which are reported and do not. Semgrep's own "3 blocking" is its word for "would fail at its default setting"; the check's line underneath is the one that counts.</p>
 <h3 id="2-read-the-finding">2. Read the finding</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/| Rule/,/^$/p' .ss/reports/sast/sast-report.md | head -3</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>| Rule | Severity | Location | Message |
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/| Rule/,/^$/p' .ss/reports/sast/sast-report.md | head -3</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>| Rule | Severity | Location | Message |
 |------|----------|----------|---------|
 | python.lang.security.audit.subprocess-shell-true.subprocess-shell-true | ERROR | `scripts/status.py:80` | Found 'subprocess' function 'run' with 'shell=True'. This is dangerous becaus... |</code></pre></div>
 <p>Three things to read, in this order. The <strong>rule id</strong> is a path into Semgrep's registry (<code>python.lang.security.audit.subprocess-shell-true</code>), which is where you go to read the whole rule and its references. The <strong>location</strong> is the file and line. And the <strong>message</strong> says why: with <code>shell=True</code>, the string is handed to a shell, so anything in it that the shell treats as syntax is executed. The full message in the report also says what to do instead, which is the next step.</p>
 <h3 id="3-read-the-line-as-a-reviewer-would">3. Read the line as a reviewer would</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '76,80p' scripts/status.py</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>        state = badge(probe(url))
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '76,80p' scripts/status.py</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>        state = badge(probe(url))
         page = update(page, name, state)
         summary.append(f"{name}={state}")
     PAGE.write_text(page)
@@ -104,34 +104,34 @@
 <p>It does what it says: commit the refreshed page with a message built from each service's state. Nothing in it is unusual. The states come from <code>badge</code>, which today returns one of four words; the day it returns something with a quote in it, the commit message is shell syntax. A reviewer reading for intent passes this line every time. Semgrep reads for shape.</p>
 <h3 id="4-fix-the-code-not-the-rule">4. Fix the code, not the rule</h3>
 <p>The fix the rule asks for: pass the command as a list and drop <code>shell=True</code>. There is no shell, so there is no shell syntax, and a message is only ever a message.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+<div class="codeblock codeblock--sh" data-copyable><pre><code>python3 - &lt;&lt;'PY'
 import pathlib
 p = pathlib.Path('scripts/status.py'); s = p.read_text()
 old = '''    subprocess.run("git commit -qam 'status: " + " ".join(summary) + "'", shell=True, check=False)'''
 p.write_text(s.replace(old, '''    subprocess.run(["git", "commit", "-qam", "status: " + " ".join(summary)], check=False)'''))
 PY
 slopstopper run security:sast</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔍 Running SAST analysis…
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Running SAST analysis…
 ⚠️  Found 2 finding(s): 0 error(s), 2 warning(s)
 ℹ️  none at or above `fail_on: error`, so the check does not fail
 
 📁 Reports saved to: .ss/reports/sast/
    • sast-report.md</code></pre></div>
 <p>Green, and honest about it: the two warnings are still reported. The other way out, when a pattern is genuinely safe where it stands, is a suppression <strong>with a reason</strong> on the line itself:</p>
-<div class="codeblock codeblock--python" role="region" aria-label="Python"><pre><code>subprocess.run(cmd, shell=True, check=False)  # nosemgrep: python.lang.security.audit.subprocess-shell-true.subprocess-shell-true -- cmd is a constant from the table above</code></pre></div>
+<div class="codeblock codeblock--python" tabindex="0"><pre><code>subprocess.run(cmd, shell=True, check=False)  # nosemgrep: python.lang.security.audit.subprocess-shell-true.subprocess-shell-true -- cmd is a constant from the table above</code></pre></div>
 <p>The rule id is spelled out, so the suppression covers one rule on one line and nothing else, and the reason sits where the next reader will see it. That is the honest exception. Turning the rule off for the repo is not; neither is lowering <code>fail_on</code> because one finding was inconvenient.</p>
 <h3 id="5-put-the-demo-back">5. Put the demo back</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout scripts/status.py</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout scripts/status.py</code></pre></div>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run security:sast &gt;/dev/null 2&gt;&amp;1; echo "exit $?"</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>exit 1</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run security:sast &gt;/dev/null 2&gt;&amp;1; echo "exit $?"</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>exit 1</code></pre></div>
 <p>Red again, with the demo as it shipped: one ERROR on one line, and you know the fix is a list.</p>
 <h2 id="exercise">Exercise</h2>
 <p>Move the line. Make the two warnings block as well, read what they are, and put the line back.</p>
 <details class="details">
   <summary>Solution</summary>
   <div class="details__body">
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>printf 'security:\n  sast:\n    fail_on: warning\n' &gt;&gt; .slopstopper.yml
+<div class="codeblock codeblock--sh" data-copyable><pre><code>printf 'security:\n  sast:\n    fail_on: warning\n' &gt;&gt; .slopstopper.yml
 slopstopper run security:sast; echo "exit $?"
 sed -n '/| Rule/,/^$/p' .ss/reports/sast/sast-report.md | tail -4
 git checkout .slopstopper.yml</code></pre></div>

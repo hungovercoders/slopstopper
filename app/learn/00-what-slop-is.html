@@ -82,7 +82,7 @@
 </ol>
 <h2 id="the-five-loops">The five loops</h2>
 <p>The checks group into five loops. Four are installed into any repo; the fifth is how slopstopper's own site ships, there to copy.</p>
-<div class="lesson-table-wrap"><table class="lesson-table">
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
   <thead><tr><th>Loop</th><th>The slop it catches</th><th>Tools</th></tr></thead>
   <tbody>
     <tr><td>🔒 <strong>Security</strong></td><td>leaked secrets, unsafe code patterns, vulnerable or badly licensed dependencies, a running app that misbehaves, wrong response headers</td><td>Gitleaks, Semgrep, Trivy, OWASP ZAP</td></tr>
@@ -98,8 +98,8 @@
 <h2 id="steps">Steps</h2>
 <h3 id="1-see-the-whole-suite-once">1. See the whole suite once</h3>
 <p>Before meeting each check on its own, list them. The left column is the name you give <code>slopstopper run</code>; the <code>task ss:</code> shim has the same name.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper checks list</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>     hygiene:complexity          Code complexity analyzer (Lizard wrapper).
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper checks list</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>     hygiene:complexity          Code complexity analyzer (Lizard wrapper).
      hygiene:csp-exceptions      CSP-Exceptions Drift Detector.
      hygiene:docs-accuracy       Documentation accuracy validator.
      hygiene:docs-size           Documentation size monitor.
@@ -127,13 +127,13 @@
 <p>The four marked 💤 are the API checks. This repo is a site with no API, so its profile leaves them without a workflow; lesson 19 is about that.</p>
 <h3 id="2-see-the-exit-code-contract">2. See the exit-code contract</h3>
 <p>Ask for a check that does not exist. The CLI cannot run it, so this is a 2, not a 1: nothing about the repo failed, and the check's issue emitter would not treat it as a finding.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:nope; echo "exit $?"</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>❌ unknown check: hygiene:nope
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:nope; echo "exit $?"</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>❌ unknown check: hygiene:nope
    known checks: hygiene:complexity, hygiene:csp-exceptions, …
 exit 2</code></pre></div>
 <p>Now run one that exists. The repo passes it, so the exit is 0. Lesson 2 shows a 1.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:docs-structure; echo "exit $?"</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🔍 Validating documentation structure…
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-structure; echo "exit $?"</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Validating documentation structure…
 ✅ Documentation structure is valid: all 33 docs are routed (21 excluded by hygiene.docs.exclude)
 
 📁 Reports saved to: .ss/reports/docs/
@@ -141,8 +141,8 @@ exit 2</code></pre></div>
 exit 0</code></pre></div>
 <h3 id="3-see-the-one-surface">3. See the one surface</h3>
 <p>The same check through the shim everyone uses. <code>task --list</code> shows every shim; the <code>ss:</code> prefix is the namespace the suite installs under, so it never clashes with a repo's own tasks.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>task --list | grep 'ss:hygiene'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>* ss:hygiene:complexity:          Analyze code complexity using Lizard
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task --list | grep 'ss:hygiene'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>* ss:hygiene:complexity:          Analyze code complexity using Lizard
 * ss:hygiene:csp-exceptions:      Detect undocumented CSP exceptions (drift check)
 * ss:hygiene:docs-accuracy:       Validate documentation accuracy against the codebase
 * ss:hygiene:docs-size:           Monitor documentation size and structure
@@ -151,8 +151,8 @@ exit 0</code></pre></div>
 * ss:hygiene:openapi:             Audit OpenAPI spec drift against a live API
 * ss:hygiene:test:                Run all hygiene checks (docs-size, docs-structure, docs-accuracy, entry-files, csp-exceptions, complexity)</code></pre></div>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper checks list | grep -c 'hygiene:'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>7</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper checks list | grep -c 'hygiene:'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>7</code></pre></div>
 <h2 id="exercise">Exercise</h2>
 <p>Without running anything, say which loop would catch each of the six examples at the top of this page, and which check. Then check your answers against the table in step 1.</p>
 <details class="details">

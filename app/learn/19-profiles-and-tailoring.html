@@ -69,9 +69,9 @@
 <h2 id="steps">Steps</h2>
 <h3 id="1-see-what-this-repo-resolves-to-and-why">1. See what this repo resolves to, and why</h3>
 <p>Install the suite into the demo first (lesson 1), quietly, so the profile has workflows to act on.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper --quiet install --no-topic --no-hooks --no-skills
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper --quiet install --no-topic --no-hooks --no-skills
 slopstopper profile show</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  Profile: ui  (from .slopstopper.yml)
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  Profile: ui  (from .slopstopper.yml)
       A web UI: a site or app that serves HTML to a browser.
 
   Disabled workflows (4):
@@ -81,13 +81,13 @@ slopstopper profile show</code></pre></div>
     · ss-security-api-headers-check.yml          (profile, no API detected)</code></pre></div>
 <p>Every check applies to a site, except the four API checks from lesson 16, which the <code>ui</code> profile holds back until the repo shows an API: a spec, a server framework or an <code>api.*</code> key. Each line says why it is off.</p>
 <h3 id="2-ask-for-a-suggestion">2. Ask for a suggestion</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper profile detect</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  Suggested profile: ui  (found app/index.html)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper profile detect</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  Suggested profile: ui  (found app/index.html)
   Active profile:    ui (already a match, nothing to do).</code></pre></div>
 <p>The installer prints the same suggestion when it differs from the active profile, and still does not change anything.</p>
 <h3 id="3-read-the-whole-mapping">3. Read the whole mapping</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper profile list</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ui  (default)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper profile list</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ui  (default)
       A web UI: a site or app that serves HTML to a browser.
       …
       holds back 4 workflow(s) until the repo shows an API:
@@ -110,9 +110,9 @@ slopstopper profile show</code></pre></div>
       disables 16 workflow(s):</code></pre></div>
 <h3 id="4-switch-the-repo-to-the-api-profile">4. Switch the repo to the API profile</h3>
 <p>The installer does this with <code>--profile api</code>; the key it writes is the whole mechanism, so write it yourself.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's/^profile: ui$/profile: api/' .slopstopper.yml &amp;&amp; rm .slopstopper.yml.bak
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's/^profile: ui$/profile: api/' .slopstopper.yml &amp;&amp; rm .slopstopper.yml.bak
 slopstopper profile show</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  Profile: api  (from .slopstopper.yml)
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  Profile: api  (from .slopstopper.yml)
       An HTTP API: JSON/gRPC endpoints with no browser-rendered surface.
 
   Disabled workflows (10):
@@ -127,21 +127,21 @@ slopstopper profile show</code></pre></div>
     · ss-reliability-sitemap-check.yml           (profile)
     · ss-reliability-smoke-tests.yml             (profile)</code></pre></div>
 <p>The four API checks are back, because the <code>api</code> profile keeps them, and the nine browser checks and the privacy statement check (a page nobody serves) are gone from the resolved set. The files are still on disk until the installer runs again, which is what <code>install.sh</code> does on a refresh:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper install --no-topic --no-hooks --no-skills | grep 'not installed for this repo shape'
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper install --no-topic --no-hooks --no-skills | grep 'not installed for this repo shape'
 ls .github/workflows | wc -l</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>ℹ️  profile 'api': 10 workflow(s) not installed for this repo shape (10 removed from a previous install)
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>ℹ️  profile 'api': 10 workflow(s) not installed for this repo shape (10 removed from a previous install)
 21</code></pre></div>
 <p>Ten removed, four API ones added: twenty-one workflows where lesson 1 had twenty-seven. The deploy trigger stops dispatching the nine too; <code>slopstopper profile disabled</code> prints the resolved set one per line, which is what both of them read.</p>
 <h3 id="5-keep-one-of-them">5. Keep one of them</h3>
 <p>An API that serves its own docs pages still wants the link check.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+<div class="codeblock codeblock--sh" data-copyable><pre><code>python3 - &lt;&lt;'PY'
 import pathlib
 path = pathlib.Path(".slopstopper.yml")
 text = path.read_text()
 path.write_text(text.replace("  enabled: []", "  enabled: [ss-reliability-broken-links-check.yml]"))
 PY
 slopstopper profile show</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  Profile: api  (from .slopstopper.yml)
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  Profile: api  (from .slopstopper.yml)
       An HTTP API: JSON/gRPC endpoints with no browser-rendered surface.
 
   Disabled workflows (9):
@@ -152,26 +152,26 @@ slopstopper profile show</code></pre></div>
   Re-enabled by workflows.enabled despite the profile:
     · ss-reliability-broken-links-check.yml</code></pre></div>
 <p>The arithmetic is one line in the CLI: the profile's set, minus <code>workflows.enabled</code>, plus <code>workflows.disabled</code>. Put the config back:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout .slopstopper.yml</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout .slopstopper.yml</code></pre></div>
 <h3 id="6-find-the-pin">6. Find the pin</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -A3 '^\[tools\]' mise.toml</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>[tools]
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep -A3 '^\[tools\]' mise.toml</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>[tools]
 "node" = "20"
 "task" = "3"
 "pipx:slopstopper-cli" = "&lt;this CLI's version&gt;"</code></pre></div>
 <p>That third line is what both a laptop and CI install, per directory, so the active <code>slopstopper</code> always matches the repo you are in. The installer seeded it with its own version because the demo had none; a plain <code>install.sh</code> re-run never bumps it, the bootstrap prints a nudge when it is behind PyPI, and <code>install.sh --upgrade-cli</code> (or <code>--cli-version X.Y.Z</code>) is the one command that moves it, by wrapping <code>mise use</code>. The suite a refresh writes is the pinned version's, so a new check arrives with the pin and never before it.</p>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper profile show | grep 'Profile: ui'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  Profile: ui  (from .slopstopper.yml)</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper profile show | grep 'Profile: ui'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  Profile: ui  (from .slopstopper.yml)</code></pre></div>
 <p>Put the demo back:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout .gitignore package.json
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout .gitignore package.json
 git clean -fdq</code></pre></div>
 <h2 id="exercise">Exercise</h2>
 <p>How many workflows does the <code>library</code> profile drop, and which hygiene checks are among them?</p>
 <details class="details">
   <summary>Solution</summary>
   <div class="details__body">
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper profile expand library | wc -l
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper profile expand library | wc -l
 slopstopper profile expand library | grep hygiene</code></pre></div>
 <p>Sixteen: the nine browser checks, the privacy statement, DAST, CSP exceptions and the four API checks. Three are hygiene checks: CSP exceptions and the privacy statement, which read headers and a page nothing serves, and <code>ss-hygiene-openapi-check.yml</code>, because drift means the spec against the live API it documents. What remains for a library is the static-analysis layer: complexity, the docs checks, secrets, SAST and dependencies, which is the whole of what applies to code nothing serves.</p>
   </div>

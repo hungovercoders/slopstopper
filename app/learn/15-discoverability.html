@@ -76,14 +76,14 @@
 </ul>
 <h2 id="steps">Steps</h2>
 <h3 id="1-serve-the-demo-and-run-all-four">1. Serve the demo and run all four</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p scratch
+<div class="codeblock codeblock--sh" data-copyable><pre><code>mkdir -p scratch
 PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
 sleep 2
 slopstopper run reliability:robots-txt -- http://localhost:8099
 slopstopper run reliability:llms-txt -- http://localhost:8099
 slopstopper run reliability:broken-links -- http://localhost:8099
 slopstopper run reliability:sitemap -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✅ http://localhost:8099/robots.txt
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✅ http://localhost:8099/robots.txt
 ✅ robots.txt is present and healthy.
   ✅ http://localhost:8099/llms.txt
 ✅ llms.txt is present and well-formed.
@@ -97,45 +97,45 @@ slopstopper run reliability:sitemap -- http://localhost:8099</code></pre></div>
 ❌ Failures detected. See .ss/reports/sitemap/sitemap-report.md for full details.</code></pre></div>
 <p>Three green, one red. The crawler followed the nav from <code>/</code> and found two pages; the sitemap lists one. The history page was added, linked from the nav, and the file that describes the site was left as it was. That is the whole lesson in one finding.</p>
 <h3 id="2-list-it">2. List it</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's|&lt;/urlset&gt;|  &lt;url&gt;&lt;loc&gt;https://lantern.example.com/history.html&lt;/loc&gt;&lt;/url&gt;\n&lt;/urlset&gt;|' app/sitemap.xml &amp;&amp; rm app/sitemap.xml.bak
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's|&lt;/urlset&gt;|  &lt;url&gt;&lt;loc&gt;https://lantern.example.com/history.html&lt;/loc&gt;&lt;/url&gt;\n&lt;/urlset&gt;|' app/sitemap.xml &amp;&amp; rm app/sitemap.xml.bak
 slopstopper run reliability:sitemap -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✅ http://localhost:8099 (2 pages crawled)
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✅ http://localhost:8099 (2 pages crawled)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ sitemap.xml is complete and free of dead entries.</code></pre></div>
 <p>The report's own advice is the durable fix: generate the sitemap from the page list at build time, so it cannot drift. A hand-edited list is what you have when the site has two pages.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout app/sitemap.xml</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout app/sitemap.xml</code></pre></div>
 <h3 id="3-de-index-the-site-with-one-word">3. De-index the site with one word</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's|^Allow: /|Disallow: /|' app/robots.txt &amp;&amp; rm app/robots.txt.bak</code></pre></div>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:robots-txt -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ❌ http://localhost:8099/robots.txt
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's|^Allow: /|Disallow: /|' app/robots.txt &amp;&amp; rm app/robots.txt.bak</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:robots-txt -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ❌ http://localhost:8099/robots.txt
       - `User-agent: *` has a blanket `Disallow: /`, which de-indexes the entire site
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ Failures detected. See .ss/reports/robots-txt/robots-txt-report.md for full details.</code></pre></div>
 <p>Lighthouse checks that the file parses; this check reads what it says.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout app/robots.txt</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout app/robots.txt</code></pre></div>
 <h3 id="4-take-the-title-off-llmstxt">4. Take the title off llms.txt</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak '1d' app/llms.txt &amp;&amp; rm app/llms.txt.bak</code></pre></div>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:llms-txt -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ❌ http://localhost:8099/llms.txt
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak '1d' app/llms.txt &amp;&amp; rm app/llms.txt.bak</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:llms-txt -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ❌ http://localhost:8099/llms.txt
       - Missing H1 title (first line should be `# &lt;name&gt;`)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ Failures detected. See .ss/reports/llms-txt/llms-txt-report.md for full details.</code></pre></div>
 <p>The bar is deliberately low, because the convention is young: the file must exist, start with a name and link somewhere. A site without one is a site an assistant summarises from its HTML, badly.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout app/llms.txt</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout app/llms.txt</code></pre></div>
 <h3 id="5-point-a-link-at-a-page-that-is-not-there">5. Point a link at a page that is not there</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's|href="history.html"|href="missing.html"|' app/index.html &amp;&amp; rm app/index.html.bak</code></pre></div>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:broken-links -- http://localhost:8099</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✘  1 [chromium] › .ss/.run/tests/broken-links.spec.ts:27:7 › Broken Link Checks › internal links return successful responses (89ms)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's|href="history.html"|href="missing.html"|' app/index.html &amp;&amp; rm app/index.html.bak</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:broken-links -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✘  1 [chromium] › .ss/.run/tests/broken-links.spec.ts:27:7 › Broken Link Checks › internal links return successful responses (89ms)
     Error: /missing.html returned 404
   1 failed</code></pre></div>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout app/index.html
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout app/index.html
 rm -rf test-results</code></pre></div>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>out=$(slopstopper run reliability:sitemap -- http://localhost:8099 2&gt;&amp;1 || true)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>out=$(slopstopper run reliability:sitemap -- http://localhost:8099 2&gt;&amp;1 || true)
 kill "$(cat scratch/serve.pid)"
 rm -r scratch
 echo "$out" | grep 'missing from sitemap'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>      - Reachable page missing from sitemap.xml: /history.html</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>      - Reachable page missing from sitemap.xml: /history.html</code></pre></div>
 <p>Red again, with the demo as it shipped, and the fix is one <code>&lt;url&gt;</code> line.</p>
 <h2 id="exercise">Exercise</h2>
 <p>Make the sitemap check pass without listing the history page.</p>
@@ -143,7 +143,7 @@ echo "$out" | grep 'missing from sitemap'</code></pre></div>
   <summary>Solution</summary>
   <div class="details__body">
 <p>Serve the demo again and take the page out of the nav instead:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -i.bak 's| · &lt;a href="history.html"&gt;History&lt;/a&gt;||' app/index.html &amp;&amp; rm app/index.html.bak
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's| · &lt;a href="history.html"&gt;History&lt;/a&gt;||' app/index.html &amp;&amp; rm app/index.html.bak
 slopstopper run reliability:sitemap -- http://localhost:8099
 git checkout app/index.html</code></pre></div>
 <p>Green: the crawler only finds what links reach, so an unlinked page is not a missing sitemap entry. It is also not a page anyone will find, which is why the fix in step 2 is the right one and this is the exercise. <code>--strict-orphans</code> and <code>--require-llms-complete</code> escalate the two advisory notes when you want the files to mirror the site exactly.</p>

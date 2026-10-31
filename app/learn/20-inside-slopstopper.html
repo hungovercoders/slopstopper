@@ -67,12 +67,12 @@
 <p>The checkout from the <a href="../learn.html">syllabus</a>. <code>task contributing:test</code> creates the CLI's test environment on first use.</p>
 <h2 id="steps">Steps</h2>
 <h3 id="1-read-the-registry">1. Read the registry</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/^REGISTRY/,/^}/p' cli/slopstopper/checks/__init__.py | grep -c '": '</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>23</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/^REGISTRY/,/^}/p' cli/slopstopper/checks/__init__.py | grep -c '": '</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>23</code></pre></div>
 <p>Twenty-three checks, each a <code>&lt;category&gt;:&lt;name&gt;</code> key mapped to a module's <code>run</code>. The key is what <code>slopstopper run</code> and the <code>task ss:*</code> shims use, so this dictionary is the one list every other surface is checked against.</p>
 <h3 id="2-add-a-check-to-the-registry-and-nothing-else">2. Add a check to the registry and nothing else</h3>
 <p>A copy of the smoke check under a new name, registered in the dictionary. This is exactly how far a hurried pull request gets.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed 's/smoke/probe/g; s/Smoke/Probe/g; s/SMOKE/PROBE/g' cli/slopstopper/checks/smoke.py &gt; cli/slopstopper/checks/probe.py
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed 's/smoke/probe/g; s/Smoke/Probe/g; s/SMOKE/PROBE/g' cli/slopstopper/checks/smoke.py &gt; cli/slopstopper/checks/probe.py
 python3 - &lt;&lt;'PY'
 import pathlib
 path = pathlib.Path("cli/slopstopper/checks/__init__.py")
@@ -82,11 +82,11 @@ text = text.replace('    "reliability:smoke": smoke.run,\n', '    "reliability:s
 path.write_text(text)
 PY
 grep -n "probe" cli/slopstopper/checks/__init__.py</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>50:    probe,
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>50:    probe,
 79:    "reliability:probe": probe.run,</code></pre></div>
 <h3 id="3-let-the-registration-test-name-every-surface-you-missed">3. Let the registration test name every surface you missed</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>task contributing:test -- -k registration -q</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>E       AssertionError: add a DOC_HEADINGS row for: ['reliability:probe']; remove: []
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task contributing:test -- -k registration -q</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>E       AssertionError: add a DOC_HEADINGS row for: ['reliability:probe']; remove: []
 E       AssertionError: reliability:probe is not in profiles.CHECK_WORKFLOWS
 E       AssertionError: Taskfile.ss.yml has no `reliability:probe:` target
 E       AssertionError: None is not in suite.GENERIC_WORKFLOWS, so adopters never get reliability:probe
@@ -96,14 +96,14 @@ E       AssertionError: reliability:probe (probe.py) has no cli/tests/checks/tes
 <p>Seven failures, each naming a file and what to add to it: the doc heading the test looks for, the profile map, the task shim, the installer's workflow list, the badge label, the labeler, the test module. Fix one and run again, and the next failure is the next surface. The two <code>workflow_run</code> trigger lists from lesson 17 are covered by a sibling test, and the generated check tables and README badges by another, which fails while they are stale until <code>task contributing:tables</code> regenerates them.</p>
 <h3 id="4-read-the-change-map">4. Read the change map</h3>
 <p>The test enforces what a test can. The rest of the row is the site pages, the install runbook and the two skills, which name specific checks and silently rot when one is added without them.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>grep -c "slopstopper-install\|slopstopper-triage" docs/contributing/CHANGE_MAP.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>7</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep -c "slopstopper-install\|slopstopper-triage" docs/contributing/CHANGE_MAP.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>7</code></pre></div>
 <p>Seven mentions, because the skills are the surface an agent reads first, and a skill that does not know a check exists will never suggest it or fix it.</p>
 <h3 id="5-remove-the-half-registered-check">5. Remove the half-registered check</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout cli/slopstopper/checks/__init__.py
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout cli/slopstopper/checks/__init__.py
 rm cli/slopstopper/checks/probe.py
 task contributing:test -- -k registration -o addopts= -q</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>…
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>…
 185 passed, 1805 deselected in 0.54s</code></pre></div>
 <h3 id="6-know-the-conventions-the-rest-of-a-change-follows">6. Know the conventions the rest of a change follows</h3>
 <ul>
@@ -113,8 +113,8 @@ task contributing:test -- -k registration -o addopts= -q</code></pre></div>
   <li><strong>Budgets are the feature.</strong> When entry-files or docs-structure fails, content moves deeper and gets a route; the budgets do not move.</li>
 </ul>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>task contributing:test -- -k registration -o addopts= -q</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>…
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task contributing:test -- -k registration -o addopts= -q</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>…
 185 passed, 1805 deselected in 0.54s</code></pre></div>
 <h2 id="exercise">Exercise</h2>
 <p>Make the seven failures six by wiring the probe into one surface, then put everything back.</p>
@@ -122,7 +122,7 @@ task contributing:test -- -k registration -o addopts= -q</code></pre></div>
   <summary>Solution</summary>
   <div class="details__body">
 <p>Repeat step 2, then add a shim to <code>Taskfile.ss.yml</code> next to the smoke one:</p>
-<div class="codeblock codeblock--yaml" role="region" aria-label="YAML"><pre><code>  reliability:probe:
+<div class="codeblock codeblock--yaml" tabindex="0"><pre><code>  reliability:probe:
     desc: Probe (a copy of smoke, for lesson 20)
     cmds:
       - slopstopper run reliability:probe -- {{.CLI_ARGS}}</code></pre></div>

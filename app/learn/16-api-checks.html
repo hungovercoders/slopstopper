@@ -73,7 +73,7 @@
 <h2 id="steps">Steps</h2>
 <h3 id="1-start-a-small-api">1. Start a small API</h3>
 <p>Three routes, a health endpoint, and the spec it serves for itself. <code>HEALTH_STATUS</code> and <code>PORT</code> are there for later steps.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>mkdir -p scratch
+<div class="codeblock codeblock--sh" data-copyable><pre><code>mkdir -p scratch
 cat &gt; scratch/api.py &lt;&lt;'PY'
 import json, os, time
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -110,8 +110,8 @@ python3 scratch/api.py &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/api.
 sleep 1</code></pre></div>
 <h3 id="2-audit-the-health-endpoint">2. Audit the health endpoint</h3>
 <p>The flags are the <code>api.health</code> keys from the command line: the path, and two fields the body must carry, one of them nested.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:api-health -- http://localhost:8765 --path /health --require-field status --require-field deps.db</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>🩺 API health audit against: http://localhost:8765/health
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:api-health -- http://localhost:8765 --path /health --require-field status --require-field deps.db</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🩺 API health audit against: http://localhost:8765/health
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ✅ http://localhost:8765/health  (HTTP 200)
       ⚠️  responded in 32ms (no api.health.max_response_ms budget set)
@@ -119,8 +119,8 @@ sleep 1</code></pre></div>
 ✅ Health endpoint is reachable and matches its contract.</code></pre></div>
 <p>The timing is reported and not enforced, because no budget is set. That is the pattern for every number in this lesson: measure first, set the budget from what you measured.</p>
 <h3 id="3-measure-latency-with-no-budget">3. Measure latency with no budget</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:api-latency -- http://localhost:8765 --path /health --path /v1/items</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>⏱ API latency audit against: http://localhost:8765
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:api-latency -- http://localhost:8765 --path /health --path /v1/items</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>⏱ API latency audit against: http://localhost:8765
    Paths: /health, /v1/items (5 sample(s) after 1 warmup)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ✅ http://localhost:8765/health  median 0.9ms · slowest 1.0ms · 38 bytes
@@ -131,14 +131,14 @@ sleep 1</code></pre></div>
 ✅ Every endpoint is reachable and within budget.</code></pre></div>
 <p>One warmup request is thrown away before the five that count, because the first hit pays for DNS, TLS and cold start, none of which is the steady state a budget is about.</p>
 <h3 id="4-set-a-budget-the-slow-route-cannot-meet">4. Set a budget the slow route cannot meet</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:api-latency -- http://localhost:8765 --path /v1/slow --median-ms 100</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ❌ http://localhost:8765/v1/slow  median 301.5ms · slowest 302.0ms · 12 bytes
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:api-latency -- http://localhost:8765 --path /v1/slow --median-ms 100</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ❌ http://localhost:8765/v1/slow  median 301.5ms · slowest 302.0ms · 12 bytes
       - `http://localhost:8765/v1/slow` median 301.5ms is over the 100ms budget
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ Failures detected. See .ss/reports/api-latency/api-latency-report.md for full details.</code></pre></div>
 <h3 id="5-commit-a-spec-that-describes-one-route-too-many">5. Commit a spec that describes one route too many</h3>
 <p>The committed spec is what a client or an agent reads. Give it a route the API does not serve.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>cat &gt; scratch/openapi.json &lt;&lt;'JSON'
+<div class="codeblock codeblock--sh" data-copyable><pre><code>cat &gt; scratch/openapi.json &lt;&lt;'JSON'
 {
   "openapi": "3.0.0",
   "info": {"title": "Lesson API", "version": "1"},
@@ -150,8 +150,8 @@ sleep 1</code></pre></div>
   }
 }
 JSON</code></pre></div>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>📘 OpenAPI drift audit (spec: scratch/openapi.json)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>📘 OpenAPI drift audit (spec: scratch/openapi.json)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ❌ 4 operation(s) declared
       - `GET /v1/reports` is in the committed spec but the live API doesn't serve it
@@ -159,8 +159,8 @@ JSON</code></pre></div>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ Drift detected. See .ss/reports/openapi/openapi-report.md for full details.</code></pre></div>
 <p>Two findings for one route, from the two directions the check can answer honestly: the committed spec disagrees with the served one, and the documented path answers 404. The report lists every probe:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/Probed paths/,/details&gt;/p' .ss/reports/openapi/openapi-report.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>&lt;details&gt;&lt;summary&gt;Probed paths&lt;/summary&gt;
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/Probed paths/,/details&gt;/p' .ss/reports/openapi/openapi-report.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>&lt;details&gt;&lt;summary&gt;Probed paths&lt;/summary&gt;
 
 | Path | Status |
 |---|---|
@@ -173,7 +173,7 @@ JSON</code></pre></div>
 <p>Paths with parameters, <code>/users/{id}</code>, are counted and never probed: a 404 from one could mean the route is missing or merely that no such record exists, and failing both would train people to ignore the check. Undocumented routes are the other half of drift and out of scope, because finding them needs framework-specific introspection.</p>
 <h3 id="6-fix-the-spec">6. Fix the spec</h3>
 <p>Drop the route that is gone, or ship it. Here it is gone.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+<div class="codeblock codeblock--sh" data-copyable><pre><code>python3 - &lt;&lt;'PY'
 import json, pathlib
 path = pathlib.Path("scratch/openapi.json")
 spec = json.loads(path.read_text())
@@ -181,34 +181,34 @@ del spec["paths"]["/v1/reports"]
 path.write_text(json.dumps(spec, indent=2) + "\n")
 PY
 slopstopper run hygiene:openapi -- http://localhost:8765 --spec scratch/openapi.json --served-spec http://localhost:8765/openapi.json</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ✅ 3 operation(s) declared
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✅ 3 operation(s) declared
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ The spec matches the API it documents.</code></pre></div>
 <p>When the framework generates the spec at build time, the durable fix is to point <code>api.openapi.spec</code> at the served URL, so there is no committed copy to drift.</p>
 <h3 id="7-degrade-the-health-endpoint">7. Degrade the health endpoint</h3>
 <p>A second copy of the API on its own port, reporting itself degraded with a 503. This is what a readiness endpoint does when a dependency is down, and it is what the health check is for.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>HEALTH_STATUS=degraded PORT=8766 python3 scratch/api.py &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/degraded.pid
+<div class="codeblock codeblock--sh" data-copyable><pre><code>HEALTH_STATUS=degraded PORT=8766 python3 scratch/api.py &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/degraded.pid
 sleep 1</code></pre></div>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:api-health -- http://localhost:8766 --path /health --require-field status --require-field deps.db</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ❌ http://localhost:8766/health  (HTTP 503)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:api-health -- http://localhost:8766 --path /health --require-field status --require-field deps.db</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ❌ http://localhost:8766/health  (HTTP 503)
       - returned HTTP 503, expected 200
       ⚠️  responded in 41ms (no api.health.max_response_ms budget set)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ Failures detected. See .ss/reports/api-health/api-health-report.md for full details.</code></pre></div>
 <p>In a real repo these flags live in <code>.slopstopper.yml</code> under <code>api</code>, and <code>expect_fields</code> there pins a value too, so <code>{"status": "degraded"}</code> with a 200 fails as well.</p>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>out=$(slopstopper run reliability:api-health -- http://localhost:8765 --path /health 2&gt;&amp;1)
+<div class="codeblock codeblock--sh" data-copyable><pre><code>out=$(slopstopper run reliability:api-health -- http://localhost:8765 --path /health 2&gt;&amp;1)
 kill "$(cat scratch/api.pid)" "$(cat scratch/degraded.pid)"
 rm -r scratch
 echo "$out" | grep 'matches its contract'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>✅ Health endpoint is reachable and matches its contract.</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>✅ Health endpoint is reachable and matches its contract.</code></pre></div>
 <h2 id="exercise">Exercise</h2>
 <p>Make the latency check fail on size rather than time.</p>
 <details class="details">
   <summary>Solution</summary>
   <div class="details__body">
 <p>Start the API again and give the items route a budget it cannot meet:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run reliability:api-latency -- http://localhost:8765 --path /v1/items --max-bytes 10</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:api-latency -- http://localhost:8765 --path /v1/items --max-bytes 10</code></pre></div>
 <p>The route answers in under a millisecond and still fails, because its 58-byte body is over the 10-byte budget. Size is a budget for the same reason time is: a list endpoint that quietly grows from two items to two thousand is slop that no timing on a fast network will show.</p>
   </div>
 </details>

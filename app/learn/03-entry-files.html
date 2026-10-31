@@ -68,8 +68,8 @@
 <p>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH.</p>
 <h2 id="steps">Steps</h2>
 <h3 id="1-see-it-red-and-read-the-table">1. See it red, and read the table</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:entry-files</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>📏 Entry-file budget + AGENTS.md-first check
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:entry-files</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>📏 Entry-file budget + AGENTS.md-first check
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ❌ README.md          800 tokens  (budget 600, headroom -200)  ✅ rules
   ✅ AGENTS.md          709 tokens  (budget 2000, headroom +1291)  ✅ rules
@@ -82,9 +82,9 @@
 <p>Four files, four budgets, and two columns of verdict: the size and the rules. <code>CLAUDE.md</code> is two tokens because it is the one line <code>@AGENTS.md</code>. The README is over by two hundred tokens, and its rules column is still green: nothing about the file's form is wrong, there is just too much of it. The cold-start line is what an agent pays before doing anything: the always-loaded file, plus the map if the task is not covered.</p>
 <h3 id="2-read-the-report-then-the-file">2. Read the report, then the file</h3>
 <p>The report carries a paste-ready fix for each violation.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>sed -n '/How to fix/,$p' .ss/reports/entry-files/entry-file-size-report.md | head -6
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/How to fix/,$p' .ss/reports/entry-files/entry-file-size-report.md | head -6
 grep -n '^## ' README.md</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>## How to fix violations
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>## How to fix violations
 
 ### `README.md` is over its token budget (800 &gt; 600)
 
@@ -96,7 +96,7 @@ Keep it to orientation and a quick start; everything else lives under `docs/` an
 <p>The headings tell the story. Orientation, a quick start, a pointer to the docs, and then the whole manual pasted in because "people read the README". This is the commonest shape of entry-file slop: content that belongs one hop deeper, inlined so it will be seen, which is exactly what makes the file too long to be read.</p>
 <h3 id="3-fix-it-move-the-content-deeper-and-route-it">3. Fix it: move the content deeper and route it</h3>
 <p>The fix is always the same direction: move the content that serves the fewest tasks into a <code>docs/</code> topic doc and add a route to it from the map. This cuts the manual out of the README into <code>docs/manual.md</code> and adds one route line.</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+<div class="codeblock codeblock--sh" data-copyable><pre><code>python3 - &lt;&lt;'PY'
 import pathlib
 readme = pathlib.Path('README.md'); text = readme.read_text()
 head, manual = text.split('## Everything you need to know\n', 1)
@@ -105,7 +105,7 @@ pathlib.Path('docs/manual.md').write_text('# The manual\n\n' + manual.lstrip())
 PY
 printf '\nBefore you look anything up beyond the quick start, read [manual.md](manual.md) for the whole manual.\n' &gt;&gt; docs/README.md
 slopstopper run hygiene:entry-files</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>📏 Entry-file budget + AGENTS.md-first check
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>📏 Entry-file budget + AGENTS.md-first check
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ✅ README.md          225 tokens  (budget 600, headroom +375)  ✅ rules
   ✅ AGENTS.md          709 tokens  (budget 2000, headroom +1291)  ✅ rules
@@ -118,11 +118,11 @@ slopstopper run hygiene:entry-files</code></pre></div>
 <p>The README dropped to a third of its budget, the map grew by one line, and the cold start barely moved: the manual now costs a tool turn only for the task that needs it. The route line's form, a trigger, the word "read", the file and what it holds, is the subject of lesson 4.</p>
 <p>What you never do is raise <code>readme_max_tokens</code>. The budgets are the feature: they are the point at which an agent stays reliable, and they do not move with the repo.</p>
 <h3 id="4-put-the-demo-back">4. Put the demo back</h3>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>git checkout README.md docs/README.md
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout README.md docs/README.md
 rm docs/manual.md</code></pre></div>
 <h2 id="checkpoint">Checkpoint</h2>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>slopstopper run hygiene:entry-files | grep 'README.md'</code></pre></div>
-<div class="codeblock codeblock--out" role="region" aria-label="What it prints"><pre><code>  ❌ README.md          800 tokens  (budget 600, headroom -200)  ✅ rules</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:entry-files | grep 'README.md'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ❌ README.md          800 tokens  (budget 600, headroom -200)  ✅ rules</code></pre></div>
 <p>Red again, with the demo as it shipped, and you know the fix is a move and a route, never a number.</p>
 <h2 id="exercise">Exercise</h2>
 <p>Make the rules column go red instead of the size column, then put it back.</p>
@@ -130,7 +130,7 @@ rm docs/manual.md</code></pre></div>
   <summary>Solution</summary>
   <div class="details__body">
 <p>Add a line to <code>CLAUDE.md</code> so it is no longer a pure include:</p>
-<div class="codeblock codeblock--sh" role="region" aria-label="Commands to type" data-copyable><pre><code>echo "Also read the wiki." &gt;&gt; CLAUDE.md
+<div class="codeblock codeblock--sh" data-copyable><pre><code>echo "Also read the wiki." &gt;&gt; CLAUDE.md
 slopstopper run hygiene:entry-files
 git checkout CLAUDE.md</code></pre></div>
 <p>The size is still tiny, but the <code>rules</code> column for <code>CLAUDE.md</code> fails, because with two entry points there are two places for instructions to drift apart. The report's fix is the one-line <code>@AGENTS.md</code> body.</p>
