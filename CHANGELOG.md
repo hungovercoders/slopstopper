@@ -4,6 +4,20 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.28.0](https://github.com/hungovercoders/slopstopper/compare/v0.27.0...v0.28.0) (2026-10-31)
+
+
+### Features
+
+* **app:** a Learn page for the course, and no sideways scroll on narrow phones ([#586](https://github.com/hungovercoders/slopstopper/issues/586)) ([b7f6051](https://github.com/hungovercoders/slopstopper/commit/b7f6051bc997c564de9ff6e19b872d2542ec5f29)), closes [#585](https://github.com/hungovercoders/slopstopper/issues/585)
+* **install:** install-skill.sh refreshes the skills from the pinned CLI ([#575](https://github.com/hungovercoders/slopstopper/issues/575)) ([995aaa0](https://github.com/hungovercoders/slopstopper/commit/995aaa0cdfb6fd799d86a3fdf8c445e94fd32c2b)), closes [#571](https://github.com/hungovercoders/slopstopper/issues/571)
+
+
+### Bug Fixes
+
+* **ci:** keep the Playwright cache on a red run, bound the apt phase and skip it on hosted runners ([#582](https://github.com/hungovercoders/slopstopper/issues/582)) ([dff126e](https://github.com/hungovercoders/slopstopper/commit/dff126e1383523062a4274f233c4f79f837a7509))
+* **licences:** a stdlib-only project passes, and a tooling error is not posted as a licence failure ([#584](https://github.com/hungovercoders/slopstopper/issues/584)) ([0f2a955](https://github.com/hungovercoders/slopstopper/commit/0f2a955607cdb49f8b2fd0c0cf74e33439eddea1))
+
 ## [0.27.0](https://github.com/hungovercoders/slopstopper/compare/v0.26.0...v0.27.0) (2026-10-31)
 
 
