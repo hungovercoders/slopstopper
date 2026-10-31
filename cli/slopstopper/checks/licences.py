@@ -358,6 +358,17 @@ def _python_manifests(root: Path) -> list[Path]:
     return [d / m for d in _manifest_dirs(root) for m in PYTHON_MANIFESTS if (d / m).is_file()]
 
 
+def _poetry_specs(poetry: dict) -> tuple[list[str], list[str]]:
+    """(dependency names, group dependency names) from Poetry's tables,
+    minus the `python` pin."""
+    runtime = [n for n in (poetry.get("dependencies") or {}) if n.lower() != "python"]
+    groups = [
+        n for group in (poetry.get("group") or {}).values()
+        for n in (group.get("dependencies") or {}) if n.lower() != "python"
+    ]
+    return runtime, groups
+
+
 def _pyproject_specs(data: dict) -> tuple[list[str], list[str], set[str]]:
     """(runtime dependency specs, optional specs, project names) a parsed
     pyproject declares, from `[project]` and from Poetry's tables. The
@@ -366,14 +377,10 @@ def _pyproject_specs(data: dict) -> tuple[list[str], list[str], set[str]]:
     project = data.get("project") or {}
     poetry = (data.get("tool") or {}).get("poetry") or {}
     projects = {_normalise_name("pypi", str(n)) for n in (project.get("name"), poetry.get("name")) if n}
-    specs = list(project.get("dependencies", []))
-    optional: list[str] = []
-    for extra in (project.get("optional-dependencies") or {}).values():
-        optional += list(extra)
-    specs += [name for name in (poetry.get("dependencies") or {}) if name.lower() != "python"]
-    for group in (poetry.get("group") or {}).values():
-        optional += [name for name in (group.get("dependencies") or {}) if name.lower() != "python"]
-    return specs, optional, projects
+    extras = [spec for extra in (project.get("optional-dependencies") or {}).values() for spec in extra]
+    poetry_runtime, poetry_groups = _poetry_specs(poetry)
+    specs = list(project.get("dependencies", [])) + poetry_runtime
+    return specs, extras + poetry_groups, projects
 
 
 def _requirements_specs(text: str) -> list[str]:
@@ -557,19 +564,29 @@ def _inventory(root: Path, include_dev: bool) -> tuple[list[dict], list[str], li
                 skipped.append(f"`{(d / name).relative_to(root)}` carries no licence data, so that tree was not judged")
     manifests = _python_manifests(root)
     if manifests:
-        found = _python_packages(root, manifests, include_dev)
-        if isinstance(found, str):
-            failures.append(found)
-        elif not found:
-            skipped.append(f"{', '.join(f'`{m.relative_to(root)}`' for m in manifests)} declare no runtime dependencies the check can read, so no Python environment was judged")
-        else:
-            packages += found
-            skipped.append(f"Python packages read from `{found[0]['source']}`")
-        for manifest in manifests:
-            _, _, optional = _declared(manifest, include_dev)
-            if optional:
-                skipped.append(f"`{manifest.relative_to(root)}`: {len(optional)} optional (extras / Poetry group) dependencies not judged (they do not ship; `security.licences.include_dev: true` judges them too)")
+        found, notes, failed = _python_inventory(root, manifests, include_dev)
+        packages += found
+        skipped += notes
+        failures += failed
     return packages, skipped, failures
+
+
+def _python_inventory(root: Path, manifests: list[Path], include_dev: bool) -> tuple[list[dict], list[str], list[str]]:
+    """The Python part of `_inventory`: (packages, notes, failures)."""
+    names = ", ".join(f"`{m.relative_to(root)}`" for m in manifests)
+    notes: list[str] = []
+    found = _python_packages(root, manifests, include_dev)
+    if isinstance(found, str):
+        return [], notes, [found]
+    if found:
+        notes.append(f"Python packages read from `{found[0]['source']}`")
+    else:
+        notes.append(f"{names} declare no runtime dependencies the check can read, so no Python environment was judged")
+    for manifest in manifests:
+        _, _, optional = _declared(manifest, include_dev)
+        if optional:
+            notes.append(f"`{manifest.relative_to(root)}`: {len(optional)} optional (extras / Poetry group) dependencies not judged (they do not ship; `security.licences.include_dev: true` judges them too)")
+    return found, notes, []
 
 
 def _cannot_run(reasons: list[str]) -> int:
