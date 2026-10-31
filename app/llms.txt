@@ -14,6 +14,7 @@ deployed with the same suite it advertises.
 - [Home](https://slopstopper.dev/): what SlopStopper is and how to get started
 - [Features](https://slopstopper.dev/features.html): the five loops (security, hygiene, reliability and operational are installed; deployment shows how this site ships, to copy) and every check
 - [Tools](https://slopstopper.dev/tools.html): the underlying kit: Semgrep, OWASP ZAP, Trivy, Gitleaks, Playwright, axe-core, Lighthouse CI, GitHub Actions, Task
+- [Learn](https://slopstopper.dev/learn.html): the course, twenty-one short lessons, each check explained and run against a demo repo the CLI writes
 - [Feedback](https://slopstopper.dev/feedback.html): report a bug or request a check
 - [Privacy](https://slopstopper.dev/privacy.html): what the site collects (nothing of its own), what Cloudflare keeps as the host, and which other services the pages reach
 

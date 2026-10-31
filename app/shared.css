@@ -852,6 +852,15 @@ footer a {
     .header-actions .btn--gh .btn__label {
         display: none;
     }
+    /* Five nav links on one row down to a 360px phone; the touch target
+       keeps its height, only the side padding narrows. */
+    header nav {
+        gap: 0;
+    }
+    header nav a {
+        padding: 0.65rem 0.45rem;
+        font-size: 0.9rem;
+    }
 }
 
 /* ─── Narrow phone header ────────────────────────────────── */

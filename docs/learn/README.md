@@ -102,8 +102,10 @@ and the verdicts are the same.
 | 19 | [Profiles and tailoring](19-profiles-and-tailoring.md) | `profile show`, `detect` and `list`, `workflows.enabled`, the pin in `mise.toml` | coming soon |
 | 20 | [Inside slopstopper: add a check](20-inside-slopstopper.md) | The registry, the registration test, the shape every check shares | coming soon |
 
-A lesson without a link is not written yet; issue #483 tracks each one.
-The episode column links the video once it is recorded. The title,
+The same list is on the site at
+[slopstopper.dev/learn.html](https://slopstopper.dev/learn.html), which
+links each lesson here. The episode column links the video once it is
+recorded. The title,
 thumbnail and description every episode follows are in
 [EPISODES.md](EPISODES.md), and `docs/learn/tapes/NN.tape` holds each
 lesson's terminal parts, generated from its runnable blocks.
