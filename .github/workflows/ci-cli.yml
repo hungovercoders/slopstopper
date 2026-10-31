@@ -236,5 +236,8 @@ jobs:
         if: contains(matrix.tools, 'vhs')
         run: python scripts/learntapes.py --check
       - name: The lesson pages match their lessons
+        # One shard is enough; cli/tests/test_learn_site.py runs the same
+        # check in the pytest job on every pull request.
+        if: contains(matrix.tools, 'vhs')
         run: python scripts/learnsite.py --check
       - run: python scripts/learncheck.py --page "${{ matrix.pages }}"

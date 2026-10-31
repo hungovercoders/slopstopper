@@ -42,6 +42,7 @@ stray or cannot be rendered, 2 there are no lessons to read.
 from __future__ import annotations
 
 import argparse
+import functools
 import html
 import re
 import sys
@@ -83,24 +84,45 @@ class Lesson:
     number: int
     source: Path
     title: str
+    text: str
 
     @property
     def page(self) -> str:
         return self.source.stem + ".html"
 
     @property
+    def plain_title(self) -> str:
+        """The title without inline markup, for the tab, the share tags and
+        the links between lessons, where no HTML can go."""
+        return plain(self.title)
+
+    @property
     def heading(self) -> str:
-        return f"Lesson {self.number}: {self.title}"
+        return f"Lesson {self.number}: {self.plain_title}"
+
+    @property
+    def where(self) -> str:
+        return str(self.source.relative_to(ROOT))
+
+    @property
+    def body(self) -> str:
+        return self.text.split("\n", 1)[1]
+
+
+def plain(text: str) -> str:
+    """Markdown inline markup stripped: backticks and bold markers."""
+    return re.sub(r"\*\*(.+?)\*\*", r"\1", re.sub(r"`([^`]*)`", r"\1", text))
 
 
 def lessons() -> list[Lesson]:
     found = []
     for path in sorted(LEARN.glob("[0-9]*.md")):
-        first = path.read_text(encoding="utf-8").splitlines()[0]
+        text = path.read_text(encoding="utf-8")
+        first = text.split("\n", 1)[0]
         m = _H1.match(first)
         if not m:
             raise RenderError(f"{path.relative_to(ROOT)}:1: expected '# Lesson N: title', got {first!r}")
-        found.append(Lesson(int(m.group(1)), path, m.group(2).strip()))
+        found.append(Lesson(int(m.group(1)), path, m.group(2).strip(), text))
     return found
 
 
@@ -179,28 +201,33 @@ def strip_comment(line: str, at: str) -> str:
     return stripped
 
 
-def convert(text: str, where: str) -> str:
+def convert(text: str, where: str, base: int = 1) -> str:
     """Markdown in the lessons' subset to HTML: one block at a time, each
-    block reader returning its HTML and the line after it."""
+    block reader returning its HTML and the line after it. `base` is the
+    file line of the first line of `text`, so an error names the real line."""
     lines = text.splitlines()
     out: list[str] = []
     i = 0
     while i < len(lines):
-        at = f"{where}:{i + 1}"
+        at = f"{where}:{base + i}"
         line = strip_comment(lines[i], at)
         if not line.strip():
             i += 1
             continue
         if _FENCE.match(line):
             block, i = fence_block(lines, i, at)
+        elif line.startswith("```"):
+            raise RenderError(f"{at}: a fence is three backticks and a language or nothing, not {line.strip()!r}")
         elif _HEADING.match(line):
             block, i = heading_block(line, i, at)
-        elif line.startswith("|") and i + 1 < len(lines) and _TABLE_RULE.match(lines[i + 1]):
+        elif line.startswith("|"):
+            if i + 1 >= len(lines) or not _TABLE_RULE.match(lines[i + 1]):
+                raise RenderError(f"{at}: a table's header row must be followed by its rule row")
             block, i = table_block(lines, i, at)
         elif _BULLET.match(line) or _NUMBERED.match(line):
-            block, i = list_block(lines, i, where)
+            block, i = list_block(lines, i, where, base)
         elif line.strip() == "<details>":
-            block, i = details_block(lines, i, where)
+            block, i = details_block(lines, i, where, base)
         elif line.startswith(("<", "#", ">", "* ", "+ ", "  ")):
             raise RenderError(f"{at}: {line.strip()[:60]!r} is outside the markdown the lessons use")
         else:
@@ -243,10 +270,12 @@ def _starts_block(line: str) -> bool:
     return bool(_BULLET.match(line) or _NUMBERED.match(line) or _HEADING.match(line))
 
 
-def list_block(lines: list[str], i: int, where: str) -> tuple[str, int]:
+def list_block(lines: list[str], i: int, where: str, base: int) -> tuple[str, int]:
     """A flat list; an item continues on the indented lines under it, and
-    one blank line between items keeps the list going."""
-    at = f"{where}:{i + 1}"
+    one blank line between items keeps the list going. A block of another
+    kind under an item is not supported, and says so rather than being
+    flattened into the item."""
+    at = f"{where}:{base + i}"
     ordered = bool(_NUMBERED.match(lines[i]))
     pattern = _NUMBERED if ordered else _BULLET
     items: list[str] = []
@@ -255,7 +284,9 @@ def list_block(lines: list[str], i: int, where: str) -> tuple[str, int]:
         i += 1
         while i < len(lines) and lines[i].strip() and not pattern.match(lines[i]):
             if _starts_block(lines[i]):
-                raise RenderError(f"{where}:{i + 1}: a list of one kind inside another is not supported")
+                raise RenderError(f"{where}:{base + i}: a list of one kind inside another is not supported")
+            if lines[i].lstrip().startswith(("```", "|", "<")):
+                raise RenderError(f"{where}:{base + i}: a code fence, table or <details> inside a list item is not supported")
             item.append(lines[i].strip())
             i += 1
         items.append(inline(" ".join(item), at))
@@ -265,13 +296,14 @@ def list_block(lines: list[str], i: int, where: str) -> tuple[str, int]:
     return f"<{tag}>\n" + "\n".join(f"  <li>{item}</li>" for item in items) + f"\n</{tag}>", i
 
 
-def details_block(lines: list[str], i: int, where: str) -> tuple[str, int]:
-    at = f"{where}:{i + 1}"
+def details_block(lines: list[str], i: int, where: str, base: int) -> tuple[str, int]:
+    at = f"{where}:{base + i}"
     if i + 1 >= len(lines) or not (m := re.fullmatch(r"<summary>(.+)</summary>", lines[i + 1].strip())):
         raise RenderError(f"{at}: <details> must be followed by a one-line <summary>")
     summary = m.group(1)
     depth, body = 1, []
     i += 2
+    body_base = base + i
     while i < len(lines):
         if lines[i].strip() == "<details>":
             depth += 1
@@ -287,7 +319,7 @@ def details_block(lines: list[str], i: int, where: str) -> tuple[str, int]:
         '<details class="details">\n'
         f"  <summary>{inline(summary, at)}</summary>\n"
         '  <div class="details__body">\n'
-        + convert("\n".join(body), where)
+        + convert("\n".join(body), where, body_base)
         + "\n  </div>\n</details>"
     )
     return block, i + 1
@@ -336,25 +368,34 @@ def table(head: list[str], rows: list[list[str]], at: str) -> str:
 # ── the page ─────────────────────────────────────────────────────
 
 
+@functools.lru_cache(maxsize=1)
 def chrome() -> tuple[str, str, str]:
-    """The Learn page's head links, header and footer, with paths one
-    directory up, so a lesson page is the same site as every other page."""
+    """The Learn page's head links, its skip link and header, and its
+    footer, with paths one directory up, so a lesson page is the same site
+    as every other page. Read once per run."""
     page = INDEX.read_text(encoding="utf-8")
 
     def up(block: str) -> str:
         return _REL_HREF.sub(lambda m: f'{m.group(1)}="../{m.group(2)}"', block)
 
+    def between(start: str, end: str, what: str) -> str:
+        try:
+            begin = page.index(start)
+            return page[begin:page.index(end, begin) + (len(end) if end.startswith("</") else 0)]
+        except ValueError:
+            raise RenderError(f"app/learn.html: no {what} between {start.strip()!r} and {end.strip()!r}") from None
+
     head = "\n".join(
-        line for line in page[page.index("<head>"):page.index("</head>")].splitlines()
+        line for line in between("<head>", "</head>", "head").splitlines()
         if re.search(r'rel="(icon|apple-touch-icon|manifest|preload)"', line)
     )
-    header = page[page.index("    <header>"):page.index("    <main")]
-    header = header.replace(' aria-current="page"', "")
-    footer = page[page.index("    <footer>"):page.index("</body>")]
+    header = between('    <a href="#main"', "    <main", "skip link and header").replace(' aria-current="page"', "")
+    footer = between("    <footer>", "</footer>", "footer") + "\n"
     return up(head), up(header), up(footer)
 
 
 def goal(text: str) -> str:
+    """The '**Goal.**' paragraph, as a plain-text description."""
     m = re.search(r"^\*\*Goal\.\*\*\s*(.+?)(?:\n\n|\Z)", text, re.M | re.S)
     if not m:
         raise RenderError("no '**Goal.**' paragraph to describe the page with")
@@ -363,14 +404,9 @@ def goal(text: str) -> str:
 
 
 def render(lesson: Lesson, all_lessons: list[Lesson]) -> str:
-    where = str(lesson.source.relative_to(ROOT))
-    text = lesson.source.read_text(encoding="utf-8")
-    body = text.split("\n", 1)[1]
-    description = goal(body)
-    try:
-        content = convert(body, where)
-    except RenderError as exc:
-        raise RenderError(str(exc)) from None
+    where = lesson.where
+    description = goal(lesson.body)
+    content = convert(lesson.body, where, base=2)
     head_links, header, footer = chrome()
     index = all_lessons.index(lesson)
     prev = all_lessons[index - 1] if index else None
@@ -380,11 +416,11 @@ def render(lesson: Lesson, all_lessons: list[Lesson]) -> str:
     esc = lambda s: html.escape(s, quote=True)  # noqa: E731
     nav = ['<nav class="lesson-nav" aria-label="Lessons">']
     nav.append(
-        f'  <a class="lesson-nav__prev" href="{prev.page}">← Lesson {prev.number}: {esc(prev.title)}</a>' if prev
+        f'  <a class="lesson-nav__prev" href="{prev.page}">← {esc(prev.heading)}</a>' if prev
         else '  <a class="lesson-nav__prev" href="../learn.html">← The course</a>'
     )
     nav.append(
-        f'  <a class="lesson-nav__next" href="{nxt.page}">Lesson {nxt.number}: {esc(nxt.title)} →</a>' if nxt
+        f'  <a class="lesson-nav__next" href="{nxt.page}">{esc(nxt.heading)} →</a>' if nxt
         else '  <a class="lesson-nav__next" href="../learn.html">Back to the course →</a>'
     )
     nav.append("</nav>")
@@ -465,7 +501,7 @@ def sitemap_text(all_lessons: list[Lesson]) -> str:
 
 def llms_text(all_lessons: list[Lesson]) -> str:
     entries = "\n".join(
-        f"- [{lesson.heading}]({SITE_URL}learn/{lesson.page}): {goal(lesson.source.read_text(encoding='utf-8'))}"
+        f"- [{lesson.heading}]({SITE_URL}learn/{lesson.page}): {goal(lesson.body)}"
         for lesson in all_lessons
     )
     return with_block(LLMS.read_text(encoding="utf-8"), entries, "app/llms.txt")

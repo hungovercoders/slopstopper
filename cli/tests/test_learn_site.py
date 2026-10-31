@@ -29,3 +29,18 @@ def test_the_lesson_pages_match_their_lessons():
         "the lesson pages, or the sitemap and llms.txt entries, are out of date; "
         "run `task contributing:learn:site` and commit the result:\n" + result.stdout + result.stderr
     )
+
+
+def test_the_audit_page_lists_carry_every_lesson_page():
+    """`.slopstopper.yml`'s pages.* lists are hand-written; the generator
+    owns the sitemap and llms.txt but not these, so this keeps them in
+    step with the pages under app/learn/."""
+    config = (REPO_ROOT / ".slopstopper.yml").read_text(encoding="utf-8")
+    pages = sorted("/learn/" + p.name for p in (REPO_ROOT / "app" / "learn").glob("*.html"))
+    assert pages, "no lesson pages under app/learn/"
+    for key in ("smoke", "accessibility", "seo", "broken_links"):
+        line = next(l for l in config.splitlines() if l.strip().startswith(f"{key}:"))
+        listed = sorted(p for p in line.split(":", 1)[1].split(",") if p.strip().startswith("/learn/"))
+        assert [p.strip() for p in listed] == pages, (
+            f"pages.{key} in .slopstopper.yml does not list exactly the lesson pages under app/learn/"
+        )
