@@ -120,6 +120,23 @@ def test_the_dependency_review_reads_the_seeded_allowlist():
     assert own == template, "this repository runs the default it ships"
 
 
+@pytest.mark.parametrize("workflow, step", [
+    ("ss-security-licences-check.yml", "licences"),
+    ("ss-security-dast-check.yml", "dast"),
+])
+def test_the_pr_comment_reads_the_same_exit_code_as_the_issue_steps(workflow, step):
+    """Only rc 1 is a finding; rc 2 means the check did not run. The issue
+    steps always read the recorded code, and the PR comment must too, or a
+    tooling error is posted as a failure of the check (#567)."""
+    text = _text(workflow)
+    assert f"steps.{step}.outputs.rc == '1'" in text, "the issue step keys on rc 1"
+    assert (
+        f"--status ${{{{ steps.{step}.outputs.rc == '0' && 'pass' || steps.{step}.outputs.rc == '1' && 'fail' || 'error' }}}}"
+        in text
+    ), "the PR comment's status is derived from rc: 0 pass, 1 fail, anything else error"
+    assert f"steps.{step}.outcome == 'success' && 'pass' || 'fail'" not in text
+
+
 def test_a_missing_licence_allowlist_is_announced_not_silent():
     """Deleting the allowlist turns the licence check off; the run must say
     so rather than pass as if licences had been checked."""

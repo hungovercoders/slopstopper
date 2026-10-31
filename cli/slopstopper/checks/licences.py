@@ -17,8 +17,11 @@ No tool is installed for it:
   - Python: `python3 -m pip inspect` lists the packages installed in that
     interpreter's environment with their metadata, which is where a
     Python project's resolved tree lives. The check refuses to pass when
-    the manifest's declared dependencies are not installed there, so an
-    empty environment never reads as clean.
+    neither the manifest's declared runtime dependencies nor the project
+    itself is installed there, so an empty environment never reads as
+    clean; a project that declares no runtime dependencies judges nothing
+    and passes. Optional extras and Poetry dependency groups do not ship,
+    so they count only when `include_dev` is on.
 
 A licence the metadata does not state, or states in a form that is not
 an SPDX expression, is listed as unknown and never fails the run, the
@@ -31,7 +34,7 @@ Configuration (.slopstopper.yml):
     security:
       licences:
         policy: .github/dependency-review-config.yml  # the allowlist dependency review reads
-        include_dev: false    # also judge npm devDependencies
+        include_dev: false    # also judge npm devDependencies, Python extras and Poetry groups
         python: python3       # interpreter whose environment holds the Python dependencies
 
 Exit codes:
@@ -355,20 +358,29 @@ def _python_manifests(root: Path) -> list[Path]:
     return [d / m for d in _manifest_dirs(root) for m in PYTHON_MANIFESTS if (d / m).is_file()]
 
 
-def _pyproject_specs(data: dict) -> tuple[list[str], set[str]]:
-    """(dependency specs, project names) a parsed pyproject declares, from
-    `[project]` and from Poetry's tables."""
+def _poetry_specs(poetry: dict) -> tuple[list[str], list[str]]:
+    """(dependency names, group dependency names) from Poetry's tables,
+    minus the `python` pin."""
+    runtime = [n for n in (poetry.get("dependencies") or {}) if n.lower() != "python"]
+    groups = [
+        n for group in (poetry.get("group") or {}).values()
+        for n in (group.get("dependencies") or {}) if n.lower() != "python"
+    ]
+    return runtime, groups
+
+
+def _pyproject_specs(data: dict) -> tuple[list[str], list[str], set[str]]:
+    """(runtime dependency specs, optional specs, project names) a parsed
+    pyproject declares, from `[project]` and from Poetry's tables. The
+    optional ones are `[project.optional-dependencies]` extras and Poetry's
+    dependency groups: installed on request, not shipped (#578)."""
     project = data.get("project") or {}
     poetry = (data.get("tool") or {}).get("poetry") or {}
     projects = {_normalise_name("pypi", str(n)) for n in (project.get("name"), poetry.get("name")) if n}
-    specs = list(project.get("dependencies", []))
-    for extra in (project.get("optional-dependencies") or {}).values():
-        specs += list(extra)
-    poetry_deps = dict(poetry.get("dependencies") or {})
-    for group in (poetry.get("group") or {}).values():
-        poetry_deps.update(group.get("dependencies") or {})
-    specs += [name for name in poetry_deps if name.lower() != "python"]
-    return specs, projects
+    extras = [spec for extra in (project.get("optional-dependencies") or {}).values() for spec in extra]
+    poetry_runtime, poetry_groups = _poetry_specs(poetry)
+    specs = list(project.get("dependencies", [])) + poetry_runtime
+    return specs, extras + poetry_groups, projects
 
 
 def _requirements_specs(text: str) -> list[str]:
@@ -376,23 +388,33 @@ def _requirements_specs(text: str) -> list[str]:
     return [s for s in specs if s and not s.startswith("-")]
 
 
-def _declared(manifest: Path) -> tuple[set[str], set[str]]:
-    """(dependency names, project names) a manifest declares, normalised."""
-    text = manifest.read_text(encoding="utf-8", errors="replace")
-    projects: set[str] = set()
-    if manifest.name == "pyproject.toml":
-        try:
-            specs, projects = _pyproject_specs(tomllib.loads(text))
-        except tomllib.TOMLDecodeError:
-            return set(), projects
-    else:
-        specs = _requirements_specs(text)
-    deps = set()
+def _names(specs: list[str]) -> set[str]:
+    names = set()
     for spec in specs:
         m = re.match(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)", spec)
         if m:
-            deps.add(_normalise_name("pypi", m.group(1)))
-    return deps, projects
+            names.add(_normalise_name("pypi", m.group(1)))
+    return names
+
+
+def _declared(manifest: Path, include_dev: bool = False) -> tuple[set[str], set[str], set[str]]:
+    """(dependency names, project names, optional names left out) a manifest
+    declares, normalised. With `include_dev` the optional names (extras,
+    Poetry groups) count as declared and the third set is empty."""
+    text = manifest.read_text(encoding="utf-8", errors="replace")
+    projects: set[str] = set()
+    optional: list[str] = []
+    if manifest.name == "pyproject.toml":
+        try:
+            specs, optional, projects = _pyproject_specs(tomllib.loads(text))
+        except tomllib.TOMLDecodeError:
+            return set(), projects, set()
+    else:
+        specs = _requirements_specs(text)
+    deps, extras = _names(specs), _names(optional)
+    if include_dev:
+        return deps | extras, projects, set()
+    return deps, projects, extras - deps
 
 
 def _python_licence(metadata: dict) -> str | None:
@@ -442,11 +464,13 @@ def _python_interpreter(root: Path, manifests: list[Path]) -> str | None:
     return shutil.which("python3")
 
 
-def _python_packages(root: Path, manifests: list[Path]) -> list[dict] | str:
+def _python_packages(root: Path, manifests: list[Path], include_dev: bool = False) -> list[dict] | str:
     """The packages installed in the configured interpreter, once the
-    manifests' declared dependencies are among them. A manifest that
-    declares nothing the check can read judges nothing, rather than
-    whatever environment happens to be on PATH."""
+    manifests' declared runtime dependencies, or the project itself, are
+    among them. A manifest that declares nothing the check can read judges
+    nothing, rather than whatever environment happens to be on PATH; so
+    does a project with no runtime dependencies, which is what an installed
+    stdlib-only package resolves to (#578)."""
     python = _python_interpreter(root, manifests)
     if not python:
         return "no `python3` on PATH to inspect; set security.licences.python to the interpreter whose environment holds the project's dependencies"
@@ -456,13 +480,13 @@ def _python_packages(root: Path, manifests: list[Path]) -> list[dict] | str:
     declared: set[str] = set()
     projects: set[str] = set()
     for manifest in manifests:
-        d, p = _declared(manifest)
+        d, p, _ = _declared(manifest, include_dev)
         declared |= d
         projects |= p
     installed = {_normalise_name("pypi", str(m.get("name", ""))): m for m in metadata if m.get("name")}
     if not declared:
         return []
-    if not (declared & set(installed)):
+    if not ((declared | projects) & set(installed)):
         return (
             f"none of the dependencies declared in {', '.join(f'`{m.relative_to(root)}`' for m in manifests)} is installed in "
             f"`{python}`'s environment, so there is no resolved tree to inventory; install the project there first "
@@ -540,15 +564,29 @@ def _inventory(root: Path, include_dev: bool) -> tuple[list[dict], list[str], li
                 skipped.append(f"`{(d / name).relative_to(root)}` carries no licence data, so that tree was not judged")
     manifests = _python_manifests(root)
     if manifests:
-        found = _python_packages(root, manifests)
-        if isinstance(found, str):
-            failures.append(found)
-        elif not found:
-            skipped.append(f"{', '.join(f'`{m.relative_to(root)}`' for m in manifests)} declare no dependencies the check can read, so no Python environment was judged")
-        else:
-            packages += found
-            skipped.append(f"Python packages read from `{found[0]['source']}`")
+        found, notes, failed = _python_inventory(root, manifests, include_dev)
+        packages += found
+        skipped += notes
+        failures += failed
     return packages, skipped, failures
+
+
+def _python_inventory(root: Path, manifests: list[Path], include_dev: bool) -> tuple[list[dict], list[str], list[str]]:
+    """The Python part of `_inventory`: (packages, notes, failures)."""
+    names = ", ".join(f"`{m.relative_to(root)}`" for m in manifests)
+    notes: list[str] = []
+    found = _python_packages(root, manifests, include_dev)
+    if isinstance(found, str):
+        return [], notes, [found]
+    if found:
+        notes.append(f"Python packages read from `{found[0]['source']}`")
+    else:
+        notes.append(f"{names} declare no runtime dependencies the check can read, so no Python environment was judged")
+    for manifest in manifests:
+        _, _, optional = _declared(manifest, include_dev)
+        if optional:
+            notes.append(f"`{manifest.relative_to(root)}`: {len(optional)} optional (extras / Poetry group) dependencies not judged (they do not ship; `security.licences.include_dev: true` judges them too)")
+    return found, notes, []
 
 
 def _cannot_run(reasons: list[str]) -> int:

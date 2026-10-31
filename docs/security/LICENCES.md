@@ -17,7 +17,7 @@ cat .ss/reports/licences/licences-report.md
 | Ecosystem | Source of the tree | Needs |
 | --------- | ------------------ | ----- |
 | npm | `package-lock.json` (lockfile version 2 or 3), at the root or one directory down; workspace packages are the repo's own code and are not judged | nothing installed: the lockfile records each package's `license` |
-| Python | `python3 -m pip inspect` of the interpreter the project is installed into; the report names which | the project's dependencies (from `[project]`, Poetry's tables or `requirements.txt`) installed there (a `.venv/` beside the manifest is used first, then `python3` on PATH). A manifest that declares nothing readable judges no environment |
+| Python | `python3 -m pip inspect` of the interpreter the project is installed into; the report names which | the project's runtime dependencies (from `[project.dependencies]`, `[tool.poetry.dependencies]` or `requirements.txt`), or the project itself, installed there; extras and Poetry groups count only with `include_dev` (a `.venv/` beside the manifest is used first, then `python3` on PATH). A manifest that declares nothing readable judges no environment |
 
 `yarn.lock` and `pnpm-lock.yaml` carry no licence data and are reported
 as not judged. A repo with no manifest at all passes with nothing to say.
