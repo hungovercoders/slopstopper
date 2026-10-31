@@ -25,6 +25,12 @@ in the [syllabus](README.md).
   source. Never a real deployment: nobody gets stuck at a login page.
   Steps that edit the sandbox end by putting it back
   (`git checkout <file>`, `rm`), so the next lesson starts clean.
+- **Render it onto the site.** `task contributing:learn:site` writes
+  `app/learn/NN-slug.html` from this page and the lesson entries in the
+  sitemap and `llms.txt`; commit them with the lesson. The converter
+  covers headings to three levels, paragraphs, bold, inline code,
+  links, fenced code, tables, flat lists and `<details>` blocks, and
+  fails on anything else, so stay inside that set.
 - **Mark runnable blocks** with an HTML comment on the line before the
   fence. `<!-- learn -->` means the block must exit 0;
   `<!-- learn: fails N -->` means it must exit exactly N (`fails 1` for
