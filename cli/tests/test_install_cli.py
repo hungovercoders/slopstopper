@@ -635,6 +635,19 @@ def test_skills_install_with_every_linked_reference_and_nothing_else(tmp_path):
     assert "slopstopper-install: installed" in result.stdout
 
 
+def test_only_skills_writes_the_skills_and_nothing_else(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    result = _run_install(target, args=["--only", "skills"])
+    assert result.returncode == 0, result.stderr
+    assert (target / ".claude/skills/slopstopper-install/SKILL.md").is_file()
+    assert (target / ".claude/skills/slopstopper-triage/references/reproduce.md").is_file()
+    for untouched in ("Taskfile.ss.yml", "mise.toml", ".github", ".githooks", ".slopstopper.yml", "package.json"):
+        assert not (target / untouched).exists(), untouched
+    assert "Installation complete" not in result.stdout
+    second = _run_install(target, args=["--only", "skills"])
+    assert "slopstopper-install: already up to date" in second.stdout
+
+
 def test_skills_are_refreshed_as_a_whole_directory(tmp_path):
     target = _make_minimal_target(tmp_path)
     assert _run_install(target, args=["--no-hooks"]).returncode == 0

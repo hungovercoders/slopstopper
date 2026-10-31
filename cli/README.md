@@ -46,7 +46,7 @@ slopstopper doctor [--json]                    # verify external tools are insta
 slopstopper profile {list, show, expand <n>, disabled, detect} [--json]   # project-shape profile (ui / api / library)
 slopstopper cloudflare preview-url <sha>       # a commit's Workers Builds preview URL, from Cloudflare's PR comment on stdin
 slopstopper demo [--out <dir>] [--force] [--json]   # write a small demo repo that two checks fail on, to try the suite
-slopstopper install [<dir>] [--profile <n>] [--no-task] [--no-skills] [--no-hooks] [--no-topic]   # write the suite into a repo from this CLI's own wheel
+slopstopper install [<dir>] [--profile <n>] [--no-task] [--no-skills] [--no-hooks] [--no-topic] [--only skills]   # write the suite (or just the skills) into a repo from this CLI's own wheel
 slopstopper --quiet …                          # suppress decorative output (CI logs)
 ```
 

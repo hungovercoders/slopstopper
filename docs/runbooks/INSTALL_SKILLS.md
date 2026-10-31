@@ -16,7 +16,7 @@ After install, Claude Code auto-picks the right skill for any SlopStopper-relate
 ## What you need
 
 - **Claude Code**, from [claude.com/claude-code](https://claude.com/claude-code). Skills land at project level regardless of whether Claude Code is installed on the machine running the install; any contributor who has Claude Code will pick them up when they open the repo.
-- **curl**, because `install-skill.sh` fetches each skill file from this repo. `install.sh` needs no network for this step: the `slopstopper install` it hands over to writes the skills its wheel carries.
+- **curl**, only in a repo with no pinned `slopstopper-cli`: there `install-skill.sh` fetches each skill file from this repo. In a repo `install.sh` has set up, it hands over to `mise exec -- slopstopper install --only skills`, which writes the skills the pinned CLI's wheel carries, with no network.
 - **Write access to the target repo**, since the scripts create `.claude/skills/` under the repo root.
 
 ## Install
@@ -65,7 +65,7 @@ Each skill's map file (SKILL.md) is short (about the ~2,000-token budget this re
 
 Nothing outside `<repo>/.claude/skills/slopstopper-*/` is touched. Per skill, the script fetches the map, checks it looks like a Claude Code skill (frontmatter present), then fetches every reference it links. Only linked files come across, so nothing else in the source tree ships. The result is copied next to the installed skill and then moved into place, so a failed download or copy leaves the installed copy as it was. A skill that fails is named at the end and the script exits non-zero; `install.sh` reports that as a warning and carries on.
 
-`install-skill.sh` fetches the skills on `main`. `slopstopper install` (what `install.sh` hands over to) writes the same two skills from the files the pinned `slopstopper-cli` ships, with the same rule (the map plus only the references it links, swapped in as a whole directory), so they always match the workflows and templates installed beside them.
+Where the skills come from depends on the repo. With a pinned `slopstopper-cli` (mise resolves `slopstopper` in the target), `install-skill.sh` hands over to `slopstopper install --only skills`, which writes the two skills from that version's wheel, with the same rule (the map plus only the references it links, swapped in as a whole directory), so they always match the workflows and templates installed beside them. Without a pin, or with `SLOPSTOPPER_REPO_RAW` set, it fetches the skills on `main` and says so.
 
 **Commit the resulting files** alongside the workflows that `install.sh` lands. The `.gitignore` block that `install.sh` appends already includes a carve-out for `.claude/skills/` so repos with a blanket `.claude/*` ignore don't silently shadow them.
 
