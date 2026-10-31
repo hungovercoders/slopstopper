@@ -11,6 +11,7 @@ Notation: C4 (Context + Container).
 | ------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
 | choosing or changing a project-shape profile (`profile:` key, `--profile`), or adding a workflow a profile should drop | Read [PROFILES.md](PROFILES.md) for the `ui` / `api` / `library` mapping and its design decisions |
 | changing how checks report on a PR (`slopstopper emit`, `ss-pr-summary.yml`, comment markers) | Read [PR_FEEDBACK.md](PR_FEEDBACK.md) for the one-summary + compact-comment design and why the summary reads GitHub, not the checks |
+| asking how adopters get upgraded or their slopstopper issues worked across an organisation, or changing a file, marker or flag the steward reads | Read [STEWARD.md](STEWARD.md) for the split with slopstopper-steward and the surfaces it relies on |
 
 ## Scope
 
