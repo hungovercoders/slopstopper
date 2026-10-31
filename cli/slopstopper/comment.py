@@ -139,9 +139,16 @@ def _headline(status: str, label: str, failures: list[str]) -> str:
     thresholds exceeded while deliberately exiting 0, so a ❌ here would
     contradict the ✅ the summary table shows for its green job. ⚠️ says
     "look at this" without claiming the check failed.
+
+    `error` is exit 2, the check could not run: an unreadable lockfile, a
+    missing interpreter, a scanner that died. The bullets below it are
+    the cause, not findings, so the headline must not read as a verdict
+    on the repo (#567).
     """
     if status == "pass":
         return f"### ✅ {label}: passed"
+    if status == "error":
+        return f"### ⚠️ {label}: could not run"
     icon, noun = ("⚠️", "alert") if status == "warn" else ("❌", "issue")
     count = len(failures)
     if count == 1:
@@ -162,7 +169,7 @@ def build_body(
     """Render the PR comment for one check.
 
     `status` is the check's own exit status as the workflow saw it
-    ('pass' / 'fail'). It is deliberately not inferred from the report
+    ('pass' / 'fail' / 'warn' / 'error'). It is deliberately not inferred from the report
     text, which varies per check and, for the advisory checks, says
     "THRESHOLDS EXCEEDED" on a run that exits 0.
     """

@@ -107,6 +107,17 @@ def test_fail_body_without_extractable_failures_still_says_failed():
     assert body.split("<details>")[0].strip() == "### ❌ SAST: failed"
 
 
+def test_error_status_says_could_not_run_and_lists_the_cause():
+    """Exit 2 is not a verdict: the headline must not read as a licence
+    (or any) failure, and the bullets are the reason it did not run (#567)."""
+    body = comment.build_body(
+        "security:licences", "# L\n\n**Overall:** did not complete\n- ❌ `package-lock.json` is lockfile version 1\n", status="error"
+    )
+    assert body.startswith("### ⚠️ Licences: could not run")
+    assert "failed" not in body.splitlines()[0]
+    assert "lockfile version 1" in body
+
+
 def test_warn_status_does_not_claim_a_failure():
     """docs-size exits 0 while reporting thresholds exceeded, so a ❌ here
     would contradict the ✅ its green job gets in the summary table."""

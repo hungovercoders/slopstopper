@@ -429,7 +429,8 @@ security:
   # reported, never failed.
   licences:
     policy: .github/dependency-review-config.yml
-    # npm devDependencies do not ship, so they are not judged unless this is true.
+    # npm devDependencies, Python extras and Poetry dependency groups do not
+    # ship, so they are not judged unless this is true.
     include_dev: false
     # Interpreter whose environment holds the project's Python dependencies.
     # Unset: a .venv/ or venv/ beside the manifest, else python3 on PATH.

@@ -257,13 +257,15 @@ def _add_emit(sub) -> None:
     )
     p.add_argument(
         "--status",
-        choices=["pass", "fail", "warn"],
+        choices=["pass", "fail", "warn", "error"],
         default="fail",
         help=(
             "The check's own outcome, as the workflow saw it (default: fail). "
-            "'warn' is for the advisory checks that report findings while exiting 0. "
+            "'warn' is for the advisory checks that report findings while exiting 0; "
+            "'error' is exit 2, the check could not run, so the comment names the cause "
+            "rather than claiming a finding. "
             "Drives the comment's verdict line instead of parsing the report. "
-            "Pass `--status ${{ steps.<id>.outcome == 'success' && 'pass' || 'fail' }}`"
+            "Pass `--status ${{ steps.<id>.outputs.rc == '0' && 'pass' || steps.<id>.outputs.rc == '1' && 'fail' || 'error' }}`"
         ),
     )
     p.add_argument(

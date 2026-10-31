@@ -255,7 +255,42 @@ def test_a_manifest_declaring_nothing_judges_no_environment(repo, monkeypatch, c
     _fake_pip(monkeypatch, [{"name": "stray", "version": "1.0", "license": "GPL-3.0"}])
     assert licences.run() == 0
     assert _report()["judged"] == 0
-    assert "declare no dependencies the check can read" in capsys.readouterr().out
+    assert "declare no runtime dependencies the check can read" in capsys.readouterr().out
+
+
+def test_a_project_with_no_runtime_dependencies_passes_once_installed(repo, monkeypatch, capsys):
+    """A stdlib-only package with only a `test` extra: the extra is not
+    installed by `pip install .`, and does not ship, so it must not make
+    the check refuse to run; the resolved runtime tree is empty (#578)."""
+    (repo / "pyproject.toml").write_text(
+        '[project]\nname = "tiny"\ndependencies = []\n[project.optional-dependencies]\ntest = ["pytest"]\n'
+    )
+    _fake_pip(monkeypatch, [{"name": "tiny", "version": "0.1", "license": "MIT"}, {"name": "pip", "version": "24.0", "license": "MIT"}])
+    assert licences.run() == 0
+    assert _report()["judged"] == 0
+    out = capsys.readouterr().out
+    assert "no runtime dependencies" in out
+    assert "1 optional (extras / Poetry group) dependencies not judged" in out
+
+
+def test_include_dev_counts_extras_and_poetry_groups_as_declared(repo, monkeypatch, write_config):
+    write_config("security:\n  licences:\n    include_dev: true\n")
+    (repo / "pyproject.toml").write_text(
+        '[project]\nname = "tiny"\ndependencies = []\n[project.optional-dependencies]\ntest = ["pytest"]\n'
+    )
+    _fake_pip(monkeypatch, [{"name": "tiny", "version": "0.1", "license": "MIT"}, {"name": "pytest", "version": "8.0", "license": "MIT"}])
+    assert licences.run() == 0
+    assert _report()["judged"] == 1, "pytest is judged once extras count"
+
+
+def test_the_installed_project_vouches_for_its_environment(repo, monkeypatch):
+    """The declared dependency is absent (an optional import the project
+    tolerates), but the project itself is installed, so the environment is
+    the project's and is judged rather than refused (#578)."""
+    (repo / "pyproject.toml").write_text('[project]\nname = "tiny"\ndependencies = ["requests"]\n')
+    _fake_pip(monkeypatch, [{"name": "tiny", "version": "0.1", "license": "MIT"}, {"name": "urllib3", "version": "2.0", "license": "MIT"}])
+    assert licences.run() == 0
+    assert [p["name"] for p in _report().get("packages", [])] == ["urllib3"] or _report()["judged"] == 1
 
 
 def test_an_environment_without_the_declared_dependencies_cannot_run(repo, monkeypatch, capsys):
