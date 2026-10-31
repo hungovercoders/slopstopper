@@ -474,19 +474,8 @@ def llms_text(all_lessons: list[Lesson]) -> str:
 # ── main ─────────────────────────────────────────────────────────
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--check", action="store_true", help="report stale, missing or stray pages and write nothing")
-    args = parser.parse_args()
-    try:
-        found = lessons()
-    except RenderError as exc:
-        print(f"✗ {exc}")
-        return 1
-    if not found:
-        print("learnsite: no lessons under docs/learn/", file=sys.stderr)
-        return 2
-
+def sync_pages(found: list[Lesson], check: bool) -> int:
+    """Write or check every lesson page and report strays; problems found."""
     problems = 0
     wanted = set()
     for lesson in found:
@@ -499,23 +488,28 @@ def main() -> int:
             print(f"✗ {exc}")
             problems += 1
             continue
-        if args.check:
-            if not target.exists():
-                print(f"✗ {rel} is missing; run `task contributing:learn:site`")
-                problems += 1
-            elif target.read_text(encoding="utf-8") != page:
-                print(f"✗ {rel} is stale; run `task contributing:learn:site`")
-                problems += 1
-            else:
-                print(f"✓ {rel}")
-            continue
-        OUT.mkdir(parents=True, exist_ok=True)
-        target.write_text(page, encoding="utf-8")
-        print(f"✓ {rel}")
+        if not check:
+            OUT.mkdir(parents=True, exist_ok=True)
+            target.write_text(page, encoding="utf-8")
+            print(f"✓ {rel}")
+        elif not target.exists():
+            print(f"✗ {rel} is missing; run `task contributing:learn:site`")
+            problems += 1
+        elif target.read_text(encoding="utf-8") != page:
+            print(f"✗ {rel} is stale; run `task contributing:learn:site`")
+            problems += 1
+        else:
+            print(f"✓ {rel}")
     for stray in sorted(OUT.glob("*")) if OUT.exists() else []:
         if stray.name not in wanted:
             print(f"✗ {stray.relative_to(ROOT)} has no lesson; delete it")
             problems += 1
+    return problems
+
+
+def sync_blocks(found: list[Lesson], check: bool) -> int:
+    """Write or check the lesson blocks in the sitemap and llms.txt; problems found."""
+    problems = 0
     for path, build in ((SITEMAP, sitemap_text), (LLMS, llms_text)):
         rel = path.relative_to(ROOT)
         try:
@@ -526,12 +520,28 @@ def main() -> int:
             continue
         if path.read_text(encoding="utf-8") == wanted_text:
             print(f"✓ {rel}")
-        elif args.check:
+        elif check:
             print(f"✗ {rel}'s lesson entries are stale; run `task contributing:learn:site`")
             problems += 1
         else:
             path.write_text(wanted_text, encoding="utf-8")
             print(f"✓ {rel}")
+    return problems
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--check", action="store_true", help="report stale, missing or stray pages and write nothing")
+    args = parser.parse_args()
+    try:
+        found = lessons()
+    except RenderError as exc:
+        print(f"✗ {exc}")
+        return 1
+    if not found:
+        print("learnsite: no lessons under docs/learn/", file=sys.stderr)
+        return 2
+    problems = sync_pages(found, args.check) + sync_blocks(found, args.check)
     if problems:
         print(f"learnsite: {problems} problem(s)")
         return 1
