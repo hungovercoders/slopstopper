@@ -37,7 +37,8 @@ them for anyone changing one:
   body markers `emit` writes, and the failure tracker's `workflow-failure`
   label and `❌ Workflow Failure: <name>` title.
 - **Method:** `.claude/skills/slopstopper-triage/` and
-  `.claude/skills/slopstopper-install/`, and the
+  `.claude/skills/slopstopper-install/` (on a big upgrade the agent works
+  the `## Refresh-only` section of its `references/refresh.md`), and the
   `slopstopper-workaround: hungovercoders/slopstopper#N` marker.
 - **Commands:** `slopstopper install --no-topic`, `slopstopper run --json`,
   `slopstopper checks list --json`, `slopstopper profile expand <n> --json`
