@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/01-install.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 1: Install slopstopper into a repo | SlopStopper</title>
+    <meta name="description" content="Install the suite into a repo, pick a profile, know what every file it wrote is for, and see which checks the repo is now carrying.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/01-install.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/01-install.html">
+    <meta property="og:title" content="Lesson 1: Install slopstopper into a repo | SlopStopper">
+    <meta property="og:description" content="Install the suite into a repo, pick a profile, know what every file it wrote is for, and see which checks the repo is now carrying.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 1: Install slopstopper into a repo | SlopStopper">
+    <meta name="twitter:description" content="Install the suite into a repo, pick a profile, know what every file it wrote is for, and see which checks the repo is now carrying.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 1</span>
+            <h1>Install slopstopper into a repo</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> Install the suite into a repo, pick a profile, know what every file it wrote is for, and see which checks the repo is now carrying.</p>
+<h2 id="why-this-lesson">Why this lesson</h2>
+<p>Adopters meet the installer first, and an installer that drops thirty files into a repo is itself a kind of slop unless every one of them can be explained. The suite earns the files by making each one answer a question you will ask later: where does a check run (the workflow), how do I run it here (the shim), which version runs (the pin), what does this repo configure (one YAML file), and where did the output go (one report directory). This lesson is the tour, so nothing in the repo is a mystery afterwards.</p>
+<p>The installer is the CLI: <code>slopstopper install</code> writes the suite from the files its own wheel carries, so the shims and workflows a repo gets are the ones the CLI that wrote them knows. The <code>install.sh</code> one-liner on the README does one thing on top: it pins <code>slopstopper-cli</code> in <code>mise.toml</code> and installs that version through <a href="https://mise.jdx.dev" rel="noopener noreferrer">mise</a>, then hands over to the same command. mise pins the CLI per repo, so two repos can run two versions and CI runs the same one you do; <code>task</code> comes from the same pin file, because <code>task ss:&lt;category&gt;:&lt;check&gt;</code> is the one surface humans, agents and CI all call.</p>
+<p>A <strong>profile</strong> names the repo's shape and switches off the checks that shape has no use for: <code>ui</code> (a site, every check), <code>api</code> (no browser surface, so the nine browser checks and the privacy statement are dropped), <code>library</code> (nothing deployed, so everything that needs a URL goes). The installer only ever subtracts, and <code>workflows.enabled</code> takes one check back. Lesson 19 goes deeper; here you pick <code>ui</code> and look at what it means.</p>
+<h2 id="you-will-need">You will need</h2>
+<ul>
+  <li>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH. Lantern is a repo that already has content, which is the common case: the suite is added to something, not the other way round.</li>
+  <li>mise, if you want the pin to install anything. Without it the installer still writes <code>mise.toml</code> and says so.</li>
+</ul>
+<h2 id="steps">Steps</h2>
+<h3 id="1-run-the-installer-with-a-profile">1. Run the installer with a profile</h3>
+<p><code>--no-topic</code> skips the one step that talks to GitHub (adding the <code>slopstopper</code> repo topic through <code>gh</code>), which a demo has no remote for.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper install --profile ui --no-topic | grep -v '^ ' | grep -E 'installed|pinned|refreshed|seeded|skipping|already|Added|appended'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>✅ Taskfile.ss.yml installed (refreshed)
+✅ Taskfile.yml installed
+ℹ️  .slopstopper.yml: profile already 'ui'
+✅ slopstopper-cli &lt;this CLI's version&gt; pinned in mise.toml
+✅ 27 workflow(s) installed, 0 refreshed, 0 previously-deleted skipped
+✅ composite actions refreshed under .github/actions/ (ss-playwright, ss-resolve-url, ss-setup)
+ℹ️  profile 'ui': 4 workflow(s) not installed for this repo shape (0 removed from a previous install)
+✅ Added devDependencies: markdownlint-cli
+✅ .github/labeler.yml: seeded
+✅ .github/dependency-review-config.yml: seeded
+ℹ️  public/_headers: no public/ directory in target, so skipping. Add one and re-run if you want the baseline.
+✅ .zap/rules.tsv: seeded
+✅ .markdownlint.json: seeded
+ℹ️  README.md: already exists, so leaving it alone
+ℹ️  AGENTS.md: already exists, so leaving it alone
+ℹ️  CLAUDE.md: already exists, so leaving it alone
+ℹ️  docs/README.md: already exists, so leaving it alone
+✅ .gitignore: appended slopstopper block
+✅ slopstopper-install: installed
+✅ slopstopper-triage: installed
+✅ pre-push hook installed (core.hooksPath → .githooks)</code></pre></div>
+<p>Trimmed to the lines that name a file. Three things to notice before the tour. The CLI version is <strong>pinned</strong>: the installer wrote its own version into <code>mise.toml</code>, a later run installs that same version and never moves it, so a release upstream cannot reach this repo unannounced (<code>install.sh --upgrade-cli</code> moves the pin, on purpose, in a commit). Four workflows were <strong>not installed</strong>: the <code>ui</code> profile holds back the API checks until the repo shows an API, so a static site does not run four jobs that check nothing. And every file Lantern already had (its config, its README, its <code>AGENTS.md</code>) was <strong>left alone</strong>: the installer seeds what is missing and never overwrites what is yours.</p>
+<h3 id="2-tour-what-landed">2. Tour what landed</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git status --short</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code> M .gitignore
+ M package.json
+?? .claude/
+?? .githooks/
+?? .github/
+?? .markdownlint.json
+?? .ss/
+?? .zap/
+?? Taskfile.ss.yml
+?? Taskfile.yml
+?? mise.toml</code></pre></div>
+<p>Two files changed and nine added, in four groups:</p>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Files</th><th>What they are for</th></tr></thead>
+  <tbody>
+    <tr><td><code>.github/workflows/ss-*.yml</code>, <code>.github/actions/ss-*/</code></td><td>One workflow per check (lesson 17), each a handful of steps built on the three composite actions. The installer owns these; a refresh rewrites them.</td></tr>
+    <tr><td><code>Taskfile.ss.yml</code>, <code>Taskfile.yml</code>, <code>mise.toml</code>, <code>package.json</code></td><td>The shims (<code>task ss:*</code>), a root Taskfile that includes them under <code>ss</code>, the version pins, and the browser checks' npm dependencies merged into the manifest Lantern already had.</td></tr>
+    <tr><td><code>.zap/rules.tsv</code>, <code>.github/labeler.yml</code>, <code>.github/dependency-review-config.yml</code>, <code>.markdownlint.json</code></td><td>Config that is <strong>yours</strong>: seeded once, never overwritten. <code>.slopstopper.yml</code> is the same kind of file, and Lantern already had one, so nothing was seeded there. Every key the checks read is in <code>.slopstopper.yml.example</code> upstream.</td></tr>
+    <tr><td><code>.claude/skills/slopstopper-*/</code>, <code>.githooks/pre-push</code>, <code>.ss/</code>, the block in <code>.gitignore</code></td><td>The two Claude Code skills (lesson 18), the pre-push gate, the directory every check writes its reports under, and the ignore rules for what the checks leave behind.</td></tr>
+  </tbody>
+</table></div>
+<p>The pin is the whole of <code>mise.toml</code>:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>cat mise.toml</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>[tools]
+"node" = "20"
+"task" = "3"
+"pipx:slopstopper-cli" = "&lt;this CLI's version&gt;"</code></pre></div>
+<p>And <code>.ss/.workflows-installed</code> is the installer's memory: it lists the workflows it wrote, so a workflow you delete on purpose stays deleted on the next refresh (remove its line there to have it back). <code>.ss/.installed-from</code> names the version that wrote everything.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>wc -l &lt; .ss/.workflows-installed
+cat .ss/.installed-from</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>27
+&lt;this CLI's version&gt;</code></pre></div>
+<h3 id="3-see-what-the-profile-decided">3. See what the profile decided</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper profile show</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  Profile: ui  (from .slopstopper.yml)
+      A web UI: a site or app that serves HTML to a browser.
+
+  Disabled workflows (4):
+    · ss-hygiene-openapi-check.yml               (profile, no API detected)
+    · ss-reliability-api-health-check.yml        (profile, no API detected)
+    · ss-reliability-api-latency-check.yml       (profile, no API detected)
+    · ss-security-api-headers-check.yml          (profile, no API detected)</code></pre></div>
+<p>Every workflow that is missing is named, with the reason. Nothing is quietly off.</p>
+<h3 id="4-ask-which-tools-are-missing">4. Ask which tools are missing</h3>
+<p>Most checks subprocess-invoke a tool the CLI does not ship: Semgrep, Gitleaks, Trivy, Docker for ZAP. <code>doctor</code> says which are on PATH, and for each missing one, which check that affects and how to install it.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper doctor</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🩺 slopstopper doctor: checking external tools and workflows
+✅ node       found at …/node (v20.20.2)
+✅ gh         found at /opt/homebrew/bin/gh (gh version 2.101.0)
+✅ semgrep    found at /opt/homebrew/bin/semgrep (1.176.0)
+✅ gitleaks   found at …/gitleaks (gitleaks version 8.30.1)
+✅ trivy      found at …/trivy (Version: 0.74.0)
+✅ docker     found at /usr/local/bin/docker (Docker version 29.5.3)
+ℹ️  workflows  skipped: gh is missing, unauthenticated, or this isn't a GitHub repo
+✅ All required tools available.</code></pre></div>
+<p>A missing tool is not a failing check. Every check exits <strong>2</strong> when it cannot run (tool absent, input missing), which CI reports as "could not run" and never as a verdict about your code; exit 1 is reserved for "the repo failed it". Lesson 0 covered the contract; <code>doctor</code> is how you clear the 2s before the first PR.</p>
+<h3 id="5-see-everything-runnable">5. See everything runnable</h3>
+<p>Once mise has installed the pin (<code>mise install</code>, or just entering the directory with mise activated), <code>task</code> resolves to this repo's and the shims are the map of the suite:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task --list</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>task: Available tasks for this project:
+* ss:hygiene:complexity:               Analyze code complexity using Lizard
+* ss:hygiene:csp-exceptions:           Validate per-page CSP relaxations match docs/security/CSP_EXCEPTIONS.md
+* ss:hygiene:docs-accuracy:            Check documentation for broken links + stale refs
+* ss:hygiene:docs-size:                Monitor documentation size against configured thresholds
+* ss:hygiene:docs-structure:           Validate every doc under docs/ has an explicit route from AGENTS.md or the map
+* ss:hygiene:entry-files:              Enforce token budgets + explicit routes on AGENTS.md, README.md, CLAUDE.md and the docs map
+* ss:hygiene:test:                     Run all hygiene checks (docs-size, docs-structure, docs-accuracy, entry-files, csp-exceptions, complexity)
+* ss:reliability:smoke:                Run smoke tests against a live URL
+* ss:security:sast:                    Run static application security testing using Semgrep
+* ss:security:secrets:                 Run secrets detection using Gitleaks
+…</code></pre></div>
+<p>One line per check, the same names the workflows call. The CLI lists the checks it knows without <code>task</code>, and marks the ones this repo carries no workflow for, which here are the four the profile held back; they still run locally through <code>slopstopper run</code>:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper checks list --json | grep -c '"disabled": true'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>4</code></pre></div>
+<h2 id="checkpoint">Checkpoint</h2>
+<p>The pre-push hook runs the static hygiene suite before every push, through <code>task ss:hygiene:test</code>. On Lantern that gate is red on purpose: the demo carries one finding per check, and lessons 2 to 5 fix the hygiene ones. The one hygiene check the demo passes as shipped is the advisory docs-size monitor, and it proves the install took: it reads the <code>docs/</code> tree Lantern shipped against the thresholds in the config the installer left alone.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-size | grep 'Status:'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>✅ Status: Within acceptable limits</code></pre></div>
+<p>Put the demo back, so the next lesson starts from the repo as shipped. The installer pointed git at the hook directory too, and <code>git clean</code> does not undo config, so unset that as well:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout .gitignore package.json
+git clean -fdq
+git config --unset core.hooksPath</code></pre></div>
+<h2 id="exercise">Exercise</h2>
+<p>Install again with <code>--profile library</code> and find out, without reading the docs, which checks a library does not get.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper install --profile library --no-topic | grep 'workflow(s)'
+slopstopper profile show
+git checkout .gitignore .slopstopper.yml package.json &amp;&amp; git clean -fdq &amp;&amp; git config --unset core.hooksPath</code></pre></div>
+<p>The installer line reads <code>15 workflow(s) installed</code> and <code>16 workflow(s) not installed</code>, and <code>profile show</code> lists those sixteen with the reason <code>(profile)</code>: the nine browser checks, DAST, CSP exceptions, the privacy statement and the four API checks, which is everything that needs a URL or a served page. What remains is the static layer: SAST, secrets, dependency CVEs, review and licences, complexity, the four docs checks. The last line puts the demo back, including the <code>profile: library</code> the flag wrote into its config.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/runbooks/INSTALL.md" rel="noopener noreferrer">The install runbook</a>: every flag, the <code>--no-task</code> mode, and what a refresh keeps and rewrites</li>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-install/SKILL.md" rel="noopener noreferrer">The install skill</a>, which walks an agent through the same install, the profile choice and the post-install verification loop</li>
+  <li>Lesson 19 for profiles in depth: <code>detect</code>, <code>list</code>, keeping one check the profile drops, and moving the pin</li>
+  <li><code>.slopstopper.yml.example</code> upstream, the schema for the one config file you own</li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 8 to 10 minutes.</p>
+<p><strong>Cold open (0:00).</strong> <code>git status --short</code> after a tool "set itself up": thirty unexplained files. "Which of these can I delete?" Cut to the same list with a reason beside every line.</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Why: an installer earns its files by making each answer a question; the CLI writes its own suite; mise, Python, task, and what each one is for.</li>
+  <li>The demo repo; the install line; the pin, the four workflows held back, the files left alone.</li>
+  <li>The tour: four groups, which are the installer's and which are yours.</li>
+  <li><code>profile show</code>: nothing quietly off. <code>doctor</code>: a missing tool is a 2, not a failure.</li>
+  <li><code>task --list</code> and <code>checks list</code> as the map; the checkpoint: the one green hygiene check on a demo that is red on purpose.</li>
+  <li>Exercise: the library profile and what "needs a URL" removes.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/01.tape</code>; <code>demos/install.tape</code> drives the <code>install.sh</code> one-liner. Zoom on the pin line, on "4 workflow(s) not installed", and on "already exists, so leaving it alone".</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:00 Install</code> · <code>2:30 What landed</code> · <code>4:30 Profile and doctor</code> · <code>6:30 The map</code> · <code>7:30 Checkpoint</code> · <code>8:30 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="00-what-slop-is.html">← Lesson 0: What slop is, and the five loops</a>
+  <a class="lesson-nav__next" href="02-first-check-complexity.html">Lesson 2: Run your first check and read its report →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/01-install.md" rel="noopener noreferrer">docs/learn/01-install.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+</body>
+</html>

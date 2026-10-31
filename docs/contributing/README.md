@@ -31,6 +31,7 @@ Run `task --list` for the full set. The most-used ones:
 | `task contributing:lint` | markdownlint over `docs/` (advisory, not a CI gate) |
 | `task contributing:learn:check` | Run every marked command block of the course under `docs/learn/` in its sandbox, the demo repo for the check lessons or a scratch clone for the rest (`scripts/learncheck.py`, what the `learn` shards in `ci-cli.yml` run); `-- --page 03` for one lesson |
 | `task contributing:learn:tapes` | Write each lesson's VHS tape, `docs/learn/tapes/NN.tape`, from its marked blocks (`scripts/learntapes.py`); `-- --check` reports stale tapes, which the `learn` job also does |
+| `task contributing:learn:site` | Write the site's page for each lesson under `app/learn/`, plus the lesson entries in `app/sitemap.xml` and `app/llms.txt`, from `docs/learn/` (`scripts/learnsite.py`); `-- --check` reports stale pages, which `cli/tests/test_learn_site.py` and the `learn` job also do |
 | `task contributing:learn:record` | Record the lesson tapes as episode b-roll into `dist/learn/NN.mp4` via `demos/render.sh` (needs vhs, ttyd, ffmpeg); `-- 08` for one |
 | `task contributing:tables` | Regenerate the per-category check tables and the README badges from the CLI's registry; `cli/tests/test_check_tables.py` fails while they are stale |
 | `task ss:hygiene:complexity` | Cyclomatic complexity check (Lizard) |

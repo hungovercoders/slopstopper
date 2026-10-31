@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/02-first-check-complexity.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 2: Run your first check and read its report | SlopStopper</title>
+    <meta name="description" content="Run one check against the demo repo, read the red line and the report it points at, fix what it names, and see it go green. This is the loop every later lesson repeats.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/02-first-check-complexity.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/02-first-check-complexity.html">
+    <meta property="og:title" content="Lesson 2: Run your first check and read its report | SlopStopper">
+    <meta property="og:description" content="Run one check against the demo repo, read the red line and the report it points at, fix what it names, and see it go green. This is the loop every later lesson repeats.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 2: Run your first check and read its report | SlopStopper">
+    <meta name="twitter:description" content="Run one check against the demo repo, read the red line and the report it points at, fix what it names, and see it go green. This is the loop every later lesson repeats.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 2</span>
+            <h1>Run your first check and read its report</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> Run one check against the demo repo, read the red line and the report it points at, fix what it names, and see it go green. This is the loop every later lesson repeats.</p>
+<h2 id="why-this-check">Why this check</h2>
+<p><code>hygiene:complexity</code> is the simplest check to see fire: one function with too many branches. It is also the check most directly about slop. Generated code tends to be long and flat. It handles every case in one function, passes every test, and nobody can follow it six weeks later, which means nobody can change it safely. Cyclomatic complexity is the measurable symptom: the number of independent paths through a function, which is roughly its <code>if</code>s, loops, <code>and</code>s and <code>or</code>s plus one.</p>
+<p>The tool is <a href="http://www.lizard.ws/" rel="noopener noreferrer">Lizard</a>, which counts that number (CCN) per function across most languages without needing a build. The check fails when any function's CCN is above <code>hygiene.complexity.max_ccn</code> in <code>.slopstopper.yml</code>, default 15, which is Lizard's own warning line. Test files by the common conventions and anything <code>.gitignore</code> ignores are skipped, so a local run after a build sees what CI sees.</p>
+<p>The gate lives in the CLI, so <code>slopstopper run hygiene:complexity</code> returns the same verdict at your terminal, in the pre-push hook and in CI, where the <code>task ss:hygiene:complexity</code> shim and the workflow both call it. There is no separate CI-only threshold.</p>
+<h2 id="you-will-need">You will need</h2>
+<p>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH. Lizard is a Python dependency of the CLI, so nothing else.</p>
+<h2 id="steps">Steps</h2>
+<h3 id="1-see-it-red">1. See it red</h3>
+<p>The demo ships with this finding in it. Run the check and read the three parts of what it prints.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:complexity</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Analyzing code complexity…
+
+📁 Reports saved to: .ss/reports/complexity/
+   • complexity-report.md
+   • complexity-report.csv
+❌ 1 function(s) exceed CCN 15. Refactor them before merging.</code></pre></div>
+<p>The first line says what is running. The middle says where the report went. The last line is the verdict: how many functions failed and what to do. It does not say which; that is the report's job.</p>
+<h3 id="2-read-the-report">2. Read the report</h3>
+<p>Every check writes under <code>.ss/reports/&lt;check&gt;/</code>, which is gitignored. The markdown report names the function, its CCN and where it is.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/High Complexity/,/Guidelines/p' .ss/reports/complexity/complexity-report.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>## ⚠️ High Complexity Items (CCN &gt; 15)
+
+| NLOC | CCN | Tokens | Params | Length | Location |
+|------|-----|--------|--------|--------|----------|
+| 34 | 17 | 119 | 1 | 34 | `badge@31-64@./scripts/status.py` |
+## Guidelines</code></pre></div>
+<p>CCN 17: sixteen <code>if</code>s plus one. Open the function and you will recognise the shape. <code>badge</code> maps an HTTP status to a word, one <code>if</code> per status, which is the flat dispatch generated code falls into most often: correct, tested, and a maintenance trap. The CSV beside the report carries the same rows for anything that wants to chart them.</p>
+<h3 id="3-see-the-raw-exit-code">3. See the raw exit code</h3>
+<p>The verdict is also an exit code, which is what the hook and CI gate on. This is the contract from lesson 0: a 1, because the check ran and the repo failed it.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:complexity &gt;/dev/null; echo "exit $?"</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>exit 1</code></pre></div>
+<h3 id="4-fix-it">4. Fix it</h3>
+<p>The fix the check asks for is a refactor, not a bigger threshold. A lookup table makes <code>badge</code> one line with a CCN of 1. This replaces the function in place:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+import pathlib
+p = pathlib.Path('scripts/status.py'); s = p.read_text()
+start = s.index('def badge(status):'); end = s.index('\n\n\n', start)
+new = '''BADGES = {200: "ok", 201: "ok", 202: "ok", 204: "ok", 301: "ok", 302: "ok", 304: "ok",
+          400: "degraded", 401: "degraded", 403: "degraded", 404: "degraded", 408: "degraded", 429: "degraded",
+          500: "down", 502: "down", 503: "down"}
+
+
+def badge(status):
+    return BADGES.get(status, "unknown")'''
+p.write_text(s[:start] + new + s[end:])
+PY
+slopstopper run hygiene:complexity</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Analyzing code complexity…
+
+📁 Reports saved to: .ss/reports/complexity/
+   • complexity-report.md
+   • complexity-report.csv
+✅ No high-complexity functions found (all CCN ≤ 15).</code></pre></div>
+<p>Same behaviour, one path through the function. When a function trips the ceiling and is genuinely well-factored, a flat dispatch or validation table, raising <code>max_ccn</code> with a note in <code>.slopstopper.yml</code> is honest. Doing it to silence noise is not; the threshold is the feature.</p>
+<h3 id="5-put-the-demo-back">5. Put the demo back</h3>
+<p>The lessons promise each one starts from the demo as written, so undo the fix with git. The next lesson's finding is a different file.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout scripts/status.py</code></pre></div>
+<h2 id="checkpoint">Checkpoint</h2>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:complexity &gt;/dev/null; echo "exit $?"</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>exit 1</code></pre></div>
+<p>Red again, because the demo is back to how it shipped, and you know exactly which function and which line the 1 is about.</p>
+<h2 id="exercise">Exercise</h2>
+<p>Make the check pass without replacing the function and without touching <code>.slopstopper.yml</code>.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<p>Split the chain by outcome. Three small functions, each a handful of <code>if</code>s, and <code>badge</code> becomes a call to each in turn:</p>
+<div class="codeblock codeblock--python" tabindex="0"><pre><code>def is_ok(status):
+    return status in (200, 201, 202, 204, 301, 302, 304)
+
+def is_degraded(status):
+    return status in (400, 401, 403, 404, 408, 429)
+
+def badge(status):
+    if is_ok(status):
+        return "ok"
+    if is_degraded(status):
+        return "degraded"
+    return "down" if status &gt;= 500 else "unknown"</code></pre></div>
+<p>No function has more than three paths. It is the same fix as the table, seen from the other side: the branches did not go away, they stopped living in one place. Put the demo back with <code>git checkout scripts/status.py</code> when you are done.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md#code-complexity-analysis" rel="noopener noreferrer">Code complexity analysis</a> in the hygiene README: what is measured, what is skipped, <code>hygiene.complexity.exclude</code></li>
+  <li><code>hygiene.complexity.max_ccn</code> in <code>.slopstopper.yml.example</code></li>
+  <li>The exit-code contract in <code>cli/slopstopper/checks/__init__.py</code></li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 8 to 10 minutes.</p>
+<p><strong>Cold open (0:00).</strong> <code>scripts/status.py</code> scrolling: sixteen <code>if</code>s, all green in the test runner. "Ship it?"</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Why complexity: generated code is long and flat; CCN is the number.</li>
+  <li>Red run on the demo; the three lines: what ran, where the report went, the verdict. The red line says how many, not which.</li>
+  <li>The report says which; CCN 17 is sixteen plus one.</li>
+  <li>The raw exit code is 1; that is what the hook and CI gate on.</li>
+  <li>The table; green. When raising the threshold is honest.</li>
+  <li>Put the demo back; the exercise splits instead of tabling.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/02.tape</code>. Zoom on the verdict line each run.</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:00 Red</code> · <code>2:30 The report</code> · <code>4:00 Exit codes</code> · <code>5:00 Fix</code> · <code>7:00 Exercise</code> · <code>8:30 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="01-install.html">← Lesson 1: Install slopstopper into a repo</a>
+  <a class="lesson-nav__next" href="03-entry-files.html">Lesson 3: Entry files: the AGENTS.md-first model →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/02-first-check-complexity.md" rel="noopener noreferrer">docs/learn/02-first-check-complexity.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+</body>
+</html>

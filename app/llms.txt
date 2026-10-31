@@ -14,16 +14,44 @@ deployed with the same suite it advertises.
 - [Home](https://slopstopper.dev/): what SlopStopper is and how to get started
 - [Features](https://slopstopper.dev/features.html): the five loops (security, hygiene, reliability and operational are installed; deployment shows how this site ships, to copy) and every check
 - [Tools](https://slopstopper.dev/tools.html): the underlying kit: Semgrep, OWASP ZAP, Trivy, Gitleaks, Playwright, axe-core, Lighthouse CI, GitHub Actions, Task
-- [Learn](https://slopstopper.dev/learn.html): the course, twenty-one short lessons, each check explained and run against a demo repo the CLI writes
+- [Learn](https://slopstopper.dev/learn.html): the course, twenty-one short lessons, each check explained and run against a demo repo the CLI writes; each lesson is a page under /learn/, listed below
 - [Feedback](https://slopstopper.dev/feedback.html): report a bug or request a check
 - [Privacy](https://slopstopper.dev/privacy.html): what the site collects (nothing of its own), what Cloudflare keeps as the host, and which other services the pages reach
+
+## The course
+
+One lesson per page, in order; each one's goal is its summary.
+
+<!-- learn:begin -->
+- [Lesson 0: What slop is, and the five loops](https://slopstopper.dev/learn/00-what-slop-is.html): Say what slopstopper stops and how, so every later lesson has a frame to sit in.
+- [Lesson 1: Install slopstopper into a repo](https://slopstopper.dev/learn/01-install.html): Install the suite into a repo, pick a profile, know what every file it wrote is for, and see which checks the repo is now carrying.
+- [Lesson 2: Run your first check and read its report](https://slopstopper.dev/learn/02-first-check-complexity.html): Run one check against the demo repo, read the red line and the report it points at, fix what it names, and see it go green. This is the loop every later lesson repeats.
+- [Lesson 3: Entry files: the AGENTS.md-first model](https://slopstopper.dev/learn/03-entry-files.html): Say why README.md and AGENTS.md have token budgets, find the demo's README over its budget, and see that the fix is to move content deeper and route it, never to raise the budget.
+- [Lesson 4: Docs structure: every doc has a route](https://slopstopper.dev/learn/04-docs-structure.html): Find the doc in the demo that nothing routes to, see why a "see also" link does not count, route it, and understand the hop and line limits.
+- [Lesson 5: Docs accuracy and docs size](https://slopstopper.dev/learn/05-docs-accuracy-and-size.html): Find the doc in the demo that describes a command the repo does not have, read the finding, make the doc true, and then read the growth signal the size monitor prints without ever failing a build.
+- [Lesson 6: Secrets](https://slopstopper.dev/learn/06-secrets.html): Commit a fake private key to the demo, watch Gitleaks catch it, see why deleting it in a later commit does not help, and learn the fix that does.
+- [Lesson 7: Static analysis](https://slopstopper.dev/learn/07-sast.html): Find the one unsafe line in the demo's script, read the finding Semgrep raised for it, and fix the code rather than the rule.
+- [Lesson 8: Dependencies and licences](https://slopstopper.dev/learn/08-dependencies.html): Find the pinned package in the demo with a known CVE, read the report's "Fixed In" column, take the fix, and see where the licence gates sit.
+- [Lesson 9: Headers and CSP](https://slopstopper.dev/learn/09-headers-and-csp.html): See the headers the demo's host sends, find the Content-Security-Policy relaxation nobody wrote down, document it properly, and then audit an API's CORS headers and fix the commonest mistake.
+- [Lesson 10: Dynamic scanning](https://slopstopper.dev/learn/10-dast.html): Serve the demo, run OWASP ZAP against it, read a baseline report, see what the gate accepts and why, and accept one finding with a reason.
+- [Lesson 11: Smoke and end-to-end](https://slopstopper.dev/learn/11-smoke-and-e2e.html): Serve the demo, run the two browser checks that prove it works for a visitor, break each one the way a real change would, and read what the browser saw.
+- [Lesson 12: Accessibility](https://slopstopper.dev/learn/12-accessibility.html): Audit both of the demo's pages with axe-core, find the one attribute a screen reader depends on that the history page is missing, and fix it.
+- [Lesson 13: Core Web Vitals](https://slopstopper.dev/learn/13-core-web-vitals.html): Run Lighthouse against the demo, read the budget it enforces, add one blocking script, and watch the numbers move.
+- [Lesson 14: SEO and social share](https://slopstopper.dev/learn/14-seo.html): Audit the tags a search engine and a link preview read, find the one the demo's history page is missing, and see which surface it would have broken.
+- [Lesson 15: Discoverability: robots, sitemap, llms.txt and links](https://slopstopper.dev/learn/15-discoverability.html): Run the four checks that decide whether anyone finds a page, fix the one the demo ships red, and break the other three to see which catches what.
+- [Lesson 16: API checks: health, latency and OpenAPI drift](https://slopstopper.dev/learn/16-api-checks.html): Point the three API checks at a small API, see each one fail on its own kind of drift, and understand why they exist alongside the browser checks.
+- [Lesson 17: CI: the workflows and the PR feedback loop](https://slopstopper.dev/learn/17-ci.html): Read one check workflow end to end, see that it is the same task line you have been typing, and follow a red check from the Actions log to the pull request comment to the issue it raises on main.
+- [Lesson 18: Agents: the install and triage skills](https://slopstopper.dev/learn/18-agents.html): Install the two Claude Code skills into a repo, read how they are shaped, and see how an agent uses them to install the suite or fix a red check without being told the steps.
+- [Lesson 19: Profiles and tailoring](https://slopstopper.dev/learn/19-profiles-and-tailoring.html): Switch a repo between the ui, api and library profiles, keep one check a profile drops, and know where the CLI pin lives and how it moves.
+- [Lesson 20: Inside slopstopper: add a check](https://slopstopper.dev/learn/20-inside-slopstopper.html): Register a new check in the CLI, let the test suite tell you the other surfaces it must be wired into, and understand the shape every check shares.
+<!-- learn:end -->
 
 ## Source
 
 - [GitHub repository](https://github.com/hungovercoders/slopstopper): source, install.sh and the slopstopper CLI
 - [README](https://github.com/hungovercoders/slopstopper/blob/main/README.md): install and usage
 - [Documentation map](https://github.com/hungovercoders/slopstopper/blob/main/docs/README.md): the routing table for every doc
-- [From zero to slopstopper](https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/README.md): the course, one check per lesson, with an episode to follow
+- [From zero to slopstopper](https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/README.md): the course's syllabus and lesson sources, with an episode to follow
 - [Agent guide](https://github.com/hungovercoders/slopstopper/blob/main/AGENTS.md): what most tasks in the repo need, within ~2k tokens
 
 ## For agents

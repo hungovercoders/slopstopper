@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/03-entry-files.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 3: Entry files: the AGENTS.md-first model | SlopStopper</title>
+    <meta name="description" content="Say why README.md and AGENTS.md have token budgets, find the demo&#x27;s README over its budget, and see that the fix is to move content deeper and route it, never to raise the budget.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/03-entry-files.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/03-entry-files.html">
+    <meta property="og:title" content="Lesson 3: Entry files: the AGENTS.md-first model | SlopStopper">
+    <meta property="og:description" content="Say why README.md and AGENTS.md have token budgets, find the demo&#x27;s README over its budget, and see that the fix is to move content deeper and route it, never to raise the budget.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 3: Entry files: the AGENTS.md-first model | SlopStopper">
+    <meta name="twitter:description" content="Say why README.md and AGENTS.md have token budgets, find the demo&#x27;s README over its budget, and see that the fix is to move content deeper and route it, never to raise the budget.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 3</span>
+            <h1>Entry files: the AGENTS.md-first model</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> Say why <code>README.md</code> and <code>AGENTS.md</code> have token budgets, find the demo's README over its budget, and see that the fix is to move content deeper and route it, never to raise the budget.</p>
+<h2 id="why-this-check">Why this check</h2>
+<p><code>hygiene:entry-files</code> is the check that keeps a repo legible to an agent. <code>AGENTS.md</code> (which <code>CLAUDE.md</code> includes) is loaded into every agent conversation, so inlining what most tasks need is cheap: it is prompt-cached, while every file an agent has to go and read costs a tool turn. But instruction-following degrades as rules pile up. Past roughly 2,000 tokens, forty to sixty rules, an agent starts skipping some. So the entry file carries what most tasks need and routes the rest with explicit lines of the form "when you are X, read Y".</p>
+<p>The slop this stops is the entry file that grows by accretion: every incident adds a rule, every feature adds a paragraph, and six months on the file that was meant to make the repo easy to work in is the reason the agent ignores half of it. The same goes for <code>README.md</code>, which is human orientation under a smaller budget, and for the docs map at <code>docs/README.md</code>, the fallback routing table.</p>
+<p>The check is stdlib Python. It estimates tokens as characters divided by four, enforces the four budgets, insists <code>CLAUDE.md</code> is a pure <code>@AGENTS.md</code> include so there is one entry point and nothing to drift, and insists every <code>.md</code> link in <code>AGENTS.md</code> is an explicit route. It prints the cold-start cost on every run so a creeping number is visible before a budget trips.</p>
+<h2 id="you-will-need">You will need</h2>
+<p>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH.</p>
+<h2 id="steps">Steps</h2>
+<h3 id="1-see-it-red-and-read-the-table">1. See it red, and read the table</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:entry-files</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>📏 Entry-file budget + AGENTS.md-first check
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ❌ README.md          800 tokens  (budget 600, headroom -200)  ✅ rules
+  ✅ AGENTS.md          709 tokens  (budget 2000, headroom +1291)  ✅ rules
+  ✅ CLAUDE.md            2 tokens  (budget 2000, headroom +1998)  ✅ rules
+  ✅ docs/README.md     301 tokens  (budget 1000, headroom +699)  ✅ rules
+
+  cold start: 709 always loaded (AGENTS.md) + 301 fallback hop (docs/README.md) = 1010
+
+❌ An entry file is over its token budget, or breaks an AGENTS.md-first rule (see below).</code></pre></div>
+<p>Four files, four budgets, and two columns of verdict: the size and the rules. <code>CLAUDE.md</code> is two tokens because it is the one line <code>@AGENTS.md</code>. The README is over by two hundred tokens, and its rules column is still green: nothing about the file's form is wrong, there is just too much of it. The cold-start line is what an agent pays before doing anything: the always-loaded file, plus the map if the task is not covered.</p>
+<h3 id="2-read-the-report-then-the-file">2. Read the report, then the file</h3>
+<p>The report carries a paste-ready fix for each violation.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/How to fix/,$p' .ss/reports/entry-files/entry-file-size-report.md | head -6
+grep -n '^## ' README.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>## How to fix violations
+
+### `README.md` is over its token budget (800 &gt; 600)
+
+Keep it to orientation and a quick start; everything else lives under `docs/` and is reachable from [`docs/README.md`](./docs/README.md).
+
+9:## Quick start
+20:## Docs
+27:## Everything you need to know</code></pre></div>
+<p>The headings tell the story. Orientation, a quick start, a pointer to the docs, and then the whole manual pasted in because "people read the README". This is the commonest shape of entry-file slop: content that belongs one hop deeper, inlined so it will be seen, which is exactly what makes the file too long to be read.</p>
+<h3 id="3-fix-it-move-the-content-deeper-and-route-it">3. Fix it: move the content deeper and route it</h3>
+<p>The fix is always the same direction: move the content that serves the fewest tasks into a <code>docs/</code> topic doc and add a route to it from the map. This cuts the manual out of the README into <code>docs/manual.md</code> and adds one route line.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+import pathlib
+readme = pathlib.Path('README.md'); text = readme.read_text()
+head, manual = text.split('## Everything you need to know\n', 1)
+readme.write_text(head.rstrip() + '\n')
+pathlib.Path('docs/manual.md').write_text('# The manual\n\n' + manual.lstrip())
+PY
+printf '\nBefore you look anything up beyond the quick start, read [manual.md](manual.md) for the whole manual.\n' &gt;&gt; docs/README.md
+slopstopper run hygiene:entry-files</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>📏 Entry-file budget + AGENTS.md-first check
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✅ README.md          225 tokens  (budget 600, headroom +375)  ✅ rules
+  ✅ AGENTS.md          709 tokens  (budget 2000, headroom +1291)  ✅ rules
+  ✅ CLAUDE.md            2 tokens  (budget 2000, headroom +1998)  ✅ rules
+  ✅ docs/README.md     327 tokens  (budget 1000, headroom +673)  ✅ rules
+
+  cold start: 709 always loaded (AGENTS.md) + 327 fallback hop (docs/README.md) = 1036
+
+✅ Every entry file is within budget, CLAUDE.md is a pure include, and every route is explicit.</code></pre></div>
+<p>The README dropped to a third of its budget, the map grew by one line, and the cold start barely moved: the manual now costs a tool turn only for the task that needs it. The route line's form, a trigger, the word "read", the file and what it holds, is the subject of lesson 4.</p>
+<p>What you never do is raise <code>readme_max_tokens</code>. The budgets are the feature: they are the point at which an agent stays reliable, and they do not move with the repo.</p>
+<h3 id="4-put-the-demo-back">4. Put the demo back</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout README.md docs/README.md
+rm docs/manual.md</code></pre></div>
+<h2 id="checkpoint">Checkpoint</h2>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:entry-files | grep 'README.md'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ❌ README.md          800 tokens  (budget 600, headroom -200)  ✅ rules</code></pre></div>
+<p>Red again, with the demo as it shipped, and you know the fix is a move and a route, never a number.</p>
+<h2 id="exercise">Exercise</h2>
+<p>Make the rules column go red instead of the size column, then put it back.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<p>Add a line to <code>CLAUDE.md</code> so it is no longer a pure include:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>echo "Also read the wiki." &gt;&gt; CLAUDE.md
+slopstopper run hygiene:entry-files
+git checkout CLAUDE.md</code></pre></div>
+<p>The size is still tiny, but the <code>rules</code> column for <code>CLAUDE.md</code> fails, because with two entry points there are two places for instructions to drift apart. The report's fix is the one-line <code>@AGENTS.md</code> body.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md#entry-file-budget" rel="noopener noreferrer">The entry-file budget</a> in the hygiene README: every rule and knob</li>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/README.md#the-model" rel="noopener noreferrer">The model</a> at the bottom of the docs map: why AGENTS.md-first, in the repo's own words</li>
+  <li>The four scaffolds <code>install.sh</code> seeds, under <code>cli/slopstopper/data/templates/entry-files/</code></li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 8 to 10 minutes.</p>
+<p><strong>Cold open (0:00).</strong> An <code>AGENTS.md</code> scrolling for ten seconds. "Which of these rules does the agent actually follow?"</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Why a budget: always loaded, prompt-cached, cheap to inline, but instruction-following degrades past about 2,000 tokens.</li>
+  <li>Red run on the demo; the four files; headroom negative, rules green; the cold-start line.</li>
+  <li>The report's paste-ready fix; the README's headings tell the story.</li>
+  <li>The move and the route; green; the cold start barely moves.</li>
+  <li>The direction of every fix is deeper and routed, never a bigger budget. Put the demo back.</li>
+  <li>Exercise: break the rules column instead.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/03.tape</code>. Zoom on the headroom number.</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:30 Red</code> · <code>3:00 The report</code> · <code>4:00 Move and route</code> · <code>6:00 Put it back</code> · <code>7:00 Exercise</code> · <code>8:30 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="02-first-check-complexity.html">← Lesson 2: Run your first check and read its report</a>
+  <a class="lesson-nav__next" href="04-docs-structure.html">Lesson 4: Docs structure: every doc has a route →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/03-entry-files.md" rel="noopener noreferrer">docs/learn/03-entry-files.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+</body>
+</html>

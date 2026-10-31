@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/04-docs-structure.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 4: Docs structure: every doc has a route | SlopStopper</title>
+    <meta name="description" content="Find the doc in the demo that nothing routes to, see why a &quot;see also&quot; link does not count, route it, and understand the hop and line limits.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/04-docs-structure.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/04-docs-structure.html">
+    <meta property="og:title" content="Lesson 4: Docs structure: every doc has a route | SlopStopper">
+    <meta property="og:description" content="Find the doc in the demo that nothing routes to, see why a &quot;see also&quot; link does not count, route it, and understand the hop and line limits.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 4: Docs structure: every doc has a route | SlopStopper">
+    <meta name="twitter:description" content="Find the doc in the demo that nothing routes to, see why a &quot;see also&quot; link does not count, route it, and understand the hop and line limits.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 4</span>
+            <h1>Docs structure: every doc has a route</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> Find the doc in the demo that nothing routes to, see why a "see also" link does not count, route it, and understand the hop and line limits.</p>
+<h2 id="why-this-check">Why this check</h2>
+<p><code>hygiene:docs-structure</code> stops the most common documentation slop: a page written once and never found again. An agent reads what it is routed to. A doc with no explicit route is invisible, however good it is, and a doc that is only "see also"-linked is skipped, because a link without a trigger does not tell the agent when to spend a tool turn on it. The model the check enforces is <code>AGENTS.md</code> → the map (<code>docs/README.md</code>) → a directory README → the doc, with a route at every step of the form "when you are X, read Y for Z".</p>
+<p>The check also caps depth and length. A route more than three hops deep costs a tool turn per hop, and a topic doc past 300 lines is one nobody reads to the end; the fix for both is to split by concern and route each part. It is stdlib Python, reads every <code>.md</code> under <code>docs/</code>, and writes a report listing every reachable doc with its hop count.</p>
+<h2 id="you-will-need">You will need</h2>
+<p>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH.</p>
+<h2 id="steps">Steps</h2>
+<h3 id="1-see-it-red">1. See it red</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-structure</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Validating documentation structure…
+❌ Found 1 structure violation(s)
+  - Unrouted doc: docs/runbooks/RELEASE.md is not linked from AGENTS.md, the map, or a README above it. Add a route to docs/README.md: 'Before you &lt;do X&gt;, read &lt;doc&gt; for &lt;what it holds&gt;'
+
+📁 Reports saved to: .ss/reports/docs/
+   • docs-structure-report.md</code></pre></div>
+<p>The red line names the file, says which file should route it, and gives the route form. That is most of the fix. The runbook is a good doc: it says how to cut a release, in two commands. Nobody will ever read it, because nothing says when to.</p>
+<h3 id="2-try-a-soft-link-and-see-why-it-does-not-count">2. Try a soft link, and see why it does not count</h3>
+<p>Add a "see also" to the map. This is what most people do first.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>printf '\nSee also [runbooks/RELEASE.md](runbooks/RELEASE.md).\n' &gt;&gt; docs/README.md
+slopstopper run hygiene:docs-structure</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Validating documentation structure…
+❌ Found 2 structure violation(s)
+  - Unrouted doc: docs/runbooks/RELEASE.md is linked from docs/README.md without a trigger or 'read'. Add a route to docs/README.md: 'Before you &lt;do X&gt;, read &lt;doc&gt; for &lt;what it holds&gt;'
+  - docs/README.md line 21 → docs/runbooks/RELEASE.md: "See also [runbooks/RELEASE.md](runbooks/RELEASE.md)." is a soft route. A route agents follow names its trigger and says read: 'Before you &lt;do X&gt;, read &lt;doc&gt; for &lt;what it holds&gt;'.</code></pre></div>
+<p>Still unrouted, and now two findings instead of one: the check found the link, is telling you it is soft, and quotes the line. A link says a doc exists; a route says when to read it.</p>
+<h3 id="3-route-it">3. Route it</h3>
+<p>Replace the soft link with a route: a trigger, the word "read", the file, and what it holds.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout docs/README.md
+printf '\nBefore you cut a release, read [runbooks/RELEASE.md](runbooks/RELEASE.md) for the tag, the push and what the tag message is for.\n' &gt;&gt; docs/README.md
+slopstopper run hygiene:docs-structure</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Validating documentation structure…
+✅ Documentation structure is valid: all 4 docs are routed</code></pre></div>
+<h3 id="4-read-the-report-then-put-the-demo-back">4. Read the report, then put the demo back</h3>
+<p>The report lists every doc and how many hops it costs. The runbook is two hops from <code>AGENTS.md</code>: the map is routed directly from there, so anything the map routes is one hop further.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep RELEASE .ss/reports/docs/docs-structure-report.md
+git checkout docs/README.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>| `docs/runbooks/RELEASE.md` | 2 | `docs/README.md` |</code></pre></div>
+<h2 id="checkpoint">Checkpoint</h2>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-structure | grep 'Unrouted doc'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  - Unrouted doc: docs/runbooks/RELEASE.md is not linked from AGENTS.md, the map, or a README above it. Add a route to docs/README.md: 'Before you &lt;do X&gt;, read &lt;doc&gt; for &lt;what it holds&gt;'</code></pre></div>
+<p>Red again, with the demo as it shipped, and you can write the one line that fixes it from memory.</p>
+<h2 id="exercise">Exercise</h2>
+<p>Make the check fail with <code>doc_over_lines</code> instead of <code>unrouted_doc</code>, without adding a file.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<p>Pad a routed doc past 300 lines, run, and revert:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>yes '' | head -300 &gt;&gt; docs/architecture.md
+slopstopper run hygiene:docs-structure
+git checkout docs/architecture.md</code></pre></div>
+<p>The violation names the doc and its line count, beside the unrouted runbook. The real fix is a split by concern, with a route to each part, never a bigger <code>max_doc_lines</code>.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md#documentation-structure-validation" rel="noopener noreferrer">Documentation structure validation</a> in the hygiene README: every violation kind</li>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md#excluding-docs-from-the-docs-checks" rel="noopener noreferrer">Excluding docs from the docs checks</a>: <code>hygiene.docs.exclude</code>, which is how this course sits under slopstopper's own <code>docs/</code></li>
+  <li>Lesson 5 for the two checks that keep routed docs accurate and sized</li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 8 to 10 minutes.</p>
+<p><strong>Cold open (0:00).</strong> <code>ls docs/</code> on a repo with thirty files. "Which of these would an agent ever open?"</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Why routes: an agent reads what it is routed to; a soft link is skipped; three hops; 300 lines.</li>
+  <li>Red on the demo: the message says which file and gives the form.</li>
+  <li>The soft link: two findings now, and the line quoted. A link says a doc exists; a route says when to read it.</li>
+  <li>The route; green; the report's hop count. Put the demo back.</li>
+  <li>Exercise: <code>doc_over_lines</code>.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/04.tape</code>. Zoom on the two different violation messages.</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:30 Unrouted</code> · <code>3:00 The soft link</code> · <code>4:30 The route</code> · <code>6:00 Put it back</code> · <code>7:00 Exercise</code> · <code>8:30 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="03-entry-files.html">← Lesson 3: Entry files: the AGENTS.md-first model</a>
+  <a class="lesson-nav__next" href="05-docs-accuracy-and-size.html">Lesson 5: Docs accuracy and docs size →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/04-docs-structure.md" rel="noopener noreferrer">docs/learn/04-docs-structure.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+</body>
+</html>

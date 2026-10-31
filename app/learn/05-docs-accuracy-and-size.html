@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/05-docs-accuracy-and-size.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 5: Docs accuracy and docs size | SlopStopper</title>
+    <meta name="description" content="Find the doc in the demo that describes a command the repo does not have, read the finding, make the doc true, and then read the growth signal the size monitor prints without ever failing a build.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/05-docs-accuracy-and-size.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/05-docs-accuracy-and-size.html">
+    <meta property="og:title" content="Lesson 5: Docs accuracy and docs size | SlopStopper">
+    <meta property="og:description" content="Find the doc in the demo that describes a command the repo does not have, read the finding, make the doc true, and then read the growth signal the size monitor prints without ever failing a build.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 5: Docs accuracy and docs size | SlopStopper">
+    <meta name="twitter:description" content="Find the doc in the demo that describes a command the repo does not have, read the finding, make the doc true, and then read the growth signal the size monitor prints without ever failing a build.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 5</span>
+            <h1>Docs accuracy and docs size</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> Find the doc in the demo that describes a command the repo does not have, read the finding, make the doc true, and then read the growth signal the size monitor prints without ever failing a build.</p>
+<h2 id="why-these-checks">Why these checks</h2>
+<p><code>hygiene:docs-accuracy</code> catches docs that describe last month's repo. Every reference a doc makes is a promise: that <code>task ss:hygiene:docs</code> exists, that <code>.github/workflows/ss-hygiene-tidy-check.yml</code> is there, that <code>TIDY.md</code> is a file, that a link into the GitHub repo lands on a path. Generated docs break these promises constantly, because they are written from a snapshot and nobody re-reads them when the task is renamed or the file moves. An agent that reads the stale doc then runs the stale command, and the first anyone hears of it is a confused transcript. The check is stdlib Python: it reads every doc, resolves each reference against the working tree, the Taskfiles and the workflows directory, and fails on the first one that does not resolve.</p>
+<p><code>hygiene:docs-size</code> is the other half, and it is deliberately not a gate. It always exits 0. What it does is measure: how many docs, how big in total, how big the largest, and it prints a verdict against three thresholds in <code>.slopstopper.yml</code>. The per-file cap is the one that protects a reader, because a 20 KB doc is one nobody finishes. The totals are a growth signal, sized to the repo, and moved only in a commit that says why. Under AGENTS.md-first (lessons 3 and 4) only the entry file is always loaded and everything else is opt-in behind a route, so size is a thing to watch, not a thing to block on.</p>
+<p>The two checks together say: every doc you keep must be true, and you should notice when you are keeping too many.</p>
+<h2 id="you-will-need">You will need</h2>
+<p>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH. Both checks are stdlib Python, so nothing else.</p>
+<h2 id="steps">Steps</h2>
+<h3 id="1-see-docs-accuracy-red">1. See docs-accuracy red</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-accuracy</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Checking documentation accuracy…
+⚠️  Found 1 accuracy issue(s)
+  docs/contributing.md:17: Task reference `task ss:hygiene:docs` not found in Taskfile.yml
+
+📁 Reports saved to: .ss/reports/docs/
+   • docs-accuracy-report.md</code></pre></div>
+<p>The file, the line and the promise that was broken. The demo has no Taskfile at all, so there is no <code>task</code> target of any name, and the contributing guide is telling every new contributor to run one.</p>
+<h3 id="2-read-the-report-then-the-line">2. Read the report, then the line</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/## Issues/,/## Excluded/p' .ss/reports/docs/docs-accuracy-report.md
+sed -n '17,18p' docs/contributing.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>## Issues
+
+### Stale Taskfile References
+
+- **docs/contributing.md** (line 17): Task reference `task ss:hygiene:docs` not found in Taskfile.yml
+
+## How to Fix
+
+1. Review each issue above.
+2. Update the referenced docs to match the current project state.
+3. Run `task ss:hygiene:docs-accuracy` locally to verify fixes.
+
+## Excluded
+Run `task ss:hygiene:docs` before you push; it is the two docs checks in
+one, and the pull request will not be looked at until it is green.</code></pre></div>
+<p>The report groups findings by kind; a doc that also linked a missing file or named a missing workflow would get a section each. This one is a doc written from memory of another repo: the command was never installed here, and the sentence beside it is confidently wrong.</p>
+<h3 id="3-fix-it">3. Fix it</h3>
+<p>The fix is to make the doc true: name the commands that exist, link the file that exists, or delete the sentence. Here the two checks the sentence means do exist, as <code>slopstopper run</code> commands.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's/Run `task ss:hygiene:docs` before you push; it is the two docs checks in/Run `slopstopper run hygiene:entry-files` and `slopstopper run hygiene:docs-structure` before you push; they are the two docs checks,/' docs/contributing.md &amp;&amp; rm docs/contributing.md.bak
+slopstopper run hygiene:docs-accuracy</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🔍 Checking documentation accuracy…
+✅ Documentation accuracy checks passed
+
+📁 Reports saved to: .ss/reports/docs/
+   • docs-accuracy-report.md</code></pre></div>
+<p>A doc that names a file on purpose although no checkout holds it, such as a report written at run time, goes in <code>hygiene.docs_accuracy.ignore_refs</code> with a reason. That is the one honest exception.</p>
+<h3 id="4-read-the-size-monitor">4. Read the size monitor</h3>
+<p>Now the advisory check. Run it and read the three numbers and the three thresholds.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-size</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>📊 Documentation Statistics:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Total Files:        5
+  Total Size:         4 KB
+  Estimated Tokens:   ~1176
+  Average File Size:  0 KB
+
+📈 Largest Files:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+docs/README.md (1 KB)
+docs/security/CSP_EXCEPTIONS.md (1 KB)
+docs/architecture.md (0 KB)
+docs/contributing.md (0 KB)
+docs/runbooks/RELEASE.md (0 KB)
+
+📋 Threshold Limits:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Max Total Size:     150 KB
+  Max File Size:      20 KB
+  Max File Count:     25
+
+✅ Status: Within acceptable limits</code></pre></div>
+<p>Five small docs against the defaults. A repo that documents a lot sits above them and raises the totals in its <code>.slopstopper.yml</code> with a comment saying why; the per-file cap stays, because that one is about a single doc staying readable.</p>
+<h3 id="5-see-the-advisory-fire-and-the-exit-code-not-move">5. See the advisory fire, and the exit code not move</h3>
+<p>Drop a 160 KB doc into the tree and run again.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>yes 'Notes on every default the checks ship with, and why each is what it is.' | head -c 160000 &gt; docs/notes.md
+slopstopper run hygiene:docs-size | sed -n '/Status/,/Reports/p'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>❌ Status: THRESHOLDS EXCEEDED
+
+⚠️ Alerts:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  Total documentation size (160 KB) exceeds threshold (150 KB)
+⚠️  Files exceeding 20 KB:
+     - notes.md
+
+
+📁 Reports saved to: .ss/reports/docs/</code></pre></div>
+<p>The verdict is red in the output and in the report, and the exit code is still 0: the hook would let you push, CI would stay green. The PR summary comment carries the alert instead, where a reviewer sees it. That is the design: a size is a reason to look, a broken reference is a reason to stop.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-size &gt;/dev/null; echo "exit $?"
+rm docs/notes.md
+git checkout docs/contributing.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>exit 0</code></pre></div>
+<p>The last line puts the demo back for the next lesson.</p>
+<h2 id="checkpoint">Checkpoint</h2>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:docs-accuracy &gt;/dev/null; echo "exit $?"</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>exit 1</code></pre></div>
+<p>Red again, with the demo as it shipped: one stale command, one finding, and the fix is a sentence.</p>
+<h2 id="exercise">Exercise</h2>
+<p>Make docs-accuracy fail with a broken link and a workflow reference as well as the task, then put it back.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<div class="codeblock codeblock--sh" data-copyable><pre><code>printf '\nThe `.github/workflows/ss-hygiene-tidy-check.yml` workflow runs it in CI; see [the tidy guide](TIDY.md).\n' &gt;&gt; docs/contributing.md
+slopstopper run hygiene:docs-accuracy
+git checkout docs/contributing.md</code></pre></div>
+<p>Three kinds of finding from two lines: the stale task from before, a "Broken link" because <code>TIDY.md</code> is not a file, and a "Workflow reference does not exist" from the rule that resolves every <code>.github/workflows/&lt;name&gt;.yml</code> path. A bare <code>ss-hygiene-tidy-check.yml</code> with no directory would pass that last rule, because prose names config files loosely; write the path.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md#documentation-accuracy" rel="noopener noreferrer">Documentation accuracy</a> in the hygiene README: every kind of reference it resolves, <code>extra_paths</code> for scanning a site or the skills, <code>ignore_refs</code></li>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md#documentation-size-monitoring" rel="noopener noreferrer">Documentation size monitoring</a>: why it is advisory and where the verdict lives</li>
+  <li>The <code>docs_size</code> comment in slopstopper's own <code>.slopstopper.yml</code>, the worked example of raising a total in a commit that says why</li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 8 to 10 minutes.</p>
+<p><strong>Cold open (0:00).</strong> A doc that says <code>task ss:hygiene:docs</code>. A terminal that says "task: command not found". An agent transcript trying it three times.</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Every reference is a promise; generated docs break them silently.</li>
+  <li>Red on the demo; the report groups by kind; the sentence beside the command is confidently wrong.</li>
+  <li>The fix is to make the doc true. <code>ignore_refs</code> is the honest exception.</li>
+  <li>The size monitor: three numbers, three thresholds, always exit 0. Why: under AGENTS.md-first size is a reason to look.</li>
+  <li>The 160 KB doc; the red verdict; the exit code still 0; where the alert goes instead.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/05.tape</code>. Zoom on the finding, then on <code>exit 0</code> under the red verdict.</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:30 Red</code> · <code>2:30 The report</code> · <code>4:00 Fix</code> · <code>5:00 The size monitor</code> · <code>6:30 Red but exit 0</code> · <code>8:00 Exercise</code> · <code>8:40 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="04-docs-structure.html">← Lesson 4: Docs structure: every doc has a route</a>
+  <a class="lesson-nav__next" href="06-secrets.html">Lesson 6: Secrets →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/05-docs-accuracy-and-size.md" rel="noopener noreferrer">docs/learn/05-docs-accuracy-and-size.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+</body>
+</html>

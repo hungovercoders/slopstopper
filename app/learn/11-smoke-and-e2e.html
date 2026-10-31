@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/11-smoke-and-e2e.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 11: Smoke and end-to-end | SlopStopper</title>
+    <meta name="description" content="Serve the demo, run the two browser checks that prove it works for a visitor, break each one the way a real change would, and read what the browser saw.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/11-smoke-and-e2e.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/11-smoke-and-e2e.html">
+    <meta property="og:title" content="Lesson 11: Smoke and end-to-end | SlopStopper">
+    <meta property="og:description" content="Serve the demo, run the two browser checks that prove it works for a visitor, break each one the way a real change would, and read what the browser saw.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 11: Smoke and end-to-end | SlopStopper">
+    <meta name="twitter:description" content="Serve the demo, run the two browser checks that prove it works for a visitor, break each one the way a real change would, and read what the browser saw.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 11</span>
+            <h1>Smoke and end-to-end</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> Serve the demo, run the two browser checks that prove it works for a visitor, break each one the way a real change would, and read what the browser saw.</p>
+<h2 id="why-these-checks">Why these checks</h2>
+<p>A green build is not a working site. The deploy can succeed and serve a page with a JavaScript error that blanks it, a stylesheet that 404s, a share image that social networks cannot fetch, or a navigation link to a page that was renamed last week. None of that is visible to the static checks, because all of it is about what a browser gets back.</p>
+<p><code>reliability:smoke</code> answers the first question after any deploy: does it serve? For every path in <code>pages.smoke</code> it loads the page in a real browser and asserts a 200, no JavaScript errors, and a load under five seconds, then checks the homepage links a stylesheet and, when the site has one, that the share image answers with the header that lets another site embed it. It is the check that runs hourly against production, because "it worked when we deployed" has a short shelf life.</p>
+<p><code>reliability:e2e</code> answers the second: can a visitor get around? From every path in <code>pages.e2e</code> it walks the primary navigation and asserts each destination answers, has a heading and still carries the nav; follows every in-page anchor to an element that exists; toggles every disclosure widget open and closed; and presses the back button. It names no selector of this site, so it runs unchanged on any site with a <code>&lt;nav&gt;</code>.</p>
+<p>Both are bundled Playwright specs inside the CLI's wheel, staged next to your <code>node_modules</code> on each run. Exit 0 is every test passed, 1 is a test failed, and 2 is the suite never ran to a verdict: no browser, no <code>npx</code>, a config error.</p>
+<h2 id="you-will-need">You will need</h2>
+<ul>
+  <li>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH.</li>
+  <li><code>node</code>, and in the demo: <code>npm install</code> (its <code>package.json</code> lists the three packages the browser checks need) then <code>npx playwright install chromium</code>, once.</li>
+</ul>
+<h2 id="steps">Steps</h2>
+<h3 id="1-serve-the-demo-and-see-smoke-green">1. Serve the demo and see smoke green</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>mkdir -p scratch
+PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
+sleep 2
+slopstopper run reliability:smoke -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✓  3 [chromium] › .ss/.run/tests/smoke.spec.ts:102:7 › Smoke Tests › homepage has at least one stylesheet linked (288ms)
+  ✓  2 [chromium] › .ss/.run/tests/smoke.spec.ts:71:9 › Smoke Tests › / returns 200 and loads cleanly (747ms)
+  ✓  1 [chromium] › .ss/.run/tests/smoke.spec.ts:71:9 › Smoke Tests › /history.html returns 200 and loads cleanly (750ms)
+
+  3 passed (1.4s)</code></pre></div>
+<p>Two pages from <code>pages.smoke</code> in <code>.slopstopper.yml</code>, plus the stylesheet. There is no share-image test because the demo's <code>smoke.og_image_path</code> is empty: its image is an SVG, and the assertion is about the PNG a preview card can embed. The <code>.ss/.run/</code> path is where the bundled spec was staged for this run; the spec itself lives in the wheel.</p>
+<h3 id="2-remove-a-page-the-list-still-names">2. Remove a page the list still names</h3>
+<p>The commonest smoke failure is a rename: the page moved, the list did not.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>rm app/history.html</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:smoke -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✘  1 [chromium] › .ss/.run/tests/smoke.spec.ts:71:9 › Smoke Tests › /history.html returns 200 and loads cleanly (105ms)
+    Error: /history.html should return 200
+    Expected: 200
+    Received: 404
+
+  1 failed
+  2 passed (1.2s)</code></pre></div>
+<p>Playwright names the assertion and shows the line of the spec that made it. The markdown report under <code>.ss/reports/reliability/</code> carries the verdict and points at Playwright's own HTML report, which CI uploads as an artifact, with a screenshot and the network log of the failing test.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout app/history.html
+rm -rf test-results</code></pre></div>
+<h3 id="3-see-end-to-end-green">3. See end-to-end green</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:e2e -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✓  3 [chromium] › .ss/.run/tests/e2e.spec.ts:243:9 › E2E Journeys › /: browser back returns to the start (207ms)
+  ✓  2 [chromium] › .ss/.run/tests/e2e.spec.ts:152:9 › E2E Journeys › /: primary navigation round trip (279ms)
+
+  2 passed (710ms)</code></pre></div>
+<p>One start path from <code>pages.e2e</code>, and two of the four journeys: the demo has no in-page anchors and no disclosure widgets, so those two are skipped rather than failed, which is the spec's rule for a journey the page gives it nothing to do.</p>
+<h3 id="4-point-a-navigation-link-at-a-page-that-does-not-exist">4. Point a navigation link at a page that does not exist</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's|href="history.html"|href="nope.html"|' app/index.html &amp;&amp; rm app/index.html.bak</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run reliability:e2e -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  ✘  1 [chromium] › .ss/.run/tests/e2e.spec.ts:152:9 › E2E Journeys › /: primary navigation round trip (275ms)
+    Error: nope.html: primary navigation should still be present
+  1 failed
+  1 passed (644ms)</code></pre></div>
+<p>The round trip fails at the destination: the page the link reaches has no nav, because it is a 404 page. The other journey still passes. On a site with no build step the nav is duplicated on every page, so a link fixed on one page stays broken on the others until something walks all of them; that is the slop this check exists for.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout app/index.html
+rm -rf test-results</code></pre></div>
+<h3 id="5-know-the-knobs">5. Know the knobs</h3>
+<p>Both checks take the URL positionally and read their page lists from <code>.slopstopper.yml</code>:</p>
+<div class="codeblock codeblock--yaml" tabindex="0"><pre><code>pages:
+  smoke: /,/history.html
+  e2e:   /
+smoke:
+  og_image_path: ''</code></pre></div>
+<p><code>--ci</code> adds retries, a single worker and the HTML report, and is what the workflows pass. <code>SMOKE_PAGES</code> and <code>E2E_PAGES</code> override the lists for one run. Assertions specific to your site, a login or a basket, belong in an ejected copy of the spec: <code>slopstopper templates eject tests/e2e.spec.ts</code> drops one into <code>.ss/</code> and the CLI picks it up from there.</p>
+<h2 id="checkpoint">Checkpoint</h2>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>out=$(slopstopper run reliability:smoke -- http://localhost:8099 2&gt;&amp;1)
+kill "$(cat scratch/serve.pid)"
+rm -r scratch
+echo "$out" | grep 'passed'</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>  3 passed (1.4s)</code></pre></div>
+<h2 id="exercise">Exercise</h2>
+<p>Make smoke fail without touching a page: add a path to the list that the site does not serve.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<p>Serve the demo again, then override the list for one run:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>SMOKE_PAGES='/,/pricing.html' slopstopper run reliability:smoke -- http://localhost:8099</code></pre></div>
+<p><code>/pricing.html should return 200</code> fails with a 404. The same happens when a page is added to <code>pages.smoke</code> before it ships, which is the right order: list it, watch it go red, then ship it and watch it go green.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md#smoke-tests" rel="noopener noreferrer">Smoke tests</a> in the reliability README: every assertion, the config, adding pages</li>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/E2E.md" rel="noopener noreferrer">E2E journeys</a>: the four journeys in detail, what is skipped rather than failed, and adding your own</li>
+  <li>Lesson 17 for the hourly production run and the issue it opens when the site stops serving</li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 9 to 11 minutes.</p>
+<p><strong>Cold open (0:00).</strong> A green deploy badge. Cut to the site: a blank page and a console error.</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Why: a green build is not a working site; the two questions, does it serve and can a visitor get around.</li>
+  <li>Serve; smoke green; what the three tests are and why there is no share-image test here.</li>
+  <li>Remove the history page; red; Playwright names the assertion and the line; the HTML report.</li>
+  <li>E2E green; two journeys run, two skipped.</li>
+  <li>Break the nav link; the round trip fails at the destination; why the nav is duplicated and why that is the slop.</li>
+  <li>The page lists, <code>--ci</code>, ejecting the spec for your own journeys.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/11.tape</code>. Zoom on "Expected: 200 / Received: 404".</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:30 Smoke</code> · <code>3:00 A missing page</code> · <code>4:30 E2E</code> · <code>6:00 A broken link</code> · <code>8:00 The knobs</code> · <code>9:30 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="10-dast.html">← Lesson 10: Dynamic scanning</a>
+  <a class="lesson-nav__next" href="12-accessibility.html">Lesson 12: Accessibility →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/11-smoke-and-e2e.md" rel="noopener noreferrer">docs/learn/11-smoke-and-e2e.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+</body>
+</html>

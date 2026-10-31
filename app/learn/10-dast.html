@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/10-dast.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 10: Dynamic scanning | SlopStopper</title>
+    <meta name="description" content="Serve the demo, run OWASP ZAP against it, read a baseline report, see what the gate accepts and why, and accept one finding with a reason.">
+    <meta name="theme-color" content="#FBF5EC">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/10-dast.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/10-dast.html">
+    <meta property="og:title" content="Lesson 10: Dynamic scanning | SlopStopper">
+    <meta property="og:description" content="Serve the demo, run OWASP ZAP against it, read a baseline report, see what the gate accepts and why, and accept one finding with a reason.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 10: Dynamic scanning | SlopStopper">
+    <meta name="twitter:description" content="Serve the demo, run OWASP ZAP against it, read a baseline report, see what the gate accepts and why, and accept one finding with a reason.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 10</span>
+            <h1>Dynamic scanning</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> Serve the demo, run OWASP ZAP against it, read a baseline report, see what the gate accepts and why, and accept one finding with a reason.</p>
+<h2 id="why-this-check">Why this check</h2>
+<p>Everything before this lesson read the source. <code>security:dast</code> tests the <strong>running thing</strong>. A header the host strips on the way out, a redirect that leaks the path it came from, a page that caches when it should not, a policy that is tighter in the config file than in the response: none of that is visible in a diff, because all of it is about what a client gets back. This is the one check whose findings a reviewer could not have seen, however carefully they read.</p>
+<p>The tool is <a href="https://www.zaproxy.org/" rel="noopener noreferrer">OWASP ZAP</a>, run from its official Docker image so the CLI ships none of it. The check runs ZAP's <strong>baseline</strong> scan: it spiders the site from the URL you give it and runs the passive rules over every response, which is the cheap version of dynamic testing and the right one for a pull request. A full active scan sends attack payloads and takes an hour; that is a scheduled job against production, not a PR gate. Each alert carries a risk (High, Medium, Low, Informational), a plugin id, and the URLs it was seen on.</p>
+<p>Then the <strong>gate</strong> decides. Medium and High block, with two narrow exceptions. A CSP finding on a path documented in <code>docs/security/CSP_EXCEPTIONS.md</code> (lesson 9's ledger) is accepted, because the relaxation was reviewed and the ledger says why. And an alert <code>.zap/rules.tsv</code> marks <code>IGNORE</code>, with a reason, is accepted. The report lists what was accepted and names the entry that accepted it, so nothing is quietly swallowed. Exit 0 is no blocking alert left, 1 is at least one, and 2 is Docker missing, nothing listening at a localhost target, or ZAP exiting without a report.</p>
+<h2 id="you-will-need">You will need</h2>
+<ul>
+  <li>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH, and <code>node</code> for <code>slopstopper serve</code>.</li>
+  <li>Docker, running. <code>slopstopper doctor</code> says whether it is on PATH; the first scan pulls the ZAP image (about a gigabyte), so it needs the network once.</li>
+</ul>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>docker --version</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>Docker version 29.5.3, build d1c06ef</code></pre></div>
+<h2 id="steps">Steps</h2>
+<h3 id="1-relax-one-page-and-write-it-down">1. Relax one page, and write it down</h3>
+<p>The demo's policy is strict enough that ZAP's passive rules find nothing above Low on it, so this lesson makes the relaxation that lesson 9 only documented a little wider: the history page's chart sets inline styles, so <code>style-src</code> admits <code>'unsafe-inline'</code> there. Both halves at once, the header and the ledger entry, so the drift check stays green.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>python3 - &lt;&lt;'PY'
+import pathlib
+p = pathlib.Path('app/_headers'); text = p.read_text()
+head, block = text.split('/history.html\n', 1)
+block = block.replace("style-src 'self';", "style-src 'self' 'unsafe-inline';", 1)
+p.write_text(head + '/history.html\n' + block)
+doc = pathlib.Path('docs/security/CSP_EXCEPTIONS.md'); t = doc.read_text()
+entry = '''### `/history.html`
+
+- **Origin allowed:** `https://charts.example.com`
+- **Directives added:** `img-src https://charts.example.com`, `style-src 'unsafe-inline'`
+- **Loader SRI:** `n/a`
+- **Why:** the uptime chart is rendered by the charts service and sets inline styles on its container
+- **Approved by:** nobody yet
+- **Data leaving site:** visitor IP and User-Agent when the chart image is fetched
+- **Refresh policy:** n/a
+'''
+doc.write_text(t.replace('None yet: every path serves the baseline policy.\n', entry, 1))
+PY
+slopstopper run hygiene:csp-exceptions | tail -1</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>✅ No drift detected.</code></pre></div>
+<h3 id="2-serve-the-demo-and-scan-it">2. Serve the demo and scan it</h3>
+<p>The site is served on a port of its own, tracked by a pid file so a later step can stop it. The server reads <code>app/_headers</code> when it starts, which is why the relaxation came first. ZAP runs in a container, so the check rewrites <code>localhost</code> to the address the container can reach the host on (<code>host.docker.internal</code> on macOS, the bridge gateway <code>172.17.0.1</code> everywhere else) and tells you.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>mkdir -p scratch
+PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
+sleep 2
+slopstopper run security:dast -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🌐 Running DAST baseline scan against http://localhost:8099…
+📍 Using Docker-compatible target: http://host.docker.internal:8099
+WARN-NEW: Storable and Cacheable Content [10049] x 3
+WARN-NEW: CSP: style-src unsafe-inline [10055] x 1
+	http://host.docker.internal:8099/history.html (200 OK)
+WARN-NEW: Permissions Policy Header Not Set [10063] x 4
+WARN-NEW: Cross-Origin-Embedder-Policy Header Missing or Invalid [90004] x 15
+FAIL-NEW: 0	FAIL-INPROG: 0	WARN-NEW: 4	WARN-INPROG: 0	INFO: 0	IGNORE: 0	PASS: 64
+⚠️  Found 1 high/medium alert(s) (total 6)
+🕷️  DAST gate
+   blocking alerts (riskcode &gt;= 2): 0
+   swallowed (rules.tsv IGNORE or documented CSP exceptions): 1
+   🛡 /history.html: alert=10055-6 riskcode=2 'CSP: style-src unsafe-inline' ← CSP_EXCEPTIONS.md path `/history.html`
+✅ No blocking findings.</code></pre></div>
+<p>Trimmed to the alerts and the gate. Sixty-four rules passed. ZAP raised six alerts, one of them Medium: the history page's CSP allows inline styles. That is exactly the relaxation step 1 put in the ledger, and the gate found the entry and accepted the finding, naming the path that accepted it. Green, with the Medium still visible.</p>
+<h3 id="3-read-the-report">3. Read the report</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/^# DAST/,/Low Risk Alerts/p' .ss/reports/dast/dast-report.md</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code># DAST Analysis Report
+
+**Generated**: 2026-10-25 18:27:22 UTC
+
+### 🛡 Accepted findings (swallowed by gate)
+
+1 finding(s) accepted by `.zap/rules.tsv` or `docs/security/CSP_EXCEPTIONS.md` were filtered out:
+
+- **/history.html**: alert `10055-6`, riskcode 2, _CSP: style-src unsafe-inline_, by CSP_EXCEPTIONS.md path `/history.html`
+
+These do not block the build. They will block again if the entry is removed or if a higher-risk variant appears.
+
+## Summary
+
+| Risk Level | Count |
+|------------|-------|
+| 🔴 High | 0 |
+| 🟡 Medium | 1 |
+| 🔵 Low | 4 |
+| ℹ️ Informational | 1 |
+| **Total** | **6** |
+
+## 🟡 Medium Risk Alerts
+
+| Alert | Risk | Instances | Description |
+|-------|------|-----------|-------------|
+| CSP: style-src unsafe-inline | Medium | 1 | &lt;p&gt;Content Security Policy (CSP) is an added layer of security that helps to ... |
+
+## 🔵 Low Risk Alerts</code></pre></div>
+<p>The report opens with the accepted findings and the entry behind each, then the counts by risk, then a table per level. The Lows are the cross-origin isolation and permissions-policy headers the demo's host does not send; Low never blocks, so they are there to be read, not fixed today. The JSON beside it has every instance and ZAP's <code>alertRef</code> (<code>10055-6</code>), which is the id you will use in step 5.</p>
+<h3 id="4-take-the-ledger-away">4. Take the ledger away</h3>
+<p>The entry is what made the Medium acceptable. Remove it and the same scan is red.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout docs/security/CSP_EXCEPTIONS.md</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run security:dast -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>⚠️  Found 1 high/medium alert(s) (total 6)
+🕷️  DAST gate
+   blocking alerts (riskcode &gt;= 2): 1
+   swallowed (rules.tsv IGNORE or documented CSP exceptions): 0
+❌ 1 blocking finding(s). See .ss/reports/dast/dast-report.md.</code></pre></div>
+<p>Same site, same six alerts, one blocking; the report's Medium table names it. Nothing about the response changed; what changed is that nobody has said why it is acceptable. The gate blocks on a Medium until someone does, in a place a reviewer reads.</p>
+<h3 id="5-accept-it-with-a-reason-the-other-way">5. Accept it with a reason, the other way</h3>
+<p>For a finding that is not a CSP relaxation on one path (a header a static host cannot send, a rule that misreads a framework), the ledger is the wrong instrument. <code>.zap/rules.tsv</code> is the right one: one line per alert, tab-separated, with the reason as the third field.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>mkdir -p .zap
+printf '10055-6\tIGNORE\t# inline styles on /history.html: the chart container sets them; the page allows nothing else\n' &gt; .zap/rules.tsv
+slopstopper run security:dast -- http://localhost:8099</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>🕷️  DAST gate
+   blocking alerts (riskcode &gt;= 2): 0
+   swallowed (rules.tsv IGNORE or documented CSP exceptions): 1
+   🛡 /history.html: alert=10055-6 riskcode=2 'CSP: style-src unsafe-inline' ← .zap/rules.tsv entry `10055-6`
+✅ No blocking findings.</code></pre></div>
+<p>Green again, and the gate names the line that did it. Two things about the id. <code>10055-6</code> is the <strong>alert ref</strong>: plugin 10055 is ZAP's whole CSP scanner and raises several unrelated alerts, so ignoring <code>10055</code> would also hide a missing <code>frame-ancestors</code>; the ref accepts exactly the inline-styles alert and nothing else. And the reason is not optional: the file is read in review, and "IGNORE" with no <code># why</code> is the quiet relaxation this course exists to stop.</p>
+<h3 id="6-put-the-demo-back">6. Put the demo back</h3>
+<p>Remove the rule, restore the headers, and stop the server: it read the relaxed headers when it started, so the clean run in the checkpoint needs a fresh one.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>rm -rf .zap
+git checkout app/_headers
+kill "$(cat scratch/serve.pid)"</code></pre></div>
+<h2 id="checkpoint">Checkpoint</h2>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid
+sleep 2
+slopstopper run security:dast -- http://localhost:8099 2&gt;&amp;1 | grep -E 'Found|No blocking'
+kill "$(cat scratch/serve.pid)"
+rm -rf scratch</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>ℹ️  Found 4 alert(s), but none are high/medium
+✅ No blocking findings.</code></pre></div>
+<p>The demo as it shipped: four Lows, nothing to accept, server stopped, pid file gone.</p>
+<h2 id="exercise">Exercise</h2>
+<p>Point the scan at a live site instead of the local one, and explain the difference in what ZAP sees.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run security:dast -- https://slopstopper.dev</code></pre></div>
+<p>No <code>📍</code> line, because there is nothing to rewrite. The response headers now come from the host's edge rather than from <code>slopstopper serve</code> reading a file, so this is the run that would catch a header the edge strips or adds. That is why the suite scans production after each deploy and daily, and why a local build is enough for a pull request: the two runs answer different questions.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/DAST.md" rel="noopener noreferrer">DAST</a>: the risk table, the gate's rules in full, <code>rules.tsv</code> by plugin id versus alert ref, static hosts that cannot send headers, and scanning an API through ZAP's OpenAPI mode</li>
+  <li><a href="https://www.zaproxy.org/docs/alerts/" rel="noopener noreferrer">ZAP's alert registry</a>, where every plugin id and alert ref resolves to its rule</li>
+  <li>Lesson 9, whose ledger is what the gate read in step 2</li>
+  <li>Lesson 17 for the post-deploy and scheduled runs against production, and the tracking issue a blocking alert on <code>main</code> opens</li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 10 to 12 minutes.</p>
+<p><strong>Cold open (0:00).</strong> <code>curl -I</code> against a deployed site: a header the config file says is there, missing from the response. "The code is right." Cut to a scan that reads responses, not code.</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Why: the running thing; what a diff cannot show; baseline versus a full scan and why PRs get the cheap one.</li>
+  <li>The relaxation and its ledger entry, both at once; serve; scan; the Docker rewrite; sixty-four passes, six alerts, one Medium, accepted by the ledger and named.</li>
+  <li>The report: accepted first, counts, a table per level, the alert ref in the JSON.</li>
+  <li>Remove the ledger; red; nothing about the site changed.</li>
+  <li><code>rules.tsv</code>: the alert ref, not the plugin; the reason field; green and named again.</li>
+  <li>Put the demo back and scan it clean. Exercise: a live site; headers from the edge; two runs, two questions.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/10.tape</code>. Zoom on <code>← CSP_EXCEPTIONS.md path</code>, on <code>blocking alerts: 1</code>, and on <code>← .zap/rules.tsv</code>.</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:30 Relax and record</code> · <code>2:30 Scan</code> · <code>4:30 The report</code> · <code>6:00 Take the ledger away</code> · <code>7:30 rules.tsv</code> · <code>9:30 Clean</code> · <code>10:30 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="09-headers-and-csp.html">← Lesson 9: Headers and CSP</a>
+  <a class="lesson-nav__next" href="11-smoke-and-e2e.html">Lesson 11: Smoke and end-to-end →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/10-dast.md" rel="noopener noreferrer">docs/learn/10-dast.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+</body>
+</html>

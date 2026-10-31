@@ -45,7 +45,8 @@ the CSP needs no font-src exception; do not add external font links.
 - Each HTML page links `app/shared.css` first, then its page-specific CSS.
 - Header / nav / footer markup is duplicated across pages because
   there is no build step or SSI. Accept the duplication; if you change
-  one, change all six. The footer carries the privacy line, which must
+  one, change all six, then run `task contributing:learn:site`, which
+  copies the Learn page's chrome into every lesson page. The footer carries the privacy line, which must
   stay true: see `app/privacy.html` and the CSP pitfall in
   `docs/contributing/PITFALLS.md`.
 - Every external link uses `rel="noopener noreferrer"`. Avoid
@@ -62,15 +63,17 @@ the CSP needs no font-src exception; do not add external font links.
 
 ## Pages
 
-Six static pages with shared navigation. Each page is one HTML file plus
-one page-specific CSS file; there is no build step and no framework.
+Six static pages with shared navigation, plus a generated page per lesson
+of the course. Each hand-written page is one HTML file plus one
+page-specific CSS file; there is no build step and no framework.
 
 | Page | File | Interactive element |
 | ---- | ---- | ------------------- |
 | Home | `app/index.html` | **Copy** buttons on the install code blocks (`app/copy.js`); `<details>` collapsibles |
 | Features | `app/features.html` | `<details>` workflow excerpt per check; an "On this page" jump row under the hero and two Back-to-top pills |
 | Tools | `app/tools.html` | `<details>` config or workflow excerpt per tool |
-| Learn | `app/learn.html` | **Copy** button on the demo setup block (`app/copy.js`). Lists the course's lessons and links each to its page on GitHub; `cli/tests/test_learn_page.py` keeps the list identical to `docs/learn/README.md` |
+| Learn | `app/learn.html` | **Copy** button on the demo setup block (`app/copy.js`). Lists the course's lessons and links each to its page under `app/learn/`; `cli/tests/test_learn_page.py` keeps the list identical to `docs/learn/README.md` |
+| Lessons | `app/learn/NN-slug.html` | Generated from `docs/learn/NN-slug.md` by `scripts/learnsite.py` (`task contributing:learn:site`), never edited by hand. The chrome is read from `app/learn.html`; **Copy** buttons on the command blocks; `<details>` for solutions and episode scripts; previous and next links |
 | Feedback | `app/feedback.html` | GitHub Discussions comments via the Giscus embed, loaded on a button press (`app/feedback.js`) |
 | Privacy | `app/privacy.html` | None. States what the site collects (nothing), what Cloudflare keeps, and which services the pages reach; linked from every footer rather than the nav |
 
@@ -87,6 +90,8 @@ app/index.html      ← Home page            app/index.css      ← Home styles
 app/features.html   ← Features page        app/features.css   ← Features styles
 app/tools.html      ← Tools page           app/tools.css      ← Tools styles
 app/learn.html      ← Learn page           app/learn.css      ← Learn styles
+app/learn/*.html    ← Lesson pages, generated (task contributing:learn:site)
+                                              app/lesson.css     ← Lesson page styles
 app/feedback.html   ← Feedback page        app/feedback.css   ← Feedback styles
 app/privacy.html   ← Privacy page         app/privacy.css    ← Privacy styles
 app/shared.css      ← Brand tokens, header/nav/footer, cards, code blocks

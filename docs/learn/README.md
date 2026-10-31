@@ -102,10 +102,10 @@ and the verdicts are the same.
 | 19 | [Profiles and tailoring](19-profiles-and-tailoring.md) | `profile show`, `detect` and `list`, `workflows.enabled`, the pin in `mise.toml` | coming soon |
 | 20 | [Inside slopstopper: add a check](20-inside-slopstopper.md) | The registry, the registration test, the shape every check shares | coming soon |
 
-The same list is on the site at
-[slopstopper.dev/learn.html](https://slopstopper.dev/learn.html), which
-links each lesson here. The episode column links the video once it is
-recorded. The title,
+The course is read on the site: [slopstopper.dev/learn.html](https://slopstopper.dev/learn.html)
+lists the lessons and each one is a page under `/learn/`, rendered from
+the file linked here by `task contributing:learn:site`. The episode
+column links the video once it is recorded. The title,
 thumbnail and description every episode follows are in
 [EPISODES.md](EPISODES.md), and `docs/learn/tapes/NN.tape` holds each
 lesson's terminal parts, generated from its runnable blocks.
@@ -117,7 +117,10 @@ here and have the demo above.
 ## Writing a lesson
 
 Copy [TEMPLATE.md](TEMPLATE.md), which is the lesson shape and the rules
-a lesson follows. The course lives under `docs/learn/` but is listed in
+a lesson follows. When the page is written, `task contributing:learn:site`
+renders it onto the site and `task contributing:learn:tapes` writes its
+tape; the CLI's test suite fails while either is stale. The course lives
+under `docs/learn/` but is listed in
 `hygiene.docs.exclude` in `.slopstopper.yml`, so the docs checks that
 keep the reference docs routed and sized leave it alone: it is read in
 order by people, not routed to by agents.
