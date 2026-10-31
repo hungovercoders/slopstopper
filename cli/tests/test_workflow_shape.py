@@ -201,40 +201,80 @@ def test_the_fixture_finds_playwright_callers():
     ]
 
 
+def _action_step(name_prefix: str) -> str:
+    action = PLAYWRIGHT_ACTION.read_text(encoding="utf-8")
+    steps = [s for s in _steps(action) if re.match(rf"\s+- name: {re.escape(name_prefix)}", s)]
+    assert len(steps) == 1, f"one step named {name_prefix!r}… in the action, found {len(steps)}"
+    return steps[0]
+
+
 def test_playwright_install_is_time_boxed():
     # A stalled browser download once held two PR jobs for hours, because
     # nothing bounded the step short of GitHub's six-hour job limit (#386).
-    action = PLAYWRIGHT_ACTION.read_text(encoding="utf-8")
-    steps = [s for s in _steps(action) if "playwright install" in s]
-    assert len(steps) == 1, "one install step in the action"
-    step = steps[0]
+    step = _action_step("Install Playwright browsers")
     assert "timeout " in step, "each download attempt is bounded with `timeout`"
-    # `timeout` kills npx but not the apt-get it spawned, which keeps the
-    # dpkg lock, so the retry fails on the lock instead of downloading
-    # (#527). apt runs once, un-timed; only the browser download retries.
-    assert "--with-deps" not in step, "run `playwright install-deps` outside the timed loop, not `--with-deps` inside it"
-    # apt gets one un-timed retry of its own: a transient mirror error
-    # exits cleanly and leaves no lock, so a second try is safe.
-    assert re.search(
-        r'(?m)^\s+npx playwright install-deps "\$BROWSER" \|\| npx playwright install-deps "\$BROWSER"\s*$', step
-    ), "the install step has no un-timed `install-deps || install-deps` line"
+    assert "id: install" in step, "the save step keys its condition on this id"
+    # The apt phase is its own step (#580), never `--with-deps` inside the
+    # timed loop: `timeout` kills npx but not the apt-get it spawned, which
+    # keeps the dpkg lock, so the retry fails on the lock (#527).
+    assert "--with-deps" not in step and "install-deps" not in step, (
+        "the download loop must not run apt; that is the system-packages step"
+    )
 
 
-def test_playwright_browsers_are_cached_before_the_install():
+def test_the_apt_phase_is_bounded_and_off_by_default_on_hosted_runners():
+    # On GitHub-hosted images every library Chromium needs is already
+    # present and the apt phase spent minutes on fonts no check uses; with
+    # no bound of its own, a slow mirror ate the caller's whole budget (#580).
+    step = _action_step("Install the browser's system packages")
+    assert "inputs.install-deps == 'true'" in step, "the input forces the phase on"
+    assert "runner.environment != 'github-hosted'" in step, "`auto` skips hosted runners"
+    assert "steps.cache.outputs.cache-hit != 'true'" in step, "a warm run never touches apt"
+    assert re.search(r"timeout --kill-after=\S+ \d+m npx playwright install-deps", step), (
+        "each apt attempt is bounded with `timeout`"
+    )
+    assert "lock" in step, "the retry waits for the dpkg lock a killed apt-get may still hold (#527)"
+    action = PLAYWRIGHT_ACTION.read_text(encoding="utf-8")
+    assert re.search(r"(?m)^  install-deps:\n(?:.*\n)*?    default: auto$", action), "the input defaults to `auto`"
+
+
+def test_playwright_browsers_are_restored_before_and_saved_after_the_install():
     # A warm run never touches the download CDN (#536): the browser directory
     # is cached on the Playwright version resolved from node_modules, so a
     # lockfile bump misses and a repeat on the same version is a no-op.
+    # Restore and save are separate steps, so a completed download is kept
+    # whatever the check's verdict (#565), and a stalled restore gives up
+    # long before the caller's budget runs out (#566).
     action = PLAYWRIGHT_ACTION.read_text(encoding="utf-8")
     names = re.findall(r"^\s+- name: (.+)$", action, re.M)
-    cache = next(i for i, n in enumerate(names) if n.startswith("Cache Playwright"))
+    restore = next(i for i, n in enumerate(names) if n.startswith("Restore Playwright"))
     install = next(i for i, n in enumerate(names) if n.startswith("Install Playwright"))
-    assert cache < install, names
-    cache_step = [s for s in _steps(action) if "actions/cache@" in s][0]
-    assert "path: ~/.cache/ms-playwright" in cache_step
-    assert "steps.pw.outputs.version" in cache_step, "the key carries the resolved Playwright version"
-    assert "restore-keys" not in cache_step, "a partial match would mask a lockfile bump"
+    save = next(i for i, n in enumerate(names) if n.startswith("Save Playwright"))
+    assert restore < install < save, names
+    assert "actions/cache@" not in action, "the all-in-one action saves on job success only (#565)"
+
+    restore_step = _action_step("Restore Playwright")
+    assert "actions/cache/restore@" in restore_step
+    assert "id: cache" in restore_step
+    assert "path: ~/.cache/ms-playwright" in restore_step
+    assert "steps.pw.outputs.version" in restore_step, "the key carries the resolved Playwright version"
+    assert "restore-keys" not in restore_step, "a partial match would mask a lockfile bump"
+    assert re.search(r"SEGMENT_DOWNLOAD_TIMEOUT_MINS: [1-3]$", restore_step, re.M), (
+        "a stalled restore must give up in a minute or two, not ten (#566)"
+    )
+
+    save_step = _action_step("Save Playwright")
+    assert "actions/cache/save@" in save_step
+    assert "steps.install.outcome == 'success'" in save_step, "save only a completed download"
+    assert "steps.cache.outputs.cache-hit != 'true'" in save_step, "nothing to save on a hit"
+    assert "steps.cache.outputs.cache-primary-key" in save_step, "save under the key that was looked up"
+
     assert "npx --no-install playwright --version" in action, "the version comes from node_modules, never the registry"
     assert "${{ runner.arch }}" in action, "one cache per architecture, or an x64 Chromium is restored on arm"
+    header = action.split("inputs:")[0]
+    assert "timeout-minutes" in header and "restore" in header, (
+        "the header says what the caller's timeout has to cover (#566)"
+    )
 
 
 @pytest.mark.parametrize("workflow", ALL_WORKFLOWS)
