@@ -69,7 +69,8 @@ anything on a JSON API.
 ## Dependency Vulnerability Scanning
 
 Trivy scans the project filesystem for known CVEs in your packages and lock
-files. CRITICAL and HIGH block. A companion GitHub-native workflow
+files, on every PR and push and weekly against `main`, since a CVE lands on
+versions already merged. CRITICAL and HIGH block. A companion GitHub-native workflow
 (`ss-security-vulnerability-new-check.yml`) reviews newly-added dependencies
 on PRs and fails on a licence outside the allowlist in `.github/dependency-review-config.yml`.
 Neither gates on a devDependency advisory: Trivy scans production scope
