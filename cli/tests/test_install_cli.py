@@ -609,6 +609,7 @@ def test_a_lock_npm_cannot_regenerate_is_said_not_failed(tmp_path):
     result = _run_install(target, args=["--no-hooks", "--no-skills"], env_extra=_fake_npm(tmp_path, "echo boom >&2; exit 1"))
     assert result.returncode == 0, result.stderr
     assert "exited 1: boom" in result.stdout and "npm install --package-lock-only` before pushing" in result.stdout
+    (tmp_path / "other").mkdir()
     no_lock = _make_minimal_target(tmp_path / "other")
     (no_lock / "package.json").write_text(json.dumps({"name": "site", "devDependencies": {}}) + "\n")
     result = _run_install(no_lock, args=["--no-hooks", "--no-skills"], env_extra=_fake_npm(tmp_path / "other", "exit 1"))
