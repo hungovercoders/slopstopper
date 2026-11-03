@@ -49,7 +49,7 @@ Everything SlopStopper owns lives under the `ss` namespace so it can't clash wit
 | `.claude/skills/slopstopper-*/` | The `slopstopper-install` and `slopstopper-triage` Claude Code skills (`--no-skills` opts out) |
 | `slopstopper` repo topic | Added via `gh` when it can reach the repo, so adopters can be found with `gh search repos --topic slopstopper` (`--no-topic` opts out) |
 | `.ss/reports/` | The `.gitignore`d directory the CLI writes reports to |
-| `package.json` | Created (or `devDependencies` merged into an existing file) |
+| `package.json` | Created (or `devDependencies` merged into an existing file; a `package-lock.json` next to it is regenerated when the merge changed the manifest, since the browser workflows run `npm ci`) |
 
 Bundled Playwright specs, lighthouserc dev/prod, and the local-CI static server live inside the wheel. To customise one, `slopstopper templates eject <name>` copies it into `.ss/`.
 

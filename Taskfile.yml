@@ -103,8 +103,10 @@ tasks:
 
   contributing:lint:
     desc: markdownlint over docs/ and CONTRIBUTING.md (advisory, not a CI gate)
+    # Fetched on demand rather than a devDependency: package.json is the
+    # suite's manifest, merged into every adopter's, and no check needs it.
     cmds:
-      - npx markdownlint 'docs/**/*.md' CONTRIBUTING.md {{.CLI_ARGS}}
+      - npx -y markdownlint-cli@0.47.0 'docs/**/*.md' CONTRIBUTING.md {{.CLI_ARGS}}
 
   contributing:run:
     desc: Serve app/ locally on :8080 via `slopstopper serve` (PORT=… to change; test:site follows it)

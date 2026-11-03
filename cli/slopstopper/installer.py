@@ -469,10 +469,40 @@ def install_package_json(root: Path, target: Path) -> None:
             existing[k] = dev[k]
         _write(pkg, json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
         output.success(f"Added devDependencies: {', '.join(added)}")
+        sync_lockfile(pkg)
     else:
         output.info("No new devDependencies to add")
     if conflicts:
         output.warn(f"Version conflicts (your version kept): {'; '.join(conflicts)}")
+
+
+LOCK_HINT = "run `npm install --package-lock-only` before pushing, or `npm ci` in the browser workflows fails"
+
+
+def sync_lockfile(pkg: Path) -> None:
+    """Keep `package-lock.json` in step with the devDependencies just added.
+    Every browser workflow begins with `npm ci`, which refuses a lock that
+    no longer matches its manifest, so a merge that left the lock alone
+    went red on the adopter's next PR. Regenerated with npm when it is on
+    PATH (lock only, no scripts, no install); otherwise said, not failed,
+    since the person at the keyboard can run it."""
+    lock = pkg.parent / "package-lock.json"
+    if not lock.is_file():
+        return
+    npm = shutil.which("npm")
+    if not npm:
+        output.warn(f"package-lock.json is out of step with package.json and npm is not on PATH: {LOCK_HINT}")
+        return
+    cmd = [npm, "install", "--package-lock-only", "--ignore-scripts", "--no-audit", "--no-fund"]
+    try:
+        done = subprocess.run(cmd, cwd=pkg.parent, capture_output=True, text=True, timeout=300)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        output.warn(f"package-lock.json could not be regenerated ({exc}): {LOCK_HINT}")
+        return
+    if done.returncode != 0:
+        output.warn(f"`npm install --package-lock-only` exited {done.returncode}: {done.stderr.strip()[-300:]}; {LOCK_HINT}")
+        return
+    output.success("package-lock.json regenerated to match")
 
 
 # ── seeds ────────────────────────────────────────────────────────
@@ -902,7 +932,7 @@ def preflight() -> None:
     """Say up front which tools the checks will need; none blocks the install."""
     soft = []
     if shutil.which("node") is None:
-        soft.append("node (Playwright, Lighthouse CI, markdownlint, TypeScript): https://nodejs.org/")
+        soft.append("node (Playwright, Lighthouse CI, TypeScript): https://nodejs.org/")
     if shutil.which("mise") is None:
         soft.append("mise (installs the pinned slopstopper-cli, task and node from mise.toml): https://mise.jdx.dev")
     if shutil.which("docker") is None:

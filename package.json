@@ -1,7 +1,7 @@
 {
   "name": "slopstopper",
   "version": "1.0.0",
-  "description": "SlopStopper – deterministic feedback for AI-driven development",
+  "description": "SlopStopper \u2013 deterministic feedback for AI-driven development",
   "scripts": {
     "build": "echo 'Static site, no build step. Cloudflare Workers ships app/ as-is.'",
     "start": "slopstopper serve",
@@ -19,7 +19,6 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",
     "@lhci/cli": "^0.14.0",
-    "@playwright/test": "^1.40.0",
-    "markdownlint-cli": "^0.47.0"
+    "@playwright/test": "^1.40.0"
   }
 }
