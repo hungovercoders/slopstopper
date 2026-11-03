@@ -574,6 +574,53 @@ def test_dev_dependencies_merge_into_an_existing_package_json_and_the_adopters_v
     assert (target / "package.json").read_text() == raw
 
 
+def _fake_npm(tmp_path: Path, script: str) -> dict[str, str]:
+    """An `npm` first on PATH that runs `script` (sh), recording its argv."""
+    bin_dir = tmp_path / "fakebin"
+    bin_dir.mkdir()
+    npm = bin_dir / "npm"
+    npm.write_text("#!/bin/sh\necho \"$@\" > \"$PWD/npm-args.txt\"\n" + script + "\n")
+    npm.chmod(0o755)
+    return {"PATH": f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}"}
+
+
+def test_a_lock_is_regenerated_when_the_merge_changes_the_manifest(tmp_path):
+    """Every browser workflow starts with `npm ci`, which refuses a lock
+    behind its manifest: the install that changed package.json keeps the
+    lock in step, lock only and without scripts."""
+    target = _make_minimal_target(tmp_path)
+    (target / "package.json").write_text(json.dumps({"name": "site", "devDependencies": {"vite": "^5"}}) + "\n")
+    (target / "package-lock.json").write_text('{"name": "site", "lockfileVersion": 3}\n')
+    env = _fake_npm(tmp_path, "echo '{\"regenerated\": true}' > package-lock.json")
+    result = _run_install(target, args=["--no-hooks", "--no-skills"], env_extra=env)
+    assert result.returncode == 0, result.stderr
+    assert "package-lock.json regenerated to match" in result.stdout
+    assert json.loads((target / "package-lock.json").read_text()) == {"regenerated": True}
+    assert (target / "npm-args.txt").read_text().split() == ["install", "--package-lock-only", "--ignore-scripts", "--no-audit", "--no-fund"]
+    (target / "npm-args.txt").unlink()
+    second = _run_install(target, args=["--no-hooks", "--no-skills"], env_extra=env)
+    assert "No new devDependencies to add" in second.stdout and not (target / "npm-args.txt").exists()   # nothing changed: npm not run
+
+
+def test_a_lock_npm_cannot_regenerate_is_said_not_failed(tmp_path):
+    target = _make_minimal_target(tmp_path)
+    (target / "package.json").write_text(json.dumps({"name": "site", "devDependencies": {}}) + "\n")
+    (target / "package-lock.json").write_text('{"name": "site", "lockfileVersion": 3}\n')
+    result = _run_install(target, args=["--no-hooks", "--no-skills"], env_extra=_fake_npm(tmp_path, "echo boom >&2; exit 1"))
+    assert result.returncode == 0, result.stderr
+    assert "exited 1: boom" in result.stdout and "npm install --package-lock-only` before pushing" in result.stdout
+    (tmp_path / "other").mkdir()
+    no_lock = _make_minimal_target(tmp_path / "other")
+    (no_lock / "package.json").write_text(json.dumps({"name": "site", "devDependencies": {}}) + "\n")
+    result = _run_install(no_lock, args=["--no-hooks", "--no-skills"], env_extra=_fake_npm(tmp_path / "other", "exit 1"))
+    assert "package-lock" not in result.stdout                       # no lock, nothing to keep in step
+
+
+def test_the_suite_ships_only_the_dev_dependencies_its_checks_need():
+    dev = json.loads((REPO_ROOT / "package.json").read_text())["devDependencies"]
+    assert set(dev) == {"@axe-core/playwright", "@lhci/cli", "@playwright/test"}
+
+
 def test_gitignore_block_covers_the_run_dir_and_node_modules(tmp_path):
     target = _make_minimal_target(tmp_path)
     assert _run_install(target, args=["--no-hooks", "--no-skills"]).returncode == 0
