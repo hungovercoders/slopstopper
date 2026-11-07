@@ -58,4 +58,4 @@ One lesson per page, in order; each one's goal is its summary.
 
 - [slopstopper-install skill](https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-install/SKILL.md): install SlopStopper into a repo or refresh an existing install
 - [slopstopper-triage skill](https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-triage/SKILL.md): diagnose and fix a failing SlopStopper check
-- [slopstopper-steward](https://github.com/hungovercoders/slopstopper-steward): across a GitHub organisation, upgrades every adopter and works the issues the suite raised, one PR each
+- [slopstopper-steward](https://github.com/hungovercoders/slopstopper-steward): across a GitHub organisation, upgrades every adopter and works the issues the suite raised, one PR each. Each organisation runs its own fork or template copy; [its setup runbook](https://github.com/hungovercoders/slopstopper-steward/blob/main/docs/runbooks/SETUP.md) walks the copy, the GitHub App and the first dry run

@@ -199,7 +199,14 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
                 <summary>What does it change, and what never?</summary>
                 <div class="details__body">
                     <p>Every write is a pull request on a <code>steward/&lt;order&gt;</code> branch: never a push to a default branch, never a merge, never a repo setting. It verifies each change with the pinned CLI before it opens the PR, opens it as a draft when something is still red or unreviewed, and says in the PR what it could not check in a clone. It runs as a GitHub App you install on the organisation, starts in a plan-only mode, and carries no check logic of its own: everything it knows about slopstopper is a written contract that its CI checks against this repo every night.</p>
-                    <a class="details__source" href="https://github.com/hungovercoders/slopstopper-steward/blob/main/docs/runbooks/SETUP.md" rel="noopener noreferrer">Set it up for an organisation →</a>
+                    <a class="details__source" href="https://github.com/hungovercoders/slopstopper-steward/blob/main/docs/architecture/README.md" rel="noopener noreferrer">How a run works and where the agent is boxed →</a>
+                </div>
+            </details>
+            <details class="details">
+                <summary>How do I run one for my organisation?</summary>
+                <div class="details__body">
+                    <p>The steward is not a hosted service: each organisation runs its own copy of the <code>slopstopper-steward</code> repo from its own GitHub Actions. Nothing in it names an organisation except one file. Fork it into your organisation (so <em>Sync fork</em> brings later fixes in) or create a repo from it as a template, then replace <code>steward.yml</code> with your org, starting in <code>mode: plan</code>. Create a GitHub App under your organisation, install it on the repos that have slopstopper, and store its ID and private key as the repo's secrets, alongside an Anthropic API key or a Claude subscription token for the agentic orders. Run <em>Steward · Run</em> with <em>Plan only</em>, read the report, then switch to <code>mode: pr</code>. Your copy is itself an adopter, so your steward keeps its own slopstopper pin current too.</p>
+                    <a class="details__source" href="https://github.com/hungovercoders/slopstopper-steward/blob/main/docs/runbooks/SETUP.md" rel="noopener noreferrer">The setup runbook: fork or template, the App's permissions, the secrets, the first dry run →</a>
                 </div>
             </details>
             <p class="docs-pointer">How the two fit together: <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/STEWARD.md" rel="noopener noreferrer">docs/architecture/STEWARD.md →</a></p>

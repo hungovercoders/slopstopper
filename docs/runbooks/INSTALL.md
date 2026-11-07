@@ -124,6 +124,8 @@ bash install.sh --upgrade-cli        # latest
 bash install.sh --cli-version X.Y.Z  # exact
 ```
 
+Many repos? A fork of [slopstopper-steward](https://github.com/hungovercoders/slopstopper-steward) does this for each, one PR per repo ([STEWARD.md](../architecture/STEWARD.md)).
+
 To refresh only the Claude Code skills, run `curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash`. [INSTALL_SKILLS.md](./INSTALL_SKILLS.md) has the detail.
 
 ## Releases and provenance

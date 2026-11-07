@@ -56,6 +56,15 @@ Before merging a change to any of these, run `steward contract <path to
 this checkout>` from a steward checkout, and open the matching steward PR
 in the same change.
 
+## Running one for your organisation
+
+`hungovercoders/slopstopper-steward` is hungovercoders' copy, not a
+service. Fork it (or copy it as a template), set your `orgs` in
+`steward.yml`, install your own GitHub App on your adopters, add it and
+an Anthropic or Claude token as secrets, and run plan-only first. Its
+[setup runbook](https://github.com/hungovercoders/slopstopper-steward/blob/main/docs/runbooks/SETUP.md)
+walks it.
+
 ## What it never does
 
 No merge, no push to a default branch, no change to repo settings, no
