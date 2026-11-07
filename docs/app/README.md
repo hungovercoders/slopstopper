@@ -11,33 +11,45 @@ slopstopper.dev is the reference install of SlopStopper: a Python CLI plus GitHu
 The site is **indie-playful**: cream / peach background, tomato accent,
 "Stoppy" mascot, sticker cards with offset shadows and tiny rotations,
 sun-highlighter underlines, hand-drawn SVG arrows. It ships in a light
-and a dark theme; the dark one is the same warm family on espresso, so
-the stickers, highlighter and mascot carry over rather than giving way
-to a generic grey.
+and a dark theme. The dark theme is not an inversion: the ink outlines
+and hard offset shadows that make the light theme a sticker sheet would
+glare on a dark ground, so there the borders go low-contrast, depth comes
+from tonal surfaces and soft shadows, the highlighter becomes a marker
+underline and the tomato carries the emphasis. The shapes, rotations,
+bubble and mascot are the same in both.
 
 Brand tokens live in [`app/shared.css`](../../app/shared.css) on `:root`,
 light first, then the dark palette:
 
 ```css
---cream: #FBF5EC;        /* page background        dark: #1B1612 */
---peach: #FFD9B8;        /* secondary surface      dark: #4A3426 */
---peach-soft: #FFE9D4;   /*                        dark: #33261E */
---ink: #2A2118;          /* primary text           dark: #F3EAE0 */
---ink-soft: #6B5B47;     /* secondary text         dark: #BDAE9A */
---accent: #E8512B;       /* tomato, decorative shapes only   dark: #FF6B3D */
---accent-deep: #B33A1A;  /* tomato for text, links, buttons  dark: #FF9B78 */
---mint: #2E8B6F;         /* "pass" indicator       dark: #5CC29E */
---sun: #F5C24C;          /* "warning" + highlighter underline  dark: #7A5C12 */
---paper: #FFFFFF;        /* card surface           dark: #27201A */
+--cream: #FBF5EC;        /* page background        dark: #131110 */
+--peach: #FFD9B8;        /* secondary surface      dark: #3A2E27 */
+--peach-soft: #FFE9D4;   /*                        dark: #231D19 */
+--ink: #2A2118;          /* primary text           dark: #EFE7DC */
+--ink-soft: #6B5B47;     /* secondary text         dark: #AEA192 */
+--accent: #E8512B;       /* tomato, decorative shapes only   dark: #FF6A3D */
+--accent-deep: #B33A1A;  /* tomato for text and links        dark: #FFA073 */
+--mint: #2E8B6F;         /* "pass" indicator       dark: #5FCBA2 */
+--sun: #F5C24C;          /* "warning" + sticker surfaces     dark: #E5B547 */
+--paper: #FFFFFF;        /* card surface           dark: #1C1815 */
 ```
 
-Semantic tokens sit on top: `--line` draws every border and sticker
-shadow, `--rule` the dashed dividers, and `--code-bg` / `--code-fg` /
-`--code-accent` keep code blocks dark in both themes instead of inverting
-with the page. **Write every colour as a token**, in CSS and in the
-inline SVGs (`fill="var(--ink)"` works in a presentation attribute);
-a hex literal is a colour that will not follow the theme. The mascot is
-the one exception: Stoppy is a sticker, cream-faced in both themes.
+Semantic tokens sit on top, and components are written against these,
+never against a swatch: `--line` draws every border (ink in light, a
+muted `#38302A` in dark); the `--shadow-*` set is hard offsets in light
+and soft drop shadows in dark; `--rule` is the dashed divider;
+`--code-bg` / `--code-fg` / `--code-accent` keep code blocks dark in both
+themes; `--emphasis-bg` / `--emphasis-fg` are the ink-on-cream pills (the
+active nav link, step numbers, report toolbars), a muted peach in dark;
+`--on-sun` is the text on a sun sticker (ink in both themes, since the
+sun stays bright); `--highlight` with `--highlight-from` / `--highlight-to`
+is the highlighter stripe (behind the lower half of the word in light, a
+thin underline in dark); `--btn-primary-bg` / `--btn-primary-fg` is the
+primary button (deep tomato with white text in light, tomato with dark
+text in dark). **Write every colour as a token**, in CSS and in the
+inline SVGs (`fill="var(--ink)"` works in a presentation attribute); a hex
+literal is a colour that will not follow the theme. The mascot is the one
+exception: Stoppy is a sticker, cream-faced in both themes.
 
 **Dark theme mechanics.** The dark palette is declared twice in
 `app/shared.css`, under `@media (prefers-color-scheme: dark)` for the OS
@@ -55,10 +67,10 @@ through its `postMessage` API (`app/feedback.js`).
 
 **Contrast rule:** `--accent` is below 4.5:1 against the page in
 either theme. For any text, link or button, use `--accent-deep`; `--sun`
-surfaces take full `--ink` text, never faded. axe-core catches
-violations at the strictest `minor` threshold, so keep that gate green
-in both themes (run the accessibility audit with the OS set to dark as
-well as light).
+surfaces take `--on-sun` text, never faded. axe-core catches violations
+at the strictest `minor` threshold, so keep that gate green in both
+themes (run the accessibility audit with the OS set to dark as well as
+light).
 
 Typography is one self-hosted face: Nunito (SIL OFL 1.1, licence in
 `app/fonts/OFL.txt`) as a single variable WOFF2, latin subset, at

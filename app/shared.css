@@ -48,6 +48,18 @@
     --code-accent: var(--sun);
     --header-bg: rgba(255, 255, 255, 0.88);
     --glow: var(--peach-soft);
+    /* Ink-on-cream emphasis (the active nav pill, step numbers, the
+     * report header bars), the text that sits on a sun sticker, the
+     * highlighter stripe and the primary button: each flips differently
+     * in the dark theme, so each has a name. */
+    --emphasis-bg: var(--ink);
+    --emphasis-fg: var(--cream);
+    --on-sun: var(--ink);
+    --highlight: var(--sun);
+    --highlight-from: 60%;
+    --highlight-to: 88%;
+    --btn-primary-bg: var(--accent-deep);
+    --btn-primary-fg: var(--paper);
 
     /* The theme toggle shows the theme you would switch to. */
     --show-sun: none;
@@ -63,6 +75,9 @@
 
     --shadow-sticker: 4px 4px 0 var(--line);
     --shadow-sticker-sm: 2px 2px 0 var(--line);
+    --shadow-lift: 5px 5px 0 var(--line);
+    --shadow-lift-sm: 3px 3px 0 var(--line);
+    --shadow-press: 1px 1px 0 var(--line);
     --shadow-soft: 0 2px 6px rgba(42, 33, 24, 0.08);
 
     --border: 2px solid var(--line);
@@ -70,55 +85,84 @@
 }
 
 /* ─── Dark palette ───────────────────────────────────────── */
-/* Espresso instead of cream, the same tomato, mint and sun pushed to
- * where they read on a dark ground. Text-on-surface pairs hold AA: the
+/* Not an inversion. The ink outlines and hard offset shadows that make
+ * the light theme a sticker sheet would glare on a dark ground, so here
+ * the borders go low-contrast, depth comes from tonal surfaces (page,
+ * card, code) and soft shadows, the highlighter turns translucent, and
+ * the tomato carries the emphasis. Text-on-surface pairs hold AA; the
  * accessibility audit runs on both themes. Change a value here and in
  * the twin block below; they must match. */
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
         color-scheme: dark;
-        --cream: #1B1612;
-        --peach: #4A3426;
-        --peach-soft: #33261E;
-        --ink: #F3EAE0;
-        --ink-soft: #BDAE9A;
-        --accent: #FF6B3D;
-        --accent-deep: #FF9B78;
-        --mint: #5CC29E;
-        --sun: #7A5C12;
-        --paper: #27201A;
-        --line: #DACBB6;
-        --rule: rgba(243, 234, 224, 0.18);
-        --code-bg: #120E0B;
-        --code-fg: #F3EAE0;
+        --cream: #131110;
+        --peach: #3A2E27;
+        --peach-soft: #231D19;
+        --ink: #EFE7DC;
+        --ink-soft: #AEA192;
+        --accent: #FF6A3D;
+        --accent-deep: #FFA073;
+        --mint: #5FCBA2;
+        --sun: #E5B547;
+        --paper: #1C1815;
+        --line: #38302A;
+        --rule: rgba(239, 231, 220, 0.12);
+        --code-bg: #0C0A09;
+        --code-fg: #E9E1D6;
         --code-accent: #F5C24C;
-        --header-bg: rgba(39, 32, 26, 0.88);
-        --glow: #2E221B;
-        --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.4);
+        --header-bg: rgba(28, 24, 21, 0.9);
+        --glow: transparent;
+        --emphasis-bg: #3A2E27;
+        --emphasis-fg: #EFE7DC;
+        --on-sun: #141110;
+        --highlight: #E5B547;
+        --highlight-from: 80%;
+        --highlight-to: 94%;
+        --btn-primary-bg: #FF6A3D;
+        --btn-primary-fg: #141110;
+        --shadow-sticker: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 12px 28px -14px rgba(0, 0, 0, 0.7);
+        --shadow-sticker-sm: 0 6px 16px -10px rgba(0, 0, 0, 0.7);
+        --shadow-lift: 0 16px 34px -14px rgba(0, 0, 0, 0.75);
+        --shadow-lift-sm: 0 8px 20px -10px rgba(0, 0, 0, 0.75);
+        --shadow-press: 0 2px 6px -4px rgba(0, 0, 0, 0.7);
+        --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.5);
         --show-sun: inline;
         --show-moon: none;
     }
 }
 :root[data-theme="dark"] {
     color-scheme: dark;
-    --cream: #1B1612;
-    --peach: #4A3426;
-    --peach-soft: #33261E;
-    --ink: #F3EAE0;
-    --ink-soft: #BDAE9A;
-    --accent: #FF6B3D;
-    --accent-deep: #FF9B78;
-    --mint: #5CC29E;
-    --sun: #7A5C12;
-    --paper: #27201A;
-    --line: #DACBB6;
-    --rule: rgba(243, 234, 224, 0.18);
-    --code-bg: #120E0B;
-    --code-fg: #F3EAE0;
+    --cream: #131110;
+    --peach: #3A2E27;
+    --peach-soft: #231D19;
+    --ink: #EFE7DC;
+    --ink-soft: #AEA192;
+    --accent: #FF6A3D;
+    --accent-deep: #FFA073;
+    --mint: #5FCBA2;
+    --sun: #E5B547;
+    --paper: #1C1815;
+    --line: #38302A;
+    --rule: rgba(239, 231, 220, 0.12);
+    --code-bg: #0C0A09;
+    --code-fg: #E9E1D6;
     --code-accent: #F5C24C;
-    --header-bg: rgba(39, 32, 26, 0.88);
-    --glow: #2E221B;
-    --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.4);
+    --header-bg: rgba(28, 24, 21, 0.9);
+    --glow: transparent;
+    --emphasis-bg: #3A2E27;
+    --emphasis-fg: #EFE7DC;
+    --on-sun: #141110;
+    --highlight: #E5B547;
+    --highlight-from: 80%;
+    --highlight-to: 94%;
+    --btn-primary-bg: #FF6A3D;
+    --btn-primary-fg: #141110;
+    --shadow-sticker: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 12px 28px -14px rgba(0, 0, 0, 0.7);
+    --shadow-sticker-sm: 0 6px 16px -10px rgba(0, 0, 0, 0.7);
+    --shadow-lift: 0 16px 34px -14px rgba(0, 0, 0, 0.75);
+    --shadow-lift-sm: 0 8px 20px -10px rgba(0, 0, 0, 0.75);
+    --shadow-press: 0 2px 6px -4px rgba(0, 0, 0, 0.7);
+    --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.5);
     --show-sun: inline;
     --show-moon: none;
 }
@@ -189,8 +233,8 @@ a:hover {
     position: absolute;
     left: -9999px;
     top: 0;
-    background: var(--accent-deep);
-    color: var(--paper);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-fg);
     padding: 0.6rem 1rem;
     font-weight: 700;
     text-decoration: none;
@@ -278,8 +322,8 @@ header nav a:hover {
     color: var(--ink);
 }
 header nav a[aria-current="page"] {
-    background: var(--ink);
-    color: var(--cream);
+    background: var(--emphasis-bg);
+    color: var(--emphasis-fg);
 }
 
 /* Header buttons: one size for Install and GitHub so the two pills
@@ -351,7 +395,7 @@ main {
 }
 
 .highlight {
-    background-image: linear-gradient(180deg, transparent 60%, var(--sun) 60%, var(--sun) 88%, transparent 88%);
+    background-image: linear-gradient(180deg, transparent var(--highlight-from), var(--highlight) var(--highlight-from), var(--highlight) var(--highlight-to), transparent var(--highlight-to));
     padding: 0 0.15em;
     /* The stripe is one gesture under one phrase: keep the phrase on one
      * line so it moves down as a unit rather than stranding a word above
@@ -397,19 +441,19 @@ main {
 }
 .btn:hover {
     transform: translate(-1px, -1px);
-    box-shadow: 3px 3px 0 var(--line);
+    box-shadow: var(--shadow-lift-sm);
 }
 .btn:active {
     transform: translate(1px, 1px);
-    box-shadow: 1px 1px 0 var(--line);
+    box-shadow: var(--shadow-press);
 }
 .btn--primary {
-    background: var(--accent-deep);
-    color: var(--paper);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-fg);
 }
 .btn--primary:hover {
-    background: var(--accent-deep);
-    color: var(--paper);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-fg);
     filter: brightness(0.92);
 }
 .btn--ghost {
@@ -439,7 +483,7 @@ main {
 }
 .card:hover {
     transform: rotate(0) translate(-1px, -1px);
-    box-shadow: 5px 5px 0 var(--line);
+    box-shadow: var(--shadow-lift);
 }
 
 /* Column flow instead of a row grid: each card sizes to its content and
@@ -560,11 +604,11 @@ main {
 }
 .codeblock__copy:hover {
     transform: translate(-1px, -1px) rotate(-1deg);
-    box-shadow: 3px 3px 0 var(--line);
+    box-shadow: var(--shadow-lift-sm);
 }
 .codeblock__copy:active {
     transform: translate(1px, 1px);
-    box-shadow: 1px 1px 0 var(--line);
+    box-shadow: var(--shadow-press);
 }
 .visually-hidden {
     position: absolute;
@@ -778,7 +822,7 @@ main {
     transform: rotate(-3deg);
     font-weight: 700;
     font-size: 1rem;
-    color: var(--ink);
+    color: var(--on-sun);
 }
 
 /* ─── Footer ─────────────────────────────────────────────── */
@@ -825,8 +869,8 @@ footer a {
     left: -0.7rem;
     width: 1.8rem;
     height: 1.8rem;
-    background: var(--ink);
-    color: var(--cream);
+    background: var(--emphasis-bg);
+    color: var(--emphasis-fg);
     border-radius: 50%;
     display: flex;
     align-items: center;

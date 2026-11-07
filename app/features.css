@@ -97,10 +97,11 @@
 }
 .loops .loop-step--trigger {
     background: var(--sun);
+    color: var(--on-sun);
 }
 .loops .loop-step--feedback {
-    background: var(--accent-deep);
-    color: var(--paper);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-fg);
 }
 /* Sub-labels keep full ink: faded text on the sun sticker fails AA in
  * the dark theme, so size and weight carry the hierarchy instead. */
@@ -217,13 +218,13 @@
     font-family: var(--font-mono);
     font-weight: 800;
     font-size: 0.95rem;
-    color: var(--ink);
+    color: var(--on-sun);
 }
 .bridge__sub {
     display: block;
     font-size: 0.72rem;
     font-weight: 600;
-    color: var(--ink);
+    color: var(--on-sun);
     margin-top: 0.15rem;
 }
 .bridge__arrows {
