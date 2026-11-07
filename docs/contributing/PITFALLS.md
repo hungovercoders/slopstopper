@@ -57,6 +57,13 @@ before; the rule is "do the obvious thing the obvious way."
 - **Tweaking `--accent` to use it as text colour.** It fails AA contrast.
   Use `--accent-deep` for text on light backgrounds, `--accent` for
   decorative shapes only.
-- **Adding to one HTML page's header but not the other two.** There
-  is no build step or SSI, so the nav drifts. Change one, change all
-  three.
+- **Adding to one HTML page's header but not the others.** There is
+  no build step or SSI, so the nav drifts. Change one, change all six,
+  then `task contributing:learn:site` to copy the chrome into the
+  lesson pages.
+- **Writing a hex colour into page CSS or an inline SVG.** It stays
+  that colour in the dark theme. Every colour is a token from
+  `app/shared.css` (`var(--ink)` works in an SVG attribute), and the
+  dark palette is declared twice there, so a new token goes in all
+  three places. The accessibility audit has to pass with the OS set to
+  dark as well as light.

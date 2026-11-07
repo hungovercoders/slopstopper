@@ -432,7 +432,8 @@ def render(lesson: Lesson, all_lessons: list[Lesson]) -> str:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{esc(title)}</title>
     <meta name="description" content="{esc(description)}">
-    <meta name="theme-color" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
     <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
     <link rel="canonical" href="{url}">
@@ -454,6 +455,7 @@ def render(lesson: Lesson, all_lessons: list[Lesson]) -> str:
     <meta name="twitter:image" content="{SITE_URL}og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
+    <script src="../theme.js"></script>
 {head_links}
     <link rel="stylesheet" href="../shared.css">
     <link rel="stylesheet" href="../lesson.css">

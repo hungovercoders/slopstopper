@@ -8,6 +8,19 @@
     const container = document.querySelector(".giscus");
     if (!button || !container) return;
 
+    // The widget takes the site's theme (theme.js sets data-theme when the
+    // visitor has chosen one; the OS preference otherwise) and follows the
+    // toggle through giscus's postMessage API once its frame is up.
+    const theme = () =>
+        document.documentElement.dataset.theme ||
+        (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.addEventListener("themechange", () => {
+        const frame = container.querySelector("iframe.giscus-frame");
+        if (frame && frame.contentWindow) {
+            frame.contentWindow.postMessage({ giscus: { setConfig: { theme: theme() } } }, "https://giscus.app");
+        }
+    });
+
     button.addEventListener("click", () => {
         button.disabled = true;
         button.textContent = "Loading comments…";
@@ -24,7 +37,7 @@
             "data-reactions-enabled": "1",
             "data-emit-metadata": "0",
             "data-input-position": "bottom",
-            "data-theme": "light",
+            "data-theme": theme(),
             "data-lang": "en",
             integrity: "sha384-UwLZGbJGvkTzz0719+xEzUm/idqwzs0yZN8aB9Se5vUXHbyRyDWw9yqZTIsOsJ7x",
             crossorigin: "anonymous",

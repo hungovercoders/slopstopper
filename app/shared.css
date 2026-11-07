@@ -1,4 +1,4 @@
-/* SlopStopper shared styles: indie playful rebrand */
+/* SlopStopper shared styles: indie playful, in a light and a dark theme */
 
 /* ─── Type ───────────────────────────────────────────────── */
 /* Nunito (SIL OFL 1.1, app/fonts/OFL.txt): one self-hosted variable
@@ -18,8 +18,12 @@
 }
 
 :root {
-    /* The site is cream by design and ships no dark theme; say so, so form
-     * controls and embedded frames don't flip dark on a dark OS. */
+    /* Two palettes, one set of token names. The light palette is the
+     * brand; the dark one is the same warm family turned down, so every
+     * component below is written once against these names and never
+     * against a hex. The dark palette is declared twice (the OS
+     * preference, then the visitor's explicit choice, which wins) and
+     * the two blocks must stay identical. theme.js sets data-theme. */
     color-scheme: light;
 
     --cream: #FBF5EC;
@@ -33,6 +37,22 @@
     --sun: #F5C24C;
     --paper: #FFFFFF;
 
+    /* Semantic tokens: what a component means, not which swatch it is.
+     * --line draws every border and sticker shadow; --rule the dashed
+     * dividers; the --code-* trio keeps code blocks dark in both themes
+     * instead of inverting with the page. */
+    --line: var(--ink);
+    --rule: rgba(42, 33, 24, 0.18);
+    --code-bg: var(--ink);
+    --code-fg: var(--cream);
+    --code-accent: var(--sun);
+    --header-bg: rgba(255, 255, 255, 0.88);
+    --glow: var(--peach-soft);
+
+    /* The theme toggle shows the theme you would switch to. */
+    --show-sun: none;
+    --show-moon: inline;
+
     --font-sans: "Nunito", ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", sans-serif;
     --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
@@ -41,12 +61,66 @@
     --r-lg: 22px;
     --r-pill: 999px;
 
-    --shadow-sticker: 4px 4px 0 var(--ink);
-    --shadow-sticker-sm: 2px 2px 0 var(--ink);
+    --shadow-sticker: 4px 4px 0 var(--line);
+    --shadow-sticker-sm: 2px 2px 0 var(--line);
     --shadow-soft: 0 2px 6px rgba(42, 33, 24, 0.08);
 
-    --border: 2px solid var(--ink);
-    --border-thin: 1.5px solid var(--ink);
+    --border: 2px solid var(--line);
+    --border-thin: 1.5px solid var(--line);
+}
+
+/* ─── Dark palette ───────────────────────────────────────── */
+/* Espresso instead of cream, the same tomato, mint and sun pushed to
+ * where they read on a dark ground. Text-on-surface pairs hold AA: the
+ * accessibility audit runs on both themes. Change a value here and in
+ * the twin block below; they must match. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --cream: #1B1612;
+        --peach: #4A3426;
+        --peach-soft: #33261E;
+        --ink: #F3EAE0;
+        --ink-soft: #BDAE9A;
+        --accent: #FF6B3D;
+        --accent-deep: #FF9B78;
+        --mint: #5CC29E;
+        --sun: #7A5C12;
+        --paper: #27201A;
+        --line: #DACBB6;
+        --rule: rgba(243, 234, 224, 0.18);
+        --code-bg: #120E0B;
+        --code-fg: #F3EAE0;
+        --code-accent: #F5C24C;
+        --header-bg: rgba(39, 32, 26, 0.88);
+        --glow: #2E221B;
+        --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.4);
+        --show-sun: inline;
+        --show-moon: none;
+    }
+}
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --cream: #1B1612;
+    --peach: #4A3426;
+    --peach-soft: #33261E;
+    --ink: #F3EAE0;
+    --ink-soft: #BDAE9A;
+    --accent: #FF6B3D;
+    --accent-deep: #FF9B78;
+    --mint: #5CC29E;
+    --sun: #7A5C12;
+    --paper: #27201A;
+    --line: #DACBB6;
+    --rule: rgba(243, 234, 224, 0.18);
+    --code-bg: #120E0B;
+    --code-fg: #F3EAE0;
+    --code-accent: #F5C24C;
+    --header-bg: rgba(39, 32, 26, 0.88);
+    --glow: #2E221B;
+    --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.4);
+    --show-sun: inline;
+    --show-moon: none;
 }
 
 * {
@@ -66,10 +140,31 @@ body {
     line-height: 1.6;
     color: var(--ink);
     background:
-        radial-gradient(circle at 12% 8%, var(--peach-soft) 0, transparent 35%),
-        radial-gradient(circle at 88% 92%, var(--peach-soft) 0, transparent 40%),
+        radial-gradient(circle at 12% 8%, var(--glow) 0, transparent 35%),
+        radial-gradient(circle at 88% 92%, var(--glow) 0, transparent 40%),
         var(--cream);
     background-attachment: fixed;
+    text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3 {
+    text-wrap: balance;
+}
+p {
+    text-wrap: pretty;
+}
+
+::selection {
+    background: var(--peach);
+    color: var(--ink);
+}
+
+/* One focus ring for every interactive element: a thick ink ring, offset
+ * so it reads on any surface, and only for keyboard focus. */
+:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 3px;
+    border-radius: var(--r-sm);
 }
 
 a {
@@ -110,13 +205,24 @@ a:hover {
 
 /* ─── Header ─────────────────────────────────────────────── */
 header {
-    background: var(--paper);
+    background: var(--header-bg);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
     border-bottom: var(--border);
     padding: 1rem 2rem;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 1rem;
+}
+/* The header stays in view on a wide screen, where it is one row; on a
+ * phone it is two and would take a third of the viewport, so it scrolls. */
+@media (min-width: 861px) {
+    header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
 }
 
 .site-title {
@@ -185,6 +291,35 @@ header nav a[aria-current="page"] {
 }
 .header-actions .btn--gh {
     gap: 0.4rem;
+}
+
+/* Theme toggle: an icon pill after GitHub. Hidden until theme.js has
+ * run (it adds `js` to <html> before first paint), so a page without
+ * script shows no dead button. The icon is the theme you would switch
+ * to, chosen by the palette's --show-* tokens, so it needs no script
+ * to stay right; the script only keeps the label in step. */
+.header-actions .theme-toggle {
+    display: none;
+    padding: 0.45rem 0.6rem;
+    line-height: 0;
+}
+html.js .header-actions .theme-toggle {
+    display: inline-flex;
+}
+.theme-toggle svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.theme-toggle .icon-sun {
+    display: var(--show-sun);
+}
+.theme-toggle .icon-moon {
+    display: var(--show-moon);
 }
 
 /* ─── Main ───────────────────────────────────────────────── */
@@ -262,11 +397,11 @@ main {
 }
 .btn:hover {
     transform: translate(-1px, -1px);
-    box-shadow: 3px 3px 0 var(--ink);
+    box-shadow: 3px 3px 0 var(--line);
 }
 .btn:active {
     transform: translate(1px, 1px);
-    box-shadow: 1px 1px 0 var(--ink);
+    box-shadow: 1px 1px 0 var(--line);
 }
 .btn--primary {
     background: var(--accent-deep);
@@ -304,7 +439,7 @@ main {
 }
 .card:hover {
     transform: rotate(0) translate(-1px, -1px);
-    box-shadow: 5px 5px 0 var(--ink);
+    box-shadow: 5px 5px 0 var(--line);
 }
 
 /* Column flow instead of a row grid: each card sizes to its content and
@@ -352,7 +487,7 @@ main {
 }
 .card ul > li {
     padding: 0.55rem 0;
-    border-bottom: 1px dashed rgba(42, 33, 24, 0.15);
+    border-bottom: 1px dashed var(--rule);
     font-size: 0.95rem;
     color: var(--ink-soft);
 }
@@ -372,8 +507,8 @@ main {
 
 /* ─── Codeblock ──────────────────────────────────────────── */
 .codeblock {
-    background: var(--ink);
-    color: var(--cream);
+    background: var(--code-bg);
+    color: var(--code-fg);
     border: var(--border);
     border-radius: var(--r-md);
     padding: 1.1rem 1.25rem;
@@ -386,7 +521,7 @@ main {
 }
 .codeblock--sh::before {
     content: "$ ";
-    color: var(--sun);
+    color: var(--code-accent);
     user-select: none;
 }
 .codeblock pre {
@@ -425,15 +560,11 @@ main {
 }
 .codeblock__copy:hover {
     transform: translate(-1px, -1px) rotate(-1deg);
-    box-shadow: 3px 3px 0 var(--ink);
+    box-shadow: 3px 3px 0 var(--line);
 }
 .codeblock__copy:active {
     transform: translate(1px, 1px);
-    box-shadow: 1px 1px 0 var(--ink);
-}
-.codeblock__copy:focus-visible {
-    outline: 3px solid var(--ink);
-    outline-offset: 2px;
+    box-shadow: 1px 1px 0 var(--line);
 }
 .visually-hidden {
     position: absolute;
@@ -489,7 +620,7 @@ main {
 }
 .details > .details__body {
     padding: 0 0.9rem 0.9rem 0.9rem;
-    border-top: 1px dashed rgba(42, 33, 24, 0.2);
+    border-top: 1px dashed var(--rule);
     padding-top: 0.7rem;
     margin-top: 0.3rem;
 }
@@ -502,7 +633,7 @@ main {
 .live-links {
     margin-top: 0.8rem;
     padding-top: 0.7rem;
-    border-top: 1px dashed rgba(42, 33, 24, 0.2);
+    border-top: 1px dashed var(--rule);
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
@@ -580,7 +711,7 @@ main {
     height: 0;
     border-left: 10px solid transparent;
     border-right: 10px solid transparent;
-    border-top: 12px solid var(--ink);
+    border-top: 12px solid var(--line);
 }
 .bubble::before {
     content: "";
@@ -859,6 +990,9 @@ footer a {
     }
     .header-actions .btn--gh .btn__label {
         display: none;
+    }
+    .header-actions .theme-toggle {
+        padding: 0.55rem 0.6rem;
     }
     /* Five nav links on one row down to a 360px phone; the touch target
        keeps its height, only the side padding narrows. */

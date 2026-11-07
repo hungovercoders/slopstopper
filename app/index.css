@@ -28,7 +28,7 @@
     border: var(--border);
     border-radius: var(--r-md);
     box-shadow: var(--shadow-sticker);
-    background: var(--ink);
+    background: var(--code-bg);
 }
 .hero__demo figcaption {
     margin-top: 0.6rem;

@@ -102,15 +102,13 @@
     background: var(--accent-deep);
     color: var(--paper);
 }
+/* Sub-labels keep full ink: faded text on the sun sticker fails AA in
+ * the dark theme, so size and weight carry the hierarchy instead. */
 .loops .step-sub {
     font-size: 0.72rem;
     color: inherit;
-    opacity: 0.78;
     margin-top: 0.2rem;
     font-weight: 500;
-}
-.loops .loop-step--feedback .step-sub {
-    opacity: 1;
 }
 .loops .loop-back {
     font-size: 0.85rem;
@@ -193,7 +191,7 @@
     font-family: var(--font-mono);
     font-size: 0.86rem;
     background: var(--paper);
-    border: 1px dashed rgba(42, 33, 24, 0.25);
+    border: 1px dashed var(--rule);
     border-radius: var(--r-sm);
     padding: 0.35rem 0.55rem;
     color: var(--ink);
@@ -224,8 +222,8 @@
 .bridge__sub {
     display: block;
     font-size: 0.72rem;
+    font-weight: 600;
     color: var(--ink);
-    opacity: 0.7;
     margin-top: 0.15rem;
 }
 .bridge__arrows {
@@ -274,7 +272,7 @@
 }
 .gh-comment {
     margin: 0;
-    background: #FFFFFF;
+    background: var(--paper);
     border: var(--border-thin);
     border-radius: var(--r-md);
     box-shadow: var(--shadow-sticker);

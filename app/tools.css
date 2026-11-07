@@ -19,7 +19,7 @@ main {
 .attribution-footer {
     margin: 2rem 0 0 0;
     padding: 1rem 0 0 0;
-    border-top: 1px solid rgba(42, 33, 24, 0.15);
+    border-top: 1px solid var(--rule);
     font-size: 0.9rem;
     text-align: center;
 }
