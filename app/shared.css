@@ -1023,6 +1023,67 @@ footer a {
     margin-top: 1.5rem;
 }
 
+/* ─── Tabs ───────────────────────────────────────────────── */
+/* A row of pills over a set of panels (Features: the five loops;
+ * Tools: the tool groups). The pills are in-page links to the panels,
+ * so without script every panel shows and each pill scrolls to one;
+ * tabs.js adds the behaviour (one panel at a time, arrow keys, the hash
+ * kept in step) and the `js` class on <html> is what collapses the
+ * spacing between panels once only one is shown. */
+.tabbed {
+    margin-top: 0;
+}
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    scroll-margin-top: 6rem;
+}
+.tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.55rem 1rem;
+    background: var(--paper);
+    border: var(--border-thin);
+    border-radius: var(--r-pill);
+    font-weight: 700;
+    font-size: 0.98rem;
+    text-decoration: none;
+    color: var(--ink);
+    transition: background 0.15s;
+}
+.tab:hover {
+    background: var(--peach-soft);
+    color: var(--ink);
+}
+.tab[aria-selected="true"] {
+    background: var(--emphasis-bg);
+    border-color: var(--emphasis-bg);
+    color: var(--emphasis-fg);
+}
+.tab-panel {
+    scroll-margin-top: 6rem;
+}
+.tab-panel[hidden] {
+    display: none;
+}
+/* A deep link focuses the panel itself (tabindex="0" lets keyboard users
+ * reach it); on a full-width section the standard ring is loud, so it
+ * thins to the border colour and sits well outside the content. */
+.tab-panel.section:focus-visible {
+    outline: 2px solid var(--line);
+    outline-offset: 10px;
+    border-radius: var(--r-md);
+}
+.tab-panel + .tab-panel {
+    margin-top: 1.5rem;
+}
+html.js .tab-panel + .tab-panel,
+html.js .tab-panel.section {
+    margin-top: 0;
+}
+
 /* ─── Stacked header (tablet and phone) ──────────────────── */
 /* Title row: title left, Install + GitHub right. Nav row: the links,
  * full width, each at least 44px tall for touch. */

@@ -72,7 +72,7 @@
             </nav>
         </section>
 
-        <section class="section loop-tabs" aria-labelledby="loops-heading">
+        <section class="section tabbed" aria-labelledby="loops-heading">
             <h2 class="visually-hidden" id="loops-heading">The five loops</h2>
             <div class="tabs" role="tablist" aria-label="The five loops">
                 <a class="tab" role="tab" id="tab-security" href="#security" aria-controls="security" aria-selected="true">🔒 Security</a>
@@ -82,7 +82,7 @@
                 <a class="tab" role="tab" id="tab-deployment" href="#deployment" aria-controls="deployment" aria-selected="false">🚀 Deployment</a>
             </div>
             <!-- ─── Security ─────────────────────────────────────── -->
-            <div class="card tab-panel" id="security" role="tabpanel" aria-labelledby="tab-security" tabindex="0">
+            <div class="card tab-panel tab-panel--card" id="security" role="tabpanel" aria-labelledby="tab-security" tabindex="0">
                 <div class="tab-panel__about">
                     <h2>🔒 Security</h2>
                     <p class="card-intro">Block vulnerable code and leaked credentials before they merge, with static analysis, dynamic scanning, secrets detection and dependency CVE checks on every change.</p>
@@ -211,7 +211,7 @@
                 </div>
             </div>
             <!-- ─── Reliability ─────────────────────────────────────── -->
-            <div class="card tab-panel" id="reliability" role="tabpanel" aria-labelledby="tab-reliability" tabindex="0">
+            <div class="card tab-panel tab-panel--card" id="reliability" role="tabpanel" aria-labelledby="tab-reliability" tabindex="0">
                 <div class="tab-panel__about">
                     <h2>✅ Reliability</h2>
                     <p class="card-intro">Catch broken pages, dead internal links, slow loads, accessibility regressions and broken social-share previews before users do. E2E, smoke, broken-link, axe-core WCAG 2.1 AA, Lighthouse CI and SEO/OpenGraph checks run on every change.</p>
@@ -455,7 +455,7 @@
                 </div>
             </div>
             <!-- ─── Hygiene ─────────────────────────────────────── -->
-            <div class="card tab-panel" id="hygiene" role="tabpanel" aria-labelledby="tab-hygiene" tabindex="0">
+            <div class="card tab-panel tab-panel--card" id="hygiene" role="tabpanel" aria-labelledby="tab-hygiene" tabindex="0">
                 <div class="tab-panel__about">
                     <h2>🧹 Hygiene</h2>
                     <p class="card-intro">Keep the codebase auditable and the docs honest, with complexity caps, structure, accuracy and size checks for docs, and auto-labelled PRs.</p>
@@ -590,7 +590,7 @@
                 </div>
             </div>
             <!-- ─── Operational ─────────────────────────────────────── -->
-            <div class="card tab-panel" id="operational" role="tabpanel" aria-labelledby="tab-operational" tabindex="0">
+            <div class="card tab-panel tab-panel--card" id="operational" role="tabpanel" aria-labelledby="tab-operational" tabindex="0">
                 <div class="tab-panel__about">
                     <h2>🤖 Operational</h2>
                     <p class="card-intro">Keep the housekeeping moving without prompts. Failed runs raise tracking issues, an agentic workflow opens weekly doc-sync PRs, and every PR gets labelled from the paths it touches.</p>
@@ -645,7 +645,7 @@
                 </div>
             </div>
             <!-- ─── Deployment ─────────────────────────────────────── -->
-            <div class="card tab-panel" id="deployment" role="tabpanel" aria-labelledby="tab-deployment" tabindex="0">
+            <div class="card tab-panel tab-panel--card" id="deployment" role="tabpanel" aria-labelledby="tab-deployment" tabindex="0">
                 <div class="tab-panel__about">
                     <h2>🚀 Deployment</h2>
                     <p class="card-intro">Every push deploys, every PR gets a preview URL and every PR close cleans up, all through Cloudflare Workers Builds hooked directly into the repo. No deploy workflow and no secrets: this is slopstopper.dev's own setup, shown so you can copy it by connecting your repo in the Cloudflare dash (Workers &amp; Pages → Create → Connect to Git). The one thing <code>install.sh</code> adds on a Cloudflare repo is <code>ss-cloudflare-deployed.yml</code>, which runs the URL-driven checks against each preview and, on <code>main</code>, the live site as soon as Workers Builds finishes.</p>
@@ -1054,6 +1054,6 @@ includes:
         <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
         <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="privacy.html">Privacy</a></p>
     </footer>
-    <script src="features.js" defer></script>
+    <script src="tabs.js" defer></script>
 </body>
 </html>

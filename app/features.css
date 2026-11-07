@@ -34,55 +34,15 @@
     color: var(--ink);
 }
 
-/* ─── The five loops as tabs ───────────────────────────────
- * One loop on screen at a time. The tablist is a row of pills whose
- * anchors point at the panels, so without script every panel shows and
- * each pill is an in-page link; features.js adds the tab behaviour
- * (one panel, arrow keys, the hash kept in step). A panel is the card
- * it always was, laid out as the intro beside its workflow disclosures. */
-.loop-tabs {
-    margin-top: 0;
-}
-.tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1.25rem;
-    scroll-margin-top: 6rem;
-}
-.tab {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.55rem 1rem;
-    background: var(--paper);
-    border: var(--border-thin);
-    border-radius: var(--r-pill);
-    font-weight: 700;
-    font-size: 0.98rem;
-    text-decoration: none;
-    color: var(--ink);
-    transition: background 0.15s;
-}
-.tab:hover {
-    background: var(--peach-soft);
-    color: var(--ink);
-}
-.tab[aria-selected="true"] {
-    background: var(--emphasis-bg);
-    border-color: var(--emphasis-bg);
-    color: var(--emphasis-fg);
-}
-.tab-panel {
-    scroll-margin-top: 6rem;
-}
-.tab-panel[hidden] {
-    display: none;
-}
-.tab-panel:hover {
+/* ─── The loop panels ───────────────────────────────────────
+ * The tab set itself is in shared.css (Tools uses it too). A loop's
+ * panel is the card it always was, laid out from 860px as the intro
+ * beside its workflow disclosures. */
+.tab-panel--card:hover {
     transform: none;
     box-shadow: var(--shadow-sticker);
 }
-.tab-panel h2 {
+.tab-panel--card h2 {
     font-size: 1.5rem;
 }
 .tab-panel__label {
@@ -97,22 +57,18 @@
     margin-top: 0.6rem;
 }
 @media (min-width: 860px) {
-    .tab-panel {
+    .tab-panel--card {
         display: grid;
         grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
         gap: 0 2.5rem;
         padding: 1.75rem 2rem;
     }
+    .tab-panel--card[hidden] {
+        display: none;
+    }
     .tab-panel__label {
         margin-top: 0.3rem;
     }
-}
-/* Without script every panel shows: space them as the cards were. */
-.tab-panel + .tab-panel {
-    margin-top: 1.5rem;
-}
-html.js .tab-panel + .tab-panel {
-    margin-top: 0;
 }
 
 .card-intro {

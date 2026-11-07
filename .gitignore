@@ -30,7 +30,7 @@ app/*.js
 !app/copy.js
 !app/feedback.js
 !app/theme.js
-!app/features.js
+!app/tabs.js
 # Local Claude Code state, but ship shared skills with the repo
 .claude/*
 !.claude/skills/

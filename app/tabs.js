@@ -1,10 +1,11 @@
 (() => {
-    // The five loops as tabs. The markup is a tablist of in-page links
-    // over the five cards, so a page without script shows every card and
-    // each link scrolls to one. With script: one panel at a time, the
-    // arrow keys move between tabs, the hash follows the open tab so a
-    // deep link (features.html#hygiene, the home page's cards) opens the
-    // right one, and a hash change (back/forward) does too.
+    // A tab set (Features: the five loops; Tools: the tool groups). The
+    // markup is a tablist of in-page links over the panels, so a page
+    // without script shows every panel and each link scrolls to one.
+    // With script: one panel at a time, the arrow keys move between
+    // tabs, the hash follows the open tab so a deep link
+    // (features.html#hygiene, the home page's cards) opens the right
+    // one, and a hash change (back/forward) does too.
     const list = document.querySelector(".tabs[role='tablist']");
     if (!list) return;
     const tabs = Array.from(list.querySelectorAll("[role='tab']"));

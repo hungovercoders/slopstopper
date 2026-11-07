@@ -64,10 +64,19 @@
         <section class="hero">
             <span class="kicker">Tools</span>
             <h1>The kit behind <span class="highlight">the loops.</span></h1>
-            <p>Every tool here drives one of the checks on the Features page, grouped by the loop each serves after the pieces every install carries. The Operational loop runs on those pieces; Deployment is this site's own, at the bottom. Open any card to see how it's wired in.</p>
+            <p>Every tool here drives one of the checks on the Features page, grouped by the loop each serves after the pieces every install carries. The Operational loop runs on those pieces; Deployment is this site's own, under the last tab. Open any card to see how it's wired in.</p>
         </section>
 
-        <section class="section tool-group" id="the-suite">
+        <section class="section tabbed" aria-labelledby="tools-heading">
+            <h2 class="visually-hidden" id="tools-heading">The tools, by loop</h2>
+            <div class="tabs" role="tablist" aria-label="The tools, by loop">
+                <a class="tab" role="tab" id="tab-the-suite" href="#the-suite" aria-controls="the-suite" aria-selected="true">The suite</a>
+                <a class="tab" role="tab" id="tab-security" href="#security" aria-controls="security" aria-selected="false">Security</a>
+                <a class="tab" role="tab" id="tab-reliability" href="#reliability" aria-controls="reliability" aria-selected="false">Reliability</a>
+                <a class="tab" role="tab" id="tab-hygiene" href="#hygiene" aria-controls="hygiene" aria-selected="false">Hygiene</a>
+                <a class="tab" role="tab" id="tab-site-stack" href="#site-stack" aria-controls="site-stack" aria-selected="false">This site</a>
+            </div>
+            <section class="section tool-group tab-panel" id="the-suite" role="tabpanel" aria-labelledby="tab-the-suite" tabindex="0">
             <span class="kicker">The suite</span>
             <h2>What every install carries.</h2>
             <p class="lede">The CLI that owns every check, the workflows that run it, the <code>task ss:*</code> shim that gives humans, agents and CI one way to call it, and the pre-push hook that runs the fast checks before code leaves the machine.</p>
@@ -141,9 +150,9 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             </div>
 
             </div>
-        </section>
+            </section>
 
-        <section class="section tool-group" id="security">
+            <section class="section tool-group tab-panel" id="security" role="tabpanel" aria-labelledby="tab-security" tabindex="0">
             <span class="kicker">Security</span>
             <h2>Block it before it merges.</h2>
             <p class="lede">Four tools sit behind the Security loop, covering static analysis, a dynamic scan of the running site, dependency CVEs and leaked credentials.</p>
@@ -250,9 +259,9 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             </div>
 
             </div>
-        </section>
+            </section>
 
-        <section class="section tool-group" id="reliability">
+            <section class="section tool-group tab-panel" id="reliability" role="tabpanel" aria-labelledby="tab-reliability" tabindex="0">
             <span class="kicker">Reliability</span>
             <h2>Prove every deploy works.</h2>
             <p class="lede">The Reliability loop runs on a browser, an accessibility engine, a performance auditor and four stdlib-Python audits.</p>
@@ -412,9 +421,9 @@ on:
             </div>
 
             </div>
-        </section>
+            </section>
 
-        <section class="section tool-group" id="hygiene">
+            <section class="section tool-group tab-panel" id="hygiene" role="tabpanel" aria-labelledby="tab-hygiene" tabindex="0">
             <span class="kicker">Hygiene</span>
             <h2>Keep the codebase auditable.</h2>
             <p class="lede">A complexity gauge and a Markdown linter; the docs checks themselves are stdlib Python inside the CLI.</p>
@@ -451,9 +460,9 @@ on:
             </div>
 
             </div>
-        </section>
+            </section>
 
-        <section class="section site-stack">
+            <section class="section tool-group tab-panel" id="site-stack" role="tabpanel" aria-labelledby="tab-site-stack" tabindex="0">
             <span class="kicker">How slopstopper.dev itself is built</span>
             <h2>Not part of the suite.</h2>
             <p class="lede">Two more pieces serve this reference site. Adopters need neither. Your repo keeps its own language and host, and the suite only needs Python and the per-check tools above.</p>
@@ -501,6 +510,7 @@ on:
                 </details>
             </div>
             </div>
+            </section>
         </section>
 
         <p class="attribution-footer">
@@ -526,5 +536,6 @@ on:
         </p>
         <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="privacy.html">Privacy</a></p>
     </footer>
+    <script src="tabs.js" defer></script>
 </body>
 </html>
