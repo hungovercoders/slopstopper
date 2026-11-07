@@ -35,42 +35,34 @@ light first, then the dark palette:
 ```
 
 Semantic tokens sit on top, and components are written against these,
-never against a swatch: `--line` draws every border (ink in light, a
-muted `#38302A` in dark); the `--shadow-*` set is hard offsets in light
-and soft drop shadows in dark; `--rule` is the dashed divider;
-`--code-bg` / `--code-fg` / `--code-accent` keep code blocks dark in both
-themes; `--emphasis-bg` / `--emphasis-fg` are the ink-on-cream pills (the
-active nav link, step numbers, report toolbars), a muted peach in dark;
-`--on-sun` is the text on a sun sticker (ink in both themes, since the
-sun stays bright); `--highlight` with `--highlight-from` / `--highlight-to`
-is the highlighter stripe (behind the lower half of the word in light, a
-thin underline in dark); `--btn-primary-bg` / `--btn-primary-fg` is the
-primary button (deep tomato with white text in light, tomato with dark
-text in dark). **Write every colour as a token**, in CSS and in the
-inline SVGs (`fill="var(--ink)"` works in a presentation attribute); a hex
-literal is a colour that will not follow the theme. The mascot is the one
-exception: Stoppy is a sticker, cream-faced in both themes.
+never against a swatch: `--line` (every border: ink in light, muted in
+dark), the `--shadow-*` set (hard offsets in light, soft drops in dark),
+`--rule` (dashed dividers), `--code-bg` / `--code-fg` / `--code-accent`
+(code blocks stay dark in both themes), `--emphasis-bg` / `--emphasis-fg`
+(the active nav pill, step numbers, report toolbars), `--on-sun` (text
+on a sun sticker), `--highlight` with `--highlight-from` / `--highlight-to`
+(the stripe: behind the lower half of the word in light, an underline in
+dark) and `--btn-primary-bg` / `--btn-primary-fg`. **Write every colour
+as a token**, in CSS and in the inline SVGs (`fill="var(--ink)"` works
+in a presentation attribute); a hex literal will not follow the theme.
+The mascot is the one exception: Stoppy is a sticker, cream-faced in
+both themes.
 
 **Dark theme mechanics.** The dark palette is declared twice in
-`app/shared.css`, under `@media (prefers-color-scheme: dark)` for the OS
-preference and under `:root[data-theme="dark"]` for an explicit choice,
-and the two blocks must stay identical. `app/theme.js` is the first
-script in every `<head>` so it runs before first paint: it reads the
-visitor's choice from `localStorage` (`theme`: `light` or `dark`), sets
-`data-theme` on `<html>`, adds the `js` class that shows the toggle, and
-keeps the toggle's label and the `theme-color` metas in step. The toggle
-is the icon pill after GitHub in every header; choosing the theme the OS
-already prefers clears the stored value, so the page follows the OS
-again. `app/privacy.html` names the stored value; keep that paragraph
-true. Giscus takes the site's theme on load and follows the toggle
-through its `postMessage` API (`app/feedback.js`).
+`app/shared.css`, under `@media (prefers-color-scheme: dark)` and under
+`:root[data-theme="dark"]` for an explicit choice; the two blocks must
+match. `app/theme.js` is the first script in every `<head>`, so it runs
+before first paint: it applies the choice stored in `localStorage`
+(`theme`: `light` or `dark`) as `data-theme`, adds the `js` class that
+shows the toggle, and keeps the toggle's label and the `theme-color`
+metas in step. Choosing the theme the OS already prefers clears the
+stored value. `app/privacy.html` names that value; keep it true. Giscus
+takes the site's theme on load and follows the toggle (`app/feedback.js`).
 
-**Contrast rule:** `--accent` is below 4.5:1 against the page in
-either theme. For any text, link or button, use `--accent-deep`; `--sun`
-surfaces take `--on-sun` text, never faded. axe-core catches violations
-at the strictest `minor` threshold, so keep that gate green in both
-themes (run the accessibility audit with the OS set to dark as well as
-light).
+**Contrast rule:** `--accent` is below 4.5:1 against the page in either
+theme; text, links and buttons use `--accent-deep`, and sun surfaces
+take `--on-sun`. axe-core gates at the strictest `minor` threshold, so
+run the audit with the OS set to dark as well as light.
 
 Typography is one self-hosted face: Nunito (SIL OFL 1.1, licence in
 `app/fonts/OFL.txt`) as a single variable WOFF2, latin subset, at
@@ -118,8 +110,6 @@ page-specific CSS file; there is no build step and no framework.
 | Feedback | `app/feedback.html` | GitHub Discussions comments via the Giscus embed, loaded on a button press (`app/feedback.js`) |
 | Privacy | `app/privacy.html` | None. States what the site collects (nothing), what Cloudflare keeps, which services the pages reach, and the one value the theme toggle stores in the browser; linked from every footer rather than the nav |
 
-Every page's header also carries the theme toggle (`app/theme.js`), after the GitHub button.
-
 Every page includes the same `<nav aria-label="Main">` in its header linking
 to the five main pages (Privacy is reached from the footer). Features carries a second `<nav aria-label="On this page">`
 for its jump row; the header rules in `app/shared.css` are scoped to
@@ -163,15 +153,6 @@ Workers Builds runs it before `wrangler deploy`; Wrangler bundles
 as-is.
 
 ## Interaction Details
-
-### Theme toggle
-
-`app/theme.js` runs before first paint, applies a stored choice of
-`light` or `dark` as `data-theme` on `<html>`, and binds the header
-toggle. With no stored choice the page follows the OS; a choice that
-matches the OS is not stored. The icon shows the theme you would switch
-to and is chosen by CSS (`--show-sun` / `--show-moon` in the palette),
-so it is right even before the script has bound the button.
 
 
 ### Copy buttons
