@@ -62,9 +62,12 @@
     --btn-primary-bg: var(--accent-deep);
     --btn-primary-fg: var(--paper);
 
-    /* The theme toggle shows the theme you would switch to. */
+    /* The theme toggle shows the theme you would switch to; .only-light
+     * and .only-dark show an element in one theme only. */
     --show-sun: none;
     --show-moon: inline;
+    --show-light: block;
+    --show-dark: none;
 
     --font-sans: "Nunito", ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", sans-serif;
     --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
@@ -131,6 +134,8 @@
         --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.5);
         --show-sun: inline;
         --show-moon: none;
+        --show-light: none;
+        --show-dark: block;
     }
 }
 :root[data-theme="dark"] {
@@ -168,6 +173,8 @@
     --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.5);
     --show-sun: inline;
     --show-moon: none;
+    --show-light: none;
+    --show-dark: block;
 }
 
 * {
@@ -229,6 +236,15 @@ a {
 
 a:hover {
     color: var(--accent);
+}
+
+/* One element per theme (the hero's recording): the other is display:
+ * none, which also keeps a lazy-loading image from being fetched. */
+:root .only-light {
+    display: var(--show-light);
+}
+:root .only-dark {
+    display: var(--show-dark);
 }
 
 /* ─── Skip link ─────────────────────────────────────────── */

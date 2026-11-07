@@ -128,9 +128,10 @@ app/learn/*.html    ← Lesson pages, generated (task contributing:learn:site)
 app/feedback.html   ← Feedback page        app/feedback.css   ← Feedback styles
 app/privacy.html   ← Privacy page         app/privacy.css    ← Privacy styles
 app/shared.css      ← Brand tokens, header/nav/footer, cards, code blocks
-app/assets/demo.svg ← The hero's terminal demo, drawn from real CLI output by
-                       scripts/shot.py (`task contributing:shots`); re-render
-                       when a command's output changes
+app/assets/demo.svg, demo-dark.svg
+                    ← The hero's terminal demo in each theme, drawn from real
+                       CLI output by scripts/shot.py (`task contributing:shots`);
+                       re-render when a command's output changes
 app/theme.js        ← Light/dark theme: first script in every <head>, the header toggle
 app/copy.js         ← Copy buttons, opt-in via data-copyable
 app/tabs.js         ← The tab sets on Features and Tools

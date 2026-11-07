@@ -73,3 +73,7 @@ def test_the_script_draws_both_screens_from_this_repo(tmp_path):
     assert "hygiene:entry-files" in svg
     assert "hygiene:docs-size" in svg  # a line of the first screen's output
     assert 'class="screen s0"' in svg and 'class="screen s1"' in svg
+    dark = (tmp_path / "demo-dark.svg").read_text(encoding="utf-8")
+    xml.dom.minidom.parseString(dark)
+    assert "slopstopper checks list" in dark
+    assert dark != svg  # the same screens in the dark theme's colours
