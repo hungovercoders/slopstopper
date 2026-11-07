@@ -14,6 +14,8 @@ test-results/
 .ss/tests/**/__pycache__/
 # Run-time copies of the Playwright config + specs (they also self-ignore).
 .ss/.run/
+# scripts/shot.py --still writes its debug stills here
+.ss/shots/
 # CLI package build artefacts (in-tree CLI pivot; see cli/README.md)
 cli/**/__pycache__/
 scripts/__pycache__/

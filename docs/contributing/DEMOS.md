@@ -81,7 +81,7 @@ demo tapes in four ways:
 
 ## The site's demo
 
-`app/assets/demo.svg`, under the home-page hero, is not a tape. It is
+`app/assets/demo.svg` (and its dark-theme twin `demo-dark.svg`), under the home-page hero, is not a tape. It is
 drawn by `scripts/shot.py` (`task contributing:shots`) from the real
 output of `slopstopper checks list` and `slopstopper run
 hygiene:entry-files` on this repo, as animated SVG text: no VHS, ttyd or

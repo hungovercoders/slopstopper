@@ -3,6 +3,7 @@
 
     task contributing:shots            # writes app/assets/demo.svg and demo-dark.svg
     python scripts/shot.py --out DIR   # somewhere else (CI uploads it)
+    python scripts/shot.py --still 1   # one screen, no motion, into .ss/shots/ (gitignored)
 
 No VHS, ttyd or ffmpeg: the script runs the commands below with the
 interpreter it was started from, captures what they print, and draws
@@ -270,10 +271,12 @@ def render(screens: list[tuple[str, list[tuple[str, str]]]], title: str, still: 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--out", default="app/assets", help="directory to write demo.svg and demo-dark.svg into")
+    parser.add_argument(
+        "--out", help="directory to write into (default: app/assets; with --still, .ss/shots, which is gitignored)",
+    )
     parser.add_argument(
         "--still", type=int, metavar="N",
-        help="write screen N without animation (demo-still-N.svg), for checking the picture",
+        help="write screen N without animation (demo-still-N.svg and demo-dark-still-N.svg), for checking the picture",
     )
     args = parser.parse_args()
     root = Path(__file__).resolve().parent.parent
@@ -284,7 +287,7 @@ def main() -> int:
             print(f"shot: {command!r} printed nothing", file=sys.stderr)
             return 1
         screens.append((command, screen_lines(command, output)))
-    out = Path(args.out)
+    out = Path(args.out) if args.out else Path("app/assets" if args.still is None else ".ss/shots")
     out.mkdir(parents=True, exist_ok=True)
     for pal in PALETTES:
         svg = render(screens, "slopstopper, on its own repository", still=args.still, pal=pal)

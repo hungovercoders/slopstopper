@@ -239,7 +239,10 @@ a:hover {
 }
 
 /* One element per theme (the hero's recording): the other is display:
- * none, which also keeps a lazy-loading image from being fetched. */
+ * none, which also keeps a lazy-loading image from being fetched until
+ * the theme changes (theme.js warms it when the toggle is hovered or
+ * focused). `:root` is for specificity: these must beat a page rule
+ * such as index.css's `.hero__demo img { display: block }`. */
 :root .only-light {
     display: var(--show-light);
 }

@@ -10,6 +10,7 @@ this repository and yields a well-formed SVG with both screens in it.
 from __future__ import annotations
 
 import importlib.util
+import re
 import subprocess
 import sys
 import xml.dom.minidom
@@ -61,7 +62,7 @@ def test_render_escapes_markup_and_holds_the_grid(shot):
     xml.dom.minidom.parseString(svg)
 
 
-def test_the_script_draws_both_screens_from_this_repo(tmp_path):
+def test_the_script_draws_both_screens_from_this_repo(shot, tmp_path):
     result = subprocess.run(
         [sys.executable, str(SCRIPT), "--out", str(tmp_path)],
         cwd=REPO_ROOT, capture_output=True, text=True, check=False,
@@ -76,4 +77,32 @@ def test_the_script_draws_both_screens_from_this_repo(tmp_path):
     dark = (tmp_path / "demo-dark.svg").read_text(encoding="utf-8")
     xml.dom.minidom.parseString(dark)
     assert "slopstopper checks list" in dark
-    assert dark != svg  # the same screens in the dark theme's colours
+    # The same screens, so the same size, in the dark theme's colours only.
+    assert _view_box(dark) == _view_box(svg)
+    assert shot.DARK.bg in dark and shot.DARK.fg in dark
+    assert shot.LIGHT.bg not in dark and shot.LIGHT.fg not in dark
+
+
+def _view_box(svg: str) -> str:
+    return re.search(r'viewBox="([^"]+)"', svg).group(1)
+
+
+def test_the_palettes_are_the_stylesheets_code_block_colours(shot):
+    """shot.py copies --code-bg / --code-fg / --code-accent from app/shared.css;
+    a retuned token that is not copied here leaves the hero a different colour
+    from every code block around it."""
+    css = (REPO_ROOT / "app" / "shared.css").read_text(encoding="utf-8")
+    for pal in shot.PALETTES:
+        for colour in (pal.bg, pal.fg, pal.accent):
+            assert colour in css, f"{pal.name or 'light'} palette colour {colour} is not in app/shared.css"
+
+
+def test_the_home_page_declares_the_recordings_size():
+    """index.html's width/height on both <img> must equal the SVGs' viewBox,
+    or the hero reserves the wrong box and shifts when the recording loads."""
+    page = (REPO_ROOT / "app" / "index.html").read_text(encoding="utf-8")
+    for name in ("demo.svg", "demo-dark.svg"):
+        svg = (REPO_ROOT / "app" / "assets" / name).read_text(encoding="utf-8")
+        _, _, width, height = _view_box(svg).split()
+        tag = re.search(rf'<img[^>]*src="assets/{re.escape(name)}"[^>]*>', page).group(0)
+        assert f'width="{width}"' in tag and f'height="{height}"' in tag, f"{name}: index.html declares another size"

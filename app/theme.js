@@ -47,8 +47,20 @@
         document.dispatchEvent(new CustomEvent("themechange", { detail: { theme } }));
     };
 
+    // An element shown in one theme only (.only-light / .only-dark, the
+    // hero's recording) is display: none in the other, so a lazy image
+    // among them has not loaded; fetch it as the toggle is approached, so
+    // the switch does not show an empty box while it arrives.
+    const warm = () => {
+        document.querySelectorAll("img.only-light, img.only-dark").forEach((img) => {
+            if (!img.complete || img.naturalWidth === 0) new Image().src = img.currentSrc || img.src;
+        });
+    };
+
     document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll(".theme-toggle").forEach((button) => {
+            button.addEventListener("pointerenter", warm, { once: true });
+            button.addEventListener("focus", warm, { once: true });
             button.addEventListener("click", () => {
                 const next = resolved() === "dark" ? "light" : "dark";
                 const system = media.matches ? "dark" : "light";
