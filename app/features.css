@@ -210,7 +210,7 @@
     padding: 0.7rem 1rem;
     text-align: center;
     box-shadow: var(--shadow-sticker-sm);
-    transform: rotate(-3deg);
+    transform: rotate(-2deg);
     margin-bottom: 0.6rem;
 }
 .bridge__taskfile {

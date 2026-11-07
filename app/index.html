@@ -61,33 +61,37 @@
         </div>
     </header>
     <main id="main">
-        <section class="hero">
-            <div class="mascot mascot--hero" aria-hidden="true">
-                <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
-                    <ellipse cx="120" cy="225" rx="70" ry="6" fill="rgba(42,33,24,0.12)"/>
-                    <path d="M40 130 C40 75, 80 50, 120 50 C160 50, 200 75, 200 130 C200 180, 165 210, 120 210 C75 210, 40 180, 40 130 Z" fill="#FBF5EC" stroke="#2A2118" stroke-width="6" stroke-linejoin="round"/>
-                    <rect x="92" y="58" width="22" height="8" rx="2" fill="#F5C24C" stroke="#2A2118" stroke-width="2.5"/>
-                    <line x1="98" y1="58" x2="98" y2="66" stroke="#2A2118" stroke-width="2"/>
-                    <line x1="108" y1="58" x2="108" y2="66" stroke="#2A2118" stroke-width="2"/>
-                    <circle cx="92" cy="130" r="13" fill="#2A2118"/>
-                    <circle cx="148" cy="130" r="13" fill="#2A2118"/>
-                    <circle cx="96" cy="125" r="4" fill="#FBF5EC"/>
-                    <circle cx="152" cy="125" r="4" fill="#FBF5EC"/>
-                    <path d="M100 165 Q120 182, 140 165" stroke="#2A2118" stroke-width="5" stroke-linecap="round" fill="none"/>
-                    <rect x="116" y="158" width="6" height="10" rx="1" fill="#FBF5EC" stroke="#2A2118" stroke-width="2"/>
-                    <circle cx="180" cy="155" r="8" fill="#FBF5EC" stroke="#2A2118" stroke-width="4"/>
-                    <circle cx="60" cy="155" r="8" fill="#FBF5EC" stroke="#2A2118" stroke-width="4"/>
-                    <polygon points="178,90 218,90 232,118 218,146 178,146 164,118" fill="#E8512B" stroke="#2A2118" stroke-width="5" stroke-linejoin="round"/>
-                    <text x="198" y="124" text-anchor="middle" font-family="Nunito, ui-rounded, system-ui, sans-serif" font-weight="800" font-size="18" fill="#FBF5EC">SLOP</text>
-                </svg>
-            </div>
-            <div class="bubble">Catch slop before it ships.</div>
-            <h1>Stop the <span class="highlight">slop.</span></h1>
-            <p class="hero__what">A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.</p>
-            <p>Deterministic, automated feedback for AI-driven development. The repo stays healthy while you ship fast.</p>
-            <div class="cta-row">
-                <a href="#get-started" class="btn btn--primary">Get started →</a>
-                <a href="features.html" class="btn btn--ghost">See features</a>
+        <section class="hero hero--split">
+            <div class="hero__copy">
+                <div class="hero__lead">
+                <div class="mascot mascot--hero" aria-hidden="true">
+                    <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+                        <ellipse cx="120" cy="225" rx="70" ry="6" fill="rgba(42,33,24,0.12)"/>
+                        <path d="M40 130 C40 75, 80 50, 120 50 C160 50, 200 75, 200 130 C200 180, 165 210, 120 210 C75 210, 40 180, 40 130 Z" fill="#FBF5EC" stroke="#2A2118" stroke-width="6" stroke-linejoin="round"/>
+                        <rect x="92" y="58" width="22" height="8" rx="2" fill="#F5C24C" stroke="#2A2118" stroke-width="2.5"/>
+                        <line x1="98" y1="58" x2="98" y2="66" stroke="#2A2118" stroke-width="2"/>
+                        <line x1="108" y1="58" x2="108" y2="66" stroke="#2A2118" stroke-width="2"/>
+                        <circle cx="92" cy="130" r="13" fill="#2A2118"/>
+                        <circle cx="148" cy="130" r="13" fill="#2A2118"/>
+                        <circle cx="96" cy="125" r="4" fill="#FBF5EC"/>
+                        <circle cx="152" cy="125" r="4" fill="#FBF5EC"/>
+                        <path d="M100 165 Q120 182, 140 165" stroke="#2A2118" stroke-width="5" stroke-linecap="round" fill="none"/>
+                        <rect x="116" y="158" width="6" height="10" rx="1" fill="#FBF5EC" stroke="#2A2118" stroke-width="2"/>
+                        <circle cx="180" cy="155" r="8" fill="#FBF5EC" stroke="#2A2118" stroke-width="4"/>
+                        <circle cx="60" cy="155" r="8" fill="#FBF5EC" stroke="#2A2118" stroke-width="4"/>
+                        <polygon points="178,90 218,90 232,118 218,146 178,146 164,118" fill="#E8512B" stroke="#2A2118" stroke-width="5" stroke-linejoin="round"/>
+                        <text x="198" y="124" text-anchor="middle" font-family="Nunito, ui-rounded, system-ui, sans-serif" font-weight="800" font-size="18" fill="#FBF5EC">SLOP</text>
+                    </svg>
+                </div>
+                    <div class="bubble bubble--side">Catch slop before it ships.</div>
+                </div>
+                <h1>Stop the <span class="highlight">slop.</span></h1>
+                <p class="hero__what">A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.</p>
+                <p>Deterministic, automated feedback for AI-driven development. The repo stays healthy while you ship fast.</p>
+                <div class="cta-row">
+                    <a href="#get-started" class="btn btn--primary">Get started →</a>
+                    <a href="features.html" class="btn btn--ghost">See features</a>
+                </div>
             </div>
             <figure class="hero__demo">
                 <img src="assets/demo.svg" width="910" height="562" alt="A terminal running slopstopper on its own repository: the list of every check, then the entry-files hygiene check passing with every budget in the green." loading="lazy" decoding="async">

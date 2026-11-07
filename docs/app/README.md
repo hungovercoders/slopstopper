@@ -9,14 +9,13 @@ slopstopper.dev is the reference install of SlopStopper: a Python CLI plus GitHu
 ## Brand & Design System
 
 The site is **indie-playful**: cream / peach background, tomato accent,
-"Stoppy" mascot, sticker cards with offset shadows and tiny rotations,
-sun-highlighter underlines, hand-drawn SVG arrows. It ships in a light
-and a dark theme. The dark theme is not an inversion: the ink outlines
-and hard offset shadows that make the light theme a sticker sheet would
-glare on a dark ground, so there the borders go low-contrast, depth comes
-from tonal surfaces and soft shadows, the highlighter becomes a marker
-underline and the tomato carries the emphasis. The shapes, rotations,
-bubble and mascot are the same in both.
+"Stoppy" mascot, sticker cards with tinted offset shadows and small
+rotations, sun-highlighter underlines, hand-drawn SVG arrows. It ships
+in a light and a dark theme. The dark theme is not an inversion: ink
+outlines would glare on a dark ground, so there the borders go
+low-contrast, depth comes from tonal surfaces and soft shadows, the
+highlighter becomes a marker underline and the tomato carries the
+emphasis. The shapes, rotations, bubble and mascot are the same in both.
 
 Brand tokens live in [`app/shared.css`](../../app/shared.css) on `:root`,
 light first, then the dark palette:
@@ -36,7 +35,8 @@ light first, then the dark palette:
 
 Semantic tokens sit on top, and components are written against these,
 never against a swatch: `--line` (every border: ink in light, muted in
-dark), the `--shadow-*` set (hard offsets in light, soft drops in dark),
+dark), the `--shadow-*` set (offsets in a paper tint in light, soft
+drops in dark),
 `--rule` (dashed dividers), `--code-bg` / `--code-fg` / `--code-accent`
 (code blocks stay dark in both themes), `--emphasis-bg` / `--emphasis-fg`
 (the active nav pill, step numbers, report toolbars), `--on-sun` (text
@@ -102,7 +102,7 @@ page-specific CSS file; there is no build step and no framework.
 
 | Page | File | Interactive element |
 | ---- | ---- | ------------------- |
-| Home | `app/index.html` | **Copy** buttons on the install code blocks (`app/copy.js`); `<details>` collapsibles |
+| Home | `app/index.html` | Hero with the copy beside the terminal demo from 980px; **Copy** buttons on the install code blocks (`app/copy.js`); `<details>` collapsibles |
 | Features | `app/features.html` | `<details>` workflow excerpt per check; an "On this page" jump row under the hero and two Back-to-top pills |
 | Tools | `app/tools.html` | `<details>` config or workflow excerpt per tool |
 | Learn | `app/learn.html` | **Copy** button on the demo setup block (`app/copy.js`). Lists the course's lessons and links each to its page under `app/learn/`; `cli/tests/test_learn_page.py` keeps the list identical to `docs/learn/README.md` |

@@ -1,15 +1,72 @@
 /* index.html: page-specific styles */
 
-.hero {
+/* ─── Hero: copy beside the terminal demo ─────────────────
+ * One column on a phone or tablet, centred like every other page's
+ * hero. From 980px the copy takes the left five twelfths and the demo
+ * the right seven, and the section breaks out of main's measure to
+ * 1200px so the recording stays legible. The mascot sits beside its
+ * bubble instead of above it, which is what makes the hero short. */
+.hero--split {
     padding-top: 1rem;
+    margin-bottom: 2.5rem;
 }
-.hero .bubble {
-    margin-bottom: 1.5rem;
+.hero__lead {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+.hero--split .mascot--hero {
+    width: 110px;
+    margin: 0;
+    flex: none;
+}
+.hero--split .bubble {
+    margin-bottom: 0;
+}
+.hero--split .hero__demo {
+    margin: 2rem auto 0;
+}
+
+@media (min-width: 980px) {
+    .hero--split {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: 2.5rem;
+        align-items: center;
+        text-align: left;
+        width: min(1200px, 100vw - 3rem);
+        margin-left: calc((100% - min(1200px, 100vw - 3rem)) / 2);
+        padding-top: 1.5rem;
+    }
+    .hero--split .hero__lead {
+        justify-content: flex-start;
+    }
+    .hero--split h1 {
+        font-size: clamp(2.5rem, 3.6vw, 3.25rem);
+    }
+    .hero--split p {
+        margin-left: 0;
+        margin-right: 0;
+        max-width: 34rem;
+    }
+    .hero--split .cta-row {
+        justify-content: flex-start;
+    }
+    .hero--split .hero__demo {
+        margin: 0;
+        max-width: none;
+    }
 }
 
 @media (max-width: 600px) {
-    .mascot--hero {
-        width: 140px;
+    .hero--split .mascot--hero {
+        width: 92px;
+    }
+    .hero--split .bubble {
+        font-size: 0.95rem;
+        padding: 0.5rem 0.85rem;
     }
     .cta-row .btn {
         width: 100%;

@@ -41,7 +41,8 @@
      * --line draws every border and sticker shadow; --rule the dashed
      * dividers; the --code-* trio keeps code blocks dark in both themes
      * instead of inverting with the page. */
-    --line: var(--ink);
+    --line: #3D3128;
+    --shadow-tint: #DFCBB0;
     --rule: rgba(42, 33, 24, 0.18);
     --code-bg: var(--ink);
     --code-fg: var(--cream);
@@ -73,15 +74,17 @@
     --r-lg: 22px;
     --r-pill: 999px;
 
-    --shadow-sticker: 4px 4px 0 var(--line);
-    --shadow-sticker-sm: 2px 2px 0 var(--line);
-    --shadow-lift: 5px 5px 0 var(--line);
-    --shadow-lift-sm: 3px 3px 0 var(--line);
-    --shadow-press: 1px 1px 0 var(--line);
+    /* Sticker shadows are hard offsets in a tint of the paper, not in
+     * ink: the cards still sit up off the page, without the weight. */
+    --shadow-sticker: 3px 3px 0 var(--shadow-tint);
+    --shadow-sticker-sm: 2px 2px 0 var(--shadow-tint);
+    --shadow-lift: 4px 4px 0 var(--shadow-tint);
+    --shadow-lift-sm: 3px 3px 0 var(--shadow-tint);
+    --shadow-press: 1px 1px 0 var(--shadow-tint);
     --shadow-soft: 0 2px 6px rgba(42, 33, 24, 0.08);
 
-    --border: 2px solid var(--line);
-    --border-thin: 1.5px solid var(--line);
+    --border: 1.5px solid var(--line);
+    --border-thin: 1px solid var(--line);
 }
 
 /* ─── Dark palette ───────────────────────────────────────── */
@@ -288,7 +291,7 @@ header {
     background: var(--accent);
     border: var(--border);
     border-radius: var(--r-sm);
-    transform: rotate(-6deg);
+    transform: rotate(-4deg);
     box-shadow: var(--shadow-sticker-sm);
 }
 
@@ -476,10 +479,10 @@ main {
     transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 .card-grid > .card:nth-child(odd) {
-    transform: rotate(-0.6deg);
+    transform: rotate(-0.35deg);
 }
 .card-grid > .card:nth-child(even) {
-    transform: rotate(0.6deg);
+    transform: rotate(0.35deg);
 }
 .card:hover {
     transform: rotate(0) translate(-1px, -1px);
@@ -717,7 +720,7 @@ main {
 }
 .mascot--hero {
     width: 180px;
-    transform: rotate(-3deg);
+    transform: rotate(-2deg);
     margin: 0 auto 1.5rem auto;
 }
 .mascot--peek {
@@ -743,7 +746,7 @@ main {
     font-weight: 700;
     font-size: 1rem;
     box-shadow: var(--shadow-sticker-sm);
-    transform: rotate(1.5deg);
+    transform: rotate(1deg);
     margin-bottom: 0.5rem;
 }
 .bubble::after {
@@ -768,6 +771,28 @@ main {
     border-right: 7px solid transparent;
     border-top: 9px solid var(--paper);
     z-index: 1;
+}
+/* Beside the speaker: the tail points left from the bubble's middle. */
+.bubble--side {
+    transform: rotate(-1deg);
+}
+.bubble--side::after {
+    left: -12px;
+    bottom: auto;
+    top: calc(50% - 10px);
+    border-left: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-right: 12px solid var(--line);
+}
+.bubble--side::before {
+    left: -7px;
+    bottom: auto;
+    top: calc(50% - 7px);
+    border-left: 0;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-right: 9px solid var(--paper);
 }
 
 /* ─── Testimonial sticker card ──────────────────────────── */
@@ -819,7 +844,7 @@ main {
     border: var(--border);
     border-radius: var(--r-lg);
     box-shadow: var(--shadow-sticker-sm);
-    transform: rotate(-3deg);
+    transform: rotate(-2deg);
     font-weight: 700;
     font-size: 1rem;
     color: var(--on-sun);
@@ -1087,6 +1112,7 @@ footer a {
     .card-grid > .card:nth-child(odd),
     .card-grid > .card:nth-child(even),
     .bubble,
+    .bubble--side,
     .mascot--hero,
     .mascot--peek,
     .mascot--wave,
