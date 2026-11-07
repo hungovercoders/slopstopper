@@ -59,18 +59,21 @@ in the same change.
 ## Running one for your organisation
 
 `hungovercoders/slopstopper-steward` is hungovercoders' copy, not a
-service. Fork it (or copy it as a template), set your `orgs` in
-`steward.yml`, install your own GitHub App on your adopters, add it and
-an Anthropic or Claude token as secrets, and run plan-only first. Its
+service. Fork it (or copy it as a template), replace `steward.yml` from
+`steward.yml.example` with your `orgs`, install your own GitHub App on
+your adopters, add its ID as a variable and its key and an Anthropic or
+Claude token as secrets, and run plan-only first. Its
 [setup runbook](https://github.com/hungovercoders/slopstopper-steward/blob/main/docs/runbooks/SETUP.md)
 walks it.
 
 ## What it never does
 
-No merge, no push to a default branch, no change to repo settings, no
-edit of an issue. Every write is a `steward/<order>` branch and a PR
-carrying `<!-- steward:order=<id> -->`; an issue labelled `steward:ignore`
-is left alone. Its agent runs boxed inside a clone with no push rights
+No push to a default branch, no change to repo settings, no edit of an
+issue, and a merge only of a PR the run itself saw green, only with
+`merge.auto` or `dependabot.merge` on. Every write is a `steward/<order>`
+branch and a PR carrying `<!-- steward:order=<id> -->`, or a fix commit
+on a Dependabot PR's own branch; an issue labelled `steward:ignore` is
+left alone. Its agent runs boxed inside a clone with no push rights
 and a dollar cap, and only for judgement calls: an open finding, or a
 check that went red after a refresh. Moving a pin and rewriting the suite
 is code.
