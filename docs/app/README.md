@@ -103,7 +103,7 @@ page-specific CSS file; there is no build step and no framework.
 | Page | File | Interactive element |
 | ---- | ---- | ------------------- |
 | Home | `app/index.html` | Hero with the copy beside the terminal demo from 980px; **Copy** buttons on the install code blocks (`app/copy.js`); `<details>` collapsibles |
-| Features | `app/features.html` | `<details>` workflow excerpt per check; an "On this page" jump row under the hero and two Back-to-top pills |
+| Features | `app/features.html` | The five loops as tabs (`app/features.js`: one panel at a time, arrow keys, the hash follows the tab so `#hygiene` deep-links; every panel shows without script); `<details>` workflow excerpt per check; a jump row to the sections below and a Back-to-top pill |
 | Tools | `app/tools.html` | `<details>` config or workflow excerpt per tool |
 | Learn | `app/learn.html` | **Copy** button on the demo setup block (`app/copy.js`). Lists the course's lessons and links each to its page under `app/learn/`; `cli/tests/test_learn_page.py` keeps the list identical to `docs/learn/README.md` |
 | Lessons | `app/learn/NN-slug.html` | Generated from `docs/learn/NN-slug.md` by `scripts/learnsite.py` (`task contributing:learn:site`), never edited by hand. The chrome is read from `app/learn.html`; **Copy** buttons on the command blocks; `<details>` for solutions and episode scripts; previous and next links |
@@ -133,6 +133,7 @@ app/assets/demo.svg ← The hero's terminal demo, drawn from real CLI output by
                        when a command's output changes
 app/theme.js        ← Light/dark theme: first script in every <head>, the header toggle
 app/copy.js         ← Copy buttons, opt-in via data-copyable
+app/features.js     ← The Features page's loop tabs
 app/feedback.js     ← Inserts the Giscus loader when the visitor asks; holds its SRI pin
 app/llms.txt, robots.txt, sitemap.xml, manifest.webmanifest, og-image.png,
 favicon.svg, apple-touch-icon.png

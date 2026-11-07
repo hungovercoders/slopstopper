@@ -270,6 +270,10 @@ header {
         top: 0;
         z-index: 50;
     }
+    /* An in-page link lands below the header, not under it. */
+    [id] {
+        scroll-margin-top: 5.5rem;
+    }
 }
 
 .site-title {

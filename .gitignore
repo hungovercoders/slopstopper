@@ -25,11 +25,12 @@ cli/.pytest_cache/
 .task/
 # Local Netlify folder
 .netlify
-# TypeScript compiled output (copy.js, feedback.js and theme.js are hand-written runtime JS, not tsc artefacts)
+# TypeScript compiled output (the four app/*.js below are hand-written runtime JS, not tsc artefacts)
 app/*.js
 !app/copy.js
 !app/feedback.js
 !app/theme.js
+!app/features.js
 # Local Claude Code state, but ship shared skills with the repo
 .claude/*
 !.claude/skills/
