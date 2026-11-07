@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """Render the site's terminal demo as an animated SVG from real CLI output.
 
-    task contributing:shots            # writes app/assets/demo.svg
+    task contributing:shots            # writes app/assets/demo.svg and demo-dark.svg
     python scripts/shot.py --out DIR   # somewhere else (CI uploads it)
+    python scripts/shot.py --still 1   # one screen, no motion, into .ss/shots/ (gitignored)
 
 No VHS, ttyd or ffmpeg: the script runs the commands below with the
 interpreter it was started from, captures what they print, and draws
 each line into a terminal window as SVG text. An animation shows the
 screens one after another and loops; `prefers-reduced-motion` gets the
 last screen, still. The result is a few kilobytes, same-origin (so the
-site's CSP needs nothing), and diffable in a PR.
+site's CSP needs nothing), and diffable in a PR. It is drawn twice, in
+the light theme's code-block colours and the dark theme's, and the home
+page shows whichever matches the theme in use.
 
 Run it from the repository root: the hygiene check reads this repo's
 entry files, so the picture shows slopstopper checking slopstopper.
@@ -24,6 +27,7 @@ import subprocess
 import sys
 import unicodedata
 from pathlib import Path
+from typing import NamedTuple
 from xml.sax.saxutils import escape
 
 # ── what the picture shows ───────────────────────────────────────
@@ -55,12 +59,19 @@ LINE_STAGGER = 0.03
 HOLD = 5.0
 GAP = 0.6
 
-# The site's brand tokens (app/shared.css), as the .codeblock uses them.
-INK = "#2A2118"
-CREAM = "#FBF5EC"
-SUN = "#F5C24C"
-INK_SOFT = "#6B5B47"
-BAR = "#3A2E22"
+# The site's code-block colours (app/shared.css: --code-bg, --code-fg,
+# --code-accent), one set per theme; the traffic lights are the brand's
+# tomato, sun and mint in both.
+class Palette(NamedTuple):
+    name: str          # the file suffix: demo.svg, demo-dark.svg
+    bg: str
+    bar: str
+    fg: str
+    accent: str        # the prompt and the cursor
+
+LIGHT = Palette("", "#2A2118", "#3A2E22", "#FBF5EC", "#F5C24C")
+DARK = Palette("-dark", "#0C0A09", "#1C1815", "#E9E1D6", "#F5C24C")
+PALETTES = (LIGHT, DARK)
 
 
 def capture(argv: list[str], cwd: Path) -> str:
@@ -155,31 +166,31 @@ class _Clock:
         self.css.append(f".{key}{{animation:{key} {self.total:.2f}s linear infinite}}")
 
 
-def _prompt_row(clock: _Clock, name: str, row: int, text: str, start: float) -> list[str]:
+def _prompt_row(clock: _Clock, pal: Palette, name: str, row: int, text: str, start: float) -> list[str]:
     """The command as if typed: one element per prefix, each shown for a
     keystroke; the full command is a row (it stays), the prefixes are the
     typing and vanish without motion."""
-    parts = [text_el(row, "$ ", SUN)]
+    parts = [text_el(row, "$ ", pal.accent)]
     chars = len(text)
     for n in range(1, chars + 1):
         key = f"{name}p{n}"
         hide = start + (n + 1) * TYPE_PER_CHAR if n < chars else None
         clock.visible(key, start + n * TYPE_PER_CHAR, hide)
         kind_class = "row" if n == chars else "typed"
-        parts.append(text_el(row, text[:n], CREAM, x=PAD_X + 2 * CELL_W, extra=f' class="{kind_class} {key}"'))
+        parts.append(text_el(row, text[:n], pal.fg, x=PAD_X + 2 * CELL_W, extra=f' class="{kind_class} {key}"'))
     return parts
 
 
-def _cursor_row(row: int, key: str) -> list[str]:
+def _cursor_row(pal: Palette, row: int, key: str) -> list[str]:
     y = FIRST_BASELINE + row * LINE_H
     return [
-        text_el(row, "$ ", SUN, extra=f' class="row {key}"'),
+        text_el(row, "$ ", pal.accent, extra=f' class="row {key}"'),
         f'<rect class="cursor row {key}" x="{PAD_X + 2 * CELL_W:.1f}" y="{y - FONT_SIZE:.1f}" '
         f'width="{CELL_W:.1f}" height="{FONT_SIZE + 3:.1f}"/>',
     ]
 
 
-def _screen(clock: _Clock, index: int, rows: list[tuple[str, str]], slot: tuple[float, float, float]) -> str:
+def _screen(clock: _Clock, pal: Palette, index: int, rows: list[tuple[str, str]], slot: tuple[float, float, float]) -> str:
     """One screen's group: visible for its slot, its rows revealed in turn."""
     start, typing, end = slot
     name = f"s{index}"
@@ -192,30 +203,30 @@ def _screen(clock: _Clock, index: int, rows: list[tuple[str, str]], slot: tuple[
     parts = [f'<g class="screen {name}">']
     for row, (kind, text) in enumerate(rows):
         if kind == "prompt":
-            parts.extend(_prompt_row(clock, name, row, text, start))
+            parts.extend(_prompt_row(clock, pal, name, row, text, start))
             continue
         key = f"{name}r{row}"
         clock.visible(key, start + typing + (row - 1) * LINE_STAGGER, None)
         if kind == "cursor":
-            parts.extend(_cursor_row(row, key))
+            parts.extend(_cursor_row(pal, row, key))
         else:
-            parts.append(text_el(row, text, CREAM, extra=f' class="row {key}"'))
+            parts.append(text_el(row, text, pal.fg, extra=f' class="row {key}"'))
     parts.append("</g>")
     return "\n".join(parts)
 
 
-def _title_bar(width: float, title: str) -> str:
+def _title_bar(pal: Palette, width: float, title: str) -> str:
     return (
-        f'<rect width="{width:.0f}" height="{BAR_H:.0f}" fill="{BAR}"/>'
+        f'<rect width="{width:.0f}" height="{BAR_H:.0f}" fill="{pal.bar}"/>'
         f'<circle cx="20" cy="{BAR_H / 2:.0f}" r="6" fill="#E8512B"/>'
-        f'<circle cx="40" cy="{BAR_H / 2:.0f}" r="6" fill="{SUN}"/>'
+        f'<circle cx="40" cy="{BAR_H / 2:.0f}" r="6" fill="#F5C24C"/>'
         f'<circle cx="60" cy="{BAR_H / 2:.0f}" r="6" fill="#2E8B6F"/>'
-        f'<text x="{width / 2:.0f}" y="{BAR_H / 2 + 4.5:.1f}" fill="{CREAM}" text-anchor="middle" '
+        f'<text x="{width / 2:.0f}" y="{BAR_H / 2 + 4.5:.1f}" fill="{pal.fg}" text-anchor="middle" '
         f'style="font-family:Nunito,ui-rounded,system-ui,sans-serif;font-size:12px;font-weight:700">{escape(title)}</text>'
     )
 
 
-def render(screens: list[tuple[str, list[tuple[str, str]]]], title: str, still: int | None = None) -> str:
+def render(screens: list[tuple[str, list[tuple[str, str]]]], title: str, still: int | None = None, pal: Palette = LIGHT) -> str:
     rows_max = max(len(rows) for _, rows in screens)
     width = PAD_X * 2 + COLS * CELL_W
     height = FIRST_BASELINE + (rows_max - 1) * LINE_H + BOTTOM
@@ -227,9 +238,9 @@ def render(screens: list[tuple[str, list[tuple[str, str]]]], title: str, still: 
         ".screen{opacity:0}",
         ".row{opacity:0}",
         ".typed{opacity:0}",
-        f".cursor{{fill:{SUN}}}",
+        f".cursor{{fill:{pal.accent}}}",
     ]
-    body = [_screen(clock, index, rows, slot) for index, ((_, rows), slot) in enumerate(zip(screens, slots))]
+    body = [_screen(clock, pal, index, rows, slot) for index, ((_, rows), slot) in enumerate(zip(screens, slots))]
 
     # Reduced motion: no animation, the last screen in full.
     last = f"s{len(screens) - 1}"
@@ -250,8 +261,8 @@ def render(screens: list[tuple[str, list[tuple[str, str]]]], title: str, still: 
         f'width="{width:.0f}" height="{height:.0f}" role="img" aria-labelledby="t">',
         f"<title id=\"t\">{escape(title)}</title>",
         "<style>" + "".join(css) + "</style>",
-        f'<rect width="{width:.0f}" height="{height:.0f}" rx="12" fill="{INK}"/>',
-        _title_bar(width, title),
+        f'<rect width="{width:.0f}" height="{height:.0f}" rx="12" fill="{pal.bg}"/>',
+        _title_bar(pal, width, title),
         *body,
         "</svg>",
         "",
@@ -260,10 +271,12 @@ def render(screens: list[tuple[str, list[tuple[str, str]]]], title: str, still: 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--out", default="app/assets", help="directory to write demo.svg into")
+    parser.add_argument(
+        "--out", help="directory to write into (default: app/assets; with --still, .ss/shots, which is gitignored)",
+    )
     parser.add_argument(
         "--still", type=int, metavar="N",
-        help="write screen N without animation (demo-still-N.svg), for checking the picture",
+        help="write screen N without animation (demo-still-N.svg and demo-dark-still-N.svg), for checking the picture",
     )
     args = parser.parse_args()
     root = Path(__file__).resolve().parent.parent
@@ -274,12 +287,14 @@ def main() -> int:
             print(f"shot: {command!r} printed nothing", file=sys.stderr)
             return 1
         screens.append((command, screen_lines(command, output)))
-    svg = render(screens, "slopstopper, on its own repository", still=args.still)
-    out = Path(args.out)
+    out = Path(args.out) if args.out else Path("app/assets" if args.still is None else ".ss/shots")
     out.mkdir(parents=True, exist_ok=True)
-    path = out / ("demo.svg" if args.still is None else f"demo-still-{args.still}.svg")
-    path.write_text(svg, encoding="utf-8")
-    print(f"wrote {path} ({len(svg.encode()) // 1024} KB)")
+    for pal in PALETTES:
+        svg = render(screens, "slopstopper, on its own repository", still=args.still, pal=pal)
+        stem = f"demo{pal.name}" if args.still is None else f"demo{pal.name}-still-{args.still}"
+        path = out / f"{stem}.svg"
+        path.write_text(svg, encoding="utf-8")
+        print(f"wrote {path} ({len(svg.encode()) // 1024} KB)")
     return 0
 
 

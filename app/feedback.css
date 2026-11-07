@@ -57,7 +57,6 @@
 .comments-section .giscus-frame {
     width: 100%;
     border: none;
-    color-scheme: light; /* opt the iframe out of OS dark-mode for form controls */
 }
 
 .card-grid--two {

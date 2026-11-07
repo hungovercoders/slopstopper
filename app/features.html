@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Features | SlopStopper</title>
     <meta name="description" content="Practices and automated feedback loops in SlopStopper: security, hygiene, reliability (E2E, smoke, accessibility, Core Web Vitals), operational and deployment. See the workflow behind each.">
-    <meta name="theme-color" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
     <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
     <link rel="canonical" href="https://slopstopper.dev/features.html">
@@ -31,6 +32,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="manifest" href="manifest.webmanifest">
 
+    <script src="theme.js"></script>
     <link rel="preload" href="fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="features.css">
@@ -52,6 +54,10 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
                 <span class="btn__label">GitHub</span>
             </a>
+            <button type="button" class="btn btn--ghost theme-toggle" aria-label="Switch theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
         </div>
     </header>
     <main id="main">
@@ -60,618 +66,635 @@
             <h1>Five loops, <span class="highlight">no slop.</span></h1>
             <p>Every security, hygiene and reliability check below is a real GitHub Actions workflow that calls <code>slopstopper run &lt;category&gt;:&lt;check&gt;</code> from the <a href="https://github.com/hungovercoders/slopstopper/tree/main/cli" rel="noopener noreferrer">CLI package</a>. The same code runs on your machine once you install with the one-liner on <a href="index.html#get-started">Get Started</a>. Operational is the housekeeping around those checks; Deployment is how this site itself ships.</p>
             <nav class="jump-row" aria-label="On this page">
-                <a href="#security">Security</a>
-                <a href="#reliability">Reliability</a>
-                <a href="#hygiene">Hygiene</a>
-                <a href="#operational">Operational</a>
-                <a href="#deployment">Deployment</a>
                 <a href="#profiles">Profiles</a>
                 <a href="#feedback">What feedback looks like</a>
                 <a href="#loops">Inner &amp; outer loop</a>
             </nav>
         </section>
 
-        <div class="card-grid card-grid--flow">
+        <section class="section tabbed" aria-labelledby="loops-heading">
+            <h2 class="visually-hidden" id="loops-heading">The five loops</h2>
+            <div class="tabs" role="tablist" aria-label="The five loops">
+                <a class="tab" role="tab" id="tab-security" href="#security" aria-controls="security" aria-selected="true">🔒 Security</a>
+                <a class="tab" role="tab" id="tab-reliability" href="#reliability" aria-controls="reliability" aria-selected="false">✅ Reliability</a>
+                <a class="tab" role="tab" id="tab-hygiene" href="#hygiene" aria-controls="hygiene" aria-selected="false">🧹 Hygiene</a>
+                <a class="tab" role="tab" id="tab-operational" href="#operational" aria-controls="operational" aria-selected="false">🤖 Operational</a>
+                <a class="tab" role="tab" id="tab-deployment" href="#deployment" aria-controls="deployment" aria-selected="false">🚀 Deployment</a>
+            </div>
             <!-- ─── Security ─────────────────────────────────────── -->
-            <div class="card" id="security">
-                <h2>🔒 Security</h2>
-                <p class="card-intro">Block vulnerable code and leaked credentials before they merge, with static analysis, dynamic scanning, secrets detection and dependency CVE checks on every change.</p>
-                <ul>
-                    <li><strong>SAST.</strong> Semgrep flags vulnerabilities in source code before merge</li>
-                    <li><strong>DAST.</strong> OWASP ZAP probes a running site for common web vulnerabilities, or an API through its OpenAPI spec</li>
-                    <li><strong>Secrets.</strong> Gitleaks scans every commit for accidentally committed credentials</li>
-                    <li><strong>Dependencies.</strong> Trivy checks all dependencies for known CVEs</li>
-                    <li><strong>API Headers &amp; CORS.</strong> Audits a JSON API's response headers and CORS policy: a wildcard origin sent with credentials, an arbitrary <code>Origin</code> reflected back, an allowlist that stopped matching, plus HSTS and <code>nosniff</code></li>
-                </ul>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/README.md" rel="noopener noreferrer">Learn more about Security →</a>
-
-                <details class="details">
-                    <summary>SAST (Semgrep)</summary>
-                    <div class="details__body">
-                        <!-- sync this excerpt if the workflow's first job step changes -->
-                        <div class="codeblock codeblock--yaml" role="region" aria-label="SAST workflow excerpt"><pre><code>name: SlopStopper · SAST Analysis
-on:
-  pull_request: { branches: [ main ] }
-  push:         { branches: [ main ] }
-jobs:
-  sast:
-    name: Static Application Security Testing with Semgrep
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: pip install semgrep
-      - run: task ss:security:sast
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit security:sast --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-sast-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>DAST (OWASP ZAP)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · DAST Analysis
-on:
-  pull_request: { branches: [ main ] }
-  push:         { branches: [ main ] }
-  deployment_status:
-  schedule: [{ cron: '30 7 * * *' }]
-  workflow_dispatch: { inputs: { url: { type: string } } }
-jobs:
-  dast:
-    name: Dynamic Application Security Testing with OWASP ZAP
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: npm ci &amp;&amp; npm run build &amp;&amp; slopstopper serve &amp;
-      - run: task ss:security:dast -- http://localhost:8080
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit security:dast --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-dast-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>Secrets (Gitleaks)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Secrets Detection
-on:
-  pull_request: { branches: [ main ] }
-  push:         { branches: [ main ] }
-jobs:
-  secrets:
-    name: Detect Secrets with Gitleaks
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with: { fetch-depth: 0 }
-      - uses: ./.github/actions/ss-setup
-      - run: curl -sL gitleaks/install.sh | bash
-      - run: task ss:security:secrets
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit security:secrets --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-secrets-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>Dependencies (Trivy + Dependency Review)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Dependency Vulnerability Scan
-on:
-  pull_request: { branches: [ main ] }
-  push:         { branches: [ main ] }
-jobs:
-  dependencies:
-    name: Scan Dependencies with Trivy
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: sudo apt-get install -y trivy   # from Aqua's apt repo
-      - run: task ss:security:vulnerability:all
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit security:vulnerability:all --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-vulnerability-all-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                        <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-vulnerability-new-check.yml" rel="noopener noreferrer">View dependency-review workflow →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>Licences (the whole resolved tree)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Licence Inventory
-on:
-  pull_request: { branches: [ main ] }
-  push:         { branches: [ main ] }
-jobs:
-  licences:
-    name: Judge dependency licences
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: task ss:security:licences   # package-lock.json + pip inspect, no tool
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit security:licences --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-licences-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-            </div>
-
-            <!-- ─── Reliability ─────────────────────────────────── -->
-            <div class="card" id="reliability">
-                <h2>✅ Reliability</h2>
-                <p class="card-intro">Catch broken pages, dead internal links, slow loads, accessibility regressions and broken social-share previews before users do. E2E, smoke, broken-link, axe-core WCAG 2.1 AA, Lighthouse CI and SEO/OpenGraph checks run on every change.</p>
-                <ul>
-                    <li><strong>E2E Journeys.</strong> Playwright walks every primary-nav link, in-page anchor, disclosure and the back button from each start page; eject the spec for journeys specific to your site</li>
-                    <li><strong>Smoke Tests.</strong> Lightweight checks after every deploy</li>
-                    <li><strong>Broken-Link Checks.</strong> Crawls internal anchors from key pages and fails on 4xx/5xx destinations</li>
-                    <li><strong>Accessibility.</strong> Axe-core audits every page against WCAG 2.1 AA</li>
-                    <li><strong>Core Web Vitals.</strong> Lighthouse CI measures LCP, INP and CLS</li>
-                    <li><strong>SEO &amp; Social-Share.</strong> Lighthouse SEO budget + OpenGraph / Twitter Card / canonical presence check</li>
-                    <li><strong>llms.txt.</strong> Validates the <code>/llms.txt</code> AI-discoverability map (llmstxt.org): H1 title, summary and links to key content</li>
-                    <li><strong>robots.txt.</strong> Guards against an accidental blanket <code>Disallow: /</code> that de-indexes the whole site, and requires a <code>Sitemap:</code> pointer</li>
-                    <li><strong>sitemap.xml.</strong> Crawls the site from <code>/</code> and cross-checks the sitemap: a reachable page missing from it or a <code>&lt;loc&gt;</code> that 404s fails; recommends generating the file from your routes</li>
-                    <li><strong>API Health.</strong> Probes a JSON API's health/readiness endpoint and asserts its contract: status code, JSON content-type, and the body fields you declare. <code>{"status": "degraded"}</code> behind an HTTP 200 passes a reachability probe and fails here</li>
-                    <li><strong>API Latency.</strong> Samples each endpoint several times and reports the median and slowest response plus the payload size. Core Web Vitals for something that renders nothing. Budgets gate on the median, so one slow sample from a shared runner doesn't fail your PR</li>
-                </ul>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
-
-                <details class="details">
-                    <summary>Smoke Tests (Playwright)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Reliability Smoke Tests
-on:
-  pull_request: { branches: [ main ] }
-  push:         { branches: [ main ] }
-  deployment_status:
-  schedule: [ { cron: '0 * * * *' } ]   # hourly
-jobs:
-  smoke-test:
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: npm ci
-      - run: npm run build &amp;&amp; slopstopper serve &amp;
-      - run: task ss:reliability:smoke -- --ci
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit reliability:smoke --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-smoke-tests.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>E2E Journeys (Playwright)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · E2E Check
-on:
-  pull_request: { branches: [ main ] }
-  push:         { branches: [ main ] }
-  deployment_status:
-  schedule: [ { cron: '0 5 * * *' } ]   # daily
-jobs:
-  e2e:
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: npm ci
-      - uses: ./.github/actions/ss-playwright
-      - run: npm run build &amp;&amp; slopstopper serve &amp;
-      - run: task ss:reliability:e2e -- --ci
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit reliability:e2e --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-e2e-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>Broken-Link Checks</summary>
-                    <div class="details__body">
-                        <!-- sync this excerpt if the workflow's first job step changes -->
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Reliability Broken Links
-on:
-  pull_request: { branches: [main] }
-  push:         { branches: [main] }
-  deployment_status:
-  schedule: [ { cron: '0 8 * * *' } ]
-jobs:
-  broken-links:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: npm ci
-      - run: npm run build &amp;&amp; slopstopper serve &amp;
-      - run: task ss:reliability:broken-links -- --ci
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit reliability:broken-links --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-broken-links-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>Accessibility (axe-core)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Accessibility Check
-on:
-  pull_request:      { branches: [main] }
-  push:              { branches: [main] }
-  deployment_status:
-  schedule: [ { cron: '0 6 * * *' } ]    # daily
-jobs:
-  a11y:
-    name: Accessibility Audit (axe-core / WCAG 2.1 AA)
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: npm ci
-      - run: npm run build &amp;&amp; slopstopper serve &amp;
-      - run: task ss:reliability:accessibility -- --ci
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit reliability:accessibility --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-accessibility-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>Core Web Vitals (Lighthouse CI)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Core Web Vitals
-on:
-  deployment_status:
-  schedule: [ { cron: '0 0 * * *' } ]   # nightly prod
-  pull_request: { branches: [ main ] }
-  push:         { branches: [ main ] }
-jobs:
-  cwv:
-    name: Core Web Vitals (Lighthouse CI)
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: npm ci &amp;&amp; npm run build
-      - run: slopstopper serve &amp;
-      - run: task ss:reliability:cwv -- --url http://localhost:8080
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit reliability:cwv --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-core-web-vitals.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>SEO &amp; Social-Share (OpenGraph + Twitter Card)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · SEO Metatag Check
-on:
-  pull_request: { branches: [main] }
-  push:         { branches: [main] }
-  deployment_status:
-  schedule: [ { cron: '0 7 * * *' } ]    # daily
-jobs:
-  seo:
-    name: SEO Metatag Audit (OpenGraph + Twitter Card + canonical)
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: npm ci
-      - run: npm run build &amp;&amp; slopstopper serve &amp;
-      - run: task ss:reliability:seo   # title, description, canonical,
-                                               # og:*, twitter:*, og:image fetch
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit reliability:seo --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-seo-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>llms.txt (AI-discoverability)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · llms.txt Check
-on:
-  pull_request: { branches: [main] }
-  push:         { branches: [main] }
-  deployment_status:
-  schedule: [ { cron: '0 7 * * *' } ]    # daily
-jobs:
-  llms-txt:
-    name: llms.txt AI-discoverability audit
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: npm ci
-      - run: npm run build &amp;&amp; slopstopper serve &amp;
-      - run: task ss:reliability:llms-txt -- --check-links   # H1, summary,
-                                               # links present + reachable
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit reliability:llms-txt --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-llms-txt-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>robots.txt (discoverability + de-index guard)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · robots.txt Check
-on:
-  pull_request: { branches: [main] }
-  push:         { branches: [main] }
-  deployment_status:
-  schedule: [ { cron: '0 7 * * *' } ]    # daily
-jobs:
-  robots-txt:
-    name: robots.txt discoverability audit
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: npm ci
-      - run: npm run build &amp;&amp; slopstopper serve &amp;
-      - run: task ss:reliability:robots-txt -- --check-links  # no blanket
-                                       # Disallow: / ; Sitemap: present
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit reliability:robots-txt --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-robots-txt-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>sitemap.xml (completeness + drift)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · sitemap Check
-on:
-  pull_request: { branches: [main] }
-  push:         { branches: [main] }
-  deployment_status:
-  schedule: [ { cron: '0 7 * * *' } ]    # daily
-jobs:
-  sitemap:
-    name: sitemap completeness audit
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: npm ci
-      - run: npm run build &amp;&amp; slopstopper serve &amp;
-      - run: task ss:reliability:sitemap -- http://localhost:8080
-                    # crawl vs sitemap: no missing pages,
-                    # no dead &lt;loc&gt; entries
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit reliability:sitemap --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-sitemap-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-            </div>
-
-            <!-- ─── Hygiene ──────────────────────────────────────── -->
-            <div class="card" id="hygiene">
-                <h2>🧹 Hygiene</h2>
-                <p class="card-intro">Keep the codebase auditable and the docs honest, with complexity caps, structure, accuracy and size checks for docs, and auto-labelled PRs.</p>
-                <ul>
-                    <li><strong>Complexity.</strong> Lizard caps cyclomatic complexity per function (CCN ≤ 15 by default, tunable in <code>.slopstopper.yml</code>) across every language it parses</li>
-                    <li><strong>Doc Structure &amp; Entry Files.</strong> AGENTS.md-first: <code>AGENTS.md</code> carries what most tasks need under a ~2k-token budget, <code>CLAUDE.md</code> is exactly <code>@AGENTS.md</code>, and every doc under <code>docs/</code> has an explicit “before you X, read Y” route from it or the <code>docs/README.md</code> map</li>
-                    <li><strong>Doc Accuracy.</strong> Documentation reflects the actual code</li>
-                    <li><strong>Doc Size.</strong> Prevents documentation from going stale or unwieldy</li>
-                    <li><strong>CSP Exceptions Drift.</strong> Keeps <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> in sync so per-page CSP relaxations stay documented</li>
-                    <li><strong>Privacy Statement.</strong> A site on a host that keeps traffic data has a privacy page that names the host, every third-party origin the CSP allows, Workers Logs when they are on, and a date. The statement is only true while it matches <code>wrangler.jsonc</code> and the headers source, so the check reads both</li>
-                    <li><strong>OpenAPI Drift.</strong> Compares your committed spec against the one the live API serves, and probes every documented path that takes no parameters. The doc-accuracy check for an API: a spec that stopped describing reality</li>
-                    <li><strong>Auto-label PRs.</strong> PRs labelled from the paths changed</li>
-                    <li><strong>Local pre-push gate.</strong> A pre-push git hook runs the fast hygiene checks before every push, so the first CI run confirms rather than discovers</li>
-                </ul>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about Hygiene →</a>
-
-                <details class="details">
-                    <summary>Complexity (Lizard)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Code Complexity Check
-on:
-  pull_request: { branches: [ main ] }
-  push:         { branches: [ main ] }
-jobs:
-  complexity-check:
-    name: Check Code Complexity with Lizard
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: pip install lizard
-      - run: task ss:hygiene:complexity
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit hygiene:complexity --target pr-comment</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-complexity-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>Doc Structure, Accuracy &amp; Entry Files</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Documentation Accuracy Check
-on:
-  schedule: [ { cron: '0 7 * * 1' } ]   # weekly
-  pull_request:                         # every PR, no paths filter: a deleted
-  push:         { branches: [ main ] }  # file anywhere can break a link</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-accuracy-check.yml" rel="noopener noreferrer">View accuracy workflow →</a>
-                        <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-structure-check.yml" rel="noopener noreferrer">View structure workflow →</a>
-                        <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-size-check.yml" rel="noopener noreferrer">View size-monitor workflow →</a>
-                        <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-entry-files-check.yml" rel="noopener noreferrer">View entry-files workflow →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>CSP Exceptions Drift</summary>
-                    <div class="details__body">
-                        <!-- sync this excerpt if the workflow's first job step changes -->
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - CSP Exceptions Drift Check
-on:
-  pull_request:
-  push: { branches: [main] }
-jobs:
-  check-csp-exceptions:
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: task ss:hygiene:csp-exceptions
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit hygiene:csp-exceptions --target pr-comment</code></pre></div>
-                        <p class="details__hint">Strict <code>default-src 'self'</code> CSP is the default. Per-path exceptions (e.g. Giscus on <code>/feedback.html</code>) must be documented in <code>CSP_EXCEPTIONS.md</code> with SRI hashes and a fallback. This check fails the build if <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> disagree.</p>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-csp-exceptions-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                        <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">View the exceptions doc →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>Privacy Statement</summary>
-                    <div class="details__body">
-                        <!-- sync this excerpt if the workflow's first job step changes -->
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Privacy Statement Check
-on:
-  pull_request:
-  push: { branches: [main] }
-jobs:
-  check-privacy:
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: ./.github/actions/ss-setup
-      - run: task ss:hygiene:privacy
-      - if: github.event_name == 'pull_request'
-        run: slopstopper emit hygiene:privacy --target pr-comment</code></pre></div>
-                        <p class="details__hint">No cookies and no analytics is not the same as nothing to say: the host processes every visitor's IP, and so does every origin the CSP lets a page reach. This check finds <code>privacy.html</code> (or <code>privacy.md</code>, anywhere in the tree) and fails unless it names the host, each allowed origin and a date. The smoke test adds the footer rule: every audited page links to it. <code>api</code> and <code>library</code> repos skip it.</p>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-privacy-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                        <br>
-                        <a class="details__source" href="privacy.html">See this site's statement →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>Auto-label PRs</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Auto Label PRs
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-jobs:
-  label:
-    steps:
-      - uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5
-        with: { sync-labels: true }</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-auto-label-pr.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                    </div>
-                </details>
-
-                <details class="details">
-                    <summary>Local pre-push gate</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--sh"><pre><code># .githooks/pre-push (wired via core.hooksPath by install.sh)
-# Runs the fast static hygiene checks before every push.
-exec mise exec -- task ss:hygiene:test</code></pre></div>
-                        <p class="details__hint">The same <code>task ss:hygiene:test</code> that CI runs, so hook, local and CI share one invocation surface. Only the static hygiene subset runs locally (seconds, no server); the server/browser checks stay in CI. <code>install.sh</code> won't override an existing <code>husky</code> / <code>lefthook</code> / <code>pre-commit</code> setup; opt out with <code>--no-hooks</code>, or bypass a single push with <code>git push --no-verify</code>.</p>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.githooks/pre-push" rel="noopener noreferrer">View the hook on GitHub →</a>
-                        <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/README.md" rel="noopener noreferrer">Inner-loop docs →</a>
-                    </div>
-                </details>
-            </div>
-
-            <!-- ─── Operational ─────────────────────────────────── -->
-            <div class="card" id="operational">
-                <h2>🤖 Operational</h2>
-                <p class="card-intro">Keep the housekeeping moving without prompts. Failed runs raise tracking issues, an agentic workflow opens weekly doc-sync PRs, and every PR gets labelled from the paths it touches.</p>
-                <ul>
-                    <li><strong>Failure Alerts.</strong> Failed workflow runs on main raise (or update) a tracking issue automatically</li>
-                    <li><strong>Doc Auto-Updater.</strong> A weekly agentic workflow opens PRs to keep docs in sync</li>
-                </ul>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/runbooks/README.md" rel="noopener noreferrer">Learn more about Operational →</a>
-
-                <details class="details">
-                    <summary>Failure Alerts</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Raise Issue on Workflow Failure
-on:
-  workflow_run:
-    workflows: ["SAST Analysis", "DAST Analysis", ...]
-    types: [completed]
-jobs:
-  raise-issue:
-    if: github.event.workflow_run.conclusion == 'failure'
-        &amp;&amp; github.event.workflow_run.head_branch == 'main'</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-workflow-failure-issue.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
-                        <div class="live-links">
-                            <span class="live-links__label">See it in action:</span>
-                            <a href="https://github.com/hungovercoders/slopstopper/issues?q=is%3Aissue+is%3Aopen+label%3Aworkflow-failure" rel="noopener noreferrer">🔴 Open issues</a>
-                            <a href="https://github.com/hungovercoders/slopstopper/issues?q=is%3Aissue+is%3Aclosed+label%3Aworkflow-failure" rel="noopener noreferrer">✅ Closed issues</a>
+            <div class="card tab-panel tab-panel--card" id="security" role="tabpanel" aria-labelledby="tab-security" tabindex="0">
+                <div class="tab-panel__about">
+                    <h2>🔒 Security</h2>
+                    <p class="card-intro">Block vulnerable code and leaked credentials before they merge, with static analysis, dynamic scanning, secrets detection and dependency CVE checks on every change.</p>
+                    <ul>
+                        <li><strong>SAST.</strong> Semgrep flags vulnerabilities in source code before merge</li>
+                        <li><strong>DAST.</strong> OWASP ZAP probes a running site for common web vulnerabilities, or an API through its OpenAPI spec</li>
+                        <li><strong>Secrets.</strong> Gitleaks scans every commit for accidentally committed credentials</li>
+                        <li><strong>Dependencies.</strong> Trivy checks all dependencies for known CVEs</li>
+                        <li><strong>API Headers &amp; CORS.</strong> Audits a JSON API's response headers and CORS policy: a wildcard origin sent with credentials, an arbitrary <code>Origin</code> reflected back, an allowlist that stopped matching, plus HSTS and <code>nosniff</code></li>
+                    </ul>
+                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/README.md" rel="noopener noreferrer">Learn more about Security →</a>
+                </div>
+                <div class="tab-panel__workflows">
+                    <h3 class="tab-panel__label">What runs, and how it is wired</h3>
+                    <details class="details">
+                        <summary>SAST (Semgrep)</summary>
+                        <div class="details__body">
+                            <!-- sync this excerpt if the workflow's first job step changes -->
+                            <div class="codeblock codeblock--yaml" role="region" aria-label="SAST workflow excerpt"><pre><code>name: SlopStopper · SAST Analysis
+    on:
+      pull_request: { branches: [ main ] }
+      push:         { branches: [ main ] }
+    jobs:
+      sast:
+        name: Static Application Security Testing with Semgrep
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: pip install semgrep
+          - run: task ss:security:sast
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit security:sast --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-sast-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
                         </div>
-                    </div>
-                </details>
+                    </details>
 
-                <details class="details">
-                    <summary>Doc Auto-Updater (agentic)</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Documentation Updater
-on:
-  schedule: [ { cron: 'weekly' } ]
-  workflow_dispatch:
-safe-outputs:
-  create-pull-request:
-    title-prefix: "[docs] "
-    labels: [documentation, automation]</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-doc-updater.md" rel="noopener noreferrer">View workflow on GitHub →</a>
-                        <div class="live-links">
-                            <span class="live-links__label">See it in action:</span>
-                            <a href="https://github.com/hungovercoders/slopstopper/pulls?q=is%3Apr+is%3Aopen+label%3Aautomation+label%3Adocumentation" rel="noopener noreferrer">🔴 Open PRs</a>
-                            <a href="https://github.com/hungovercoders/slopstopper/pulls?q=is%3Apr+is%3Aclosed+label%3Aautomation+label%3Adocumentation" rel="noopener noreferrer">✅ Closed PRs</a>
+                    <details class="details">
+                        <summary>DAST (OWASP ZAP)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · DAST Analysis
+    on:
+      pull_request: { branches: [ main ] }
+      push:         { branches: [ main ] }
+      deployment_status:
+      schedule: [{ cron: '30 7 * * *' }]
+      workflow_dispatch: { inputs: { url: { type: string } } }
+    jobs:
+      dast:
+        name: Dynamic Application Security Testing with OWASP ZAP
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: npm ci &amp;&amp; npm run build &amp;&amp; slopstopper serve &amp;
+          - run: task ss:security:dast -- http://localhost:8080
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit security:dast --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-dast-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
                         </div>
-                    </div>
-                </details>
+                    </details>
+
+                    <details class="details">
+                        <summary>Secrets (Gitleaks)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Secrets Detection
+    on:
+      pull_request: { branches: [ main ] }
+      push:         { branches: [ main ] }
+    jobs:
+      secrets:
+        name: Detect Secrets with Gitleaks
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+            with: { fetch-depth: 0 }
+          - uses: ./.github/actions/ss-setup
+          - run: curl -sL gitleaks/install.sh | bash
+          - run: task ss:security:secrets
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit security:secrets --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-secrets-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        </div>
+                    </details>
+
+                    <details class="details">
+                        <summary>Dependencies (Trivy + Dependency Review)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Dependency Vulnerability Scan
+    on:
+      pull_request: { branches: [ main ] }
+      push:         { branches: [ main ] }
+    jobs:
+      dependencies:
+        name: Scan Dependencies with Trivy
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: sudo apt-get install -y trivy   # from Aqua's apt repo
+          - run: task ss:security:vulnerability:all
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit security:vulnerability:all --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-vulnerability-all-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                            <br>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-vulnerability-new-check.yml" rel="noopener noreferrer">View dependency-review workflow →</a>
+                        </div>
+                    </details>
+
+                    <details class="details">
+                        <summary>Licences (the whole resolved tree)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Licence Inventory
+    on:
+      pull_request: { branches: [ main ] }
+      push:         { branches: [ main ] }
+    jobs:
+      licences:
+        name: Judge dependency licences
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: task ss:security:licences   # package-lock.json + pip inspect, no tool
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit security:licences --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-security-licences-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        </div>
+                    </details>
+                </div>
             </div>
+            <!-- ─── Reliability ─────────────────────────────────────── -->
+            <div class="card tab-panel tab-panel--card" id="reliability" role="tabpanel" aria-labelledby="tab-reliability" tabindex="0">
+                <div class="tab-panel__about">
+                    <h2>✅ Reliability</h2>
+                    <p class="card-intro">Catch broken pages, dead internal links, slow loads, accessibility regressions and broken social-share previews before users do. E2E, smoke, broken-link, axe-core WCAG 2.1 AA, Lighthouse CI and SEO/OpenGraph checks run on every change.</p>
+                    <ul>
+                        <li><strong>E2E Journeys.</strong> Playwright walks every primary-nav link, in-page anchor, disclosure and the back button from each start page; eject the spec for journeys specific to your site</li>
+                        <li><strong>Smoke Tests.</strong> Lightweight checks after every deploy</li>
+                        <li><strong>Broken-Link Checks.</strong> Crawls internal anchors from key pages and fails on 4xx/5xx destinations</li>
+                        <li><strong>Accessibility.</strong> Axe-core audits every page against WCAG 2.1 AA</li>
+                        <li><strong>Core Web Vitals.</strong> Lighthouse CI measures LCP, INP and CLS</li>
+                        <li><strong>SEO &amp; Social-Share.</strong> Lighthouse SEO budget + OpenGraph / Twitter Card / canonical presence check</li>
+                        <li><strong>llms.txt.</strong> Validates the <code>/llms.txt</code> AI-discoverability map (llmstxt.org): H1 title, summary and links to key content</li>
+                        <li><strong>robots.txt.</strong> Guards against an accidental blanket <code>Disallow: /</code> that de-indexes the whole site, and requires a <code>Sitemap:</code> pointer</li>
+                        <li><strong>sitemap.xml.</strong> Crawls the site from <code>/</code> and cross-checks the sitemap: a reachable page missing from it or a <code>&lt;loc&gt;</code> that 404s fails; recommends generating the file from your routes</li>
+                        <li><strong>API Health.</strong> Probes a JSON API's health/readiness endpoint and asserts its contract: status code, JSON content-type, and the body fields you declare. <code>{"status": "degraded"}</code> behind an HTTP 200 passes a reachability probe and fails here</li>
+                        <li><strong>API Latency.</strong> Samples each endpoint several times and reports the median and slowest response plus the payload size. Core Web Vitals for something that renders nothing. Budgets gate on the median, so one slow sample from a shared runner doesn't fail your PR</li>
+                    </ul>
+                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
+                </div>
+                <div class="tab-panel__workflows">
+                    <h3 class="tab-panel__label">What runs, and how it is wired</h3>
+                    <details class="details">
+                        <summary>Smoke Tests (Playwright)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Reliability Smoke Tests
+    on:
+      pull_request: { branches: [ main ] }
+      push:         { branches: [ main ] }
+      deployment_status:
+      schedule: [ { cron: '0 * * * *' } ]   # hourly
+    jobs:
+      smoke-test:
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: npm ci
+          - run: npm run build &amp;&amp; slopstopper serve &amp;
+          - run: task ss:reliability:smoke -- --ci
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit reliability:smoke --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-smoke-tests.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        </div>
+                    </details>
 
-            <!-- ─── Deployment ──────────────────────────────────── -->
-            <div class="card" id="deployment">
-                <h2>🚀 Deployment</h2>
-                <p class="card-intro">Every push deploys, every PR gets a preview URL and every PR close cleans up, all through Cloudflare Workers Builds hooked directly into the repo. No deploy workflow and no secrets: this is slopstopper.dev's own setup, shown so you can copy it by connecting your repo in the Cloudflare dash (Workers &amp; Pages → Create → Connect to Git). The one thing <code>install.sh</code> adds on a Cloudflare repo is <code>ss-cloudflare-deployed.yml</code>, which runs the URL-driven checks against each preview and, on <code>main</code>, the live site as soon as Workers Builds finishes.</p>
-                <ul>
-                    <li><strong>Production Deploy.</strong> Merges to main trigger an automatic release</li>
-                    <li><strong>Preview Deploys.</strong> Every PR gets a unique preview URL as a commit check</li>
-                    <li><strong>Auto Cleanup.</strong> Preview deploys are removed automatically on PR close</li>
-                </ul>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/deployment/README.md" rel="noopener noreferrer">Learn more about Deployment →</a>
+                    <details class="details">
+                        <summary>E2E Journeys (Playwright)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · E2E Check
+    on:
+      pull_request: { branches: [ main ] }
+      push:         { branches: [ main ] }
+      deployment_status:
+      schedule: [ { cron: '0 5 * * *' } ]   # daily
+    jobs:
+      e2e:
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: npm ci
+          - uses: ./.github/actions/ss-playwright
+          - run: npm run build &amp;&amp; slopstopper serve &amp;
+          - run: task ss:reliability:e2e -- --ci
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit reliability:e2e --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-e2e-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        </div>
+                    </details>
 
-                <details class="details">
-                    <summary>wrangler.jsonc</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>{
-  "name": "slopstopper",
-  "main": "worker/index.ts",
-  "compatibility_date": "2026-06-01",
-  "assets": {
-    "directory": "./app",
-    "binding": "ASSETS",
-    "run_worker_first": true
-  }
-}</code></pre></div>
-                        <p class="details__hint">Cloudflare Workers Builds reads this file from the repo on every push and deploys the Worker with the <code>app/</code> directory bound as static assets. There is no build step (<code>npm run build</code> is a no-op); Wrangler bundles <code>worker/index.ts</code> itself. No GitHub Action involved.</p>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/wrangler.jsonc" rel="noopener noreferrer">View wrangler.jsonc →</a>
-                    </div>
-                </details>
+                    <details class="details">
+                        <summary>Broken-Link Checks</summary>
+                        <div class="details__body">
+                            <!-- sync this excerpt if the workflow's first job step changes -->
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Reliability Broken Links
+    on:
+      pull_request: { branches: [main] }
+      push:         { branches: [main] }
+      deployment_status:
+      schedule: [ { cron: '0 8 * * *' } ]
+    jobs:
+      broken-links:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: npm ci
+          - run: npm run build &amp;&amp; slopstopper serve &amp;
+          - run: task ss:reliability:broken-links -- --ci
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit reliability:broken-links --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-broken-links-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        </div>
+                    </details>
 
-                <details class="details">
-                    <summary>Headers source-of-truth</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>[
-  {
-    "for": "/*",
-    "values": {
-      "Content-Security-Policy": "default-src 'self'; ...",
-      "X-Frame-Options": "DENY"
-    }
-  }
-]</code></pre></div>
-                        <p class="details__hint">The Worker imports this JSON and applies per-path headers on every response. <code>server.js</code> (local dev / DAST) and the CSP-drift gate read the same file. One source of truth for prod and local.</p>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/worker/headers.json" rel="noopener noreferrer">View worker/headers.json →</a>
-                    </div>
-                </details>
+                    <details class="details">
+                        <summary>Accessibility (axe-core)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Accessibility Check
+    on:
+      pull_request:      { branches: [main] }
+      push:              { branches: [main] }
+      deployment_status:
+      schedule: [ { cron: '0 6 * * *' } ]    # daily
+    jobs:
+      a11y:
+        name: Accessibility Audit (axe-core / WCAG 2.1 AA)
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: npm ci
+          - run: npm run build &amp;&amp; slopstopper serve &amp;
+          - run: task ss:reliability:accessibility -- --ci
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit reliability:accessibility --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-accessibility-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        </div>
+                    </details>
+
+                    <details class="details">
+                        <summary>Core Web Vitals (Lighthouse CI)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Core Web Vitals
+    on:
+      deployment_status:
+      schedule: [ { cron: '0 0 * * *' } ]   # nightly prod
+      pull_request: { branches: [ main ] }
+      push:         { branches: [ main ] }
+    jobs:
+      cwv:
+        name: Core Web Vitals (Lighthouse CI)
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: npm ci &amp;&amp; npm run build
+          - run: slopstopper serve &amp;
+          - run: task ss:reliability:cwv -- --url http://localhost:8080
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit reliability:cwv --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-core-web-vitals.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        </div>
+                    </details>
+
+                    <details class="details">
+                        <summary>SEO &amp; Social-Share (OpenGraph + Twitter Card)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · SEO Metatag Check
+    on:
+      pull_request: { branches: [main] }
+      push:         { branches: [main] }
+      deployment_status:
+      schedule: [ { cron: '0 7 * * *' } ]    # daily
+    jobs:
+      seo:
+        name: SEO Metatag Audit (OpenGraph + Twitter Card + canonical)
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: npm ci
+          - run: npm run build &amp;&amp; slopstopper serve &amp;
+          - run: task ss:reliability:seo   # title, description, canonical,
+                                                   # og:*, twitter:*, og:image fetch
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit reliability:seo --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-seo-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        </div>
+                    </details>
+
+                    <details class="details">
+                        <summary>llms.txt (AI-discoverability)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · llms.txt Check
+    on:
+      pull_request: { branches: [main] }
+      push:         { branches: [main] }
+      deployment_status:
+      schedule: [ { cron: '0 7 * * *' } ]    # daily
+    jobs:
+      llms-txt:
+        name: llms.txt AI-discoverability audit
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: npm ci
+          - run: npm run build &amp;&amp; slopstopper serve &amp;
+          - run: task ss:reliability:llms-txt -- --check-links   # H1, summary,
+                                                   # links present + reachable
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit reliability:llms-txt --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-llms-txt-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        </div>
+                    </details>
+
+                    <details class="details">
+                        <summary>robots.txt (discoverability + de-index guard)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · robots.txt Check
+    on:
+      pull_request: { branches: [main] }
+      push:         { branches: [main] }
+      deployment_status:
+      schedule: [ { cron: '0 7 * * *' } ]    # daily
+    jobs:
+      robots-txt:
+        name: robots.txt discoverability audit
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: npm ci
+          - run: npm run build &amp;&amp; slopstopper serve &amp;
+          - run: task ss:reliability:robots-txt -- --check-links  # no blanket
+                                           # Disallow: / ; Sitemap: present
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit reliability:robots-txt --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-robots-txt-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        </div>
+                    </details>
+
+                    <details class="details">
+                        <summary>sitemap.xml (completeness + drift)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · sitemap Check
+    on:
+      pull_request: { branches: [main] }
+      push:         { branches: [main] }
+      deployment_status:
+      schedule: [ { cron: '0 7 * * *' } ]    # daily
+    jobs:
+      sitemap:
+        name: sitemap completeness audit
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: npm ci
+          - run: npm run build &amp;&amp; slopstopper serve &amp;
+          - run: task ss:reliability:sitemap -- http://localhost:8080
+                        # crawl vs sitemap: no missing pages,
+                        # no dead &lt;loc&gt; entries
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit reliability:sitemap --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-sitemap-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        </div>
+                    </details>
+                </div>
             </div>
-        </div>
+            <!-- ─── Hygiene ─────────────────────────────────────── -->
+            <div class="card tab-panel tab-panel--card" id="hygiene" role="tabpanel" aria-labelledby="tab-hygiene" tabindex="0">
+                <div class="tab-panel__about">
+                    <h2>🧹 Hygiene</h2>
+                    <p class="card-intro">Keep the codebase auditable and the docs honest, with complexity caps, structure, accuracy and size checks for docs, and auto-labelled PRs.</p>
+                    <ul>
+                        <li><strong>Complexity.</strong> Lizard caps cyclomatic complexity per function (CCN ≤ 15 by default, tunable in <code>.slopstopper.yml</code>) across every language it parses</li>
+                        <li><strong>Doc Structure &amp; Entry Files.</strong> AGENTS.md-first: <code>AGENTS.md</code> carries what most tasks need under a ~2k-token budget, <code>CLAUDE.md</code> is exactly <code>@AGENTS.md</code>, and every doc under <code>docs/</code> has an explicit “before you X, read Y” route from it or the <code>docs/README.md</code> map</li>
+                        <li><strong>Doc Accuracy.</strong> Documentation reflects the actual code</li>
+                        <li><strong>Doc Size.</strong> Prevents documentation from going stale or unwieldy</li>
+                        <li><strong>CSP Exceptions Drift.</strong> Keeps <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> in sync so per-page CSP relaxations stay documented</li>
+                        <li><strong>Privacy Statement.</strong> A site on a host that keeps traffic data has a privacy page that names the host, every third-party origin the CSP allows, Workers Logs when they are on, and a date. The statement is only true while it matches <code>wrangler.jsonc</code> and the headers source, so the check reads both</li>
+                        <li><strong>OpenAPI Drift.</strong> Compares your committed spec against the one the live API serves, and probes every documented path that takes no parameters. The doc-accuracy check for an API: a spec that stopped describing reality</li>
+                        <li><strong>Auto-label PRs.</strong> PRs labelled from the paths changed</li>
+                        <li><strong>Local pre-push gate.</strong> A pre-push git hook runs the fast hygiene checks before every push, so the first CI run confirms rather than discovers</li>
+                    </ul>
+                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about Hygiene →</a>
+                </div>
+                <div class="tab-panel__workflows">
+                    <h3 class="tab-panel__label">What runs, and how it is wired</h3>
+                    <details class="details">
+                        <summary>Complexity (Lizard)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Code Complexity Check
+    on:
+      pull_request: { branches: [ main ] }
+      push:         { branches: [ main ] }
+    jobs:
+      complexity-check:
+        name: Check Code Complexity with Lizard
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: pip install lizard
+          - run: task ss:hygiene:complexity
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit hygiene:complexity --target pr-comment</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-complexity-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        </div>
+                    </details>
 
-        <p class="jump-top"><a href="#top">↑ Back to top</a></p>
+                    <details class="details">
+                        <summary>Doc Structure, Accuracy &amp; Entry Files</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Documentation Accuracy Check
+    on:
+      schedule: [ { cron: '0 7 * * 1' } ]   # weekly
+      pull_request:                         # every PR, no paths filter: a deleted
+      push:         { branches: [ main ] }  # file anywhere can break a link</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-accuracy-check.yml" rel="noopener noreferrer">View accuracy workflow →</a>
+                            <br>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-structure-check.yml" rel="noopener noreferrer">View structure workflow →</a>
+                            <br>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-size-check.yml" rel="noopener noreferrer">View size-monitor workflow →</a>
+                            <br>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-entry-files-check.yml" rel="noopener noreferrer">View entry-files workflow →</a>
+                        </div>
+                    </details>
+
+                    <details class="details">
+                        <summary>CSP Exceptions Drift</summary>
+                        <div class="details__body">
+                            <!-- sync this excerpt if the workflow's first job step changes -->
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - CSP Exceptions Drift Check
+    on:
+      pull_request:
+      push: { branches: [main] }
+    jobs:
+      check-csp-exceptions:
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: task ss:hygiene:csp-exceptions
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit hygiene:csp-exceptions --target pr-comment</code></pre></div>
+                            <p class="details__hint">Strict <code>default-src 'self'</code> CSP is the default. Per-path exceptions (e.g. Giscus on <code>/feedback.html</code>) must be documented in <code>CSP_EXCEPTIONS.md</code> with SRI hashes and a fallback. This check fails the build if <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> disagree.</p>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-csp-exceptions-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                            <br>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">View the exceptions doc →</a>
+                        </div>
+                    </details>
+
+                    <details class="details">
+                        <summary>Privacy Statement</summary>
+                        <div class="details__body">
+                            <!-- sync this excerpt if the workflow's first job step changes -->
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Privacy Statement Check
+    on:
+      pull_request:
+      push: { branches: [main] }
+    jobs:
+      check-privacy:
+        steps:
+          - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+          - uses: ./.github/actions/ss-setup
+          - run: task ss:hygiene:privacy
+          - if: github.event_name == 'pull_request'
+            run: slopstopper emit hygiene:privacy --target pr-comment</code></pre></div>
+                            <p class="details__hint">No cookies and no analytics is not the same as nothing to say: the host processes every visitor's IP, and so does every origin the CSP lets a page reach. This check finds <code>privacy.html</code> (or <code>privacy.md</code>, anywhere in the tree) and fails unless it names the host, each allowed origin and a date. The smoke test adds the footer rule: every audited page links to it. <code>api</code> and <code>library</code> repos skip it.</p>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-privacy-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                            <br>
+                            <a class="details__source" href="privacy.html">See this site's statement →</a>
+                        </div>
+                    </details>
+
+                    <details class="details">
+                        <summary>Auto-label PRs</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Auto Label PRs
+    on:
+      pull_request:
+        types: [opened, synchronize, reopened]
+    jobs:
+      label:
+        steps:
+          - uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5
+            with: { sync-labels: true }</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-auto-label-pr.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                        </div>
+                    </details>
+
+                    <details class="details">
+                        <summary>Local pre-push gate</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--sh"><pre><code># .githooks/pre-push (wired via core.hooksPath by install.sh)
+    # Runs the fast static hygiene checks before every push.
+    exec mise exec -- task ss:hygiene:test</code></pre></div>
+                            <p class="details__hint">The same <code>task ss:hygiene:test</code> that CI runs, so hook, local and CI share one invocation surface. Only the static hygiene subset runs locally (seconds, no server); the server/browser checks stay in CI. <code>install.sh</code> won't override an existing <code>husky</code> / <code>lefthook</code> / <code>pre-commit</code> setup; opt out with <code>--no-hooks</code>, or bypass a single push with <code>git push --no-verify</code>.</p>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.githooks/pre-push" rel="noopener noreferrer">View the hook on GitHub →</a>
+                            <br>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/README.md" rel="noopener noreferrer">Inner-loop docs →</a>
+                        </div>
+                    </details>
+                </div>
+            </div>
+            <!-- ─── Operational ─────────────────────────────────────── -->
+            <div class="card tab-panel tab-panel--card" id="operational" role="tabpanel" aria-labelledby="tab-operational" tabindex="0">
+                <div class="tab-panel__about">
+                    <h2>🤖 Operational</h2>
+                    <p class="card-intro">Keep the housekeeping moving without prompts. Failed runs raise tracking issues, an agentic workflow opens weekly doc-sync PRs, and every PR gets labelled from the paths it touches.</p>
+                    <ul>
+                        <li><strong>Failure Alerts.</strong> Failed workflow runs on main raise (or update) a tracking issue automatically</li>
+                        <li><strong>Doc Auto-Updater.</strong> A weekly agentic workflow opens PRs to keep docs in sync</li>
+                    </ul>
+                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/runbooks/README.md" rel="noopener noreferrer">Learn more about Operational →</a>
+                </div>
+                <div class="tab-panel__workflows">
+                    <h3 class="tab-panel__label">What runs, and how it is wired</h3>
+                    <details class="details">
+                        <summary>Failure Alerts</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Raise Issue on Workflow Failure
+    on:
+      workflow_run:
+        workflows: ["SAST Analysis", "DAST Analysis", ...]
+        types: [completed]
+    jobs:
+      raise-issue:
+        if: github.event.workflow_run.conclusion == 'failure'
+            &amp;&amp; github.event.workflow_run.head_branch == 'main'</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-workflow-failure-issue.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
+                            <div class="live-links">
+                                <span class="live-links__label">See it in action:</span>
+                                <a href="https://github.com/hungovercoders/slopstopper/issues?q=is%3Aissue+is%3Aopen+label%3Aworkflow-failure" rel="noopener noreferrer">🔴 Open issues</a>
+                                <a href="https://github.com/hungovercoders/slopstopper/issues?q=is%3Aissue+is%3Aclosed+label%3Aworkflow-failure" rel="noopener noreferrer">✅ Closed issues</a>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="details">
+                        <summary>Doc Auto-Updater (agentic)</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Documentation Updater
+    on:
+      schedule: [ { cron: 'weekly' } ]
+      workflow_dispatch:
+    safe-outputs:
+      create-pull-request:
+        title-prefix: "[docs] "
+        labels: [documentation, automation]</code></pre></div>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-doc-updater.md" rel="noopener noreferrer">View workflow on GitHub →</a>
+                            <div class="live-links">
+                                <span class="live-links__label">See it in action:</span>
+                                <a href="https://github.com/hungovercoders/slopstopper/pulls?q=is%3Apr+is%3Aopen+label%3Aautomation+label%3Adocumentation" rel="noopener noreferrer">🔴 Open PRs</a>
+                                <a href="https://github.com/hungovercoders/slopstopper/pulls?q=is%3Apr+is%3Aclosed+label%3Aautomation+label%3Adocumentation" rel="noopener noreferrer">✅ Closed PRs</a>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </div>
+            <!-- ─── Deployment ─────────────────────────────────────── -->
+            <div class="card tab-panel tab-panel--card" id="deployment" role="tabpanel" aria-labelledby="tab-deployment" tabindex="0">
+                <div class="tab-panel__about">
+                    <h2>🚀 Deployment</h2>
+                    <p class="card-intro">Every push deploys, every PR gets a preview URL and every PR close cleans up, all through Cloudflare Workers Builds hooked directly into the repo. No deploy workflow and no secrets: this is slopstopper.dev's own setup, shown so you can copy it by connecting your repo in the Cloudflare dash (Workers &amp; Pages → Create → Connect to Git). The one thing <code>install.sh</code> adds on a Cloudflare repo is <code>ss-cloudflare-deployed.yml</code>, which runs the URL-driven checks against each preview and, on <code>main</code>, the live site as soon as Workers Builds finishes.</p>
+                    <ul>
+                        <li><strong>Production Deploy.</strong> Merges to main trigger an automatic release</li>
+                        <li><strong>Preview Deploys.</strong> Every PR gets a unique preview URL as a commit check</li>
+                        <li><strong>Auto Cleanup.</strong> Preview deploys are removed automatically on PR close</li>
+                    </ul>
+                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/deployment/README.md" rel="noopener noreferrer">Learn more about Deployment →</a>
+                </div>
+                <div class="tab-panel__workflows">
+                    <h3 class="tab-panel__label">What runs, and how it is wired</h3>
+                    <details class="details">
+                        <summary>wrangler.jsonc</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>{
+      "name": "slopstopper",
+      "main": "worker/index.ts",
+      "compatibility_date": "2026-06-01",
+      "assets": {
+        "directory": "./app",
+        "binding": "ASSETS",
+        "run_worker_first": true
+      }
+    }</code></pre></div>
+                            <p class="details__hint">Cloudflare Workers Builds reads this file from the repo on every push and deploys the Worker with the <code>app/</code> directory bound as static assets. There is no build step (<code>npm run build</code> is a no-op); Wrangler bundles <code>worker/index.ts</code> itself. No GitHub Action involved.</p>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/wrangler.jsonc" rel="noopener noreferrer">View wrangler.jsonc →</a>
+                        </div>
+                    </details>
+
+                    <details class="details">
+                        <summary>Headers source-of-truth</summary>
+                        <div class="details__body">
+                            <div class="codeblock codeblock--yaml"><pre><code>[
+      {
+        "for": "/*",
+        "values": {
+          "Content-Security-Policy": "default-src 'self'; ...",
+          "X-Frame-Options": "DENY"
+        }
+      }
+    ]</code></pre></div>
+                            <p class="details__hint">The Worker imports this JSON and applies per-path headers on every response. <code>server.js</code> (local dev / DAST) and the CSP-drift gate read the same file. One source of truth for prod and local.</p>
+                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/worker/headers.json" rel="noopener noreferrer">View worker/headers.json →</a>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
 
         <section class="section" id="profiles">
             <span class="kicker">Other project shapes</span>
@@ -730,34 +753,34 @@ safe-outputs:
                 <div class="report report--axe">
                     <svg viewBox="0 0 480 320" role="img" aria-labelledby="axeTitle" xmlns="http://www.w3.org/2000/svg">
                         <title id="axeTitle">axe-core accessibility report mockup</title>
-                        <rect width="480" height="320" fill="#FFFFFF"/>
-                        <rect x="0" y="0" width="480" height="36" fill="#2A2118"/>
-                        <circle cx="16" cy="18" r="5" fill="#E8512B"/>
-                        <circle cx="32" cy="18" r="5" fill="#F5C24C"/>
-                        <circle cx="48" cy="18" r="5" fill="#2E8B6F"/>
-                        <text x="70" y="23" font-family="ui-monospace, monospace" font-size="12" fill="#FBF5EC">axe-core / WCAG 2.1 AA</text>
-                        <text x="20" y="72" font-family="Nunito, ui-rounded, system-ui, sans-serif" font-weight="800" font-size="20" fill="#2A2118">Accessibility report</text>
-                        <text x="20" y="92" font-family="Nunito, ui-rounded, system-ui, sans-serif" font-size="13" fill="#6B5B47">3 issues found on this page</text>
-                        <rect x="350" y="56" width="110" height="24" rx="12" fill="#FFD9B8" stroke="#2A2118" stroke-width="1.5"/>
-                        <text x="405" y="73" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="11" fill="#2A2118">WCAG 2.1 AA</text>
-                        <rect x="20" y="110" width="440" height="14" rx="7" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
-                        <rect x="22" y="112" width="330" height="10" rx="5" fill="#2E8B6F"/>
-                        <rect x="352" y="112" width="60" height="10" fill="#F5C24C"/>
-                        <rect x="412" y="112" width="46" height="10" rx="5" fill="#E8512B"/>
-                        <text x="20" y="148" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="13" fill="#2A2118">Violations</text>
-                        <rect x="20" y="160" width="78" height="22" rx="11" fill="#E8512B"/>
-                        <text x="59" y="176" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="11" fill="#FBF5EC">CRITICAL</text>
-                        <text x="108" y="176" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">color-contrast</text>
-                        <text x="240" y="176" font-family="Nunito, ui-rounded, sans-serif" font-size="12" fill="#6B5B47">foreground/background ratio &lt; 4.5</text>
-                        <rect x="20" y="194" width="78" height="22" rx="11" fill="#F5C24C"/>
-                        <text x="59" y="210" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="11" fill="#2A2118">SERIOUS</text>
-                        <text x="108" y="210" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">image-alt</text>
-                        <text x="200" y="210" font-family="Nunito, ui-rounded, sans-serif" font-size="12" fill="#6B5B47">image missing alternative text</text>
-                        <rect x="20" y="228" width="78" height="22" rx="11" fill="#6B5B47"/>
-                        <text x="59" y="244" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="11" fill="#FBF5EC">MODERATE</text>
-                        <text x="108" y="244" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">aria-required-attr</text>
-                        <text x="260" y="244" font-family="Nunito, ui-rounded, sans-serif" font-size="12" fill="#6B5B47">required ARIA attribute</text>
-                        <text x="20" y="284" font-family="Nunito, ui-rounded, sans-serif" font-size="11" fill="#6B5B47">12 passes · 2 incomplete · 3 violations</text>
+                        <rect width="480" height="320" fill="var(--paper)"/>
+                        <rect x="0" y="0" width="480" height="36" fill="var(--emphasis-bg)"/>
+                        <circle cx="16" cy="18" r="5" fill="var(--accent)"/>
+                        <circle cx="32" cy="18" r="5" fill="var(--sun)"/>
+                        <circle cx="48" cy="18" r="5" fill="var(--mint)"/>
+                        <text x="70" y="23" font-family="ui-monospace, monospace" font-size="12" fill="var(--emphasis-fg)">axe-core / WCAG 2.1 AA</text>
+                        <text x="20" y="72" font-family="Nunito, ui-rounded, system-ui, sans-serif" font-weight="800" font-size="20" fill="var(--ink)">Accessibility report</text>
+                        <text x="20" y="92" font-family="Nunito, ui-rounded, system-ui, sans-serif" font-size="13" fill="var(--ink-soft)">3 issues found on this page</text>
+                        <rect x="350" y="56" width="110" height="24" rx="12" fill="var(--peach)" stroke="var(--ink)" stroke-width="1.5"/>
+                        <text x="405" y="73" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="11" fill="var(--ink)">WCAG 2.1 AA</text>
+                        <rect x="20" y="110" width="440" height="14" rx="7" fill="var(--cream)" stroke="var(--ink)" stroke-width="1.5"/>
+                        <rect x="22" y="112" width="330" height="10" rx="5" fill="var(--mint)"/>
+                        <rect x="352" y="112" width="60" height="10" fill="var(--sun)"/>
+                        <rect x="412" y="112" width="46" height="10" rx="5" fill="var(--accent)"/>
+                        <text x="20" y="148" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="13" fill="var(--ink)">Violations</text>
+                        <rect x="20" y="160" width="78" height="22" rx="11" fill="var(--accent)"/>
+                        <text x="59" y="176" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="11" fill="var(--cream)">CRITICAL</text>
+                        <text x="108" y="176" font-family="ui-monospace, monospace" font-size="12" fill="var(--ink)">color-contrast</text>
+                        <text x="240" y="176" font-family="Nunito, ui-rounded, sans-serif" font-size="12" fill="var(--ink-soft)">foreground/background ratio &lt; 4.5</text>
+                        <rect x="20" y="194" width="78" height="22" rx="11" fill="var(--sun)"/>
+                        <text x="59" y="210" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="11" fill="var(--ink)">SERIOUS</text>
+                        <text x="108" y="210" font-family="ui-monospace, monospace" font-size="12" fill="var(--ink)">image-alt</text>
+                        <text x="200" y="210" font-family="Nunito, ui-rounded, sans-serif" font-size="12" fill="var(--ink-soft)">image missing alternative text</text>
+                        <rect x="20" y="228" width="78" height="22" rx="11" fill="var(--ink-soft)"/>
+                        <text x="59" y="244" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="11" fill="var(--cream)">MODERATE</text>
+                        <text x="108" y="244" font-family="ui-monospace, monospace" font-size="12" fill="var(--ink)">aria-required-attr</text>
+                        <text x="260" y="244" font-family="Nunito, ui-rounded, sans-serif" font-size="12" fill="var(--ink-soft)">required ARIA attribute</text>
+                        <text x="20" y="284" font-family="Nunito, ui-rounded, sans-serif" font-size="11" fill="var(--ink-soft)">12 passes · 2 incomplete · 3 violations</text>
                     </svg>
                 </div>
 
@@ -765,54 +788,54 @@ safe-outputs:
                 <div class="report report--lh">
                     <svg viewBox="0 0 480 320" role="img" aria-labelledby="lhTitle" xmlns="http://www.w3.org/2000/svg">
                         <title id="lhTitle">Lighthouse Core Web Vitals report mockup</title>
-                        <rect width="480" height="320" fill="#FFFFFF"/>
-                        <rect x="0" y="0" width="480" height="36" fill="#2A2118"/>
-                        <circle cx="16" cy="18" r="5" fill="#E8512B"/>
-                        <circle cx="32" cy="18" r="5" fill="#F5C24C"/>
-                        <circle cx="48" cy="18" r="5" fill="#2E8B6F"/>
-                        <text x="70" y="23" font-family="ui-monospace, monospace" font-size="12" fill="#FBF5EC">Lighthouse CI</text>
-                        <text x="20" y="72" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="20" fill="#2A2118">Core Web Vitals</text>
+                        <rect width="480" height="320" fill="var(--paper)"/>
+                        <rect x="0" y="0" width="480" height="36" fill="var(--emphasis-bg)"/>
+                        <circle cx="16" cy="18" r="5" fill="var(--accent)"/>
+                        <circle cx="32" cy="18" r="5" fill="var(--sun)"/>
+                        <circle cx="48" cy="18" r="5" fill="var(--mint)"/>
+                        <text x="70" y="23" font-family="ui-monospace, monospace" font-size="12" fill="var(--emphasis-fg)">Lighthouse CI</text>
+                        <text x="20" y="72" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="20" fill="var(--ink)">Core Web Vitals</text>
                         <g transform="translate(40,100)">
-                            <circle cx="40" cy="40" r="36" fill="none" stroke="#FBF5EC" stroke-width="6"/>
-                            <circle cx="40" cy="40" r="36" fill="none" stroke="#2E8B6F" stroke-width="6" stroke-dasharray="221.7" stroke-dashoffset="4.5" transform="rotate(-90 40 40)"/>
-                            <text x="40" y="46" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="20" fill="#2A2118">98</text>
-                            <text x="40" y="100" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-size="11" fill="#6B5B47">Performance</text>
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="var(--peach-soft)" stroke-width="6"/>
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="var(--mint)" stroke-width="6" stroke-dasharray="221.7" stroke-dashoffset="4.5" transform="rotate(-90 40 40)"/>
+                            <text x="40" y="46" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="20" fill="var(--ink)">98</text>
+                            <text x="40" y="100" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-size="11" fill="var(--ink-soft)">Performance</text>
                         </g>
                         <g transform="translate(140,100)">
-                            <circle cx="40" cy="40" r="36" fill="none" stroke="#FBF5EC" stroke-width="6"/>
-                            <circle cx="40" cy="40" r="36" fill="none" stroke="#2E8B6F" stroke-width="6" stroke-dasharray="226.2" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
-                            <text x="40" y="46" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="20" fill="#2A2118">100</text>
-                            <text x="40" y="100" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-size="11" fill="#6B5B47">Accessibility</text>
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="var(--peach-soft)" stroke-width="6"/>
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="var(--mint)" stroke-width="6" stroke-dasharray="226.2" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
+                            <text x="40" y="46" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="20" fill="var(--ink)">100</text>
+                            <text x="40" y="100" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-size="11" fill="var(--ink-soft)">Accessibility</text>
                         </g>
                         <g transform="translate(240,100)">
-                            <circle cx="40" cy="40" r="36" fill="none" stroke="#FBF5EC" stroke-width="6"/>
-                            <circle cx="40" cy="40" r="36" fill="none" stroke="#2E8B6F" stroke-width="6" stroke-dasharray="226.2" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
-                            <text x="40" y="46" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="20" fill="#2A2118">100</text>
-                            <text x="40" y="100" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-size="11" fill="#6B5B47">Best Pract.</text>
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="var(--peach-soft)" stroke-width="6"/>
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="var(--mint)" stroke-width="6" stroke-dasharray="226.2" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
+                            <text x="40" y="46" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="20" fill="var(--ink)">100</text>
+                            <text x="40" y="100" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-size="11" fill="var(--ink-soft)">Best Pract.</text>
                         </g>
                         <g transform="translate(340,100)">
-                            <circle cx="40" cy="40" r="36" fill="none" stroke="#FBF5EC" stroke-width="6"/>
-                            <circle cx="40" cy="40" r="36" fill="none" stroke="#2E8B6F" stroke-width="6" stroke-dasharray="226.2" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
-                            <text x="40" y="46" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="20" fill="#2A2118">100</text>
-                            <text x="40" y="100" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-size="11" fill="#6B5B47">SEO</text>
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="var(--peach-soft)" stroke-width="6"/>
+                            <circle cx="40" cy="40" r="36" fill="none" stroke="var(--mint)" stroke-width="6" stroke-dasharray="226.2" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
+                            <text x="40" y="46" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="20" fill="var(--ink)">100</text>
+                            <text x="40" y="100" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-size="11" fill="var(--ink-soft)">SEO</text>
                         </g>
                         <g transform="translate(20,232)">
-                            <rect width="140" height="60" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
-                            <circle cx="14" cy="14" r="5" fill="#2E8B6F"/>
-                            <text x="26" y="18" font-family="ui-monospace, monospace" font-size="11" fill="#6B5B47">LCP</text>
-                            <text x="14" y="44" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#2A2118">1.2 s</text>
+                            <rect width="140" height="60" rx="10" fill="var(--cream)" stroke="var(--ink)" stroke-width="1.5"/>
+                            <circle cx="14" cy="14" r="5" fill="var(--mint)"/>
+                            <text x="26" y="18" font-family="ui-monospace, monospace" font-size="11" fill="var(--ink-soft)">LCP</text>
+                            <text x="14" y="44" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="var(--ink)">1.2 s</text>
                         </g>
                         <g transform="translate(170,232)">
-                            <rect width="140" height="60" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
-                            <circle cx="14" cy="14" r="5" fill="#2E8B6F"/>
-                            <text x="26" y="18" font-family="ui-monospace, monospace" font-size="11" fill="#6B5B47">INP</text>
-                            <text x="14" y="44" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#2A2118">80 ms</text>
+                            <rect width="140" height="60" rx="10" fill="var(--cream)" stroke="var(--ink)" stroke-width="1.5"/>
+                            <circle cx="14" cy="14" r="5" fill="var(--mint)"/>
+                            <text x="26" y="18" font-family="ui-monospace, monospace" font-size="11" fill="var(--ink-soft)">INP</text>
+                            <text x="14" y="44" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="var(--ink)">80 ms</text>
                         </g>
                         <g transform="translate(320,232)">
-                            <rect width="140" height="60" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
-                            <circle cx="14" cy="14" r="5" fill="#2E8B6F"/>
-                            <text x="26" y="18" font-family="ui-monospace, monospace" font-size="11" fill="#6B5B47">CLS</text>
-                            <text x="14" y="44" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#2A2118">0.01</text>
+                            <rect width="140" height="60" rx="10" fill="var(--cream)" stroke="var(--ink)" stroke-width="1.5"/>
+                            <circle cx="14" cy="14" r="5" fill="var(--mint)"/>
+                            <text x="26" y="18" font-family="ui-monospace, monospace" font-size="11" fill="var(--ink-soft)">CLS</text>
+                            <text x="14" y="44" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="var(--ink)">0.01</text>
                         </g>
                     </svg>
                 </div>
@@ -821,54 +844,54 @@ safe-outputs:
                 <div class="report report--trivy">
                     <svg viewBox="0 0 480 320" role="img" aria-labelledby="trivyTitle" xmlns="http://www.w3.org/2000/svg">
                         <title id="trivyTitle">Trivy vulnerability scan report mockup</title>
-                        <rect width="480" height="320" fill="#FFFFFF"/>
-                        <rect x="0" y="0" width="480" height="36" fill="#2A2118"/>
-                        <circle cx="16" cy="18" r="5" fill="#E8512B"/>
-                        <circle cx="32" cy="18" r="5" fill="#F5C24C"/>
-                        <circle cx="48" cy="18" r="5" fill="#2E8B6F"/>
-                        <text x="70" y="23" font-family="ui-monospace, monospace" font-size="12" fill="#FBF5EC">trivy fs .</text>
-                        <text x="20" y="72" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="20" fill="#2A2118">Vulnerability scan</text>
-                        <text x="20" y="92" font-family="Nunito, ui-rounded, sans-serif" font-size="13" fill="#6B5B47">19 known issues across direct &amp; transitive deps</text>
+                        <rect width="480" height="320" fill="var(--paper)"/>
+                        <rect x="0" y="0" width="480" height="36" fill="var(--emphasis-bg)"/>
+                        <circle cx="16" cy="18" r="5" fill="var(--accent)"/>
+                        <circle cx="32" cy="18" r="5" fill="var(--sun)"/>
+                        <circle cx="48" cy="18" r="5" fill="var(--mint)"/>
+                        <text x="70" y="23" font-family="ui-monospace, monospace" font-size="12" fill="var(--emphasis-fg)">trivy fs .</text>
+                        <text x="20" y="72" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="20" fill="var(--ink)">Vulnerability scan</text>
+                        <text x="20" y="92" font-family="Nunito, ui-rounded, sans-serif" font-size="13" fill="var(--ink-soft)">19 known issues across direct &amp; transitive deps</text>
                         <g transform="translate(20,110)">
-                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
-                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">CRITICAL</text>
-                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#2E8B6F">0</text>
+                            <rect width="100" height="48" rx="10" fill="var(--cream)" stroke="var(--ink)" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="var(--ink-soft)">CRITICAL</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="var(--mint)">0</text>
                         </g>
                         <g transform="translate(130,110)">
-                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
-                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">HIGH</text>
-                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#E8512B">2</text>
+                            <rect width="100" height="48" rx="10" fill="var(--cream)" stroke="var(--ink)" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="var(--ink-soft)">HIGH</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="var(--accent)">2</text>
                         </g>
                         <g transform="translate(240,110)">
-                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
-                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">MEDIUM</text>
-                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#F5C24C">5</text>
+                            <rect width="100" height="48" rx="10" fill="var(--cream)" stroke="var(--ink)" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="var(--ink-soft)">MEDIUM</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="var(--sun)">5</text>
                         </g>
                         <g transform="translate(350,110)">
-                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
-                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">LOW</text>
-                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#6B5B47">12</text>
+                            <rect width="100" height="48" rx="10" fill="var(--cream)" stroke="var(--ink)" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="var(--ink-soft)">LOW</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="var(--ink-soft)">12</text>
                         </g>
-                        <line x1="20" y1="180" x2="460" y2="180" stroke="#2A2118" stroke-width="1"/>
-                        <text x="20" y="200" font-family="ui-monospace, monospace" font-size="11" fill="#6B5B47">package</text>
-                        <text x="170" y="200" font-family="ui-monospace, monospace" font-size="11" fill="#6B5B47">version</text>
-                        <text x="260" y="200" font-family="ui-monospace, monospace" font-size="11" fill="#6B5B47">CVE</text>
-                        <text x="400" y="200" font-family="ui-monospace, monospace" font-size="11" fill="#6B5B47">sev</text>
-                        <text x="20" y="222" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">esbuild</text>
-                        <text x="170" y="222" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">0.21.5</text>
-                        <text x="260" y="222" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">CVE-2024-12345</text>
-                        <rect x="396" y="208" width="48" height="18" rx="9" fill="#E8512B"/>
-                        <text x="420" y="221" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#FBF5EC">HIGH</text>
-                        <text x="20" y="246" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">tar</text>
-                        <text x="170" y="246" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">6.2.0</text>
-                        <text x="260" y="246" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">CVE-2024-23456</text>
-                        <rect x="396" y="232" width="48" height="18" rx="9" fill="#F5C24C"/>
-                        <text x="420" y="245" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#2A2118">MED</text>
-                        <text x="20" y="270" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">semver</text>
-                        <text x="170" y="270" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">7.5.4</text>
-                        <text x="260" y="270" font-family="ui-monospace, monospace" font-size="12" fill="#2A2118">CVE-2024-34567</text>
-                        <rect x="396" y="256" width="48" height="18" rx="9" fill="#6B5B47"/>
-                        <text x="420" y="269" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#FBF5EC">LOW</text>
+                        <line x1="20" y1="180" x2="460" y2="180" stroke="var(--ink)" stroke-width="1"/>
+                        <text x="20" y="200" font-family="ui-monospace, monospace" font-size="11" fill="var(--ink-soft)">package</text>
+                        <text x="170" y="200" font-family="ui-monospace, monospace" font-size="11" fill="var(--ink-soft)">version</text>
+                        <text x="260" y="200" font-family="ui-monospace, monospace" font-size="11" fill="var(--ink-soft)">CVE</text>
+                        <text x="400" y="200" font-family="ui-monospace, monospace" font-size="11" fill="var(--ink-soft)">sev</text>
+                        <text x="20" y="222" font-family="ui-monospace, monospace" font-size="12" fill="var(--ink)">esbuild</text>
+                        <text x="170" y="222" font-family="ui-monospace, monospace" font-size="12" fill="var(--ink)">0.21.5</text>
+                        <text x="260" y="222" font-family="ui-monospace, monospace" font-size="12" fill="var(--ink)">CVE-2024-12345</text>
+                        <rect x="396" y="208" width="48" height="18" rx="9" fill="var(--accent)"/>
+                        <text x="420" y="221" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="var(--cream)">HIGH</text>
+                        <text x="20" y="246" font-family="ui-monospace, monospace" font-size="12" fill="var(--ink)">tar</text>
+                        <text x="170" y="246" font-family="ui-monospace, monospace" font-size="12" fill="var(--ink)">6.2.0</text>
+                        <text x="260" y="246" font-family="ui-monospace, monospace" font-size="12" fill="var(--ink)">CVE-2024-23456</text>
+                        <rect x="396" y="232" width="48" height="18" rx="9" fill="var(--sun)"/>
+                        <text x="420" y="245" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="var(--ink)">MED</text>
+                        <text x="20" y="270" font-family="ui-monospace, monospace" font-size="12" fill="var(--ink)">semver</text>
+                        <text x="170" y="270" font-family="ui-monospace, monospace" font-size="12" fill="var(--ink)">7.5.4</text>
+                        <text x="260" y="270" font-family="ui-monospace, monospace" font-size="12" fill="var(--ink)">CVE-2024-34567</text>
+                        <rect x="396" y="256" width="48" height="18" rx="9" fill="var(--ink-soft)"/>
+                        <text x="420" y="269" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="var(--cream)">LOW</text>
                     </svg>
                 </div>
 
@@ -876,45 +899,45 @@ safe-outputs:
                 <div class="report report--zap">
                     <svg viewBox="0 0 480 320" role="img" aria-labelledby="zapTitle" xmlns="http://www.w3.org/2000/svg">
                         <title id="zapTitle">OWASP ZAP DAST summary report mockup</title>
-                        <rect width="480" height="320" fill="#FFFFFF"/>
-                        <rect x="0" y="0" width="480" height="36" fill="#2A2118"/>
-                        <circle cx="16" cy="18" r="5" fill="#E8512B"/>
-                        <circle cx="32" cy="18" r="5" fill="#F5C24C"/>
-                        <circle cx="48" cy="18" r="5" fill="#2E8B6F"/>
-                        <text x="70" y="23" font-family="ui-monospace, monospace" font-size="12" fill="#FBF5EC">OWASP ZAP · baseline</text>
-                        <text x="20" y="72" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="20" fill="#2A2118">DAST summary</text>
-                        <text x="20" y="92" font-family="Nunito, ui-rounded, sans-serif" font-size="13" fill="#6B5B47">11 findings on https://preview.workers.dev</text>
+                        <rect width="480" height="320" fill="var(--paper)"/>
+                        <rect x="0" y="0" width="480" height="36" fill="var(--emphasis-bg)"/>
+                        <circle cx="16" cy="18" r="5" fill="var(--accent)"/>
+                        <circle cx="32" cy="18" r="5" fill="var(--sun)"/>
+                        <circle cx="48" cy="18" r="5" fill="var(--mint)"/>
+                        <text x="70" y="23" font-family="ui-monospace, monospace" font-size="12" fill="var(--emphasis-fg)">OWASP ZAP · baseline</text>
+                        <text x="20" y="72" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="20" fill="var(--ink)">DAST summary</text>
+                        <text x="20" y="92" font-family="Nunito, ui-rounded, sans-serif" font-size="13" fill="var(--ink-soft)">11 findings on https://preview.workers.dev</text>
                         <g transform="translate(20,110)">
-                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
-                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">HIGH</text>
-                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#2E8B6F">0</text>
+                            <rect width="100" height="48" rx="10" fill="var(--cream)" stroke="var(--ink)" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="var(--ink-soft)">HIGH</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="var(--mint)">0</text>
                         </g>
                         <g transform="translate(130,110)">
-                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
-                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">MEDIUM</text>
-                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#F5C24C">1</text>
+                            <rect width="100" height="48" rx="10" fill="var(--cream)" stroke="var(--ink)" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="var(--ink-soft)">MEDIUM</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="var(--sun)">1</text>
                         </g>
                         <g transform="translate(240,110)">
-                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
-                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">LOW</text>
-                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#6B5B47">3</text>
+                            <rect width="100" height="48" rx="10" fill="var(--cream)" stroke="var(--ink)" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="var(--ink-soft)">LOW</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="var(--ink-soft)">3</text>
                         </g>
                         <g transform="translate(350,110)">
-                            <rect width="100" height="48" rx="10" fill="#FBF5EC" stroke="#2A2118" stroke-width="1.5"/>
-                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="#6B5B47">INFO</text>
-                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="#2A2118">7</text>
+                            <rect width="100" height="48" rx="10" fill="var(--cream)" stroke="var(--ink)" stroke-width="1.5"/>
+                            <text x="50" y="20" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="10" fill="var(--ink-soft)">INFO</text>
+                            <text x="50" y="40" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="800" font-size="18" fill="var(--ink)">7</text>
                         </g>
-                        <line x1="20" y1="180" x2="460" y2="180" stroke="#2A2118" stroke-width="1"/>
-                        <text x="20" y="200" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="13" fill="#2A2118">Findings</text>
-                        <rect x="20" y="212" width="48" height="22" rx="11" fill="#F5C24C"/>
-                        <text x="44" y="228" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="11" fill="#2A2118">MED</text>
-                        <text x="78" y="228" font-family="ui-monospace, monospace" font-size="11" fill="#2A2118">GET / · CSP not enforced</text>
-                        <rect x="20" y="244" width="48" height="22" rx="11" fill="#6B5B47"/>
-                        <text x="44" y="260" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="11" fill="#FBF5EC">LOW</text>
-                        <text x="78" y="260" font-family="ui-monospace, monospace" font-size="11" fill="#2A2118">GET / · Cache-Control missing</text>
-                        <rect x="20" y="276" width="48" height="22" rx="11" fill="#2A2118"/>
-                        <text x="44" y="292" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="11" fill="#FBF5EC">INFO</text>
-                        <text x="78" y="292" font-family="ui-monospace, monospace" font-size="11" fill="#2A2118">GET /robots.txt · not found</text>
+                        <line x1="20" y1="180" x2="460" y2="180" stroke="var(--ink)" stroke-width="1"/>
+                        <text x="20" y="200" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="13" fill="var(--ink)">Findings</text>
+                        <rect x="20" y="212" width="48" height="22" rx="11" fill="var(--sun)"/>
+                        <text x="44" y="228" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="11" fill="var(--ink)">MED</text>
+                        <text x="78" y="228" font-family="ui-monospace, monospace" font-size="11" fill="var(--ink)">GET / · CSP not enforced</text>
+                        <rect x="20" y="244" width="48" height="22" rx="11" fill="var(--ink-soft)"/>
+                        <text x="44" y="260" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="11" fill="var(--cream)">LOW</text>
+                        <text x="78" y="260" font-family="ui-monospace, monospace" font-size="11" fill="var(--ink)">GET / · Cache-Control missing</text>
+                        <rect x="20" y="276" width="48" height="22" rx="11" fill="var(--ink)"/>
+                        <text x="44" y="292" text-anchor="middle" font-family="Nunito, ui-rounded, sans-serif" font-weight="700" font-size="11" fill="var(--cream)">INFO</text>
+                        <text x="78" y="292" font-family="ui-monospace, monospace" font-size="11" fill="var(--ink)">GET /robots.txt · not found</text>
                     </svg>
                 </div>
             </div>
@@ -1031,5 +1054,6 @@ includes:
         <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
         <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="privacy.html">Privacy</a></p>
     </footer>
+    <script src="tabs.js" defer></script>
 </body>
 </html>

@@ -1,9 +1,8 @@
 /* features.html: page-specific styles */
 
-/* ─── Jump row under the hero, Back-to-top pills ───────────
- * The page is long (five loop cards, then three more sections), so the
- * hero ends with a row of pills to every section, and a Back-to-top pill
- * follows the loop cards and the last section. One pill definition for
+/* ─── Jump row under the hero, Back-to-top pill ─────────────
+ * The hero ends with a row of pills to the sections below the tabs, and
+ * a Back-to-top pill follows the last section. One pill definition for
  * both; slightly larger than .live-links so it reads as navigation. */
 .jump-row {
     display: flex;
@@ -34,10 +33,42 @@
     background: var(--peach-soft);
     color: var(--ink);
 }
-.jump-row a:focus-visible,
-.jump-top a:focus-visible {
-    outline: 3px solid var(--ink);
-    outline-offset: 2px;
+
+/* ─── The loop panels ───────────────────────────────────────
+ * The tab set itself is in shared.css (Tools uses it too). A loop's
+ * panel is the card it always was, laid out from 860px as the intro
+ * beside its workflow disclosures. */
+.tab-panel--card:hover {
+    transform: none;
+    box-shadow: var(--shadow-sticker);
+}
+.tab-panel--card h2 {
+    font-size: 1.5rem;
+}
+.tab-panel__label {
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 1.5rem 0 0.25rem;
+}
+.tab-panel__workflows .details:first-of-type {
+    margin-top: 0.6rem;
+}
+@media (min-width: 860px) {
+    .tab-panel--card {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+        gap: 0 2.5rem;
+        padding: 1.75rem 2rem;
+    }
+    .tab-panel--card[hidden] {
+        display: none;
+    }
+    .tab-panel__label {
+        margin-top: 0.3rem;
+    }
 }
 
 .card-intro {
@@ -97,20 +128,19 @@
 }
 .loops .loop-step--trigger {
     background: var(--sun);
+    color: var(--on-sun);
 }
 .loops .loop-step--feedback {
-    background: var(--accent-deep);
-    color: var(--paper);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-fg);
 }
+/* Sub-labels keep full ink: faded text on the sun sticker fails AA in
+ * the dark theme, so size and weight carry the hierarchy instead. */
 .loops .step-sub {
     font-size: 0.72rem;
     color: inherit;
-    opacity: 0.78;
     margin-top: 0.2rem;
     font-weight: 500;
-}
-.loops .loop-step--feedback .step-sub {
-    opacity: 1;
 }
 .loops .loop-back {
     font-size: 0.85rem;
@@ -193,7 +223,7 @@
     font-family: var(--font-mono);
     font-size: 0.86rem;
     background: var(--paper);
-    border: 1px dashed rgba(42, 33, 24, 0.25);
+    border: 1px dashed var(--rule);
     border-radius: var(--r-sm);
     padding: 0.35rem 0.55rem;
     color: var(--ink);
@@ -211,7 +241,7 @@
     padding: 0.7rem 1rem;
     text-align: center;
     box-shadow: var(--shadow-sticker-sm);
-    transform: rotate(-3deg);
+    transform: rotate(-2deg);
     margin-bottom: 0.6rem;
 }
 .bridge__taskfile {
@@ -219,13 +249,13 @@
     font-family: var(--font-mono);
     font-weight: 800;
     font-size: 0.95rem;
-    color: var(--ink);
+    color: var(--on-sun);
 }
 .bridge__sub {
     display: block;
     font-size: 0.72rem;
-    color: var(--ink);
-    opacity: 0.7;
+    font-weight: 600;
+    color: var(--on-sun);
     margin-top: 0.15rem;
 }
 .bridge__arrows {
@@ -274,7 +304,7 @@
 }
 .gh-comment {
     margin: 0;
-    background: #FFFFFF;
+    background: var(--paper);
     border: var(--border-thin);
     border-radius: var(--r-md);
     box-shadow: var(--shadow-sticker);

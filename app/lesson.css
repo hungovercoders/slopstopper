@@ -57,7 +57,7 @@
 }
 
 .lesson .codeblock--out {
-    color: var(--cream);
+    color: var(--code-fg);
     opacity: 0.92;
 }
 

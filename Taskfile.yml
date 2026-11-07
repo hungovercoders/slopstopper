@@ -64,7 +64,7 @@ tasks:
       - demos/render.sh {{.CLI_ARGS}}
 
   contributing:shots:
-    desc: Regenerate app/assets/demo.svg, the site's terminal demo, from real CLI output (no VHS needed)
+    desc: Regenerate app/assets/demo.svg and demo-dark.svg, the site's terminal demo in each theme, from real CLI output (no VHS needed)
     deps: [cli:install]
     cmds:
       - '"{{.PYTHON}}" scripts/shot.py'

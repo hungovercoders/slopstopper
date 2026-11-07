@@ -9,27 +9,60 @@ slopstopper.dev is the reference install of SlopStopper: a Python CLI plus GitHu
 ## Brand & Design System
 
 The site is **indie-playful**: cream / peach background, tomato accent,
-"Stoppy" mascot, sticker cards with offset shadows and tiny rotations,
-sun-highlighter underlines, hand-drawn SVG arrows.
+"Stoppy" mascot, sticker cards with tinted offset shadows and small
+rotations, sun-highlighter underlines, hand-drawn SVG arrows. It ships
+in a light and a dark theme. The dark theme is not an inversion: ink
+outlines would glare on a dark ground, so there the borders go
+low-contrast, depth comes from tonal surfaces and soft shadows, the
+highlighter becomes a marker underline and the tomato carries the
+emphasis. The shapes, rotations, bubble and mascot are the same in both.
 
-Brand tokens live in [`app/shared.css`](../../app/shared.css) on `:root`:
+Brand tokens live in [`app/shared.css`](../../app/shared.css) on `:root`,
+light first, then the dark palette:
 
 ```css
---cream: #FBF5EC;        /* page background */
---peach: #FFD9B8;        /* secondary surface */
---peach-soft: #FFE9D4;
---ink: #2A2118;          /* primary text */
---ink-soft: #6B5B47;     /* secondary text */
---accent: #E8512B;       /* tomato, decorative shapes only */
---accent-deep: #B33A1A;  /* tomato for text-on-light or text-on-accent */
---mint: #2E8B6F;         /* "pass" indicator */
---sun: #F5C24C;          /* "warning" + highlighter underline */
+--cream: #FBF5EC;        /* page background        dark: #131110 */
+--peach: #FFD9B8;        /* secondary surface      dark: #3A2E27 */
+--peach-soft: #FFE9D4;   /*                        dark: #231D19 */
+--ink: #2A2118;          /* primary text           dark: #EFE7DC */
+--ink-soft: #6B5B47;     /* secondary text         dark: #AEA192 */
+--accent: #E8512B;       /* tomato, decorative shapes only   dark: #FF6A3D */
+--accent-deep: #B33A1A;  /* tomato for text and links        dark: #FFA073 */
+--mint: #2E8B6F;         /* "pass" indicator       dark: #5FCBA2 */
+--sun: #F5C24C;          /* "warning" + sticker surfaces     dark: #E5B547 */
+--paper: #FFFFFF;        /* card surface           dark: #1C1815 */
 ```
 
-**Contrast rule:** `--accent` (`#E8512B`) is below 4.5:1 against white.
-For any text on a light background, or white text on coloured
-backgrounds, use `--accent-deep`. axe-core catches violations at the
-strictest `minor` threshold, so keep that gate green.
+Semantic tokens sit on top, and components are written against these,
+never against a swatch: `--line` (every border: ink in light, muted in
+dark), the `--shadow-*` set (offsets in a paper tint in light, soft
+drops in dark),
+`--rule` (dashed dividers), `--code-bg` / `--code-fg` / `--code-accent`
+(code blocks stay dark in both themes), `--emphasis-bg` / `--emphasis-fg`
+(the active nav pill, step numbers, report toolbars), `--on-sun` (text
+on a sun sticker), `--highlight` with `--highlight-from` / `--highlight-to`
+(the stripe: behind the lower half of the word in light, an underline in
+dark) and `--btn-primary-bg` / `--btn-primary-fg`. **Write every colour
+as a token**, in CSS and in the inline SVGs (`fill="var(--ink)"` works
+in a presentation attribute); a hex literal will not follow the theme.
+The mascot is the one exception: Stoppy is a sticker, cream-faced in
+both themes.
+
+**Dark theme mechanics.** The dark palette is declared twice in
+`app/shared.css`, under `@media (prefers-color-scheme: dark)` and under
+`:root[data-theme="dark"]` for an explicit choice; the two blocks must
+match. `app/theme.js` is the first script in every `<head>`, so it runs
+before first paint: it applies the choice stored in `localStorage`
+(`theme`: `light` or `dark`) as `data-theme`, adds the `js` class that
+shows the toggle, and keeps the toggle's label and the `theme-color`
+metas in step. Choosing the theme the OS already prefers clears the
+stored value. `app/privacy.html` names that value; keep it true. Giscus
+takes the site's theme on load and follows the toggle (`app/feedback.js`).
+
+**Contrast rule:** `--accent` is below 4.5:1 against the page in either
+theme; text, links and buttons use `--accent-deep`, and sun surfaces
+take `--on-sun`. axe-core gates at the strictest `minor` threshold, so
+run the audit with the OS set to dark as well as light.
 
 Typography is one self-hosted face: Nunito (SIL OFL 1.1, licence in
 `app/fonts/OFL.txt`) as a single variable WOFF2, latin subset, at
@@ -69,13 +102,13 @@ page-specific CSS file; there is no build step and no framework.
 
 | Page | File | Interactive element |
 | ---- | ---- | ------------------- |
-| Home | `app/index.html` | **Copy** buttons on the install code blocks (`app/copy.js`); `<details>` collapsibles |
-| Features | `app/features.html` | `<details>` workflow excerpt per check; an "On this page" jump row under the hero and two Back-to-top pills |
-| Tools | `app/tools.html` | `<details>` config or workflow excerpt per tool |
+| Home | `app/index.html` | Hero with the copy beside the terminal demo from 980px; **Copy** buttons on the install code blocks (`app/copy.js`); `<details>` collapsibles |
+| Features | `app/features.html` | The five loops as tabs (`app/tabs.js`: one panel at a time, arrow keys, the hash follows the tab so `#hygiene` deep-links; every panel shows without script); `<details>` workflow excerpt per check; a jump row to the sections below and a Back-to-top pill |
+| Tools | `app/tools.html` | The tool groups as tabs (`app/tabs.js`, as on Features); `<details>` config or workflow excerpt per tool |
 | Learn | `app/learn.html` | **Copy** button on the demo setup block (`app/copy.js`). Lists the course's lessons and links each to its page under `app/learn/`; `cli/tests/test_learn_page.py` keeps the list identical to `docs/learn/README.md` |
 | Lessons | `app/learn/NN-slug.html` | Generated from `docs/learn/NN-slug.md` by `scripts/learnsite.py` (`task contributing:learn:site`), never edited by hand. The chrome is read from `app/learn.html`; **Copy** buttons on the command blocks; `<details>` for solutions and episode scripts; previous and next links |
 | Feedback | `app/feedback.html` | GitHub Discussions comments via the Giscus embed, loaded on a button press (`app/feedback.js`) |
-| Privacy | `app/privacy.html` | None. States what the site collects (nothing), what Cloudflare keeps, and which services the pages reach; linked from every footer rather than the nav |
+| Privacy | `app/privacy.html` | None. States what the site collects (nothing), what Cloudflare keeps, which services the pages reach, and the one value the theme toggle stores in the browser; linked from every footer rather than the nav |
 
 Every page includes the same `<nav aria-label="Main">` in its header linking
 to the five main pages (Privacy is reached from the footer). Features carries a second `<nav aria-label="On this page">`
@@ -95,10 +128,13 @@ app/learn/*.html    ← Lesson pages, generated (task contributing:learn:site)
 app/feedback.html   ← Feedback page        app/feedback.css   ← Feedback styles
 app/privacy.html   ← Privacy page         app/privacy.css    ← Privacy styles
 app/shared.css      ← Brand tokens, header/nav/footer, cards, code blocks
-app/assets/demo.svg ← The hero's terminal demo, drawn from real CLI output by
-                       scripts/shot.py (`task contributing:shots`); re-render
-                       when a command's output changes
+app/assets/demo.svg, demo-dark.svg
+                    ← The hero's terminal demo in each theme, drawn from real
+                       CLI output by scripts/shot.py (`task contributing:shots`);
+                       re-render when a command's output changes
+app/theme.js        ← Light/dark theme: first script in every <head>, the header toggle
 app/copy.js         ← Copy buttons, opt-in via data-copyable
+app/tabs.js         ← The tab sets on Features and Tools
 app/feedback.js     ← Inserts the Giscus loader when the visitor asks; holds its SRI pin
 app/llms.txt, robots.txt, sitemap.xml, manifest.webmanifest, og-image.png,
 favicon.svg, apple-touch-icon.png
@@ -119,6 +155,7 @@ Workers Builds runs it before `wrangler deploy`; Wrangler bundles
 as-is.
 
 ## Interaction Details
+
 
 ### Copy buttons
 

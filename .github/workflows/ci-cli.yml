@@ -103,7 +103,7 @@ jobs:
       - name: Run CLI tests
         run: task -t cli/Taskfile.yml test
 
-  # The site's terminal demo (app/assets/demo.svg) is drawn from real CLI
+  # The site's terminal demo (app/assets/demo.svg, demo-dark.svg) is drawn from real CLI
   # output. Rendering it here proves a change to what a command prints
   # did not break the generator, and the artifact lets a reviewer look
   # at the picture a change produces before anyone re-renders the
