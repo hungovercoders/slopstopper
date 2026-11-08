@@ -110,7 +110,7 @@ framework.
 | Learn | `app/learn.html` | **Copy** button on the demo setup block (`app/copy.js`). Lists the course's lessons and links each to its page under `app/learn/`; `cli/tests/test_learn_page.py` keeps the list identical to `docs/learn/README.md` |
 | Lessons | `app/learn/NN-slug.html` | Generated from `docs/learn/NN-slug.md` by `scripts/learnsite.py` (`task contributing:learn:site`), never edited by hand. The chrome is read from `app/learn.html`; **Copy** buttons on the command blocks; `<details>` for solutions and episode scripts; previous and next links |
 | Docs | `app/docs.html` | The landing page for the reference docs: three hand-written doors in, then two section lists, for adopters and for people working on the project, between `<!-- docs:adopters:begin -->` … `end` and `<!-- docs:project:begin -->` … `end`, which `scripts/docsite.py` owns (`docsite.SECTIONS` gives each section its audience) |
-| Doc pages | `app/docs/<dir>/<name>.html` | Generated from `docs/<dir>/<NAME>.md` by `scripts/docsite.py` (`task contributing:docs:site`), never edited by hand: a README becomes its directory's `index.html`, any other doc its name in lower case with hyphens. The chrome is read from `app/docs.html`; a breadcrumb, the section's other pages, and the file each page is rendered from. The lessons stay under `app/learn/` |
+| Doc pages | `app/docs/<dir>/<name>.html` | Generated from `docs/<dir>/<NAME>.md` by `scripts/docsite.py` (`task contributing:docs:site`), never edited by hand: a README becomes its directory's `index.html`, any other doc its name in lower case with hyphens. The chrome is read from `app/docs.html`; a breadcrumb, the section's other pages, and an edit link. A `mermaid` fence shows as an SVG per theme from `app/assets/docs/diagrams/`, rendered by `task contributing:docs:diagrams`, with the source folded beneath. The lessons stay under `app/learn/` |
 | Feedback | `app/feedback.html` | GitHub Discussions comments via the Giscus embed, loaded on a button press (`app/feedback.js`) |
 | Privacy | `app/privacy.html` | None. States what the site collects (nothing), what Cloudflare keeps, which services the pages reach, and the one value the theme toggle stores in the browser; linked from every footer rather than the nav |
 
@@ -131,6 +131,9 @@ app/learn/*.html    ← Lesson pages, generated (task contributing:learn:site)
                                               app/lesson.css     ← Article typography, shared with the doc pages
 app/docs.html       ← Docs page             app/docs.css       ← Docs page and doc page styles
 app/docs/**/*.html  ← Doc pages, generated (task contributing:docs:site)
+app/assets/docs/diagrams/
+                    ← The docs' Mermaid diagrams as SVG, one per theme, plus
+                       the .mmd source of each (task contributing:docs:diagrams)
 app/feedback.html   ← Feedback page        app/feedback.css   ← Feedback styles
 app/privacy.html   ← Privacy page         app/privacy.css    ← Privacy styles
 app/shared.css      ← Brand tokens, header/nav/footer, cards, code blocks

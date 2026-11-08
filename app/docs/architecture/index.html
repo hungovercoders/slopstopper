@@ -104,7 +104,12 @@ worker/                   # index.ts (fetch handler) + headers.json (the canonic
 mise.toml                 # Pins `"pipx:slopstopper-cli"`, `task` and `node`; read locally and by jdx/mise-action
 Taskfile.yml              # Thin root, `includes: { ss: ./Taskfile.ss.yml }`</code></pre></div>
 <h2 id="c4-level-1-system-context">C4 – Level 1 (System Context)</h2>
-<div class="codeblock codeblock--mermaid" tabindex="0"><pre><code>flowchart LR
+<figure class="diagram">
+  <img class="only-light" src="../../assets/docs/diagrams/56eceb9bbb37-light.svg" width="832" height="179" alt="Diagram; its text follows.">
+  <img class="only-dark" src="../../assets/docs/diagrams/56eceb9bbb37-dark.svg" width="832" height="179" alt="Diagram; its text follows.">
+  <details class="details diagram__source">
+    <summary>The diagram as text</summary>
+    <div class="details__body"><div class="codeblock codeblock--out" tabindex="0"><pre><code>flowchart LR
     U[User Browser]
     A[SlopStopper site]
     CF[Cloudflare Workers + Custom Domain]
@@ -112,9 +117,16 @@ Taskfile.yml              # Thin root, `includes: { ss: ./Taskfile.ss.yml }`</co
 
     U --&gt;|HTTPS| A
     A --&gt;|Served by| CF
-    G --&gt;|Workers Builds Git integration| CF</code></pre></div>
+    G --&gt;|Workers Builds Git integration| CF</code></pre></div></div>
+  </details>
+</figure>
 <h2 id="c4-level-2-container">C4 – Level 2 (Container)</h2>
-<div class="codeblock codeblock--mermaid" tabindex="0"><pre><code>flowchart LR
+<figure class="diagram">
+  <img class="only-light" src="../../assets/docs/diagrams/5bb5539a1ed1-light.svg" width="959" height="272" alt="Diagram; its text follows.">
+  <img class="only-dark" src="../../assets/docs/diagrams/5bb5539a1ed1-dark.svg" width="959" height="272" alt="Diagram; its text follows.">
+  <details class="details diagram__source">
+    <summary>The diagram as text</summary>
+    <div class="details__body"><div class="codeblock codeblock--out" tabindex="0"><pre><code>flowchart LR
     B[Browser]
     WORKER[Cloudflare Worker\nworker/index.ts]
     ASSETS[Static Assets\napp/index.html, app/features.html, app/tools.html, CSS, copy.js]
@@ -127,7 +139,9 @@ Taskfile.yml              # Thin root, `includes: { ss: ./Taskfile.ss.yml }`</co
 
     B --&gt;|Local HTTP requests| DEV
     DEV --&gt; ASSETS
-    HJSON --&gt;|loaded by| DEV</code></pre></div>
+    HJSON --&gt;|loaded by| DEV</code></pre></div></div>
+  </details>
+</figure>
 <h2 id="single-route-invocation-task-ss">Single-route invocation: <code>task ss:*</code></h2>
 <p>SlopStopper exposes one canonical entry point for any check: <code>task ss:&lt;category&gt;:&lt;name&gt;</code>. Humans, agents AND CI all invoke through it, so the suite shares the same invocation surface as everything else in the codebase (<code>task build</code>, <code>task deploy</code>, <code>task lint</code>).</p>
 <div class="codeblock codeblock--out" tabindex="0"><pre><code>┌─────────────────────────────────────────────────────────────────┐
@@ -168,15 +182,27 @@ Taskfile.yml              # Thin root, `includes: { ss: ./Taskfile.ss.yml }`</co
 <p>SlopStopper organises quality feedback into two loops. Together they keep velocity high while keeping quality consistent.</p>
 <h3 id="local-inner-loop">Local Inner Loop</h3>
 <p>The fast, local cycle a developer (or AI agent) runs before pushing code. Completes in seconds to minutes.</p>
-<div class="codeblock codeblock--mermaid" tabindex="0"><pre><code>flowchart LR
+<figure class="diagram">
+  <img class="only-light" src="../../assets/docs/diagrams/0f9637a21011-light.svg" width="1115" height="109" alt="Diagram; its text follows.">
+  <img class="only-dark" src="../../assets/docs/diagrams/0f9637a21011-dark.svg" width="1115" height="109" alt="Diagram; its text follows.">
+  <details class="details diagram__source">
+    <summary>The diagram as text</summary>
+    <div class="details__body"><div class="codeblock codeblock--out" tabindex="0"><pre><code>flowchart LR
     A["✏️ Write Code\n(with AI)"] --&gt;|build| B["🔨 Build &amp; Lint\nlocally"]
     B --&gt;|verify| C["🧪 Run Tests\nlocally"]
     C --&gt;|commit| D["📤 Push / Open PR"]
-    D -.-&gt;|iterate on feedback| A</code></pre></div>
+    D -.-&gt;|iterate on feedback| A</code></pre></div></div>
+  </details>
+</figure>
 <p>The push step is backed by an automated gate: <code>install.sh</code> wires a <strong>pre-push hook</strong> (<code>.githooks/pre-push</code>, via <code>core.hooksPath</code>) that runs the fast static hygiene checks (<code>task ss:hygiene:test</code>) before every push, so the first CI run confirms rather than discovers. It goes through <code>mise exec</code> (git hooks don't source your shell profile) and reuses the same <code>task ss:hygiene:test</code> target that CI runs, keeping one invocation surface across hook, local and CI. Only the static hygiene checks run in the hook; the server/browser checks (reliability, DAST) stay in the Outer Loop. The installer won't touch an existing hook manager (husky / lefthook / pre-commit) or a custom <code>core.hooksPath</code>; pass <code>--no-hooks</code> to skip it, and <code>git push --no-verify</code> bypasses a single push.</p>
 <h3 id="cicd-outer-loop">CI/CD Outer Loop</h3>
 <p>The automated CI/CD pipeline triggered by every push or pull request. Each stage provides deterministic feedback before code reaches production.</p>
-<div class="codeblock codeblock--mermaid" tabindex="0"><pre><code>flowchart LR
+<figure class="diagram">
+  <img class="only-light" src="../../assets/docs/diagrams/168042fe4a69-light.svg" width="1128" height="159" alt="Diagram; its text follows.">
+  <img class="only-dark" src="../../assets/docs/diagrams/168042fe4a69-dark.svg" width="1128" height="159" alt="Diagram; its text follows.">
+  <details class="details diagram__source">
+    <summary>The diagram as text</summary>
+    <div class="details__body"><div class="codeblock codeblock--out" tabindex="0"><pre><code>flowchart LR
     PR["📤 Push / Open PR"]
     SC["🔒 Security\nSAST · DAST · Secrets · CVEs"]
     HY["🧹 Hygiene\nComplexity · Docs"]
@@ -189,7 +215,9 @@ Taskfile.yml              # Thin root, `includes: { ss: ./Taskfile.ss.yml }`</co
     HY --&gt; RE
     RE --&gt; DP
     DP --&gt; FB
-    FB -.-&gt;|fix &amp; iterate| PR</code></pre></div>
+    FB -.-&gt;|fix &amp; iterate| PR</code></pre></div></div>
+  </details>
+</figure>
 <h3 id="how-the-loops-work-together">How the Loops Work Together</h3>
 <div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
   <thead><tr><th>Loop</th><th>Where</th><th>Speed</th><th>Triggered by</th></tr></thead>

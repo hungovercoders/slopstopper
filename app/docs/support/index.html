@@ -72,7 +72,12 @@
 <p>How to get help with this project.</p>
 <h2 id="support-flow">Support Flow</h2>
 <p>Before raising a support request, please work through the following steps in order. Most questions can be resolved without opening an issue.</p>
-<div class="codeblock codeblock--mermaid" tabindex="0"><pre><code>flowchart TD
+<figure class="diagram">
+  <img class="only-light" src="../../assets/docs/diagrams/9c22a99d2def-light.svg" width="379" height="1977" alt="Diagram; its text follows.">
+  <img class="only-dark" src="../../assets/docs/diagrams/9c22a99d2def-dark.svg" width="379" height="1977" alt="Diagram; its text follows.">
+  <details class="details diagram__source">
+    <summary>The diagram as text</summary>
+    <div class="details__body"><div class="codeblock codeblock--out" tabindex="0"><pre><code>flowchart TD
     A([I need help]) --&gt; B{Have you asked\nCopilot / AI?}
     B -- No --&gt; C[Ask Copilot or your AI assistant\nabout the codebase]
     C --&gt; D{Resolved?}
@@ -85,7 +90,9 @@
     G -- No --&gt; H{Cross-repo or\ncross-team?}
     E -- No --&gt; H
     H -- Yes --&gt; I[Start a GitHub Discussion]
-    I --&gt; Z</code></pre></div>
+    I --&gt; Z</code></pre></div></div>
+  </details>
+</figure>
 <h2 id="step-1-ask-ai-first">Step 1. Ask AI First</h2>
 <p>Use GitHub Copilot or another AI assistant to ask questions about the codebase before raising an issue. This is the fastest path to an answer and keeps the issue tracker focused on genuine bugs or gaps.</p>
 <p><strong>Examples of things AI can help with:</strong></p>

@@ -13,6 +13,15 @@ docs/learn/ are the course's pages under /learn/ (`scripts/learnsite.py`)
 and are not rendered twice; the syllabus, the episode conventions and
 the lesson template are.
 
+A `mermaid` fence becomes a diagram: the page shows an SVG per theme
+from `app/assets/docs/diagrams/<digest>-{light,dark}.svg`, with the
+Mermaid source folded beneath it for readers and screen readers, where
+`<digest>` is the first twelve hex digits of the source's SHA-256. This
+script writes the source beside them as `<digest>.mmd` and reports a
+diagram whose SVGs are missing; `scripts/diagrams.js` renders them
+(`task contributing:docs:diagrams`), because the site's CSP allows no
+script or inline style, so a diagram cannot render in the browser.
+
 `scripts/sitemd.py` holds the converter and the page template, shared
 with the course. A construct outside the markdown it covers fails the
 render with the file and line. A relative link to another doc becomes
@@ -44,6 +53,7 @@ stray or cannot be rendered, 2 there are no docs to read.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import re
 import sys
@@ -63,6 +73,15 @@ SITEMAP = SITE / "sitemap.xml"
 LLMS = SITE / "llms.txt"
 BEGIN, END = "<!-- docs:begin -->", "<!-- docs:end -->"
 GENERATOR, TASK = "scripts/docsite.py", "task contributing:docs:site"
+DIAGRAMS_PATH = "/assets/docs/diagrams"
+DIAGRAMS_DIR = SITE / DIAGRAMS_PATH.lstrip("/")
+DIAGRAMS_TASK = "task contributing:docs:diagrams"
+THEMES = ("light", "dark")
+_VIEWBOX = re.compile(r'viewBox="[\d.\-]+ [\d.\-]+ ([\d.]+) ([\d.]+)"')
+
+# Every Mermaid diagram the pages rendered in this run, digest → source;
+# sync_diagrams() keeps app/assets/docs/diagrams/ in step with it.
+DIAGRAMS: dict[str, str] = {}
 
 # Every directory under docs/ that holds docs, in the order the Docs page
 # lists them, with the name the kicker and breadcrumb use and who the
@@ -198,7 +217,75 @@ def rewriter(doc: Doc) -> sitemd.Rewriter:
 
 
 def options(doc: Doc) -> Options:
-    return Options(link=rewriter(doc), later_h1="demote")
+    page_dir = dirname(doc.path)
+    return Options(link=rewriter(doc), later_h1="demote", diagram=lambda source: diagram_html(source, page_dir))
+
+
+# ── diagrams ─────────────────────────────────────────────────────
+
+
+def digest_of(source: str) -> str:
+    return hashlib.sha256(source.encode("utf-8")).hexdigest()[:12]
+
+
+def svg_size(path: Path) -> str:
+    """` width="W" height="H"` from a rendered SVG's viewBox, so the page
+    reserves the diagram's space before the image arrives; empty when the
+    SVG is not there yet."""
+    if not path.is_file():
+        return ""
+    m = _VIEWBOX.search(path.read_text(encoding="utf-8"))
+    return f' width="{round(float(m.group(1)))}" height="{round(float(m.group(2)))}"' if m else ""
+
+
+def diagram_html(source: str, page_dir: str) -> str:
+    """A Mermaid fence as the page shows it: one image per theme and the
+    source folded beneath, which is also what a screen reader gets."""
+    digest = digest_of(source)
+    DIAGRAMS[digest] = source
+    images = "\n".join(
+        f'  <img class="only-{theme}" src="{relpath(f"{DIAGRAMS_PATH}/{digest}-{theme}.svg", page_dir)}"'
+        f'{svg_size(DIAGRAMS_DIR / f"{digest}-{theme}.svg")} alt="Diagram; its text follows.">'
+        for theme in THEMES
+    )
+    return (
+        '<figure class="diagram">\n'
+        f"{images}\n"
+        '  <details class="details diagram__source">\n'
+        "    <summary>The diagram as text</summary>\n"
+        f'    <div class="details__body">{sitemd.fence("", source)}</div>\n'
+        "  </details>\n"
+        "</figure>"
+    )
+
+
+def sync_diagrams(check: bool) -> int:
+    """Write or check the diagram sources, report SVGs still to render and
+    strays from diagrams that no longer exist; problems found."""
+    problems = 0
+    DIAGRAMS_DIR.mkdir(parents=True, exist_ok=True)
+    for digest, source in sorted(DIAGRAMS.items()):
+        mmd = DIAGRAMS_DIR / f"{digest}.mmd"
+        if not mmd.is_file() or mmd.read_text(encoding="utf-8") != source + "\n":
+            if check:
+                print(f"✗ {mmd.relative_to(ROOT)} is missing or stale; run `{TASK}`")
+                problems += 1
+            else:
+                mmd.write_text(source + "\n", encoding="utf-8")
+        missing = [t for t in THEMES if not (DIAGRAMS_DIR / f"{digest}-{t}.svg").is_file()]
+        if missing:
+            print(f"✗ {DIAGRAMS_DIR.relative_to(ROOT)}/{digest}-{{{','.join(missing)}}}.svg not rendered; run `{DIAGRAMS_TASK}`")
+            problems += 1
+    for stray in sorted(DIAGRAMS_DIR.iterdir()):
+        if stray.name.split("-")[0].split(".")[0] in DIAGRAMS:
+            continue
+        if check:
+            print(f"✗ {stray.relative_to(ROOT)} belongs to no diagram; run `{TASK}`")
+            problems += 1
+        else:
+            stray.unlink()
+            print(f"✓ removed {stray.relative_to(ROOT)}")
+    return problems
 
 
 # ── the page ─────────────────────────────────────────────────────
@@ -393,7 +480,8 @@ def main() -> int:
     if not found:
         print("docsite: no docs under docs/", file=sys.stderr)
         return 2
-    problems = sync_pages(found, args.check) + sync_blocks(found, args.check)
+    DIAGRAMS.clear()
+    problems = sync_pages(found, args.check) + sync_diagrams(args.check) + sync_blocks(found, args.check)
     if problems:
         print(f"docsite: {problems} problem(s)")
         return 1

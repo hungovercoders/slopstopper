@@ -16,6 +16,8 @@ test-results/
 .ss/.run/
 # scripts/shot.py --still writes its debug stills here
 .ss/shots/
+# Mermaid, installed on first use by scripts/diagrams.js (not a devDependency).
+.ss/mermaid/
 # CLI package build artefacts (in-tree CLI pivot; see cli/README.md)
 cli/**/__pycache__/
 scripts/__pycache__/

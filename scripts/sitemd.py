@@ -10,7 +10,8 @@ mapping from a doc's path in the repo to its page on the site.
 The converter covers the markdown the docs use and nothing more:
 headings to h4, paragraphs, bold, emphasis, inline code, links and
 `<https://…>` autolinks, fenced code (a `sh` or `bash` fence is the
-site's command block, any other an output block), tables, blockquotes,
+site's command block, a `mermaid` fence a diagram where the generator
+provides one, any other an output block), tables, blockquotes,
 horizontal rules, bullet and numbered lists nested to any depth with
 paragraphs and fences inside an item, and `<details>` blocks whose body
 is markdown. HTML comments are dropped. A construct outside that set
@@ -73,11 +74,14 @@ class Options:
     whether it leaves the site; it raises RenderError for a target it
     does not accept. `later_h1` says what a second H1 becomes: an error
     (a lesson has one title) or an h2 (a reference doc that carries one
-    keeps its reading order; the page's h1 is its title).
+    keeps its reading order; the page's h1 is its title). `diagram`, when
+    set, renders a `mermaid` fence's source as the page's diagram markup;
+    without it the fence is an output block like any other.
     """
 
     link: Rewriter
     later_h1: str = "error"
+    diagram: Callable[[str], str] | None = None
 
 
 # ── paths ────────────────────────────────────────────────────────
@@ -228,7 +232,7 @@ def _block(lines: list[str], line: str, i: int, where: str, base: int, opts: Opt
     """Read the block that starts at `lines[i]` (`line` is it, comments dropped)."""
     at = f"{where}:{base + i}"
     if _FENCE.match(line):
-        return fence_block(lines, i, at)
+        return fence_block(lines, i, at, opts)
     if line.startswith("```"):
         raise RenderError(f"{at}: a fence is three backticks and a language or nothing, not {line.strip()!r}")
     if _HEADING.match(line):
@@ -250,7 +254,7 @@ def _block(lines: list[str], line: str, i: int, where: str, base: int, opts: Opt
     return paragraph_block(lines, i, at, opts)
 
 
-def fence_block(lines: list[str], i: int, at: str) -> tuple[str, int]:
+def fence_block(lines: list[str], i: int, at: str, opts: Options) -> tuple[str, int]:
     lang = _FENCE.match(lines[i]).group(1)  # type: ignore[union-attr]
     body: list[str] = []
     i += 1
@@ -259,6 +263,8 @@ def fence_block(lines: list[str], i: int, at: str) -> tuple[str, int]:
         i += 1
     if i == len(lines):
         raise RenderError(f"{at}: unclosed code fence")
+    if lang == "mermaid" and opts.diagram is not None:
+        return opts.diagram("\n".join(body)), i + 1
     return fence(lang, "\n".join(body)), i + 1
 
 

@@ -29,6 +29,7 @@ on:
       - 'scripts/learnsite.py'
       - 'scripts/docsite.py'
       - 'scripts/sitemd.py'
+      - 'scripts/diagrams.js'
       # test_learn_site.py and test_docs_site.py fail while a page the
       # generators write from docs/ is stale.
       - 'docs/**'
@@ -36,6 +37,7 @@ on:
       - 'app/learn/**'
       - 'app/docs.html'
       - 'app/docs/**'
+      - 'app/assets/docs/**'
       - 'Taskfile.yml'
       - 'Taskfile.ss.yml'
       - '.github/workflows/ci-cli.yml'
@@ -54,6 +56,7 @@ on:
       - 'scripts/learnsite.py'
       - 'scripts/docsite.py'
       - 'scripts/sitemd.py'
+      - 'scripts/diagrams.js'
       # test_learn_site.py and test_docs_site.py fail while a page the
       # generators write from docs/ is stale.
       - 'docs/**'
@@ -61,6 +64,7 @@ on:
       - 'app/learn/**'
       - 'app/docs.html'
       - 'app/docs/**'
+      - 'app/assets/docs/**'
       - 'Taskfile.yml'
       - 'Taskfile.ss.yml'
       - '.github/workflows/ci-cli.yml'
