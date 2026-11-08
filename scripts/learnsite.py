@@ -124,7 +124,7 @@ def rewrite_link(target: str) -> tuple[str, bool]:
 # docsite.py keeps app/assets/docs/diagrams/ in step with the lessons too,
 # so a new diagram here needs `task contributing:docs:site` and then
 # `task contributing:docs:diagrams` before the page shows it.
-OPTIONS = Options(link=rewrite_link, diagram=lambda source: docsite.diagram_html(source, "learn"))
+OPTIONS = Options(link=rewrite_link, diagram=lambda source: docsite.diagram_html(source, "/learn"))
 
 
 def goal(text: str) -> str:
