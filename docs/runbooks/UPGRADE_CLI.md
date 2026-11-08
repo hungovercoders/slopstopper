@@ -1,6 +1,6 @@
 # Upgrade the pinned `slopstopper-cli`
 
-`slopstopper-cli` is pinned per-repo. The pin lives in
+Move a repo's pinned `slopstopper-cli` to a newer release. The pin lives in
 [`mise.toml`](../../mise.toml) as the `[tools]` entry `"pipx:slopstopper-cli"`,
 and mise installs it both locally and in CI (via `jdx/mise-action`). mise
 activates the tool per-directory, so the active `slopstopper` always matches the

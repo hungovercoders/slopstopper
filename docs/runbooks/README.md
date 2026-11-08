@@ -1,6 +1,6 @@
 # Runbooks
 
-Operational procedures for the SlopStopper project, covering both the suite itself and the things adopters do once around it.
+What you do once around the suite: install it into a repo, install the Claude Code skills, move the CLI pin, and, for the project itself, cut a release.
 
 ## Overview
 

@@ -1,6 +1,6 @@
 # llms.txt AI-Discoverability Check
 
-`ss:reliability:llms-txt`, implemented in [`cli/slopstopper/checks/llms_txt.py`](../../cli/slopstopper/checks/llms_txt.py), audits your site's `/llms.txt` as the [llmstxt.org](https://llmstxt.org/) convention defines it. `llms.txt` is a curated markdown map at the site root that lets AI assistants and agents read your key content directly, instead of parsing noisy HTML. It complements [`ss:reliability:seo`](SEO.md): SEO covers what human-facing crawlers read, this covers the surface an LLM reads.
+Audits your site's `/llms.txt`, the [llmstxt.org](https://llmstxt.org/) map that lets an AI assistant read your key pages without parsing HTML. The check is `ss:reliability:llms-txt`, in [`cli/slopstopper/checks/llms_txt.py`](../../cli/slopstopper/checks/llms_txt.py). `llms.txt` is a curated markdown map at the site root that lets AI assistants and agents read your key content directly, instead of parsing noisy HTML. It complements [`ss:reliability:seo`](SEO.md): SEO covers what human-facing crawlers read, this covers the surface an LLM reads.
 
 The check is Python stdlib only, so it adds no dependencies on top of Python 3.
 

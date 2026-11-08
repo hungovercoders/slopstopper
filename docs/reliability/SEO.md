@@ -1,6 +1,8 @@
 # SEO & Social-Share Metatag Check
 
-SlopStopper ships two complementary SEO-flavoured checks:
+Asserts the tags a search engine and a link preview read on each page: title, description, canonical, OpenGraph and Twitter Card, with the share image reachable.
+
+Two complementary checks share the job:
 
 1. **Lighthouse SEO category** runs as part of `ss:reliability:cwv`, gated at score ≥ 0.9 (see [`cli/slopstopper/data/lighthouserc.json`](../../cli/slopstopper/data/lighthouserc.json)). It covers the SEO basics of meta description, `viewport`, `lang`, canonical, robots, indexability and link-text quality.
 2. **SEO metatag check** is `ss:reliability:seo`, implemented in [`cli/slopstopper/checks/seo.py`](../../cli/slopstopper/checks/seo.py). It validates the social-share tags Lighthouse does **not** flag (OpenGraph + Twitter Card) plus reachability of the OG image.

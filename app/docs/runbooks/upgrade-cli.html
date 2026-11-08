@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upgrade the pinned slopstopper-cli · Runbooks | SlopStopper</title>
-    <meta name="description" content="slopstopper-cli is pinned per-repo. The pin lives in mise.toml as the [tools] entry &quot;pipx:slopstopper-cli&quot;, and mise installs it both locally and in CI (via jdx/mise-action). mise activates the tool per-directory, so the active slopstopper always matches the repo you&#x27;re in and there&#x27;s no single…">
+    <meta name="description" content="Move a repo&#x27;s pinned slopstopper-cli to a newer release.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://slopstopper.dev/docs/runbooks/upgrade-cli.html">
     <meta property="og:title" content="Upgrade the pinned slopstopper-cli · Runbooks | SlopStopper">
-    <meta property="og:description" content="slopstopper-cli is pinned per-repo. The pin lives in mise.toml as the [tools] entry &quot;pipx:slopstopper-cli&quot;, and mise installs it both locally and in CI (via jdx/mise-action). mise activates the tool per-directory, so the active slopstopper always matches the repo you&#x27;re in and there&#x27;s no single…">
+    <meta property="og:description" content="Move a repo&#x27;s pinned slopstopper-cli to a newer release.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +25,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Upgrade the pinned slopstopper-cli · Runbooks | SlopStopper">
-    <meta name="twitter:description" content="slopstopper-cli is pinned per-repo. The pin lives in mise.toml as the [tools] entry &quot;pipx:slopstopper-cli&quot;, and mise installs it both locally and in CI (via jdx/mise-action). mise activates the tool per-directory, so the active slopstopper always matches the repo you&#x27;re in and there&#x27;s no single…">
+    <meta name="twitter:description" content="Move a repo&#x27;s pinned slopstopper-cli to a newer release.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -69,7 +69,7 @@
         </section>
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Runbooks</a></li><li aria-current="page">Upgrade the pinned slopstopper-cli</li></ol></nav>
         <article class="lesson doc">
-<p><code>slopstopper-cli</code> is pinned per-repo. The pin lives in <a href="https://github.com/hungovercoders/slopstopper/blob/main/mise.toml" rel="noopener noreferrer"><code>mise.toml</code></a> as the <code>[tools]</code> entry <code>"pipx:slopstopper-cli"</code>, and mise installs it both locally and in CI (via <code>jdx/mise-action</code>). mise activates the tool per-directory, so the active <code>slopstopper</code> always matches the repo you're in and there's no single global binary to drift between repos. A breaking upstream release cannot reach your repo until you choose to move the pin.</p>
+<p>Move a repo's pinned <code>slopstopper-cli</code> to a newer release. The pin lives in <a href="https://github.com/hungovercoders/slopstopper/blob/main/mise.toml" rel="noopener noreferrer"><code>mise.toml</code></a> as the <code>[tools]</code> entry <code>"pipx:slopstopper-cli"</code>, and mise installs it both locally and in CI (via <code>jdx/mise-action</code>). mise activates the tool per-directory, so the active <code>slopstopper</code> always matches the repo you're in and there's no single global binary to drift between repos. A breaking upstream release cannot reach your repo until you choose to move the pin.</p>
 <h2 id="how-the-pin-behaves">How the pin behaves</h2>
 <ul>
   <li><strong>First install</strong> records the latest published version into <code>mise.toml</code>. Commit it so CI installs the same version.</li>

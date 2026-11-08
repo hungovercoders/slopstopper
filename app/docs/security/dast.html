@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dynamic Application Security Testing (DAST) · Security | SlopStopper</title>
-    <meta name="description" content="slopstopper ships automated Dynamic Application Security Testing (DAST) using OWASP ZAP to detect runtime security issues by scanning your running site. This guide explains how to customise and use the check.">
+    <meta name="description" content="OWASP ZAP scans your running site, or your API through its OpenAPI spec, for runtime security issues. This page covers what the check finds and how to tune it.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://slopstopper.dev/docs/security/dast.html">
     <meta property="og:title" content="Dynamic Application Security Testing (DAST) · Security | SlopStopper">
-    <meta property="og:description" content="slopstopper ships automated Dynamic Application Security Testing (DAST) using OWASP ZAP to detect runtime security issues by scanning your running site. This guide explains how to customise and use the check.">
+    <meta property="og:description" content="OWASP ZAP scans your running site, or your API through its OpenAPI spec, for runtime security issues. This page covers what the check finds and how to tune it.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +25,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Dynamic Application Security Testing (DAST) · Security | SlopStopper">
-    <meta name="twitter:description" content="slopstopper ships automated Dynamic Application Security Testing (DAST) using OWASP ZAP to detect runtime security issues by scanning your running site. This guide explains how to customise and use the check.">
+    <meta name="twitter:description" content="OWASP ZAP scans your running site, or your API through its OpenAPI spec, for runtime security issues. This page covers what the check finds and how to tune it.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -69,7 +69,7 @@
         </section>
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Security</a></li><li aria-current="page">Dynamic Application Security Testing (DAST)</li></ol></nav>
         <article class="lesson doc">
-<p>slopstopper ships automated Dynamic Application Security Testing (DAST) using <strong>OWASP ZAP</strong> to detect runtime security issues by scanning your running site. This guide explains how to customise and use the check.</p>
+<p><strong>OWASP ZAP</strong> scans your running site, or your API through its OpenAPI spec, for runtime security issues. This page covers what the check finds and how to tune it.</p>
 <h2 id="quick-start">Quick Start</h2>
 <h3 id="run-analysis-locally">Run Analysis Locally</h3>
 <div class="codeblock codeblock--sh" data-copyable><pre><code># Serve the built site on :8080 as CI does, or point at a deployed URL instead

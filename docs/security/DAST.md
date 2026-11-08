@@ -1,6 +1,6 @@
 # Dynamic Application Security Testing (DAST)
 
-slopstopper ships automated Dynamic Application Security Testing (DAST) using **OWASP ZAP** to detect runtime security issues by scanning your running site. This guide explains how to customise and use the check.
+**OWASP ZAP** scans your running site, or your API through its OpenAPI spec, for runtime security issues. This page covers what the check finds and how to tune it.
 
 ## Quick Start
 

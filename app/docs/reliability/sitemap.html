@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>sitemap.xml Completeness + Drift Check · Reliability | SlopStopper</title>
-    <meta name="description" content="ss:reliability:sitemap, implemented in cli/slopstopper/checks/sitemap.py, crawls your site from / and cross-checks the served sitemap.xml against the pages it actually reaches. Where ss:reliability:llms-txt and ss:reliability:robots-txt assert those files exist and are well-formed, this check…">
+    <meta name="description" content="Crawls your site and cross-checks sitemap.xml against the pages it reaches: a reachable page missing from it, or an entry that 404s, fails.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://slopstopper.dev/docs/reliability/sitemap.html">
     <meta property="og:title" content="sitemap.xml Completeness + Drift Check · Reliability | SlopStopper">
-    <meta property="og:description" content="ss:reliability:sitemap, implemented in cli/slopstopper/checks/sitemap.py, crawls your site from / and cross-checks the served sitemap.xml against the pages it actually reaches. Where ss:reliability:llms-txt and ss:reliability:robots-txt assert those files exist and are well-formed, this check…">
+    <meta property="og:description" content="Crawls your site and cross-checks sitemap.xml against the pages it reaches: a reachable page missing from it, or an entry that 404s, fails.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +25,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="sitemap.xml Completeness + Drift Check · Reliability | SlopStopper">
-    <meta name="twitter:description" content="ss:reliability:sitemap, implemented in cli/slopstopper/checks/sitemap.py, crawls your site from / and cross-checks the served sitemap.xml against the pages it actually reaches. Where ss:reliability:llms-txt and ss:reliability:robots-txt assert those files exist and are well-formed, this check…">
+    <meta name="twitter:description" content="Crawls your site and cross-checks sitemap.xml against the pages it reaches: a reachable page missing from it, or an entry that 404s, fails.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -69,7 +69,7 @@
         </section>
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Reliability</a></li><li aria-current="page">sitemap.xml Completeness + Drift Check</li></ol></nav>
         <article class="lesson doc">
-<p><code>ss:reliability:sitemap</code>, implemented in <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/checks/sitemap.py" rel="noopener noreferrer"><code>cli/slopstopper/checks/sitemap.py</code></a>, crawls your site from <code>/</code> and cross-checks the served <code>sitemap.xml</code> against the pages it actually reaches. Where <a href="llms-txt.html"><code>ss:reliability:llms-txt</code></a> and <a href="robots-txt.html"><code>ss:reliability:robots-txt</code></a> assert those files <em>exist and are well-formed</em>, this check asserts <code>sitemap.xml</code> is <strong>complete and current</strong>. It is a black-box assertion that the served sitemap mirrors the reachable site, <strong>independent of how the file is produced</strong> (hand-authored or generated).</p>
+<p>Crawls your site and cross-checks <code>sitemap.xml</code> against the pages it reaches: a reachable page missing from it, or an entry that 404s, fails. The check is <code>ss:reliability:sitemap</code>, in <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/checks/sitemap.py" rel="noopener noreferrer"><code>cli/slopstopper/checks/sitemap.py</code></a>. Where <a href="llms-txt.html"><code>ss:reliability:llms-txt</code></a> and <a href="robots-txt.html"><code>ss:reliability:robots-txt</code></a> assert those files <em>exist and are well-formed</em>, this check asserts <code>sitemap.xml</code> is <strong>complete and current</strong>. It is a black-box assertion that the served sitemap mirrors the reachable site, <strong>independent of how the file is produced</strong> (hand-authored or generated).</p>
 <p>The check is Python stdlib only (<code>urllib</code> + <code>html.parser</code> + <code>ElementTree</code>), so it adds no dependencies on top of Python 3.</p>
 <h2 id="what-gets-validated">What gets validated</h2>
 <p>The check performs one BFS crawl from <code>/</code> (following same-origin <code>&lt;a href&gt;</code> links), then diffs the reachable page set against the sitemap and, advisorily, against <code>llms.txt</code>.</p>

@@ -1,6 +1,6 @@
 # sitemap.xml Completeness + Drift Check
 
-`ss:reliability:sitemap`, implemented in [`cli/slopstopper/checks/sitemap.py`](../../cli/slopstopper/checks/sitemap.py), crawls your site from `/` and cross-checks the served `sitemap.xml` against the pages it actually reaches. Where [`ss:reliability:llms-txt`](LLMS_TXT.md) and [`ss:reliability:robots-txt`](ROBOTS_TXT.md) assert those files *exist and are well-formed*, this check asserts `sitemap.xml` is **complete and current**. It is a black-box assertion that the served sitemap mirrors the reachable site, **independent of how the file is produced** (hand-authored or generated).
+Crawls your site and cross-checks `sitemap.xml` against the pages it reaches: a reachable page missing from it, or an entry that 404s, fails. The check is `ss:reliability:sitemap`, in [`cli/slopstopper/checks/sitemap.py`](../../cli/slopstopper/checks/sitemap.py). Where [`ss:reliability:llms-txt`](LLMS_TXT.md) and [`ss:reliability:robots-txt`](ROBOTS_TXT.md) assert those files *exist and are well-formed*, this check asserts `sitemap.xml` is **complete and current**. It is a black-box assertion that the served sitemap mirrors the reachable site, **independent of how the file is produced** (hand-authored or generated).
 
 The check is Python stdlib only (`urllib` + `html.parser` + `ElementTree`), so it adds no dependencies on top of Python 3.
 

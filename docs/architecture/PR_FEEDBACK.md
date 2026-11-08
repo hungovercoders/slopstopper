@@ -1,5 +1,7 @@
 # PR feedback: one summary, compact detail
 
+Every pull request gets one summary comment, and a failing check adds a short comment of its own; this page is why, and the format of each.
+
 Every check writes a standalone report with an H1, an overall verdict,
 per-item sections, folded evidence and a "How to Fix" section. That is
 the right shape for a file you open deliberately. It is the wrong shape

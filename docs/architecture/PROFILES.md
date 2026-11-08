@@ -1,5 +1,7 @@
 # Project-shape profiles
 
+A profile picks the checks that fit a repo's shape: `ui` for a website, `api` for a service with no pages, `library` for a package that serves nothing.
+
 Not every check applies to every repo. The nine browser-and-SEO reliability
 checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt,
 robots.txt, sitemap) assume HTML, a DOM and a public web surface. On an HTTP API

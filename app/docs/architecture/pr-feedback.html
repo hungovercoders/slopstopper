@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PR feedback: one summary, compact detail · Architecture | SlopStopper</title>
-    <meta name="description" content="Every check writes a standalone report with an H1, an overall verdict, per-item sections, folded evidence and a &quot;How to Fix&quot; section. That is the right shape for a file you open deliberately. It is the wrong shape for nineteen of them stacked on a pull request, which is what posting each report…">
+    <meta name="description" content="Every pull request gets one summary comment, and a failing check adds a short comment of its own; this page is why, and the format of each.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://slopstopper.dev/docs/architecture/pr-feedback.html">
     <meta property="og:title" content="PR feedback: one summary, compact detail · Architecture | SlopStopper">
-    <meta property="og:description" content="Every check writes a standalone report with an H1, an overall verdict, per-item sections, folded evidence and a &quot;How to Fix&quot; section. That is the right shape for a file you open deliberately. It is the wrong shape for nineteen of them stacked on a pull request, which is what posting each report…">
+    <meta property="og:description" content="Every pull request gets one summary comment, and a failing check adds a short comment of its own; this page is why, and the format of each.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +25,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="PR feedback: one summary, compact detail · Architecture | SlopStopper">
-    <meta name="twitter:description" content="Every check writes a standalone report with an H1, an overall verdict, per-item sections, folded evidence and a &quot;How to Fix&quot; section. That is the right shape for a file you open deliberately. It is the wrong shape for nineteen of them stacked on a pull request, which is what posting each report…">
+    <meta name="twitter:description" content="Every pull request gets one summary comment, and a failing check adds a short comment of its own; this page is why, and the format of each.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -69,6 +69,7 @@
         </section>
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Architecture</a></li><li aria-current="page">PR feedback: one summary, compact detail</li></ol></nav>
         <article class="lesson doc">
+<p>Every pull request gets one summary comment, and a failing check adds a short comment of its own; this page is why, and the format of each.</p>
 <p>Every check writes a standalone report with an H1, an overall verdict, per-item sections, folded evidence and a "How to Fix" section. That is the right shape for a file you open deliberately. It is the wrong shape for nineteen of them stacked on a pull request, which is what posting each report verbatim produced: on an all-passing run the suite emitted ~390 lines of markdown across 19 comment cards, so it was hardest of all to see whether anything had failed, which is the one thing a reviewer wants to know.</p>
 <p>Feedback now arrives in two layers.</p>
 <p><strong>One summary comment.</strong> <a href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-pr-summary.yml" rel="noopener noreferrer"><code>ss-pr-summary.yml</code></a> renders a single rolling comment covering every check:</p>

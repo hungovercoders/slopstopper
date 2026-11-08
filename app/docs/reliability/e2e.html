@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E2E Journeys · Reliability | SlopStopper</title>
-    <meta name="description" content="Smoke proves each page renders. The E2E check proves a visitor can get around: it drives a browser through the journeys any HTML site offers, without knowing anything about yours. From every start path the bundled Playwright spec:">
+    <meta name="description" content="The E2E check proves a visitor can get around: it drives a browser through the journeys any HTML site offers, without knowing anything about yours.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://slopstopper.dev/docs/reliability/e2e.html">
     <meta property="og:title" content="E2E Journeys · Reliability | SlopStopper">
-    <meta property="og:description" content="Smoke proves each page renders. The E2E check proves a visitor can get around: it drives a browser through the journeys any HTML site offers, without knowing anything about yours. From every start path the bundled Playwright spec:">
+    <meta property="og:description" content="The E2E check proves a visitor can get around: it drives a browser through the journeys any HTML site offers, without knowing anything about yours.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +25,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="E2E Journeys · Reliability | SlopStopper">
-    <meta name="twitter:description" content="Smoke proves each page renders. The E2E check proves a visitor can get around: it drives a browser through the journeys any HTML site offers, without knowing anything about yours. From every start path the bundled Playwright spec:">
+    <meta name="twitter:description" content="The E2E check proves a visitor can get around: it drives a browser through the journeys any HTML site offers, without knowing anything about yours.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -70,7 +70,8 @@
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Reliability</a></li><li aria-current="page">E2E Journeys</li></ol></nav>
         <article class="lesson doc">
 <h2 id="overview">Overview</h2>
-<p>Smoke proves each page renders. The E2E check proves a visitor can get around: it drives a browser through the journeys any HTML site offers, without knowing anything about yours. From every start path the bundled Playwright spec:</p>
+<p>The E2E check proves a visitor can get around: it drives a browser through the journeys any HTML site offers, without knowing anything about yours. Smoke proves each page renders; this proves the pages connect.</p>
+<p>From every start path the bundled Playwright spec:</p>
 <ol>
   <li><strong>Walks the primary navigation.</strong> Clicks each same-origin link inside the first <code>&lt;nav&gt;</code> on the page, plus any other link in the <code>&lt;header&gt;</code> that holds it (a call-to-action button, say), and asserts the destination answers, shows an <code>&lt;h1&gt;</code> and still carries a nav, with no JavaScript errors along the way. Links a visitor could not follow in the same tab are left out, not failed: hidden ones (a collapsed mobile menu, a hover dropdown), <code>target="_blank"</code>, downloads and non-HTML files. <code>/about.html</code>, <code>/about/</code> and <code>/about</code> count as the same destination, so a host that rewrites URLs still passes.</li>
   <li><strong>Follows in-page anchors.</strong> Every <code>href="#…"</code> must point at an element that exists.</li>

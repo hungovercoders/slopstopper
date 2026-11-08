@@ -1,8 +1,7 @@
 # Agentic Documentation Updater
 
-The repo ships a weekly agentic workflow that scans recently-merged PRs,
-identifies documentation drift, and opens a sync PR with the proposed
-fixes. It runs on [GitHub Agentic Workflows (`gh-aw`)](https://github.github.com/gh-aw/)
+A weekly agent reads what merged, finds the docs that drifted from it,
+and opens a pull request with the fixes. It runs on [GitHub Agentic Workflows (`gh-aw`)](https://github.github.com/gh-aw/)
 with the GitHub Copilot CLI engine.
 
 ## Quick reference

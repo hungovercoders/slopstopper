@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>robots.txt Discoverability Check · Reliability | SlopStopper</title>
-    <meta name="description" content="ss:reliability:robots-txt, implemented in cli/slopstopper/checks/robots_txt.py, audits your site&#x27;s /robots.txt, which is the Robots Exclusion Protocol file every crawler reads first. Its headline job is the de-index guard: a stray Disallow: / under User-agent:  (often leaked from a staging…">
+    <meta name="description" content="Audits your site&#x27;s /robots.txt: a stray Disallow: / that would de-index the whole site fails, and a Sitemap: pointer is required.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://slopstopper.dev/docs/reliability/robots-txt.html">
     <meta property="og:title" content="robots.txt Discoverability Check · Reliability | SlopStopper">
-    <meta property="og:description" content="ss:reliability:robots-txt, implemented in cli/slopstopper/checks/robots_txt.py, audits your site&#x27;s /robots.txt, which is the Robots Exclusion Protocol file every crawler reads first. Its headline job is the de-index guard: a stray Disallow: / under User-agent:  (often leaked from a staging…">
+    <meta property="og:description" content="Audits your site&#x27;s /robots.txt: a stray Disallow: / that would de-index the whole site fails, and a Sitemap: pointer is required.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +25,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="robots.txt Discoverability Check · Reliability | SlopStopper">
-    <meta name="twitter:description" content="ss:reliability:robots-txt, implemented in cli/slopstopper/checks/robots_txt.py, audits your site&#x27;s /robots.txt, which is the Robots Exclusion Protocol file every crawler reads first. Its headline job is the de-index guard: a stray Disallow: / under User-agent:  (often leaked from a staging…">
+    <meta name="twitter:description" content="Audits your site&#x27;s /robots.txt: a stray Disallow: / that would de-index the whole site fails, and a Sitemap: pointer is required.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -69,7 +69,7 @@
         </section>
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Reliability</a></li><li aria-current="page">robots.txt Discoverability Check</li></ol></nav>
         <article class="lesson doc">
-<p><code>ss:reliability:robots-txt</code>, implemented in <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/checks/robots_txt.py" rel="noopener noreferrer"><code>cli/slopstopper/checks/robots_txt.py</code></a>, audits your site's <code>/robots.txt</code>, which is the <a href="https://www.rfc-editor.org/rfc/rfc9309.html" rel="noopener noreferrer">Robots Exclusion Protocol</a> file every crawler reads first. Its headline job is the <strong>de-index guard</strong>: a stray <code>Disallow: /</code> under <code>User-agent: *</code> (often leaked from a staging config) silently removes an entire public site from search, which makes it the single highest-blast-radius line a site can ship. It complements <a href="seo.html"><code>ss:reliability:seo</code></a> (what human crawlers read) and <a href="llms-txt.html"><code>ss:reliability:llms-txt</code></a> (what AI assistants read).</p>
+<p>Audits your site's <code>/robots.txt</code>: a stray <code>Disallow: /</code> that would de-index the whole site fails, and a <code>Sitemap:</code> pointer is required. The check is <code>ss:reliability:robots-txt</code>, in <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/checks/robots_txt.py" rel="noopener noreferrer"><code>cli/slopstopper/checks/robots_txt.py</code></a>; <code>/robots.txt</code> is the <a href="https://www.rfc-editor.org/rfc/rfc9309.html" rel="noopener noreferrer">Robots Exclusion Protocol</a> file every crawler reads first. Its headline job is the <strong>de-index guard</strong>: a stray <code>Disallow: /</code> under <code>User-agent: *</code> (often leaked from a staging config) silently removes an entire public site from search, which makes it the single highest-blast-radius line a site can ship. It complements <a href="seo.html"><code>ss:reliability:seo</code></a> (what human crawlers read) and <a href="llms-txt.html"><code>ss:reliability:llms-txt</code></a> (what AI assistants read).</p>
 <p>The check is Python stdlib only, so it adds no dependencies on top of Python 3.</p>
 <h2 id="what-gets-validated">What gets validated</h2>
 <p>The check fetches <code>/robots.txt</code> and asserts it is present and does not sabotage discoverability.</p>

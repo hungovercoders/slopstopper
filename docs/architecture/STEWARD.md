@@ -1,5 +1,9 @@
 # slopstopper-steward: the org-wide operator
 
+slopstopper-steward works across a GitHub organisation: it upgrades every
+repo that has slopstopper installed and works the issues the checks raised,
+one pull request each.
+
 slopstopper is per-repo: it tells one repo what is wrong and ships how to
 fix it. [`hungovercoders/slopstopper-steward`](https://github.com/hungovercoders/slopstopper-steward)
 is the counterpart that works across an organisation. On a schedule it

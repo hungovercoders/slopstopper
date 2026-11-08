@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Install the SlopStopper Claude Code skills · Runbooks | SlopStopper</title>
-    <meta name="description" content="The companion to install.sh. Where install.sh drops the whole quality suite into a repo, install-skill.sh targets just the Claude Code skill subset, which is useful for refreshing the playbooks without re-running the full installer.">
+    <meta name="description" content="Install or refresh the two Claude Code skills on their own, without re-running the whole installer. Where install.sh puts the whole suite into a repo, install-skill.sh writes just the skills.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://slopstopper.dev/docs/runbooks/install-skills.html">
     <meta property="og:title" content="Install the SlopStopper Claude Code skills · Runbooks | SlopStopper">
-    <meta property="og:description" content="The companion to install.sh. Where install.sh drops the whole quality suite into a repo, install-skill.sh targets just the Claude Code skill subset, which is useful for refreshing the playbooks without re-running the full installer.">
+    <meta property="og:description" content="Install or refresh the two Claude Code skills on their own, without re-running the whole installer. Where install.sh puts the whole suite into a repo, install-skill.sh writes just the skills.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +25,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Install the SlopStopper Claude Code skills · Runbooks | SlopStopper">
-    <meta name="twitter:description" content="The companion to install.sh. Where install.sh drops the whole quality suite into a repo, install-skill.sh targets just the Claude Code skill subset, which is useful for refreshing the playbooks without re-running the full installer.">
+    <meta name="twitter:description" content="Install or refresh the two Claude Code skills on their own, without re-running the whole installer. Where install.sh puts the whole suite into a repo, install-skill.sh writes just the skills.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -69,7 +69,7 @@
         </section>
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Runbooks</a></li><li aria-current="page">Install the SlopStopper Claude Code skills</li></ol></nav>
         <article class="lesson doc">
-<p>The companion to <a href="https://github.com/hungovercoders/slopstopper/blob/main/install.sh" rel="noopener noreferrer"><code>install.sh</code></a>. Where <code>install.sh</code> drops the whole quality suite into a repo, <a href="https://github.com/hungovercoders/slopstopper/blob/main/install-skill.sh" rel="noopener noreferrer"><code>install-skill.sh</code></a> targets just the Claude Code skill subset, which is useful for refreshing the playbooks without re-running the full installer.</p>
+<p>Install or refresh the two Claude Code skills on their own, without re-running the whole installer. Where <a href="https://github.com/hungovercoders/slopstopper/blob/main/install.sh" rel="noopener noreferrer"><code>install.sh</code></a> puts the whole suite into a repo, <a href="https://github.com/hungovercoders/slopstopper/blob/main/install-skill.sh" rel="noopener noreferrer"><code>install-skill.sh</code></a> writes just the skills.</p>
 <p>Both scripts write skills at <strong>project level</strong>. They land in the adopter repo's <code>.claude/skills/</code> directory, so every contributor that clones the repo gets them automatically. Claude Code auto-discovers project-level skills the same way it does user-level ones.</p>
 <p>After install, Claude Code auto-picks the right skill for any SlopStopper-related prompt:</p>
 <div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">

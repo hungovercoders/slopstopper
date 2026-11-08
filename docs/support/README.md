@@ -1,6 +1,6 @@
 # Support
 
-How to get help with this project.
+Where to ask a question, report a bug or request a check: an AI assistant first, then an issue on the repository, then a discussion.
 
 ## Support Flow
 

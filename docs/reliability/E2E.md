@@ -2,10 +2,11 @@
 
 ## Overview
 
-Smoke proves each page renders. The E2E check proves a visitor can get
-around: it drives a browser through the journeys any HTML site offers,
-without knowing anything about yours. From every start path the bundled
-Playwright spec:
+The E2E check proves a visitor can get around: it drives a browser through
+the journeys any HTML site offers, without knowing anything about yours.
+Smoke proves each page renders; this proves the pages connect.
+
+From every start path the bundled Playwright spec:
 
 1. **Walks the primary navigation.** Clicks each same-origin link inside the
    first `<nav>` on the page, plus any other link in the `<header>` that

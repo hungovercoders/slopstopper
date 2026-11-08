@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>llms.txt AI-Discoverability Check · Reliability | SlopStopper</title>
-    <meta name="description" content="ss:reliability:llms-txt, implemented in cli/slopstopper/checks/llms_txt.py, audits your site&#x27;s /llms.txt as the llmstxt.org convention defines it. llms.txt is a curated markdown map at the site root that lets AI assistants and agents read your key content directly, instead of parsing noisy HTML.…">
+    <meta name="description" content="Audits your site&#x27;s /llms.txt, the llmstxt.org map that lets an AI assistant read your key pages without parsing HTML.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://slopstopper.dev/docs/reliability/llms-txt.html">
     <meta property="og:title" content="llms.txt AI-Discoverability Check · Reliability | SlopStopper">
-    <meta property="og:description" content="ss:reliability:llms-txt, implemented in cli/slopstopper/checks/llms_txt.py, audits your site&#x27;s /llms.txt as the llmstxt.org convention defines it. llms.txt is a curated markdown map at the site root that lets AI assistants and agents read your key content directly, instead of parsing noisy HTML.…">
+    <meta property="og:description" content="Audits your site&#x27;s /llms.txt, the llmstxt.org map that lets an AI assistant read your key pages without parsing HTML.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +25,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="llms.txt AI-Discoverability Check · Reliability | SlopStopper">
-    <meta name="twitter:description" content="ss:reliability:llms-txt, implemented in cli/slopstopper/checks/llms_txt.py, audits your site&#x27;s /llms.txt as the llmstxt.org convention defines it. llms.txt is a curated markdown map at the site root that lets AI assistants and agents read your key content directly, instead of parsing noisy HTML.…">
+    <meta name="twitter:description" content="Audits your site&#x27;s /llms.txt, the llmstxt.org map that lets an AI assistant read your key pages without parsing HTML.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -69,7 +69,7 @@
         </section>
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Reliability</a></li><li aria-current="page">llms.txt AI-Discoverability Check</li></ol></nav>
         <article class="lesson doc">
-<p><code>ss:reliability:llms-txt</code>, implemented in <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/checks/llms_txt.py" rel="noopener noreferrer"><code>cli/slopstopper/checks/llms_txt.py</code></a>, audits your site's <code>/llms.txt</code> as the <a href="https://llmstxt.org/" rel="noopener noreferrer">llmstxt.org</a> convention defines it. <code>llms.txt</code> is a curated markdown map at the site root that lets AI assistants and agents read your key content directly, instead of parsing noisy HTML. It complements <a href="seo.html"><code>ss:reliability:seo</code></a>: SEO covers what human-facing crawlers read, this covers the surface an LLM reads.</p>
+<p>Audits your site's <code>/llms.txt</code>, the <a href="https://llmstxt.org/" rel="noopener noreferrer">llmstxt.org</a> map that lets an AI assistant read your key pages without parsing HTML. The check is <code>ss:reliability:llms-txt</code>, in <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/checks/llms_txt.py" rel="noopener noreferrer"><code>cli/slopstopper/checks/llms_txt.py</code></a>. <code>llms.txt</code> is a curated markdown map at the site root that lets AI assistants and agents read your key content directly, instead of parsing noisy HTML. It complements <a href="seo.html"><code>ss:reliability:seo</code></a>: SEO covers what human-facing crawlers read, this covers the surface an LLM reads.</p>
 <p>The check is Python stdlib only, so it adds no dependencies on top of Python 3.</p>
 <h2 id="what-gets-validated">What gets validated</h2>
 <p>The check fetches <code>/llms.txt</code> and asserts a <strong>well-formed</strong> file per the convention.</p>

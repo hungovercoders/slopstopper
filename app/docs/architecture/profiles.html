@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project-shape profiles · Architecture | SlopStopper</title>
-    <meta name="description" content="Not every check applies to every repo. The nine browser-and-SEO reliability checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume HTML, a DOM and a public web surface. On an HTTP API they don&#x27;t quietly no-op. They build, serve and audit…">
+    <meta name="description" content="A profile picks the checks that fit a repo&#x27;s shape: ui for a website, api for a service with no pages, library for a package that serves nothing.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://slopstopper.dev/docs/architecture/profiles.html">
     <meta property="og:title" content="Project-shape profiles · Architecture | SlopStopper">
-    <meta property="og:description" content="Not every check applies to every repo. The nine browser-and-SEO reliability checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume HTML, a DOM and a public web surface. On an HTTP API they don&#x27;t quietly no-op. They build, serve and audit…">
+    <meta property="og:description" content="A profile picks the checks that fit a repo&#x27;s shape: ui for a website, api for a service with no pages, library for a package that serves nothing.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +25,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Project-shape profiles · Architecture | SlopStopper">
-    <meta name="twitter:description" content="Not every check applies to every repo. The nine browser-and-SEO reliability checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume HTML, a DOM and a public web surface. On an HTTP API they don&#x27;t quietly no-op. They build, serve and audit…">
+    <meta name="twitter:description" content="A profile picks the checks that fit a repo&#x27;s shape: ui for a website, api for a service with no pages, library for a package that serves nothing.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -69,6 +69,7 @@
         </section>
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Architecture</a></li><li aria-current="page">Project-shape profiles</li></ol></nav>
         <article class="lesson doc">
+<p>A profile picks the checks that fit a repo's shape: <code>ui</code> for a website, <code>api</code> for a service with no pages, <code>library</code> for a package that serves nothing.</p>
 <p>Not every check applies to every repo. The nine browser-and-SEO reliability checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume HTML, a DOM and a public web surface. On an HTTP API they don't quietly no-op. They build, serve and audit nothing, and go red. On a library there is nothing to serve at all.</p>
 <p>A <strong>profile</strong> is a named preset for <code>workflows.disabled</code>: it says which workflows a repo of that shape shouldn't carry.</p>
 <div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">

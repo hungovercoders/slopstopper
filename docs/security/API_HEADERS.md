@@ -1,6 +1,6 @@
 # API Headers & CORS
 
-The API-shaped analogue of [CSP Exceptions](CSP_EXCEPTIONS.md). On an HTML surface, CSP is the header that decides what a document may load. On a JSON API there is no document to restrict, so CSP is largely irrelevant and **CORS** becomes the control that decides who may *read* the response. A permissive CORS policy on a credentialed API is a cross-origin data leak, not a style violation.
+Audits a JSON API's response headers and CORS policy, where a permissive policy on a credentialed API is a cross-origin data leak. It is the API-shaped analogue of [CSP Exceptions](CSP_EXCEPTIONS.md): on an HTML surface, CSP is the header that decides what a document may load. On a JSON API there is no document to restrict, so CSP is largely irrelevant and **CORS** becomes the control that decides who may *read* the response. A permissive CORS policy on a credentialed API is a cross-origin data leak, not a style violation.
 
 `security:api-headers` probes each endpoint in `api.headers.paths` and splits its findings into hard failures and advisory notes. A check that fails on advice becomes noise; one that only advises on a credentialed wildcard isn't doing its job.
 

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API Headers &amp; CORS · Security | SlopStopper</title>
-    <meta name="description" content="The API-shaped analogue of CSP Exceptions. On an HTML surface, CSP is the header that decides what a document may load. On a JSON API there is no document to restrict, so CSP is largely irrelevant and CORS becomes the control that decides who may read the response. A permissive CORS policy on a…">
+    <meta name="description" content="Audits a JSON API&#x27;s response headers and CORS policy, where a permissive policy on a credentialed API is a cross-origin data leak.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://slopstopper.dev/docs/security/api-headers.html">
     <meta property="og:title" content="API Headers &amp; CORS · Security | SlopStopper">
-    <meta property="og:description" content="The API-shaped analogue of CSP Exceptions. On an HTML surface, CSP is the header that decides what a document may load. On a JSON API there is no document to restrict, so CSP is largely irrelevant and CORS becomes the control that decides who may read the response. A permissive CORS policy on a…">
+    <meta property="og:description" content="Audits a JSON API&#x27;s response headers and CORS policy, where a permissive policy on a credentialed API is a cross-origin data leak.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +25,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="API Headers &amp; CORS · Security | SlopStopper">
-    <meta name="twitter:description" content="The API-shaped analogue of CSP Exceptions. On an HTML surface, CSP is the header that decides what a document may load. On a JSON API there is no document to restrict, so CSP is largely irrelevant and CORS becomes the control that decides who may read the response. A permissive CORS policy on a…">
+    <meta name="twitter:description" content="Audits a JSON API&#x27;s response headers and CORS policy, where a permissive policy on a credentialed API is a cross-origin data leak.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -69,7 +69,7 @@
         </section>
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Security</a></li><li aria-current="page">API Headers &amp; CORS</li></ol></nav>
         <article class="lesson doc">
-<p>The API-shaped analogue of <a href="csp-exceptions.html">CSP Exceptions</a>. On an HTML surface, CSP is the header that decides what a document may load. On a JSON API there is no document to restrict, so CSP is largely irrelevant and <strong>CORS</strong> becomes the control that decides who may <em>read</em> the response. A permissive CORS policy on a credentialed API is a cross-origin data leak, not a style violation.</p>
+<p>Audits a JSON API's response headers and CORS policy, where a permissive policy on a credentialed API is a cross-origin data leak. It is the API-shaped analogue of <a href="csp-exceptions.html">CSP Exceptions</a>: on an HTML surface, CSP is the header that decides what a document may load. On a JSON API there is no document to restrict, so CSP is largely irrelevant and <strong>CORS</strong> becomes the control that decides who may <em>read</em> the response. A permissive CORS policy on a credentialed API is a cross-origin data leak, not a style violation.</p>
 <p><code>security:api-headers</code> probes each endpoint in <code>api.headers.paths</code> and splits its findings into hard failures and advisory notes. A check that fails on advice becomes noise; one that only advises on a credentialed wildcard isn't doing its job.</p>
 <h2 id="what-it-checks">What it checks</h2>
 <div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">

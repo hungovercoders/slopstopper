@@ -572,8 +572,16 @@ def with_block(text: str, block: str, begin: str, end: str, where: str) -> str:
     return text[:b] + begin + "\n" + block + "\n" + text[e:]
 
 
-def describe(text: str, limit: int = 300) -> str:
-    """Plain text for a description, cut at a word before `limit`."""
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z`\"(])")
+
+
+def describe(text: str, limit: int = 200) -> str:
+    """Plain text for a description: the first sentence, or the first two
+    while they fit in `limit`, else a cut at a word before it."""
     text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", " ".join(text.split()))
-    text = plain(text).replace("*", "")
-    return text if len(text) <= limit else text[:limit - 3].rsplit(" ", 1)[0] + "…"
+    text = _EM.sub(r"\1", plain(text))
+    sentences = _SENTENCE_END.split(text)
+    out = sentences[0]
+    if len(sentences) > 1 and len(out) + 1 + len(sentences[1]) <= limit:
+        out = out + " " + sentences[1]
+    return out if len(out) <= limit else out[:limit - 3].rsplit(" ", 1)[0] + "…"
