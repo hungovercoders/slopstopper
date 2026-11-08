@@ -1,8 +1,6 @@
 # robots.txt Discoverability Check
 
-Audits your site's `/robots.txt`: a stray `Disallow: /` that would de-index the whole site fails, and a `Sitemap:` pointer is required. The check is `ss:reliability:robots-txt`, in [`cli/slopstopper/checks/robots_txt.py`](../../cli/slopstopper/checks/robots_txt.py); `/robots.txt` is the [Robots Exclusion Protocol](https://www.rfc-editor.org/rfc/rfc9309.html) file every crawler reads first. Its headline job is the **de-index guard**: a stray `Disallow: /` under `User-agent: *` (often leaked from a staging config) silently removes an entire public site from search, which makes it the single highest-blast-radius line a site can ship. It complements [`ss:reliability:seo`](SEO.md) (what human crawlers read) and [`ss:reliability:llms-txt`](LLMS_TXT.md) (what AI assistants read).
-
-The check is Python stdlib only, so it adds no dependencies on top of Python 3.
+Audits your site's `/robots.txt`: a stray `Disallow: /` that would de-index the whole site fails, and a `Sitemap:` pointer is required. `/robots.txt` is the [Robots Exclusion Protocol](https://www.rfc-editor.org/rfc/rfc9309.html) file every crawler reads first, and a `Disallow: /` leaked from a staging config silently removes a whole public site from search. It complements [`ss:reliability:seo`](SEO.md) (what human crawlers read) and [`ss:reliability:llms-txt`](LLMS_TXT.md) (what AI assistants read).
 
 ## What gets validated
 

@@ -6,11 +6,8 @@ one pull request each.
 
 slopstopper is per-repo: it tells one repo what is wrong and ships how to
 fix it. [`hungovercoders/slopstopper-steward`](https://github.com/hungovercoders/slopstopper-steward)
-is the counterpart that works across an organisation. On a schedule it
-finds every repo with slopstopper installed, moves CLI pins that fell
-behind, and works the issues slopstopper raised, opening one pull request
-per piece of work. It is a separate repo and package so an adopter's
-install stays small and the cross-repo token stays out of every adopter.
+is a separate repo and package, so an adopter's install stays small and
+the cross-repo token stays out of every adopter.
 
 ## The split
 

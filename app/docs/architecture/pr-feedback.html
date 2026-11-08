@@ -70,8 +70,8 @@
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Architecture</a></li><li aria-current="page">PR feedback: one summary, compact detail</li></ol></nav>
         <article class="lesson doc">
 <p>Every pull request gets one summary comment, and a failing check adds a short comment of its own; this page is why, and the format of each.</p>
-<p>Every check writes a standalone report with an H1, an overall verdict, per-item sections, folded evidence and a "How to Fix" section. That is the right shape for a file you open deliberately. It is the wrong shape for nineteen of them stacked on a pull request, which is what posting each report verbatim produced: on an all-passing run the suite emitted ~390 lines of markdown across 19 comment cards, so it was hardest of all to see whether anything had failed, which is the one thing a reviewer wants to know.</p>
-<p>Feedback now arrives in two layers.</p>
+<p>Every check writes a standalone report with an H1, an overall verdict, per-item sections, folded evidence and a "How to Fix" section. That is the right shape for a file you open deliberately and the wrong shape for twenty-seven of them stacked on a pull request, where the one thing a reviewer wants to know is whether anything failed.</p>
+<p>Feedback arrives in two layers.</p>
 <p><strong>One summary comment.</strong> <a href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-pr-summary.yml" rel="noopener noreferrer"><code>ss-pr-summary.yml</code></a> renders a single rolling comment covering every check:</p>
 <div class="codeblock codeblock--out" tabindex="0"><pre><code>## ❌ SlopStopper: 2 of 27 checks failed
 

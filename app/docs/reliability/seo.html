@@ -75,7 +75,6 @@
   <li><strong>Lighthouse SEO category</strong> runs as part of <code>ss:reliability:cwv</code>, gated at score ≥ 0.9 (see <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/data/lighthouserc.json" rel="noopener noreferrer"><code>cli/slopstopper/data/lighthouserc.json</code></a>). It covers the SEO basics of meta description, <code>viewport</code>, <code>lang</code>, canonical, robots, indexability and link-text quality.</li>
   <li><strong>SEO metatag check</strong> is <code>ss:reliability:seo</code>, implemented in <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/checks/seo.py" rel="noopener noreferrer"><code>cli/slopstopper/checks/seo.py</code></a>. It validates the social-share tags Lighthouse does <strong>not</strong> flag (OpenGraph + Twitter Card) plus reachability of the OG image.</li>
 </ol>
-<p>The metatag check is intentionally Python stdlib only, so it adds no dependencies on top of Python 3.</p>
 <h2 id="what-gets-validated">What gets validated</h2>
 <p>For each page in <code>SEO_PAGES</code>, the script asserts the following are present and non-empty:</p>
 <p><strong>Core SEO</strong></p>

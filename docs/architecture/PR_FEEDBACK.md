@@ -4,14 +4,11 @@ Every pull request gets one summary comment, and a failing check adds a short co
 
 Every check writes a standalone report with an H1, an overall verdict,
 per-item sections, folded evidence and a "How to Fix" section. That is
-the right shape for a file you open deliberately. It is the wrong shape
-for nineteen of them stacked on a pull request, which is what posting
-each report verbatim produced: on an all-passing run the suite emitted
-~390 lines of markdown across 19 comment cards, so it was hardest of all
-to see whether anything had failed, which is the one thing a reviewer
-wants to know.
+the right shape for a file you open deliberately and the wrong shape for
+twenty-seven of them stacked on a pull request, where the one thing a
+reviewer wants to know is whether anything failed.
 
-Feedback now arrives in two layers.
+Feedback arrives in two layers.
 
 **One summary comment.** [`ss-pr-summary.yml`](../../.github/workflows/ss-pr-summary.yml)
 renders a single rolling comment covering every check:

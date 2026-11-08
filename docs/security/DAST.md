@@ -1,6 +1,6 @@
 # Dynamic Application Security Testing (DAST)
 
-**OWASP ZAP** scans your running site, or your API through its OpenAPI spec, for runtime security issues. This page covers what the check finds and how to tune it.
+**OWASP ZAP** scans your running site, or your API through its OpenAPI spec, for runtime security issues.
 
 ## Quick Start
 

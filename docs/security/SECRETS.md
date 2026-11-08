@@ -1,6 +1,6 @@
 # Secrets Detection
 
-**Gitleaks** scans your source and your git history for committed credentials, API keys and other secrets. This page covers what the check finds and how to tune it.
+**Gitleaks** scans your source and your git history for committed credentials, API keys and other secrets.
 
 ## Quick Start
 

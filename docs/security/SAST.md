@@ -1,6 +1,6 @@
 # Static Application Security Testing (SAST)
 
-**Semgrep** scans your source code for security bugs and unsafe patterns before they merge. This page covers what the check finds and how to tune it.
+**Semgrep** scans your source code for security bugs and unsafe patterns before they merge.
 
 ## Quick Start
 
