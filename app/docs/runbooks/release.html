@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cutting a release · Runbooks | SlopStopper</title>
-    <meta name="description" content="slopstopper-cli releases are automated end-to-end via two GitHub workflows:">
+    <meta name="description" content="How a slopstopper-cli release is cut: two GitHub workflows take a merged Release PR to a tagged GitHub Release and a signed PyPI publish, with no version bump, changelog edit or tag pushed by hand. The two workflows:">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://slopstopper.dev/docs/runbooks/release.html">
     <meta property="og:title" content="Cutting a release · Runbooks | SlopStopper">
-    <meta property="og:description" content="slopstopper-cli releases are automated end-to-end via two GitHub workflows:">
+    <meta property="og:description" content="How a slopstopper-cli release is cut: two GitHub workflows take a merged Release PR to a tagged GitHub Release and a signed PyPI publish, with no version bump, changelog edit or tag pushed by hand. The two workflows:">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +25,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Cutting a release · Runbooks | SlopStopper">
-    <meta name="twitter:description" content="slopstopper-cli releases are automated end-to-end via two GitHub workflows:">
+    <meta name="twitter:description" content="How a slopstopper-cli release is cut: two GitHub workflows take a merged Release PR to a tagged GitHub Release and a signed PyPI publish, with no version bump, changelog edit or tag pushed by hand. The two workflows:">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -64,12 +64,12 @@
     </header>
     <main id="main">
         <section class="hero hero--lesson hero--doc">
-            <span class="kicker">📚 Docs · Runbooks</span>
+            <span class="kicker">📚 Inside the project · Runbooks</span>
             <h1>Cutting a release</h1>
         </section>
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Runbooks</a></li><li aria-current="page">Cutting a release</li></ol></nav>
         <article class="lesson doc">
-<p>slopstopper-cli releases are automated end-to-end via two GitHub workflows:</p>
+<p>How a slopstopper-cli release is cut: two GitHub workflows take a merged Release PR to a tagged GitHub Release and a signed PyPI publish, with no version bump, changelog edit or tag pushed by hand. The two workflows:</p>
 <ol>
   <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/release-please.yml" rel="noopener noreferrer"><code>release-please.yml</code></a> watches <code>main</code> for <a href="https://www.conventionalcommits.org/" rel="noopener noreferrer">Conventional Commit</a> pushes and maintains a perpetual <strong>Release PR</strong> that regenerates <a href="https://github.com/hungovercoders/slopstopper/blob/main/CHANGELOG.md" rel="noopener noreferrer"><code>CHANGELOG.md</code></a>, bumps <code>cli/pyproject.toml</code> <code>version</code> and <code>cli/slopstopper/__init__.py</code> <code>__version__</code>. Merging it creates the matching <code>vX.Y.Z</code> tag + GitHub Release with notes.</li>
   <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-release.yml" rel="noopener noreferrer"><code>ss-release.yml</code></a> fires on that tag push, builds the wheel + sdist, signs them with Sigstore build-provenance, uploads to the GitHub Release, and publishes to PyPI via the OIDC Trusted Publisher flow.</li>

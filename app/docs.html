@@ -101,7 +101,6 @@
                 <ul class="doc-list">
                     <li><a href="docs/runbooks/install.html">Adopting SlopStopper</a><span class="doc-list__about">Everything an adopter needs once: prerequisites, what the installer writes, what each check needs from you, how to run the suite, configure it and move the CLI pin. The README holds the two install commands; this is the rest.</span></li>
                     <li><a href="docs/runbooks/install-skills.html">Install the SlopStopper Claude Code skills</a><span class="doc-list__about">The companion to install.sh. Where install.sh drops the whole quality suite into a repo, install-skill.sh targets just the Claude Code skill subset, which is useful for refreshing the playbooks without re-running the full installer.</span></li>
-                    <li><a href="docs/runbooks/release.html">Cutting a release</a><span class="doc-list__about">slopstopper-cli releases are automated end-to-end via two GitHub workflows:</span></li>
                     <li><a href="docs/runbooks/upgrade-cli.html">Upgrade the pinned slopstopper-cli</a><span class="doc-list__about">slopstopper-cli is pinned per-repo. The pin lives in mise.toml as the [tools] entry &quot;pipx:slopstopper-cli&quot;, and mise installs it both locally and in CI (via jdx/mise-action). mise activates the tool per-directory, so the active slopstopper always matches the repo you&#x27;re in and there&#x27;s no single…</span></li>
                 </ul>
             </div>
@@ -159,6 +158,12 @@
             <h2>Working on slopstopper itself.</h2>
             <p class="lede">For contributors, and for lesson 20 of <a href="learn.html">the course</a>, which adds a check: how to contribute, what a change has to touch, how this site is built and deployed, the decisions behind the suite, and how a lesson is written.</p>
             <!-- docs:project:begin -->
+            <div class="doc-section" id="runbooks-project">
+                <h3><a href="docs/runbooks/index.html">Runbooks</a></h3>
+                <ul class="doc-list">
+                    <li><a href="docs/runbooks/release.html">Cutting a release</a><span class="doc-list__about">How a slopstopper-cli release is cut: two GitHub workflows take a merged Release PR to a tagged GitHub Release and a signed PyPI publish, with no version bump, changelog edit or tag pushed by hand. The two workflows:</span></li>
+                </ul>
+            </div>
             <div class="doc-section" id="contributing">
                 <h3><a href="docs/contributing/index.html">Contributing</a></h3>
                 <p class="doc-section__lede">This document defines the default way to contribute to this project.</p>

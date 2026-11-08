@@ -105,14 +105,23 @@ SECTIONS = {
 AUDIENCE_KICKER = {ADOPTERS: "Docs", PROJECT: "Inside the project"}
 CURRENT = ' aria-current="page"'
 
+# A doc whose audience is not its section's: the release runbook is how
+# the project ships slopstopper-cli, not something an adopter does.
+AUDIENCE_OVERRIDES = {
+    "docs/runbooks/RELEASE.md": PROJECT,
+}
+
 
 def section_name(key: str) -> str:
     return SECTIONS[key][0]
 
 
-def audience(key: str | None) -> str:
-    """A section's audience; the map itself is the project's."""
-    return SECTIONS[key][1] if key else PROJECT
+def audience(doc: "Doc") -> str:
+    """Who a doc is for: its own override, else its section's audience;
+    the map itself is the project's."""
+    if doc.where in AUDIENCE_OVERRIDES:
+        return AUDIENCE_OVERRIDES[doc.where]
+    return SECTIONS[doc.section][1] if doc.section else PROJECT
 
 _H1 = re.compile(r"^# (.+?)\s*$")
 _LESSON = re.compile(r"\d\d-[\w-]+\.md")
@@ -327,7 +336,7 @@ def render(doc: Doc, all_docs: list[Doc]) -> str:
     esc = lambda s: html.escape(s, quote=True)  # noqa: E731
     section = section_name(doc.section) if doc.section else "The map"
     main = f"""        <section class="hero hero--lesson hero--doc">
-            <span class="kicker">📚 {AUDIENCE_KICKER[audience(doc.section)]} · {esc(section)}</span>
+            <span class="kicker">📚 {AUDIENCE_KICKER[audience(doc)]} · {esc(section)}</span>
             <h1>{sitemd.inline(doc.title, where, opts)}</h1>
         </section>
         {_crumbs(doc, esc)}
@@ -366,18 +375,21 @@ def index_text(all_docs: list[Doc]) -> str:
 
 
 def _section_blocks(all_docs: list[Doc], who: str) -> str:
+    """One block per section that has a doc for this audience: the index's
+    heading and lede when the index is theirs, then the docs that are."""
     esc = lambda s: html.escape(s, quote=True)  # noqa: E731
     blocks = []
-    for key, (name, who_for) in SECTIONS.items():
-        if who_for != who:
-            continue
+    for key, (name, _) in SECTIONS.items():
         index = next(d for d in all_docs if d.section == key and d.is_index)
-        others = [d for d in all_docs if d.section == key and not d.is_index]
+        others = [d for d in all_docs if d.section == key and not d.is_index and audience(d) == who]
+        if audience(index) != who and not others:
+            continue
         items = "\n".join(_entry(d, esc) for d in others)
+        lede = f'                <p class="doc-section__lede">{esc(index.description)}</p>\n' if audience(index) == who else ""
         blocks.append(
-            f'            <div class="doc-section" id="{key}">\n'
+            f'            <div class="doc-section" id="{key}{"" if audience(index) == who else "-" + who}">\n'
             f'                <h3><a href="{index.path.lstrip("/")}">{esc(name)}</a></h3>\n'
-            f'                <p class="doc-section__lede">{esc(index.description)}</p>\n'
+            + lede
             + (f'                <ul class="doc-list">\n{items}\n                </ul>\n' if items else "")
             + "            </div>"
         )
@@ -403,7 +415,7 @@ def llms_text(all_docs: list[Doc]) -> str:
     def group(who: str) -> str:
         return "\n".join(
             f"- [{label(doc)}]({SITE_URL}{doc.path.lstrip('/')}): {doc.description}"
-            for doc in all_docs if audience(doc.section) == who
+            for doc in all_docs if audience(doc) == who
         )
 
     entries = f"For adopters:\n\n{group(ADOPTERS)}\n\nInside the project:\n\n{group(PROJECT)}"

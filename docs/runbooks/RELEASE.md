@@ -1,6 +1,6 @@
 # Cutting a release
 
-slopstopper-cli releases are automated end-to-end via two GitHub workflows:
+How a slopstopper-cli release is cut: two GitHub workflows take a merged Release PR to a tagged GitHub Release and a signed PyPI publish, with no version bump, changelog edit or tag pushed by hand. The two workflows:
 
 1. [`release-please.yml`](../../.github/workflows/release-please.yml) watches `main` for [Conventional Commit](https://www.conventionalcommits.org/) pushes and maintains a perpetual **Release PR** that regenerates [`CHANGELOG.md`](../../CHANGELOG.md), bumps `cli/pyproject.toml` `version` and `cli/slopstopper/__init__.py` `__version__`. Merging it creates the matching `vX.Y.Z` tag + GitHub Release with notes.
 2. [`ss-release.yml`](../../.github/workflows/ss-release.yml) fires on that tag push, builds the wheel + sdist, signs them with Sigstore build-provenance, uploads to the GitHub Release, and publishes to PyPI via the OIDC Trusted Publisher flow.
