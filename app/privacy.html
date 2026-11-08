@@ -70,7 +70,7 @@
 
         <section class="section privacy-section" id="collects">
             <span class="kicker">What this site collects</span>
-            <h2>Nothing of its own.</h2>
+            <h2>Nothing beyond what any host sees.</h2>
             <p class="lede">There are no accounts, no forms, no cookies, and no analytics or tracking scripts.</p>
             <p>The pages are static. The only scripts they load are the site's own: <code>theme.js</code>, which switches between the light and dark theme, <code>copy.js</code>, which powers the copy buttons on code blocks, <code>tabs.js</code>, which turns the features and tools pages' sections into tabs, and <code>feedback.js</code>, which loads the comments widget on the feedback page when you ask for it. The Content-Security-Policy on every path allows scripts and styles from this origin alone and none inline, so an analytics snippet or beacon cannot run even if one were injected. One page relaxes that policy for the comments widget, described below.</p>
             <p>One setting stays in your browser: pressing the theme toggle in the header stores your choice of light or dark (the word <code>light</code> or <code>dark</code>, nothing else) in your browser's local storage, so the next page keeps it. It never leaves your browser, is cleared when you switch back to the theme your device already prefers, and is never written at all if you leave the toggle alone.</p>
@@ -84,7 +84,7 @@
 
         <section class="section privacy-section" id="services">
             <span class="kicker">Other services the pages reach</span>
-            <h2>One, on one page.</h2>
+            <h2>Giscus, on the feedback page only.</h2>
             <ul class="privacy-list">
                 <li><strong>Giscus, on the feedback page only, and only when you ask.</strong> <a href="feedback.html">The feedback page</a> offers comments from <a href="https://giscus.app" rel="noopener noreferrer">Giscus</a>. Nothing is fetched from <code>giscus.app</code> until you press "Load comments"; pressing it loads a script from Giscus in an iframe under a page-scoped exception to the site's Content-Security-Policy, and sends your IP address, browser details and the page address to Giscus. Reading the page without pressing it sends nothing to anyone but Cloudflare. Commenting means signing in to GitHub, so GitHub and Giscus both see that visit and your GitHub identity, and the comment itself is stored as a GitHub Discussion on the SlopStopper repository. See <a href="https://github.com/giscus/giscus/blob/main/PRIVACY-POLICY.md" rel="noopener noreferrer">Giscus's privacy policy</a> and <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener noreferrer">GitHub's privacy statement</a>. The exception, what leaves the site through it, and how the loader is pinned are written up in <a href="docs/security/csp-exceptions.html">the CSP exceptions doc</a>.</li>
                 <li><strong>Fonts</strong> are served from this site, not from a font service.</li>
@@ -94,7 +94,7 @@
 
         <section class="section privacy-section" id="cli">
             <span class="kicker">The CLI and the workflows</span>
-            <h2>They never talk to this site.</h2>
+            <h2>They send nothing to this site.</h2>
             <p>The <code>slopstopper-cli</code> package and the <code>ss-*</code> workflows run in your own repository and your own CI. They send nothing to slopstopper.dev. The tools they drive fetch their own inputs from their own sources (Semgrep its rules, Playwright its browsers, Trivy its vulnerability database), and the Lighthouse report stays in your repo unless you opt in to its public upload.</p>
         </section>
 

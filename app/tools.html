@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tools | SlopStopper</title>
-    <meta name="description" content="The tools behind each SlopStopper check: Semgrep, OWASP ZAP, Trivy, Gitleaks, Playwright, axe-core, Lighthouse CI and the stdlib audits, plus the CLI, workflows, Task and git hook every install carries.">
+    <meta name="description" content="The tools behind each SlopStopper check: Semgrep, OWASP ZAP, Trivy, Gitleaks, Playwright, axe-core, Lighthouse CI and the stdlib audits, plus the CLI, workflows, Task and git hook the installer adds.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -14,7 +14,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://slopstopper.dev/tools.html">
     <meta property="og:title" content="Tools | SlopStopper">
-    <meta property="og:description" content="The tools behind each check, and the pieces every install carries.">
+    <meta property="og:description" content="The tools behind each check, and the pieces the installer adds.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -24,7 +24,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Tools | SlopStopper">
-    <meta name="twitter:description" content="The tools behind each check, and the pieces every install carries.">
+    <meta name="twitter:description" content="The tools behind each check, and the pieces the installer adds.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -64,8 +64,8 @@
     <main id="main">
         <section class="hero">
             <span class="kicker">Tools</span>
-            <h1>The kit behind <span class="highlight">the checks.</span></h1>
-            <p>The CLI drives one tool per check and reads its result, so you never configure the tools themselves. Here they are by loop, after the pieces every install carries. Open a card for how it is wired in.</p>
+            <h1>The tools behind <span class="highlight">the checks.</span></h1>
+            <p>The CLI drives one tool per check and reads its result, so you do not configure the tools yourself. They are listed by loop, after the pieces the installer adds to a repo. Open a card for how each is wired in.</p>
         </section>
 
         <section class="section tabbed" aria-labelledby="tools-heading">
@@ -78,13 +78,13 @@
             </div>
             <section class="section tool-group tab-panel" id="the-suite" role="tabpanel" aria-labelledby="tab-the-suite" tabindex="0">
             <span class="kicker">The suite</span>
-            <h2>What every install carries.</h2>
-            <p class="lede">The CLI that owns every check, the workflows that run it in CI, the <code>task ss:*</code> commands that run it anywhere, and the hook that runs the fast checks before a push.</p>
+            <h2>What the installer adds.</h2>
+            <p class="lede">The CLI that runs the checks, the workflows that call it in CI, the <code>task ss:*</code> commands that call it anywhere, and the hook that runs the fast checks before a push.</p>
             <div class="card-grid card-grid--flow card-grid--flow-3">
                 <div class="card">
                     <h3>🐍 slopstopper-cli</h3>
                     <span class="tool-license">MIT</span>
-                    <p>The Python package every check, report and pull request comment goes through. <code>pipx install slopstopper-cli</code> to try it; in a repo it is pinned in <code>mise.toml</code>. Each <a href="https://github.com/hungovercoders/slopstopper/releases/latest">release</a> carries its changelog and signed artifacts.</p>
+                    <p>The Python package that runs each check, writes its report and posts the pull request comment. <code>pipx install slopstopper-cli</code> to try it; in a repo it is pinned in <code>mise.toml</code>. Each <a href="https://github.com/hungovercoders/slopstopper/releases/latest">release</a> carries its changelog and signed artifacts.</p>
                     <details class="details">
                         <summary>CLI surface</summary>
                         <div class="details__body">
@@ -141,7 +141,7 @@
                     <div class="details__body">
                         <div class="codeblock codeblock--sh"><pre><code># Runs through `mise exec` because git hooks don't source your shell profile.
 exec mise exec -- task ss:hygiene:test</code></pre></div>
-                        <p class="details__hint">The same command the hook, your local loop and CI all run.</p>
+                        <p>The same command CI runs.</p>
                         <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.githooks/pre-push" rel="noopener noreferrer">View .githooks/pre-push →</a>
                     </div>
                 </details>
@@ -152,7 +152,7 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
 
             <section class="section tool-group tab-panel" id="security" role="tabpanel" aria-labelledby="tab-security" tabindex="0">
             <span class="kicker">Security</span>
-            <h2>Block it before it merges.</h2>
+            <h2>The security tools.</h2>
             <p class="lede">Static analysis, a scan of the running site or API, dependency CVEs and licences, and leaked credentials.</p>
             <div class="card-grid card-grid--flow card-grid--flow-3">
                 <div class="card">
@@ -264,7 +264,7 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
 
             <section class="section tool-group tab-panel" id="reliability" role="tabpanel" aria-labelledby="tab-reliability" tabindex="0">
             <span class="kicker">Reliability</span>
-            <h2>Prove every deploy works.</h2>
+            <h2>The reliability tools.</h2>
             <p class="lede">A browser, an accessibility engine, a performance auditor, and four audits written in plain Python inside the CLI, so they add no dependencies.</p>
             <div class="card-grid card-grid--flow card-grid--flow-3">
                 <div class="card">
@@ -426,7 +426,7 @@ on:
 
             <section class="section tool-group tab-panel" id="hygiene" role="tabpanel" aria-labelledby="tab-hygiene" tabindex="0">
             <span class="kicker">Hygiene</span>
-            <h2>Keep the codebase auditable.</h2>
+            <h2>The hygiene tools.</h2>
             <p class="lede">A complexity gauge and a seeded Markdown linter. The docs checks are plain Python inside the CLI and need no tool.</p>
             <div class="card-grid card-grid--flow card-grid--flow-3">
                 <div class="card">
@@ -450,7 +450,7 @@ on:
             <div class="card">
                 <h3>📝 markdownlint</h3>
                 <span class="tool-license">MIT</span>
-                <p>Seeded, not enforced: the installer adds <code>markdownlint-cli</code> and a starter config for you to wire in. The suite checks what docs say and where they are, and leaves Markdown style to your house rules.</p>
+                <p>Installed but not enforced: the installer adds <code>markdownlint-cli</code> and a starter config for you to wire in. The suite checks what docs say and where they are, and leaves Markdown style to your house rules.</p>
                 <details class="details">
                     <summary>Seeded config</summary>
                     <div class="details__body">

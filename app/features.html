@@ -64,8 +64,8 @@
     <main id="main">
         <section class="hero">
             <span class="kicker">Features</span>
-            <h1>Every check, <span class="highlight">by loop.</span></h1>
-            <p>Each check is one GitHub Actions workflow in your repo and one <code>task ss:&lt;loop&gt;:&lt;check&gt;</code> command on your machine, running the same code. Open a tab for the checks in that loop and the workflow behind each; the last tab shows how this site deploys, which is your host's job rather than the suite's.</p>
+            <h1>What the suite <span class="highlight">checks.</span></h1>
+            <p>Each check is one GitHub Actions workflow in your repo and one <code>task ss:&lt;loop&gt;:&lt;check&gt;</code> command on your machine, running the same code. Each tab lists the checks in a loop and the workflow behind each. The last tab shows how this site deploys, which the suite leaves to your host.</p>
             <nav class="jump-row" aria-label="On this page">
                 <a href="#profiles">Profiles</a>
                 <a href="#feedback">What feedback looks like</a>
@@ -216,7 +216,7 @@
             <div class="card tab-panel tab-panel--card" id="reliability" role="tabpanel" aria-labelledby="tab-reliability" tabindex="0">
                 <div class="tab-panel__about">
                     <h2>✅ Reliability</h2>
-                    <p class="card-intro">Prove the deployed site or API works for a visitor: it serves, a visitor can get around, it is fast, accessible and findable, and the API keeps its contract. Each runs against a local build on every PR and against the live URL after each deploy.</p>
+                    <p class="card-intro">Check that the deployed site or API works: pages serve, navigation works, load time and accessibility are within budget, search engines and assistants can find the pages, and the API honours its contract. Each check runs against a local build on each PR and against the live URL after each deploy.</p>
                     <ul>
                         <li><strong>Smoke Tests.</strong> Every listed page serves and renders</li>
                         <li><strong>E2E Journeys.</strong> Playwright walks every nav link, anchor, disclosure and the back button from each start page</li>
@@ -460,13 +460,13 @@
             <div class="card tab-panel tab-panel--card" id="hygiene" role="tabpanel" aria-labelledby="tab-hygiene" tabindex="0">
                 <div class="tab-panel__about">
                     <h2>🧹 Hygiene</h2>
-                    <p class="card-intro">Keep the code readable and the docs true, for people and for agents: a complexity cap, docs every task can find within a budget, and no doc that describes something the repo no longer has.</p>
+                    <p class="card-intro">Keep code readable and docs accurate, for people and agents alike: a complexity cap, docs that are routed and within budget, and no doc that refers to something the repo no longer has.</p>
                     <ul>
                         <li><strong>Complexity.</strong> Lizard caps cyclomatic complexity per function (CCN ≤ 15 by default, tunable in <code>.slopstopper.yml</code>) across every language it parses</li>
                         <li><strong>Entry Files.</strong> <code>README.md</code> and <code>AGENTS.md</code> stay under a token budget, and <code>CLAUDE.md</code> is exactly <code>@AGENTS.md</code>, so an agent's first read is short and routes onward</li>
                         <li><strong>Doc Structure.</strong> Every doc under <code>docs/</code> is reachable by an explicit "before you X, read Y" route, within a hop and line limit</li>
                         <li><strong>Doc Accuracy.</strong> No doc links a file, task or workflow the repo no longer has</li>
-                        <li><strong>Doc Size.</strong> Reports how the docs are growing; advisory, never a gate</li>
+                        <li><strong>Doc Size.</strong> Reports how the docs are growing. Advisory only</li>
                         <li><strong>CSP Exceptions Drift.</strong> Every per-page relaxation of the Content Security Policy is documented, and the doc matches the headers</li>
                         <li><strong>Privacy Statement.</strong> A site whose host keeps traffic data has a privacy page naming the host, every third-party origin the CSP allows, and a date</li>
                         <li><strong>OpenAPI Drift.</strong> The committed spec matches what the live API serves; the doc-accuracy check for an API</li>
@@ -555,7 +555,7 @@
           - run: task ss:hygiene:privacy
           - if: github.event_name == 'pull_request'
             run: slopstopper emit hygiene:privacy --target pr-comment</code></pre></div>
-                            <p class="details__hint">No cookies and no analytics is not the same as nothing to say: the host processes every visitor's IP, and so does every origin the CSP lets a page reach. This check finds <code>privacy.html</code> (or <code>privacy.md</code>, anywhere in the tree) and fails unless it names the host, each allowed origin and a date. The smoke test adds the footer rule: every audited page links to it. <code>api</code> and <code>library</code> repos skip it.</p>
+                            <p class="details__hint">A site with no cookies or analytics still has something to disclose: the host processes each visitor's IP address, and so does any origin the CSP lets a page reach. This check finds <code>privacy.html</code> (or <code>privacy.md</code>, anywhere in the tree) and fails unless it names the host, each allowed origin and a date. The smoke test adds the footer rule: every audited page links to it. <code>api</code> and <code>library</code> repos skip it.</p>
                             <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-privacy-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
                             <br>
                             <a class="details__source" href="privacy.html">See this site's statement →</a>
@@ -584,7 +584,7 @@
                             <div class="codeblock codeblock--sh"><pre><code># .githooks/pre-push (wired via core.hooksPath by install.sh)
     # Runs the fast static hygiene checks before every push.
     exec mise exec -- task ss:hygiene:test</code></pre></div>
-                            <p class="details__hint">The same <code>task ss:hygiene:test</code> that CI runs, so hook, local and CI share one invocation surface. Only the static hygiene subset runs locally (seconds, no server); the server/browser checks stay in CI. <code>install.sh</code> won't override an existing <code>husky</code> / <code>lefthook</code> / <code>pre-commit</code> setup; opt out with <code>--no-hooks</code>, or bypass a single push with <code>git push --no-verify</code>.</p>
+                            <p class="details__hint">The same <code>task ss:hygiene:test</code> that CI runs, so the hook, your terminal and CI run one command. Only the static hygiene subset runs locally (seconds, no server); the server/browser checks stay in CI. <code>install.sh</code> won't override an existing <code>husky</code> / <code>lefthook</code> / <code>pre-commit</code> setup; opt out with <code>--no-hooks</code>, or bypass a single push with <code>git push --no-verify</code>.</p>
                             <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.githooks/pre-push" rel="noopener noreferrer">View the hook on GitHub →</a>
                             <br>
                             <a class="details__source" href="docs/architecture/index.html">Inner-loop docs →</a>
@@ -596,7 +596,7 @@
             <div class="card tab-panel tab-panel--card" id="operational" role="tabpanel" aria-labelledby="tab-operational" tabindex="0">
                 <div class="tab-panel__about">
                     <h2>🤖 Operational</h2>
-                    <p class="card-intro">The housekeeping around the checks, so nothing red on <code>main</code> goes unnoticed and the docs follow the code.</p>
+                    <p class="card-intro">The housekeeping around the checks: a red run on <code>main</code> raises an issue, and the docs follow the code.</p>
                     <ul>
                         <li><strong>Failure Alerts.</strong> A failed workflow run on <code>main</code> opens a tracking issue, or updates the open one, and closes it when the run is green again</li>
                         <li><strong>Doc Auto-Updater.</strong> A weekly agent reads what merged and opens a pull request with the doc fixes it implies</li>
@@ -651,7 +651,7 @@
             <div class="card tab-panel tab-panel--card" id="deployment" role="tabpanel" aria-labelledby="tab-deployment" tabindex="0">
                 <div class="tab-panel__about">
                     <h2>🚀 Deployment</h2>
-                    <p class="card-intro">The suite does not deploy; your host does. This is how slopstopper.dev ships, to copy if you are on Cloudflare: Workers Builds connected to the repo, no deploy workflow and no secrets. The one workflow the installer adds on a Cloudflare repo runs the URL checks against each preview and, on <code>main</code>, against the live site as soon as a deploy finishes.</p>
+                    <p class="card-intro">The suite does not deploy anything. This tab shows how slopstopper.dev itself ships, for anyone on Cloudflare to copy: Workers Builds connected to the repo, with no deploy workflow and no secrets. The one workflow the installer adds on a Cloudflare repo runs the URL checks against each preview and, on <code>main</code>, against the live site once a deploy finishes.</p>
                     <ul>
                         <li><strong>Production Deploy.</strong> Merges to main trigger an automatic release</li>
                         <li><strong>Preview Deploys.</strong> Every PR gets a unique preview URL as a commit check</li>
@@ -700,8 +700,8 @@
         </section>
 
         <section class="section" id="profiles">
-            <span class="kicker">Not a website?</span>
-            <h2>A profile picks the checks.</h2>
+            <span class="kicker">APIs and libraries</span>
+            <h2>Profiles pick the checks that fit.</h2>
             <p class="lede">The browser checks assume a served site, so <code>--profile api</code> swaps them for the API checks, and <code>--profile library</code> keeps only the checks that need no URL. <code>workflows.enabled</code> in <code>.slopstopper.yml</code> takes back any single check. <a href="docs/architecture/profiles.html">What each profile keeps →</a></p>
         </section>
 
@@ -718,7 +718,7 @@
                 </svg>
             </div>
             <span class="kicker">What feedback looks like</span>
-            <h2>One comment, not twenty-seven.</h2>
+            <h2>One summary comment per pull request.</h2>
             <p class="lede">Every pull request gets one summary comment that updates as checks finish. A failing check adds a short comment of its own with what to fix; a passing one removes it. Below, the summary from <a href="https://github.com/hungovercoders/slopstopper/pull/358" rel="noopener noreferrer">a PR on this repo</a>, and the shape a failing check adds.</p>
 
             <div class="gh-comments">
@@ -749,7 +749,7 @@
             </div>
 
             <h3 class="reports-subhead">Inside the fold</h3>
-            <p class="lede">The folded report is the tool's own. Four of them, illustrated:</p>
+            <p class="lede">Each failing comment folds the tool's full report. Four examples:</p>
 
             <div class="reports-grid">
                 <!-- axe-core mock report -->
@@ -949,8 +949,8 @@
         <!-- ─── Development Loops ──────────────────────────────── -->
         <section class="section loops" id="loops">
             <span class="kicker">Development loops</span>
-            <h2>Fast on your machine, <span class="highlight">the same in CI.</span></h2>
-            <p class="lede">The same <code>task ss:*</code> command runs a check on your machine and in the workflow, so what you ran is what the pipeline runs.</p>
+            <h2>On your machine <span class="highlight">and in CI.</span></h2>
+            <p class="lede">The same <code>task ss:*</code> command runs a check on your machine and in the workflow, so the result you see locally is the result CI sees.</p>
 
             <div class="loop-diagram">
                 <h3>Inner loop, on your machine</h3>

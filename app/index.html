@@ -88,7 +88,7 @@
                 </div>
                 <h1>Stop the <span class="highlight">slop.</span></h1>
                 <p class="hero__what">A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.</p>
-                <p>Install it once. Every pull request then gets one comment saying what passed and what to fix, and the same checks run on your machine before you push. This site is built and deployed with the suite it describes.</p>
+                <p>Install it once. Each pull request then gets one comment saying what passed and what to fix, and the same checks run on your machine before you push. This site is built and deployed with the suite it describes.</p>
                 <div class="cta-row">
                     <a href="#get-started" class="btn btn--primary">Get started →</a>
                     <a href="features.html" class="btn btn--ghost">See features</a>
@@ -103,8 +103,8 @@
 
         <section class="section" id="get-started">
             <span class="kicker">Get started</span>
-            <h2>Two ways in.</h2>
-            <p class="lede">Try the CLI on its own to run a check locally, or install the whole suite into a repo: the CLI pinned, the GitHub Actions workflows, the <code>task ss:*</code> commands and a pre-push hook.</p>
+            <h2>Try the CLI, or install the whole suite.</h2>
+            <p class="lede">The CLI on its own runs a check locally. The installer adds the whole suite to a repo: the pinned CLI, the GitHub Actions workflows, the <code>task ss:*</code> commands and a pre-push hook.</p>
             <h3 class="install-heading">Try the CLI</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install slopstopper-cli via pipx" data-copyable>
                 <pre><code>pipx install slopstopper-cli
@@ -126,7 +126,7 @@ slopstopper run hygiene:docs-size            # one check; the report lands in .s
                     <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/install.sh" rel="noopener noreferrer">View install.sh on GitHub →</a>
                 </div>
             </details>
-            <h3 class="install-heading">Not a website? Pick a profile</h3>
+            <h3 class="install-heading">For an API or a library, pick a profile</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install with a project-shape profile" data-copyable>
                 <pre><code># JSON/gRPC endpoints, no browser surface
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh \
@@ -140,15 +140,15 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
             <div class="steps">
                 <div class="step">
                     <h3>Run a check</h3>
-                    <p><code>task ss:hygiene:test</code> runs the fast checks locally; <code>task --list</code> shows every <code>ss:*</code> command. Each writes its report to <code>.ss/reports/</code>.</p>
+                    <p><code>task ss:hygiene:test</code> runs the fast checks locally, and <code>task --list</code> shows the rest. Each check writes its report to <code>.ss/reports/</code>.</p>
                 </div>
                 <div class="step">
                     <h3>Open a PR</h3>
-                    <p>One comment on the pull request shows every check's verdict. A failing check adds its findings; passing ones stay quiet.</p>
+                    <p>One comment on the pull request shows each check's verdict. A failing check adds its findings. Passing checks add nothing.</p>
                 </div>
                 <div class="step">
                     <h3>Tune it</h3>
-                    <p>Thresholds, page lists, headers source and which checks run all live in <code>.slopstopper.yml</code>. Every check's page says which setting tunes it.</p>
+                    <p>Thresholds, page lists, the headers source and which checks run are all set in <code>.slopstopper.yml</code>. Each check's doc page names the setting that tunes it.</p>
                 </div>
             </div>
             <p class="docs-pointer">The full walkthrough: <a href="docs/runbooks/install.html">Adopting SlopStopper →</a></p>
@@ -165,30 +165,30 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
         </section>
 
         <section class="section" id="steward">
-            <span class="kicker">Many repos?</span>
-            <h2>Let the steward keep them current.</h2>
-            <p class="lede"><a href="https://github.com/hungovercoders/slopstopper-steward" rel="noopener noreferrer">slopstopper-steward</a> runs across a GitHub organisation on a schedule: it finds every repo with slopstopper installed, moves pins that fell behind, and works the issues the checks raised, one pull request each. Every change is a pull request, never a push to a default branch. Each organisation runs its own copy from its own GitHub Actions.</p>
+            <span class="kicker">Across an organisation</span>
+            <h2>The steward keeps your repos up to date.</h2>
+            <p class="lede"><a href="https://github.com/hungovercoders/slopstopper-steward" rel="noopener noreferrer">slopstopper-steward</a> runs across a GitHub organisation on a schedule. It finds the repos with slopstopper installed, moves pins that fell behind, and works the issues the checks raised, one pull request each. It only ever opens pull requests. Each organisation runs its own copy from its own GitHub Actions.</p>
             <p class="docs-pointer">How the two fit together: <a href="docs/architecture/steward.html">The steward and the suite →</a> · Setting one up: <a href="https://github.com/hungovercoders/slopstopper-steward/blob/main/docs/runbooks/SETUP.md" rel="noopener noreferrer">the runbook →</a></p>
         </section>
 
         <section class="section">
             <span class="kicker">What you get</span>
-            <h2>Four loops of checks.</h2>
-            <p class="lede">Each lands in your repo as GitHub Actions workflows, and each runs locally with the same command. The Features page lists every check and shows the workflow behind it.</p>
+            <h2>What the checks cover.</h2>
+            <p class="lede">Four groups, each installed as GitHub Actions workflows and each runnable locally with the same command. The Features page lists the checks and the workflow behind each.</p>
             <div class="card-grid card-grid--loops">
                 <div class="card">
                     <h3>🔒 Security</h3>
-                    <p>Unsafe code, leaked secrets, vulnerable or badly licensed dependencies, and a running site or API under attack.</p>
+                    <p>Unsafe code, leaked secrets, vulnerable or badly licensed dependencies, and a scan of the running site or API.</p>
                     <a href="features.html#security" class="card-link">The security checks →</a>
                 </div>
                 <div class="card">
                     <h3>🧹 Hygiene</h3>
-                    <p>Code complexity, and docs that people and agents can find, trust and read within a budget.</p>
+                    <p>Code complexity, and docs that stay findable, accurate and within a size budget.</p>
                     <a href="features.html#hygiene" class="card-link">The hygiene checks →</a>
                 </div>
                 <div class="card">
                     <h3>✅ Reliability</h3>
-                    <p>The deployed site or API: does it serve, can a visitor use it, is it fast, accessible and findable.</p>
+                    <p>Whether the deployed site or API serves, works for a visitor, loads fast, passes accessibility and can be found.</p>
                     <a href="features.html#reliability" class="card-link">The reliability checks →</a>
                 </div>
                 <div class="card">
@@ -197,7 +197,7 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
                     <a href="features.html#operational" class="card-link">The operational checks →</a>
                 </div>
             </div>
-            <p class="docs-pointer">Deploying is your host's job, not the suite's; <a href="features.html#deployment">how this site deploys</a> is on Features to copy.</p>
+            <p class="docs-pointer">The suite does not deploy anything. The Features page shows <a href="features.html#deployment">how this site deploys</a> on Cloudflare, if you want to copy it.</p>
         </section>
     </main>
     <footer>
