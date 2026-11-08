@@ -1,6 +1,6 @@
 # Static Application Security Testing (SAST)
 
-This template includes automated Static Application Security Testing (SAST) using **Semgrep** to detect security bugs and anti-patterns in your own source code. This guide explains how to customise and use this feature.
+slopstopper ships automated Static Application Security Testing (SAST) using **Semgrep** to detect security bugs and anti-patterns in your own source code. This guide explains how to customise and use the check.
 
 ## Quick Start
 

@@ -20,10 +20,15 @@ that doc's page, to a lesson that lesson's page, to any other file in
 the repo its view on GitHub; a link to a file that is not there fails
 the render, so the pages never carry a dead link.
 
-`app/docs.html` carries the section list between `<!-- docs:begin -->`
-and `<!-- docs:end -->`; `app/sitemap.xml` and `app/llms.txt` carry one
-entry per page between the same markers. This script owns those blocks
-and nothing else in the three files. `reliability:sitemap` hard-fails
+Each section has an audience. The docs an adopter reads (the checks,
+the runbooks, the architecture they meet) and the docs about running
+this repository and its site (contributing, decisions, the site, the
+course's authoring notes) are listed apart on the Docs page, between
+`<!-- docs:adopters:begin -->` … `end` and `<!-- docs:project:begin -->`
+… `end`, and a page's kicker says which it is. `app/sitemap.xml` and
+`app/llms.txt` carry one entry per page between `<!-- docs:begin -->`
+and `<!-- docs:end -->`. This script owns those blocks and nothing else
+in the three files. `reliability:sitemap` hard-fails
 on a reachable page missing from the sitemap, so the block is what lets
 the site link the docs at all.
 
@@ -60,21 +65,34 @@ BEGIN, END = "<!-- docs:begin -->", "<!-- docs:end -->"
 GENERATOR, TASK = "scripts/docsite.py", "task contributing:docs:site"
 
 # Every directory under docs/ that holds docs, in the order the Docs page
-# lists them, with the name the kicker and breadcrumb use. A directory
+# lists them, with the name the kicker and breadcrumb use and who the
+# section is for: "adopters" (someone running the suite in their repo) or
+# "project" (someone working on this repository or its site). A directory
 # missing here fails the render rather than being left off the page.
+ADOPTERS, PROJECT = "adopters", "project"
 SECTIONS = {
-    "runbooks": "Runbooks",
-    "hygiene": "Hygiene",
-    "security": "Security",
-    "reliability": "Reliability",
-    "architecture": "Architecture",
-    "deployment": "Deployment",
-    "app": "The site",
-    "contributing": "Contributing",
-    "decisions": "Decisions",
-    "support": "Support",
-    "learn": "The course",
+    "runbooks": ("Runbooks", ADOPTERS),
+    "hygiene": ("Hygiene", ADOPTERS),
+    "security": ("Security", ADOPTERS),
+    "reliability": ("Reliability", ADOPTERS),
+    "architecture": ("Architecture", ADOPTERS),
+    "support": ("Support", ADOPTERS),
+    "contributing": ("Contributing", PROJECT),
+    "deployment": ("Deployment", PROJECT),
+    "app": ("The site", PROJECT),
+    "decisions": ("Decisions", PROJECT),
+    "learn": ("The course", PROJECT),
 }
+AUDIENCE_KICKER = {ADOPTERS: "Docs", PROJECT: "Inside the project"}
+
+
+def section_name(key: str) -> str:
+    return SECTIONS[key][0]
+
+
+def audience(key: str | None) -> str:
+    """A section's audience; the map itself is the project's."""
+    return SECTIONS[key][1] if key else PROJECT
 
 _H1 = re.compile(r"^# (.+?)\s*$")
 _LESSON = re.compile(r"\d\d-[\w-]+\.md")
@@ -191,9 +209,9 @@ def _crumbs(doc: Doc, esc) -> str:
     if doc.section is None:
         items.append(f'<li aria-current="page">{esc(doc.plain_title)}</li>')
     elif doc.is_index:
-        items.append(f'<li aria-current="page">{esc(SECTIONS[doc.section])}</li>')
+        items.append(f'<li aria-current="page">{esc(section_name(doc.section))}</li>')
     else:
-        items.append(f'<li><a href="index.html">{esc(SECTIONS[doc.section])}</a></li>')
+        items.append(f'<li><a href="index.html">{esc(section_name(doc.section))}</a></li>')
         items.append(f'<li aria-current="page">{esc(doc.plain_title)}</li>')
     return '<nav class="doc-crumbs" aria-label="Breadcrumb"><ol>' + "".join(items) + "</ol></nav>"
 
@@ -203,9 +221,9 @@ def _siblings(doc: Doc, all_docs: list[Doc], esc) -> str:
     rel = lambda p: relpath(p, dirname(doc.path))  # noqa: E731
     if doc.section is None:
         heading, pages = "The sections", [d for d in all_docs if d.is_index and d.section]
-        label = lambda d: SECTIONS[d.section]  # noqa: E731
+        label = lambda d: section_name(d.section)  # noqa: E731
     else:
-        heading, pages = f"In {SECTIONS[doc.section]}", [d for d in all_docs if d.section == doc.section]
+        heading, pages = f"In {section_name(doc.section)}", [d for d in all_docs if d.section == doc.section]
         label = lambda d: d.plain_title  # noqa: E731
     items = "\n".join(
         f'    <li><a href="{rel(d.path)}"{" aria-current=\"page\"" if d is doc else ""}>{esc(label(d))}</a></li>'
@@ -219,9 +237,9 @@ def render(doc: Doc, all_docs: list[Doc]) -> str:
     where = doc.where
     content = sitemd.dedupe_ids(sitemd.convert(doc.body, where, opts, base=2))
     esc = lambda s: html.escape(s, quote=True)  # noqa: E731
-    section = SECTIONS[doc.section] if doc.section else "The map"
+    section = section_name(doc.section) if doc.section else "The map"
     main = f"""        <section class="hero hero--lesson hero--doc">
-            <span class="kicker">📚 Docs · {esc(section)}</span>
+            <span class="kicker">📚 {AUDIENCE_KICKER[audience(doc.section)]} · {esc(section)}</span>
             <h1>{sitemd.inline(doc.title, where, opts)}</h1>
         </section>
         {_crumbs(doc, esc)}
@@ -250,11 +268,21 @@ def _entry(doc: Doc, esc) -> str:
 
 
 def index_text(all_docs: list[Doc]) -> str:
-    """The section list on the Docs page: each section's index as its
-    heading and lede, then its other docs."""
+    """The section lists on the Docs page, one per audience: each section's
+    index as its heading and lede, then its other docs."""
+    text = INDEX.read_text(encoding="utf-8")
+    for who in (ADOPTERS, PROJECT):
+        begin, end = f"<!-- docs:{who}:begin -->", f"<!-- docs:{who}:end -->"
+        text = sitemd.with_block(text, _section_blocks(all_docs, who), begin, end, "app/docs.html")
+    return text
+
+
+def _section_blocks(all_docs: list[Doc], who: str) -> str:
     esc = lambda s: html.escape(s, quote=True)  # noqa: E731
     blocks = []
-    for key, name in SECTIONS.items():
+    for key, (name, who_for) in SECTIONS.items():
+        if who_for != who:
+            continue
         index = next(d for d in all_docs if d.section == key and d.is_index)
         others = [d for d in all_docs if d.section == key and not d.is_index]
         items = "\n".join(_entry(d, esc) for d in others)
@@ -265,7 +293,7 @@ def index_text(all_docs: list[Doc]) -> str:
             + (f'                <ul class="doc-list">\n{items}\n                </ul>\n' if items else "")
             + "            </div>"
         )
-    return sitemd.with_block(INDEX.read_text(encoding="utf-8"), "\n".join(blocks), BEGIN, END, "app/docs.html")
+    return "\n".join(blocks)
 
 
 def sitemap_text(all_docs: list[Doc]) -> str:
@@ -282,9 +310,15 @@ def sitemap_text(all_docs: list[Doc]) -> str:
 
 def llms_text(all_docs: list[Doc]) -> str:
     def label(doc: Doc) -> str:
-        return doc.plain_title if doc.section is None else f"{SECTIONS[doc.section]}: {doc.plain_title}"
+        return doc.plain_title if doc.section is None else f"{section_name(doc.section)}: {doc.plain_title}"
 
-    entries = "\n".join(f"- [{label(doc)}]({SITE_URL}{doc.path.lstrip('/')}): {doc.description}" for doc in all_docs)
+    def group(who: str) -> str:
+        return "\n".join(
+            f"- [{label(doc)}]({SITE_URL}{doc.path.lstrip('/')}): {doc.description}"
+            for doc in all_docs if audience(doc.section) == who
+        )
+
+    entries = f"For adopters:\n\n{group(ADOPTERS)}\n\nInside the project:\n\n{group(PROJECT)}"
     return sitemd.with_block(LLMS.read_text(encoding="utf-8"), entries, BEGIN, END, "app/llms.txt")
 
 

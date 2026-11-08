@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dynamic Application Security Testing (DAST) · Security | SlopStopper</title>
-    <meta name="description" content="This template includes automated Dynamic Application Security Testing (DAST) using OWASP ZAP to detect runtime security issues by scanning your running site. This guide explains how to customise and use this feature.">
+    <meta name="description" content="slopstopper ships automated Dynamic Application Security Testing (DAST) using OWASP ZAP to detect runtime security issues by scanning your running site. This guide explains how to customise and use the check.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://slopstopper.dev/docs/security/dast.html">
     <meta property="og:title" content="Dynamic Application Security Testing (DAST) · Security | SlopStopper">
-    <meta property="og:description" content="This template includes automated Dynamic Application Security Testing (DAST) using OWASP ZAP to detect runtime security issues by scanning your running site. This guide explains how to customise and use this feature.">
+    <meta property="og:description" content="slopstopper ships automated Dynamic Application Security Testing (DAST) using OWASP ZAP to detect runtime security issues by scanning your running site. This guide explains how to customise and use the check.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +25,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Dynamic Application Security Testing (DAST) · Security | SlopStopper">
-    <meta name="twitter:description" content="This template includes automated Dynamic Application Security Testing (DAST) using OWASP ZAP to detect runtime security issues by scanning your running site. This guide explains how to customise and use this feature.">
+    <meta name="twitter:description" content="slopstopper ships automated Dynamic Application Security Testing (DAST) using OWASP ZAP to detect runtime security issues by scanning your running site. This guide explains how to customise and use the check.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -69,7 +69,7 @@
         </section>
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Security</a></li><li aria-current="page">Dynamic Application Security Testing (DAST)</li></ol></nav>
         <article class="lesson doc">
-<p>This template includes automated Dynamic Application Security Testing (DAST) using <strong>OWASP ZAP</strong> to detect runtime security issues by scanning your running site. This guide explains how to customise and use this feature.</p>
+<p>slopstopper ships automated Dynamic Application Security Testing (DAST) using <strong>OWASP ZAP</strong> to detect runtime security issues by scanning your running site. This guide explains how to customise and use the check.</p>
 <h2 id="quick-start">Quick Start</h2>
 <h3 id="run-analysis-locally">Run Analysis Locally</h3>
 <div class="codeblock codeblock--sh" data-copyable><pre><code># Serve the built site on :8080 as CI does, or point at a deployed URL instead
@@ -104,7 +104,7 @@ task ss:security:dast -- http://localhost:8080</code></pre></div>
   </tbody>
 </table></div>
 <h3 id="dast-csp-exceptions">DAST + CSP exceptions</h3>
-<p>The DAST gate in this template (driven by <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/dast_gate.py" rel="noopener noreferrer"><code>cli/slopstopper/dast_gate.py</code></a>) consults <a href="csp-exceptions.html"><code>docs/security/CSP_EXCEPTIONS.md</code></a> on every run:</p>
+<p>The DAST gate (driven by <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/dast_gate.py" rel="noopener noreferrer"><code>cli/slopstopper/dast_gate.py</code></a>) consults <a href="csp-exceptions.html"><code>docs/security/CSP_EXCEPTIONS.md</code></a> on every run:</p>
 <ul>
   <li><strong>With no <code>CSP_EXCEPTIONS.md</code> file</strong>, the gate behaves exactly like a vanilla riskcode ≥ 2 cutoff, so nothing changes for you. Adopters with no third-party scripts can ignore this section entirely.</li>
   <li><strong>If you add a third-party widget (GTM, Sentry, Intercom, Giscus…)</strong>, add a per-path entry to <code>worker/headers.json</code> for the affected path, <em>and</em> document it under <code>## Exceptions</code> in <code>CSP_EXCEPTIONS.md</code> using the schema in that file. Once it's documented, ZAP's CSP findings on that exact path stop blocking the build. They still appear in the PR comment under a separate "🛡 Accepted findings" section, each naming the entry that accepted it, so they stay visible in review.</li>

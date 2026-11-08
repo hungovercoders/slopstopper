@@ -4,7 +4,7 @@ Operational procedures for the SlopStopper project, covering both the suite itse
 
 ## Overview
 
-This directory holds step-by-step runbooks for common operational tasks. As the project is a minimal static site template, operational procedures are currently minimal.
+This directory holds step-by-step runbooks for common operational tasks: what an adopter does once around the suite, and what the project does to cut a release.
 
 ## Routes
 

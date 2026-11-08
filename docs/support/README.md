@@ -44,7 +44,7 @@ Use this for:
 
 - Unexpected behaviour within this repo
 - Missing documentation that is clearly scoped to this project
-- Configuration questions specific to this template
+- Configuration questions specific to this repo
 
 ## Step 3. Start a Discussion (cross-repo or cross-team)
 

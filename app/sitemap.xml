@@ -274,12 +274,7 @@
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://slopstopper.dev/docs/deployment/index.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://slopstopper.dev/docs/app/index.html</loc>
+    <loc>https://slopstopper.dev/docs/support/index.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -309,12 +304,17 @@
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://slopstopper.dev/docs/decisions/index.html</loc>
+    <loc>https://slopstopper.dev/docs/deployment/index.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://slopstopper.dev/docs/support/index.html</loc>
+    <loc>https://slopstopper.dev/docs/app/index.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://slopstopper.dev/docs/decisions/index.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>

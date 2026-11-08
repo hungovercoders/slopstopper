@@ -1,6 +1,6 @@
 # Dynamic Application Security Testing (DAST)
 
-This template includes automated Dynamic Application Security Testing (DAST) using **OWASP ZAP** to detect runtime security issues by scanning your running site. This guide explains how to customise and use this feature.
+slopstopper ships automated Dynamic Application Security Testing (DAST) using **OWASP ZAP** to detect runtime security issues by scanning your running site. This guide explains how to customise and use the check.
 
 ## Quick Start
 
@@ -38,7 +38,7 @@ task ss:security:dast -- http://localhost:8080
 
 ### DAST + CSP exceptions
 
-The DAST gate in this template (driven by [`cli/slopstopper/dast_gate.py`](../../cli/slopstopper/dast_gate.py)) consults [`docs/security/CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md) on every run:
+The DAST gate (driven by [`cli/slopstopper/dast_gate.py`](../../cli/slopstopper/dast_gate.py)) consults [`docs/security/CSP_EXCEPTIONS.md`](./CSP_EXCEPTIONS.md) on every run:
 
 - **With no `CSP_EXCEPTIONS.md` file**, the gate behaves exactly like a vanilla riskcode ≥ 2 cutoff, so nothing changes for you. Adopters with no third-party scripts can ignore this section entirely.
 - **If you add a third-party widget (GTM, Sentry, Intercom, Giscus…)**, add a per-path entry to `worker/headers.json` for the affected path, *and* document it under `## Exceptions` in `CSP_EXCEPTIONS.md` using the schema in that file. Once it's documented, ZAP's CSP findings on that exact path stop blocking the build. They still appear in the PR comment under a separate "🛡 Accepted findings" section, each naming the entry that accepted it, so they stay visible in review.

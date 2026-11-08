@@ -90,11 +90,11 @@
             </div>
         </section>
 
-        <section class="section docs-section" id="sections">
-            <span class="kicker">Browse</span>
-            <h2>One section per concern.</h2>
-            <p class="lede">Each section opens with its own index, which says when to read what; the pages under it carry the detail. The lessons of <a href="learn.html">the course</a> are pages of their own under <code>/learn/</code>.</p>
-            <!-- docs:begin -->
+        <section class="section docs-section" id="adopters">
+            <span class="kicker">For adopters</span>
+            <h2>Running the suite in your repo.</h2>
+            <p class="lede">What each check enforces, which knob tunes it and where its report lands; how to install, configure and update; how the profiles, the PR feedback and the steward fit. Each section opens with its own index, which says when to read what.</p>
+            <!-- docs:adopters:begin -->
             <div class="doc-section" id="runbooks">
                 <h3><a href="docs/runbooks/index.html">Runbooks</a></h3>
                 <p class="doc-section__lede">Operational procedures for the SlopStopper project, covering both the suite itself and the things adopters do once around it.</p>
@@ -118,11 +118,11 @@
                 <ul class="doc-list">
                     <li><a href="docs/security/api-headers.html">API Headers &amp; CORS</a><span class="doc-list__about">The API-shaped analogue of CSP Exceptions. On an HTML surface, CSP is the header that decides what a document may load. On a JSON API there is no document to restrict, so CSP is largely irrelevant and CORS becomes the control that decides who may read the response. A permissive CORS policy on a…</span></li>
                     <li><a href="docs/security/csp-exceptions.html">CSP exceptions</a><span class="doc-list__about">This file is the single source of truth for every per-path Content-Security-Policy relaxation on the SlopStopper site. The ss:hygiene:csp-exceptions check fails the build if worker/headers.json and this file disagree.</span></li>
-                    <li><a href="docs/security/dast.html">Dynamic Application Security Testing (DAST)</a><span class="doc-list__about">This template includes automated Dynamic Application Security Testing (DAST) using OWASP ZAP to detect runtime security issues by scanning your running site. This guide explains how to customise and use this feature.</span></li>
+                    <li><a href="docs/security/dast.html">Dynamic Application Security Testing (DAST)</a><span class="doc-list__about">slopstopper ships automated Dynamic Application Security Testing (DAST) using OWASP ZAP to detect runtime security issues by scanning your running site. This guide explains how to customise and use the check.</span></li>
                     <li><a href="docs/security/licences.html">Licence Inventory</a><span class="doc-list__about">security:licences judges every dependency the lockfiles resolve to against the repo&#x27;s licence allowlist, so a transitive package under a denied licence cannot sit in the tree unnoticed. It is the full-tree companion to the dependency review, which judges only what each PR adds.</span></li>
-                    <li><a href="docs/security/sast.html">Static Application Security Testing (SAST)</a><span class="doc-list__about">This template includes automated Static Application Security Testing (SAST) using Semgrep to detect security bugs and anti-patterns in your own source code. This guide explains how to customise and use this feature.</span></li>
-                    <li><a href="docs/security/secrets.html">Secrets Detection</a><span class="doc-list__about">This template includes automated secrets detection using Gitleaks to identify hardcoded credentials, API keys, and other sensitive data in your source code and git history. This guide explains how to customise and use this feature.</span></li>
-                    <li><a href="docs/security/vulnerability.html">Dependency Vulnerability Scanning</a><span class="doc-list__about">This template includes automated dependency vulnerability scanning using Trivy to detect known CVEs in your project&#x27;s dependencies. This guide explains how to customise and use this feature.</span></li>
+                    <li><a href="docs/security/sast.html">Static Application Security Testing (SAST)</a><span class="doc-list__about">slopstopper ships automated Static Application Security Testing (SAST) using Semgrep to detect security bugs and anti-patterns in your own source code. This guide explains how to customise and use the check.</span></li>
+                    <li><a href="docs/security/secrets.html">Secrets Detection</a><span class="doc-list__about">slopstopper ships automated secrets detection using Gitleaks to identify hardcoded credentials, API keys, and other sensitive data in your source code and git history. This guide explains how to customise and use the check.</span></li>
+                    <li><a href="docs/security/vulnerability.html">Dependency Vulnerability Scanning</a><span class="doc-list__about">slopstopper ships automated dependency vulnerability scanning using Trivy to detect known CVEs in your project&#x27;s dependencies. This guide explains how to customise and use the check.</span></li>
                 </ul>
             </div>
             <div class="doc-section" id="reliability">
@@ -147,14 +147,18 @@
                     <li><a href="docs/architecture/steward.html">slopstopper-steward: the org-wide operator</a><span class="doc-list__about">slopstopper is per-repo: it tells one repo what is wrong and ships how to fix it. hungovercoders/slopstopper-steward is the counterpart that works across an organisation. On a schedule it finds every repo with slopstopper installed, moves CLI pins that fell behind, and works the issues…</span></li>
                 </ul>
             </div>
-            <div class="doc-section" id="deployment">
-                <h3><a href="docs/deployment/index.html">Deployment</a></h3>
-                <p class="doc-section__lede">How the SlopStopper site ships to production.</p>
+            <div class="doc-section" id="support">
+                <h3><a href="docs/support/index.html">Support</a></h3>
+                <p class="doc-section__lede">How to get help with this project.</p>
             </div>
-            <div class="doc-section" id="app">
-                <h3><a href="docs/app/index.html">The site</a></h3>
-                <p class="doc-section__lede">What the site does and how its pages are organised.</p>
-            </div>
+<!-- docs:adopters:end -->
+        </section>
+
+        <section class="section docs-section" id="project">
+            <span class="kicker">Inside the project</span>
+            <h2>Working on slopstopper itself.</h2>
+            <p class="lede">How to contribute, what a change has to touch, how this site is built and deployed, the decisions behind the suite, and how the lessons of <a href="learn.html">the course</a> are written. Here for the curious and for lesson 20, which adds a check; nothing an adopter needs.</p>
+            <!-- docs:project:begin -->
             <div class="doc-section" id="contributing">
                 <h3><a href="docs/contributing/index.html">Contributing</a></h3>
                 <p class="doc-section__lede">This document defines the default way to contribute to this project.</p>
@@ -165,13 +169,17 @@
                     <li><a href="docs/contributing/pitfalls.html">Common pitfalls when extending SlopStopper</a><span class="doc-list__about">A short list of the most-hit gotchas. Each one has bitten somebody before; the rule is &quot;do the obvious thing the obvious way.&quot;</span></li>
                 </ul>
             </div>
+            <div class="doc-section" id="deployment">
+                <h3><a href="docs/deployment/index.html">Deployment</a></h3>
+                <p class="doc-section__lede">How the SlopStopper site ships to production.</p>
+            </div>
+            <div class="doc-section" id="app">
+                <h3><a href="docs/app/index.html">The site</a></h3>
+                <p class="doc-section__lede">What the site does and how its pages are organised.</p>
+            </div>
             <div class="doc-section" id="decisions">
                 <h3><a href="docs/decisions/index.html">Decisions</a></h3>
                 <p class="doc-section__lede">This directory records significant decisions and their rationale for the project.</p>
-            </div>
-            <div class="doc-section" id="support">
-                <h3><a href="docs/support/index.html">Support</a></h3>
-                <p class="doc-section__lede">How to get help with this project.</p>
             </div>
             <div class="doc-section" id="learn">
                 <h3><a href="docs/learn/index.html">The course</a></h3>
@@ -181,7 +189,7 @@
                     <li><a href="docs/learn/template.html">Writing a lesson</a><span class="doc-list__about">This page is the template every lesson in the course is copied from, and the rules a lesson follows. Copy it to docs/learn/&lt;NN&gt;-&lt;slug&gt;.md, keep the H1 as Lesson N: &lt;title&gt;, replace each section, and update the row in the syllabus.</span></li>
                 </ul>
             </div>
-<!-- docs:end -->
+<!-- docs:project:end -->
         </section>
 
         <section class="section docs-section" id="agents">
