@@ -109,3 +109,80 @@
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+/* ─── How it works: three callers, the CLI, three outputs ──
+ * A row of five on a wide screen; on a phone the columns stack and the
+ * arrows turn to point down. Every box is real text, so it reflows and
+ * a screen reader gets the same picture. */
+.how {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.15fr) auto minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: center;
+    margin-top: 1.5rem;
+}
+.how__col {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.6rem;
+}
+.how__box {
+    background: var(--peach-soft);
+    border: var(--border-thin);
+    border-radius: var(--r-md);
+    padding: 0.7rem 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.92rem;
+    color: var(--ink);
+}
+.how__box strong {
+    font-weight: 800;
+}
+.how__box code {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    color: var(--ink);
+    word-break: break-word;
+}
+.how__box > span {
+    color: var(--ink-soft);
+}
+.how__box--core {
+    background: var(--paper);
+    border: var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sticker);
+    padding: 1.1rem 1.2rem;
+    text-align: center;
+    align-items: center;
+}
+.how__box--core strong {
+    font-size: 1.1rem;
+}
+.how__exit {
+    margin-top: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+}
+.how__exit b {
+    color: var(--accent-deep);
+}
+.how__arrow {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--ink-soft);
+    text-align: center;
+}
+@media (max-width: 760px) {
+    .how {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .how__arrow {
+        transform: rotate(90deg);
+        line-height: 1;
+    }
+}

@@ -109,6 +109,21 @@
 <div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:docs-size</code></pre></div>
 <h3 id="documentation-structure-validation">Documentation Structure Validation</h3>
 <p>Validates the AGENTS.md-first model: every doc under <code>docs/</code> must be reachable by an <strong>explicit route</strong> from <code>AGENTS.md</code>, the map (<code>docs/README.md</code>) or a <code>README.md</code> above it. An explicit route is a line that names its trigger and says read (<code>Before you change CI, read docs/ci.md for what task ci runs</code>, or a row of a "When you are… | Do this" table). A doc nothing routes to is invisible to agents; a "see also" is skipped. The report lists every reachable doc with its hop count.</p>
+<figure class="diagram">
+  <img class="only-light" src="../../assets/docs/diagrams/266fb426bdc2-light.svg" width="514" height="793" alt="Diagram; its text follows.">
+  <img class="only-dark" src="../../assets/docs/diagrams/266fb426bdc2-dark.svg" width="514" height="793" alt="Diagram; its text follows.">
+  <details class="details diagram__source">
+    <summary>The diagram as text</summary>
+    <div class="details__body"><div class="codeblock codeblock--out" tabindex="0"><pre><code>flowchart TD
+    C["CLAUDE.md\n@AGENTS.md"] -. includes .-&gt; A
+    A["AGENTS.md\nalways loaded\n≤ 2,000 tokens"] -- "when you are X, read Y" --&gt; T1["a topic doc\n≤ 300 lines\nhop 1"]
+    A -- route --&gt; M["the map\n≤ 1,000 tokens\nhop 1"]
+    README["README.md\n≤ 600 tokens"] -. links .-&gt; M
+    M -- route --&gt; T2["a topic doc\nhop 2"]
+    M -- route --&gt; R["an area README\nhop 2"]
+    R -- route --&gt; T3["a deeper doc\nhop 3, the limit"]</code></pre></div></div>
+  </details>
+</figure>
 <p><strong>Fails on:</strong></p>
 <ul>
   <li><code>unrouted_doc</code> is a doc with no explicit route (the message says whether it is linked softly, or routed from a README that is itself unreachable)</li>

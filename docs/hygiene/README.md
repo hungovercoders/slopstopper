@@ -63,6 +63,17 @@ task ss:hygiene:docs-size
 
 Validates the AGENTS.md-first model: every doc under `docs/` must be reachable by an **explicit route** from `AGENTS.md`, the map (`docs/README.md`) or a `README.md` above it. An explicit route is a line that names its trigger and says read (`Before you change CI, read docs/ci.md for what task ci runs`, or a row of a "When you are… | Do this" table). A doc nothing routes to is invisible to agents; a "see also" is skipped. The report lists every reachable doc with its hop count.
 
+```mermaid
+flowchart TD
+    C["CLAUDE.md\n@AGENTS.md"] -. includes .-> A
+    A["AGENTS.md\nalways loaded\n≤ 2,000 tokens"] -- "when you are X, read Y" --> T1["a topic doc\n≤ 300 lines\nhop 1"]
+    A -- route --> M["the map\n≤ 1,000 tokens\nhop 1"]
+    README["README.md\n≤ 600 tokens"] -. links .-> M
+    M -- route --> T2["a topic doc\nhop 2"]
+    M -- route --> R["an area README\nhop 2"]
+    R -- route --> T3["a deeper doc\nhop 3, the limit"]
+```
+
 **Fails on:**
 
 - `unrouted_doc` is a doc with no explicit route (the message says whether it is linked softly, or routed from a README that is itself unreachable)

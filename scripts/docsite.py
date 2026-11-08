@@ -27,6 +27,8 @@ script writes the source beside them as `<digest>.mmd` and reports a
 diagram whose SVGs are missing; `scripts/diagrams.js` renders them
 (`task contributing:docs:diagrams`), because the site's CSP allows no
 script or inline style, so a diagram cannot render in the browser.
+The lessons' fences (scripts/learnsite.py) are drawn the same way and
+tracked here, so one directory holds every diagram on the site.
 
 `scripts/sitemd.py` holds the converter and the page template, shared
 with the course. A construct outside the markdown it covers fails the
@@ -254,6 +256,19 @@ def diagram_html(source: str, page_dir: str) -> str:
     )
 
 
+LESSONS = DOCS / "learn"
+_MERMAID = re.compile(r"^```mermaid\n(.*?)\n```", re.M | re.S)
+
+
+def register_lesson_diagrams() -> None:
+    """The lessons (scripts/learnsite.py) draw their `mermaid` fences
+    through diagram_html too, so their sources belong in the same
+    directory and are not strays."""
+    for lesson in sorted(LESSONS.glob("[0-9][0-9]-*.md")):
+        for m in _MERMAID.finditer(lesson.read_text(encoding="utf-8")):
+            DIAGRAMS[digest_of(m.group(1))] = m.group(1)
+
+
 def sync_diagrams(check: bool) -> int:
     """Write or check the diagram sources, report SVGs still to render and
     strays from diagrams that no longer exist; problems found."""
@@ -456,7 +471,9 @@ def main() -> int:
         print("docsite: no docs under docs/", file=sys.stderr)
         return 2
     DIAGRAMS.clear()
-    problems = sync_pages(found, args.check) + sync_diagrams(args.check) + sync_blocks(found, args.check)
+    problems = sync_pages(found, args.check)
+    register_lesson_diagrams()
+    problems += sync_diagrams(args.check) + sync_blocks(found, args.check)
     if problems:
         print(f"docsite: {problems} problem(s)")
         return 1

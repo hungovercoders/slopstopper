@@ -894,48 +894,6 @@ footer a {
     margin-right: auto;
 }
 
-/* ─── Steps ─────────────────────────────────────────────── */
-.steps {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1rem;
-    margin-top: 1.5rem;
-    counter-reset: step;
-}
-.step {
-    background: var(--peach-soft);
-    border: var(--border-thin);
-    border-radius: var(--r-md);
-    padding: 1rem 1.1rem;
-    position: relative;
-    counter-increment: step;
-}
-.step::before {
-    content: counter(step);
-    position: absolute;
-    top: -0.7rem;
-    left: -0.7rem;
-    width: 1.8rem;
-    height: 1.8rem;
-    background: var(--emphasis-bg);
-    color: var(--emphasis-fg);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    font-size: 0.9rem;
-}
-.step h3 {
-    font-size: 1rem;
-    font-weight: 800;
-    margin-bottom: 0.3rem;
-}
-.step p {
-    font-size: 0.92rem;
-    color: var(--ink-soft);
-}
-
 /* ─── Sections ───────────────────────────────────────────── */
 .section {
     margin-top: 4rem;
@@ -1211,3 +1169,28 @@ html.js .tab-panel.section {
         scroll-behavior: auto;
     }
 }
+
+/* A diagram: one SVG per theme, rendered ahead of time by
+   scripts/diagrams.js (the CSP allows no script), the source folded
+   beneath it, on a docs page or a lesson. The image's width and height hold its space; the rule
+   below lets it shrink to a phone. */
+.diagram {
+    margin-top: 1.25rem;
+}
+
+.diagram img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+}
+
+.diagram__source {
+    margin-top: 0.6rem;
+    font-size: 0.92rem;
+}
+
+.diagram__source .details__body > .codeblock {
+    margin-top: 0.5rem;
+}
+
