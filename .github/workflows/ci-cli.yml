@@ -27,9 +27,19 @@ on:
       - 'scripts/learncheck.py'
       - 'scripts/learntapes.py'
       - 'scripts/learnsite.py'
-      - 'docs/learn/**'
+      - 'scripts/docsite.py'
+      - 'scripts/sitemd.py'
+      - 'scripts/diagrams.js'
+      # test_learn_site.py and test_docs_site.py fail while a page the
+      # generators write from docs/ is stale.
+      - 'docs/**'
       - 'app/learn.html'
       - 'app/learn/**'
+      - 'app/docs.html'
+      - 'app/docs/**'
+      - 'app/assets/docs/**'
+      # test_docs_site.py and test_learn_site.py read its pages.* lists.
+      - '.slopstopper.yml'
       - 'Taskfile.yml'
       - 'Taskfile.ss.yml'
       - '.github/workflows/ci-cli.yml'
@@ -46,9 +56,19 @@ on:
       - 'scripts/learncheck.py'
       - 'scripts/learntapes.py'
       - 'scripts/learnsite.py'
-      - 'docs/learn/**'
+      - 'scripts/docsite.py'
+      - 'scripts/sitemd.py'
+      - 'scripts/diagrams.js'
+      # test_learn_site.py and test_docs_site.py fail while a page the
+      # generators write from docs/ is stale.
+      - 'docs/**'
       - 'app/learn.html'
       - 'app/learn/**'
+      - 'app/docs.html'
+      - 'app/docs/**'
+      - 'app/assets/docs/**'
+      # test_docs_site.py and test_learn_site.py read its pages.* lists.
+      - '.slopstopper.yml'
       - 'Taskfile.yml'
       - 'Taskfile.ss.yml'
       - '.github/workflows/ci-cli.yml'
@@ -79,7 +99,7 @@ jobs:
       - name: Set up toolchain (task)
         # Installs the mise-pinned `task` (mise.toml [tools]), the same
         # version locally and in CI. Replaces a `curl | sh` bootstrap.
-        uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
       - name: Install dependencies
         run: npm ci
       - name: Install Playwright
@@ -153,7 +173,7 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
           changed="$(git diff --name-only "origin/${BASE_REF}...HEAD")"
-          if echo "$changed" | grep -qE '^(docs/learn/|scripts/learncheck\.py|scripts/learntapes\.py|scripts/learnsite\.py|app/learn\.html|app/learn/|\.github/workflows/ci-cli\.yml)'; then
+          if echo "$changed" | grep -qE '^(docs/learn/|scripts/learncheck\.py|scripts/learntapes\.py|scripts/learnsite\.py|scripts/sitemd\.py|app/learn\.html|app/learn/|\.github/workflows/ci-cli\.yml)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
@@ -188,7 +208,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Set up toolchain (task)
-        uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
       - run: pip install -e ./cli
       - name: Install dependencies
         run: npm ci

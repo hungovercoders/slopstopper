@@ -2,7 +2,7 @@
 
 ## Overview
 
-SlopStopper's reliability checks, wired against any reachable URL: portable smoke tests, broken-link audits, and the API health and latency audits (all below), plus seven audits with their own guide. Read the one whose trigger matches.
+The checks that prove the deployed site or API works for a visitor, each run against any reachable URL. Smoke, broken links, API health and API latency are covered below; seven more have a page each.
 
 ## Routes
 

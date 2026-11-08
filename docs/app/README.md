@@ -78,8 +78,9 @@ the CSP needs no font-src exception; do not add external font links.
 - Each HTML page links `app/shared.css` first, then its page-specific CSS.
 - Header / nav / footer markup is duplicated across pages because
   there is no build step or SSI. Accept the duplication; if you change
-  one, change all six, then run `task contributing:learn:site`, which
-  copies the Learn page's chrome into every lesson page. The footer carries the privacy line, which must
+  one, change all seven, then run `task contributing:learn:site` and
+  `task contributing:docs:site`, which copy the Learn and Docs pages'
+  chrome into every generated page. The footer carries the privacy line, which must
   stay true: see `app/privacy.html` and the CSP pitfall in
   `docs/contributing/PITFALLS.md`.
 - Every external link uses `rel="noopener noreferrer"`. Avoid
@@ -96,9 +97,10 @@ the CSP needs no font-src exception; do not add external font links.
 
 ## Pages
 
-Six static pages with shared navigation, plus a generated page per lesson
-of the course. Each hand-written page is one HTML file plus one
-page-specific CSS file; there is no build step and no framework.
+Seven static pages with shared navigation, plus a generated page per
+lesson of the course and per reference doc an adopter reads. Each hand-written page is one
+HTML file plus one page-specific CSS file; there is no build step and no
+framework.
 
 | Page | File | Interactive element |
 | ---- | ---- | ------------------- |
@@ -107,11 +109,13 @@ page-specific CSS file; there is no build step and no framework.
 | Tools | `app/tools.html` | The tool groups as tabs (`app/tabs.js`, as on Features); `<details>` config or workflow excerpt per tool |
 | Learn | `app/learn.html` | **Copy** button on the demo setup block (`app/copy.js`). Lists the course's lessons and links each to its page under `app/learn/`; `cli/tests/test_learn_page.py` keeps the list identical to `docs/learn/README.md` |
 | Lessons | `app/learn/NN-slug.html` | Generated from `docs/learn/NN-slug.md` by `scripts/learnsite.py` (`task contributing:learn:site`), never edited by hand. The chrome is read from `app/learn.html`; **Copy** buttons on the command blocks; `<details>` for solutions and episode scripts; previous and next links |
+| Docs | `app/docs.html` | The landing page for the reference docs: three hand-written doors in, then the section list between `<!-- docs:begin -->` and `<!-- docs:end -->`, which `scripts/docsite.py` owns |
+| Doc pages | `app/docs/<dir>/<name>.html` | Generated from `docs/<dir>/<NAME>.md` by `scripts/docsite.py` (`task contributing:docs:site`), never edited by hand, for the sections an adopter reads (`sitemd.SITE_SECTIONS`; the site is for people using slopstopper, so the docs about working on this repository stay on GitHub): a README becomes its directory's `index.html`, any other doc its name in lower case with hyphens. The chrome is read from `app/docs.html`; a breadcrumb and the section's other pages. A `mermaid` fence shows as an SVG per theme from `app/assets/docs/diagrams/`, rendered by `task contributing:docs:diagrams`, with the source folded beneath. The lessons stay under `app/learn/` |
 | Feedback | `app/feedback.html` | GitHub Discussions comments via the Giscus embed, loaded on a button press (`app/feedback.js`) |
 | Privacy | `app/privacy.html` | None. States what the site collects (nothing), what Cloudflare keeps, which services the pages reach, and the one value the theme toggle stores in the browser; linked from every footer rather than the nav |
 
 Every page includes the same `<nav aria-label="Main">` in its header linking
-to the five main pages (Privacy is reached from the footer). Features carries a second `<nav aria-label="On this page">`
+to the six main pages (Privacy is reached from the footer). Features carries a second `<nav aria-label="On this page">`
 for its jump row; the header rules in `app/shared.css` are scoped to
 `header nav` so it styles itself, and the distinct labels keep the two
 landmarks unique for the accessibility audit.
@@ -124,7 +128,12 @@ app/features.html   ← Features page        app/features.css   ← Features sty
 app/tools.html      ← Tools page           app/tools.css      ← Tools styles
 app/learn.html      ← Learn page           app/learn.css      ← Learn styles
 app/learn/*.html    ← Lesson pages, generated (task contributing:learn:site)
-                                              app/lesson.css     ← Lesson page styles
+                                              app/lesson.css     ← Article typography, shared with the doc pages
+app/docs.html       ← Docs page             app/docs.css       ← Docs page and doc page styles
+app/docs/**/*.html  ← Doc pages, generated (task contributing:docs:site)
+app/assets/docs/diagrams/
+                    ← The docs' Mermaid diagrams as SVG, one per theme, plus
+                       the .mmd source of each (task contributing:docs:diagrams)
 app/feedback.html   ← Feedback page        app/feedback.css   ← Feedback styles
 app/privacy.html   ← Privacy page         app/privacy.css    ← Privacy styles
 app/shared.css      ← Brand tokens, header/nav/footer, cards, code blocks

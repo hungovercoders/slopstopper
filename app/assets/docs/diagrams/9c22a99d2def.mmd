@@ -1,0 +1,14 @@
+flowchart TD
+    A([I need help]) --> B{Have you asked\nCopilot / AI?}
+    B -- No --> C[Ask Copilot or your AI assistant\nabout the codebase]
+    C --> D{Resolved?}
+    D -- Yes --> Z([Done ✅])
+    D -- No --> E{Is this specific\nto this repo?}
+    B -- Yes --> E
+    E -- Yes --> F[Open a Support Issue\nin this repository]
+    F --> G{Resolved?}
+    G -- Yes --> Z
+    G -- No --> H{Cross-repo or\ncross-team?}
+    E -- No --> H
+    H -- Yes --> I[Start a GitHub Discussion]
+    I --> Z

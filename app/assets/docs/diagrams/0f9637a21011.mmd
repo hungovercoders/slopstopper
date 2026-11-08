@@ -1,0 +1,5 @@
+flowchart LR
+    A["✏️ Write Code\n(with AI)"] -->|build| B["🔨 Build & Lint\nlocally"]
+    B -->|verify| C["🧪 Run Tests\nlocally"]
+    C -->|commit| D["📤 Push / Open PR"]
+    D -.->|iterate on feedback| A

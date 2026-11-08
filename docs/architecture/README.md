@@ -1,7 +1,8 @@
 # Architecture
 
-Architecture structure and boundaries overview for this static site
-hosted on a Cloudflare Worker.
+How the suite fits together: the CLI, the workflows and the `task ss:*`
+commands that call it, the toolchain, and the inner and outer loops the
+checks run in. This site's own pieces are here too, as the reference install.
 
 Notation: C4 (Context + Container).
 

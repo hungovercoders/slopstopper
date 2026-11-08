@@ -58,9 +58,15 @@ before; the rule is "do the obvious thing the obvious way."
   Use `--accent-deep` for text on light backgrounds, `--accent` for
   decorative shapes only.
 - **Adding to one HTML page's header but not the others.** There is
-  no build step or SSI, so the nav drifts. Change one, change all six,
-  then `task contributing:learn:site` to copy the chrome into the
-  lesson pages.
+  no build step or SSI, so the nav drifts. Change one, change all seven,
+  then `task contributing:learn:site` and `task contributing:docs:site`
+  to copy the chrome into the generated pages.
+- **Linking a page to a doc on GitHub.** Every reference doc an adopter
+  reads is a page under `app/docs/` (`scripts/sitemd.py`'s `doc_page`
+  gives the path), so a "learn more" link stays on the site. A GitHub
+  link is for source (a workflow, a check module, a Taskfile) and for
+  the docs about working on this repository, which the site does not
+  carry: the site is for users, and contributing goes through GitHub.
 - **Writing a hex colour into page CSS or an inline SVG.** It stays
   that colour in the dark theme. Every colour is a token from
   `app/shared.css` (`var(--ink)` works in an SVG attribute), and the

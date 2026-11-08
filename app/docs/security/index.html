@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<!-- Generated from docs/security/README.md by scripts/docsite.py: edit the source, then `task contributing:docs:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security · Security | SlopStopper</title>
+    <meta name="description" content="The security checks: what each one looks at, how it blocks, and where to tune it. One page per check; read the one whose trigger matches.">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/docs/security/index.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/docs/security/index.html">
+    <meta property="og:title" content="Security · Security | SlopStopper">
+    <meta property="og:description" content="The security checks: what each one looks at, how it blocks, and where to tune it. One page per check; read the one whose trigger matches.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Security · Security | SlopStopper">
+    <meta name="twitter:description" content="The security checks: what each one looks at, how it blocks, and where to tune it. One page per check; read the one whose trigger matches.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <script src="../../theme.js"></script>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+    <link rel="manifest" href="../../manifest.webmanifest">
+    <link rel="preload" href="../../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../../shared.css">
+    <link rel="stylesheet" href="../../lesson.css">
+    <link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../../index.html" id="nav-home">Home</a>
+            <a href="../../features.html" id="nav-features">Features</a>
+            <a href="../../tools.html" id="nav-tools">Tools</a>
+            <a href="../../learn.html" id="nav-learn">Learn</a>
+            <a href="../../docs.html" id="nav-docs">Docs</a>
+            <a href="../../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+            <button type="button" class="btn btn--ghost theme-toggle" aria-label="Switch theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson hero--doc">
+            <span class="kicker">📚 Docs · Security</span>
+            <h1>Security</h1>
+        </section>
+        <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li aria-current="page">Security</li></ol></nav>
+        <article class="lesson doc">
+<p>The security checks: what each one looks at, how it blocks, and where to tune it. One page per check; read the one whose trigger matches.</p>
+<h2 id="routes">Routes</h2>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>When you are…</th><th>Do this</th></tr></thead>
+  <tbody>
+    <tr><td>tuning what SAST blocks, or suppressing a Semgrep finding</td><td>Read <a href="sast.html">SAST.md</a> for the quick start, severity table, <code>security.sast.fail_on</code>, the suppression pattern and this repo's suppressions</td></tr>
+    <tr><td>configuring or debugging the OWASP ZAP scan (baseline or OpenAPI mode), or a static host with a <code>&lt;meta&gt;</code> CSP</td><td>Read <a href="dast.html">DAST.md</a> for local commands, CI wiring, risk levels, the gate (<code>rules.tsv</code> alert refs, CSP exceptions), the static-host alerts and <code>api.openapi.spec</code></td></tr>
+    <tr><td>fixing a Trivy CVE finding, or when local and CI disagree on one</td><td>Read <a href="vulnerability.html">VULNERABILITY.md</a> for the Trivy scan, the licence gate and local/CI parity (DB cache, binary version)</td></tr>
+    <tr><td>judging a dependency's licence, exempting one, or when the inventory says the tree is not installed</td><td>Read <a href="licences.html">LICENCES.md</a> for what each ecosystem is read from, the purl exemptions, dev scope and the exit-2 cases</td></tr>
+    <tr><td>handling a Gitleaks finding or allowlisting a false positive</td><td>Read <a href="secrets.html">SECRETS.md</a> for the quick start, the allowlist format and what to do the moment a real secret is detected</td></tr>
+    <tr><td>adding a third-party script, widget or any external resource to a page</td><td>Read <a href="csp-exceptions.html">CSP_EXCEPTIONS.md</a> first for the strict-default + per-path exception pattern and the live list</td></tr>
+    <tr><td>auditing CORS, HSTS or <code>nosniff</code> on a JSON API</td><td>Read <a href="api-headers.html">API_HEADERS.md</a> for the findings, the hard-fail split, knobs and commands</td></tr>
+  </tbody>
+</table></div>
+<h2 id="checks">Checks</h2>
+<p>Generated from the CLI's registry by <code>task contributing:tables</code>:</p>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Check</th><th>Run it</th><th>Workflow</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>security:api-headers</code></td><td><code>task ss:security:api-headers</code></td><td><code>ss-security-api-headers-check.yml</code></td><td>API response-header + CORS policy audit (in-CLI implementation).</td></tr>
+    <tr><td><code>security:dast</code></td><td><code>task ss:security:dast</code></td><td><code>ss-security-dast-check.yml</code></td><td>Dynamic Application Security Testing (OWASP ZAP).</td></tr>
+    <tr><td><code>security:licences</code></td><td><code>task ss:security:licences</code></td><td><code>ss-security-licences-check.yml</code></td><td>Licence inventory over the full resolved dependency tree.</td></tr>
+    <tr><td><code>security:sast</code></td><td><code>task ss:security:sast</code></td><td><code>ss-security-sast-check.yml</code></td><td>Static Application Security Testing (Semgrep wrapper).</td></tr>
+    <tr><td><code>security:secrets</code></td><td><code>task ss:security:secrets</code></td><td><code>ss-security-secrets-check.yml</code></td><td>Secrets detection (Gitleaks wrapper).</td></tr>
+    <tr><td><code>security:vulnerability:all</code></td><td><code>task ss:security:vulnerability:all</code></td><td><code>ss-security-vulnerability-all-check.yml</code></td><td>Dependency vulnerability scanning (Trivy wrapper).</td></tr>
+  </tbody>
+</table></div>
+<p>What each one blocks on:</p>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Check</th><th>Tool</th><th>Blocks on</th></tr></thead>
+  <tbody>
+    <tr><td><code>security:sast</code></td><td>Semgrep</td><td>findings at or above <code>security.sast.fail_on</code> (default ERROR) in your own code</td></tr>
+    <tr><td><code>security:dast</code></td><td>OWASP ZAP</td><td>High / Medium alerts on the running site or API</td></tr>
+    <tr><td><code>security:vulnerability:all</code></td><td>Trivy</td><td>CRITICAL / HIGH CVEs in dependencies</td></tr>
+    <tr><td><code>security:licences</code></td><td>stdlib Python</td><td>a resolved dependency whose licence is outside <code>.github/dependency-review-config.yml</code></td></tr>
+    <tr><td><code>security:secrets</code></td><td>Gitleaks</td><td>any secret, in files or git history</td></tr>
+    <tr><td><code>security:api-headers</code></td><td>stdlib Python</td><td>credentialed CORS wildcards, missing HSTS / <code>nosniff</code></td></tr>
+    <tr><td><code>hygiene:csp-exceptions</code></td><td>stdlib Python</td><td>drift between <code>worker/headers.json</code> and the exceptions doc</td></tr>
+  </tbody>
+</table></div>
+<p>Every check follows the same shape: run it locally with the <code>task</code> target named after it (<code>task ss:security:sast</code>, <code>task ss:hygiene:csp-exceptions</code>), read the report its page names under <code>.ss/reports/</code>, get a PR comment on pull requests and a GitHub issue when a blocking finding lands on <code>main</code>. Disable one by listing its workflow under <code>workflows.disabled</code> in <code>.slopstopper.yml</code> (or by choosing a <a href="../architecture/profiles.html">profile</a> that drops it). <code>task ss:security:scan</code> runs SAST, secrets, the dependency scan and the licence inventory in sequence.</p>
+<h2 id="static-application-security-testing-sast">Static Application Security Testing (SAST)</h2>
+<p>Semgrep pattern-matches <strong>your own source code</strong> for dangerous calls, injection risks and hardcoded secrets. ERROR blocks; WARNING and INFO are reported; <code>security.sast.fail_on</code> moves that line. Narrow, documented <code>nosemgrep</code> suppressions beat disabling a rule.</p>
+<h2 id="dynamic-application-security-testing-dast">Dynamic Application Security Testing (DAST)</h2>
+<p>OWASP ZAP scans the running app for common web vulnerabilities. It has two modes. The <strong>baseline</strong> scan spiders an HTML site, and the <strong>API</strong> scan reads an OpenAPI spec and exercises its operations. Only the API scan finds anything on a JSON API.</p>
+<h2 id="dependency-vulnerability-scanning">Dependency Vulnerability Scanning</h2>
+<p>Trivy scans the project filesystem for known CVEs in your packages and lock files, on every PR and push and weekly against <code>main</code>, since a CVE lands on versions already merged. CRITICAL and HIGH block. A companion GitHub-native workflow (<code>ss-security-vulnerability-new-check.yml</code>) reviews newly-added dependencies on PRs and fails on a licence outside the allowlist in <code>.github/dependency-review-config.yml</code>. Neither gates on a devDependency advisory: Trivy scans production scope and dependency review fails on runtime scope only. That is Dependabot's job, by design; keep its alerts and security updates enabled. <a href="vulnerability.html">VULNERABILITY.md</a> has the three-way table.</p>
+<h2 id="licence-inventory">Licence Inventory</h2>
+<p><code>security:licences</code> applies the same allowlist to the whole resolved tree: npm from <code>package-lock.json</code>, Python from <code>pip inspect</code>, no tool to install. A transitive package under a denied licence fails it; a licence it cannot read as SPDX is reported, never failed. <a href="licences.html">LICENCES.md</a> has the sources, the exemptions and the exit codes.</p>
+<h2 id="secrets-detection">Secrets Detection</h2>
+<p>Gitleaks scans all files <strong>and full git history</strong> for credentials, tokens and private keys. Always blocking; the check never writes the credential to disk. Allowlist known false positives in the file SECRETS.md describes.</p>
+<h2 id="csp-exceptions">CSP Exceptions</h2>
+<p>The site ships a strict <code>default-src 'self'; script-src 'self'</code> Content Security Policy on every path. When a third-party widget is genuinely required on a single page (e.g. Giscus on <code>/feedback.html</code>), we admit it via a <strong>scoped, documented, SRI-pinned per-path exception</strong> rather than weakening the site-wide CSP. The <a href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.ss.yml" rel="noopener noreferrer"><code>ss:hygiene:csp-exceptions</code></a> check enforces drift between <code>worker/headers.json</code> and the exceptions doc routed above. <strong>For adopters:</strong> this is the pattern to reuse the moment your site needs GTM, Sentry, Intercom or any analytics tag.</p>
+<h2 id="api-headers-cors">API Headers &amp; CORS</h2>
+<p>On a JSON API, CORS rather than CSP decides who may read a response. <code>security:api-headers</code> audits that policy, plus HSTS and <code>nosniff</code>, and splits findings into hard failures and advisory notes.</p>
+        </article>
+<nav class="doc-siblings" aria-label="In Security">
+  <h2>In Security</h2>
+  <ul>
+    <li><a href="index.html" aria-current="page">Security</a></li>
+    <li><a href="api-headers.html">API Headers &amp; CORS</a></li>
+    <li><a href="csp-exceptions.html">CSP exceptions</a></li>
+    <li><a href="dast.html">Dynamic Application Security Testing (DAST)</a></li>
+    <li><a href="licences.html">Licence Inventory</a></li>
+    <li><a href="sast.html">Static Application Security Testing (SAST)</a></li>
+    <li><a href="secrets.html">Secrets Detection</a></li>
+    <li><a href="vulnerability.html">Dependency Vulnerability Scanning</a></li>
+  </ul>
+</nav>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../../copy.js" defer></script>
+</body>
+</html>

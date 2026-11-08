@@ -1,0 +1,9 @@
+flowchart LR
+    U[User Browser]
+    A[SlopStopper site]
+    CF[Cloudflare Workers + Custom Domain]
+    G[GitHub Repository]
+
+    U -->|HTTPS| A
+    A -->|Served by| CF
+    G -->|Workers Builds Git integration| CF

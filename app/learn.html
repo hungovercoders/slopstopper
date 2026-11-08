@@ -46,6 +46,7 @@
             <a href="features.html" id="nav-features">Features</a>
             <a href="tools.html" id="nav-tools">Tools</a>
             <a href="learn.html" id="nav-learn" aria-current="page">Learn</a>
+            <a href="docs.html" id="nav-docs">Docs</a>
             <a href="feedback.html" id="nav-feedback">Feedback</a>
         </nav>
         <div class="header-actions">
@@ -64,7 +65,7 @@
         <section class="hero hero--learn">
             <span class="kicker">🎓 The course</span>
             <h1>From zero to <span class="highlight">slopstopper</span></h1>
-            <p>Twenty-one short lessons, one check or one idea at a time: the slop it stops, the tool behind it, what it looks like when it fires, and the fix. You start with nothing installed and finish able to read any check's red line, fix what it found, tailor the suite to a repo, and add a check of your own.</p>
+            <p>Twenty-one short lessons, each on one check: what it stops, the tool behind it, what a failure looks like and how to fix it. You start with nothing installed and finish able to read any check's output, fix what it found, tailor the suite to a repo, and add a check of your own.</p>
         </section>
 
         <section class="section learn-section" id="start">
@@ -77,13 +78,13 @@ slopstopper demo                   # writes slopstopper-demo/
 cd slopstopper-demo
 git init -q -b main &amp;&amp; git add -A &amp;&amp; git commit -q -m "lantern"</code></pre>
             </div>
-            <p class="learn-note">Each lesson says which tool it needs beyond the CLI, and <code>slopstopper doctor</code> lists what is missing. Lesson 20 edits the CLI itself, so it runs in a checkout of the repository; <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/README.md" rel="noopener noreferrer">the syllabus</a> has the setup for it. Every lesson is also a markdown file in that directory, which is what the pages here are rendered from.</p>
+            <p class="learn-note">Each lesson says which tool it needs beyond the CLI, and <code>slopstopper doctor</code> lists what is missing. Lesson 20 edits the CLI itself, so it runs in a checkout of the repository; <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/README.md" rel="noopener noreferrer">the syllabus</a> has the setup for it.</p>
         </section>
 
         <section class="section learn-section" id="lessons">
             <span class="kicker">The lessons</span>
             <h2>Read them in order, or jump to a check.</h2>
-            <p class="lede">Each lesson has the same shape: why the check exists, the commands to type and the output to expect, a checkpoint, and an exercise. The commands on every page run in CI, so they work as written. Start with lesson 0, or jump to the check you came for.</p>
+            <p class="lede">Each lesson has the same shape: why the check exists, the commands to type and the output to expect, a checkpoint, and an exercise. Start with lesson 0, or jump to the check you came for.</p>
             <div class="lesson-group" id="start">
                 <h3>Start here</h3>
                 <p class="lesson-group__lede">What slop is, putting the suite into a repo, and the loop every later lesson repeats.</p>
@@ -140,7 +141,7 @@ git init -q -b main &amp;&amp; git add -A &amp;&amp; git commit -q -m "lantern"<
             </div>
             <div class="lesson-group" id="security">
                 <h3>Security</h3>
-                <p class="lesson-group__lede">Keys in history, unsafe code, vulnerable dependencies, headers, and the running site under attack.</p>
+                <p class="lesson-group__lede">Secrets in git history, unsafe code, vulnerable dependencies, headers, and scanning the running site.</p>
                 <ol class="lessons" start="6">
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">6</span>
@@ -181,7 +182,7 @@ git init -q -b main &amp;&amp; git add -A &amp;&amp; git commit -q -m "lantern"<
             </div>
             <div class="lesson-group" id="reliability">
                 <h3>Reliability</h3>
-                <p class="lesson-group__lede">Does it serve, can a visitor use it, is it fast, can anyone find it, does the API keep its promises.</p>
+                <p class="lesson-group__lede">Whether the site serves, works for a visitor, loads fast and can be found, and whether the API keeps its contract.</p>
                 <ol class="lessons" start="11">
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">11</span>
@@ -265,7 +266,7 @@ git init -q -b main &amp;&amp; git add -A &amp;&amp; git commit -q -m "lantern"<
 
         <section class="section learn-section" id="episodes">
             <span class="kicker">Episodes</span>
-            <h2>A video for every lesson.</h2>
+            <h2>A video for each lesson.</h2>
             <p>Each lesson has an episode to follow, cut from the same terminal at the same size. They are being recorded now, and each one is linked here and in <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/README.md" rel="noopener noreferrer">the syllabus</a> as it is published. Something wrong in a lesson? <a href="https://github.com/hungovercoders/slopstopper/issues/new/choose" rel="noopener noreferrer">Open an issue</a> with its number.</p>
         </section>
     </main>

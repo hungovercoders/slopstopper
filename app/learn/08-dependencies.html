@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Generated from docs/learn/08-dependencies.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<!-- Generated from docs/learn/08-dependencies.md by scripts/learnsite.py: edit the source, then `task contributing:learn:site`. -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -46,6 +46,7 @@
             <a href="../features.html" id="nav-features">Features</a>
             <a href="../tools.html" id="nav-tools">Tools</a>
             <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../docs.html" id="nav-docs">Docs</a>
             <a href="../feedback.html" id="nav-feedback">Feedback</a>
         </nav>
         <div class="header-actions">
@@ -70,7 +71,7 @@
 <h2 id="why-this-check">Why this check</h2>
 <p><code>security:vulnerability:all</code> stops the slop you did not write: a dependency with a published vulnerability. It arrives in ordinary ways. An agent pins the version it remembers, which is the version from its training data and a year or more old. A requirements file is copied from another project along with its pins. A lock file is regenerated and nobody reads the diff. None of these are mistakes in your code, and no review of your code finds them, because the vulnerable lines are in a package you never open. The only way to know is to look every dependency up against the list of CVEs, and the only way to keep knowing is to do it on every pull request and again on every push to <code>main</code>, because the list grows after your code stops changing.</p>
 <p>The tool is <a href="https://trivy.dev/" rel="noopener noreferrer">Trivy</a>, which scans the filesystem for every dependency manifest and lock file it knows (npm, pip, Go, Cargo, Maven and the rest), resolves each package to a version, and matches them against a vulnerability database it downloads and caches for a day. The check subprocess-invokes it with <code>node_modules</code> and <code>.git</code> skipped, writes the report, and gates on severity: CRITICAL and HIGH exit 1, MEDIUM and LOW are reported and exit 0. That threshold is in the check, not the workflow, so the local run and CI agree. Exit 2 is Trivy missing or its database download failing, because a scan that never finished must not read as clean.</p>
-<p>Two companion checks cover licences. The dependency review runs only in CI: it is GitHub's own <code>dependency-review-action</code> on the pull request's manifest diff, so it sees only what the PR adds, and fails a new dependency under a licence outside the allowlist in <code>.github/dependency-review-config.yml</code>. <code>security:licences</code> applies the same allowlist to the whole resolved tree, locally and in CI, so a transitive package under a denied licence cannot sit unseen. Neither gates on a build tool's own dependencies, which is Dependabot's job; the <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/VULNERABILITY.md#what-it-does-not-cover-and-who-does" rel="noopener noreferrer">vulnerability doc</a> has the table.</p>
+<p>Two companion checks cover licences. The dependency review runs only in CI: it is GitHub's own <code>dependency-review-action</code> on the pull request's manifest diff, so it sees only what the PR adds, and fails a new dependency under a licence outside the allowlist in <code>.github/dependency-review-config.yml</code>. <code>security:licences</code> applies the same allowlist to the whole resolved tree, locally and in CI, so a transitive package under a denied licence cannot sit unseen. Neither gates on a build tool's own dependencies, which is Dependabot's job; the <a href="../docs/security/vulnerability.html#what-it-does-not-cover-and-who-does">vulnerability doc</a> has the table.</p>
 <h2 id="you-will-need">You will need</h2>
 <ul>
   <li>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH.</li>
@@ -155,8 +156,8 @@ rm -r .github</code></pre></div>
 </details>
 <h2 id="going-further">Going further</h2>
 <ul>
-  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/VULNERABILITY.md" rel="noopener noreferrer">Dependency vulnerability scanning</a>: the dependency review, local/CI parity, and the fixed threshold</li>
-  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/LICENCES.md" rel="noopener noreferrer">Licence inventory</a>: what each ecosystem is read from, the purl exemptions, and the exit-2 cases</li>
+  <li><a href="../docs/security/vulnerability.html">Dependency vulnerability scanning</a>: the dependency review, local/CI parity, and the fixed threshold</li>
+  <li><a href="../docs/security/licences.html">Licence inventory</a>: what each ecosystem is read from, the purl exemptions, and the exit-2 cases</li>
   <li><a href="https://trivy.dev/latest/docs/coverage/language/" rel="noopener noreferrer">Trivy's supported ecosystems</a>, which is what "every manifest it knows" means</li>
   <li>Lesson 17 for the issue a red run on <code>main</code> opens, and lesson 20 for the licence boundary from the CLI's side</li>
 </ul>

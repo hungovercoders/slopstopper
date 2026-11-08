@@ -1,6 +1,6 @@
 # Install the SlopStopper Claude Code skills
 
-The companion to [`install.sh`](../../install.sh). Where `install.sh` drops the whole quality suite into a repo, [`install-skill.sh`](../../install-skill.sh) targets just the Claude Code skill subset, which is useful for refreshing the playbooks without re-running the full installer.
+Install or refresh the two Claude Code skills on their own, without re-running the whole installer. Where [`install.sh`](../../install.sh) puts the whole suite into a repo, [`install-skill.sh`](../../install-skill.sh) writes just the skills.
 
 Both scripts write skills at **project level**. They land in the adopter repo's `.claude/skills/` directory, so every contributor that clones the repo gets them automatically. Claude Code auto-discovers project-level skills the same way it does user-level ones.
 

@@ -5,16 +5,17 @@
 > Stops AI-generated "slop" reaching production; humans, agents and CI all
 > invoke every check through one `task ss:*` surface.
 
-SlopStopper is two things at once: a portable quality suite you install into
-your own repo via `install.sh`, and a live reference site (this one) built and
-deployed with the same suite it advertises.
+SlopStopper is a quality suite you install into your own repo with one
+command. Every check runs the same way on your machine and in CI, and reports
+into the pull request. This site is built and deployed with the same suite.
 
 ## Site
 
-- [Home](https://slopstopper.dev/): what SlopStopper is and how to get started
-- [Features](https://slopstopper.dev/features.html): the five loops (security, hygiene, reliability and operational are installed; deployment shows how this site ships, to copy) and every check
-- [Tools](https://slopstopper.dev/tools.html): the underlying kit: Semgrep, OWASP ZAP, Trivy, Gitleaks, Playwright, axe-core, Lighthouse CI, GitHub Actions, Task
-- [Learn](https://slopstopper.dev/learn.html): the course, twenty-one short lessons, each check explained and run against a demo repo the CLI writes; each lesson is a page under /learn/, listed below
+- [Home](https://slopstopper.dev/): what SlopStopper is, the two ways to install it, and the four loops of checks
+- [Features](https://slopstopper.dev/features.html): every check by loop (security, reliability, hygiene, operational), the workflow behind each, the profiles, and what the pull request feedback looks like
+- [Tools](https://slopstopper.dev/tools.html): the tool behind each check: Semgrep, OWASP ZAP, Trivy, Gitleaks, Playwright, axe-core, Lighthouse CI, and the pieces every install carries
+- [Learn](https://slopstopper.dev/learn.html): a course of twenty-one short lessons, one check at a time, run against a demo repo the CLI writes; each lesson is a page under /learn/, listed below
+- [Docs](https://slopstopper.dev/docs.html): the reference docs as pages under /docs/, listed below: what every check enforces and how to fix what it finds, installing and tuning the suite, the architecture
 - [Feedback](https://slopstopper.dev/feedback.html): report a bug or request a check
 - [Privacy](https://slopstopper.dev/privacy.html): what the site collects (nothing of its own), what Cloudflare keeps as the host, and which other services the pages reach
 
@@ -46,12 +47,45 @@ One lesson per page, in order; each one's goal is its summary.
 - [Lesson 20: Inside slopstopper: add a check](https://slopstopper.dev/learn/20-inside-slopstopper.html): Register a new check in the CLI, let the test suite tell you the other surfaces it must be wired into, and understand the shape every check shares.
 <!-- learn:end -->
 
+## Docs
+
+One page per reference doc an adopter reads, by section; each section's index says when to read what. The docs about working on the repository itself are on GitHub, under Source.
+
+<!-- docs:begin -->
+- [Runbooks: Runbooks](https://slopstopper.dev/docs/runbooks/index.html): What you do once around the suite: install it into a repo, install the Claude Code skills, move the CLI pin, and, for the project itself, cut a release.
+- [Runbooks: Adopting SlopStopper](https://slopstopper.dev/docs/runbooks/install.html): Everything an adopter needs once: prerequisites, what the installer writes, what each check needs from you, how to run the suite, configure it and move the CLI pin.
+- [Runbooks: Install the SlopStopper Claude Code skills](https://slopstopper.dev/docs/runbooks/install-skills.html): Install or refresh the two Claude Code skills on their own, without re-running the whole installer. Where install.sh puts the whole suite into a repo, install-skill.sh writes just the skills.
+- [Runbooks: Upgrade the pinned slopstopper-cli](https://slopstopper.dev/docs/runbooks/upgrade-cli.html): Move a repo's pinned slopstopper-cli to a newer release.
+- [Hygiene: Hygiene](https://slopstopper.dev/docs/hygiene/index.html): The checks that keep code readable and docs true, for people and for agents: what each enforces, which setting tunes it, and how to fix what it finds.
+- [Hygiene: Agentic Documentation Updater](https://slopstopper.dev/docs/hygiene/doc-updater.html): A weekly agent reads what merged, finds the docs that drifted from it, and opens a pull request with the fixes. It runs on GitHub Agentic Workflows (gh-aw) with the GitHub Copilot CLI engine.
+- [Security: Security](https://slopstopper.dev/docs/security/index.html): The security checks: what each one looks at, how it blocks, and where to tune it. One page per check; read the one whose trigger matches.
+- [Security: API Headers & CORS](https://slopstopper.dev/docs/security/api-headers.html): Audits a JSON API's response headers and CORS policy, where a permissive policy on a credentialed API is a cross-origin data leak.
+- [Security: CSP exceptions](https://slopstopper.dev/docs/security/csp-exceptions.html): This file is the single source of truth for every per-path Content-Security-Policy relaxation on the SlopStopper site.
+- [Security: Dynamic Application Security Testing (DAST)](https://slopstopper.dev/docs/security/dast.html): OWASP ZAP scans your running site, or your API through its OpenAPI spec, for runtime security issues.
+- [Security: Licence Inventory](https://slopstopper.dev/docs/security/licences.html): security:licences judges every dependency the lockfiles resolve to against the repo's licence allowlist, so a transitive package under a denied licence cannot sit in the tree unnoticed.
+- [Security: Static Application Security Testing (SAST)](https://slopstopper.dev/docs/security/sast.html): Semgrep scans your source code for security bugs and unsafe patterns before they merge.
+- [Security: Secrets Detection](https://slopstopper.dev/docs/security/secrets.html): Gitleaks scans your source and your git history for committed credentials, API keys and other secrets.
+- [Security: Dependency Vulnerability Scanning](https://slopstopper.dev/docs/security/vulnerability.html): Trivy scans your dependencies for known CVEs.
+- [Reliability: Reliability Testing](https://slopstopper.dev/docs/reliability/index.html): The checks that prove the deployed site or API works for a visitor, each run against any reachable URL. Smoke, broken links, API health and API latency are covered below; seven more have a page each.
+- [Reliability: Accessibility Monitoring](https://slopstopper.dev/docs/reliability/accessibility.html): axe-core audits every page against WCAG 2.1 AA, on every pull request, push to main and deploy, and daily.
+- [Reliability: Core Web Vitals](https://slopstopper.dev/docs/reliability/cwv.html): reliability:cwv runs Lighthouse CI against a URL and fails the build when a page's performance falls below budget. It is the browser-side speed check; API Latency is its analogue for a JSON API.
+- [Reliability: E2E Journeys](https://slopstopper.dev/docs/reliability/e2e.html): The E2E check proves a visitor can get around: it drives a browser through the journeys any HTML site offers, without knowing anything about yours.
+- [Reliability: llms.txt AI-Discoverability Check](https://slopstopper.dev/docs/reliability/llms-txt.html): Audits your site's /llms.txt, the llmstxt.org map that lets an AI assistant read your key pages without parsing HTML.
+- [Reliability: robots.txt Discoverability Check](https://slopstopper.dev/docs/reliability/robots-txt.html): Audits your site's /robots.txt: a stray Disallow: / that would de-index the whole site fails, and a Sitemap: pointer is required. /robots.txt is the Robots Exclusion Protocol file every crawler…
+- [Reliability: SEO & Social-Share Metatag Check](https://slopstopper.dev/docs/reliability/seo.html): Asserts the tags a search engine and a link preview read on each page: title, description, canonical, OpenGraph and Twitter Card, with the share image reachable.
+- [Reliability: sitemap.xml Completeness + Drift Check](https://slopstopper.dev/docs/reliability/sitemap.html): Crawls your site and cross-checks sitemap.xml against the pages it reaches: a reachable page missing from it, or an entry that 404s, fails.
+- [Architecture: Architecture](https://slopstopper.dev/docs/architecture/index.html): How the suite fits together: the CLI, the workflows and the task ss:* commands that call it, the toolchain, and the inner and outer loops the checks run in.
+- [Architecture: PR feedback: one summary, compact detail](https://slopstopper.dev/docs/architecture/pr-feedback.html): Every pull request gets one summary comment, and a failing check adds a short comment of its own; this page is why, and the format of each.
+- [Architecture: Project-shape profiles](https://slopstopper.dev/docs/architecture/profiles.html): A profile picks the checks that fit a repo's shape: ui for a website, api for a service with no pages, library for a package that serves nothing.
+- [Architecture: slopstopper-steward: the org-wide operator](https://slopstopper.dev/docs/architecture/steward.html): slopstopper-steward works across a GitHub organisation: it upgrades every repo that has slopstopper installed and works the issues the checks raised, one pull request each.
+- [Support: Support](https://slopstopper.dev/docs/support/index.html): Where to ask a question, report a bug or request a check: an AI assistant first, then an issue on the repository, then a discussion.
+<!-- docs:end -->
+
 ## Source
 
 - [GitHub repository](https://github.com/hungovercoders/slopstopper): source, install.sh and the slopstopper CLI
 - [README](https://github.com/hungovercoders/slopstopper/blob/main/README.md): install and usage
-- [Documentation map](https://github.com/hungovercoders/slopstopper/blob/main/docs/README.md): the routing table for every doc
-- [From zero to slopstopper](https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/README.md): the course's syllabus and lesson sources, with an episode to follow
+- [Course syllabus](https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/README.md): the lessons as markdown, with the episode to follow for each
 - [Agent guide](https://github.com/hungovercoders/slopstopper/blob/main/AGENTS.md): what most tasks in the repo need, within ~2k tokens
 
 ## For agents

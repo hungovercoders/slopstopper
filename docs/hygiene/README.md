@@ -1,6 +1,6 @@
 # Hygiene
 
-Overview of code and documentation hygiene and quality gates.
+The checks that keep code readable and docs true, for people and for agents: what each enforces, which setting tunes it, and how to fix what it finds.
 
 ## Overview
 

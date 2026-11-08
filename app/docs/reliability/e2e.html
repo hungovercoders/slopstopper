@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<!-- Generated from docs/reliability/E2E.md by scripts/docsite.py: edit the source, then `task contributing:docs:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E2E Journeys · Reliability | SlopStopper</title>
+    <meta name="description" content="The E2E check proves a visitor can get around: it drives a browser through the journeys any HTML site offers, without knowing anything about yours.">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/docs/reliability/e2e.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/docs/reliability/e2e.html">
+    <meta property="og:title" content="E2E Journeys · Reliability | SlopStopper">
+    <meta property="og:description" content="The E2E check proves a visitor can get around: it drives a browser through the journeys any HTML site offers, without knowing anything about yours.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="E2E Journeys · Reliability | SlopStopper">
+    <meta name="twitter:description" content="The E2E check proves a visitor can get around: it drives a browser through the journeys any HTML site offers, without knowing anything about yours.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <script src="../../theme.js"></script>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+    <link rel="manifest" href="../../manifest.webmanifest">
+    <link rel="preload" href="../../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../../shared.css">
+    <link rel="stylesheet" href="../../lesson.css">
+    <link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../../index.html" id="nav-home">Home</a>
+            <a href="../../features.html" id="nav-features">Features</a>
+            <a href="../../tools.html" id="nav-tools">Tools</a>
+            <a href="../../learn.html" id="nav-learn">Learn</a>
+            <a href="../../docs.html" id="nav-docs">Docs</a>
+            <a href="../../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+            <button type="button" class="btn btn--ghost theme-toggle" aria-label="Switch theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson hero--doc">
+            <span class="kicker">📚 Docs · Reliability</span>
+            <h1>E2E Journeys</h1>
+        </section>
+        <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Reliability</a></li><li aria-current="page">E2E Journeys</li></ol></nav>
+        <article class="lesson doc">
+<h2 id="overview">Overview</h2>
+<p>The E2E check proves a visitor can get around: it drives a browser through the journeys any HTML site offers, without knowing anything about yours. Smoke proves each page renders; this proves the pages connect.</p>
+<p>From every start path the bundled Playwright spec:</p>
+<ol>
+  <li><strong>Walks the primary navigation.</strong> Clicks each same-origin link inside the first <code>&lt;nav&gt;</code> on the page, plus any other link in the <code>&lt;header&gt;</code> that holds it (a call-to-action button, say), and asserts the destination answers, shows an <code>&lt;h1&gt;</code> and still carries a nav, with no JavaScript errors along the way. Links a visitor could not follow in the same tab are left out, not failed: hidden ones (a collapsed mobile menu, a hover dropdown), <code>target="_blank"</code>, downloads and non-HTML files. <code>/about.html</code>, <code>/about/</code> and <code>/about</code> count as the same destination, so a host that rewrites URLs still passes.</li>
+  <li><strong>Follows in-page anchors.</strong> Every <code>href="#…"</code> must point at an element that exists.</li>
+  <li><strong>Toggles every disclosure.</strong> Each visible <code>&lt;details&gt;</code> flips on click and flips back on the next, whichever state it started in.</li>
+  <li><strong>Presses back.</strong> After following a nav link, the browser's back button must land on the start page.</li>
+</ol>
+<p>A journey with nothing to do is skipped, not failed: a page with no <code>&lt;nav&gt;</code>, no anchors or no <code>&lt;details&gt;</code> reports skips for those steps. The start path itself must answer, though: a <code>pages.e2e</code> entry that 404s fails every journey for that path.</p>
+<p>The spec names no selector or page of this site, so it runs unchanged on any adopter's site. Journeys specific to yours (log in, add to basket, submit a form) belong in an ejected copy, as <a href="#adding-your-own-journeys">Adding your own journeys</a> describes.</p>
+<h2 id="quick-start">Quick Start</h2>
+<div class="codeblock codeblock--sh" data-copyable><pre><code># Against a running site (any reliability check takes the URL positionally)
+task ss:reliability:e2e -- https://your-site.example.com
+
+# CI mode: retries, HTML report, single worker
+task ss:reliability:e2e -- https://your-site.example.com --ci
+
+# Or via the env var
+E2E_TEST_URL=https://your-site.example.com task ss:reliability:e2e</code></pre></div>
+<p>Report: <code>.ss/reports/reliability/e2e-report.md</code>, with Playwright's HTML report under <code>playwright-report/</code> naming the failing step.</p>
+<h2 id="configuration">Configuration</h2>
+<div class="codeblock codeblock--yaml" tabindex="0"><pre><code># .slopstopper.yml
+pages:
+  e2e: /,/pricing      # start paths for the journeys (default /)
+e2e:
+  max_links: 25        # nav links followed per start path</code></pre></div>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>E2E_TEST_URL</code></td><td><em>(falls back to <code>SMOKE_TEST_URL</code> / <code>BASE_URL</code> / <code>localhost:8080</code>)</em></td><td>Base URL to walk</td></tr>
+    <tr><td><code>E2E_PAGES</code></td><td><code>pages.e2e</code>, else <code>/</code></td><td>Comma-separated start paths. In CI the workflow sets it from <code>slopstopper discover e2e</code>, so <code>reliability.coverage.*</code> (sitemap or changed files) applies here as to the other page-walking checks</td></tr>
+    <tr><td><code>E2E_MAX_LINKS</code></td><td><code>e2e.max_links</code>, else <code>25</code></td><td>Nav links followed per start path; also caps the <code>&lt;details&gt;</code> toggled</td></tr>
+  </tbody>
+</table></div>
+<p>Env vars win over <code>.slopstopper.yml</code>, so a one-off run can widen or narrow the walk without editing config.</p>
+<h2 id="github-actions-workflow">GitHub Actions Workflow</h2>
+<p><strong>File:</strong> <a href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-e2e-check.yml" rel="noopener noreferrer"><code>.github/workflows/ss-reliability-e2e-check.yml</code></a></p>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Trigger</th><th>URL walked</th></tr></thead>
+  <tbody>
+    <tr><td><code>pull_request</code> → <code>main</code></td><td>Local build (<code>localhost:8080</code>)</td></tr>
+    <tr><td><code>push</code> → <code>main</code></td><td>Local build (<code>localhost:8080</code>)</td></tr>
+    <tr><td><code>deployment_status</code> (success)</td><td>The deployment's <code>environment_url</code> (else <code>target_url</code>); never a GitHub Actions log link</td></tr>
+    <tr><td><code>schedule</code> (daily 05:00 UTC)</td><td>Production URL (<code>urls.production</code>)</td></tr>
+    <tr><td><code>workflow_dispatch</code></td><td>The <code>url</code> input, or the local build when blank. <code>ss-cloudflare-deployed.yml</code> dispatches each Workers Builds deploy this way</td></tr>
+  </tbody>
+</table></div>
+<p>The job builds and serves the repo with <code>slopstopper serve</code> on PRs and pushes, runs <code>task ss:reliability:e2e -- &lt;url&gt; --ci</code>, uploads the Playwright report, posts a rolling PR comment, and on <code>main</code> opens (or closes) a tracking issue. It ships under the <code>ui</code> profile only: like the other browser checks, <code>--profile api</code> and <code>--profile library</code> drop it (see <a href="../architecture/profiles.html">project-shape profiles</a>).</p>
+<h2 id="adding-your-own-journeys">Adding your own journeys</h2>
+<p>The bundled spec is deliberately generic. For journeys that know your site, eject it and extend the copy; the CLI picks <code>.ss/tests/e2e.spec.ts</code> up in place of the bundled one:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper templates eject tests/e2e.spec.ts</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>// .ss/tests/e2e.spec.ts, appended to the bundled journeys
+test('pricing → checkout', async ({ page }) =&gt; {
+  await page.goto('/pricing');
+  await page.getByRole('link', { name: 'Start free trial' }).click();
+  await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible();
+});</code></pre></div>
+<p>An ejected copy is yours: a later CLI release will not overwrite it, so pull in bundled improvements by diffing against <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/data/tests/e2e.spec.ts" rel="noopener noreferrer"><code>cli/slopstopper/data/tests/e2e.spec.ts</code></a>.</p>
+<h2 id="understanding-failures">Understanding failures</h2>
+<p>The test title says which start path and which journey failed; the assertion message says which link, anchor or disclosure:</p>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>✘ /: primary navigation round trip
+  features.html: page should have a heading</code></pre></div>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Message</th><th>Usual cause</th></tr></thead>
+  <tbody>
+    <tr><td><code>start page should answer 2xx/3xx</code></td><td>A <code>pages.e2e</code> entry (or <code>E2E_PAGES</code>) names a path the site doesn't serve</td></tr>
+    <tr><td><code>should land on that page, got …</code></td><td>The link redirected somewhere else (an off-site hop, a login wall, a locale redirect that changes the path entirely)</td></tr>
+    <tr><td><code>page should have a heading</code></td><td>The destination rendered without an <code>&lt;h1&gt;</code>, or an error page</td></tr>
+    <tr><td><code>primary navigation should still be present</code></td><td>The destination is outside the site shell (a bare document, a redirect off-site)</td></tr>
+    <tr><td><code>in-page anchors with no target element</code></td><td>A table-of-contents link to a heading that was renamed or removed (<code>#top</code> and <code>&lt;a name&gt;</code> targets are accepted)</td></tr>
+    <tr><td><code>&lt;details&gt; … should open on click</code></td><td>A script intercepts the click, or the summary is covered by another element</td></tr>
+    <tr><td><code>back button should return to the start page</code></td><td>The nav link navigated with <code>location.replace</code>, or the destination redirected</td></tr>
+  </tbody>
+</table></div>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p><strong>Every journey is skipped:</strong> the start page's header has no visible same-origin links in its first <code>&lt;nav&gt;</code> or beside it, perhaps because the menu is collapsed behind a hamburger at desktop width. Either wrap your primary navigation in a visible <code>&lt;nav&gt;</code> (good for accessibility too) or eject the spec and open the menu in <code>navTargets</code> before collecting links.</p>
+<p><strong><code>e2e.max_links</code> is ignored:</strong> it must be a positive integer; anything else falls back to 25 with a warning in the check's output.</p>
+<p><strong>The walk is slow:</strong> each nav link is a fresh page load from the start path. Lower <code>e2e.max_links</code>, or list fewer start paths in <code>pages.e2e</code>.</p>
+<p><strong>Tests fail locally but pass in CI (or vice versa):</strong> check the URL the run resolved to (<code>E2E_TEST_URL</code> or the positional), that it is reachable, and that the Playwright browsers are installed (<code>npx playwright install --with-deps chromium</code>).</p>
+<h2 id="related-documentation">Related Documentation</h2>
+<ul>
+  <li><a href="index.html">Reliability README</a>, the env-var contract shared by every reliability check</li>
+  <li><a href="accessibility.html">Accessibility</a>, the other page-walking Playwright check</li>
+  <li><a href="https://playwright.dev/docs/locators" rel="noopener noreferrer">Playwright locators</a>, for writing your own journeys</li>
+</ul>
+        </article>
+<nav class="doc-siblings" aria-label="In Reliability">
+  <h2>In Reliability</h2>
+  <ul>
+    <li><a href="index.html">Reliability Testing</a></li>
+    <li><a href="accessibility.html">Accessibility Monitoring</a></li>
+    <li><a href="cwv.html">Core Web Vitals</a></li>
+    <li><a href="e2e.html" aria-current="page">E2E Journeys</a></li>
+    <li><a href="llms-txt.html">llms.txt AI-Discoverability Check</a></li>
+    <li><a href="robots-txt.html">robots.txt Discoverability Check</a></li>
+    <li><a href="seo.html">SEO &amp; Social-Share Metatag Check</a></li>
+    <li><a href="sitemap.html">sitemap.xml Completeness + Drift Check</a></li>
+  </ul>
+</nav>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../../copy.js" defer></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # Support
 
-How to get help with this project.
+Where to ask a question, report a bug or request a check: an AI assistant first, then an issue on the repository, then a discussion.
 
 ## Support Flow
 
@@ -44,7 +44,7 @@ Use this for:
 
 - Unexpected behaviour within this repo
 - Missing documentation that is clearly scoped to this project
-- Configuration questions specific to this template
+- Configuration questions specific to this repo
 
 ## Step 3. Start a Discussion (cross-repo or cross-team)
 

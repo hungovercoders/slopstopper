@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<!-- Generated from docs/security/LICENCES.md by scripts/docsite.py: edit the source, then `task contributing:docs:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Licence Inventory · Security | SlopStopper</title>
+    <meta name="description" content="security:licences judges every dependency the lockfiles resolve to against the repo&#x27;s licence allowlist, so a transitive package under a denied licence cannot sit in the tree unnoticed.">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/docs/security/licences.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/docs/security/licences.html">
+    <meta property="og:title" content="Licence Inventory · Security | SlopStopper">
+    <meta property="og:description" content="security:licences judges every dependency the lockfiles resolve to against the repo&#x27;s licence allowlist, so a transitive package under a denied licence cannot sit in the tree unnoticed.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Licence Inventory · Security | SlopStopper">
+    <meta name="twitter:description" content="security:licences judges every dependency the lockfiles resolve to against the repo&#x27;s licence allowlist, so a transitive package under a denied licence cannot sit in the tree unnoticed.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <script src="../../theme.js"></script>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+    <link rel="manifest" href="../../manifest.webmanifest">
+    <link rel="preload" href="../../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../../shared.css">
+    <link rel="stylesheet" href="../../lesson.css">
+    <link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../../index.html" id="nav-home">Home</a>
+            <a href="../../features.html" id="nav-features">Features</a>
+            <a href="../../tools.html" id="nav-tools">Tools</a>
+            <a href="../../learn.html" id="nav-learn">Learn</a>
+            <a href="../../docs.html" id="nav-docs">Docs</a>
+            <a href="../../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+            <button type="button" class="btn btn--ghost theme-toggle" aria-label="Switch theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson hero--doc">
+            <span class="kicker">📚 Docs · Security</span>
+            <h1>Licence Inventory</h1>
+        </section>
+        <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Security</a></li><li aria-current="page">Licence Inventory</li></ol></nav>
+        <article class="lesson doc">
+<p><code>security:licences</code> judges every dependency the lockfiles resolve to against the repo's licence allowlist, so a transitive package under a denied licence cannot sit in the tree unnoticed. It is the full-tree companion to the dependency review, which judges only what each PR adds.</p>
+<h2 id="quick-start">Quick Start</h2>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:security:licences        # the whole resolved tree, against the policy
+cat .ss/reports/licences/licences-report.md</code></pre></div>
+<h2 id="what-it-reads">What it reads</h2>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Ecosystem</th><th>Source of the tree</th><th>Needs</th></tr></thead>
+  <tbody>
+    <tr><td>npm</td><td><code>package-lock.json</code> (lockfile version 2 or 3), at the root or one directory down; workspace packages are the repo's own code and are not judged</td><td>nothing installed: the lockfile records each package's <code>license</code></td></tr>
+    <tr><td>Python</td><td><code>python3 -m pip inspect</code> of the interpreter the project is installed into; the report names which</td><td>the project's runtime dependencies (from <code>[project.dependencies]</code>, <code>[tool.poetry.dependencies]</code> or <code>requirements.txt</code>), or the project itself, installed there; extras and Poetry groups count only with <code>include_dev</code> (a <code>.venv/</code> beside the manifest is used first, then <code>python3</code> on PATH). A manifest that declares nothing readable judges no environment</td></tr>
+  </tbody>
+</table></div>
+<p><code>yarn.lock</code> and <code>pnpm-lock.yaml</code> carry no licence data and are reported as not judged. A repo with no manifest at all passes with nothing to say.</p>
+<p>By default npm <code>devDependencies</code> are not judged, the same scope the dependency review fails on: they build and test the project and never ship, so their licences impose no obligation on what does. Set <code>security.licences.include_dev: true</code> to judge them too.</p>
+<h2 id="the-policy">The policy</h2>
+<p><code>.github/dependency-review-config.yml</code>, which <code>install.sh</code> seeds, is the one policy file. Its <code>allow-licenses</code> (or <code>deny-licenses</code>) list is the rule and its <code>allow-dependencies-licenses</code> purls are the exemptions:</p>
+<div class="codeblock codeblock--yaml" tabindex="0"><pre><code>allow-dependencies-licenses:
+  # Build-time image library under the LGPL; the shipped site never links it.
+  - pkg:npm/@img/sharp-libvips-linux-x64
+  - pkg:pypi/some-package</code></pre></div>
+<p>A licence is judged as an SPDX expression (<code>MIT</code>, <code>(MIT OR Apache-2.0)</code>, <code>GPL-2.0-only WITH Classpath-exception-2.0</code>). The deprecated GNU forms most lockfiles still carry (<code>GPL-3.0</code>, <code>GPL-2.0+</code>) are read as their current ids, common free-text names in Python metadata (<code>Apache License 2.0</code>, <code>3-Clause BSD License</code>) as their SPDX id, and npm's <code>UNLICENSED</code> as an explicit refusal. Anything else, and a package that states no licence, is <strong>reported as unknown and never fails the run</strong>, which is also how the dependency review treats a licence it cannot detect. The report lists them so a reader can look. The policy's lists may be block or flow form; a file with neither an allow nor a deny list is exit 2.</p>
+<h2 id="exit-codes">Exit codes</h2>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Code</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td>0</td><td>every judged licence is on the allowlist, or there was nothing to inventory</td></tr>
+    <tr><td>1</td><td>at least one package carries a licence outside the policy; the report names each</td></tr>
+    <tr><td>2</td><td>no policy file; a version-1 <code>package-lock.json</code> (no licence data; rewrite it with npm 7+); <code>pip inspect</code> missing (pip 22.2+); or a Python manifest whose declared dependencies are not installed in the inspected interpreter</td></tr>
+  </tbody>
+</table></div>
+<p>The last case is deliberate: an empty environment must never read as a clean tree. In CI the workflow installs a root-level <code>requirements.txt</code> or <code>pyproject.toml</code> into the job's Python first; a project one directory down adds its own <code>pip install</code> step to the workflow.</p>
+<h2 id="configuration">Configuration</h2>
+<div class="codeblock codeblock--yaml" tabindex="0"><pre><code>security:
+  licences:
+    policy: .github/dependency-review-config.yml
+    include_dev: false
+    python: python3     # or a path, e.g. cli/.venv/bin/python</code></pre></div>
+<h2 id="when-it-fails">When it fails</h2>
+<ol>
+  <li>Read the report's "Outside the allowlist" table: package, version, ecosystem, licence.</li>
+  <li>If the package should go, replace it. If its licence is acceptable for this project, add its purl to <code>allow-dependencies-licenses</code> with a comment saying why; the dependency review honours the same line.</li>
+  <li>If the policy itself is wrong for the project, edit <code>allow-licenses</code>; both checks move together.</li>
+</ol>
+<h2 id="files">Files</h2>
+<ul>
+  <li><code>cli/slopstopper/checks/licences.py</code>, the check (stdlib only)</li>
+  <li><code>.github/workflows/ss-security-licences-check.yml</code>, the workflow</li>
+  <li><code>.ss/reports/licences/licences-report.{md,json}</code>, the reports</li>
+  <li><a href="vulnerability.html">VULNERABILITY.md</a>, the division of labour with the dependency review, Trivy and Dependabot</li>
+</ul>
+        </article>
+<nav class="doc-siblings" aria-label="In Security">
+  <h2>In Security</h2>
+  <ul>
+    <li><a href="index.html">Security</a></li>
+    <li><a href="api-headers.html">API Headers &amp; CORS</a></li>
+    <li><a href="csp-exceptions.html">CSP exceptions</a></li>
+    <li><a href="dast.html">Dynamic Application Security Testing (DAST)</a></li>
+    <li><a href="licences.html" aria-current="page">Licence Inventory</a></li>
+    <li><a href="sast.html">Static Application Security Testing (SAST)</a></li>
+    <li><a href="secrets.html">Secrets Detection</a></li>
+    <li><a href="vulnerability.html">Dependency Vulnerability Scanning</a></li>
+  </ul>
+</nav>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../../copy.js" defer></script>
+</body>
+</html>

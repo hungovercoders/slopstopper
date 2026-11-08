@@ -74,14 +74,14 @@ def _nav(page: Path) -> tuple[list[tuple[str, str, str]], list[str]]:
 
 
 def test_every_page_carries_the_same_main_nav():
-    pages = sorted((REPO_ROOT / "app").glob("*.html")) + sorted(LESSON_PAGES.glob("*.html"))
+    pages = sorted((REPO_ROOT / "app").glob("*.html")) + sorted(LESSON_PAGES.glob("*.html")) + sorted((REPO_ROOT / "app/docs").rglob("*.html"))
     expected, _ = _nav(REPO_ROOT / "app/index.html")
     assert ("learn.html", "nav-learn", "Learn") in expected
     for page in pages:
         links, current = _nav(page)
-        # A lesson page lives one directory down and reaches the nav's
-        # targets through `../`; the targets themselves must be the same.
-        links = [(href.removeprefix("../"), nav_id, label) for href, nav_id, label in links]
+        # A lesson or doc page lives one or two directories down and reaches
+        # the nav's targets through `../`; the targets themselves must be the same.
+        links = [(re.sub(r"^(\.\./)+", "", href), nav_id, label) for href, nav_id, label in links]
         assert links == expected, f"{page.relative_to(REPO_ROOT)}'s main nav differs from index.html's"
         in_nav = page.parent == REPO_ROOT / "app" and page.name in {href for href, _, _ in links}
         assert current == ([page.name] if in_nav else []), (

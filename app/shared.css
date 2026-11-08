@@ -1147,19 +1147,19 @@ html.js .tab-panel.section {
     .header-actions .theme-toggle {
         padding: 0.55rem 0.6rem;
     }
-    /* Five nav links on one row down to a 360px phone; the touch target
-       keeps its height, only the side padding narrows. */
+    /* Six nav links on one row down to a 360px phone; the touch target
+       keeps its height, only the side padding and the type narrow. */
     header nav {
         gap: 0;
     }
     header nav a {
-        padding: 0.65rem 0.45rem;
-        font-size: 0.9rem;
+        padding: 0.65rem 0.3rem;
+        font-size: 0.86rem;
     }
 }
 
 /* ─── Narrow phone header ────────────────────────────────── */
-/* Below ~370px the four links no longer fit at phone padding: tighten
+/* Below ~370px the six links no longer fit at phone padding: tighten
  * them so the nav stays one row, and spread it across the width. */
 @media (max-width: 370px) {
     .site-title {
@@ -1170,8 +1170,8 @@ html.js .tab-panel.section {
         justify-content: space-between;
     }
     header nav a {
-        padding: 0.65rem 0.4rem;
-        font-size: 0.9rem;
+        padding: 0.65rem 0.2rem;
+        font-size: 0.84rem;
     }
     .header-actions .nav-cta {
         padding: 0.55rem 0.6rem;

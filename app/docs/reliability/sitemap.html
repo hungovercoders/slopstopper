@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<!-- Generated from docs/reliability/SITEMAP.md by scripts/docsite.py: edit the source, then `task contributing:docs:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sitemap.xml Completeness + Drift Check · Reliability | SlopStopper</title>
+    <meta name="description" content="Crawls your site and cross-checks sitemap.xml against the pages it reaches: a reachable page missing from it, or an entry that 404s, fails.">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/docs/reliability/sitemap.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/docs/reliability/sitemap.html">
+    <meta property="og:title" content="sitemap.xml Completeness + Drift Check · Reliability | SlopStopper">
+    <meta property="og:description" content="Crawls your site and cross-checks sitemap.xml against the pages it reaches: a reachable page missing from it, or an entry that 404s, fails.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="sitemap.xml Completeness + Drift Check · Reliability | SlopStopper">
+    <meta name="twitter:description" content="Crawls your site and cross-checks sitemap.xml against the pages it reaches: a reachable page missing from it, or an entry that 404s, fails.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <script src="../../theme.js"></script>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+    <link rel="manifest" href="../../manifest.webmanifest">
+    <link rel="preload" href="../../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../../shared.css">
+    <link rel="stylesheet" href="../../lesson.css">
+    <link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../../index.html" id="nav-home">Home</a>
+            <a href="../../features.html" id="nav-features">Features</a>
+            <a href="../../tools.html" id="nav-tools">Tools</a>
+            <a href="../../learn.html" id="nav-learn">Learn</a>
+            <a href="../../docs.html" id="nav-docs">Docs</a>
+            <a href="../../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+            <button type="button" class="btn btn--ghost theme-toggle" aria-label="Switch theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson hero--doc">
+            <span class="kicker">📚 Docs · Reliability</span>
+            <h1>sitemap.xml Completeness + Drift Check</h1>
+        </section>
+        <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Reliability</a></li><li aria-current="page">sitemap.xml Completeness + Drift Check</li></ol></nav>
+        <article class="lesson doc">
+<p>Crawls your site and cross-checks <code>sitemap.xml</code> against the pages it reaches: a reachable page missing from it, or an entry that 404s, fails. Where <a href="llms-txt.html"><code>ss:reliability:llms-txt</code></a> and <a href="robots-txt.html"><code>ss:reliability:robots-txt</code></a> assert those files <em>exist and are well-formed</em>, this check asserts <code>sitemap.xml</code> is <strong>complete and current</strong>. It is a black-box assertion that the served sitemap mirrors the reachable site, <strong>independent of how the file is produced</strong> (hand-authored or generated).</p>
+<h2 id="what-gets-validated">What gets validated</h2>
+<p>The check performs one BFS crawl from <code>/</code> (following same-origin <code>&lt;a href&gt;</code> links), then diffs the reachable page set against the sitemap and, advisorily, against <code>llms.txt</code>.</p>
+<p><strong>Hard-fail (exit 1):</strong></p>
+<ul>
+  <li><code>sitemap.xml</code> is reachable (HTTP 200) and valid XML</li>
+  <li><strong>No reachable page is missing from the sitemap</strong>, the incompleteness guard</li>
+  <li><strong>No sitemap <code>&lt;loc&gt;</code> 404s</strong>, because a dead entry is stale drift</li>
+</ul>
+<p><strong>Advisory (notes only, unless escalated via config):</strong></p>
+<ul>
+  <li><strong>Orphans.</strong> A sitemap entry that resolves (HTTP 200) but nothing internally links to. Escalate with <code>allow_orphans: false</code> / <code>--strict-orphans</code>.</li>
+  <li><strong>llms.txt gaps.</strong> A reachable page not listed in <code>llms.txt</code>. <code>llms.txt</code> is a <em>curated</em> map, so this is advisory; escalate with <code>require_llms_complete</code> / <code>--require-llms-complete</code>. Five or more gaps under one section collapse into one note, and <code>llms_ignore_paths</code> leaves a taxonomy or listing section out of this diff without touching its sitemap coverage.</li>
+  <li><strong>Crawl cap.</strong> Hitting <code>max_pages</code> is logged and noted (never silent), so a truncated crawl can't masquerade as full coverage.</li>
+</ul>
+<blockquote>
+<p><strong>Scope note.</strong> The crawler sees only server-rendered <code>&lt;a href&gt;</code> links, so a JS-rendered SPA will under-crawl. Use <code>ignore_paths</code> / <code>max_pages</code> to bound noisy sections, or point the check at your built static output.</p>
+</blockquote>
+<h2 id="flat-vs-nested-sitemaps">Flat vs nested sitemaps</h2>
+<p>Both shapes are supported transparently and <strong>neither is flagged</strong>:</p>
+<ul>
+  <li>A <strong>flat <code>&lt;urlset&gt;</code></strong>, one file listing every URL.</li>
+  <li>A <strong>nested <code>&lt;sitemapindex&gt;</code></strong> pointing at child sitemaps (<code>sitemap-0.xml</code>, <code>sitemap-1.xml</code>, …), which the check fetches and recurses into.</li>
+</ul>
+<p>A flat sitemap is fully spec-valid. Per the <a href="https://www.sitemaps.org/protocol.html" rel="noopener noreferrer">sitemaps.org protocol</a> the index is the <em>optional</em> scale-out mechanism for when you exceed the 50,000-URL / 50 MB-per-file limit, so it is <strong>recommended, not required</strong>. Frameworks such as <a href="https://docs.astro.build/en/guides/integrations-guide/sitemap/" rel="noopener noreferrer"><code>@astrojs/sitemap</code></a> emit the index by default regardless of size; a small static site with a single flat sitemap is equally correct, so the check enforces neither shape.</p>
+<h2 id="keeping-it-complete-generate-dont-hand-edit">Keeping it complete: generate, don't hand-edit</h2>
+<p>The durable fix for drift is <strong>not</strong> to hand-patch each missing <code>&lt;loc&gt;</code>. It is to <strong>generate <code>sitemap.xml</code> (and <code>llms.txt</code>) from your route inventory at build time</strong>, so the file is <em>derived</em> from your routes and can't drift. Two common routes:</p>
+<ul>
+  <li><strong>A framework sitemap integration</strong>, such as <code>@astrojs/sitemap</code>, Next.js <code>app/sitemap.ts</code> or your framework's equivalent.</li>
+  <li><strong>A build-time endpoint that iterates your content</strong>, such as an Astro <code>src/pages/sitemap-*.xml.ts</code> (or <code>src/pages/llms.txt.ts</code>) that walks your content collections. Every new post/page appears automatically.</li>
+</ul>
+<p>The check still earns its place when generation makes drift impossible at the source, because a generator can still have bugs, such as a collection left out of the iterator, an over-aggressive <code>draft</code> filter or a route type not enumerated. <strong>Generation prevents drift; this check independently verifies the generator is actually complete.</strong> The two are complementary, so when the check fails, reach for the generator first and treat a manual <code>&lt;loc&gt;</code> edit as the stopgap.</p>
+<h2 id="configuration">Configuration</h2>
+<p>Read from environment variables or <code>.slopstopper.yml</code>'s <code>reliability.sitemap</code> block:</p>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Variable / key</th><th>Default</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>SITEMAP_TEST_URL</code></td><td>(none, required)</td><td>Base URL to crawl + audit</td></tr>
+    <tr><td><code>SITEMAP_PATH</code></td><td><code>/sitemap.xml</code></td><td>Path to the sitemap (<code>--path</code>)</td></tr>
+    <tr><td><code>reliability.sitemap.max_pages</code></td><td><code>200</code></td><td>Crawl bound; hitting it is logged, not silent (<code>--max-pages</code>)</td></tr>
+    <tr><td><code>reliability.sitemap.ignore_paths</code></td><td><code>[]</code></td><td>Globs excluded from crawl + diff (<code>--ignore</code>)</td></tr>
+    <tr><td><code>reliability.sitemap.llms_ignore_paths</code></td><td><code>[]</code></td><td>Globs left out of the llms.txt diff only, e.g. <code>/tags/*</code> (<code>--llms-ignore</code>)</td></tr>
+    <tr><td><code>reliability.sitemap.allow_orphans</code></td><td><code>true</code></td><td>Sitemap entries nothing links to are advisory (<code>--strict-orphans</code> to fail)</td></tr>
+    <tr><td><code>reliability.sitemap.require_llms_complete</code></td><td><code>false</code></td><td>Fail if a reachable page is absent from llms.txt (<code>--require-llms-complete</code>)</td></tr>
+    <tr><td><code>reliability.sitemap.llms_path</code></td><td><code>/llms.txt</code></td><td>Path to llms.txt for the cross-check (<code>--llms-path</code>)</td></tr>
+  </tbody>
+</table></div>
+<p>Sitemap and <code>llms.txt</code> <code>&lt;loc&gt;</code>s carry absolute production URLs even when served from a local build, so the check <strong>rebases every path onto the origin under test</strong>. It never HEADs the production domain from a localhost run, and behaves identically in local, CI and deployed runs.</p>
+<h2 id="running-it">Running it</h2>
+<div class="codeblock codeblock--sh" data-copyable><pre><code># Crawl + audit a deployed site
+task ss:reliability:sitemap -- https://your-site.example.com
+
+# Audit the local build, bound the crawl, and require llms.txt to be complete
+SITEMAP_TEST_URL=http://localhost:8080 \
+task ss:reliability:sitemap -- --max-pages 50 --require-llms-complete</code></pre></div>
+<p>Generated reports are written to:</p>
+<ul>
+  <li><code>.ss/reports/sitemap/sitemap-report.md</code> (human-readable)</li>
+  <li><code>.ss/reports/sitemap/sitemap-report.json</code> (machine-readable)</li>
+</ul>
+<p>This site's own file, <a href="https://github.com/hungovercoders/slopstopper/blob/main/app/sitemap.xml" rel="noopener noreferrer"><code>app/sitemap.xml</code></a>, is the canonical example.</p>
+<h2 id="why-this-exists">Why this exists</h2>
+<p><code>sitemap.xml</code> is the one discovery file <em>meant</em> to be exhaustive, yet nothing normally guards it: add a page and nothing fails if it's missing from the sitemap; delete a page and its stale <code>&lt;loc&gt;</code> sits there unflagged. Both failures are silent. Search engines quietly under-index new content or waste crawl budget on 404s. Making completeness and dead-entry detection a deploy-time gate turns slow, invisible SEO decay into a red check on the PR that introduced it, and points the fix at the durable remedy: generate the file from your routes.</p>
+<h2 id="ci-integration">CI integration</h2>
+<p>The <a href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-sitemap-check.yml" rel="noopener noreferrer"><code>ss-reliability-sitemap-check.yml</code></a> workflow runs on every PR, every push to <code>main</code>, on <code>deployment_status</code> success, daily, and on a <code>url</code> dispatch (which is how <code>ss-cloudflare-deployed.yml</code> runs it after a Workers Builds deploy). PR runs comment back with pass/fail and a link to the artefact.</p>
+        </article>
+<nav class="doc-siblings" aria-label="In Reliability">
+  <h2>In Reliability</h2>
+  <ul>
+    <li><a href="index.html">Reliability Testing</a></li>
+    <li><a href="accessibility.html">Accessibility Monitoring</a></li>
+    <li><a href="cwv.html">Core Web Vitals</a></li>
+    <li><a href="e2e.html">E2E Journeys</a></li>
+    <li><a href="llms-txt.html">llms.txt AI-Discoverability Check</a></li>
+    <li><a href="robots-txt.html">robots.txt Discoverability Check</a></li>
+    <li><a href="seo.html">SEO &amp; Social-Share Metatag Check</a></li>
+    <li><a href="sitemap.html" aria-current="page">sitemap.xml Completeness + Drift Check</a></li>
+  </ul>
+</nav>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../../copy.js" defer></script>
+</body>
+</html>

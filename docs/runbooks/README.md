@@ -1,10 +1,10 @@
 # Runbooks
 
-Operational procedures for the SlopStopper project, covering both the suite itself and the things adopters do once around it.
+What you do once around the suite: install it into a repo, install the Claude Code skills, move the CLI pin, and, for the project itself, cut a release.
 
 ## Overview
 
-This directory holds step-by-step runbooks for common operational tasks. As the project is a minimal static site template, operational procedures are currently minimal.
+This directory holds step-by-step runbooks for common operational tasks: what an adopter does once around the suite, and what the project does to cut a release.
 
 ## Routes
 

@@ -1,8 +1,7 @@
 # Security
 
-Security scanning and controls for this project: what each `security:*` check
-looks at, how it blocks, and where to tune it. One file per check; this page
-is the map, so read only the doc whose trigger matches.
+The security checks: what each one looks at, how it blocks, and where to tune it.
+One page per check; read the one whose trigger matches.
 
 ## Routes
 

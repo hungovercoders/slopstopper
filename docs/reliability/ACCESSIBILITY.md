@@ -2,8 +2,7 @@
 
 ## Overview
 
-This directory documents automated accessibility monitoring for the site.
-Accessibility is audited on every pull request, push to `main`, successful deployment, and on a daily schedule.
+axe-core audits every page against WCAG 2.1 AA, on every pull request, push to `main` and deploy, and daily.
 
 The audit uses [axe-core](https://github.com/dequelabs/axe-core) via [`@axe-core/playwright`](https://github.com/dequelabs/axe-core-packages/tree/develop/packages/playwright) to check all pages against **WCAG 2.1 AA** rules.
 

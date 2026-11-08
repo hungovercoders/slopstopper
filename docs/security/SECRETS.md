@@ -1,6 +1,6 @@
 # Secrets Detection
 
-This template includes automated secrets detection using **Gitleaks** to identify hardcoded credentials, API keys, and other sensitive data in your source code and git history. This guide explains how to customise and use this feature.
+**Gitleaks** scans your source and your git history for committed credentials, API keys and other secrets.
 
 ## Quick Start
 

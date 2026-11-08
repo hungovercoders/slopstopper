@@ -1,0 +1,14 @@
+flowchart LR
+    PR["📤 Push / Open PR"]
+    SC["🔒 Security\nSAST · DAST · Secrets · CVEs"]
+    HY["🧹 Hygiene\nComplexity · Docs"]
+    RE["✅ Reliability\nE2E · Smoke · A11y · CWV"]
+    DP["🚀 Deploy\nPreview URL"]
+    FB["💬 Feedback\nto Developer"]
+
+    PR --> SC
+    SC --> HY
+    HY --> RE
+    RE --> DP
+    DP --> FB
+    FB -.->|fix & iterate| PR
