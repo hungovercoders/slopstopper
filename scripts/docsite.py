@@ -387,25 +387,31 @@ def index_text(all_docs: list[Doc]) -> str:
 def _section_blocks(all_docs: list[Doc], who: str) -> str:
     """One block per section that has a doc for this audience: the index's
     heading and lede when the index is theirs, then the docs that are."""
-    esc = lambda s: html.escape(s, quote=True)  # noqa: E731
     blocks = []
     for key, (name, _) in SECTIONS.items():
         index = next((d for d in all_docs if d.section == key and d.is_index), None)
         if index is None:
             raise RenderError(f"docs/{key}/README.md is missing; every section in docsite.SECTIONS needs its index")
         others = [d for d in all_docs if d.section == key and not d.is_index and audience(d) == who]
-        if audience(index) != who and not others:
-            continue
-        items = "\n".join(_entry(d, esc) for d in others)
-        lede = f'                <p class="doc-section__lede">{esc(index.description)}</p>\n' if audience(index) == who else ""
-        blocks.append(
-            f'            <div class="doc-section" id="{key}{"" if audience(index) == who else "-" + who}">\n'
-            f'                <h3><a href="{index.path.lstrip("/")}">{esc(name)}</a></h3>\n'
-            + lede
-            + (f'                <ul class="doc-list">\n{items}\n                </ul>\n' if items else "")
-            + "            </div>"
-        )
+        index_here = audience(index) == who
+        if index_here or others:
+            blocks.append(_section_block(key if index_here else f"{key}-{who}", name, index, others, index_here))
     return "\n".join(blocks)
+
+
+def _section_block(block_id: str, name: str, index: Doc, others: list[Doc], with_lede: bool) -> str:
+    esc = lambda s: html.escape(s, quote=True)  # noqa: E731
+    lines = [
+        f'            <div class="doc-section" id="{block_id}">',
+        f'                <h3><a href="{index.path.lstrip("/")}">{esc(name)}</a></h3>',
+    ]
+    if with_lede:
+        lines.append(f'                <p class="doc-section__lede">{esc(index.description)}</p>')
+    if others:
+        items = "\n".join(_entry(d, esc) for d in others)
+        lines.append(f'                <ul class="doc-list">\n{items}\n                </ul>')
+    lines.append("            </div>")
+    return "\n".join(lines)
 
 
 def sitemap_text(all_docs: list[Doc]) -> str:
