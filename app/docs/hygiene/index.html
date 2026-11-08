@@ -109,11 +109,26 @@
 <div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:docs-size</code></pre></div>
 <h3 id="documentation-structure-validation">Documentation Structure Validation</h3>
 <p>Validates the AGENTS.md-first model: every doc under <code>docs/</code> must be reachable by an <strong>explicit route</strong> from <code>AGENTS.md</code>, the map (<code>docs/README.md</code>) or a <code>README.md</code> above it. An explicit route is a line that names its trigger and says read (<code>Before you change CI, read docs/ci.md for what task ci runs</code>, or a row of a "When you are… | Do this" table). A doc nothing routes to is invisible to agents; a "see also" is skipped. The report lists every reachable doc with its hop count.</p>
+<figure class="diagram">
+  <img class="only-light" src="../../assets/docs/diagrams/266fb426bdc2-light.svg" width="514" height="793" alt="Diagram; its text follows.">
+  <img class="only-dark" src="../../assets/docs/diagrams/266fb426bdc2-dark.svg" width="514" height="793" alt="Diagram; its text follows.">
+  <details class="details diagram__source">
+    <summary>The diagram as text</summary>
+    <div class="details__body"><div class="codeblock codeblock--out" tabindex="0"><pre><code>flowchart TD
+    C["CLAUDE.md\n@AGENTS.md"] -. includes .-&gt; A
+    A["AGENTS.md\nalways loaded\n≤ 2,000 tokens"] -- "when you are X, read Y" --&gt; T1["a topic doc\n≤ 300 lines\nhop 1"]
+    A -- route --&gt; M["the map\n≤ 1,000 tokens\nhop 1"]
+    README["README.md\n≤ 600 tokens"] -. links .-&gt; M
+    M -- route --&gt; T2["a topic doc\nhop 2"]
+    M -- route --&gt; R["an area README\nhop 2"]
+    R -- route --&gt; T3["a deeper doc\nhop 3, the limit"]</code></pre></div></div>
+  </details>
+</figure>
 <p><strong>Fails on:</strong></p>
 <ul>
   <li><code>unrouted_doc</code> is a doc with no explicit route (the message says whether it is linked softly, or routed from a README that is itself unreachable)</li>
   <li><code>soft_route</code> is a <code>.md</code> link in the map that does not say when to read it</li>
-  <li><code>route_too_deep</code> means more hops than <code>hygiene.docs_structure.max_route_depth</code> (default 3: <code>AGENTS.md</code> → map → directory README → doc)</li>
+  <li><code>route_too_deep</code> means more hops than <code>hygiene.docs_structure.max_route_depth</code> (default 3)</li>
   <li><code>doc_over_lines</code> is a topic doc past <code>hygiene.docs_structure.max_doc_lines</code> (default 300; the map is exempt). Split by concern and route each part</li>
   <li><code>legacy_index</code> is a legacy index file beside the map. The map is a README so the repo UI renders it in place; fold it in and delete it</li>
   <li><code>broken_route</code> is a route whose target does not exist</li>
@@ -124,7 +139,7 @@
 <p>Scans markdown for stale or broken references: internal markdown links that don't resolve, <code>task &lt;name&gt;</code> references to non-existent Taskfile tasks, workflow filename references that don't match <code>.github/workflows/</code>, and stale source-file references. A backtick-quoted file resolves at the repo root, next to the doc, or anywhere in the repo by name or path suffix (for example <code>pack.json</code> or <code>demos/render.sh</code>), counting files <code>git ls-files</code> lists, so prose can name files the way people say them. A path a doc names on purpose although no checkout holds it (a file written at run time, a generated file that is gitignored) goes in <code>hygiene.docs_accuracy.ignore_refs</code>. Scans all of <code>docs/</code> plus the repo-root entry files (<code>README.md</code>, <code>AGENTS.md</code>, <code>CLAUDE.md</code>, <code>CONTRIBUTING.md</code>) so drift in the most-loaded files is caught too.</p>
 <p>Runs <strong>weekly on a schedule</strong> (Monday 07:00 UTC), on PRs/pushes that change docs or project structure, and can be triggered manually. When issues are found, a GitHub issue is automatically created or updated.</p>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:docs-accuracy</code></pre></div>
-<p>By default it reads <code>docs/**/*.md</code> and the four root entry files. <code>hygiene.docs_accuracy.extra_paths</code> (repo-relative globs in <code>.slopstopper.yml</code>) brings more files into scope, with only the checks that are precise for a file describing an adopter's tree rather than this one: <code>task ss:…</code> and workflow references must exist (markdown), and every <code>github.com/&lt;this repo&gt;/blob|tree/&lt;ref&gt;/&lt;path&gt;</code> link must point at a path that exists (markdown and HTML). slopstopper.dev scans <code>app/*.html</code> and <code>.claude/skills/**/*.md</code> this way, because every piece of site and skill drift the repo review found lived in a file the <code>docs/</code>-only scan never read.</p>
+<p>By default it reads <code>docs/**/*.md</code> and the four root entry files. <code>hygiene.docs_accuracy.extra_paths</code> (repo-relative globs in <code>.slopstopper.yml</code>) brings more files into scope, with only the checks that are precise for a file describing an adopter's tree rather than this one: <code>task ss:…</code> and workflow references must exist (markdown), and every <code>github.com/&lt;this repo&gt;/blob|tree/&lt;ref&gt;/&lt;path&gt;</code> link must point at a path that exists (markdown and HTML). slopstopper.dev scans <code>app/*.html</code> and <code>.claude/skills/**/*.md</code> this way.</p>
 <h3 id="entry-file-budget">Entry-File Budget</h3>
 <p>Enforces the AGENTS.md-first entry files declared in <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/README.md#the-model" rel="noopener noreferrer"><code>docs/README.md</code></a>. <code>AGENTS.md</code> is loaded into every agent conversation (it is prompt-cached, so inlining what most tasks need is cheap, while every routing hop costs a tool turn), but instruction-following degrades as rules pile up, so it stays under <strong>~2,000 estimated tokens</strong> (chars/4; roughly 40–60 rules) and routes the overflow. The check enforces:</p>
 <ul>

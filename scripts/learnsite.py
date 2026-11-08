@@ -119,7 +119,12 @@ def rewrite_link(target: str) -> tuple[str, bool]:
     return (href if external else relpath(href, "/learn")), external
 
 
-OPTIONS = Options(link=rewrite_link)
+# A `mermaid` fence is a diagram, drawn the way the docs pages draw one.
+# docsite.py keeps app/assets/docs/diagrams/ in step with the lessons too,
+# so a new diagram here needs `task contributing:docs:site` (its source)
+# and `task contributing:docs:diagrams` (its SVGs, then this page again
+# with their sizes) before the page shows it.
+OPTIONS = Options(link=rewrite_link, diagram=lambda source: sitemd.diagram_html(source, "/learn"))
 
 
 def goal(text: str) -> str:

@@ -153,7 +153,7 @@ slopstopper run security:sast
 ```
 
 Green, and honest about it: the two warnings are still reported. The
-other way out, when a pattern is genuinely safe where it stands, is a
+other way out, when a pattern is safe where it stands, is a
 suppression **with a reason** on the line itself:
 
 ```python

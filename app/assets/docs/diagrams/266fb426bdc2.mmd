@@ -1,0 +1,8 @@
+flowchart TD
+    C["CLAUDE.md\n@AGENTS.md"] -. includes .-> A
+    A["AGENTS.md\nalways loaded\n≤ 2,000 tokens"] -- "when you are X, read Y" --> T1["a topic doc\n≤ 300 lines\nhop 1"]
+    A -- route --> M["the map\n≤ 1,000 tokens\nhop 1"]
+    README["README.md\n≤ 600 tokens"] -. links .-> M
+    M -- route --> T2["a topic doc\nhop 2"]
+    M -- route --> R["an area README\nhop 2"]
+    R -- route --> T3["a deeper doc\nhop 3, the limit"]

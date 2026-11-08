@@ -3,7 +3,7 @@
 <!-- learn-sandbox: demo -->
 
 **Goal.** Audit the tags a search engine and a link preview read, find
-the one the demo's history page is missing, and see which surface it
+the one the demo's history page is missing, and see what it
 would have broken.
 
 ## Why this check

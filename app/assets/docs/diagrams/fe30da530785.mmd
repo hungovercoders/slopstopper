@@ -1,0 +1,19 @@
+flowchart TB
+    subgraph UI["ui: a site, every check"]
+        direction LR
+        U1["smoke · E2E\nbroken links"]
+        U2["accessibility\nCore Web Vitals"]
+        U3["SEO · sitemap\nrobots · llms.txt"]
+        subgraph API["api: endpoints, no pages"]
+            direction LR
+            A1["api-health\napi-latency"]
+            A2["api-headers\nOpenAPI drift"]
+            A3["CSP exceptions\nDAST via the spec"]
+            subgraph LIB["library: nothing deployed"]
+                direction LR
+                L1["SAST · secrets"]
+                L2["CVEs · licences"]
+                L3["complexity · docs\nentry files · labels"]
+            end
+        end
+    end

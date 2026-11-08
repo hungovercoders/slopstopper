@@ -34,7 +34,7 @@ Type 'slopstopper run hygiene:docs-structure; echo "exit $?"' Enter
 Wait+Line@5m /(^|\s)\$$/
 Sleep 3s
 
-# 3. See the one surface
+# 3. See the one command
 Type "clear" Enter
 Wait+Line@5m /(^|\s)\$$/
 Type "task --list | grep 'ss:hygiene'" Enter

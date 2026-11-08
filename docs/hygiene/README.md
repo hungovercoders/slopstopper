@@ -63,11 +63,22 @@ task ss:hygiene:docs-size
 
 Validates the AGENTS.md-first model: every doc under `docs/` must be reachable by an **explicit route** from `AGENTS.md`, the map (`docs/README.md`) or a `README.md` above it. An explicit route is a line that names its trigger and says read (`Before you change CI, read docs/ci.md for what task ci runs`, or a row of a "When you are… | Do this" table). A doc nothing routes to is invisible to agents; a "see also" is skipped. The report lists every reachable doc with its hop count.
 
+```mermaid
+flowchart TD
+    C["CLAUDE.md\n@AGENTS.md"] -. includes .-> A
+    A["AGENTS.md\nalways loaded\n≤ 2,000 tokens"] -- "when you are X, read Y" --> T1["a topic doc\n≤ 300 lines\nhop 1"]
+    A -- route --> M["the map\n≤ 1,000 tokens\nhop 1"]
+    README["README.md\n≤ 600 tokens"] -. links .-> M
+    M -- route --> T2["a topic doc\nhop 2"]
+    M -- route --> R["an area README\nhop 2"]
+    R -- route --> T3["a deeper doc\nhop 3, the limit"]
+```
+
 **Fails on:**
 
 - `unrouted_doc` is a doc with no explicit route (the message says whether it is linked softly, or routed from a README that is itself unreachable)
 - `soft_route` is a `.md` link in the map that does not say when to read it
-- `route_too_deep` means more hops than `hygiene.docs_structure.max_route_depth` (default 3: `AGENTS.md` → map → directory README → doc)
+- `route_too_deep` means more hops than `hygiene.docs_structure.max_route_depth` (default 3)
 - `doc_over_lines` is a topic doc past `hygiene.docs_structure.max_doc_lines` (default 300; the map is exempt). Split by concern and route each part
 - `legacy_index` is a legacy index file beside the map. The map is a README so the repo UI renders it in place; fold it in and delete it
 - `broken_route` is a route whose target does not exist
@@ -87,7 +98,7 @@ Runs **weekly on a schedule** (Monday 07:00 UTC), on PRs/pushes that change docs
 task ss:hygiene:docs-accuracy
 ```
 
-By default it reads `docs/**/*.md` and the four root entry files. `hygiene.docs_accuracy.extra_paths` (repo-relative globs in `.slopstopper.yml`) brings more files into scope, with only the checks that are precise for a file describing an adopter's tree rather than this one: `task ss:…` and workflow references must exist (markdown), and every `github.com/<this repo>/blob|tree/<ref>/<path>` link must point at a path that exists (markdown and HTML). slopstopper.dev scans `app/*.html` and `.claude/skills/**/*.md` this way, because every piece of site and skill drift the repo review found lived in a file the `docs/`-only scan never read.
+By default it reads `docs/**/*.md` and the four root entry files. `hygiene.docs_accuracy.extra_paths` (repo-relative globs in `.slopstopper.yml`) brings more files into scope, with only the checks that are precise for a file describing an adopter's tree rather than this one: `task ss:…` and workflow references must exist (markdown), and every `github.com/<this repo>/blob|tree/<ref>/<path>` link must point at a path that exists (markdown and HTML). slopstopper.dev scans `app/*.html` and `.claude/skills/**/*.md` this way.
 
 ### Entry-File Budget
 

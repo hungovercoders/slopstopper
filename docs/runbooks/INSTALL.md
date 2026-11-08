@@ -1,9 +1,8 @@
 # Adopting SlopStopper
 
-Everything an adopter needs once: prerequisites, what the installer writes,
-what each check needs from you, how to run the suite, configure it and
-move the CLI pin. The [README](../../README.md) holds the two install
-commands; this is the rest.
+Everything an adopter needs once: prerequisites, the install command,
+what the installer writes, what each check needs from you, how to run
+the suite, configure it and move the CLI pin.
 
 ## Prerequisites
 
@@ -23,13 +22,38 @@ Per-check tools (skip any check your profile drops):
 | `trivy` | `security:vulnerability:all` | `brew install aquasecurity/trivy/trivy` |
 | `docker` | `security:dast` | [docs.docker.com/get-docker](https://docs.docker.com/get-docker/) |
 
-Optional: **bash** (for `install.sh`, which pins the CLI through mise and then runs `slopstopper install`; with the CLI already installed, `slopstopper install` alone writes the suite), **Task v3.x** (for the `task ss:*` shim layer).
-`security:licences` needs no tool: it reads `package-lock.json` and `pip inspect`.
+Optional: **bash** for `install.sh`, **Task v3.x** for the `task ss:*` shims. `security:licences` needs no tool: it reads `package-lock.json` and `pip inspect`.
 
 The installer never writes a `LICENSE` or `NOTICE` file. Which licence a
 repo carries is the owner's legal choice, not a default a tool should
 pick, and the two licence checks judge dependencies, not the repo itself;
 `.github/dependency-review-config.yml` is the only licence file it seeds.
+
+## Install
+
+From the root of the repo you are adding it to:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
+```
+
+For an API or a library, name the repo's shape so only the checks that fit are installed ([PROFILES.md](../architecture/PROFILES.md) says what each keeps):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash -s -- --profile api
+curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash -s -- --profile library
+```
+
+`install.sh` pins `slopstopper-cli` in `mise.toml`, installs it through mise, then runs `slopstopper install`, which writes everything the next section lists. Re-running the same command is how you refresh (see [Update](#update)). With the CLI already on PATH, `slopstopper install [--profile …]` alone writes the suite. Commit what landed and open a pull request: the checks run on it and report back in one summary comment.
+
+To try a check before installing anything into a repo:
+
+```bash
+pipx install slopstopper-cli
+slopstopper checks list              # every check
+slopstopper doctor                   # which external tools are missing
+slopstopper run hygiene:docs-size    # one check; the report lands in .ss/reports/
+```
 
 ## What gets installed
 
@@ -63,7 +87,7 @@ There are five feedback loops. The first four run on every PR and push to `main`
 | 🧹 **Hygiene** | Complexity caps, docs structure/accuracy/size and entry-file checks, CSP drift, the privacy statement, OpenAPI drift, auto-labelled PRs | Lizard, stdlib Python | [Hygiene →](../hygiene/README.md) |
 | ✅ **Reliability** | E2E + smoke tests, broken-link audits, accessibility (WCAG 2.1 AA), Core Web Vitals, SEO metatags, llms.txt, robots.txt, sitemap.xml, API health + latency | Playwright, axe-core, Lighthouse CI, stdlib Python | [Reliability →](../reliability/README.md) |
 | 🤖 **Runbooks** | One rolling PR comment summarises every check; failed workflows auto-raise issues; an agentic doc updater opens weekly sync PRs | GitHub Actions, gh-aw | [Runbooks →](./README.md) |
-| 🚀 **Deployment** | How slopstopper.dev ships: preview deploys per PR, automated production releases, automatic preview cleanup. `install.sh` installs no deploy, only the post-deploy check trigger on a Cloudflare repo | Cloudflare Workers Builds (Git integration) | [Deployment →](../deployment/README.md) |
+| 🚀 **Deployment** | How slopstopper.dev ships, to copy; `install.sh` installs no deploy, only the post-deploy check trigger on a Cloudflare repo | Cloudflare Workers Builds | [Deployment →](../deployment/README.md) |
 
 ## What each check needs
 
@@ -71,18 +95,16 @@ Three portability layers. Layer 1 runs on install; layers 2–3 need a little co
 
 | Layer | Checks | What you provide |
 | ----- | ------ | ---------------- |
-| **1. Static analysis** (any code) | SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure/Accuracy/Size, Entry Files, Auto-label PRs, Workflow-failure tracker | Nothing. It works out of the box |
+| **1. Static analysis** (any code) | SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure/Accuracy/Size, Entry Files, Auto-label PRs, Workflow-failure tracker | Nothing |
 | **2. Deployed surface** (need a URL) | Smoke, E2E, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, llms.txt, robots.txt, sitemap.xml, DAST, Playwright, API Health/Latency/Headers, OpenAPI Drift | `urls.production` / `urls.preview` in `.slopstopper.yml` ([per-check env vars](../reliability/README.md) also work) |
 | **3. Agentic doc-updater** | Weekly doc-sync PRs | `COPILOT_GITHUB_TOKEN` repo secret |
 | **Cloudflare repos only** | `ss-cloudflare-deployed.yml`: after each Workers Builds deploy, runs the layer-2 checks against the preview (PRs) or `urls.production` (main) | wrangler config (at the root or one directory down) or `worker/` in the repo; `urls.production` for the live site |
 
-To drop a check, delete its workflow or list it under `workflows.disabled`. Re-runs respect both. If the repo is not a website, `--profile api` (or `library`) installs only the applicable checks (see [Profiles](../architecture/PROFILES.md)).
-
-Deploy is intentionally not a layer: connect your repo in the Cloudflare dash for production deploys, PR previews and preview cleanup. The one workflow `install.sh` adds for a Cloudflare repo runs the checks against what was deployed. See [Deployment](../deployment/README.md).
+To drop a check, delete its workflow or list it under `workflows.disabled`. Re-runs respect both.
 
 ## Same commands, both loops
 
-`task ss:<category>:<check>` is the canonical interface. Humans, agents and CI all go through it, so the suite shares one invocation surface with the rest of your codebase. The shims call `slopstopper-cli` under the hood; pass `--no-task` to `install.sh` to skip Task and have workflows call the CLI directly.
+`task ss:<category>:<check>` is the canonical interface. People, agents and CI all go through it, so a check is run the same way as the rest of your repo's tasks. The shims call `slopstopper-cli`; pass `--no-task` to `install.sh` to skip Task and have workflows call the CLI directly.
 
 ```bash
 task ss:hygiene:complexity                    # the canonical form
@@ -93,7 +115,7 @@ slopstopper run hygiene:complexity            # underlying CLI if you skip Task
 
 ## Configure
 
-Most checks work out of the box. To wire up the full suite:
+Most checks need nothing from you. For the rest:
 
 **[`.slopstopper.yml`](../../.slopstopper.yml.example)** at the repo root is the config file. `install.sh` seeds a starter (`profile`, URLs, page lists, `headers.source: null`) so the first PR is green; the link is the full schema. Survives reinstalls.
 
@@ -109,13 +131,7 @@ Deploy needs no secrets, because Cloudflare Workers Builds connects via the GitH
 
 ## Update
 
-Refresh workflows + shims and reinstall the **pinned** `slopstopper-cli` (config + customisations survive):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
-```
-
-`install.sh` pins and installs the CLI through mise, then hands over to `slopstopper install [--profile …]`, which writes the suite from the files that version ships (the `ss-*.yml` workflows, shims, seeds, hook and skills). With the CLI already installed, `slopstopper install` alone does the same and seeds the pin with its own version when the repo has none; run it from the pinned CLI (`mise exec -- slopstopper install`) so the shims match the version CI runs.
+Re-run the [install command](#install): it rewrites the workflows, shims, hook and skills from the files the **pinned** `slopstopper-cli` ships, and your config and customisations survive. `slopstopper install` on its own does the same; run it from the pinned CLI (`mise exec -- slopstopper install`) so the shims match the version CI runs.
 
 Move the pin when ready (rewrites `mise.toml`; commit so CI matches). See [UPGRADE_CLI.md](./UPGRADE_CLI.md):
 

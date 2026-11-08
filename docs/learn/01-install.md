@@ -25,11 +25,11 @@ on the README does one thing on top: it pins `slopstopper-cli` in
 then hands over to the same command. mise pins the CLI per repo, so two
 repos can run two versions and CI runs the same one you do; `task` comes
 from the same pin file, because `task ss:<category>:<check>` is the one
-surface humans, agents and CI all call.
+command people, agents and CI all run.
 
 A **profile** names the repo's shape and switches off the checks that
-shape has no use for: `ui` (a site, every check), `api` (no browser
-surface, so the nine browser checks and the privacy statement are
+shape has no use for: `ui` (a site, every check), `api` (no pages to
+render, so the nine browser checks and the privacy statement are
 dropped), `library` (nothing deployed, so everything that needs a URL
 goes). The installer only ever
 subtracts, and `workflows.enabled` takes one check back. Lesson 19 goes

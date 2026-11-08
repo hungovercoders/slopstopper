@@ -1,6 +1,6 @@
 # SlopStopper
 
-**A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.** The CLI is `slopstopper-cli`; humans, agents and CI invoke every check through one `task ss:*` surface.
+**A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.** The CLI is `slopstopper-cli`; people, agents and CI run every check with the same `task ss:*` command.
 
 ![slopstopper checks list, doctor and a hygiene check going green](./demos/hero.gif)
 

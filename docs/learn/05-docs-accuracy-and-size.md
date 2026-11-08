@@ -12,7 +12,7 @@ growth signal the size monitor prints without ever failing a build.
 Every reference a doc makes is a promise: that `task ss:hygiene:docs`
 exists, that `.github/workflows/ss-hygiene-tidy-check.yml` is there,
 that `TIDY.md` is a file, that a link into the GitHub repo lands on a
-path. Generated docs break these promises constantly, because they are
+path. Generated docs break these promises often, because they are
 written from a snapshot and nobody re-reads them when the task is
 renamed or the file moves. An agent that reads the stale doc then runs
 the stale command, and the first anyone hears of it is a confused

@@ -9,8 +9,8 @@ how it moves.
 ## Why this lesson
 
 A check that cannot apply is noise, and noise is how gates get
-ignored. The nine browser checks assume HTML, a DOM and a public web
-surface; on an API they do not quietly no-op, they build, serve and
+ignored. The nine browser checks assume HTML, a DOM and a public
+site; on an API they do not quietly no-op, they build, serve and
 audit nothing and go red, and on a library there is nothing to serve
 at all. A profile is a named preset for `workflows.disabled` that says
 which workflows a repo of that shape should not carry. It only ever

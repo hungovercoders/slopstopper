@@ -1,0 +1,8 @@
+flowchart LR
+    S["a schedule\nin your Actions"] --> D["find adopters\ntopic · pin · marker"]
+    D --> P["a pin behind\nthe target?"]
+    D --> I["open issues\nthe checks raised"]
+    P --> R["refresh from\nthe target CLI"]
+    I --> T["triage with the\nrepo's own skills"]
+    R --> PR["one PR per repo\nnever a push"]
+    T --> PR

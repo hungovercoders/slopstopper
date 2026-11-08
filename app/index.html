@@ -88,7 +88,7 @@
                 </div>
                 <h1>Stop the <span class="highlight">slop.</span></h1>
                 <p class="hero__what">A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.</p>
-                <p>Install it once. Each pull request then gets one comment saying what passed and what to fix, and the same checks run on your machine before you push. This site is built and deployed with the suite it describes.</p>
+                <p>Install it once; the same checks run before you push and on every pull request.</p>
                 <div class="cta-row">
                     <a href="#get-started" class="btn btn--primary">Get started →</a>
                     <a href="features.html" class="btn btn--ghost">See features</a>
@@ -97,8 +97,33 @@
             <figure class="hero__demo">
                 <img class="only-light" src="assets/demo.svg" width="910" height="586" alt="A terminal running slopstopper on its own repository: the list of every check, then the entry-files hygiene check passing with every budget in the green." loading="lazy" decoding="async">
                 <img class="only-dark" src="assets/demo-dark.svg" width="910" height="586" alt="A terminal running slopstopper on its own repository: the list of every check, then the entry-files hygiene check passing with every budget in the green." loading="lazy" decoding="async">
-                <figcaption>Real output, recorded from the CLI, drawn in whichever theme you are reading in.</figcaption>
+                <figcaption>Real output from the CLI on this site's own repository, which is built and deployed with the suite it describes.</figcaption>
             </figure>
+        </section>
+
+        <section class="section" id="how-it-works">
+            <span class="kicker">How it works</span>
+            <h2>One command, run from three places.</h2>
+            <p class="lede">Every check is one <code>task ss:&lt;check&gt;</code> line. Your terminal, the pre-push hook and the GitHub Actions workflow all run that same line, so a check that passes on your machine passes in CI.</p>
+            <div class="how" role="group" aria-label="How a check runs: three callers, one CLI, three outputs">
+                <ul class="how__col">
+                    <li class="how__box"><strong>Your terminal</strong><code>task ss:hygiene:test</code></li>
+                    <li class="how__box"><strong>Pre-push hook</strong><code>task ss:hygiene:test</code></li>
+                    <li class="how__box"><strong>GitHub Actions</strong><code>ss-*.yml → task ss:&lt;check&gt;</code></li>
+                </ul>
+                <div class="how__arrow" aria-hidden="true">→</div>
+                <div class="how__box how__box--core">
+                    <strong>slopstopper-cli</strong>
+                    <span>runs one tool per check and reads its result</span>
+                    <span class="how__exit"><b>0</b> passed · <b>1</b> failed · <b>2</b> could not run</span>
+                </div>
+                <div class="how__arrow" aria-hidden="true">→</div>
+                <ul class="how__col">
+                    <li class="how__box"><strong>A report</strong><code>.ss/reports/&lt;check&gt;/</code></li>
+                    <li class="how__box"><strong>One PR comment</strong><span>what passed, what to fix</span></li>
+                    <li class="how__box"><strong>An issue on <code>main</code></strong><span>opened when red, closed when green</span></li>
+                </ul>
+            </div>
         </section>
 
         <section class="section" id="get-started">
@@ -137,20 +162,7 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
   | bash -s -- --profile library</code></pre>
             </div>
             <p class="install-subnote">The browser checks need a served site, so a profile installs only the checks that fit: <code>api</code> keeps the API and static checks, <code>library</code> the static checks alone. <code>slopstopper profile detect</code> suggests one. <a href="docs/architecture/profiles.html">What each profile keeps →</a></p>
-            <div class="steps">
-                <div class="step">
-                    <h3>Run a check</h3>
-                    <p><code>task ss:hygiene:test</code> runs the fast checks locally, and <code>task --list</code> shows the rest. Each check writes its report to <code>.ss/reports/</code>.</p>
-                </div>
-                <div class="step">
-                    <h3>Open a PR</h3>
-                    <p>One comment on the pull request shows each check's verdict. A failing check adds its findings. Passing checks add nothing.</p>
-                </div>
-                <div class="step">
-                    <h3>Tune it</h3>
-                    <p>Thresholds, page lists, the headers source and which checks run are all set in <code>.slopstopper.yml</code>. Each check's doc page names the setting that tunes it.</p>
-                </div>
-            </div>
+            <p class="install-subnote">Then <code>task ss:hygiene:test</code> runs the fast checks locally and <code>task --list</code> shows the rest. Thresholds, page lists, the headers source and which checks run are set in <code>.slopstopper.yml</code>; each check's doc page names the setting that tunes it.</p>
             <p class="docs-pointer">The full walkthrough: <a href="docs/runbooks/install.html">Adopting SlopStopper →</a></p>
         </section>
 
@@ -174,7 +186,7 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
         <section class="section">
             <span class="kicker">What you get</span>
             <h2>What the checks cover.</h2>
-            <p class="lede">Four groups, each installed as GitHub Actions workflows and each runnable locally with the same command. The Features page lists the checks and the workflow behind each.</p>
+            <p class="lede">Slop is code and docs produced faster than anyone reads them: a key pasted in as an example, a function nobody can follow, a doc naming a task that no longer exists, a page that fails contrast. Four groups of checks catch it, each installed as GitHub Actions workflows and each runnable locally with the same command. The Features page lists the checks and the workflow behind each.</p>
             <div class="card-grid card-grid--loops">
                 <div class="card">
                     <h3>🔒 Security</h3>

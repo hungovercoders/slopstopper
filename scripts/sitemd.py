@@ -26,10 +26,12 @@ passes its own rewriter in `Options`.
 from __future__ import annotations
 
 import functools
+import hashlib
 import html
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from posixpath import relpath
 from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -585,3 +587,56 @@ def describe(text: str, limit: int = 200) -> str:
     if len(sentences) > 1 and len(out) + 1 + len(sentences[1]) <= limit:
         out = out + " " + sentences[1]
     return out if len(out) <= limit else out[:limit - 3].rsplit(" ", 1)[0] + "…"
+
+
+# ── diagrams ─────────────────────────────────────────────────────
+# A `mermaid` fence is drawn as an SVG per theme, rendered ahead of time
+# by scripts/diagrams.js (the site's CSP allows no script), with the
+# source folded beneath. Both generators draw one through diagram_html,
+# which records it in DIAGRAMS; docsite.py keeps DIAGRAMS_DIR in step
+# with that registry for the docs pages and the lessons together.
+
+DIAGRAMS_PATH = "/assets/docs/diagrams"
+DIAGRAMS_DIR = SITE / DIAGRAMS_PATH.lstrip("/")
+THEMES = ("light", "dark")
+_VIEWBOX = re.compile(r'viewBox="[\d.\-]+ [\d.\-]+ ([\d.]+) ([\d.]+)"')
+
+# Every diagram rendered in this process, digest → source.
+DIAGRAMS: dict[str, str] = {}
+
+
+def digest_of(source: str) -> str:
+    return hashlib.sha256(source.encode("utf-8")).hexdigest()[:12]
+
+
+def svg_size(path: Path) -> str:
+    """` width="W" height="H"` from a rendered SVG's viewBox, so the page
+    reserves the diagram's space before the image arrives; empty when the
+    SVG is not there yet."""
+    if not path.is_file():
+        return ""
+    m = _VIEWBOX.search(path.read_text(encoding="utf-8"))
+    return f' width="{round(float(m.group(1)))}" height="{round(float(m.group(2)))}"' if m else ""
+
+
+def diagram_html(source: str, page_dir: str) -> str:
+    """A Mermaid fence as the page shows it: one image per theme and the
+    source folded beneath, which is also what a screen reader gets.
+    `page_dir` is the page's directory from the site root (`/docs/hygiene`,
+    `/learn`), so the image paths are the same wherever the script runs."""
+    digest = digest_of(source)
+    DIAGRAMS[digest] = source
+    images = "\n".join(
+        f'  <img class="only-{theme}" src="{relpath(f"{DIAGRAMS_PATH}/{digest}-{theme}.svg", page_dir)}"'
+        f'{svg_size(DIAGRAMS_DIR / f"{digest}-{theme}.svg")} alt="Diagram; its text follows.">'
+        for theme in THEMES
+    )
+    return (
+        '<figure class="diagram">\n'
+        f"{images}\n"
+        '  <details class="details diagram__source">\n'
+        "    <summary>The diagram as text</summary>\n"
+        f'    <div class="details__body">{fence("", source)}</div>\n'
+        "  </details>\n"
+        "</figure>"
+    )

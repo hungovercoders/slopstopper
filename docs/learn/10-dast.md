@@ -127,7 +127,7 @@ FAIL-NEW: 0	FAIL-INPROG: 0	WARN-NEW: 4	WARN-INPROG: 0	INFO: 0	IGNORE: 0	PASS: 64
 
 Trimmed to the alerts and the gate. Sixty-four rules passed. ZAP raised
 six alerts, one of them Medium: the history page's CSP allows inline
-styles. That is exactly the relaxation step 1 put in the ledger, and
+styles. That is the relaxation step 1 put in the ledger, and
 the gate found the entry and accepted the finding, naming the path that
 accepted it. Green, with the Medium still visible.
 

@@ -8,7 +8,7 @@ fix that does.
 
 ## Why this check
 
-`security:secrets` stops the single most expensive kind of slop: a
+`security:secrets` stops the most expensive kind of slop: a
 credential in the repo. It arrives in ordinary ways. An agent writes a
 config file and fills the key field with something key-shaped "as an
 example". A person commits `.env` because it was not in `.gitignore`

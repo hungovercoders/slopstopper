@@ -1,0 +1,8 @@
+flowchart LR
+    R["slopstopper run"]
+    R --> Z["exit 0\nran, repo passed"]
+    R --> O["exit 1\nran, repo failed"]
+    R --> T["exit 2\ncould not run"]
+    Z --> ZA["job green\nits issue closes\non main"]
+    O --> OA["job red: finding\nits issue opens\non main"]
+    T --> TA["job red\nnot a finding\nfix the run first\nthe failure\ntracker files it"]

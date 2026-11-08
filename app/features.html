@@ -460,7 +460,7 @@
             <div class="card tab-panel tab-panel--card" id="hygiene" role="tabpanel" aria-labelledby="tab-hygiene" tabindex="0">
                 <div class="tab-panel__about">
                     <h2>🧹 Hygiene</h2>
-                    <p class="card-intro">Keep code readable and docs accurate, for people and agents alike: a complexity cap, docs that are routed and within budget, and no doc that refers to something the repo no longer has.</p>
+                    <p class="card-intro">Keep code readable and docs accurate, for people and agents: a complexity cap, docs that are routed and within budget, and no doc that refers to something the repo no longer has.</p>
                     <ul>
                         <li><strong>Complexity.</strong> Lizard caps cyclomatic complexity per function (CCN ≤ 15 by default, tunable in <code>.slopstopper.yml</code>) across every language it parses</li>
                         <li><strong>Entry Files.</strong> <code>README.md</code> and <code>AGENTS.md</code> stay under a token budget, and <code>CLAUDE.md</code> is exactly <code>@AGENTS.md</code>, so an agent's first read is short and routes onward</li>
@@ -532,7 +532,7 @@
           - run: task ss:hygiene:csp-exceptions
           - if: github.event_name == 'pull_request'
             run: slopstopper emit hygiene:csp-exceptions --target pr-comment</code></pre></div>
-                            <p class="details__hint">Strict <code>default-src 'self'</code> CSP is the default. Per-path exceptions (e.g. Giscus on <code>/feedback.html</code>) must be documented in <code>CSP_EXCEPTIONS.md</code> with SRI hashes and a fallback. This check fails the build if <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> disagree.</p>
+                            <p class="details__hint">Strict <code>default-src 'self'</code> CSP is the default. Per-path exceptions (Giscus on <code>/feedback.html</code>) must be documented in <code>CSP_EXCEPTIONS.md</code> with SRI hashes and a fallback. This check fails the build if <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> disagree.</p>
                             <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-csp-exceptions-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
                             <br>
                             <a class="details__source" href="docs/security/csp-exceptions.html">View the exceptions doc →</a>
@@ -1035,7 +1035,7 @@ reliability:accessibility:
 
 # Pass a URL and flags through `--`:
 #   task ss:reliability:accessibility -- https://example.com --ci</code></pre></div>
-                        <p>And the wiring in the root <code>Taskfile.yml</code> is just:</p>
+                        <p>And the wiring in the root <code>Taskfile.yml</code> is:</p>
                         <div class="codeblock codeblock--yaml"><pre><code># Taskfile.yml: thin integration layer
 version: '3'
 includes:

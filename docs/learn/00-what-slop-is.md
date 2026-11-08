@@ -37,7 +37,7 @@ slopstopper's answer is a gate for each of those defects, run the same
 way by a human at a terminal, an agent in a conversation and CI on a
 pull request. Three rules make that work:
 
-1. **One surface.** Every check is `task ss:<category>:<action>`. The
+1. **One command.** Every check is `task ss:<category>:<action>`. The
    shim calls `slopstopper run <category>:<action>`, and the workflow
    under `.github/workflows/ss-*.yml` runs the same `task` line. There
    is no CI-only threshold and no local-only shortcut, so "it passed on
@@ -46,19 +46,25 @@ pull request. Three rules make that work:
    pre-push hook runs and what CI runs. A check reports its verdict in
    a red line on the terminal and in a report under `.ss/reports/`, so
    the fix is never a guess.
-3. **An exit-code contract.** Every check exits 0 when it ran and found
-   nothing to fail on, 1 when it ran and the repo failed it, and 2 when
-   it could not run: a tool is missing, an input is absent, the check
-   crashed. Both 1 and 2 fail the CI job, because a gate that quietly
-   passed when its tool was missing would be worse than no gate. The
-   difference is what the suite does with the result. A 1 is a finding:
-   on `main`, the check's own issue emitter opens or updates a tracking
-   issue and closes it when the check goes green. A 2 is not a finding,
-   so that emitter stays silent, and the red run is something for the
-   person running it to fix first. The separate workflow-failure
-   tracker still files any failed run on `main`, so a 2 is never
-   invisible either; it is filed as a broken run, not as a verdict on
-   the repo.
+3. **An exit-code contract.** Every check exits 0 when it ran and the
+   repo passed, 1 when it ran and the repo failed, and 2 when it could
+   not run: a tool is missing, an input is absent, the check crashed.
+   Both 1 and 2 fail the CI job, because a gate that quietly passed when
+   its tool was missing would be worse than no gate. What differs is
+   what the suite does next:
+
+```mermaid
+flowchart LR
+    R["slopstopper run"]
+    R --> Z["exit 0\nran, repo passed"]
+    R --> O["exit 1\nran, repo failed"]
+    R --> T["exit 2\ncould not run"]
+    Z --> ZA["job green\nits issue closes\non main"]
+    O --> OA["job red: finding\nits issue opens\non main"]
+    T --> TA["job red\nnot a finding\nfix the run first\nthe failure\ntracker files it"]
+```
+
+A 2 is never a verdict on the repo, and never invisible either.
 
 ## The five loops
 
@@ -159,7 +165,7 @@ slopstopper run hygiene:docs-structure; echo "exit $?"
 exit 0
 ```
 
-### 3. See the one surface
+### 3. See the one command
 
 The same check through the shim everyone uses. `task --list` shows every
 shim; the `ss:` prefix is the namespace the suite installs under, so it
@@ -230,7 +236,7 @@ that does not exist. A reviewer's "LGTM". Cut to the red line.
 
 1. Slop is what any process produces once output outruns attention.
    Six examples, one sentence each.
-2. Gates, not reviews: one surface, one definition of green, the
+2. Gates, not reviews: one command, one definition of green, the
    exit-code contract. Why 2 exists.
 3. The five loops and the tools behind them.
 4. `slopstopper checks list`, the unknown-check 2, the docs-structure 0.

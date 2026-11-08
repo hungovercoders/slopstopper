@@ -9,6 +9,17 @@ fix it. [`hungovercoders/slopstopper-steward`](https://github.com/hungovercoders
 is a separate repo and package, so an adopter's install stays small and
 the cross-repo token stays out of every adopter.
 
+```mermaid
+flowchart LR
+    S["a schedule\nin your Actions"] --> D["find adopters\ntopic · pin · marker"]
+    D --> P["a pin behind\nthe target?"]
+    D --> I["open issues\nthe checks raised"]
+    P --> R["refresh from\nthe target CLI"]
+    I --> T["triage with the\nrepo's own skills"]
+    R --> PR["one PR per repo\nnever a push"]
+    T --> PR
+```
+
 ## The split
 
 | Concern | slopstopper (here) | steward |
