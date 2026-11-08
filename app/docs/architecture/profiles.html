@@ -70,14 +70,40 @@
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Architecture</a></li><li aria-current="page">Project-shape profiles</li></ol></nav>
         <article class="lesson doc">
 <p>A profile picks the checks that fit a repo's shape: <code>ui</code> for a website, <code>api</code> for a service with no pages, <code>library</code> for a package that serves nothing.</p>
-<p>Not every check applies to every repo. The nine browser-and-SEO reliability checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume HTML, a DOM and a public web surface. On an HTTP API they don't quietly no-op. They build, serve and audit nothing, and go red. On a library there is nothing to serve at all.</p>
-<p>A <strong>profile</strong> is a named preset for <code>workflows.disabled</code>: it says which workflows a repo of that shape shouldn't carry.</p>
+<p>Each profile is a subset of the one around it: the browser checks need a served page, the API checks and the header scans need a URL, and the static checks need only the source.</p>
+<figure class="diagram">
+  <img class="only-light" src="../../assets/docs/diagrams/fe30da530785-light.svg" width="568" height="651" alt="Diagram; its text follows.">
+  <img class="only-dark" src="../../assets/docs/diagrams/fe30da530785-dark.svg" width="568" height="651" alt="Diagram; its text follows.">
+  <details class="details diagram__source">
+    <summary>The diagram as text</summary>
+    <div class="details__body"><div class="codeblock codeblock--out" tabindex="0"><pre><code>flowchart TB
+    subgraph UI["ui: a site, every check"]
+        direction LR
+        U1["smoke · E2E\nbroken links"]
+        U2["accessibility\nCore Web Vitals"]
+        U3["SEO · sitemap\nrobots · llms.txt"]
+        subgraph API["api: endpoints, no pages"]
+            direction LR
+            A1["api-health\napi-latency"]
+            A2["api-headers\nOpenAPI drift"]
+            A3["CSP exceptions\nDAST via the spec"]
+            subgraph LIB["library: nothing deployed"]
+                direction LR
+                L1["SAST · secrets"]
+                L2["CVEs · licences"]
+                L3["complexity · docs\nentry files · labels"]
+            end
+        end
+    end</code></pre></div></div>
+  </details>
+</figure>
+<p>A <strong>profile</strong> is a named preset for <code>workflows.disabled</code>: it says which workflows a repo of that shape shouldn't carry. On an API the browser checks don't quietly no-op: they build, serve and audit nothing, and go red.</p>
 <div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
   <thead><tr><th>Profile</th><th>Shape</th><th>Drops</th></tr></thead>
   <tbody>
-    <tr><td><code>ui</code> (default)</td><td>Serves HTML to a browser</td><td>Nothing while the repo has an API. With no API found, the four API checks (api-health, api-latency, api-headers, OpenAPI drift) are left out until one appears</td></tr>
-    <tr><td><code>api</code></td><td>JSON/gRPC endpoints, no browser surface</td><td>The nine browser-and-SEO checks. Keeps the four API checks (api-health, api-latency, api-headers, OpenAPI drift), CSP exceptions (APIs still set response headers) and DAST, via ZAP's OpenAPI mode</td></tr>
-    <tr><td><code>library</code></td><td>Library, CLI or package; nothing deployed</td><td>The nine above, plus DAST, CSP exceptions and the four API checks, which is everything that needs a URL</td></tr>
+    <tr><td><code>ui</code> (default)</td><td>Serves HTML to a browser</td><td>Nothing while the repo has an API. With no API found, the four API checks are left out until one appears</td></tr>
+    <tr><td><code>api</code></td><td>JSON/gRPC endpoints, no pages</td><td>The nine browser checks. Keeps the API checks, CSP exceptions (APIs still set response headers) and DAST, via ZAP's OpenAPI mode</td></tr>
+    <tr><td><code>library</code></td><td>Library, CLI or package; nothing deployed</td><td>Everything that needs a URL</td></tr>
   </tbody>
 </table></div>
 <p><strong>DAST scans an API through ZAP's OpenAPI mode.</strong> The default scan is ZAP's <em>baseline</em>, which spiders a site from a root URL. That is right for an HTML surface and useless against a JSON API, which exposes no links to crawl. Setting <code>api.openapi.spec</code> switches the check to ZAP's API scan (<code>-f openapi</code>), which reads the spec and exercises the operations it declares. The scanned URL is passed as ZAP's <code>-O</code> host override, so a spec whose <code>servers</code> block names production can be run against a preview environment.</p>

@@ -71,6 +71,21 @@
         <article class="lesson doc">
 <p>slopstopper-steward works across a GitHub organisation: it upgrades every repo that has slopstopper installed and works the issues the checks raised, one pull request each.</p>
 <p>slopstopper is per-repo: it tells one repo what is wrong and ships how to fix it. <a href="https://github.com/hungovercoders/slopstopper-steward" rel="noopener noreferrer"><code>hungovercoders/slopstopper-steward</code></a> is a separate repo and package, so an adopter's install stays small and the cross-repo token stays out of every adopter.</p>
+<figure class="diagram">
+  <img class="only-light" src="../../assets/docs/diagrams/5c0ad992b7dc-light.svg" width="936" height="197" alt="Diagram; its text follows.">
+  <img class="only-dark" src="../../assets/docs/diagrams/5c0ad992b7dc-dark.svg" width="936" height="197" alt="Diagram; its text follows.">
+  <details class="details diagram__source">
+    <summary>The diagram as text</summary>
+    <div class="details__body"><div class="codeblock codeblock--out" tabindex="0"><pre><code>flowchart LR
+    S["a schedule\nin your Actions"] --&gt; D["find adopters\ntopic · pin · marker"]
+    D --&gt; P["a pin behind\nthe target?"]
+    D --&gt; I["open issues\nthe checks raised"]
+    P --&gt; R["refresh from\nthe target CLI"]
+    I --&gt; T["triage with the\nrepo's own skills"]
+    R --&gt; PR["one PR per repo\nnever a push"]
+    T --&gt; PR</code></pre></div></div>
+  </details>
+</figure>
 <h2 id="the-split">The split</h2>
 <div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
   <thead><tr><th>Concern</th><th>slopstopper (here)</th><th>steward</th></tr></thead>

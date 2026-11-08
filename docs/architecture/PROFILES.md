@@ -2,20 +2,41 @@
 
 A profile picks the checks that fit a repo's shape: `ui` for a website, `api` for a service with no pages, `library` for a package that serves nothing.
 
-Not every check applies to every repo. The nine browser-and-SEO reliability
-checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt,
-robots.txt, sitemap) assume HTML, a DOM and a public web surface. On an HTTP API
-they don't quietly no-op. They build, serve and audit nothing, and go red. On a
-library there is nothing to serve at all.
+Each profile is a subset of the one around it: the browser checks need a
+served page, the API checks and the header scans need a URL, and the static
+checks need only the source.
+
+```mermaid
+flowchart TB
+    subgraph UI["ui: a site, every check"]
+        direction LR
+        U1["smoke · E2E\nbroken links"]
+        U2["accessibility\nCore Web Vitals"]
+        U3["SEO · sitemap\nrobots · llms.txt"]
+        subgraph API["api: endpoints, no pages"]
+            direction LR
+            A1["api-health\napi-latency"]
+            A2["api-headers\nOpenAPI drift"]
+            A3["CSP exceptions\nDAST via the spec"]
+            subgraph LIB["library: nothing deployed"]
+                direction LR
+                L1["SAST · secrets"]
+                L2["CVEs · licences"]
+                L3["complexity · docs\nentry files · labels"]
+            end
+        end
+    end
+```
 
 A **profile** is a named preset for `workflows.disabled`: it says which
-workflows a repo of that shape shouldn't carry.
+workflows a repo of that shape shouldn't carry. On an API the browser checks
+don't quietly no-op: they build, serve and audit nothing, and go red.
 
 | Profile | Shape | Drops |
 | ------- | ----- | ----- |
-| `ui` (default) | Serves HTML to a browser | Nothing while the repo has an API. With no API found, the four API checks (api-health, api-latency, api-headers, OpenAPI drift) are left out until one appears |
-| `api` | JSON/gRPC endpoints, no browser surface | The nine browser-and-SEO checks. Keeps the four API checks (api-health, api-latency, api-headers, OpenAPI drift), CSP exceptions (APIs still set response headers) and DAST, via ZAP's OpenAPI mode |
-| `library` | Library, CLI or package; nothing deployed | The nine above, plus DAST, CSP exceptions and the four API checks, which is everything that needs a URL |
+| `ui` (default) | Serves HTML to a browser | Nothing while the repo has an API. With no API found, the four API checks are left out until one appears |
+| `api` | JSON/gRPC endpoints, no pages | The nine browser checks. Keeps the API checks, CSP exceptions (APIs still set response headers) and DAST, via ZAP's OpenAPI mode |
+| `library` | Library, CLI or package; nothing deployed | Everything that needs a URL |
 
 **DAST scans an API through ZAP's OpenAPI mode.** The default scan is ZAP's
 *baseline*, which spiders a site from a root URL. That is right for an HTML
