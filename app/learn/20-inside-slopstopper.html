@@ -69,7 +69,7 @@
         <article class="lesson">
 <p><strong>Goal.</strong> Register a new check in the CLI, let the test suite tell you the other surfaces it must be wired into, and understand the shape every check shares.</p>
 <h2 id="why-this-lesson">Why this lesson</h2>
-<p>The last lesson is the one for contributors, and it is about the repository's own slop guard. A check is one Python module, but a check that ships needs a workflow, a task shim, a line in the installer, a row in the profile map, a badge label, two trigger lists, a labeler entry, a doc heading, a test file, and mentions in both skills and on the site. The change map lists them. A list in a table cell is prose, and prose does not fail a build; when two checks landed touching twenty-four files against a thirteen-item list, one of them shipped with a badge and a workflow and no documentation. So the list became a test keyed off the registry: a check that exists in the CLI and is missing from any surface fails with a message naming the surface.</p>
+<p>This lesson is the one for contributors, and it is about the repository's own slop guard. A check is one Python module, but a check that ships needs a workflow, a task shim, a line in the installer, a row in the profile map, a badge label, two trigger lists, a labeler entry, a doc heading, a test file, and mentions in both skills and on the site. The change map lists them. A list in a table cell is prose, and prose does not fail a build; when two checks landed touching twenty-four files against a thirteen-item list, one of them shipped with a badge and a workflow and no documentation. So the list became a test keyed off the registry: a check that exists in the CLI and is missing from any surface fails with a message naming the surface.</p>
 <p>Every check also keeps one shape. It is stdlib Python, it subprocess-invokes its tool if it has one (the licence boundary: Semgrep is LGPL, Gitleaks and Trivy are their own projects, and the CLI ships none of their code), it writes under <code>.ss/reports/&lt;check&gt;/</code>, it carries a Configuration block in its docstring for every config key it reads, and it exits 0, 1 or 2 by the contract from lesson 0. The four Playwright-backed checks share their whole flow through one module and differ only in a spec name and some wording, which is why copying <code>smoke.py</code> is the way to start one.</p>
 <h2 id="you-will-need">You will need</h2>
 <p>The checkout from the <a href="../learn.html">syllabus</a>. <code>task contributing:test</code> creates the CLI's test environment on first use.</p>
@@ -164,7 +164,7 @@ task contributing:test -- -k registration -o addopts= -q</code></pre></div>
         </article>
 <nav class="lesson-nav" aria-label="Lessons">
   <a class="lesson-nav__prev" href="19-profiles-and-tailoring.html">← Lesson 19: Profiles and tailoring</a>
-  <a class="lesson-nav__next" href="../learn.html">Back to the course →</a>
+  <a class="lesson-nav__next" href="21-steward.html">Lesson 21: Across an organisation: the steward →</a>
 </nav>
         <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/20-inside-slopstopper.md" rel="noopener noreferrer">docs/learn/20-inside-slopstopper.md</a>; the commands on it run in CI on every change to the course.</p>
     </main>

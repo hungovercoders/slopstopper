@@ -201,6 +201,8 @@ first install.)
   the maps themselves
 - Lesson 3 for the AGENTS.md-first model the skills assume, and lesson
   20 for the change map that keeps them true
+- Lesson 21 for the steward, which hands these skills to an agent across
+  every repo in an organisation
 
 <details>
 <summary>Episode script</summary>

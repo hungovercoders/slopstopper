@@ -191,7 +191,7 @@ jobs:
       matrix:
         include:
           - name: "hygiene and agents (0-5, 17-20)"
-            pages: "00,01,02,03,04,05,17,18,19,20"
+            pages: "00,01,02,03,04,05,17,18,19,20,21"
             tools: "vhs"
           - name: "scanners (6-8)"
             pages: "06,07,08"

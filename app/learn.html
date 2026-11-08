@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Learn | SlopStopper</title>
-    <meta name="description" content="From zero to slopstopper: a free course in twenty-one short lessons. Each one explains a single check, the slop it stops and the fix, run against a small demo repo the CLI writes for you.">
+    <meta name="description" content="From zero to slopstopper: a free course in twenty-two short lessons. Each one explains a single check, the slop it stops and the fix, run against a small demo repo the CLI writes for you.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -14,7 +14,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://slopstopper.dev/learn.html">
     <meta property="og:title" content="Learn | SlopStopper">
-    <meta property="og:description" content="A free course in twenty-one short lessons, one check at a time, run against a demo repo the CLI writes for you.">
+    <meta property="og:description" content="A free course in twenty-two short lessons, one check at a time, run against a demo repo the CLI writes for you.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -24,7 +24,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Learn | SlopStopper">
-    <meta name="twitter:description" content="A free course in twenty-one short lessons, one check at a time, run against a demo repo the CLI writes for you.">
+    <meta name="twitter:description" content="A free course in twenty-two short lessons, one check at a time, run against a demo repo the CLI writes for you.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -65,13 +65,13 @@
         <section class="hero hero--learn">
             <span class="kicker">🎓 The course</span>
             <h1>From zero to <span class="highlight">slopstopper</span></h1>
-            <p>Twenty-one short lessons, each on one check: what it stops, the tool behind it, what a failure looks like and how to fix it. You start with nothing installed and finish able to read any check's output, fix what it found, tailor the suite to a repo, and add a check of your own.</p>
+            <p>Twenty-two short lessons, each on one check: what it stops, the tool behind it, what a failure looks like and how to fix it. You start with nothing installed and finish able to read any check's output, fix what it found, tailor the suite to a repo, and add a check of your own.</p>
         </section>
 
         <section class="section learn-section" id="start">
             <span class="kicker">You will need</span>
             <h2>Python, the CLI and a demo repo.</h2>
-            <p class="lede">Every lesson but the last runs in a small repo the CLI writes for you: "Lantern", a status page with one deliberate finding per check. Python 3.11 or newer, then:</p>
+            <p class="lede">Every lesson but lesson 20 runs in a small repo the CLI writes for you: "Lantern", a status page with one deliberate finding per check. Python 3.11 or newer, then:</p>
             <div class="codeblock codeblock--sh" role="region" aria-label="Set up the course's demo repo" data-copyable>
                 <pre><code>pipx install slopstopper-cli
 slopstopper demo                   # writes slopstopper-demo/
@@ -230,7 +230,7 @@ git init -q -b main &amp;&amp; git add -A &amp;&amp; git commit -q -m "lantern"<
             </div>
             <div class="lesson-group" id="running">
                 <h3>Running the suite</h3>
-                <p class="lesson-group__lede">The workflows, the agent skills, tailoring the suite to a repo's shape, and adding a check of your own.</p>
+                <p class="lesson-group__lede">The workflows, the agent skills, tailoring the suite to a repo's shape, adding a check of your own, and running the suite across an organisation.</p>
                 <ol class="lessons" start="17">
                 <li class="lesson">
                     <span class="lesson__num" aria-hidden="true">17</span>
@@ -258,6 +258,13 @@ git init -q -b main &amp;&amp; git add -A &amp;&amp; git commit -q -m "lantern"<
                     <div class="lesson__body">
                         <h4 class="lesson__title"><a href="learn/20-inside-slopstopper.html"><span class="visually-hidden">Lesson 20: </span>Inside slopstopper: add a check</a></h4>
                         <p class="lesson__learn">The registry, the registration test, the shape every check shares</p>
+                    </div>
+                </li>
+                <li class="lesson">
+                    <span class="lesson__num" aria-hidden="true">21</span>
+                    <div class="lesson__body">
+                        <h4 class="lesson__title"><a href="learn/21-steward.html"><span class="visually-hidden">Lesson 21: </span>Across an organisation: the steward</a></h4>
+                        <p class="lesson__learn">What the steward reads to find a repo, judge its pin and work a finding; an upgrade order; running one</p>
                     </div>
                 </li>
                 </ol>

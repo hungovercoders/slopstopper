@@ -35,7 +35,10 @@ outruns attention.
 
 slopstopper's answer is a gate for each of those defects, run the same
 way by a human at a terminal, an agent in a conversation and CI on a
-pull request. Three rules make that work:
+pull request. Every gate is deterministic: a tool runs, a number meets a
+threshold, and the same input gives the same verdict every time, with no
+model in the loop. That is what lets agents write the code: the judge is
+not another agent. Three rules make that work:
 
 1. **One command.** Every check is `task ss:<category>:<action>`. The
    shim calls `slopstopper run <category>:<action>`, and the workflow
@@ -81,8 +84,8 @@ fifth is how slopstopper's own site ships, there to copy.
 
 Lessons 2 to 5 take the hygiene loop, because it needs no external
 tools. Lessons 6 to 10 take security, 11 to 16 reliability, and 17 the
-operational loop. The last three are about shaping the suite to a repo
-and to yourself.
+operational loop. The last four are about shaping the suite to a repo,
+to yourself and to an organisation.
 
 ## You will need
 

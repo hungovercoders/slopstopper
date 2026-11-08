@@ -1,6 +1,6 @@
 # From zero to slopstopper
 
-A course in twenty-one short lessons, each with a YouTube episode to
+A course in twenty-two short lessons, each with a YouTube episode to
 follow. You start with nothing installed and finish able to install the
 suite into a repo, read any check's red line and the report it points at,
 fix what it found, tailor the suite to a repo's shape, and add a check of
@@ -10,7 +10,7 @@ and the fix.
 
 ## You will need
 
-Every lesson but the last runs in a small repo the CLI writes for you,
+Every lesson but lesson 20 runs in a small repo the CLI writes for you,
 so they need the CLI and nothing of this repository. Python 3.11 or
 newer, then:
 
@@ -25,8 +25,8 @@ The demo is "Lantern", a two-page status page laid out the way the
 suite expects, deliberately a little slopped: each check lesson opens
 on a red check already in it, reads the report, fixes the finding, and
 puts the demo back with `git checkout`. The commit is what lesson 6
-scans. The lessons about the suite itself (1, 17, 18 and 19: the
-installer, the workflows, the skills and profiles) install the suite
+scans. The lessons about the suite itself (1, 17, 18, 19 and 21: the
+installer, the workflows, the skills, profiles and the steward) install the suite
 into the same demo with `slopstopper install`, which writes it from the
 files the CLI ships, and put it back afterwards. Each lesson says which
 external tool it needs beyond the CLI (lesson 6 `gitleaks`, lesson 7
@@ -101,6 +101,7 @@ and the verdicts are the same.
 | 18 | [Agents: the install and triage skills](18-agents.md) | The two Claude Code skills | coming soon |
 | 19 | [Profiles and tailoring](19-profiles-and-tailoring.md) | `profile show`, `detect` and `list`, `workflows.enabled`, the pin in `mise.toml` | coming soon |
 | 20 | [Inside slopstopper: add a check](20-inside-slopstopper.md) | The registry, the registration test, the shape every check shares | coming soon |
+| 21 | [Across an organisation: the steward](21-steward.md) | What the steward reads to find a repo, judge its pin and work a finding; an upgrade order; running one | coming soon |
 
 The course is read on the site: [slopstopper.dev/learn.html](https://slopstopper.dev/learn.html)
 lists the lessons and each one is a page under `/learn/`, rendered from

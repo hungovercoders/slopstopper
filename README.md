@@ -1,6 +1,6 @@
 # SlopStopper
 
-**A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.** The CLI is `slopstopper-cli`; people, agents and CI run every check with the same `task ss:*` command.
+**A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.** Deterministic checks for a software factory run by agents; people, agents and CI run every check with the same `task ss:*` command.
 
 ![slopstopper checks list, doctor and a hygiene check going green](./demos/hero.gif)
 
@@ -24,7 +24,7 @@ If the repo is an API or a library rather than a website, pass a profile through
 
 - Adopting it: prerequisites, what gets installed, what each check needs, configure, update → [`docs/runbooks/INSTALL.md`](./docs/runbooks/INSTALL.md)
 - Learning it from zero, one check per lesson: [`docs/learn/README.md`](./docs/learn/README.md)
-- Working in this repo: [`AGENTS.md`](./AGENTS.md) carries the conventions and commands; [`docs/README.md`](./docs/README.md) routes to everything else
+- Working in this repo: [`AGENTS.md`](./AGENTS.md), then [`docs/README.md`](./docs/README.md) for the rest
 - For Claude Code, `install.sh` lands two skills in `<repo>/.claude/skills/`: `slopstopper-install` and `slopstopper-triage`
 - Many repos? Fork or template-copy [slopstopper-steward](https://github.com/hungovercoders/slopstopper-steward) into your org: it upgrades every adopter and works their issues, one PR each
 
