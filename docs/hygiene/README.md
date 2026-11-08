@@ -78,7 +78,7 @@ flowchart TD
 
 - `unrouted_doc` is a doc with no explicit route (the message says whether it is linked softly, or routed from a README that is itself unreachable)
 - `soft_route` is a `.md` link in the map that does not say when to read it
-- `route_too_deep` means more hops than `hygiene.docs_structure.max_route_depth` (default 3: `AGENTS.md` → map → directory README → doc)
+- `route_too_deep` means more hops than `hygiene.docs_structure.max_route_depth` (default 3)
 - `doc_over_lines` is a topic doc past `hygiene.docs_structure.max_doc_lines` (default 300; the map is exempt). Split by concern and route each part
 - `legacy_index` is a legacy index file beside the map. The map is a README so the repo UI renders it in place; fold it in and delete it
 - `broken_route` is a route whose target does not exist
@@ -98,7 +98,7 @@ Runs **weekly on a schedule** (Monday 07:00 UTC), on PRs/pushes that change docs
 task ss:hygiene:docs-accuracy
 ```
 
-By default it reads `docs/**/*.md` and the four root entry files. `hygiene.docs_accuracy.extra_paths` (repo-relative globs in `.slopstopper.yml`) brings more files into scope, with only the checks that are precise for a file describing an adopter's tree rather than this one: `task ss:…` and workflow references must exist (markdown), and every `github.com/<this repo>/blob|tree/<ref>/<path>` link must point at a path that exists (markdown and HTML). slopstopper.dev scans `app/*.html` and `.claude/skills/**/*.md` this way, because every piece of site and skill drift the repo review found lived in a file the `docs/`-only scan never read.
+By default it reads `docs/**/*.md` and the four root entry files. `hygiene.docs_accuracy.extra_paths` (repo-relative globs in `.slopstopper.yml`) brings more files into scope, with only the checks that are precise for a file describing an adopter's tree rather than this one: `task ss:…` and workflow references must exist (markdown), and every `github.com/<this repo>/blob|tree/<ref>/<path>` link must point at a path that exists (markdown and HTML). slopstopper.dev scans `app/*.html` and `.claude/skills/**/*.md` this way.
 
 ### Entry-File Budget
 
