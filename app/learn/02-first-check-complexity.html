@@ -121,7 +121,7 @@ slopstopper run hygiene:complexity</code></pre></div>
    • complexity-report.md
    • complexity-report.csv
 ✅ No high-complexity functions found (all CCN ≤ 15).</code></pre></div>
-<p>Same behaviour, one path through the function. When a function trips the ceiling and is genuinely well-factored, a flat dispatch or validation table, raising <code>max_ccn</code> with a note in <code>.slopstopper.yml</code> is honest. Doing it to silence noise is not; the threshold is the feature.</p>
+<p>Same behaviour, one path through the function. When a function trips the ceiling and is well-factored, a flat dispatch or validation table, raising <code>max_ccn</code> with a note in <code>.slopstopper.yml</code> is honest. Doing it to silence noise is not; the threshold is the feature.</p>
 <h3 id="5-put-the-demo-back">5. Put the demo back</h3>
 <p>The lessons promise each one starts from the demo as written, so undo the fix with git. The next lesson's finding is a different file.</p>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout scripts/status.py</code></pre></div>

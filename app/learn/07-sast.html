@@ -125,7 +125,7 @@ slopstopper run security:sast</code></pre></div>
 
 📁 Reports saved to: .ss/reports/sast/
    • sast-report.md</code></pre></div>
-<p>Green, and honest about it: the two warnings are still reported. The other way out, when a pattern is genuinely safe where it stands, is a suppression <strong>with a reason</strong> on the line itself:</p>
+<p>Green, and honest about it: the two warnings are still reported. The other way out, when a pattern is safe where it stands, is a suppression <strong>with a reason</strong> on the line itself:</p>
 <div class="codeblock codeblock--python" tabindex="0"><pre><code>subprocess.run(cmd, shell=True, check=False)  # nosemgrep: python.lang.security.audit.subprocess-shell-true.subprocess-shell-true -- cmd is a constant from the table above</code></pre></div>
 <p>The rule id is spelled out, so the suppression covers one rule on one line and nothing else, and the reason sits where the next reader will see it. That is the honest exception. Turning the rule off for the repo is not; neither is lowering <code>fail_on</code> because one finding was inconvenient.</p>
 <h3 id="5-put-the-demo-back">5. Put the demo back</h3>

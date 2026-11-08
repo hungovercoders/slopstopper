@@ -54,7 +54,7 @@ checked against.
 ### 2. Add a check to the registry and nothing else
 
 A copy of the smoke check under a new name, registered in the
-dictionary. This is exactly how far a hurried pull request gets.
+dictionary. This is how far a hurried pull request gets.
 
 <!-- learn -->
 ```sh

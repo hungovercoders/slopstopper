@@ -71,7 +71,7 @@ Three portability layers. Layer 1 runs on install; layers 2–3 need a little co
 
 | Layer | Checks | What you provide |
 | ----- | ------ | ---------------- |
-| **1. Static analysis** (any code) | SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure/Accuracy/Size, Entry Files, Auto-label PRs, Workflow-failure tracker | Nothing. It works out of the box |
+| **1. Static analysis** (any code) | SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure/Accuracy/Size, Entry Files, Auto-label PRs, Workflow-failure tracker | Nothing |
 | **2. Deployed surface** (need a URL) | Smoke, E2E, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, llms.txt, robots.txt, sitemap.xml, DAST, Playwright, API Health/Latency/Headers, OpenAPI Drift | `urls.production` / `urls.preview` in `.slopstopper.yml` ([per-check env vars](../reliability/README.md) also work) |
 | **3. Agentic doc-updater** | Weekly doc-sync PRs | `COPILOT_GITHUB_TOKEN` repo secret |
 | **Cloudflare repos only** | `ss-cloudflare-deployed.yml`: after each Workers Builds deploy, runs the layer-2 checks against the preview (PRs) or `urls.production` (main) | wrangler config (at the root or one directory down) or `worker/` in the repo; `urls.production` for the live site |
@@ -82,7 +82,7 @@ Deploy is intentionally not a layer: connect your repo in the Cloudflare dash fo
 
 ## Same commands, both loops
 
-`task ss:<category>:<check>` is the canonical interface. Humans, agents and CI all go through it, so the suite shares one invocation surface with the rest of your codebase. The shims call `slopstopper-cli` under the hood; pass `--no-task` to `install.sh` to skip Task and have workflows call the CLI directly.
+`task ss:<category>:<check>` is the canonical interface. People, agents and CI all go through it, so a check is run the same way as the rest of your repo's tasks. The shims call `slopstopper-cli`; pass `--no-task` to `install.sh` to skip Task and have workflows call the CLI directly.
 
 ```bash
 task ss:hygiene:complexity                    # the canonical form
@@ -93,7 +93,7 @@ slopstopper run hygiene:complexity            # underlying CLI if you skip Task
 
 ## Configure
 
-Most checks work out of the box. To wire up the full suite:
+Most checks need nothing from you. For the rest:
 
 **[`.slopstopper.yml`](../../.slopstopper.yml.example)** at the repo root is the config file. `install.sh` seeds a starter (`profile`, URLs, page lists, `headers.source: null`) so the first PR is green; the link is the full schema. Survives reinstalls.
 

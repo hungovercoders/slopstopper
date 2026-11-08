@@ -10,7 +10,7 @@ fix a red check without being told the steps.
 
 slopstopper is built to be run by agents as much as by people. The
 AGENTS.md-first model from lesson 3 exists so an agent knows where to
-read; the `task ss:*` surface exists so there is one thing to learn;
+read; the `task ss:*` commands exist so there is one thing to learn;
 every check prints a red line that names the file and the report so
 the next step is never a guess. The two skills close the loop. A skill
 is a markdown playbook that Claude Code loads when a prompt matches
@@ -212,7 +212,7 @@ the shim, opens the report, moves the content, reruns. Green.
 
 **Talking points.**
 
-1. Why: built to be run by agents; AGENTS.md-first, one surface, red
+1. Why: built to be run by agents; AGENTS.md-first, one command, red
    lines that name files; the skills close the loop.
 2. Install them; what lands; project level and committed.
 3. The triage map is lesson 2's loop written for an agent; the three

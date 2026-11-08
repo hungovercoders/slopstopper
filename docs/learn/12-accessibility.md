@@ -8,7 +8,7 @@ and fix it.
 
 ## Why this check
 
-Generated markup fails accessibility constantly, and the failures are
+Generated markup fails accessibility often, and the failures are
 not exotic: an image without alternative text, a button that is a
 `<div>`, the brand colour used for body text, a form field with no
 label. Each is invisible to a sighted reviewer with a mouse and a

@@ -37,7 +37,7 @@ slopstopper's answer is a gate for each of those defects, run the same
 way by a human at a terminal, an agent in a conversation and CI on a
 pull request. Three rules make that work:
 
-1. **One surface.** Every check is `task ss:<category>:<action>`. The
+1. **One command.** Every check is `task ss:<category>:<action>`. The
    shim calls `slopstopper run <category>:<action>`, and the workflow
    under `.github/workflows/ss-*.yml` runs the same `task` line. There
    is no CI-only threshold and no local-only shortcut, so "it passed on
@@ -159,7 +159,7 @@ slopstopper run hygiene:docs-structure; echo "exit $?"
 exit 0
 ```
 
-### 3. See the one surface
+### 3. See the one command
 
 The same check through the shim everyone uses. `task --list` shows every
 shim; the `ss:` prefix is the namespace the suite installs under, so it
@@ -230,7 +230,7 @@ that does not exist. A reviewer's "LGTM". Cut to the red line.
 
 1. Slop is what any process produces once output outruns attention.
    Six examples, one sentence each.
-2. Gates, not reviews: one surface, one definition of green, the
+2. Gates, not reviews: one command, one definition of green, the
    exit-code contract. Why 2 exists.
 3. The five loops and the tools behind them.
 4. `slopstopper checks list`, the unknown-check 2, the docs-structure 0.

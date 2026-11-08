@@ -69,7 +69,7 @@
         <article class="lesson">
 <p><strong>Goal.</strong> Install the two Claude Code skills into a repo, read how they are shaped, and see how an agent uses them to install the suite or fix a red check without being told the steps.</p>
 <h2 id="why-this-lesson">Why this lesson</h2>
-<p>slopstopper is built to be run by agents as much as by people. The AGENTS.md-first model from lesson 3 exists so an agent knows where to read; the <code>task ss:*</code> surface exists so there is one thing to learn; every check prints a red line that names the file and the report so the next step is never a guess. The two skills close the loop. A skill is a markdown playbook that Claude Code loads when a prompt matches its description, and these two turn "add slopstopper to this repo" and "this check is red" into things an agent does the same way every time.</p>
+<p>slopstopper is built to be run by agents as much as by people. The AGENTS.md-first model from lesson 3 exists so an agent knows where to read; the <code>task ss:*</code> commands exist so there is one thing to learn; every check prints a red line that names the file and the report so the next step is never a guess. The two skills close the loop. A skill is a markdown playbook that Claude Code loads when a prompt matches its description, and these two turn "add slopstopper to this repo" and "this check is red" into things an agent does the same way every time.</p>
 <ul>
   <li><strong><code>slopstopper-install</code></strong> covers a first install and a refresh. It detects which one it is doing, picks a profile from the repo's shape, runs the installer, sets the URLs and page lists, lays out the AGENTS.md-first docs, and closes every check locally before anything is pushed. It also knows what a refresh overwrites and what it must re-apply.</li>
   <li><strong><code>slopstopper-triage</code></strong> is reactive. It decodes the failing workflow's name into a check, reproduces it with the <code>task ss:*</code> shim, reads the report, sorts the finding into one of three kinds (a real finding, a false positive, a threshold too tight for this repo) and fixes the right thing, with a per-symptom table of what has bitten before.</li>
@@ -147,7 +147,7 @@ git clean -fdq</code></pre></div>
 <p><strong>Cold open (0:00).</strong> A red check. A prompt: "fix it". The agent runs the shim, opens the report, moves the content, reruns. Green.</p>
 <p><strong>Talking points.</strong></p>
 <ol>
-  <li>Why: built to be run by agents; AGENTS.md-first, one surface, red lines that name files; the skills close the loop.</li>
+  <li>Why: built to be run by agents; AGENTS.md-first, one command, red lines that name files; the skills close the loop.</li>
   <li>Install them; what lands; project level and committed.</li>
   <li>The triage map is lesson 2's loop written for an agent; the three kinds of finding.</li>
   <li>The live run: break entry-files, prompt, watch it take the route; why it moves content rather than raising the budget.</li>

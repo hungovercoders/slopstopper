@@ -128,7 +128,7 @@
 <div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
   <thead><tr><th>Layer</th><th>Checks</th><th>What you provide</th></tr></thead>
   <tbody>
-    <tr><td><strong>1. Static analysis</strong> (any code)</td><td>SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure/Accuracy/Size, Entry Files, Auto-label PRs, Workflow-failure tracker</td><td>Nothing. It works out of the box</td></tr>
+    <tr><td><strong>1. Static analysis</strong> (any code)</td><td>SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure/Accuracy/Size, Entry Files, Auto-label PRs, Workflow-failure tracker</td><td>Nothing</td></tr>
     <tr><td><strong>2. Deployed surface</strong> (need a URL)</td><td>Smoke, E2E, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, llms.txt, robots.txt, sitemap.xml, DAST, Playwright, API Health/Latency/Headers, OpenAPI Drift</td><td><code>urls.production</code> / <code>urls.preview</code> in <code>.slopstopper.yml</code> (<a href="../reliability/index.html">per-check env vars</a> also work)</td></tr>
     <tr><td><strong>3. Agentic doc-updater</strong></td><td>Weekly doc-sync PRs</td><td><code>COPILOT_GITHUB_TOKEN</code> repo secret</td></tr>
     <tr><td><strong>Cloudflare repos only</strong></td><td><code>ss-cloudflare-deployed.yml</code>: after each Workers Builds deploy, runs the layer-2 checks against the preview (PRs) or <code>urls.production</code> (main)</td><td>wrangler config (at the root or one directory down) or <code>worker/</code> in the repo; <code>urls.production</code> for the live site</td></tr>
@@ -137,13 +137,13 @@
 <p>To drop a check, delete its workflow or list it under <code>workflows.disabled</code>. Re-runs respect both. If the repo is not a website, <code>--profile api</code> (or <code>library</code>) installs only the applicable checks (see <a href="../architecture/profiles.html">Profiles</a>).</p>
 <p>Deploy is intentionally not a layer: connect your repo in the Cloudflare dash for production deploys, PR previews and preview cleanup. The one workflow <code>install.sh</code> adds for a Cloudflare repo runs the checks against what was deployed. See <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/deployment/README.md" rel="noopener noreferrer">Deployment</a>.</p>
 <h2 id="same-commands-both-loops">Same commands, both loops</h2>
-<p><code>task ss:&lt;category&gt;:&lt;check&gt;</code> is the canonical interface. Humans, agents and CI all go through it, so the suite shares one invocation surface with the rest of your codebase. The shims call <code>slopstopper-cli</code> under the hood; pass <code>--no-task</code> to <code>install.sh</code> to skip Task and have workflows call the CLI directly.</p>
+<p><code>task ss:&lt;category&gt;:&lt;check&gt;</code> is the canonical interface. People, agents and CI all go through it, so a check is run the same way as the rest of your repo's tasks. The shims call <code>slopstopper-cli</code>; pass <code>--no-task</code> to <code>install.sh</code> to skip Task and have workflows call the CLI directly.</p>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:complexity                    # the canonical form
 task ss:reliability:accessibility -- http://localhost:8080
 task ss:security:sast                         # CI runs the same line
 slopstopper run hygiene:complexity            # underlying CLI if you skip Task</code></pre></div>
 <h2 id="configure">Configure</h2>
-<p>Most checks work out of the box. To wire up the full suite:</p>
+<p>Most checks need nothing from you. For the rest:</p>
 <p><strong><a href="https://github.com/hungovercoders/slopstopper/blob/main/.slopstopper.yml.example" rel="noopener noreferrer"><code>.slopstopper.yml</code></a></strong> at the repo root is the config file. <code>install.sh</code> seeds a starter (<code>profile</code>, URLs, page lists, <code>headers.source: null</code>) so the first PR is green; the link is the full schema. Survives reinstalls.</p>
 <p><strong>Repo secrets</strong> (under Settings → Secrets and variables → Actions):</p>
 <ul>

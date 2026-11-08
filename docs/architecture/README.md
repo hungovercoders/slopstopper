@@ -80,7 +80,7 @@ flowchart LR
 
 ## Single-route invocation: `task ss:*`
 
-SlopStopper exposes one canonical entry point for any check: `task ss:<category>:<name>`. Humans, agents AND CI all invoke through it, so the suite shares the same invocation surface as everything else in the codebase (`task build`, `task deploy`, `task lint`).
+SlopStopper exposes one canonical entry point for any check: `task ss:<category>:<name>`. People, agents and CI all run it, so a check is called the same way as everything else in the codebase (`task build`, `task deploy`, `task lint`).
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -116,7 +116,7 @@ the idiomatic mise+Task split, not redundancy.
 | Tool | Job | Where it's defined |
 | ---- | --- | ------------------ |
 | **mise** | *Tool versions.* Pins and installs `slopstopper-cli`, `task` itself, and `node`, then activates them **per-directory** | `mise.toml` (`[tools]` `"pipx:slopstopper-cli"` + `task` + `node`) |
-| **Task** | *Commands.* `task ss:<check>` is the single invocation surface | `Taskfile.ss.yml` shims |
+| **Task** | *Commands.* `task ss:<check>` is the one command for every check | `Taskfile.ss.yml` shims |
 
 Why mise owns versions: a normal global install puts **one** `slopstopper` binary
 on `PATH`, which can't match different repos pinned to different versions, so
@@ -132,8 +132,8 @@ separate `setup-node` step or `SLOPSTOPPER_NODE_VERSION` repo variable.
 haven't already declared a Node version (`mise.toml` / `.node-version` / `.nvmrc`).
 
 Why Task stays the interface: `task ss:<category>:<check>` sits alongside an adopter's own
-`task build` / `task deploy`, so the suite shares their existing command surface
-rather than introducing a parallel one. mise auto-installs `task`, so it remains a
+`task build` / `task deploy`, so the checks are run the way the rest of the repo is
+rather than through a second tool. mise auto-installs `task`, so it remains a
 one-install story. Install mise and everything else flows from `mise.toml`.
 
 In short: **mise installs it (pinned), Task runs it.** Moving the CLI pin is
@@ -163,7 +163,7 @@ hook** (`.githooks/pre-push`, via `core.hooksPath`) that runs the fast static
 hygiene checks (`task ss:hygiene:test`) before every push, so the first CI run
 confirms rather than discovers. It goes through `mise exec` (git hooks don't
 source your shell profile) and reuses the same `task ss:hygiene:test` target that
-CI runs, keeping one invocation surface across hook, local and CI. Only the
+CI runs, so the hook, your terminal and CI run one command. Only the
 static hygiene checks run in the hook; the server/browser checks (reliability,
 DAST) stay in the Outer Loop. The installer won't touch an existing hook manager
 (husky / lefthook / pre-commit) or a custom `core.hooksPath`; pass `--no-hooks`

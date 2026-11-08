@@ -90,7 +90,7 @@ Keep it to orientation and a quick start; everything else lives under `docs/` an
 The headings tell the story. Orientation, a quick start, a pointer to
 the docs, and then the whole manual pasted in because "people read the
 README". This is the commonest shape of entry-file slop: content that
-belongs one hop deeper, inlined so it will be seen, which is exactly
+belongs one hop deeper, inlined so it will be seen, which is
 what makes the file too long to be read.
 
 ### 3. Fix it: move the content deeper and route it

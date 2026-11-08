@@ -118,7 +118,7 @@ Allow: /
 Sitemap: https://example.com/sitemap.xml</code></pre></div>
 <p>This site's own file, <a href="https://github.com/hungovercoders/slopstopper/blob/main/app/robots.txt" rel="noopener noreferrer"><code>app/robots.txt</code></a>, is the canonical example.</p>
 <h2 id="why-this-exists">Why this exists</h2>
-<p>A single wrong line in robots.txt can de-index a whole site, and the failure is silent, because nothing errors and traffic just evaporates over the following weeks. Making it a first-class, deploy-time gate turns a slow, invisible catastrophe into a red check on the PR that introduced it. The sitemap-pointer assertion completes the discovery story: crawlers that read robots.txt find the URL inventory rather than guessing.</p>
+<p>A single wrong line in robots.txt can de-index a whole site, and the failure is silent, because nothing errors and traffic evaporates over the following weeks. A deploy-time gate turns that slow, invisible failure into a red check on the PR that introduced it. The sitemap-pointer assertion completes the picture: crawlers that read robots.txt find the URL inventory rather than guessing.</p>
 <h2 id="ci-integration">CI integration</h2>
 <p>The <a href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-robots-txt-check.yml" rel="noopener noreferrer"><code>ss-reliability-robots-txt-check.yml</code></a> workflow runs on every PR, every push to <code>main</code>, on <code>deployment_status</code> success, daily, and on a <code>url</code> dispatch (which is how <code>ss-cloudflare-deployed.yml</code> runs it after a Workers Builds deploy). PR runs comment back with pass/fail and a link to the artefact.</p>
         </article>

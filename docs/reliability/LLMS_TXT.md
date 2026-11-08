@@ -69,7 +69,7 @@ This site's own file, [`app/llms.txt`](../../app/llms.txt), is the canonical exa
 
 ## Why this exists
 
-A product whose value proposition is quality for the AI/agent era should be legible to agents. `llms.txt` gives an AI assistant evaluating your project a clean, curated entry point, so you control what it surfaces and how it's described rather than leaving it to scrape 60k of HTML. Adoption by major crawlers is still emerging, so the check verifies presence and structure cheaply rather than gating on a contested standard.
+A tool that promises quality for agents should be readable by agents. `llms.txt` gives an assistant a short, curated entry point, so you say what the project is instead of leaving it to scrape the HTML. Few crawlers read the file yet, so the check asks only that it exists and is well formed.
 
 ## CI integration
 

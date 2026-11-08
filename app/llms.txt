@@ -2,12 +2,34 @@
 
 > A Python CLI plus GitHub Actions workflows that run security, hygiene and
 > reliability checks on every PR. One command to install into any repo.
-> Stops AI-generated "slop" reaching production; humans, agents and CI all
-> invoke every check through one `task ss:*` surface.
+> It stops AI-generated slop reaching production. People, agents and CI run
+> every check with the same `task ss:*` command.
 
 SlopStopper is a quality suite you install into your own repo with one
 command. Every check runs the same way on your machine and in CI, and reports
 into the pull request. This site is built and deployed with the same suite.
+
+Slop is code and docs produced faster than anyone reads them: a pasted key,
+a function nobody can follow, a doc naming a task that no longer exists, a
+page that fails contrast. Each check catches one kind and exits 0 when the
+repo passed, 1 when it failed, 2 when the check could not run.
+
+To try one check, or to install the whole suite into a repo:
+
+```sh
+pipx install slopstopper-cli
+slopstopper checks list                # every check
+slopstopper doctor                     # which external tools are missing
+slopstopper run hygiene:docs-size      # one check; report in .ss/reports/
+
+# the suite: pinned CLI, ss-*.yml workflows, task ss:* commands, pre-push hook
+curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
+# an API or a library: --profile api / --profile library
+```
+
+Needs Python; the installer also needs mise. Settings live in
+`.slopstopper.yml`. In Claude Code, the installed `slopstopper-install` and
+`slopstopper-triage` skills do the install and fix a red check.
 
 ## Site
 
@@ -38,7 +60,7 @@ One lesson per page, in order; each one's goal is its summary.
 - [Lesson 11: Smoke and end-to-end](https://slopstopper.dev/learn/11-smoke-and-e2e.html): Serve the demo, run the two browser checks that prove it works for a visitor, break each one the way a real change would, and read what the browser saw.
 - [Lesson 12: Accessibility](https://slopstopper.dev/learn/12-accessibility.html): Audit both of the demo's pages with axe-core, find the one attribute a screen reader depends on that the history page is missing, and fix it.
 - [Lesson 13: Core Web Vitals](https://slopstopper.dev/learn/13-core-web-vitals.html): Run Lighthouse against the demo, read the budget it enforces, add one blocking script, and watch the numbers move.
-- [Lesson 14: SEO and social share](https://slopstopper.dev/learn/14-seo.html): Audit the tags a search engine and a link preview read, find the one the demo's history page is missing, and see which surface it would have broken.
+- [Lesson 14: SEO and social share](https://slopstopper.dev/learn/14-seo.html): Audit the tags a search engine and a link preview read, find the one the demo's history page is missing, and see what it would have broken.
 - [Lesson 15: Discoverability: robots, sitemap, llms.txt and links](https://slopstopper.dev/learn/15-discoverability.html): Run the four checks that decide whether anyone finds a page, fix the one the demo ships red, and break the other three to see which catches what.
 - [Lesson 16: API checks: health, latency and OpenAPI drift](https://slopstopper.dev/learn/16-api-checks.html): Point the three API checks at a small API, see each one fail on its own kind of drift, and understand why they exist alongside the browser checks.
 - [Lesson 17: CI: the workflows and the PR feedback loop](https://slopstopper.dev/learn/17-ci.html): Read one check workflow end to end, see that it is the same task line you have been typing, and follow a red check from the Actions log to the pull request comment to the issue it raises on main.

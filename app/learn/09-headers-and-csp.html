@@ -101,7 +101,7 @@ Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'
    ❌ /history.html: `/history.html` in app/_headers allows external origins (https://charts.example.com) but has no entry in CSP_EXCEPTIONS.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ Drift detected. See .ss/reports/csp/csp-exceptions-report.md for full details.</code></pre></div>
-<p>One exception in the headers, none in the ledger. This is exactly the diff a "make the chart show" commit contains: one line in a config file, reviewed as config.</p>
+<p>One exception in the headers, none in the ledger. This is the diff a "make the chart show" commit contains: one line in a config file, reviewed as config.</p>
 <h3 id="3-read-the-report">3. Read the report</h3>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/^## .* Errors/,/Mismatched origins/p' .ss/reports/csp/csp-exceptions-report.md</code></pre></div>
 <div class="codeblock codeblock--out" tabindex="0"><pre><code>## ❌ Errors

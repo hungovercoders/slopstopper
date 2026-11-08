@@ -123,7 +123,7 @@ task ss:reliability:llms-txt -- --check-links</code></pre></div>
 - [Changelog](https://example.com/changelog): release history</code></pre></div>
 <p>This site's own file, <a href="https://github.com/hungovercoders/slopstopper/blob/main/app/llms.txt" rel="noopener noreferrer"><code>app/llms.txt</code></a>, is the canonical example.</p>
 <h2 id="why-this-exists">Why this exists</h2>
-<p>A product whose value proposition is quality for the AI/agent era should be legible to agents. <code>llms.txt</code> gives an AI assistant evaluating your project a clean, curated entry point, so you control what it surfaces and how it's described rather than leaving it to scrape 60k of HTML. Adoption by major crawlers is still emerging, so the check verifies presence and structure cheaply rather than gating on a contested standard.</p>
+<p>A tool that promises quality for agents should be readable by agents. <code>llms.txt</code> gives an assistant a short, curated entry point, so you say what the project is instead of leaving it to scrape the HTML. Few crawlers read the file yet, so the check asks only that it exists and is well formed.</p>
 <h2 id="ci-integration">CI integration</h2>
 <p>The <a href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-llms-txt-check.yml" rel="noopener noreferrer"><code>ss-reliability-llms-txt-check.yml</code></a> workflow runs on every PR, every push to <code>main</code>, on <code>deployment_status</code> success, daily, and on a <code>url</code> dispatch (which is how <code>ss-cloudflare-deployed.yml</code> runs it after a Workers Builds deploy). PR runs comment back with pass/fail and a link to the artefact.</p>
         </article>

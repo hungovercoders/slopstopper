@@ -65,7 +65,7 @@ This site's own file, [`app/robots.txt`](../../app/robots.txt), is the canonical
 
 ## Why this exists
 
-A single wrong line in robots.txt can de-index a whole site, and the failure is silent, because nothing errors and traffic just evaporates over the following weeks. Making it a first-class, deploy-time gate turns a slow, invisible catastrophe into a red check on the PR that introduced it. The sitemap-pointer assertion completes the discovery story: crawlers that read robots.txt find the URL inventory rather than guessing.
+A single wrong line in robots.txt can de-index a whole site, and the failure is silent, because nothing errors and traffic evaporates over the following weeks. A deploy-time gate turns that slow, invisible failure into a red check on the PR that introduced it. The sitemap-pointer assertion completes the picture: crawlers that read robots.txt find the URL inventory rather than guessing.
 
 ## CI integration
 

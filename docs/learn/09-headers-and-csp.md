@@ -92,7 +92,7 @@ slopstopper run hygiene:csp-exceptions
 ❌ Drift detected. See .ss/reports/csp/csp-exceptions-report.md for full details.
 ```
 
-One exception in the headers, none in the ledger. This is exactly the
+One exception in the headers, none in the ledger. This is the
 diff a "make the chart show" commit contains: one line in a config
 file, reviewed as config.
 

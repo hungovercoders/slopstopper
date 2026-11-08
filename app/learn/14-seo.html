@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lesson 14: SEO and social share | SlopStopper</title>
-    <meta name="description" content="Audit the tags a search engine and a link preview read, find the one the demo&#x27;s history page is missing, and see which surface it would have broken.">
+    <meta name="description" content="Audit the tags a search engine and a link preview read, find the one the demo&#x27;s history page is missing, and see what it would have broken.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://slopstopper.dev/learn/14-seo.html">
     <meta property="og:title" content="Lesson 14: SEO and social share | SlopStopper">
-    <meta property="og:description" content="Audit the tags a search engine and a link preview read, find the one the demo&#x27;s history page is missing, and see which surface it would have broken.">
+    <meta property="og:description" content="Audit the tags a search engine and a link preview read, find the one the demo&#x27;s history page is missing, and see what it would have broken.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +25,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Lesson 14: SEO and social share | SlopStopper">
-    <meta name="twitter:description" content="Audit the tags a search engine and a link preview read, find the one the demo&#x27;s history page is missing, and see which surface it would have broken.">
+    <meta name="twitter:description" content="Audit the tags a search engine and a link preview read, find the one the demo&#x27;s history page is missing, and see what it would have broken.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -67,7 +67,7 @@
             <h1>SEO and social share</h1>
         </section>
         <article class="lesson">
-<p><strong>Goal.</strong> Audit the tags a search engine and a link preview read, find the one the demo's history page is missing, and see which surface it would have broken.</p>
+<p><strong>Goal.</strong> Audit the tags a search engine and a link preview read, find the one the demo's history page is missing, and see what it would have broken.</p>
 <h2 id="why-this-check">Why this check</h2>
 <p>Every page carries a second page nobody looks at: the <code>&lt;head&gt;</code>. A search engine reads the title, the description and the canonical URL to decide what the page is and whether it is a duplicate. Slack, LinkedIn and a dozen chat apps read the OpenGraph and Twitter Card tags to draw the preview card when someone pastes a link. Generated pages ship with a placeholder title, a description copied from another page, or no canonical at all, and the first anyone notices is a link that unfurls as "Untitled" in a channel, or two URLs for one page competing in search.</p>
 <p><code>reliability:seo</code> fetches each page in <code>pages.seo</code> and asserts the tags are present and non-empty: title, description, viewport and canonical for search; <code>og:title</code>, <code>og:description</code>, <code>og:type</code>, <code>og:url</code> and <code>og:image</code> for previews; <code>twitter:card</code>, title, description and image for the other preview format. It warns on a title over 70 characters or a description over 160, the lengths results pages truncate at, and by default it fetches the share image to prove it answers with an image content type. It is stdlib Python: one HTTP request per page and a parser, no browser.</p>

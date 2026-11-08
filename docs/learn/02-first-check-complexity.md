@@ -132,7 +132,7 @@ slopstopper run hygiene:complexity
 ```
 
 Same behaviour, one path through the function. When a function trips
-the ceiling and is genuinely well-factored, a flat dispatch or
+the ceiling and is well-factored, a flat dispatch or
 validation table, raising `max_ccn` with a note in `.slopstopper.yml` is
 honest. Doing it to silence noise is not; the threshold is the feature.
 
