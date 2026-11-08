@@ -84,6 +84,7 @@ SECTIONS = {
     "learn": ("The course", PROJECT),
 }
 AUDIENCE_KICKER = {ADOPTERS: "Docs", PROJECT: "Inside the project"}
+CURRENT = ' aria-current="page"'
 
 
 def section_name(key: str) -> str:
@@ -226,7 +227,7 @@ def _siblings(doc: Doc, all_docs: list[Doc], esc) -> str:
         heading, pages = f"In {section_name(doc.section)}", [d for d in all_docs if d.section == doc.section]
         label = lambda d: d.plain_title  # noqa: E731
     items = "\n".join(
-        f'    <li><a href="{rel(d.path)}"{" aria-current=\"page\"" if d is doc else ""}>{esc(label(d))}</a></li>'
+        f'    <li><a href="{rel(d.path)}"{CURRENT if d is doc else ""}>{esc(label(d))}</a></li>'
         for d in pages
     )
     return f'<nav class="doc-siblings" aria-label="{esc(heading)}">\n  <h2>{esc(heading)}</h2>\n  <ul>\n{items}\n  </ul>\n</nav>'
