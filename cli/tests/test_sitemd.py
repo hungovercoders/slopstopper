@@ -78,3 +78,23 @@ def test_a_directory_link_lands_on_its_readme_page(sitemd):
     assert (href, external) == ("/docs/hygiene/index.html", False)
     href, external = sitemd.repo_link("cli/slopstopper/checks")
     assert external and href.endswith("/tree/main/cli/slopstopper/checks")
+
+
+@pytest.mark.parametrize(
+    "repo_path",
+    ["docs/contributing/README.md", "docs/contributing/CHANGE_MAP.md", "docs/deployment/README.md",
+     "docs/decisions/README.md", "docs/app/README.md", "docs/learn/TEMPLATE.md", "docs/README.md",
+     "docs/runbooks/RELEASE.md"],
+)
+def test_a_doc_about_working_on_the_project_stays_on_github(sitemd, repo_path):
+    """The site is for people using slopstopper; a link to a doc about the
+    repository itself goes to GitHub rather than to a page the site has."""
+    assert sitemd.doc_page(repo_path) is None
+    href, external = sitemd.repo_link(repo_path, "#x")
+    assert external and href == sitemd.BLOB + repo_path + "#x"
+
+
+def test_a_lesson_and_an_adopter_doc_are_pages_of_the_site(sitemd):
+    assert sitemd.doc_page("docs/learn/01-install.md") == "/learn/01-install.html"
+    assert sitemd.doc_page("docs/runbooks/INSTALL.md") == "/docs/runbooks/install.html"
+    assert sitemd.doc_page("docs/support/README.md") == "/docs/support/index.html"

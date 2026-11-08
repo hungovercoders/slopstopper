@@ -134,11 +134,6 @@
 <!-- learn:end -->
 <!-- docs:begin -->
   <url>
-    <loc>https://slopstopper.dev/docs/index.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
     <loc>https://slopstopper.dev/docs/runbooks/index.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
@@ -150,11 +145,6 @@
   </url>
   <url>
     <loc>https://slopstopper.dev/docs/runbooks/install-skills.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://slopstopper.dev/docs/runbooks/release.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -275,61 +265,6 @@
   </url>
   <url>
     <loc>https://slopstopper.dev/docs/support/index.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://slopstopper.dev/docs/contributing/index.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://slopstopper.dev/docs/contributing/change-map.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://slopstopper.dev/docs/contributing/demos.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://slopstopper.dev/docs/contributing/fixture.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://slopstopper.dev/docs/contributing/pitfalls.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://slopstopper.dev/docs/deployment/index.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://slopstopper.dev/docs/app/index.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://slopstopper.dev/docs/decisions/index.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://slopstopper.dev/docs/learn/index.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://slopstopper.dev/docs/learn/episodes.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://slopstopper.dev/docs/learn/template.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>

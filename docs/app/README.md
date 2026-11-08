@@ -98,7 +98,7 @@ the CSP needs no font-src exception; do not add external font links.
 ## Pages
 
 Seven static pages with shared navigation, plus a generated page per
-lesson of the course and per reference doc. Each hand-written page is one
+lesson of the course and per reference doc an adopter reads. Each hand-written page is one
 HTML file plus one page-specific CSS file; there is no build step and no
 framework.
 
@@ -109,8 +109,8 @@ framework.
 | Tools | `app/tools.html` | The tool groups as tabs (`app/tabs.js`, as on Features); `<details>` config or workflow excerpt per tool |
 | Learn | `app/learn.html` | **Copy** button on the demo setup block (`app/copy.js`). Lists the course's lessons and links each to its page under `app/learn/`; `cli/tests/test_learn_page.py` keeps the list identical to `docs/learn/README.md` |
 | Lessons | `app/learn/NN-slug.html` | Generated from `docs/learn/NN-slug.md` by `scripts/learnsite.py` (`task contributing:learn:site`), never edited by hand. The chrome is read from `app/learn.html`; **Copy** buttons on the command blocks; `<details>` for solutions and episode scripts; previous and next links |
-| Docs | `app/docs.html` | The landing page for the reference docs: three hand-written doors in, then two section lists, for adopters and for people working on the project, between `<!-- docs:adopters:begin -->` … `end` and `<!-- docs:project:begin -->` … `end`, which `scripts/docsite.py` owns (`docsite.SECTIONS` gives each section its audience) |
-| Doc pages | `app/docs/<dir>/<name>.html` | Generated from `docs/<dir>/<NAME>.md` by `scripts/docsite.py` (`task contributing:docs:site`), never edited by hand: a README becomes its directory's `index.html`, any other doc its name in lower case with hyphens. The chrome is read from `app/docs.html`; a breadcrumb, the section's other pages, and an edit link. A `mermaid` fence shows as an SVG per theme from `app/assets/docs/diagrams/`, rendered by `task contributing:docs:diagrams`, with the source folded beneath. The lessons stay under `app/learn/` |
+| Docs | `app/docs.html` | The landing page for the reference docs: three hand-written doors in, then the section list between `<!-- docs:begin -->` and `<!-- docs:end -->`, which `scripts/docsite.py` owns |
+| Doc pages | `app/docs/<dir>/<name>.html` | Generated from `docs/<dir>/<NAME>.md` by `scripts/docsite.py` (`task contributing:docs:site`), never edited by hand, for the sections an adopter reads (`sitemd.SITE_SECTIONS`; the site is for people using slopstopper, so the docs about working on this repository stay on GitHub): a README becomes its directory's `index.html`, any other doc its name in lower case with hyphens. The chrome is read from `app/docs.html`; a breadcrumb and the section's other pages. A `mermaid` fence shows as an SVG per theme from `app/assets/docs/diagrams/`, rendered by `task contributing:docs:diagrams`, with the source folded beneath. The lessons stay under `app/learn/` |
 | Feedback | `app/feedback.html` | GitHub Discussions comments via the Giscus embed, loaded on a button press (`app/feedback.js`) |
 | Privacy | `app/privacy.html` | None. States what the site collects (nothing), what Cloudflare keeps, which services the pages reach, and the one value the theme toggle stores in the browser; linked from every footer rather than the nav |
 

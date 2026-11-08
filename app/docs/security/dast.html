@@ -129,7 +129,7 @@ task ss:security:dast -- http://localhost:8080</code></pre></div>
 <h3 id="change-the-target-url">Change the Target URL</h3>
 <p>In <code>Taskfile.yml</code>, the <code>dast</code> task accepts the target URL as an argument:</p>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:security:dast -- http://your-site-url</code></pre></div>
-<p>In CI, pull requests and pushes to <code>main</code> scan a local build on <code>http://localhost:8080</code>. The deployed site is scanned after each successful <code>deployment_status</code>, daily against <code>urls.production</code> (skipped with a notice when unset), on a manual run given a <code>url</code> input, and on a Cloudflare repo after each Workers Builds deploy of <code>main</code> (<code>ss-cloudflare-deployed.yml</code> dispatches it for production only; see <a href="../deployment/index.html">Deployment</a>). Scan the deployed site when headers come from the edge (<code>_headers</code>, a CDN, a proxy), since a local build doesn't carry them. Every non-PR run on <code>main</code> opens or closes the DAST tracking issue.</p>
+<p>In CI, pull requests and pushes to <code>main</code> scan a local build on <code>http://localhost:8080</code>. The deployed site is scanned after each successful <code>deployment_status</code>, daily against <code>urls.production</code> (skipped with a notice when unset), on a manual run given a <code>url</code> input, and on a Cloudflare repo after each Workers Builds deploy of <code>main</code> (<code>ss-cloudflare-deployed.yml</code> dispatches it for production only; see <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/deployment/README.md" rel="noopener noreferrer">Deployment</a>). Scan the deployed site when headers come from the edge (<code>_headers</code>, a CDN, a proxy), since a local build doesn't carry them. Every non-PR run on <code>main</code> opens or closes the DAST tracking issue.</p>
 <h3 id="change-the-blocking-threshold">Change the Blocking Threshold</h3>
 <p>Medium and High (riskcode ≥ 2) block, and that cutoff is fixed in <code>cli/slopstopper/dast_gate.py</code>; there is no workflow line or <code>.slopstopper.yml</code> knob for it. To stop a specific Medium alert blocking, scope it rather than the threshold:</p>
 <ul>
@@ -196,7 +196,6 @@ task ss:security:dast -- https://api-preview.example.com --spec openapi.yaml</co
     <li><a href="vulnerability.html">Dependency Vulnerability Scanning</a></li>
   </ul>
 </nav>
-        <p class="lesson-source"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/DAST.md" rel="noopener noreferrer">Edit this page on GitHub</a></p>
     </main>
     <footer>
         <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>

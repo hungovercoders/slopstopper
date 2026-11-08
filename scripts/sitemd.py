@@ -90,17 +90,30 @@ class Options:
 # ── paths ────────────────────────────────────────────────────────
 
 
+# The docs the site renders: the sections an adopter reads, in the order
+# the Docs page lists them, and the one doc in them that is the
+# project's own business. The site is for people using slopstopper;
+# the docs about working on this repository (contributing, deployment,
+# the site, the decisions, the course's authoring notes, the docs map)
+# stay on GitHub, which is where a link to one of them goes.
+SITE_SECTIONS = ("runbooks", "hygiene", "security", "reliability", "architecture", "support")
+OFF_SITE = frozenset({"docs/runbooks/RELEASE.md"})
+
+
 def doc_page(repo_path: str) -> str | None:
     """The site path (`/docs/hygiene/index.html`) of a markdown file under
-    docs/, or None when the file is not one the site renders. A lesson is
-    a page under /learn/, a README its directory's index, anything else
-    its name in lower case with hyphens, so a URL reads as a path and not
-    as a shout."""
+    docs/, or None when the file is not one the site renders: a doc of a
+    section outside SITE_SECTIONS, one in OFF_SITE, the docs map, or
+    anything deeper than docs/<dir>/. A lesson is a page under /learn/, a
+    README its directory's index, anything else its name in lower case
+    with hyphens, so a URL reads as a path and not as a shout."""
     parts = repo_path.split("/")
-    if parts[0] != "docs" or not parts[-1].endswith(".md") or len(parts) > 3:
+    if parts[0] != "docs" or not parts[-1].endswith(".md") or len(parts) != 3:
         return None
-    if len(parts) == 3 and parts[1] == "learn" and _LESSON_PAGE.fullmatch(parts[2]):
+    if parts[1] == "learn" and _LESSON_PAGE.fullmatch(parts[2]):
         return "/learn/" + parts[2][:-3] + ".html"
+    if parts[1] not in SITE_SECTIONS or repo_path in OFF_SITE:
+        return None
     name = "index" if parts[-1] == "README.md" else parts[-1][:-3].lower().replace("_", "-")
     return "/" + "/".join(parts[:-1] + [name + ".html"])
 

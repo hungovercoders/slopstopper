@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Docs | SlopStopper</title>
-    <meta name="description" content="The SlopStopper docs: what every check enforces and how to fix what it finds, how to install and tune the suite for your repo, how it reports into a pull request, and how to contribute.">
+    <meta name="description" content="The SlopStopper docs: what every check enforces and how to fix what it finds, how to install and tune the suite for your repo, and how it reports into a pull request.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -14,7 +14,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://slopstopper.dev/docs.html">
     <meta property="og:title" content="Docs | SlopStopper">
-    <meta property="og:description" content="What every check enforces and how to fix what it finds, how to install and tune the suite, and how to contribute.">
+    <meta property="og:description" content="What every check enforces and how to fix what it finds, and how to install and tune the suite.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -24,7 +24,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Docs | SlopStopper">
-    <meta name="twitter:description" content="What every check enforces and how to fix what it finds, how to install and tune the suite, and how to contribute.">
+    <meta name="twitter:description" content="What every check enforces and how to fix what it finds, and how to install and tune the suite.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -93,8 +93,8 @@
         <section class="section docs-section" id="adopters">
             <span class="kicker">Using slopstopper</span>
             <h2>The suite, check by check.</h2>
-            <p class="lede">Each loop has a page per check: hygiene keeps code and docs readable to people and agents, security catches leaked secrets, unsafe code and vulnerable dependencies, and reliability proves the running site or API works for a visitor. The runbooks cover installing, updating and releasing; the architecture pages cover profiles, the pull request feedback and running the suite across an organisation.</p>
-            <!-- docs:adopters:begin -->
+            <p class="lede">Each loop has a page per check: hygiene keeps code and docs readable to people and agents, security catches leaked secrets, unsafe code and vulnerable dependencies, and reliability proves the running site or API works for a visitor. The runbooks cover installing and updating; the architecture pages cover profiles, the pull request feedback and running the suite across an organisation.</p>
+            <!-- docs:begin -->
             <div class="doc-section" id="runbooks">
                 <h3><a href="docs/runbooks/index.html">Runbooks</a></h3>
                 <p class="doc-section__lede">Operational procedures for the SlopStopper project, covering both the suite itself and the things adopters do once around it.</p>
@@ -150,58 +150,14 @@
                 <h3><a href="docs/support/index.html">Support</a></h3>
                 <p class="doc-section__lede">How to get help with this project.</p>
             </div>
-<!-- docs:adopters:end -->
-        </section>
-
-        <section class="section docs-section" id="project">
-            <span class="kicker">Inside the project</span>
-            <h2>Working on slopstopper itself.</h2>
-            <p class="lede">For contributors, and for lesson 20 of <a href="learn.html">the course</a>, which adds a check: how to contribute, what a change has to touch, how this site is built and deployed, the decisions behind the suite, and how a lesson is written.</p>
-            <!-- docs:project:begin -->
-            <div class="doc-section" id="runbooks-project">
-                <h3><a href="docs/runbooks/index.html">Runbooks</a></h3>
-                <ul class="doc-list">
-                    <li><a href="docs/runbooks/release.html">Cutting a release</a><span class="doc-list__about">How a slopstopper-cli release is cut: two GitHub workflows take a merged Release PR to a tagged GitHub Release and a signed PyPI publish, with no version bump, changelog edit or tag pushed by hand. The two workflows:</span></li>
-                </ul>
-            </div>
-            <div class="doc-section" id="contributing">
-                <h3><a href="docs/contributing/index.html">Contributing</a></h3>
-                <p class="doc-section__lede">This document defines the default way to contribute to this project.</p>
-                <ul class="doc-list">
-                    <li><a href="docs/contributing/change-map.html">Change map: every surface a change must touch</a><span class="doc-list__about">SlopStopper is a suite adopters install and a site that proves it works, so one change usually lands in several places: the CLI, a workflow, the installer, the config schema, the docs, the two Claude Code skills and the site copy. This table is the checklist; cli/tests/test_check_registration.py…</span></li>
-                    <li><a href="docs/contributing/demos.html">Demo recordings</a><span class="doc-list__about">The GIF in README.md and the stills beside it are recorded from the real CLI with VHS, from the tapes under demos/, and live next to them. They are committed, so a reader never needs the tooling; a contributor re-records when what a command prints changes.</span></li>
-                    <li><a href="docs/contributing/fixture.html">The demo repo</a><span class="doc-list__about">slopstopper demo writes a small fixture repository, shipped in the CLI wheel under cli/slopstopper/data/demo/, for anything that needs a repo to run slopstopper against with no network and no clone of this one: the course, the demo tapes, a triage walkthrough, the skill evals. It is &quot;Lantern&quot;, a…</span></li>
-                    <li><a href="docs/contributing/pitfalls.html">Common pitfalls when extending SlopStopper</a><span class="doc-list__about">A short list of the most-hit gotchas. Each one has bitten somebody before; the rule is &quot;do the obvious thing the obvious way.&quot;</span></li>
-                </ul>
-            </div>
-            <div class="doc-section" id="deployment">
-                <h3><a href="docs/deployment/index.html">Deployment</a></h3>
-                <p class="doc-section__lede">How the SlopStopper site ships to production.</p>
-            </div>
-            <div class="doc-section" id="app">
-                <h3><a href="docs/app/index.html">The site</a></h3>
-                <p class="doc-section__lede">What the site does and how its pages are organised.</p>
-            </div>
-            <div class="doc-section" id="decisions">
-                <h3><a href="docs/decisions/index.html">Decisions</a></h3>
-                <p class="doc-section__lede">This directory records significant decisions and their rationale for the project.</p>
-            </div>
-            <div class="doc-section" id="learn">
-                <h3><a href="docs/learn/index.html">The course</a></h3>
-                <p class="doc-section__lede">A course in twenty-one short lessons, each with a YouTube episode to follow. You start with nothing installed and finish able to install the suite into a repo, read any check&#x27;s red line and the report it points at, fix what it found, tailor the suite to a repo&#x27;s shape, and add a check of your…</p>
-                <ul class="doc-list">
-                    <li><a href="docs/learn/episodes.html">Episode conventions</a><span class="doc-list__about">The YouTube title, thumbnail and description conventions for the &quot;From zero to slopstopper&quot; series, and the recording notes every episode follows, so the series reads as one thing. Each lesson&#x27;s own script is the collapsed &quot;Episode script&quot; at the end of its page; this file is what those scripts…</span></li>
-                    <li><a href="docs/learn/template.html">Writing a lesson</a><span class="doc-list__about">This page is the template every lesson in the course is copied from, and the rules a lesson follows. Copy it to docs/learn/&lt;NN&gt;-&lt;slug&gt;.md, keep the H1 as Lesson N: &lt;title&gt;, replace each section, and update the row in the syllabus.</span></li>
-                </ul>
-            </div>
-<!-- docs:project:end -->
+<!-- docs:end -->
         </section>
 
         <section class="section docs-section" id="agents">
             <span class="kicker">Working with an agent</span>
             <h2>Let the agent install it and fix what it finds.</h2>
             <p class="lede">Two Claude Code skills ship with the suite: <strong>slopstopper-install</strong> adds the suite to a repo or refreshes it, and <strong>slopstopper-triage</strong> takes a red check from the workflow to the report to the fix. <a href="docs/runbooks/install-skills.html">Installing the skills</a> covers both; <a href="docs/architecture/steward.html">the steward</a> runs them across every repo in an organisation. An assistant reading this site can start from <a href="llms.txt">llms.txt</a>, which lists every page with a one-line summary.</p>
-            <p class="docs-note">Something wrong or missing? <a href="https://github.com/hungovercoders/slopstopper/issues/new/choose" rel="noopener noreferrer">Open an issue</a>, or use the edit link at the foot of any page.</p>
+            <p class="docs-note">Something wrong or missing? <a href="https://github.com/hungovercoders/slopstopper/issues/new/choose" rel="noopener noreferrer">Open an issue</a>.</p>
         </section>
     </main>
     <footer>

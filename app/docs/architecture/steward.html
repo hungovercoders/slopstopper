@@ -83,12 +83,12 @@
 </table></div>
 <p>The steward carries no check logic and no fix knowledge. Anything that explains how a check works or how to fix it belongs in the two skills here, which the steward then gets for free in every adopter.</p>
 <h2 id="what-the-steward-reads-from-this-repo">What the steward reads from this repo</h2>
-<p>These are the surfaces its <a href="https://github.com/hungovercoders/slopstopper-steward/blob/main/steward/contract.py" rel="noopener noreferrer">contract module</a> names. The steward's CI checks them against this repo's <code>main</code> on every steward PR and nightly; nothing in this repo's own CI does, so the steward row in <a href="../contributing/change-map.html"><code>docs/contributing/CHANGE_MAP.md</code></a> lists them for anyone changing one:</p>
+<p>These are the surfaces its <a href="https://github.com/hungovercoders/slopstopper-steward/blob/main/steward/contract.py" rel="noopener noreferrer">contract module</a> names. The steward's CI checks them against this repo's <code>main</code> on every steward PR and nightly; nothing in this repo's own CI does, so the steward row in <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/contributing/CHANGE_MAP.md" rel="noopener noreferrer"><code>docs/contributing/CHANGE_MAP.md</code></a> lists them for anyone changing one:</p>
 <ul>
   <li><strong>Discovery:</strong> the <code>slopstopper</code> repo topic the installer adds, the <code>"pipx:slopstopper-cli"</code> key in <code>mise.toml</code>, <code>.ss/.installed-from</code>.</li>
   <li><strong>Findings:</strong> the <code>slopstopper</code> brand label, the <code>&lt;!-- slopstopper:check=&lt;name&gt; --&gt;</code> and <code>&lt;!-- slopstopper:workflow=&lt;file&gt; --&gt;</code> body markers <code>emit</code> writes, and the failure tracker's <code>workflow-failure</code> label and <code>❌ Workflow Failure: &lt;name&gt;</code> title.</li>
   <li><strong>Method:</strong> <code>.claude/skills/slopstopper-triage/</code> and <code>.claude/skills/slopstopper-install/</code> (on a big upgrade the agent works the <code>## Refresh-only</code> section of its <code>references/refresh.md</code>), and the <code>slopstopper-workaround: hungovercoders/slopstopper#N</code> marker.</li>
-  <li><strong>Commands:</strong> <code>slopstopper install --no-topic</code>, <code>slopstopper run --json</code>, <code>slopstopper checks list --json</code>, <code>slopstopper profile expand &lt;n&gt; --json</code> and <code>slopstopper doctor --json</code> with its <code>needed_by</code> (the shapes in <a href="../contributing/index.html"><code>docs/contributing/README.md</code></a>).</li>
+  <li><strong>Commands:</strong> <code>slopstopper install --no-topic</code>, <code>slopstopper run --json</code>, <code>slopstopper checks list --json</code>, <code>slopstopper profile expand &lt;n&gt; --json</code> and <code>slopstopper doctor --json</code> with its <code>needed_by</code> (the shapes in <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/contributing/README.md" rel="noopener noreferrer"><code>docs/contributing/README.md</code></a>).</li>
   <li><strong>Checks that need an installed environment:</strong> <code>security:licences</code>, registered in <code>cli/slopstopper/checks/__init__.py</code>, inventories the interpreter's packages (<code>pip inspect</code> in <code>checks/licences.py</code>), so the steward reports it unverified in a bare clone instead of red.</li>
   <li><strong>Releases:</strong> PyPI <code>slopstopper-cli</code> and the <code>v&lt;version&gt;</code> tag form (<code>include-v-in-tag</code> in <code>release-please-config.json</code>), so release notes and skills can be fetched for a pinned version.</li>
 </ul>
@@ -107,7 +107,6 @@
     <li><a href="steward.html" aria-current="page">slopstopper-steward: the org-wide operator</a></li>
   </ul>
 </nav>
-        <p class="lesson-source"><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/STEWARD.md" rel="noopener noreferrer">Edit this page on GitHub</a></p>
     </main>
     <footer>
         <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>

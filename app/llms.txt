@@ -49,11 +49,9 @@ One lesson per page, in order; each one's goal is its summary.
 
 ## Docs
 
-One page per reference doc, by section; each section's index says when to read what.
+One page per reference doc an adopter reads, by section; each section's index says when to read what. The docs about working on the repository itself are on GitHub, under Source.
 
 <!-- docs:begin -->
-For adopters:
-
 - [Runbooks: Runbooks](https://slopstopper.dev/docs/runbooks/index.html): Operational procedures for the SlopStopper project, covering both the suite itself and the things adopters do once around it.
 - [Runbooks: Adopting SlopStopper](https://slopstopper.dev/docs/runbooks/install.html): Everything an adopter needs once: prerequisites, what the installer writes, what each check needs from you, how to run the suite, configure it and move the CLI pin. The README holds the two install commands; this is the rest.
 - [Runbooks: Install the SlopStopper Claude Code skills](https://slopstopper.dev/docs/runbooks/install-skills.html): The companion to install.sh. Where install.sh drops the whole quality suite into a repo, install-skill.sh targets just the Claude Code skill subset, which is useful for refreshing the playbooks without re-running the full installer.
@@ -81,30 +79,13 @@ For adopters:
 - [Architecture: Project-shape profiles](https://slopstopper.dev/docs/architecture/profiles.html): Not every check applies to every repo. The nine browser-and-SEO reliability checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume HTML, a DOM and a public web surface. On an HTTP API they don't quietly no-op. They build, serve and audit…
 - [Architecture: slopstopper-steward: the org-wide operator](https://slopstopper.dev/docs/architecture/steward.html): slopstopper is per-repo: it tells one repo what is wrong and ships how to fix it. hungovercoders/slopstopper-steward is the counterpart that works across an organisation. On a schedule it finds every repo with slopstopper installed, moves CLI pins that fell behind, and works the issues…
 - [Support: Support](https://slopstopper.dev/docs/support/index.html): How to get help with this project.
-
-Inside the project:
-
-- [Docs index](https://slopstopper.dev/docs/index.html): The fallback routing table (a README so it renders in place when you browse docs/). AGENTS.md carries what most tasks need and routes the common cases directly; come here when your task is not covered there. Read only the doc whose trigger matches. Each row says when, and each category README…
-- [Runbooks: Cutting a release](https://slopstopper.dev/docs/runbooks/release.html): How a slopstopper-cli release is cut: two GitHub workflows take a merged Release PR to a tagged GitHub Release and a signed PyPI publish, with no version bump, changelog edit or tag pushed by hand. The two workflows:
-- [Contributing: Contributing](https://slopstopper.dev/docs/contributing/index.html): This document defines the default way to contribute to this project.
-- [Contributing: Change map: every surface a change must touch](https://slopstopper.dev/docs/contributing/change-map.html): SlopStopper is a suite adopters install and a site that proves it works, so one change usually lands in several places: the CLI, a workflow, the installer, the config schema, the docs, the two Claude Code skills and the site copy. This table is the checklist; cli/tests/test_check_registration.py…
-- [Contributing: Demo recordings](https://slopstopper.dev/docs/contributing/demos.html): The GIF in README.md and the stills beside it are recorded from the real CLI with VHS, from the tapes under demos/, and live next to them. They are committed, so a reader never needs the tooling; a contributor re-records when what a command prints changes.
-- [Contributing: The demo repo](https://slopstopper.dev/docs/contributing/fixture.html): slopstopper demo writes a small fixture repository, shipped in the CLI wheel under cli/slopstopper/data/demo/, for anything that needs a repo to run slopstopper against with no network and no clone of this one: the course, the demo tapes, a triage walkthrough, the skill evals. It is "Lantern", a…
-- [Contributing: Common pitfalls when extending SlopStopper](https://slopstopper.dev/docs/contributing/pitfalls.html): A short list of the most-hit gotchas. Each one has bitten somebody before; the rule is "do the obvious thing the obvious way."
-- [Deployment: Deployment](https://slopstopper.dev/docs/deployment/index.html): How the SlopStopper site ships to production.
-- [The site: App](https://slopstopper.dev/docs/app/index.html): What the site does and how its pages are organised.
-- [Decisions: Decisions](https://slopstopper.dev/docs/decisions/index.html): This directory records significant decisions and their rationale for the project.
-- [The course: From zero to slopstopper](https://slopstopper.dev/docs/learn/index.html): A course in twenty-one short lessons, each with a YouTube episode to follow. You start with nothing installed and finish able to install the suite into a repo, read any check's red line and the report it points at, fix what it found, tailor the suite to a repo's shape, and add a check of your…
-- [The course: Episode conventions](https://slopstopper.dev/docs/learn/episodes.html): The YouTube title, thumbnail and description conventions for the "From zero to slopstopper" series, and the recording notes every episode follows, so the series reads as one thing. Each lesson's own script is the collapsed "Episode script" at the end of its page; this file is what those scripts…
-- [The course: Writing a lesson](https://slopstopper.dev/docs/learn/template.html): This page is the template every lesson in the course is copied from, and the rules a lesson follows. Copy it to docs/learn/<NN>-<slug>.md, keep the H1 as Lesson N: <title>, replace each section, and update the row in the syllabus.
 <!-- docs:end -->
 
 ## Source
 
 - [GitHub repository](https://github.com/hungovercoders/slopstopper): source, install.sh and the slopstopper CLI
 - [README](https://github.com/hungovercoders/slopstopper/blob/main/README.md): install and usage
-- [Documentation map](https://slopstopper.dev/docs/index.html): the routing table for every doc, as agents read it in the repo
-- [From zero to slopstopper](https://slopstopper.dev/docs/learn/index.html): the course's syllabus and lesson sources, with an episode to follow
+- [Course syllabus](https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/README.md): the lessons as markdown, with the episode to follow for each
 - [Agent guide](https://github.com/hungovercoders/slopstopper/blob/main/AGENTS.md): what most tasks in the repo need, within ~2k tokens
 
 ## For agents
