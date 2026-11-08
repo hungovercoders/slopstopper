@@ -27,8 +27,9 @@ script writes the source beside them as `<digest>.mmd` and reports a
 diagram whose SVGs are missing; `scripts/diagrams.js` renders them
 (`task contributing:docs:diagrams`), because the site's CSP allows no
 script or inline style, so a diagram cannot render in the browser.
-The lessons' fences (scripts/learnsite.py) are drawn the same way and
-tracked here, so one directory holds every diagram on the site.
+The lessons' fences (scripts/learnsite.py) are drawn the same way, and
+this script renders the lessons too when it syncs the directory, so one
+directory holds every diagram on the site.
 
 `scripts/sitemd.py` holds the converter and the page template, shared
 with the course. A construct outside the markdown it covers fails the
@@ -57,7 +58,6 @@ stray or cannot be rendered, 2 there are no docs to read.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import html
 import re
 import sys
@@ -68,7 +68,7 @@ from posixpath import dirname, normpath, relpath
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import sitemd  # noqa: E402
-from sitemd import ROOT, SITE, SITE_URL, Options, Page, RenderError, plain  # noqa: E402
+from sitemd import DIAGRAMS, DIAGRAMS_DIR, ROOT, SITE, SITE_URL, THEMES, Options, Page, RenderError, diagram_html, plain  # noqa: E402
 
 DOCS = ROOT / "docs"
 OUT = SITE / "docs"
@@ -77,15 +77,8 @@ SITEMAP = SITE / "sitemap.xml"
 LLMS = SITE / "llms.txt"
 BEGIN, END = "<!-- docs:begin -->", "<!-- docs:end -->"
 GENERATOR, TASK = "scripts/docsite.py", "task contributing:docs:site"
-DIAGRAMS_PATH = "/assets/docs/diagrams"
-DIAGRAMS_DIR = SITE / DIAGRAMS_PATH.lstrip("/")
 DIAGRAMS_TASK = "task contributing:docs:diagrams"
-THEMES = ("light", "dark")
-_VIEWBOX = re.compile(r'viewBox="[\d.\-]+ [\d.\-]+ ([\d.]+) ([\d.]+)"')
 
-# Every Mermaid diagram the pages rendered in this run, digest → source;
-# sync_diagrams() keeps app/assets/docs/diagrams/ in step with it.
-DIAGRAMS: dict[str, str] = {}
 
 # The name each rendered section (sitemd.SITE_SECTIONS) shows in the
 # kicker, the breadcrumb and the Docs page.
@@ -221,52 +214,15 @@ def options(doc: Doc) -> Options:
 # ── diagrams ─────────────────────────────────────────────────────
 
 
-def digest_of(source: str) -> str:
-    return hashlib.sha256(source.encode("utf-8")).hexdigest()[:12]
-
-
-def svg_size(path: Path) -> str:
-    """` width="W" height="H"` from a rendered SVG's viewBox, so the page
-    reserves the diagram's space before the image arrives; empty when the
-    SVG is not there yet."""
-    if not path.is_file():
-        return ""
-    m = _VIEWBOX.search(path.read_text(encoding="utf-8"))
-    return f' width="{round(float(m.group(1)))}" height="{round(float(m.group(2)))}"' if m else ""
-
-
-def diagram_html(source: str, page_dir: str) -> str:
-    """A Mermaid fence as the page shows it: one image per theme and the
-    source folded beneath, which is also what a screen reader gets."""
-    digest = digest_of(source)
-    DIAGRAMS[digest] = source
-    images = "\n".join(
-        f'  <img class="only-{theme}" src="{relpath(f"{DIAGRAMS_PATH}/{digest}-{theme}.svg", page_dir)}"'
-        f'{svg_size(DIAGRAMS_DIR / f"{digest}-{theme}.svg")} alt="Diagram; its text follows.">'
-        for theme in THEMES
-    )
-    return (
-        '<figure class="diagram">\n'
-        f"{images}\n"
-        '  <details class="details diagram__source">\n'
-        "    <summary>The diagram as text</summary>\n"
-        f'    <div class="details__body">{sitemd.fence("", source)}</div>\n'
-        "  </details>\n"
-        "</figure>"
-    )
-
-
-LESSONS = DOCS / "learn"
-_MERMAID = re.compile(r"^```mermaid\n(.*?)\n```", re.M | re.S)
-
-
 def register_lesson_diagrams() -> None:
-    """The lessons (scripts/learnsite.py) draw their `mermaid` fences
-    through diagram_html too, so their sources belong in the same
-    directory and are not strays."""
-    for lesson in sorted(LESSONS.glob("[0-9][0-9]-*.md")):
-        for m in _MERMAID.finditer(lesson.read_text(encoding="utf-8")):
-            DIAGRAMS[digest_of(m.group(1))] = m.group(1)
+    """The lessons (scripts/learnsite.py) draw their `mermaid` fences through
+    sitemd.diagram_html too. Render them the way learnsite does, so exactly
+    the fences a lesson page shows are registered, and their sources are
+    not strays."""
+    import learnsite  # noqa: PLC0415 (learnsite imports sitemd, never this module)
+
+    for lesson in learnsite.lessons():
+        sitemd.convert(lesson.body, lesson.where, learnsite.OPTIONS, base=2)
 
 
 def sync_diagrams(check: bool) -> int:

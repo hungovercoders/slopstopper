@@ -48,7 +48,6 @@ from posixpath import normpath, relpath
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import docsite  # noqa: E402
 import sitemd  # noqa: E402
 from sitemd import BLOB, ROOT, SITE, SITE_URL, Options, Page, RenderError, plain  # noqa: E402
 
@@ -120,11 +119,12 @@ def rewrite_link(target: str) -> tuple[str, bool]:
     return (href if external else relpath(href, "/learn")), external
 
 
-# A `mermaid` fence is a diagram, drawn the way the docs pages draw one:
+# A `mermaid` fence is a diagram, drawn the way the docs pages draw one.
 # docsite.py keeps app/assets/docs/diagrams/ in step with the lessons too,
-# so a new diagram here needs `task contributing:docs:site` and then
-# `task contributing:docs:diagrams` before the page shows it.
-OPTIONS = Options(link=rewrite_link, diagram=lambda source: docsite.diagram_html(source, "/learn"))
+# so a new diagram here needs `task contributing:docs:site` (its source)
+# and `task contributing:docs:diagrams` (its SVGs, then this page again
+# with their sizes) before the page shows it.
+OPTIONS = Options(link=rewrite_link, diagram=lambda source: sitemd.diagram_html(source, "/learn"))
 
 
 def goal(text: str) -> str:

@@ -100,11 +100,12 @@ tasks:
       - '"{{.PYTHON}}" scripts/docsite.py {{.CLI_ARGS}}'
 
   contributing:docs:diagrams:
-    desc: Render the docs' Mermaid diagrams to SVG, one per theme, under app/assets/docs/diagrams (scripts/diagrams.js, Playwright), then rewrite the doc pages with their sizes
+    desc: Render the docs' and lessons' Mermaid diagrams to SVG, one per theme, under app/assets/docs/diagrams (scripts/diagrams.js, Playwright), then rewrite the doc and lesson pages with their sizes
     deps: [cli:install]
     cmds:
       - node scripts/diagrams.js
       - '"{{.PYTHON}}" scripts/docsite.py'
+      - '"{{.PYTHON}}" scripts/learnsite.py'
 
   contributing:learn:record:
     desc: Record the lesson tapes as episode b-roll into dist/learn/NN.mp4 (demos/render.sh; needs vhs, ttyd 1.7.7+, ffmpeg); `-- 08` for one
