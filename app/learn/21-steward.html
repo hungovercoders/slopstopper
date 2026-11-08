@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/21-steward.md by scripts/learnsite.py: edit the source, then `task contributing:learn:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 21: Across an organisation: the steward | SlopStopper</title>
+    <meta name="description" content="See what slopstopper-steward reads from a repo to find it, judge its pin and work its findings, so that you can run one for your organisation and know what it will and will not touch.">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/learn/21-steward.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/learn/21-steward.html">
+    <meta property="og:title" content="Lesson 21: Across an organisation: the steward | SlopStopper">
+    <meta property="og:description" content="See what slopstopper-steward reads from a repo to find it, judge its pin and work its findings, so that you can run one for your organisation and know what it will and will not touch.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lesson 21: Across an organisation: the steward | SlopStopper">
+    <meta name="twitter:description" content="See what slopstopper-steward reads from a repo to find it, judge its pin and work its findings, so that you can run one for your organisation and know what it will and will not touch.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <script src="../theme.js"></script>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="preload" href="../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../shared.css">
+    <link rel="stylesheet" href="../lesson.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../index.html" id="nav-home">Home</a>
+            <a href="../features.html" id="nav-features">Features</a>
+            <a href="../tools.html" id="nav-tools">Tools</a>
+            <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../docs.html" id="nav-docs">Docs</a>
+            <a href="../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+            <button type="button" class="btn btn--ghost theme-toggle" aria-label="Switch theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson">
+            <span class="kicker">🎓 From zero to slopstopper · lesson 21</span>
+            <h1>Across an organisation: the steward</h1>
+        </section>
+        <article class="lesson">
+<p><strong>Goal.</strong> See what slopstopper-steward reads from a repo to find it, judge its pin and work its findings, so that you can run one for your organisation and know what it will and will not touch.</p>
+<h2 id="why-this-lesson">Why this lesson</h2>
+<p>Everything so far is one repo at a time. A team with forty repos has forty pins, and each one falls behind the day after a release; forty sets of tracking issues, each waiting for someone to notice; and forty copies of the skills, which fix a red check only when someone asks. That is the slop of scale: nothing is wrong in any one repo, and the whole estate drifts.</p>
+<p><a href="https://github.com/hungovercoders/slopstopper-steward" rel="noopener noreferrer">slopstopper-steward</a> is the operator for that. On a schedule, in your organisation's own GitHub Actions, it finds every repo with slopstopper installed, moves the pins that fell behind, and works the issues the checks raised, one pull request each. It carries no check logic and no fix knowledge: the pinned CLI rewrites and verifies the suite, and the <code>slopstopper-triage</code> skill the install ships is what its agent works a finding with. Each organisation runs its own copy; there is no service.</p>
+<p>What makes that possible is a <strong>contract</strong>: a short list of things in an adopter's repo and in the CLI that the steward reads, named in its contract module and tested nightly against slopstopper's <code>main</code>. This lesson walks that list from the adopter's side, in the demo, so every surface the steward depends on is one you have seen.</p>
+<h2 id="you-will-need">You will need</h2>
+<p>The demo repo from the <a href="../learn.html">syllabus</a>, with the CLI on PATH. Nothing in this lesson needs the steward installed or a token; running one for real is the last section.</p>
+<h2 id="steps">Steps</h2>
+<h3 id="1-install-the-suite-and-see-what-the-steward-can-see">1. Install the suite, and see what the steward can see</h3>
+<p>Install into the demo quietly, keeping the skills, so there is a suite to discover. Then read the two files discovery is built on.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper --quiet install --no-topic --no-hooks
+grep slopstopper-cli mise.toml
+cat .ss/.installed-from</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>"pipx:slopstopper-cli" = "0.29.0"
+0.29.0</code></pre></div>
+<p>Three signals say "this repo has slopstopper": the <code>slopstopper</code> topic the installer adds through <code>gh</code> (skipped here with <code>--no-topic</code>, because the demo has no remote), the pin line in <code>mise.toml</code>, and <code>.ss/.installed-from</code>, which the installer writes with its own version. The pin is what runs; the marker is what wrote the suite. A pin below the steward's target is an <strong>upgrade order</strong>: rewrite that one line, run <code>slopstopper install</code> from the target CLI, and open the pull request with the result.</p>
+<h3 id="2-the-finding-it-works">2. The finding it works</h3>
+<p>A check that fails on <code>main</code> opens a tracking issue (lesson 17), and the issue body carries a hidden marker naming the check. The steward reads those issues, and when its agent reproduces one it asks the CLI for the verdict as JSON rather than parsing the red line:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:complexity --json</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>❌ 1 function(s) exceed CCN 15. Refactor them before merging.
+{
+  "check": "hygiene:complexity",
+  "exit_code": 1,
+  "status": "fail",
+  "reports": [
+    ".ss/reports/complexity/complexity-report.csv",
+    ".ss/reports/complexity/complexity-report.md"
+  ]
+}</code></pre></div>
+<p>Trimmed to the verdict. The check, the exit code from lesson 0, and the reports to read: that is what the agent is handed, and then it follows the triage skill exactly as you did in lesson 18. A 2 here would be "could not run", and the steward reports that as unverified rather than as a finding.</p>
+<h3 id="3-the-rest-of-the-contract">3. The rest of the contract</h3>
+<p>Three more commands the steward calls, each with a <code>--json</code> form so it never scrapes text meant for people:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper profile expand library --json | head -4
+slopstopper checks list --json | head -7</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>{
+  "profile": "library",
+  "workflows": [
+    "ss-reliability-smoke-tests.yml",
+[
+  {
+    "name": "hygiene:complexity",
+    "summary": "Code complexity analyzer (Lizard wrapper).",
+    "workflow": "ss-hygiene-complexity-check.yml",
+    "disabled": false</code></pre></div>
+<p><code>profile expand</code> is how it knows which workflows a repo of that shape should carry after a refresh (lesson 19); <code>checks list</code> is how it names a check from a workflow file. The third is <code>doctor --json</code>, whose <code>needed_by</code> field says which check a missing tool belongs to:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper doctor --json | python3 -c "
+import json, sys
+for t in json.load(sys.stdin)['tools']:
+    if t['tool'] == 'semgrep': print(t['needed_by'], t['status'])"</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>security:sast missing</code></pre></div>
+<p>The steward runs in a bare clone with no Semgrep, Gitleaks or Trivy, so without this it would report four checks red on every repo. With it, they are reported as not verified here, which is true.</p>
+<h3 id="4-the-marker-a-workaround-leaves">4. The marker a workaround leaves</h3>
+<p>When the triage skill works around a bug in slopstopper itself, it leaves a marker on the workaround naming the upstream issue, in the file's own comment syntax. The install skill's refresh step, and the steward on an upgrade, collect on those: a pin moved, so the fix may have shipped, and a workaround that outlives its bug keeps a check degraded for nothing.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>grep -rho 'slopstopper-workaround: hungovercoders/slopstopper#&lt;N&gt;' .claude/skills | sort -u</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>slopstopper-workaround: hungovercoders/slopstopper#&lt;N&gt;</code></pre></div>
+<p>The two skills carry the convention byte for byte, because the steward greps for exactly this string. It is also why lesson 20's change map lists the skills as a surface: rename the marker in one place and the steward stops finding workarounds everywhere.</p>
+<h3 id="5-what-an-upgrade-order-changes">5. What an upgrade order changes</h3>
+<p>Simulate a pin that fell behind, and read what the steward would open:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's/"pipx:slopstopper-cli" = ".*"/"pipx:slopstopper-cli" = "0.28.0"/' mise.toml &amp;&amp; rm mise.toml.bak
+grep slopstopper-cli mise.toml</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>"pipx:slopstopper-cli" = "0.28.0"</code></pre></div>
+<p>The order is that one line rewritten to the target, then <code>slopstopper install</code> run from the target version so the workflows, shims, hook and skills are the ones that version ships, then the repo's own <code>ss-*</code> checks on the pull request. The steward waits for them. A check that goes red after the refresh is the one case where its agent is called in on an upgrade; a green run is merged only when the copy's <code>merge.auto</code> says so, and otherwise left for a person.</p>
+<p>Running one is a copy of the steward repo in your organisation, with your <code>orgs</code> in <code>steward.yml</code>, a GitHub App installed on the adopters, and a first run in plan mode. The commands are the whole interface:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>steward discover            # the adopters, and the evidence for each
+steward plan                # the orders a run would open, nothing written
+steward run --dry-run       # the same, as a report under .steward/reports/
+steward contract ../slopstopper   # do the surfaces above still hold?</code></pre></div>
+<p>Everything it writes is a <code>steward/&lt;order&gt;</code> branch and a pull request; it never pushes to a default branch, edits an issue or changes a setting, and an issue labelled <code>steward:ignore</code> is left alone.</p>
+<h2 id="checkpoint">Checkpoint</h2>
+<p>The checks the steward will report as unverified in a bare clone, read the way it reads them:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper doctor --json | python3 -c "
+import json, sys
+print(sorted({t['needed_by'] for t in json.load(sys.stdin)['tools'] if t['needed_by']}))"</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>['security:dast', 'security:sast', 'security:secrets', 'security:vulnerability:all']</code></pre></div>
+<p>Put the demo back:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>git checkout .gitignore package.json
+git clean -fdq</code></pre></div>
+<h2 id="exercise">Exercise</h2>
+<p>Rename <code>.ss/.installed-from</code> in your head and list what breaks. Then find the one place in this repository that names every surface the steward reads, so a change there is reviewed as a contract change.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<p>Discovery loses one of its three signals, so a repo with no topic and a pin the steward cannot parse would be missed; nothing else breaks, because the pin still says which version runs. The list is the steward row of <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/contributing/CHANGE_MAP.md" rel="noopener noreferrer">the change map</a>, which points at <a href="../docs/architecture/steward.html">STEWARD.md</a>; the steward's own CI checks the same list against this repo's <code>main</code> nightly, so a rename here goes red there within a day. Run <code>steward contract &lt;this checkout&gt;</code> from a steward checkout before merging one.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li><a href="../docs/architecture/steward.html">The steward and the suite</a>: the split of concerns, the full contract and the loop as a diagram</li>
+  <li><a href="https://github.com/hungovercoders/slopstopper-steward/blob/main/docs/runbooks/SETUP.md" rel="noopener noreferrer">The steward's setup runbook</a>: the fork, the GitHub App, the agent user and the first plan-only run</li>
+  <li>Lesson 18 for the two skills the steward hands its agent, and lesson 19 for the pin it moves</li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 8 to 10 minutes.</p>
+<p><strong>Cold open (0:00).</strong> A GitHub organisation page, forty repos, each with a slopstopper badge row. Click three: three different pin versions, two with open tracking issues nobody has touched. "Nothing is wrong in any one of them."</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>The slop of scale, and why the fix is an operator, not a bigger suite.</li>
+  <li>Discovery: the topic, the pin, the marker.</li>
+  <li>The finding as JSON, and the agent handed the triage skill.</li>
+  <li>The contract: three more commands, and the nightly test that keeps them true.</li>
+  <li>An upgrade order, line by line, and what the steward never does.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme. <code>docs/learn/tapes/21.tape</code>. Cut once to the steward doc's loop diagram while talking point 1 lands, and once to a <code>steward/&lt;order&gt;</code> pull request on a real adopter.</p>
+<p><strong>Chapters.</strong> <code>0:00 Forty repos</code> · <code>1:30 Discovery</code> · <code>3:00 The finding</code> · <code>4:30 The contract</code> · <code>6:30 An upgrade order</code> · <code>8:00 Running one</code> · <code>9:00 Next steps</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="lesson-nav" aria-label="Lessons">
+  <a class="lesson-nav__prev" href="20-inside-slopstopper.html">← Lesson 20: Inside slopstopper: add a check</a>
+  <a class="lesson-nav__next" href="../learn.html">Back to the course →</a>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/21-steward.md" rel="noopener noreferrer">docs/learn/21-steward.md</a>; the commands on it run in CI on every change to the course.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../copy.js" defer></script>
+</body>
+</html>

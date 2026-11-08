@@ -2,7 +2,8 @@
 
 > A Python CLI plus GitHub Actions workflows that run security, hygiene and
 > reliability checks on every PR. One command to install into any repo.
-> It stops AI-generated slop reaching production. People, agents and CI run
+> Deterministic checks for a software factory run by agents: the same input
+> gives the same verdict, with no model in the loop. People, agents and CI run
 > every check with the same `task ss:*` command.
 
 SlopStopper is a quality suite you install into your own repo with one
@@ -36,7 +37,7 @@ Needs Python; the installer also needs mise. Settings live in
 - [Home](https://slopstopper.dev/): what SlopStopper is, the two ways to install it, and the four loops of checks
 - [Features](https://slopstopper.dev/features.html): every check by loop (security, reliability, hygiene, operational), the workflow behind each, the profiles, and what the pull request feedback looks like
 - [Tools](https://slopstopper.dev/tools.html): the tool behind each check: Semgrep, OWASP ZAP, Trivy, Gitleaks, Playwright, axe-core, Lighthouse CI, and the pieces every install carries
-- [Learn](https://slopstopper.dev/learn.html): a course of twenty-one short lessons, one check at a time, run against a demo repo the CLI writes; each lesson is a page under /learn/, listed below
+- [Learn](https://slopstopper.dev/learn.html): a course of twenty-two short lessons, one check at a time, run against a demo repo the CLI writes; each lesson is a page under /learn/, listed below
 - [Docs](https://slopstopper.dev/docs.html): the reference docs as pages under /docs/, listed below: what every check enforces and how to fix what it finds, installing and tuning the suite, the architecture
 - [Feedback](https://slopstopper.dev/feedback.html): report a bug or request a check
 - [Privacy](https://slopstopper.dev/privacy.html): what the site collects (nothing of its own), what Cloudflare keeps as the host, and which other services the pages reach
@@ -67,6 +68,7 @@ One lesson per page, in order; each one's goal is its summary.
 - [Lesson 18: Agents: the install and triage skills](https://slopstopper.dev/learn/18-agents.html): Install the two Claude Code skills into a repo, read how they are shaped, and see how an agent uses them to install the suite or fix a red check without being told the steps.
 - [Lesson 19: Profiles and tailoring](https://slopstopper.dev/learn/19-profiles-and-tailoring.html): Switch a repo between the ui, api and library profiles, keep one check a profile drops, and know where the CLI pin lives and how it moves.
 - [Lesson 20: Inside slopstopper: add a check](https://slopstopper.dev/learn/20-inside-slopstopper.html): Register a new check in the CLI, let the test suite tell you the other surfaces it must be wired into, and understand the shape every check shares.
+- [Lesson 21: Across an organisation: the steward](https://slopstopper.dev/learn/21-steward.html): See what slopstopper-steward reads from a repo to find it, judge its pin and work its findings, so that you can run one for your organisation and know what it will and will not touch.
 <!-- learn:end -->
 
 ## Docs

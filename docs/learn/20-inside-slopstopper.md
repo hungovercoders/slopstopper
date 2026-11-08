@@ -6,7 +6,7 @@ every check shares.
 
 ## Why this lesson
 
-The last lesson is the one for contributors, and it is about the
+This lesson is the one for contributors, and it is about the
 repository's own slop guard. A check is one Python module, but a check
 that ships needs a workflow, a task shim, a line in the installer, a
 row in the profile map, a badge label, two trigger lists, a labeler

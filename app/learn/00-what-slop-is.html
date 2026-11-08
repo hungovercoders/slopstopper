@@ -82,7 +82,7 @@
 </ul>
 <p>None of these is hard to spot. All of them get merged, because review does not scale with the volume of plausible-looking change. Slop is not a quality of the author. It is what any process produces once output outruns attention.</p>
 <h2 id="the-thesis-gates-not-reviews">The thesis: gates, not reviews</h2>
-<p>slopstopper's answer is a gate for each of those defects, run the same way by a human at a terminal, an agent in a conversation and CI on a pull request. Three rules make that work:</p>
+<p>slopstopper's answer is a gate for each of those defects, run the same way by a human at a terminal, an agent in a conversation and CI on a pull request. Every gate is deterministic: a tool runs, a number meets a threshold, and the same input gives the same verdict every time, with no model in the loop. That is what lets agents write the code: the judge is not another agent. Three rules make that work:</p>
 <ol>
   <li><strong>One command.</strong> Every check is <code>task ss:&lt;category&gt;:&lt;action&gt;</code>. The shim calls <code>slopstopper run &lt;category&gt;:&lt;action&gt;</code>, and the workflow under <code>.github/workflows/ss-*.yml</code> runs the same <code>task</code> line. There is no CI-only threshold and no local-only shortcut, so "it passed on my machine" and "it passed in CI" mean the same thing.</li>
   <li><strong>One definition of green.</strong> <code>task ss:hygiene:test</code> is what the pre-push hook runs and what CI runs. A check reports its verdict in a red line on the terminal and in a report under <code>.ss/reports/</code>, so the fix is never a guess.</li>
@@ -116,7 +116,7 @@
     <tr><td>🚀 <strong>Deployment</strong></td><td>a preview per PR and the URL checks run against it after every deploy</td><td>Cloudflare Workers Builds</td></tr>
   </tbody>
 </table></div>
-<p>Lessons 2 to 5 take the hygiene loop, because it needs no external tools. Lessons 6 to 10 take security, 11 to 16 reliability, and 17 the operational loop. The last three are about shaping the suite to a repo and to yourself.</p>
+<p>Lessons 2 to 5 take the hygiene loop, because it needs no external tools. Lessons 6 to 10 take security, 11 to 16 reliability, and 17 the operational loop. The last four are about shaping the suite to a repo, to yourself and to an organisation.</p>
 <h2 id="you-will-need">You will need</h2>
 <p>The checkout from the <a href="../learn.html">syllabus</a>, with the CLI on PATH.</p>
 <h2 id="steps">Steps</h2>
