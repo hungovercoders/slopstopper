@@ -38,6 +38,8 @@ on:
       - 'app/docs.html'
       - 'app/docs/**'
       - 'app/assets/docs/**'
+      # test_docs_site.py and test_learn_site.py read its pages.* lists.
+      - '.slopstopper.yml'
       - 'Taskfile.yml'
       - 'Taskfile.ss.yml'
       - '.github/workflows/ci-cli.yml'
@@ -65,6 +67,8 @@ on:
       - 'app/docs.html'
       - 'app/docs/**'
       - 'app/assets/docs/**'
+      # test_docs_site.py and test_learn_site.py read its pages.* lists.
+      - '.slopstopper.yml'
       - 'Taskfile.yml'
       - 'Taskfile.ss.yml'
       - '.github/workflows/ci-cli.yml'

@@ -158,7 +158,7 @@ class Doc:
 
     @property
     def body(self) -> str:
-        return self.text.split("\n", 1)[1]
+        return self.text.split("\n", 1)[1] if "\n" in self.text else ""
 
     @property
     def description(self) -> str:
@@ -170,7 +170,12 @@ def intro(body: str, where: str) -> str:
     and blank lines before it are skipped, and a blockquote counts."""
     lines = body.splitlines()
     i = 0
-    while i < len(lines) and (not lines[i].strip() or lines[i].startswith(("#", "<!--"))):
+    while i < len(lines):
+        if lines[i].startswith("<!--"):
+            while i < len(lines) and "-->" not in lines[i]:
+                i += 1
+        elif lines[i].strip() and not lines[i].startswith("#"):
+            break
         i += 1
     para = []
     while i < len(lines) and lines[i].strip() and not lines[i].startswith(("#", "```", "|", "<", "- ")):
@@ -219,7 +224,12 @@ def rewriter(doc: Doc) -> sitemd.Rewriter:
         anchor = f"#{anchor}" if anchor else ""
         if not path:
             return anchor, False
-        href, external = sitemd.repo_link(normpath(f"{here}/{path}"), anchor)
+        if path.startswith("/"):
+            raise RenderError(f"link target {target!r} is root-absolute; make it relative to the doc")
+        repo_path = normpath(f"{here}/{path}")
+        if repo_path.startswith(".."):
+            raise RenderError(f"link target {target!r} leaves the repository")
+        href, external = sitemd.repo_link(repo_path, anchor)
         return (href if external else relpath(href, page_dir)), external
 
     return rewrite
@@ -380,7 +390,9 @@ def _section_blocks(all_docs: list[Doc], who: str) -> str:
     esc = lambda s: html.escape(s, quote=True)  # noqa: E731
     blocks = []
     for key, (name, _) in SECTIONS.items():
-        index = next(d for d in all_docs if d.section == key and d.is_index)
+        index = next((d for d in all_docs if d.section == key and d.is_index), None)
+        if index is None:
+            raise RenderError(f"docs/{key}/README.md is missing; every section in docsite.SECTIONS needs its index")
         others = [d for d in all_docs if d.section == key and not d.is_index and audience(d) == who]
         if audience(index) != who and not others:
             continue

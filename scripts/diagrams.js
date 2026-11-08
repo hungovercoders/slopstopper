@@ -117,11 +117,13 @@ async function renderAll(page, sources) {
   const browser = await chromium.launch(launch);
   try {
     const page = await browser.newPage();
-    page.on('pageerror', (e) => { throw e; });
+    const pageErrors = [];
+    page.on('pageerror', (e) => pageErrors.push(e));
     await serveCache(page);
     await page.goto(`${ORIGIN}/`, { waitUntil: 'load' });
     await page.waitForFunction(() => Boolean(window.mermaid), null, { timeout: 15000 });
     const count = await renderAll(page, sources);
+    if (pageErrors.length) throw new Error(`the page reported ${pageErrors.length} error(s): ${pageErrors.map((e) => e.message).join('; ')}`);
     console.log(`diagrams: ${count} SVG(s) written for ${sources.length} diagram(s)`);
   } finally {
     await browser.close();

@@ -43,12 +43,30 @@ def test_the_audit_page_lists_carry_every_doc_page():
     config = (REPO_ROOT / ".slopstopper.yml").read_text(encoding="utf-8")
     pages = sorted(["/docs.html"] + ["/" + p.relative_to(REPO_ROOT / "app").as_posix() for p in DOC_PAGES.rglob("*.html")])
     assert len(pages) > 1, "no doc pages under app/docs/"
+    lists = _pages_block(config)
     for key in ("smoke", "accessibility", "seo", "broken_links"):
-        line = next(l for l in config.splitlines() if l.strip().startswith(f"{key}:"))
-        listed = sorted(p.strip() for p in line.split(":", 1)[1].split(",") if p.strip().startswith("/docs"))
+        assert key in lists, f"pages.{key} is missing from .slopstopper.yml"
+        listed = sorted(p.strip() for p in lists[key].split(",") if p.strip().startswith("/docs"))
         assert listed == pages, (
             f"pages.{key} in .slopstopper.yml does not list exactly /docs.html and the doc pages under app/docs/"
         )
+
+
+def _pages_block(config: str) -> dict[str, str]:
+    """The `key: value` lines indented under the top-level `pages:` key,
+    wherever that block sits in the file."""
+    lists: dict[str, str] = {}
+    inside = False
+    for line in config.splitlines():
+        if line.startswith("pages:"):
+            inside = True
+            continue
+        if inside and line and not line.startswith((" ", "#")):
+            break
+        if inside and line.strip() and not line.lstrip().startswith("#"):
+            key, _, value = line.strip().partition(":")
+            lists[key] = value
+    return lists
 
 
 def test_every_doc_page_the_docs_page_links_exists():

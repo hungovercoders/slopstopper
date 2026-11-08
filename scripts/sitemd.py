@@ -50,7 +50,10 @@ _CODE = re.compile(r"`([^`]+)`")
 _AUTOLINK = re.compile(r"<(https?://[^>\s]+)>")
 _BOLD = re.compile(r"\*\*(.+?)\*\*")
 _EM = re.compile(r"(?<![\w*])\*(?=[\w(])([^*\n]+?)(?<=[\w).!?\"'])\*(?!\*)")
-_LINK = re.compile(r"\[([^\]]+)\]\(([^)\s]+)\)")
+_LINK = re.compile(r"\[([^\]]+)\]\((?P<target>(?:[^()\s]|\([^()\s]*\))+)\)")
+_IMAGE = re.compile(r"!\[")
+_TITLED_LINK = re.compile(r"\]\([^)\s]+\s+[\"']")
+_INLINE_HTML = re.compile(r"<(?!!--)[A-Za-z/]")
 _REL_HREF = re.compile(r'(href|src)="(?!https?:|#|mailto:)([^"]+)"')
 _LESSON_PAGE = re.compile(r"\d\d-[\w-]+\.md")
 
@@ -113,6 +116,9 @@ def repo_link(repo_path: str, anchor: str = "") -> tuple[str, bool]:
     if (ROOT / repo_path).is_file():
         return BLOB + repo_path + anchor, True
     if (ROOT / repo_path).is_dir():
+        index = doc_page(repo_path.rstrip("/") + "/README.md")
+        if index is not None and (ROOT / repo_path / "README.md").is_file():
+            return index + anchor, False
         return TREE + repo_path + anchor, True
     raise RenderError(f"link target {repo_path!r} is not a file in the repo")
 
@@ -150,10 +156,16 @@ def inline(text: str, where: str, opts: Options) -> str:
 
     text = _CODE.sub(lambda m: hold(f"<code>{html.escape(m.group(1), quote=False)}</code>"), text)
     text = _AUTOLINK.sub(lambda m: hold(anchor(html.escape(m.group(1)), m.group(1))), text)
+    if _IMAGE.search(text):
+        raise RenderError(f"{where}: images are not supported; link the file instead")
+    if _TITLED_LINK.search(text):
+        raise RenderError(f"{where}: a link title (`[text](url \"title\")`) is not supported")
+    if _INLINE_HTML.search(text):
+        raise RenderError(f"{where}: inline HTML is outside the markdown the site renders")
     text = html.escape(text, quote=False)
     text = _BOLD.sub(r"<strong>\1</strong>", text)
     text = _EM.sub(r"<em>\1</em>", text)
-    text = _LINK.sub(lambda m: anchor(m.group(1), m.group(2)), text)
+    text = _LINK.sub(lambda m: anchor(m.group(1), m.group("target")), text)
     return re.sub(r"\x00(\d+)\x00", lambda m: held[int(m.group(1))], text)
 
 
@@ -175,11 +187,27 @@ def split_cells(row: str) -> list[str]:
 # ── block markdown ───────────────────────────────────────────────
 
 
+def outside_code(text: str) -> str:
+    """`text` with every backtick code span blanked to spaces, so a search
+    for markup finds only what is outside code (positions are preserved)."""
+    return _CODE.sub(lambda m: " " * len(m.group(0)), text)
+
+
 def strip_comment(line: str, at: str) -> str:
+    """`line` without the HTML comments outside its code spans; a comment
+    inside backticks is text the page shows."""
     if "<!--" not in line:
         return line
-    stripped = _COMMENT.sub("", line)
-    if "<!--" in stripped:
+    mask = outside_code(line)
+    if "<!--" not in mask:
+        return line
+    out, pos = [], 0
+    for m in _COMMENT.finditer(mask):
+        out.append(line[pos:m.start()])
+        pos = m.end()
+    out.append(line[pos:])
+    stripped = "".join(out)
+    if "<!--" in outside_code(stripped):
         raise RenderError(f"{at}: a comment must open and close on one line")
     return stripped
 
@@ -249,7 +277,7 @@ def _block(lines: list[str], line: str, i: int, where: str, base: int, opts: Opt
         return "<hr>", i + 1
     if line.strip() == "<details>":
         return details_block(lines, i, where, base, opts)
-    if line.startswith(("<", "#", "* ", "+ ", "  ")):
+    if line.startswith(("#", "* ", "+ ", "  ")) or (line.startswith("<") and not _AUTOLINK.match(line)):
         raise RenderError(f"{at}: {line.strip()[:60]!r} is outside the markdown the site renders")
     return paragraph_block(lines, i, at, opts)
 
@@ -392,7 +420,7 @@ def paragraph_block(lines: list[str], i: int, at: str, opts: Options) -> tuple[s
     para = [strip_comment(lines[i], at).strip()]
     i += 1
     while i < len(lines) and not _ends_paragraph(lines[i]):
-        para.append(_COMMENT.sub("", lines[i]).strip())
+        para.append(strip_comment(lines[i], at).strip())
         i += 1
     return f"<p>{inline(' '.join(p for p in para if p), at, opts)}</p>", i
 
