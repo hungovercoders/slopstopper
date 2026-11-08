@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Docs | SlopStopper</title>
-    <meta name="description" content="The SlopStopper reference docs, on the site: what every check enforces and how to read its report, how to adopt the suite, the architecture, the runbooks and the change map, rendered from the same files agents read in the repo.">
+    <meta name="description" content="The SlopStopper docs: what every check enforces and how to fix what it finds, how to install and tune the suite for your repo, how it reports into a pull request, and how to contribute.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -14,7 +14,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://slopstopper.dev/docs.html">
     <meta property="og:title" content="Docs | SlopStopper">
-    <meta property="og:description" content="The reference docs, on the site: every check, how to adopt the suite, the architecture, the runbooks and the change map.">
+    <meta property="og:description" content="What every check enforces and how to fix what it finds, how to install and tune the suite, and how to contribute.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -24,7 +24,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Docs | SlopStopper">
-    <meta name="twitter:description" content="The reference docs, on the site: every check, how to adopt the suite, the architecture, the runbooks and the change map.">
+    <meta name="twitter:description" content="What every check enforces and how to fix what it finds, how to install and tune the suite, and how to contribute.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -63,9 +63,9 @@
     </header>
     <main id="main">
         <section class="hero hero--docs">
-            <span class="kicker">📚 The docs</span>
-            <h1>Every doc, <span class="highlight">on the site</span>.</h1>
-            <p>The reference docs are markdown files in the repository, routed from <code>AGENTS.md</code> so an agent working in it reads only the one its task needs. These are the same files, rendered as pages: what each check enforces and how to read its report, how to adopt the suite and keep it current, how the pieces fit, and what a change has to touch.</p>
+            <span class="kicker">📚 Docs</span>
+            <h1>How slopstopper <span class="highlight">works</span>.</h1>
+            <p>What each check enforces and why, how to read the report it writes and fix what it found, how to install the suite into a repo and tune it to the repo's shape, and how every check reports into a pull request.</p>
         </section>
 
         <section class="section docs-section" id="start">
@@ -73,27 +73,27 @@
             <h2>Three doors in.</h2>
             <div class="card-grid docs-doors">
                 <div class="card">
-                    <h3>Adopting the suite</h3>
-                    <p>Prerequisites, what the installer writes, what each check needs on the runner, and how to configure and update.</p>
+                    <h3>Install it in your repo</h3>
+                    <p>What you need first, what the installer writes, which tools each check needs on the runner, and how to configure the suite and move the pin.</p>
                     <a class="card-link" href="docs/runbooks/install.html">Adopting SlopStopper →</a>
                 </div>
                 <div class="card">
-                    <h3>A check went red</h3>
-                    <p>Each section's page says what the check enforces, which knob tunes it and where its report lands: <a href="docs/hygiene/index.html">hygiene</a>, <a href="docs/security/index.html">security</a> or <a href="docs/reliability/index.html">reliability</a>.</p>
+                    <h3>Fix a red check</h3>
+                    <p>Every check has a page: what it enforces, what a finding looks like, which setting tunes it, and where its report lands. Pick the loop: <a href="docs/hygiene/index.html">hygiene</a>, <a href="docs/security/index.html">security</a> or <a href="docs/reliability/index.html">reliability</a>.</p>
                     <a class="card-link" href="docs/reliability/index.html">Start with reliability →</a>
                 </div>
                 <div class="card">
-                    <h3>Changing slopstopper</h3>
-                    <p>A check, a workflow, a skill or a page ships to every adopter, so one change lands in several places. The change map is the checklist.</p>
-                    <a class="card-link" href="docs/contributing/change-map.html">The change map →</a>
+                    <h3>Tailor it to the repo</h3>
+                    <p>An API has no pages to audit and a library serves nothing. Profiles pick the checks that fit, and one setting takes back any single check.</p>
+                    <a class="card-link" href="docs/architecture/profiles.html">Project-shape profiles →</a>
                 </div>
             </div>
         </section>
 
         <section class="section docs-section" id="adopters">
-            <span class="kicker">For adopters</span>
-            <h2>Running the suite in your repo.</h2>
-            <p class="lede">What each check enforces, which knob tunes it and where its report lands; how to install, configure and update; how the profiles, the PR feedback and the steward fit. Each section opens with its own index, which says when to read what.</p>
+            <span class="kicker">Using slopstopper</span>
+            <h2>The suite, check by check.</h2>
+            <p class="lede">Each loop has a page per check: hygiene keeps code and docs readable to people and agents, security catches leaked secrets, unsafe code and vulnerable dependencies, and reliability proves the running site or API works for a visitor. The runbooks cover installing, updating and releasing; the architecture pages cover profiles, the pull request feedback and running the suite across an organisation.</p>
             <!-- docs:adopters:begin -->
             <div class="doc-section" id="runbooks">
                 <h3><a href="docs/runbooks/index.html">Runbooks</a></h3>
@@ -157,7 +157,7 @@
         <section class="section docs-section" id="project">
             <span class="kicker">Inside the project</span>
             <h2>Working on slopstopper itself.</h2>
-            <p class="lede">How to contribute, what a change has to touch, how this site is built and deployed, the decisions behind the suite, and how the lessons of <a href="learn.html">the course</a> are written. Here for the curious and for lesson 20, which adds a check; nothing an adopter needs.</p>
+            <p class="lede">For contributors, and for lesson 20 of <a href="learn.html">the course</a>, which adds a check: how to contribute, what a change has to touch, how this site is built and deployed, the decisions behind the suite, and how a lesson is written.</p>
             <!-- docs:project:begin -->
             <div class="doc-section" id="contributing">
                 <h3><a href="docs/contributing/index.html">Contributing</a></h3>
@@ -193,10 +193,10 @@
         </section>
 
         <section class="section docs-section" id="agents">
-            <span class="kicker">For agents</span>
-            <h2>The same files, the agent's way in.</h2>
-            <p class="lede">An agent in the repository starts from <a href="https://github.com/hungovercoders/slopstopper/blob/main/AGENTS.md" rel="noopener noreferrer">AGENTS.md</a>, which carries what most tasks need and routes the rest through <a href="docs/index.html">the docs map</a>: a table of triggers, each saying which doc to read and what it holds. Two hygiene checks keep every doc routed and the entry files within budget. An assistant reading the site starts from <a href="llms.txt">llms.txt</a>, which lists every page here with its summary.</p>
-            <p class="docs-note">Something wrong or missing on a page? Every page names the file it is rendered from; <a href="https://github.com/hungovercoders/slopstopper/issues/new/choose" rel="noopener noreferrer">open an issue</a> or send a pull request against that file, and the page follows.</p>
+            <span class="kicker">Working with an agent</span>
+            <h2>Let the agent install it and fix what it finds.</h2>
+            <p class="lede">Two Claude Code skills ship with the suite: <strong>slopstopper-install</strong> adds the suite to a repo or refreshes it, and <strong>slopstopper-triage</strong> takes a red check from the workflow to the report to the fix. <a href="docs/runbooks/install-skills.html">Installing the skills</a> covers both; <a href="docs/architecture/steward.html">the steward</a> runs them across every repo in an organisation. An assistant reading this site can start from <a href="llms.txt">llms.txt</a>, which lists every page with a one-line summary.</p>
+            <p class="docs-note">Something wrong or missing? <a href="https://github.com/hungovercoders/slopstopper/issues/new/choose" rel="noopener noreferrer">Open an issue</a>, or use the edit link at the foot of any page.</p>
         </section>
     </main>
     <footer>

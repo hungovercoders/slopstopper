@@ -248,7 +248,7 @@ def render(doc: Doc, all_docs: list[Doc]) -> str:
 {content}
         </article>
 {_siblings(doc, all_docs, esc)}
-        <p class="lesson-source">This page is rendered from <a href="{BLOB}{where}" rel="noopener noreferrer">{where}</a>; edit it there and the page follows.</p>"""
+        <p class="lesson-source"><a href="{BLOB}{where}" rel="noopener noreferrer">Edit this page on GitHub</a></p>"""
     page = Page(
         source=where, generator=GENERATOR, task=TASK,
         title=doc.plain_title if doc.section is None else f"{doc.plain_title} · {section}",
