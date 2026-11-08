@@ -1,9 +1,8 @@
 # Adopting SlopStopper
 
-Everything an adopter needs once: prerequisites, what the installer writes,
-what each check needs from you, how to run the suite, configure it and
-move the CLI pin. The [README](../../README.md) holds the two install
-commands; this is the rest.
+Everything an adopter needs once: prerequisites, the install command,
+what the installer writes, what each check needs from you, how to run
+the suite, configure it and move the CLI pin.
 
 ## Prerequisites
 
@@ -30,6 +29,32 @@ The installer never writes a `LICENSE` or `NOTICE` file. Which licence a
 repo carries is the owner's legal choice, not a default a tool should
 pick, and the two licence checks judge dependencies, not the repo itself;
 `.github/dependency-review-config.yml` is the only licence file it seeds.
+
+## Install
+
+From the root of the repo you are adding it to:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash
+```
+
+For an API or a library, name the repo's shape so only the checks that fit are installed ([PROFILES.md](../architecture/PROFILES.md) says what each keeps):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash -s -- --profile api
+curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash -s -- --profile library
+```
+
+`install.sh` pins `slopstopper-cli` in `mise.toml`, installs it through mise, then runs `slopstopper install`, which writes everything the next section lists. Re-running the same command is how you refresh (see [Update](#update)). With the CLI already on PATH, `slopstopper install [--profile …]` alone writes the suite. Commit what landed and open a pull request: the checks run on it and report back in one summary comment.
+
+To try a check before installing anything into a repo:
+
+```bash
+pipx install slopstopper-cli
+slopstopper checks list              # every check
+slopstopper doctor                   # which external tools are missing
+slopstopper run hygiene:docs-size    # one check; the report lands in .ss/reports/
+```
 
 ## What gets installed
 

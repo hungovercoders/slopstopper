@@ -75,7 +75,7 @@ One page per reference doc an adopter reads, by section; each section's index sa
 
 <!-- docs:begin -->
 - [Runbooks: Runbooks](https://slopstopper.dev/docs/runbooks/index.html): What you do once around the suite: install it into a repo, install the Claude Code skills, move the CLI pin, and, for the project itself, cut a release.
-- [Runbooks: Adopting SlopStopper](https://slopstopper.dev/docs/runbooks/install.html): Everything an adopter needs once: prerequisites, what the installer writes, what each check needs from you, how to run the suite, configure it and move the CLI pin.
+- [Runbooks: Adopting SlopStopper](https://slopstopper.dev/docs/runbooks/install.html): Everything an adopter needs once: prerequisites, the install command, what the installer writes, what each check needs from you, how to run the suite, configure it and move the CLI pin.
 - [Runbooks: Install the SlopStopper Claude Code skills](https://slopstopper.dev/docs/runbooks/install-skills.html): Install or refresh the two Claude Code skills on their own, without re-running the whole installer. Where install.sh puts the whole suite into a repo, install-skill.sh writes just the skills.
 - [Runbooks: Upgrade the pinned slopstopper-cli](https://slopstopper.dev/docs/runbooks/upgrade-cli.html): Move a repo's pinned slopstopper-cli to a newer release.
 - [Hygiene: Hygiene](https://slopstopper.dev/docs/hygiene/index.html): The checks that keep code readable and docs true, for people and for agents: what each enforces, which setting tunes it, and how to fix what it finds.

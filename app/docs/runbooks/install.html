@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Adopting SlopStopper · Runbooks | SlopStopper</title>
-    <meta name="description" content="Everything an adopter needs once: prerequisites, what the installer writes, what each check needs from you, how to run the suite, configure it and move the CLI pin.">
+    <meta name="description" content="Everything an adopter needs once: prerequisites, the install command, what the installer writes, what each check needs from you, how to run the suite, configure it and move the CLI pin.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://slopstopper.dev/docs/runbooks/install.html">
     <meta property="og:title" content="Adopting SlopStopper · Runbooks | SlopStopper">
-    <meta property="og:description" content="Everything an adopter needs once: prerequisites, what the installer writes, what each check needs from you, how to run the suite, configure it and move the CLI pin.">
+    <meta property="og:description" content="Everything an adopter needs once: prerequisites, the install command, what the installer writes, what each check needs from you, how to run the suite, configure it and move the CLI pin.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +25,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Adopting SlopStopper · Runbooks | SlopStopper">
-    <meta name="twitter:description" content="Everything an adopter needs once: prerequisites, what the installer writes, what each check needs from you, how to run the suite, configure it and move the CLI pin.">
+    <meta name="twitter:description" content="Everything an adopter needs once: prerequisites, the install command, what the installer writes, what each check needs from you, how to run the suite, configure it and move the CLI pin.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -69,7 +69,7 @@
         </section>
         <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Runbooks</a></li><li aria-current="page">Adopting SlopStopper</li></ol></nav>
         <article class="lesson doc">
-<p>Everything an adopter needs once: prerequisites, what the installer writes, what each check needs from you, how to run the suite, configure it and move the CLI pin. The <a href="https://github.com/hungovercoders/slopstopper/blob/main/README.md" rel="noopener noreferrer">README</a> holds the two install commands; this is the rest.</p>
+<p>Everything an adopter needs once: prerequisites, the install command, what the installer writes, what each check needs from you, how to run the suite, configure it and move the CLI pin.</p>
 <h2 id="prerequisites">Prerequisites</h2>
 <p>mise pins + installs <code>slopstopper-cli</code>; each check subprocess-invokes its own tool (<code>semgrep</code>, <code>gitleaks</code>, <code>trivy</code>, <code>docker</code>, <code>node</code>). <code>slopstopper doctor</code> reports what's missing or won't run, and which <code>ss-*</code> workflows GitHub has disabled for inactivity.</p>
 <ul>
@@ -90,6 +90,18 @@
 </table></div>
 <p>Optional: <strong>bash</strong> (for <code>install.sh</code>, which pins the CLI through mise and then runs <code>slopstopper install</code>; with the CLI already installed, <code>slopstopper install</code> alone writes the suite), <strong>Task v3.x</strong> (for the <code>task ss:*</code> shim layer). <code>security:licences</code> needs no tool: it reads <code>package-lock.json</code> and <code>pip inspect</code>.</p>
 <p>The installer never writes a <code>LICENSE</code> or <code>NOTICE</code> file. Which licence a repo carries is the owner's legal choice, not a default a tool should pick, and the two licence checks judge dependencies, not the repo itself; <code>.github/dependency-review-config.yml</code> is the only licence file it seeds.</p>
+<h2 id="install">Install</h2>
+<p>From the root of the repo you are adding it to:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash</code></pre></div>
+<p>For an API or a library, name the repo's shape so only the checks that fit are installed (<a href="../architecture/profiles.html">PROFILES.md</a> says what each keeps):</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash -s -- --profile api
+curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash -s -- --profile library</code></pre></div>
+<p><code>install.sh</code> pins <code>slopstopper-cli</code> in <code>mise.toml</code>, installs it through mise, then runs <code>slopstopper install</code>, which writes everything the next section lists. Re-running the same command is how you refresh (see <a href="#update">Update</a>). With the CLI already on PATH, <code>slopstopper install [--profile …]</code> alone writes the suite. Commit what landed and open a pull request: the checks run on it and report back in one summary comment.</p>
+<p>To try a check before installing anything into a repo:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>pipx install slopstopper-cli
+slopstopper checks list              # every check
+slopstopper doctor                   # which external tools are missing
+slopstopper run hygiene:docs-size    # one check; the report lands in .ss/reports/</code></pre></div>
 <h2 id="what-gets-installed">What gets installed</h2>
 <p>Everything SlopStopper owns lives under the <code>ss</code> namespace so it can't clash with files you already have.</p>
 <div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
