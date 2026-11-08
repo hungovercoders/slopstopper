@@ -88,7 +88,7 @@
                 </div>
                 <h1>Stop the <span class="highlight">slop.</span></h1>
                 <p class="hero__what">A Python CLI plus GitHub Actions workflows that run security, hygiene and reliability checks on every PR. One command to install into any repo.</p>
-                <p>Deterministic, automated feedback for AI-driven development. The repo stays healthy while you ship fast.</p>
+                <p>Install it once. Every pull request then gets one comment saying what passed and what to fix, and the same checks run on your machine before you push. This site is built and deployed with the suite it describes.</p>
                 <div class="cta-row">
                     <a href="#get-started" class="btn btn--primary">Get started →</a>
                     <a href="features.html" class="btn btn--ghost">See features</a>
@@ -101,46 +101,32 @@
             </figure>
         </section>
 
-        <section class="about">
-            <span class="kicker about__kicker">🪞 Dogfooded here</span>
-            <p>slopstopper.dev is the reference install: this site is built and deployed with the same CLI and workflows it describes. As AI-assisted development accelerates the pace of change, consistent automated checks keep code quality high without slowing teams down.</p>
-            <p class="about__dogfood">Every check on the Features page runs on this repo too, and the status badges on the <a href="https://github.com/hungovercoders/slopstopper#readme" rel="noopener noreferrer">README</a> are real.</p>
-        </section>
-
         <section class="section" id="get-started">
             <span class="kicker">Get started</span>
-            <h2>Install the CLI and run the checks anywhere.</h2>
-            <p class="lede">SlopStopper is a Python CLI plus the GitHub Actions workflows that drive it. Try the CLI alone for a quick local run, or run the all-in-one installer to pin it and seed the workflows + Taskfile shim into a repo.</p>
-            <h3 class="install-heading">Just the CLI (quick try)</h3>
+            <h2>Two ways in.</h2>
+            <p class="lede">Try the CLI on its own to run a check locally, or install the whole suite into a repo: the CLI pinned, the GitHub Actions workflows, the <code>task ss:*</code> commands and a pre-push hook.</p>
+            <h3 class="install-heading">Try the CLI</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install slopstopper-cli via pipx" data-copyable>
                 <pre><code>pipx install slopstopper-cli
 slopstopper checks list
 slopstopper doctor
-slopstopper run hygiene:docs-size            # underlying CLI; same code as task ss:hygiene:docs-size</code></pre>
+slopstopper run hygiene:docs-size            # one check; the report lands in .ss/reports/</code></pre>
             </div>
-            <p class="install-subnote">This path is unpinned, comes from PyPI and needs only Python; <code>slopstopper doctor</code> lists the per-check tools you still need. For a repo you'll keep, use the pinned suite install below.</p>
-            <details class="details">
-                <summary>More about the standalone CLI</summary>
-                <div class="details__body">
-                    <p>Published to PyPI on every release tag, so <code>pipx upgrade slopstopper-cli</code> pulls the latest, and every <a href="https://github.com/hungovercoders/slopstopper/releases/latest">GitHub Release</a> carries a Sigstore build-provenance attestation. Per-check tools (<code>node</code>, <code>semgrep</code>, <code>gitleaks</code>, <code>trivy</code>, <code>docker</code>; Lizard ships with the CLI) install per the checks you actually use.</p>
-                    <a class="details__source" href="docs/runbooks/install.html">How to verify a release and what each check needs →</a>
-                </div>
-            </details>
-            <h3 class="install-heading">Full suite into a repo (pinned)</h3>
+            <p class="install-subnote">Needs only Python. <code>slopstopper doctor</code> lists the tools each check still wants (Node, Semgrep, Gitleaks, Trivy, Docker); install the ones for the checks you use. <a href="docs/runbooks/install.html">What each check needs →</a></p>
+            <h3 class="install-heading">Install the suite into a repo</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install full suite" data-copyable>
                 <pre><code>curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh | bash</code></pre>
             </div>
-            <p class="install-subnote">Requires <a href="https://mise.jdx.dev" rel="noopener noreferrer">mise</a>, which installs and pins <code>slopstopper-cli</code> + <code>task</code> per directory, so local and CI run the same version.</p>
+            <p class="install-subnote">Needs <a href="https://mise.jdx.dev" rel="noopener noreferrer">mise</a>, which pins <code>slopstopper-cli</code> and <code>task</code> per repo so your machine and CI run the same version. Re-run the same command any time to refresh.</p>
             <details class="details">
                 <summary>What does the installer do?</summary>
                 <div class="details__body">
-                    <p>The installer pins <code>slopstopper-cli</code> + <code>task</code> in <code>mise.toml</code> and installs them via <strong>mise</strong> (required), then seeds your repo with the <code>.github/workflows/ss-*.yml</code> CI checks and the <code>.github/actions/ss-*</code> composite steps they share (toolchain setup via <code>jdx/mise-action</code>, URL resolution), a thin <code>Taskfile.ss.yml</code> of <code>task ss:*</code> shims that call the CLI, and a <code>.slopstopper.yml</code> starter config. It is idempotent, so re-run it any time to refresh, and move the pin with <code>install.sh --upgrade-cli</code> / <code>--cli-version</code>.</p>
-                    <p>It also wires a <strong>pre-push git hook</strong> (<code>.githooks/pre-push</code>, via <code>core.hooksPath</code>) that runs the fast hygiene checks (<code>task ss:hygiene:test</code>) before every push, so the first CI run confirms rather than discovers. It won't touch an existing <code>husky</code> / <code>lefthook</code> / <code>pre-commit</code> setup; opt out with <code>--no-hooks</code>, or bypass a single push with <code>git push --no-verify</code>.</p>
-                    <p>Bundled Playwright specs, lighthouserc, and the local-CI static server (<code>slopstopper serve</code>) live inside the wheel. Run <code>slopstopper templates eject &lt;name&gt;</code> to customise any of them.</p>
+                    <p>It writes <code>mise.toml</code> with the CLI pinned, one <code>.github/workflows/ss-*.yml</code> workflow per check, <code>Taskfile.ss.yml</code> with the <code>task ss:*</code> commands those workflows call, a starter <code>.slopstopper.yml</code>, the two Claude Code skills, and a pre-push hook that runs the fast hygiene checks before anything leaves your machine (<code>--no-hooks</code> skips it; it leaves an existing husky, lefthook or pre-commit setup alone).</p>
+                    <p>Everything else the checks need, such as the Playwright specs and the Lighthouse config, ships inside the CLI; <code>slopstopper templates eject &lt;name&gt;</code> copies one out to customise.</p>
                     <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/install.sh" rel="noopener noreferrer">View install.sh on GitHub →</a>
                 </div>
             </details>
-            <h3 class="install-heading">Pick a profile for an API or a library</h3>
+            <h3 class="install-heading">Not a website? Pick a profile</h3>
             <div class="codeblock codeblock--sh" role="region" aria-label="Install with a project-shape profile" data-copyable>
                 <pre><code># JSON/gRPC endpoints, no browser surface
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh \
@@ -150,100 +136,68 @@ curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/ins
 curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install.sh \
   | bash -s -- --profile library</code></pre>
             </div>
-            <p class="install-subnote">The nine browser-and-SEO checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume a served site, so a <strong>profile</strong> installs only the checks that fit your repo's shape. <code>slopstopper profile detect</code> suggests one.</p>
-            <details class="details">
-                <summary>What does each profile keep?</summary>
-                <div class="details__body">
-                    <p>On an API the browser checks don't quietly pass, they go red, so <code>--profile api</code> drops them and keeps the four API checks (health, latency, headers, OpenAPI drift), CSP exceptions, DAST and the whole static-analysis layer; <code>--profile library</code> keeps the static layer only; <code>ui</code> keeps everything, adding the four API checks once the repo shows an API. The choice is written as <code>profile:</code> in <code>.slopstopper.yml</code> so it survives re-runs, switching is reversible either way, and <code>workflows.enabled</code> takes back any single check. <code>slopstopper profile list</code> prints the full mapping.</p>
-                    <a class="details__source" href="docs/architecture/profiles.html">Project-shape profiles, in full →</a>
-                </div>
-            </details>
+            <p class="install-subnote">The browser checks need a served site, so a profile installs only the checks that fit: <code>api</code> keeps the API and static checks, <code>library</code> the static checks alone. <code>slopstopper profile detect</code> suggests one. <a href="docs/architecture/profiles.html">What each profile keeps →</a></p>
             <div class="steps">
                 <div class="step">
-                    <h3>Install</h3>
-                    <p>Try the <code>pipx install</code> one-liner above, or run <code>install.sh</code> (needs <code>mise</code>) to pin the CLI and add CI.</p>
-                </div>
-                <div class="step">
-                    <h3>Customise</h3>
-                    <p>Project-shape profile, complexity thresholds, page lists and headers source all live in <code>.slopstopper.yml</code>.</p>
+                    <h3>Run a check</h3>
+                    <p><code>task ss:hygiene:test</code> runs the fast checks locally; <code>task --list</code> shows every <code>ss:*</code> command. Each writes its report to <code>.ss/reports/</code>.</p>
                 </div>
                 <div class="step">
                     <h3>Open a PR</h3>
-                    <p>Push to a branch. One rolling comment shows every check's verdict; failures add detail, passes stay quiet.</p>
+                    <p>One comment on the pull request shows every check's verdict. A failing check adds its findings; passing ones stay quiet.</p>
+                </div>
+                <div class="step">
+                    <h3>Tune it</h3>
+                    <p>Thresholds, page lists, headers source and which checks run all live in <code>.slopstopper.yml</code>. Every check's page says which setting tunes it.</p>
                 </div>
             </div>
-            <p class="docs-pointer">Want the deep dive? <a href="docs.html">Browse the docs →</a></p>
+            <p class="docs-pointer">The full walkthrough: <a href="docs/runbooks/install.html">Adopting SlopStopper →</a></p>
         </section>
 
         <section class="section" id="claude-code-skill">
             <span class="kicker">Claude Code users</span>
-            <h2>Let the agent drive the install.</h2>
-            <p class="lede">Two companion skills land in <code>&lt;repo&gt;/.claude/skills/</code> alongside the workflows when you run <code>install.sh</code>: <a href="https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-install/SKILL.md" rel="noopener noreferrer">slopstopper-install</a> for the first install <em>and</em> every refresh, and <a href="https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-triage/SKILL.md" rel="noopener noreferrer">slopstopper-triage</a> for diagnosing a failing check. Every contributor that clones the repo gets them automatically; Claude Code auto-picks the right skill per prompt.</p>
+            <h2>Let the agent install it and fix what it finds.</h2>
+            <p class="lede">The installer also lands two skills in <code>&lt;repo&gt;/.claude/skills/</code>: <a href="https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-install/SKILL.md" rel="noopener noreferrer">slopstopper-install</a>, so "install slopstopper" or "refresh slopstopper" does the right thing, and <a href="https://github.com/hungovercoders/slopstopper/blob/main/.claude/skills/slopstopper-triage/SKILL.md" rel="noopener noreferrer">slopstopper-triage</a>, so "fix this failing check" goes from the workflow to the report to the fix. Everyone who clones the repo gets them. To refresh just the skills:</p>
             <div class="codeblock codeblock--sh" role="region" aria-label="Skill refresh command" data-copyable>
                 <pre><code>curl -fsSL https://raw.githubusercontent.com/hungovercoders/slopstopper/main/install-skill.sh | bash</code></pre>
             </div>
-            <details class="details">
-                <summary>What does this do?</summary>
-                <div class="details__body">
-                    <p>The above one-liner is for <em>refreshing</em> just the skills inside an existing slopstopper-adopting repo without re-running the whole installer. It writes two directories at project level, <code>&lt;repo&gt;/.claude/skills/slopstopper-install/</code> and <code>&lt;repo&gt;/.claude/skills/slopstopper-triage/</code>, each a short <code>SKILL.md</code> map plus the <code>references/</code> it links, so every contributor gets them on <code>git clone</code>. Commit the whole directories. Different prompts trigger different skills: "install / refresh / upgrade slopstopper" → <code>slopstopper-install</code>; "fix this failing slopstopper check" → <code>slopstopper-triage</code>. For a first-time install just run <code>install.sh</code>, which includes the skills.</p>
-                    <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/install-skill.sh" rel="noopener noreferrer">View install-skill.sh on GitHub →</a>
-                </div>
-            </details>
-            <p class="docs-pointer">Full runbook: <a href="docs/runbooks/install-skills.html">Installing the skills, in full →</a></p>
+            <p class="docs-pointer">Full runbook: <a href="docs/runbooks/install-skills.html">Installing the skills →</a></p>
         </section>
 
         <section class="section" id="steward">
             <span class="kicker">Many repos?</span>
             <h2>Let the steward keep them current.</h2>
-            <p class="lede"><a href="https://github.com/hungovercoders/slopstopper-steward" rel="noopener noreferrer">slopstopper-steward</a> runs across a GitHub organisation on a schedule. It finds every repo with slopstopper installed, moves a CLI pin that fell behind and rewrites the suite with that release's own <code>slopstopper install</code>, and works the issues the checks raised, one pull request each. Upgrades are code; the agent comes in only for judgement calls (a finding, a check that went red, a big jump between releases), boxed as its own OS user and following the same two skills.</p>
-            <details class="details">
-                <summary>What does it change, and what never?</summary>
-                <div class="details__body">
-                    <p>Every write is a pull request on a <code>steward/&lt;order&gt;</code> branch, or a fix commit on a Dependabot PR's own branch when you turn that on: never a push to a default branch, never a repo setting, and a merge only of a PR it saw green itself, only when <code>merge.auto</code> or <code>dependabot.merge</code> is set. It verifies each change with the pinned CLI before it opens the PR, opens it as a draft when something is still red or unreviewed, and says in the PR what it could not check in a clone. It runs as a GitHub App you install on the organisation, you start it in plan-only mode, and it carries no check logic of its own: everything it knows about slopstopper is a written contract that its CI checks against this repo every night.</p>
-                    <a class="details__source" href="https://github.com/hungovercoders/slopstopper-steward/blob/main/docs/architecture/README.md" rel="noopener noreferrer">How a run works and where the agent is boxed →</a>
-                </div>
-            </details>
-            <details class="details">
-                <summary>How do I run one for my organisation?</summary>
-                <div class="details__body">
-                    <p>The steward is not a hosted service: each organisation runs its own copy of the <code>slopstopper-steward</code> repo from its own GitHub Actions. Only <code>steward.yml</code> and the README badges name an organisation. Fork it into your organisation (enable Actions on the fork once, so the schedule runs, and <em>Sync fork</em> brings later fixes in) or create a repo from it as a template, then replace <code>steward.yml</code> from <code>steward.yml.example</code> with your org, starting in <code>mode: plan</code>. Create a GitHub App under your organisation, install it on the repos that have slopstopper, and store its ID as an Actions variable and its private key as a secret, alongside an Anthropic API key or a Claude subscription token as a secret for the agentic orders. Run <em>Steward · Run</em> with <em>Plan only</em>, read the report, then switch to <code>mode: pr</code>. Your copy is itself an adopter, so your steward keeps its own slopstopper pin current too.</p>
-                    <a class="details__source" href="https://github.com/hungovercoders/slopstopper-steward/blob/main/docs/runbooks/SETUP.md" rel="noopener noreferrer">The setup runbook: fork or template, the App's permissions, the secrets, the first dry run →</a>
-                </div>
-            </details>
-            <p class="docs-pointer">How the two fit together: <a href="docs/architecture/steward.html">The steward and the suite, side by side →</a></p>
+            <p class="lede"><a href="https://github.com/hungovercoders/slopstopper-steward" rel="noopener noreferrer">slopstopper-steward</a> runs across a GitHub organisation on a schedule: it finds every repo with slopstopper installed, moves pins that fell behind, and works the issues the checks raised, one pull request each. Every change is a pull request, never a push to a default branch. Each organisation runs its own copy from its own GitHub Actions.</p>
+            <p class="docs-pointer">How the two fit together: <a href="docs/architecture/steward.html">The steward and the suite →</a> · Setting one up: <a href="https://github.com/hungovercoders/slopstopper-steward/blob/main/docs/runbooks/SETUP.md" rel="noopener noreferrer">the runbook →</a></p>
         </section>
 
         <section class="section">
             <span class="kicker">What you get</span>
-            <h2>Five loops of feedback.</h2>
-            <p class="lede">The first four are what <code>install.sh</code> puts in your repo as real GitHub Actions workflows; the fifth is how slopstopper.dev itself ships, not installed but here to copy. Click through to see exactly what runs.</p>
-            <div class="card-grid">
+            <h2>Four loops of checks.</h2>
+            <p class="lede">Each lands in your repo as GitHub Actions workflows, and each runs locally with the same command. The Features page lists every check and shows the workflow behind it.</p>
+            <div class="card-grid card-grid--loops">
                 <div class="card">
                     <h3>🔒 Security</h3>
-                    <p>Static analysis, dynamic scanning, secrets detection and dependency vulnerability checks run on every change.</p>
-                    <a href="features.html#security" class="card-link">View practices →</a>
+                    <p>Unsafe code, leaked secrets, vulnerable or badly licensed dependencies, and a running site or API under attack.</p>
+                    <a href="features.html#security" class="card-link">The security checks →</a>
                 </div>
                 <div class="card">
                     <h3>🧹 Hygiene</h3>
-                    <p>Complexity caps, documentation structure, accuracy, size and entry-file budgets, CSP-exception drift and auto-labelled PRs keep the codebase clean and well-documented.</p>
-                    <a href="features.html#hygiene" class="card-link">View practices →</a>
+                    <p>Code complexity, and docs that people and agents can find, trust and read within a budget.</p>
+                    <a href="features.html#hygiene" class="card-link">The hygiene checks →</a>
                 </div>
                 <div class="card">
                     <h3>✅ Reliability</h3>
-                    <p>End-to-end, smoke, broken-link, accessibility and Core Web Vitals checks verify every deploy works correctly for every user.</p>
-                    <a href="features.html#reliability" class="card-link">View practices →</a>
+                    <p>The deployed site or API: does it serve, can a visitor use it, is it fast, accessible and findable.</p>
+                    <a href="features.html#reliability" class="card-link">The reliability checks →</a>
                 </div>
                 <div class="card">
                     <h3>🤖 Operational</h3>
-                    <p>An agentic doc updater and automatic failure alerts keep day-to-day housekeeping on autopilot.</p>
-                    <a href="features.html#operational" class="card-link">View practices →</a>
-                </div>
-                <div class="card">
-                    <h3>🚀 Deployment</h3>
-                    <p>How slopstopper.dev ships: Cloudflare Workers Builds deploys every push to <code>main</code>, gives every PR a preview URL and retires it on close. Connect your repo in the Cloudflare dash and you get the same; <code>install.sh</code> adds one workflow that checks each preview and the live site after every deploy.</p>
-                    <a href="features.html#deployment" class="card-link">See how this site ships →</a>
+                    <p>A failed run on <code>main</code> opens an issue, and a weekly agent proposes doc fixes for what merged.</p>
+                    <a href="features.html#operational" class="card-link">The operational checks →</a>
                 </div>
             </div>
+            <p class="docs-pointer">Deploying is your host's job, not the suite's; <a href="features.html#deployment">how this site deploys</a> is on Features to copy.</p>
         </section>
     </main>
     <footer>

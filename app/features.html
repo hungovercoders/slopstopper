@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Features | SlopStopper</title>
-    <meta name="description" content="Practices and automated feedback loops in SlopStopper: security, hygiene, reliability (E2E, smoke, accessibility, Core Web Vitals), operational and deployment. See the workflow behind each.">
+    <meta name="description" content="Every SlopStopper check by loop: security, reliability, hygiene and operational, with the workflow behind each, the profiles that pick them, and what the pull request feedback looks like.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -14,7 +14,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://slopstopper.dev/features.html">
     <meta property="og:title" content="Features | SlopStopper">
-    <meta property="og:description" content="Every category of feedback, the workflow YAML behind it, and a peek at what the output looks like.">
+    <meta property="og:description" content="Every check by loop, the workflow behind each, and what the pull request feedback looks like.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -24,7 +24,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Features | SlopStopper">
-    <meta name="twitter:description" content="Every category of feedback, the workflow YAML behind it, and a peek at what the output looks like.">
+    <meta name="twitter:description" content="Every check by loop, the workflow behind each, and what the pull request feedback looks like.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -63,9 +63,9 @@
     </header>
     <main id="main">
         <section class="hero">
-            <span class="kicker">Practices &amp; feedback</span>
-            <h1>Five loops, <span class="highlight">no slop.</span></h1>
-            <p>Every security, hygiene and reliability check below is a real GitHub Actions workflow that calls <code>slopstopper run &lt;category&gt;:&lt;check&gt;</code> from the <a href="https://github.com/hungovercoders/slopstopper/tree/main/cli" rel="noopener noreferrer">CLI package</a>. The same code runs on your machine once you install with the one-liner on <a href="index.html#get-started">Get Started</a>. Operational is the housekeeping around those checks; Deployment is how this site itself ships.</p>
+            <span class="kicker">Features</span>
+            <h1>Every check, <span class="highlight">by loop.</span></h1>
+            <p>Each check is one GitHub Actions workflow in your repo and one <code>task ss:&lt;loop&gt;:&lt;check&gt;</code> command on your machine, running the same code. Open a tab for the checks in that loop and the workflow behind each; the last tab shows how this site deploys, which is your host's job rather than the suite's.</p>
             <nav class="jump-row" aria-label="On this page">
                 <a href="#profiles">Profiles</a>
                 <a href="#feedback">What feedback looks like</a>
@@ -91,8 +91,9 @@
                         <li><strong>SAST.</strong> Semgrep flags vulnerabilities in source code before merge</li>
                         <li><strong>DAST.</strong> OWASP ZAP probes a running site for common web vulnerabilities, or an API through its OpenAPI spec</li>
                         <li><strong>Secrets.</strong> Gitleaks scans every commit for accidentally committed credentials</li>
-                        <li><strong>Dependencies.</strong> Trivy checks all dependencies for known CVEs</li>
-                        <li><strong>API Headers &amp; CORS.</strong> Audits a JSON API's response headers and CORS policy: a wildcard origin sent with credentials, an arbitrary <code>Origin</code> reflected back, an allowlist that stopped matching, plus HSTS and <code>nosniff</code></li>
+                        <li><strong>Dependencies.</strong> Trivy checks every dependency for known CVEs</li>
+                        <li><strong>API Headers &amp; CORS.</strong> Audits a JSON API's response headers and CORS policy, such as a wildcard origin sent with credentials</li>
+                        <li><strong>Licences.</strong> Every resolved dependency's licence against your allowlist; the dependency review judges what each PR adds</li>
                     </ul>
                     <a class="card-link" href="docs/security/index.html">Learn more about Security →</a>
                 </div>
@@ -215,19 +216,19 @@
             <div class="card tab-panel tab-panel--card" id="reliability" role="tabpanel" aria-labelledby="tab-reliability" tabindex="0">
                 <div class="tab-panel__about">
                     <h2>✅ Reliability</h2>
-                    <p class="card-intro">Catch broken pages, dead internal links, slow loads, accessibility regressions and broken social-share previews before users do. E2E, smoke, broken-link, axe-core WCAG 2.1 AA, Lighthouse CI and SEO/OpenGraph checks run on every change.</p>
+                    <p class="card-intro">Prove the deployed site or API works for a visitor: it serves, a visitor can get around, it is fast, accessible and findable, and the API keeps its contract. Each runs against a local build on every PR and against the live URL after each deploy.</p>
                     <ul>
-                        <li><strong>E2E Journeys.</strong> Playwright walks every primary-nav link, in-page anchor, disclosure and the back button from each start page; eject the spec for journeys specific to your site</li>
-                        <li><strong>Smoke Tests.</strong> Lightweight checks after every deploy</li>
+                        <li><strong>Smoke Tests.</strong> Every listed page serves and renders</li>
+                        <li><strong>E2E Journeys.</strong> Playwright walks every nav link, anchor, disclosure and the back button from each start page</li>
                         <li><strong>Broken-Link Checks.</strong> Crawls internal anchors from key pages and fails on 4xx/5xx destinations</li>
                         <li><strong>Accessibility.</strong> Axe-core audits every page against WCAG 2.1 AA</li>
                         <li><strong>Core Web Vitals.</strong> Lighthouse CI measures LCP, INP and CLS</li>
                         <li><strong>SEO &amp; Social-Share.</strong> Lighthouse SEO budget + OpenGraph / Twitter Card / canonical presence check</li>
                         <li><strong>llms.txt.</strong> Validates the <code>/llms.txt</code> AI-discoverability map (llmstxt.org): H1 title, summary and links to key content</li>
                         <li><strong>robots.txt.</strong> Guards against an accidental blanket <code>Disallow: /</code> that de-indexes the whole site, and requires a <code>Sitemap:</code> pointer</li>
-                        <li><strong>sitemap.xml.</strong> Crawls the site from <code>/</code> and cross-checks the sitemap: a reachable page missing from it or a <code>&lt;loc&gt;</code> that 404s fails; recommends generating the file from your routes</li>
-                        <li><strong>API Health.</strong> Probes a JSON API's health/readiness endpoint and asserts its contract: status code, JSON content-type, and the body fields you declare. <code>{"status": "degraded"}</code> behind an HTTP 200 passes a reachability probe and fails here</li>
-                        <li><strong>API Latency.</strong> Samples each endpoint several times and reports the median and slowest response plus the payload size. Core Web Vitals for something that renders nothing. Budgets gate on the median, so one slow sample from a shared runner doesn't fail your PR</li>
+                        <li><strong>sitemap.xml.</strong> Crawls the site and cross-checks the sitemap: a reachable page missing from it, or an entry that 404s, fails</li>
+                        <li><strong>API Health.</strong> Probes a JSON API's health endpoint and asserts its contract: status, content type and the body fields you declare</li>
+                        <li><strong>API Latency.</strong> Samples each endpoint and gates on the median response time and payload size</li>
                     </ul>
                     <a class="card-link" href="docs/reliability/index.html">Learn more about Reliability →</a>
                 </div>
@@ -459,17 +460,18 @@
             <div class="card tab-panel tab-panel--card" id="hygiene" role="tabpanel" aria-labelledby="tab-hygiene" tabindex="0">
                 <div class="tab-panel__about">
                     <h2>🧹 Hygiene</h2>
-                    <p class="card-intro">Keep the codebase auditable and the docs honest, with complexity caps, structure, accuracy and size checks for docs, and auto-labelled PRs.</p>
+                    <p class="card-intro">Keep the code readable and the docs true, for people and for agents: a complexity cap, docs every task can find within a budget, and no doc that describes something the repo no longer has.</p>
                     <ul>
                         <li><strong>Complexity.</strong> Lizard caps cyclomatic complexity per function (CCN ≤ 15 by default, tunable in <code>.slopstopper.yml</code>) across every language it parses</li>
-                        <li><strong>Doc Structure &amp; Entry Files.</strong> AGENTS.md-first: <code>AGENTS.md</code> carries what most tasks need under a ~2k-token budget, <code>CLAUDE.md</code> is exactly <code>@AGENTS.md</code>, and every doc under <code>docs/</code> has an explicit “before you X, read Y” route from it or the <code>docs/README.md</code> map</li>
-                        <li><strong>Doc Accuracy.</strong> Documentation reflects the actual code</li>
-                        <li><strong>Doc Size.</strong> Prevents documentation from going stale or unwieldy</li>
-                        <li><strong>CSP Exceptions Drift.</strong> Keeps <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> in sync so per-page CSP relaxations stay documented</li>
-                        <li><strong>Privacy Statement.</strong> A site on a host that keeps traffic data has a privacy page that names the host, every third-party origin the CSP allows, Workers Logs when they are on, and a date. The statement is only true while it matches <code>wrangler.jsonc</code> and the headers source, so the check reads both</li>
-                        <li><strong>OpenAPI Drift.</strong> Compares your committed spec against the one the live API serves, and probes every documented path that takes no parameters. The doc-accuracy check for an API: a spec that stopped describing reality</li>
+                        <li><strong>Entry Files.</strong> <code>README.md</code> and <code>AGENTS.md</code> stay under a token budget, and <code>CLAUDE.md</code> is exactly <code>@AGENTS.md</code>, so an agent's first read is short and routes onward</li>
+                        <li><strong>Doc Structure.</strong> Every doc under <code>docs/</code> is reachable by an explicit "before you X, read Y" route, within a hop and line limit</li>
+                        <li><strong>Doc Accuracy.</strong> No doc links a file, task or workflow the repo no longer has</li>
+                        <li><strong>Doc Size.</strong> Reports how the docs are growing; advisory, never a gate</li>
+                        <li><strong>CSP Exceptions Drift.</strong> Every per-page relaxation of the Content Security Policy is documented, and the doc matches the headers</li>
+                        <li><strong>Privacy Statement.</strong> A site whose host keeps traffic data has a privacy page naming the host, every third-party origin the CSP allows, and a date</li>
+                        <li><strong>OpenAPI Drift.</strong> The committed spec matches what the live API serves; the doc-accuracy check for an API</li>
                         <li><strong>Auto-label PRs.</strong> PRs labelled from the paths changed</li>
-                        <li><strong>Local pre-push gate.</strong> A pre-push git hook runs the fast hygiene checks before every push, so the first CI run confirms rather than discovers</li>
+                        <li><strong>Local pre-push gate.</strong> A git hook runs the fast hygiene checks before every push</li>
                     </ul>
                     <a class="card-link" href="docs/hygiene/index.html">Learn more about Hygiene →</a>
                 </div>
@@ -594,12 +596,12 @@
             <div class="card tab-panel tab-panel--card" id="operational" role="tabpanel" aria-labelledby="tab-operational" tabindex="0">
                 <div class="tab-panel__about">
                     <h2>🤖 Operational</h2>
-                    <p class="card-intro">Keep the housekeeping moving without prompts. Failed runs raise tracking issues, an agentic workflow opens weekly doc-sync PRs, and every PR gets labelled from the paths it touches.</p>
+                    <p class="card-intro">The housekeeping around the checks, so nothing red on <code>main</code> goes unnoticed and the docs follow the code.</p>
                     <ul>
-                        <li><strong>Failure Alerts.</strong> Failed workflow runs on main raise (or update) a tracking issue automatically</li>
-                        <li><strong>Doc Auto-Updater.</strong> A weekly agentic workflow opens PRs to keep docs in sync</li>
+                        <li><strong>Failure Alerts.</strong> A failed workflow run on <code>main</code> opens a tracking issue, or updates the open one, and closes it when the run is green again</li>
+                        <li><strong>Doc Auto-Updater.</strong> A weekly agent reads what merged and opens a pull request with the doc fixes it implies</li>
                     </ul>
-                    <a class="card-link" href="docs/runbooks/index.html">Learn more about Operational →</a>
+                    <a class="card-link" href="docs/hygiene/doc-updater.html">Learn more about the doc updater →</a>
                 </div>
                 <div class="tab-panel__workflows">
                     <h3 class="tab-panel__label">What runs, and how it is wired</h3>
@@ -649,7 +651,7 @@
             <div class="card tab-panel tab-panel--card" id="deployment" role="tabpanel" aria-labelledby="tab-deployment" tabindex="0">
                 <div class="tab-panel__about">
                     <h2>🚀 Deployment</h2>
-                    <p class="card-intro">Every push deploys, every PR gets a preview URL and every PR close cleans up, all through Cloudflare Workers Builds hooked directly into the repo. No deploy workflow and no secrets: this is slopstopper.dev's own setup, shown so you can copy it by connecting your repo in the Cloudflare dash (Workers &amp; Pages → Create → Connect to Git). The one thing <code>install.sh</code> adds on a Cloudflare repo is <code>ss-cloudflare-deployed.yml</code>, which runs the URL-driven checks against each preview and, on <code>main</code>, the live site as soon as Workers Builds finishes.</p>
+                    <p class="card-intro">The suite does not deploy; your host does. This is how slopstopper.dev ships, to copy if you are on Cloudflare: Workers Builds connected to the repo, no deploy workflow and no secrets. The one workflow the installer adds on a Cloudflare repo runs the URL checks against each preview and, on <code>main</code>, against the live site as soon as a deploy finishes.</p>
                     <ul>
                         <li><strong>Production Deploy.</strong> Merges to main trigger an automatic release</li>
                         <li><strong>Preview Deploys.</strong> Every PR gets a unique preview URL as a commit check</li>
@@ -698,9 +700,9 @@
         </section>
 
         <section class="section" id="profiles">
-            <span class="kicker">Other project shapes</span>
-            <h2>A profile picks the loops.</h2>
-            <p class="lede">Every reliability check except API Health and API Latency assumes HTML and a served site. <code>--profile api</code> drops those nine and the privacy statement check, and keeps DAST and the four API checks (which <code>ui</code> holds back until the repo shows an API); <code>--profile library</code> also drops everything else that needs a URL: DAST, API Headers, CSP Exceptions and OpenAPI Drift. Pick one on <a href="index.html#get-started">Get Started</a>; the full mapping is in <a href="docs/architecture/profiles.html">project-shape profiles</a>.</p>
+            <span class="kicker">Not a website?</span>
+            <h2>A profile picks the checks.</h2>
+            <p class="lede">The browser checks assume a served site, so <code>--profile api</code> swaps them for the API checks, and <code>--profile library</code> keeps only the checks that need no URL. <code>workflows.enabled</code> in <code>.slopstopper.yml</code> takes back any single check. <a href="docs/architecture/profiles.html">What each profile keeps →</a></p>
         </section>
 
         <!-- ─── What feedback looks like ────────────────────────── -->
@@ -716,8 +718,8 @@
                 </svg>
             </div>
             <span class="kicker">What feedback looks like</span>
-            <h2>One comment, not nineteen.</h2>
-            <p class="lede">Every PR gets a single rolling summary comment, rendered from the run conclusions GitHub already holds. A failing check adds a compact comment of its own; a passing one deletes it. Below: the summary as posted on <a href="https://github.com/hungovercoders/slopstopper/pull/358" rel="noopener noreferrer">PR #358</a> of this repo, and the shape a failing check adds.</p>
+            <h2>One comment, not twenty-seven.</h2>
+            <p class="lede">Every pull request gets one summary comment that updates as checks finish. A failing check adds a short comment of its own with what to fix; a passing one removes it. Below, the summary from <a href="https://github.com/hungovercoders/slopstopper/pull/358" rel="noopener noreferrer">a PR on this repo</a>, and the shape a failing check adds.</p>
 
             <div class="gh-comments">
                 <figure class="gh-comment">
@@ -729,7 +731,7 @@
                         <p>✅ Reliability: Accessibility · API Health · API Latency · Broken Links · Core Web Vitals · llms.txt · robots.txt · SEO · Sitemap · Smoke</p>
                         <p class="gh-comment__sub">head <code>75d1b28</code> · updated 2026-10-04 14:50 UTC</p>
                     </div>
-                    <figcaption>The summary comment on a green PR. It re-renders as each check finishes, so it never races them.</figcaption>
+                    <figcaption>The summary on a green pull request.</figcaption>
                 </figure>
                 <figure class="gh-comment gh-comment--fail">
                     <div class="gh-comment__head"><span class="gh-comment__avatar" aria-hidden="true"></span><strong>github-actions</strong> <span class="gh-comment__bot">bot</span> commented</div>
@@ -742,12 +744,12 @@
                         <p class="gh-comment__fold">▸ Full report and evidence</p>
                         <p class="gh-comment__sub">slopstopper · <code>reliability:seo</code> · head <code>abc1234</code> · run →</p>
                     </div>
-                    <figcaption>What one failing check adds: a verdict line, the failing items, the report folded away. The format from <a href="docs/architecture/pr-feedback.html">the PR feedback design</a>.</figcaption>
+                    <figcaption>What one failing check adds: the verdict, the failing items, the full report folded away. <a href="docs/architecture/pr-feedback.html">How the feedback is designed →</a></figcaption>
                 </figure>
             </div>
 
             <h3 class="reports-subhead">Inside the fold</h3>
-            <p class="lede">Each failing comment folds the tool's full report. Illustrations of four of them:</p>
+            <p class="lede">The folded report is the tool's own. Four of them, illustrated:</p>
 
             <div class="reports-grid">
                 <!-- axe-core mock report -->
@@ -948,11 +950,11 @@
         <section class="section loops" id="loops">
             <span class="kicker">Development loops</span>
             <h2>Fast on your machine, <span class="highlight">the same in CI.</span></h2>
-            <p class="lede">SlopStopper runs the same checks in two places: on your machine before you push, and in CI on every PR.</p>
+            <p class="lede">The same <code>task ss:*</code> command runs a check on your machine and in the workflow, so what you ran is what the pipeline runs.</p>
 
             <div class="loop-diagram">
                 <h3>Inner loop, on your machine</h3>
-                <p class="loop-desc">The fast, local cycle a developer (or AI agent) runs before pushing. It completes in seconds to minutes, and the pre-push hook that <code>install.sh</code> wires runs the static hygiene checks before anything leaves the machine.</p>
+                <p class="loop-desc">What a developer or agent runs before pushing. The pre-push hook runs the static hygiene checks on the way out.</p>
                 <div class="loop-flow">
                     <div class="loop-step">✏️ Write Code<span class="step-sub">with AI</span></div>
                     <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
@@ -969,7 +971,7 @@
 
             <div class="loop-diagram">
                 <h3>Outer loop, in CI/CD</h3>
-                <p class="loop-desc">Automated checks triggered on every push or PR. Deterministic feedback before code reaches production.</p>
+                <p class="loop-desc">Every push and pull request, with the verdicts back on the pull request.</p>
                 <div class="loop-flow">
                     <div class="loop-step loop-step--trigger">📤 Push / PR</div>
                     <div class="arrow"><svg viewBox="0 0 40 24"><path d="M2 12 Q15 4, 28 14 L34 12" /><path d="M28 8 L34 12 L28 16" /></svg></div>
@@ -990,7 +992,7 @@
                 <div class="bridge__header">
                     <span class="kicker">One source of truth</span>
                     <h3>The same commands <span class="highlight">in both loops.</span></h3>
-                    <p class="bridge__lede">Every check is a <code>task ss:&lt;name&gt;</code> command, defined once in <a href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.ss.yml" rel="noopener noreferrer">Taskfile.ss.yml</a> under the <code>ss</code> namespace. You type it locally for instant feedback and CI runs the exact same command, so there is no drift between what you ran and what the pipeline runs.</p>
+                    <p class="bridge__lede">Each check is defined once, in <a href="https://github.com/hungovercoders/slopstopper/blob/main/Taskfile.ss.yml" rel="noopener noreferrer">Taskfile.ss.yml</a>, and both loops call it.</p>
                 </div>
                 <div class="bridge__grid">
                     <div class="bridge__col">

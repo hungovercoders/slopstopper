@@ -99,3 +99,13 @@
     font-weight: 600;
     margin-bottom: 0.6rem;
 }
+
+/* The four loops: two by two, so no card sits alone on a row. */
+.card-grid--loops {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 640px) {
+    .card-grid--loops {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

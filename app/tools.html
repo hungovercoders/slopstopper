@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tools | SlopStopper</title>
-    <meta name="description" content="The technology stack powering SlopStopper: GitHub Actions, Task, Playwright, Semgrep, ZAP, Trivy, Gitleaks, axe-core, Lighthouse CI and more. Each card links back to its source.">
+    <meta name="description" content="The tools behind each SlopStopper check: Semgrep, OWASP ZAP, Trivy, Gitleaks, Playwright, axe-core, Lighthouse CI and the stdlib audits, plus the CLI, workflows, Task and git hook every install carries.">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
     <meta name="author" content="SlopStopper">
@@ -14,7 +14,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://slopstopper.dev/tools.html">
     <meta property="og:title" content="Tools | SlopStopper">
-    <meta property="og:description" content="The technology stack powering SlopStopper's automated feedback.">
+    <meta property="og:description" content="The tools behind each check, and the pieces every install carries.">
     <meta property="og:site_name" content="SlopStopper">
     <meta property="og:image" content="https://slopstopper.dev/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -24,7 +24,7 @@
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Tools | SlopStopper">
-    <meta name="twitter:description" content="The technology stack powering SlopStopper's automated feedback.">
+    <meta name="twitter:description" content="The tools behind each check, and the pieces every install carries.">
     <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
     <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
 
@@ -64,8 +64,8 @@
     <main id="main">
         <section class="hero">
             <span class="kicker">Tools</span>
-            <h1>The kit behind <span class="highlight">the loops.</span></h1>
-            <p>Every tool here drives one of the checks on the Features page, grouped by the loop each serves after the pieces every install carries. The Operational loop runs on those pieces; Deployment is this site's own, under the last tab. Open any card to see how it's wired in.</p>
+            <h1>The kit behind <span class="highlight">the checks.</span></h1>
+            <p>The CLI drives one tool per check and reads its result, so you never configure the tools themselves. Here they are by loop, after the pieces every install carries. Open a card for how it is wired in.</p>
         </section>
 
         <section class="section tabbed" aria-labelledby="tools-heading">
@@ -75,17 +75,16 @@
                 <a class="tab" role="tab" id="tab-security" href="#security" aria-controls="security" aria-selected="false">Security</a>
                 <a class="tab" role="tab" id="tab-reliability" href="#reliability" aria-controls="reliability" aria-selected="false">Reliability</a>
                 <a class="tab" role="tab" id="tab-hygiene" href="#hygiene" aria-controls="hygiene" aria-selected="false">Hygiene</a>
-                <a class="tab" role="tab" id="tab-site-stack" href="#site-stack" aria-controls="site-stack" aria-selected="false">This site</a>
             </div>
             <section class="section tool-group tab-panel" id="the-suite" role="tabpanel" aria-labelledby="tab-the-suite" tabindex="0">
             <span class="kicker">The suite</span>
             <h2>What every install carries.</h2>
-            <p class="lede">The CLI that owns every check, the workflows that run it, the <code>task ss:*</code> shim that gives humans, agents and CI one way to call it, and the pre-push hook that runs the fast checks before code leaves the machine.</p>
+            <p class="lede">The CLI that owns every check, the workflows that run it in CI, the <code>task ss:*</code> commands that run it anywhere, and the hook that runs the fast checks before a push.</p>
             <div class="card-grid card-grid--flow card-grid--flow-3">
                 <div class="card">
                     <h3>🐍 slopstopper-cli</h3>
                     <span class="tool-license">MIT</span>
-                    <p>The Python package every check, report and PR comment goes through. Quick standalone try: <code>pipx install slopstopper-cli</code>; in an adopting repo it's pinned in <code>mise.toml</code> and installed via <a href="https://mise.jdx.dev" rel="noopener noreferrer">mise</a>. See the <a href="https://github.com/hungovercoders/slopstopper/releases/latest">latest release</a> for changelog and signed artifacts.</p>
+                    <p>The Python package every check, report and pull request comment goes through. <code>pipx install slopstopper-cli</code> to try it; in a repo it is pinned in <code>mise.toml</code>. Each <a href="https://github.com/hungovercoders/slopstopper/releases/latest">release</a> carries its changelog and signed artifacts.</p>
                     <details class="details">
                         <summary>CLI surface</summary>
                         <div class="details__body">
@@ -104,9 +103,7 @@
             <div class="card">
                 <h3>⚙️ GitHub Actions</h3>
                 <span class="tool-license">Platform</span>
-                <p>All checks run as GitHub Actions workflows triggered on every pull request and push to main. Each workflow is a handful of steps: set up the toolchain, <code>slopstopper run …</code>, <code>slopstopper emit …</code>.</p>
-                <p><em>Which</em> workflows land is driven by the <code>profile:</code> key in <code>.slopstopper.yml</code>. <code>ui</code> installs up to 30 workflows (the 27 checks plus the PR summary, failure alerts and doc updater), holding back the four API checks until the repo shows an API, <code>api</code> drops the nine browser-and-SEO checks and the privacy statement check, and <code>library</code> also drops DAST, CSP exceptions and the four API checks (health, latency, headers and OpenAPI drift). Set it with <code>install.sh --profile api</code>, inspect it with <code>slopstopper profile show</code>, and take back any single check with <code>workflows.enabled</code>.</p>
-                <p>Feedback lands as <strong>one rolling comment per PR</strong>, rendered from the run conclusions GitHub already recorded so it cannot race the checks: a verdict line such as <code>❌ SlopStopper: 2 of 27 checks failed</code>, failures in a table, passes folded away. Each failing check adds a compact comment (verdict line, failing items, report folded); passing checks delete theirs, so a green PR carries only the summary.</p>
+                <p>One workflow per check, run on every pull request and push to <code>main</code>: set up the toolchain, <code>slopstopper run …</code>, report. Which workflows land is the <a href="features.html#profiles">profile's</a> choice, and the verdicts come back as <a href="features.html#feedback">one comment on the pull request</a>.</p>
                 <details class="details">
                     <summary>See it in action</summary>
                     <div class="details__body">
@@ -120,7 +117,7 @@
             <div class="card">
                 <h3>📋 Task</h3>
                 <span class="tool-license">MIT</span>
-                <p><code>task ss:*</code> is the canonical interface. Humans, agents and CI all invoke checks through it. Adopters get one consistent invocation surface across the suite and the rest of their codebase. Re-run install.sh with <code>--no-task</code> to skip <a href="https://taskfile.dev" rel="noopener noreferrer">Task</a> entirely; workflows will call the CLI directly.</p>
+                <p><code>task ss:&lt;loop&gt;:&lt;check&gt;</code> is how people, agents and CI all run a check, so there is one command to learn. <a href="https://taskfile.dev" rel="noopener noreferrer">Task</a> is optional: <code>install.sh --no-task</code> has the workflows call the CLI directly.</p>
                 <details class="details">
                     <summary>Taskfile excerpt</summary>
                     <div class="details__body">
@@ -138,7 +135,7 @@
             <div class="card">
                 <h3>🪝 Git hooks</h3>
                 <span class="tool-license">GPL-2.0</span>
-                <p><code>install.sh</code> wires a <strong>pre-push</strong> hook via <code>core.hooksPath</code> that runs the fast hygiene checks (<code>task ss:hygiene:test</code>) before every push, so the first CI run confirms rather than discovers. Only the static hygiene subset runs locally; the server/browser checks stay in CI. It won't override an existing <code>husky</code> / <code>lefthook</code> / <code>pre-commit</code> setup. Re-run <code>install.sh --no-hooks</code> to skip it, or bypass a single push with <code>git push --no-verify</code>.</p>
+                <p>A <strong>pre-push</strong> hook runs the static hygiene checks (<code>task ss:hygiene:test</code>) before every push; the browser and server checks stay in CI. It leaves an existing husky, lefthook or pre-commit setup alone. <code>install.sh --no-hooks</code> skips it, <code>git push --no-verify</code> bypasses one push.</p>
                 <details class="details">
                     <summary>.githooks/pre-push (installed)</summary>
                     <div class="details__body">
@@ -156,13 +153,13 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             <section class="section tool-group tab-panel" id="security" role="tabpanel" aria-labelledby="tab-security" tabindex="0">
             <span class="kicker">Security</span>
             <h2>Block it before it merges.</h2>
-            <p class="lede">Four tools sit behind the Security loop, covering static analysis, a dynamic scan of the running site, dependency CVEs and leaked credentials.</p>
+            <p class="lede">Static analysis, a scan of the running site or API, dependency CVEs and licences, and leaked credentials.</p>
             <div class="card-grid card-grid--flow card-grid--flow-3">
                 <div class="card">
                     <h3>🔍 Semgrep</h3>
                     <span class="tool-license">LGPL-2.1</span>
-                    <p>Fast static application security testing (SAST). Scans source code for vulnerability patterns and OWASP-style issues before code is merged.</p>
-                    <a class="card-link" href="docs/security/index.html">Learn more about Security →</a>
+                    <p>Static analysis (SAST): scans your source for vulnerability patterns before it merges.</p>
+                    <a class="card-link" href="docs/security/sast.html">The SAST check →</a>
                     <details class="details">
                         <summary>Workflow excerpt</summary>
                         <div class="details__body">
@@ -182,8 +179,8 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             <div class="card">
                 <h3>🕷️ OWASP ZAP</h3>
                 <span class="tool-license">Apache-2.0</span>
-                <p>Dynamic application security testing (DAST). Probes a running deployment for common web vulnerabilities such as XSS, injection and insecure headers.</p>
-                <p>Two modes: the <strong>baseline</strong> scan spiders an HTML site, and the <strong>API</strong> scan reads an OpenAPI spec and exercises the operations it declares, which is the only mode that finds anything on a JSON API since there are no links to crawl. Point <code>api.openapi.spec</code> at your spec to switch.</p>
+                <p>Dynamic scanning (DAST): probes the running deployment for XSS, injection and insecure headers. It spiders an HTML site, or exercises an API through its OpenAPI spec when <code>api.openapi.spec</code> names one.</p>
+                <a class="card-link" href="docs/security/dast.html">The DAST check →</a>
                 <details class="details">
                     <summary>Workflow excerpt</summary>
                     <div class="details__body">
@@ -203,7 +200,8 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             <div class="card">
                 <h3>🛡️ Trivy</h3>
                 <span class="tool-license">Apache-2.0</span>
-                <p>Scans project dependencies for known CVEs on every pull request and push, with severity-based gating to prevent vulnerable packages from reaching production.</p>
+                <p>Scans every dependency for known CVEs, gating on severity.</p>
+                <a class="card-link" href="docs/security/vulnerability.html">The dependency check →</a>
                 <details class="details">
                     <summary>Workflow excerpt</summary>
                     <div class="details__body">
@@ -223,7 +221,8 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             <div class="card">
                 <h3>⚖️ Licence inventory</h3>
                 <span class="tool-license">stdlib Python</span>
-                <p>Judges every resolved dependency's licence against the repo's own allowlist, the file the dependency review reads too. npm comes from <code>package-lock.json</code>, Python from <code>pip inspect</code>, so there is nothing to install and a transitive package under a denied licence cannot hide in the tree.</p>
+                <p>Judges every resolved dependency's licence against your allowlist, read from the lockfiles, so a transitive package under a denied licence cannot hide.</p>
+                <a class="card-link" href="docs/security/licences.html">The licence check →</a>
                 <details class="details">
                     <summary>Workflow excerpt</summary>
                     <div class="details__body">
@@ -242,7 +241,8 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             <div class="card">
                 <h3>🔑 Gitleaks</h3>
                 <span class="tool-license">MIT</span>
-                <p>Inspects every commit for accidentally committed credentials, tokens and other secrets, blocking pull requests when high-confidence matches are found.</p>
+                <p>Scans every commit, history included, for committed credentials and tokens.</p>
+                <a class="card-link" href="docs/security/secrets.html">The secrets check →</a>
                 <details class="details">
                     <summary>Workflow excerpt</summary>
                     <div class="details__body">
@@ -265,13 +265,13 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             <section class="section tool-group tab-panel" id="reliability" role="tabpanel" aria-labelledby="tab-reliability" tabindex="0">
             <span class="kicker">Reliability</span>
             <h2>Prove every deploy works.</h2>
-            <p class="lede">The Reliability loop runs on a browser, an accessibility engine, a performance auditor and four stdlib-Python audits.</p>
+            <p class="lede">A browser, an accessibility engine, a performance auditor, and four audits written in plain Python inside the CLI, so they add no dependencies.</p>
             <div class="card-grid card-grid--flow card-grid--flow-3">
                 <div class="card">
                     <h3>🎭 Playwright</h3>
                     <span class="tool-license">Apache-2.0</span>
-                    <p>Portable smoke, E2E journey, broken-link and accessibility specs ship inside the slopstopper-cli wheel, so adopters don't vendor them. Run <code>slopstopper templates eject playwright.config.js</code> to customise.</p>
-                    <a class="card-link" href="docs/reliability/index.html">Learn more about Reliability →</a>
+                    <p>Runs the smoke, E2E, broken-link and accessibility checks against any URL. The specs ship inside the CLI; <code>slopstopper templates eject</code> copies one out to customise.</p>
+                    <a class="card-link" href="docs/reliability/e2e.html">The E2E check →</a>
                     <details class="details">
                         <summary>playwright.config.js (bundled)</summary>
                         <div class="details__body">
@@ -290,8 +290,8 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
             <div class="card">
                 <h3>♿ axe-core</h3>
                 <span class="tool-license">MPL-2.0</span>
-                <p>Industry-standard accessibility engine, run via Playwright on every page to flag WCAG 2.1 AA violations on PRs, after deploys and on a daily schedule.</p>
-                <a class="card-link" href="docs/reliability/accessibility.html">Learn more about Accessibility →</a>
+                <p>Audits every page against WCAG 2.1 AA, on each pull request, after each deploy and daily.</p>
+                <a class="card-link" href="docs/reliability/accessibility.html">The accessibility check →</a>
                 <details class="details">
                     <summary>Workflow excerpt</summary>
                     <div class="details__body">
@@ -311,8 +311,8 @@ on:
             <div class="card">
                 <h3>⚡ Lighthouse CI</h3>
                 <span class="tool-license">Apache-2.0</span>
-                <p>Measures Core Web Vitals (LCP, INP, CLS) plus performance, accessibility, best-practice and SEO category scores on every PR and nightly against production.</p>
-                <a class="card-link" href="docs/reliability/index.html">Learn more about Reliability →</a>
+                <p>Measures Core Web Vitals and the performance, accessibility, best-practice and SEO scores against budgets you set.</p>
+                <a class="card-link" href="docs/reliability/cwv.html">The Core Web Vitals check →</a>
                 <details class="details">
                     <summary>lighthouserc.json (bundled)</summary>
                     <div class="details__body">
@@ -339,8 +339,8 @@ on:
             <div class="card">
                 <h3>🔎 SEO Metatag Check</h3>
                 <span class="tool-license">MIT</span>
-                <p>Fetches each page and asserts the full set of social-share + indexer metadata: <code>&lt;title&gt;</code>, meta description, canonical, viewport, OpenGraph (og:title/description/type/url/image) and Twitter Card (twitter:card/title/description/image). HEAD-fetches <code>og:image</code> to confirm it is reachable. Stdlib Python, so no new dependencies.</p>
-                <a class="card-link" href="docs/reliability/seo.html">Learn more about SEO check config →</a>
+                <p>Asserts the tags a search engine and a link preview read on each page: title, description, canonical, OpenGraph and Twitter Card, with the share image reachable.</p>
+                <a class="card-link" href="docs/reliability/seo.html">The SEO check →</a>
                 <details class="details">
                     <summary>Taskfile excerpt</summary>
                     <div class="details__body">
@@ -360,8 +360,8 @@ on:
             <div class="card">
                 <h3>📄 llms.txt Check</h3>
                 <span class="tool-license">MIT</span>
-                <p>Audits your site's <code>/llms.txt</code>, the <a href="https://llmstxt.org/" rel="noopener noreferrer">llmstxt.org</a> convention for a curated markdown map that lets AI assistants read your key content without parsing HTML. Asserts an H1 title, a summary blockquote and markdown links to key content, and can HEAD-verify every link resolves. Stdlib Python, so no new dependencies.</p>
-                <a class="card-link" href="docs/reliability/llms-txt.html">Learn more about llms.txt check config →</a>
+                <p>Audits <code>/llms.txt</code>, the <a href="https://llmstxt.org/" rel="noopener noreferrer">llmstxt.org</a> map that lets an AI assistant read your key pages without parsing HTML: a title, a summary and links that resolve.</p>
+                <a class="card-link" href="docs/reliability/llms-txt.html">The llms.txt check →</a>
                 <details class="details">
                     <summary>Taskfile excerpt</summary>
                     <div class="details__body">
@@ -381,8 +381,8 @@ on:
             <div class="card">
                 <h3>🤖 robots.txt Check</h3>
                 <span class="tool-license">MIT</span>
-                <p>Audits your site's <code>/robots.txt</code> for the two failures Lighthouse buries. Its headline job is the de-index guard: a stray <code>Disallow: /</code> under <code>User-agent: *</code> silently removes the whole site from search. Also requires a <code>Sitemap:</code> pointer, notes a stray <code>Llms:</code> line (not a directive; Lighthouse scores it 0), and can HEAD-verify the referenced URLs resolve. Stdlib Python, so no new dependencies.</p>
-                <a class="card-link" href="docs/reliability/robots-txt.html">Learn more about robots.txt check config →</a>
+                <p>Audits <code>/robots.txt</code>: a stray <code>Disallow: /</code> that would de-index the whole site fails, and a <code>Sitemap:</code> pointer is required.</p>
+                <a class="card-link" href="docs/reliability/robots-txt.html">The robots.txt check →</a>
                 <details class="details">
                     <summary>Taskfile excerpt</summary>
                     <div class="details__body">
@@ -402,8 +402,8 @@ on:
             <div class="card">
                 <h3>🗺️ sitemap Check</h3>
                 <span class="tool-license">MIT</span>
-                <p>Crawls your site from <code>/</code> and cross-checks the served <code>sitemap.xml</code> against the pages it actually reaches. A reachable page missing from the sitemap, or a <code>&lt;loc&gt;</code> that 404s, hard-fails, because that is drift. <code>llms.txt</code> gaps are advisory. Flat and nested (sitemap-index) shapes both pass. When it fails it recommends generating the file from your routes so it can't drift. Stdlib Python, so no new dependencies.</p>
-                <a class="card-link" href="docs/reliability/sitemap.html">Learn more about sitemap check config →</a>
+                <p>Crawls the site and cross-checks <code>sitemap.xml</code> against the pages it reaches: a page missing from the sitemap, or an entry that 404s, fails.</p>
+                <a class="card-link" href="docs/reliability/sitemap.html">The sitemap check →</a>
                 <details class="details">
                     <summary>Taskfile excerpt</summary>
                     <div class="details__body">
@@ -427,13 +427,13 @@ on:
             <section class="section tool-group tab-panel" id="hygiene" role="tabpanel" aria-labelledby="tab-hygiene" tabindex="0">
             <span class="kicker">Hygiene</span>
             <h2>Keep the codebase auditable.</h2>
-            <p class="lede">A complexity gauge and a Markdown linter; the docs checks themselves are stdlib Python inside the CLI.</p>
+            <p class="lede">A complexity gauge and a seeded Markdown linter. The docs checks are plain Python inside the CLI and need no tool.</p>
             <div class="card-grid card-grid--flow card-grid--flow-3">
                 <div class="card">
                     <h3>🐛 Lizard</h3>
                     <span class="tool-license">MIT</span>
-                    <p>Lizard enforces a cyclomatic-complexity ceiling so code stays auditable and maintainable. It ships as a dependency of <code>slopstopper-cli</code>, so there's nothing extra to install, and the gate runs identically locally, in the pre-push hook and in CI, with one threshold and one exit code.</p>
-                    <a class="card-link" href="docs/hygiene/index.html">Learn more about Hygiene →</a>
+                    <p>Caps cyclomatic complexity per function across every language it parses. It ships with the CLI, so there is nothing to install.</p>
+                    <a class="card-link" href="docs/hygiene/index.html">The hygiene checks →</a>
                     <details class="details">
                         <summary>Workflow excerpt</summary>
                         <div class="details__body">
@@ -450,8 +450,7 @@ on:
             <div class="card">
                 <h3>📝 markdownlint</h3>
                 <span class="tool-license">MIT</span>
-                <p>Seeded, not enforced. <code>install.sh</code> merges <code>markdownlint-cli</code> into your devDependencies and drops a starter <code>.markdownlint.json</code>, ready to wire into your own lint script or pre-commit. The suite's own hygiene checks are about documentation <em>structure, accuracy and size</em>. Markdown style is left to you, because every repo's house style differs.</p>
-                <a class="card-link" href="docs/hygiene/index.html">Learn more about the hygiene checks →</a>
+                <p>Seeded, not enforced: the installer adds <code>markdownlint-cli</code> and a starter config for you to wire in. The suite checks what docs say and where they are, and leaves Markdown style to your house rules.</p>
                 <details class="details">
                     <summary>Seeded config</summary>
                     <div class="details__body">
@@ -463,59 +462,10 @@ on:
             </div>
             </section>
 
-            <section class="section tool-group tab-panel" id="site-stack" role="tabpanel" aria-labelledby="tab-site-stack" tabindex="0">
-            <span class="kicker">How slopstopper.dev itself is built</span>
-            <h2>Not part of the suite.</h2>
-            <p class="lede">Two more pieces serve this reference site. Adopters need neither. Your repo keeps its own language and host, and the suite only needs Python and the per-check tools above.</p>
-            <div class="card-grid card-grid--flow card-grid--flow-3">
-                <div class="card">
-                    <h3>🔷 TypeScript</h3>
-                    <span class="tool-license">Apache-2.0</span>
-                    <p>The Cloudflare Worker that serves the site and applies its security headers is TypeScript, bundled by Wrangler at deploy time. It reads the same <code>worker/headers.json</code> the local dev server and the CSP-drift check read, so there is one header policy with three consumers.</p>
-                    <details class="details">
-                        <summary>worker/index.ts excerpt</summary>
-                        <div class="details__body">
-                            <div class="codeblock codeblock--yaml"><pre><code>const response = await env.ASSETS.fetch(assetRequest);
-    const next = new Response(response.body, response);
-    for (const [name, value] of Object.entries(headersForPath(url.pathname))) {
-      next.headers.set(name, value);
-    }
-    return next;</code></pre></div>
-                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/worker/index.ts" rel="noopener noreferrer">View worker/index.ts →</a>
-                        </div>
-                    </details>
-            </div>
-
-            <div class="card">
-                <h3>🟧 Cloudflare</h3>
-                <span class="tool-license">Platform</span>
-                <p>Static site served by Cloudflare Workers with the <code>[assets]</code> binding. Workers Builds watches the repo: pushes deploy to prod, PRs get preview URLs, closing a PR cleans up. No deploy workflow is needed; <code>ss-cloudflare-deployed.yml</code> runs the URL-driven checks against each deploy.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/deployment/README.md" rel="noopener noreferrer">Learn more about Deployment →</a>
-                <details class="details">
-                    <summary>wrangler.jsonc</summary>
-                    <div class="details__body">
-                        <div class="codeblock codeblock--yaml"><pre><code>{
-  "name": "slopstopper",
-  "main": "worker/index.ts",
-  "compatibility_date": "2026-06-01",
-  "assets": {
-    "directory": "./app",
-    "binding": "ASSETS",
-    "run_worker_first": true
-  }
-}</code></pre></div>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/wrangler.jsonc" rel="noopener noreferrer">View wrangler.jsonc →</a>
-                        <br>
-                        <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/worker/index.ts" rel="noopener noreferrer">View Worker →</a>
-                    </div>
-                </details>
-            </div>
-            </div>
-            </section>
         </section>
 
         <p class="attribution-footer">
-            slopstopper-cli has one third-party Python dependency, <code>lizard</code> (the engine behind <code>hygiene:complexity</code>); every other tool above is invoked via <code>subprocess</code> only.
+            slopstopper-cli has one Python dependency, <code>lizard</code>; every other tool above is run as a separate process and installed only for the checks you use.
             Full attribution, licences and upstream links: <a href="https://github.com/hungovercoders/slopstopper/blob/main/ATTRIBUTIONS.md" rel="noopener noreferrer">ATTRIBUTIONS.md</a>.
         </p>
     </main>

@@ -5,17 +5,17 @@
 > Stops AI-generated "slop" reaching production; humans, agents and CI all
 > invoke every check through one `task ss:*` surface.
 
-SlopStopper is two things at once: a portable quality suite you install into
-your own repo via `install.sh`, and a live reference site (this one) built and
-deployed with the same suite it advertises.
+SlopStopper is a quality suite you install into your own repo with one
+command. Every check runs the same way on your machine and in CI, and reports
+into the pull request. This site is built and deployed with the same suite.
 
 ## Site
 
-- [Home](https://slopstopper.dev/): what SlopStopper is and how to get started
-- [Features](https://slopstopper.dev/features.html): the five loops (security, hygiene, reliability and operational are installed; deployment shows how this site ships, to copy) and every check
-- [Tools](https://slopstopper.dev/tools.html): the underlying kit: Semgrep, OWASP ZAP, Trivy, Gitleaks, Playwright, axe-core, Lighthouse CI, GitHub Actions, Task
-- [Learn](https://slopstopper.dev/learn.html): the course, twenty-one short lessons, each check explained and run against a demo repo the CLI writes; each lesson is a page under /learn/, listed below
-- [Docs](https://slopstopper.dev/docs.html): the reference docs rendered as pages under /docs/, listed below: every check's rules, knobs and report, adopting the suite, the architecture, the runbooks and the change map
+- [Home](https://slopstopper.dev/): what SlopStopper is, the two ways to install it, and the four loops of checks
+- [Features](https://slopstopper.dev/features.html): every check by loop (security, reliability, hygiene, operational), the workflow behind each, the profiles, and what the pull request feedback looks like
+- [Tools](https://slopstopper.dev/tools.html): the tool behind each check: Semgrep, OWASP ZAP, Trivy, Gitleaks, Playwright, axe-core, Lighthouse CI, and the pieces every install carries
+- [Learn](https://slopstopper.dev/learn.html): a course of twenty-one short lessons, one check at a time, run against a demo repo the CLI writes; each lesson is a page under /learn/, listed below
+- [Docs](https://slopstopper.dev/docs.html): the reference docs as pages under /docs/, listed below: what every check enforces and how to fix what it finds, installing and tuning the suite, the architecture
 - [Feedback](https://slopstopper.dev/feedback.html): report a bug or request a check
 - [Privacy](https://slopstopper.dev/privacy.html): what the site collects (nothing of its own), what Cloudflare keeps as the host, and which other services the pages reach
 
