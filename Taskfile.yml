@@ -93,6 +93,12 @@ tasks:
     cmds:
       - '"{{.PYTHON}}" scripts/learnsite.py {{.CLI_ARGS}}'
 
+  contributing:docs:site:
+    desc: Write app/docs/<dir>/<name>.html, the site's page for each reference doc, from docs/ (scripts/docsite.py), plus the doc entries in app/docs.html, sitemap.xml and llms.txt; `-- --check` only reports stale pages
+    deps: [cli:install]
+    cmds:
+      - '"{{.PYTHON}}" scripts/docsite.py {{.CLI_ARGS}}'
+
   contributing:learn:record:
     desc: Record the lesson tapes as episode b-roll into dist/learn/NN.mp4 (demos/render.sh; needs vhs, ttyd 1.7.7+, ffmpeg); `-- 08` for one
     cmds:

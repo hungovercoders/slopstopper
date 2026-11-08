@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<!-- Generated from docs/hygiene/DOC_UPDATER.md by scripts/docsite.py: edit the source, then `task contributing:docs:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic Documentation Updater · Hygiene | SlopStopper</title>
+    <meta name="description" content="The repo ships a weekly agentic workflow that scans recently-merged PRs, identifies documentation drift, and opens a sync PR with the proposed fixes. It runs on GitHub Agentic Workflows (gh-aw) with the GitHub Copilot CLI engine.">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/docs/hygiene/doc-updater.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/docs/hygiene/doc-updater.html">
+    <meta property="og:title" content="Agentic Documentation Updater · Hygiene | SlopStopper">
+    <meta property="og:description" content="The repo ships a weekly agentic workflow that scans recently-merged PRs, identifies documentation drift, and opens a sync PR with the proposed fixes. It runs on GitHub Agentic Workflows (gh-aw) with the GitHub Copilot CLI engine.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Agentic Documentation Updater · Hygiene | SlopStopper">
+    <meta name="twitter:description" content="The repo ships a weekly agentic workflow that scans recently-merged PRs, identifies documentation drift, and opens a sync PR with the proposed fixes. It runs on GitHub Agentic Workflows (gh-aw) with the GitHub Copilot CLI engine.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <script src="../../theme.js"></script>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+    <link rel="manifest" href="../../manifest.webmanifest">
+    <link rel="preload" href="../../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../../shared.css">
+    <link rel="stylesheet" href="../../lesson.css">
+    <link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../../index.html" id="nav-home">Home</a>
+            <a href="../../features.html" id="nav-features">Features</a>
+            <a href="../../tools.html" id="nav-tools">Tools</a>
+            <a href="../../learn.html" id="nav-learn">Learn</a>
+            <a href="../../docs.html" id="nav-docs">Docs</a>
+            <a href="../../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+            <button type="button" class="btn btn--ghost theme-toggle" aria-label="Switch theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson hero--doc">
+            <span class="kicker">📚 Docs · Hygiene</span>
+            <h1>Agentic Documentation Updater</h1>
+        </section>
+        <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Hygiene</a></li><li aria-current="page">Agentic Documentation Updater</li></ol></nav>
+        <article class="lesson doc">
+<p>The repo ships a weekly agentic workflow that scans recently-merged PRs, identifies documentation drift, and opens a sync PR with the proposed fixes. It runs on <a href="https://github.github.com/gh-aw/" rel="noopener noreferrer">GitHub Agentic Workflows (<code>gh-aw</code>)</a> with the GitHub Copilot CLI engine.</p>
+<h2 id="quick-reference">Quick reference</h2>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><a href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-doc-updater.md" rel="noopener noreferrer"><code>.github/workflows/ss-hygiene-doc-updater.md</code></a></td><td>Human-authored source. Frontmatter + prompt body. <strong>This is what you edit.</strong></td></tr>
+    <tr><td><a href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-doc-updater.lock.yml" rel="noopener noreferrer"><code>.github/workflows/ss-hygiene-doc-updater.lock.yml</code></a></td><td>Compiled artifact the gh-aw runtime executes. It is generated, so do not hand-edit it.</td></tr>
+    <tr><td><a href="https://github.com/hungovercoders/slopstopper/blob/main/.github/aw/actions-lock.json" rel="noopener noreferrer"><code>.github/aw/actions-lock.json</code></a></td><td>gh-aw companion lockfile that pins SHAs for the GitHub Actions referenced in compiled workflows.</td></tr>
+  </tbody>
+</table></div>
+<h2 id="what-it-does">What it does</h2>
+<ol>
+  <li>Triggers weekly (Wednesday, 03:20 UTC) and on <code>workflow_dispatch</code>.</li>
+  <li>Searches for PRs merged in the last 7 days and open issues labelled <code>documentation</code>.</li>
+  <li>Reviews changed files in each PR against the corresponding sections of <code>docs/</code>.</li>
+  <li>Identifies real drift (added/removed/renamed features, new workflows, broken references) and writes a patch.</li>
+  <li>Opens a pull request labelled <code>documentation, automation</code> for human review.</li>
+</ol>
+<p>If no drift is found, it exits via the <code>noop</code> safe-output and creates nothing.</p>
+<p>The prompt is project-agnostic: it ships unchanged to every adopter and learns the project from the repo's own <code>AGENTS.md</code> and <code>docs/README.md</code> (no <code>AGENTS.md</code> and no map means a <code>noop</code>). Project context belongs in those files, not in the prompt, which <code>install.sh</code> overwrites on every refresh.</p>
+<h2 id="required-configuration-adopters-read-this">Required configuration (adopters: read this)</h2>
+<p>The workflow won't fully function without two pieces of repo configuration:</p>
+<h3 id="1-repo-secret-copilot_github_token">1. Repo secret: <code>COPILOT_GITHUB_TOKEN</code></h3>
+<p>The gh-aw runtime drives the Copilot CLI engine; the token authorises it. Generate per the <a href="https://github.github.com/gh-aw/reference/engines/#github-copilot-default" rel="noopener noreferrer">gh-aw Copilot setup guide</a> and add under <strong>Settings → Secrets and variables → Actions</strong>. Without it, the workflow runs to the engine-invocation step and fails authentication.</p>
+<h3 id="2-repo-setting-allow-github-actions-to-create-and-approve-pull-requests">2. Repo setting: "Allow GitHub Actions to create and approve pull requests"</h3>
+<p><strong>Settings → Actions → General → Workflow permissions → tick "Allow GitHub Actions to create and approve pull requests" → Save.</strong></p>
+<p>Without this, the workflow's <code>safe-outputs.create-pull-request</code> step is denied. The agent still does the work and pushes its branch (<code>docs/weekly-update-&lt;date&gt;-&lt;hash&gt;</code>), but instead of opening a PR it opens an <em>issue</em> labelled <code>documentation, automation, agentic-workflows</code> with a <code>Click here to create the pull request</code> link. You then have to manually open the PR from the link.</p>
+<p>Enabling the setting is preferable, because the agent's intended output is a PR and the issue-fallback workflow adds manual steps every week.</p>
+<h2 id="what-it-produces">What it produces</h2>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Scenario</th><th>Output</th></tr></thead>
+  <tbody>
+    <tr><td>Drift found, PR-creation allowed</td><td>A PR labelled <code>documentation, automation</code>, auto-marked for <code>copilot</code> review, auto-merge enabled (you still review before it merges).</td></tr>
+    <tr><td>Drift found, PR-creation blocked</td><td>A tracking issue with the patch preview and a manual-open link to the pushed branch.</td></tr>
+    <tr><td>No drift</td><td>A <code>noop</code> safe-output message; no PR or issue.</td></tr>
+    <tr><td>Tool/env failure</td><td>A workflow-run failure; the <a href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-workflow-failure-issue.yml" rel="noopener noreferrer">workflow-failure-issue tracker</a> raises a tracking issue automatically.</td></tr>
+  </tbody>
+</table></div>
+<h2 id="editing-the-prompt-or-frontmatter">Editing the prompt or frontmatter</h2>
+<p>The <code>.md</code> source is authoritative. After editing it you <strong>must</strong> recompile the <code>.lock.yml</code>, otherwise the scheduled run will execute the old behaviour (or fail outright, as the next section describes).</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code># One-time: install the gh-aw extension
+gh extension install githubnext/gh-aw
+
+# Recompile after editing the .md
+gh aw compile ss-hygiene-doc-updater
+
+# Commit both files
+git add .github/workflows/ss-hygiene-doc-updater.lock.yml \
+        .github/aw/actions-lock.json
+git commit -m "chore(workflows): recompile doc-updater after prompt edit"</code></pre></div>
+<p>The compiler also updates <code>.github/aw/actions-lock.json</code> if it picks up newer action versions, so commit both files together.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="scheduled-run-fails-immediately-with-err_system-runtime-import-file-not-found">Scheduled run fails immediately with <code>ERR_SYSTEM: Runtime import file not found</code></h3>
+<p>Cause: the <code>.md</code> source filename changed (or was renamed to follow the <code>ss-</code> prefix convention) but the <code>.lock.yml</code> was never recompiled, so its embedded <code>runtime-import</code> directive still references the old path.</p>
+<p>Fix: recompile per the section above. This is exactly what <a href="https://github.com/hungovercoders/slopstopper/pull/164" rel="noopener noreferrer">PR #164</a> did.</p>
+<h3 id="workflow-runs-successfully-but-no-pr-appears">Workflow runs successfully but no PR appears</h3>
+<p>You're missing the workflow-permissions setting above. Look in the issue list for one labelled <code>documentation, automation</code>. The agent put the patch and a manual-open link there.</p>
+<h3 id="copilot_github_token-rotated-runs-failing-auth"><code>COPILOT_GITHUB_TOKEN</code> rotated, runs failing auth</h3>
+<p>Refresh the secret per the <a href="https://github.github.com/gh-aw/reference/engines/#github-copilot-default" rel="noopener noreferrer">gh-aw Copilot setup guide</a>. The next scheduled run picks up the new value; no recompile needed.</p>
+<h3 id="dont-want-this-workflow-at-all">"Don't want this workflow at all"</h3>
+<p>List both files under <code>workflows.disabled</code> in <code>.slopstopper.yml</code>:</p>
+<div class="codeblock codeblock--yaml" tabindex="0"><pre><code>workflows:
+  disabled: [ss-hygiene-doc-updater.md, ss-hygiene-doc-updater.lock.yml]</code></pre></div>
+<p>The installer removes them and never brings them back. Deleting the two files works too (tracked via <code>.ss/.workflows-installed</code>).</p>
+        </article>
+<nav class="doc-siblings" aria-label="In Hygiene">
+  <h2>In Hygiene</h2>
+  <ul>
+    <li><a href="index.html">Hygiene</a></li>
+    <li><a href="doc-updater.html" aria-current="page">Agentic Documentation Updater</a></li>
+  </ul>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/DOC_UPDATER.md" rel="noopener noreferrer">docs/hygiene/DOC_UPDATER.md</a>; edit it there and the page follows.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../../copy.js" defer></script>
+</body>
+</html>

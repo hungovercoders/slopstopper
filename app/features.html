@@ -46,6 +46,7 @@
             <a href="features.html" id="nav-features" aria-current="page">Features</a>
             <a href="tools.html" id="nav-tools">Tools</a>
             <a href="learn.html" id="nav-learn">Learn</a>
+            <a href="docs.html" id="nav-docs">Docs</a>
             <a href="feedback.html" id="nav-feedback">Feedback</a>
         </nav>
         <div class="header-actions">
@@ -93,7 +94,7 @@
                         <li><strong>Dependencies.</strong> Trivy checks all dependencies for known CVEs</li>
                         <li><strong>API Headers &amp; CORS.</strong> Audits a JSON API's response headers and CORS policy: a wildcard origin sent with credentials, an arbitrary <code>Origin</code> reflected back, an allowlist that stopped matching, plus HSTS and <code>nosniff</code></li>
                     </ul>
-                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/README.md" rel="noopener noreferrer">Learn more about Security →</a>
+                    <a class="card-link" href="docs/security/index.html">Learn more about Security →</a>
                 </div>
                 <div class="tab-panel__workflows">
                     <h3 class="tab-panel__label">What runs, and how it is wired</h3>
@@ -228,7 +229,7 @@
                         <li><strong>API Health.</strong> Probes a JSON API's health/readiness endpoint and asserts its contract: status code, JSON content-type, and the body fields you declare. <code>{"status": "degraded"}</code> behind an HTTP 200 passes a reachability probe and fails here</li>
                         <li><strong>API Latency.</strong> Samples each endpoint several times and reports the median and slowest response plus the payload size. Core Web Vitals for something that renders nothing. Budgets gate on the median, so one slow sample from a shared runner doesn't fail your PR</li>
                     </ul>
-                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
+                    <a class="card-link" href="docs/reliability/index.html">Learn more about Reliability →</a>
                 </div>
                 <div class="tab-panel__workflows">
                     <h3 class="tab-panel__label">What runs, and how it is wired</h3>
@@ -470,7 +471,7 @@
                         <li><strong>Auto-label PRs.</strong> PRs labelled from the paths changed</li>
                         <li><strong>Local pre-push gate.</strong> A pre-push git hook runs the fast hygiene checks before every push, so the first CI run confirms rather than discovers</li>
                     </ul>
-                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about Hygiene →</a>
+                    <a class="card-link" href="docs/hygiene/index.html">Learn more about Hygiene →</a>
                 </div>
                 <div class="tab-panel__workflows">
                     <h3 class="tab-panel__label">What runs, and how it is wired</h3>
@@ -532,7 +533,7 @@
                             <p class="details__hint">Strict <code>default-src 'self'</code> CSP is the default. Per-path exceptions (e.g. Giscus on <code>/feedback.html</code>) must be documented in <code>CSP_EXCEPTIONS.md</code> with SRI hashes and a fallback. This check fails the build if <code>worker/headers.json</code> and <code>CSP_EXCEPTIONS.md</code> disagree.</p>
                             <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-csp-exceptions-check.yml" rel="noopener noreferrer">View workflow on GitHub →</a>
                             <br>
-                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">View the exceptions doc →</a>
+                            <a class="details__source" href="docs/security/csp-exceptions.html">View the exceptions doc →</a>
                         </div>
                     </details>
 
@@ -584,7 +585,7 @@
                             <p class="details__hint">The same <code>task ss:hygiene:test</code> that CI runs, so hook, local and CI share one invocation surface. Only the static hygiene subset runs locally (seconds, no server); the server/browser checks stay in CI. <code>install.sh</code> won't override an existing <code>husky</code> / <code>lefthook</code> / <code>pre-commit</code> setup; opt out with <code>--no-hooks</code>, or bypass a single push with <code>git push --no-verify</code>.</p>
                             <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.githooks/pre-push" rel="noopener noreferrer">View the hook on GitHub →</a>
                             <br>
-                            <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/README.md" rel="noopener noreferrer">Inner-loop docs →</a>
+                            <a class="details__source" href="docs/architecture/index.html">Inner-loop docs →</a>
                         </div>
                     </details>
                 </div>
@@ -598,7 +599,7 @@
                         <li><strong>Failure Alerts.</strong> Failed workflow runs on main raise (or update) a tracking issue automatically</li>
                         <li><strong>Doc Auto-Updater.</strong> A weekly agentic workflow opens PRs to keep docs in sync</li>
                     </ul>
-                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/runbooks/README.md" rel="noopener noreferrer">Learn more about Operational →</a>
+                    <a class="card-link" href="docs/runbooks/index.html">Learn more about Operational →</a>
                 </div>
                 <div class="tab-panel__workflows">
                     <h3 class="tab-panel__label">What runs, and how it is wired</h3>
@@ -654,7 +655,7 @@
                         <li><strong>Preview Deploys.</strong> Every PR gets a unique preview URL as a commit check</li>
                         <li><strong>Auto Cleanup.</strong> Preview deploys are removed automatically on PR close</li>
                     </ul>
-                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/deployment/README.md" rel="noopener noreferrer">Learn more about Deployment →</a>
+                    <a class="card-link" href="docs/deployment/index.html">Learn more about Deployment →</a>
                 </div>
                 <div class="tab-panel__workflows">
                     <h3 class="tab-panel__label">What runs, and how it is wired</h3>
@@ -699,7 +700,7 @@
         <section class="section" id="profiles">
             <span class="kicker">Other project shapes</span>
             <h2>A profile picks the loops.</h2>
-            <p class="lede">Every reliability check except API Health and API Latency assumes HTML and a served site. <code>--profile api</code> drops those nine and the privacy statement check, and keeps DAST and the four API checks (which <code>ui</code> holds back until the repo shows an API); <code>--profile library</code> also drops everything else that needs a URL: DAST, API Headers, CSP Exceptions and OpenAPI Drift. Pick one on <a href="index.html#get-started">Get Started</a>; the full mapping is in <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PROFILES.md" rel="noopener noreferrer">project-shape profiles</a>.</p>
+            <p class="lede">Every reliability check except API Health and API Latency assumes HTML and a served site. <code>--profile api</code> drops those nine and the privacy statement check, and keeps DAST and the four API checks (which <code>ui</code> holds back until the repo shows an API); <code>--profile library</code> also drops everything else that needs a URL: DAST, API Headers, CSP Exceptions and OpenAPI Drift. Pick one on <a href="index.html#get-started">Get Started</a>; the full mapping is in <a href="docs/architecture/profiles.html">project-shape profiles</a>.</p>
         </section>
 
         <!-- ─── What feedback looks like ────────────────────────── -->
@@ -741,7 +742,7 @@
                         <p class="gh-comment__fold">▸ Full report and evidence</p>
                         <p class="gh-comment__sub">slopstopper · <code>reliability:seo</code> · head <code>abc1234</code> · run →</p>
                     </div>
-                    <figcaption>What one failing check adds: a verdict line, the failing items, the report folded away. The format from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PR_FEEDBACK.md" rel="noopener noreferrer">the PR feedback design</a>.</figcaption>
+                    <figcaption>What one failing check adds: a verdict line, the failing items, the report folded away. The format from <a href="docs/architecture/pr-feedback.html">the PR feedback design</a>.</figcaption>
                 </figure>
             </div>
 

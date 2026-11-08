@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<!-- Generated from docs/reliability/README.md by scripts/docsite.py: edit the source, then `task contributing:docs:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reliability Testing · Reliability | SlopStopper</title>
+    <meta name="description" content="SlopStopper&#x27;s reliability checks, wired against any reachable URL: portable smoke tests, broken-link audits, and the API health and latency audits (all below), plus seven audits with their own guide. Read the one whose trigger matches.">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/docs/reliability/index.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/docs/reliability/index.html">
+    <meta property="og:title" content="Reliability Testing · Reliability | SlopStopper">
+    <meta property="og:description" content="SlopStopper&#x27;s reliability checks, wired against any reachable URL: portable smoke tests, broken-link audits, and the API health and latency audits (all below), plus seven audits with their own guide. Read the one whose trigger matches.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Reliability Testing · Reliability | SlopStopper">
+    <meta name="twitter:description" content="SlopStopper&#x27;s reliability checks, wired against any reachable URL: portable smoke tests, broken-link audits, and the API health and latency audits (all below), plus seven audits with their own guide. Read the one whose trigger matches.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <script src="../../theme.js"></script>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+    <link rel="manifest" href="../../manifest.webmanifest">
+    <link rel="preload" href="../../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../../shared.css">
+    <link rel="stylesheet" href="../../lesson.css">
+    <link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../../index.html" id="nav-home">Home</a>
+            <a href="../../features.html" id="nav-features">Features</a>
+            <a href="../../tools.html" id="nav-tools">Tools</a>
+            <a href="../../learn.html" id="nav-learn">Learn</a>
+            <a href="../../docs.html" id="nav-docs">Docs</a>
+            <a href="../../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+            <button type="button" class="btn btn--ghost theme-toggle" aria-label="Switch theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson hero--doc">
+            <span class="kicker">📚 Docs · Reliability</span>
+            <h1>Reliability Testing</h1>
+        </section>
+        <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li aria-current="page">Reliability</li></ol></nav>
+        <article class="lesson doc">
+<h2 id="overview">Overview</h2>
+<p>SlopStopper's reliability checks, wired against any reachable URL: portable smoke tests, broken-link audits, and the API health and latency audits (all below), plus seven audits with their own guide. Read the one whose trigger matches.</p>
+<h2 id="routes">Routes</h2>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>When you are…</th><th>Do this</th></tr></thead>
+  <tbody>
+    <tr><td>fixing an axe-core finding or tuning the WCAG audit</td><td>Read <a href="accessibility.html">ACCESSIBILITY.md</a>, the audit, its thresholds and report</td></tr>
+    <tr><td>fixing a broken user journey, or adding journeys specific to your site</td><td>Read <a href="e2e.html">E2E.md</a>, the nav, anchor, disclosure and back-button walk</td></tr>
+    <tr><td>tuning Lighthouse budgets or debugging a Core Web Vitals failure</td><td>Read <a href="cwv.html">CWV.md</a>, Lighthouse CI configuration and the budget files</td></tr>
+    <tr><td>fixing a missing or wrong SEO / social-share metatag</td><td>Read <a href="seo.html">SEO.md</a>, what the metatag audit asserts</td></tr>
+    <tr><td>adding or fixing the site's <code>llms.txt</code></td><td>Read <a href="llms-txt.html">LLMS_TXT.md</a>, the llmstxt.org shape the check asserts</td></tr>
+    <tr><td>changing <code>robots.txt</code>, or when the de-index guard fires</td><td>Read <a href="robots-txt.html">ROBOTS_TXT.md</a>, discoverability rules and the guard</td></tr>
+    <tr><td>adding pages, or when the sitemap drift check fires</td><td>Read <a href="sitemap.html">SITEMAP.md</a>, completeness + drift against the served site</td></tr>
+  </tbody>
+</table></div>
+<h2 id="checks">Checks</h2>
+<p>Every reliability check, generated from the CLI's registry by <code>task contributing:tables</code>:</p>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Check</th><th>Run it</th><th>Workflow</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>reliability:accessibility</code></td><td><code>task ss:reliability:accessibility</code></td><td><code>ss-reliability-accessibility-check.yml</code></td><td>Accessibility audit (Playwright + axe-core wrapper).</td></tr>
+    <tr><td><code>reliability:api-health</code></td><td><code>task ss:reliability:api-health</code></td><td><code>ss-reliability-api-health-check.yml</code></td><td>API health/readiness endpoint audit (in-CLI implementation).</td></tr>
+    <tr><td><code>reliability:api-latency</code></td><td><code>task ss:reliability:api-latency</code></td><td><code>ss-reliability-api-latency-check.yml</code></td><td>API latency + payload budget audit (in-CLI implementation).</td></tr>
+    <tr><td><code>reliability:broken-links</code></td><td><code>task ss:reliability:broken-links</code></td><td><code>ss-reliability-broken-links-check.yml</code></td><td>Broken-link checks (Playwright wrapper).</td></tr>
+    <tr><td><code>reliability:cwv</code></td><td><code>task ss:reliability:cwv</code></td><td><code>ss-reliability-core-web-vitals.yml</code></td><td>Core Web Vitals audit (Lighthouse CI wrapper).</td></tr>
+    <tr><td><code>reliability:e2e</code></td><td><code>task ss:reliability:e2e</code></td><td><code>ss-reliability-e2e-check.yml</code></td><td>End-to-end user journeys against a live URL (Playwright wrapper).</td></tr>
+    <tr><td><code>reliability:llms-txt</code></td><td><code>task ss:reliability:llms-txt</code></td><td><code>ss-reliability-llms-txt-check.yml</code></td><td>llms.txt AI-discoverability audit (in-CLI implementation).</td></tr>
+    <tr><td><code>reliability:robots-txt</code></td><td><code>task ss:reliability:robots-txt</code></td><td><code>ss-reliability-robots-txt-check.yml</code></td><td>robots.txt discoverability + de-index guard audit (in-CLI implementation).</td></tr>
+    <tr><td><code>reliability:seo</code></td><td><code>task ss:reliability:seo</code></td><td><code>ss-reliability-seo-check.yml</code></td><td>SEO + social-share metatag audit (in-CLI implementation).</td></tr>
+    <tr><td><code>reliability:sitemap</code></td><td><code>task ss:reliability:sitemap</code></td><td><code>ss-reliability-sitemap-check.yml</code></td><td>sitemap.xml completeness + drift audit (in-CLI implementation).</td></tr>
+    <tr><td><code>reliability:smoke</code></td><td><code>task ss:reliability:smoke</code></td><td><code>ss-reliability-smoke-tests.yml</code></td><td>Smoke tests against a live URL (Playwright wrapper).</td></tr>
+  </tbody>
+</table></div>
+<h2 id="configuration-env-vars">Configuration (env vars)</h2>
+<p>Every reliability check takes its base URL as a positional argument (<code>task ss:reliability:&lt;check&gt; -- https://host/</code>; a sub-path such as <code>https://user.github.io/proj/</code> is kept, and every page path is resolved under it) or from <code>&lt;CHECK&gt;_TEST_URL</code>; the browser checks fall back to <code>SMOKE_TEST_URL</code>, then <code>BASE_URL</code>, then <code>http://localhost:8080</code>. Each check's own variables (pages, thresholds, paths) are in its section below or its doc: <a href="accessibility.html">ACCESSIBILITY.md</a>, <a href="e2e.html">E2E.md</a>, <a href="cwv.html">CWV.md</a>, <a href="seo.html">SEO.md</a>, <a href="llms-txt.html">LLMS_TXT.md</a>, <a href="robots-txt.html">ROBOTS_TXT.md</a>, <a href="sitemap.html">SITEMAP.md</a>. <code>.slopstopper.yml</code> (<code>pages.*</code>, <code>api.*</code>, <code>reliability.*</code>) is the committed form of the same settings.</p>
+<h2 id="api-health-check">API Health Check</h2>
+<p>The API-shaped analogue of the smoke test. Smoke drives a browser over HTML pages; this probes the one endpoint an API is expected to expose for exactly this purpose, and asserts the contract around it.</p>
+<p><strong>Why not just point smoke at <code>/health</code>:</strong> smoke asserts DOM-shaped things that a JSON endpoint will never satisfy, such as a <code>&lt;title&gt;</code>, a linked stylesheet and a shareable og-image. A health endpoint also has assertions of its own. <code>{"status": "degraded"}</code> returned with HTTP 200 is a <strong>pass</strong> to any reachability probe and a <strong>failure</strong> here, which is the whole reason a health endpoint returns a body at all.</p>
+<h3 id="what-it-checks">What it checks</h3>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Assertion</th><th>Hard fail?</th><th>Knob</th></tr></thead>
+  <tbody>
+    <tr><td>Endpoint reachable</td><td>yes</td><td>none</td></tr>
+    <tr><td>Status code matches</td><td>yes</td><td><code>api.health.expect_status</code> (default 200)</td></tr>
+    <tr><td>JSON content-type (<code>application/json</code>, <code>+json</code> suffixes)</td><td>yes</td><td><code>api.health.require_json</code></td></tr>
+    <tr><td>Body parses as JSON and is non-empty</td><td>yes</td><td><code>api.health.require_json</code></td></tr>
+    <tr><td>Declared fields present (dot-paths, e.g. <code>deps.db</code>)</td><td>yes</td><td><code>api.health.require_fields</code></td></tr>
+    <tr><td>Declared fields match an expected value</td><td>yes</td><td><code>api.health.expect_fields</code></td></tr>
+    <tr><td>Response time</td><td>only with a budget set</td><td><code>api.health.max_response_ms</code></td></tr>
+  </tbody>
+</table></div>
+<h3 id="configuration">Configuration</h3>
+<div class="codeblock codeblock--yaml" tabindex="0"><pre><code># .slopstopper.yml
+api:
+  base_path: ''          # prefix the API is served under, e.g. /api/v1
+  health:
+    path: /health        # unset → the check skips gracefully (exit 0)
+    expect_status: 200
+    require_json: true
+    require_fields: [status, deps.db]
+    expect_fields:
+      status: ok
+    max_response_ms:     # unset → timing reported, never enforced</code></pre></div>
+<p>With <code>api.health.path</code> unset the check exits 0 with a note, which is the same contract as <a href="../security/index.html#csp-exceptions"><code>hygiene:csp-exceptions</code></a> with <code>headers.source: null</code>. An unconfigured check is not a failing check, so a fresh install's first PR is green.</p>
+<h3 id="running-locally">Running locally</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code># Pass the base URL positionally (works for any reliability check)
+task ss:reliability:api-health -- https://api.example.com
+
+# Override config from the command line
+task ss:reliability:api-health -- https://api.example.com \
+  --path /readyz --expect-status 204 --require-field status --max-response-ms 500
+
+# Or set the env var
+API_HEALTH_TEST_URL=https://api.example.com task ss:reliability:api-health</code></pre></div>
+<p>Report: <code>.ss/reports/api-health/api-health-report.{md,json}</code>.</p>
+<h3 id="running-in-ci">Running in CI</h3>
+<p><code>ss-reliability-api-health-check.yml</code> audits <code>urls.preview</code> on pull requests and <code>urls.production</code> on pushes to main, schedules, <code>deployment_status</code> events and the Cloudflare post-deploy dispatch. Unlike the browser checks it <strong>never builds and serves the repo locally</strong>, because an API isn't a static bundle <code>slopstopper serve</code> can host, and guessing a start command would be worse than not guessing. With neither URL configured the PR run emits a notice and skips; the deployed-main and scheduled runs still cover the endpoint.</p>
+<p>The check ships under the <code>api</code> <a href="../architecture/profiles.html">project-shape profile</a>, and under <code>ui</code> once the repo shows an API (a spec, a server framework or an API check configured under <code>api.*</code>). It stays inert until configured.</p>
+<h2 id="api-latency-check">API Latency Check</h2>
+<p>The API-shaped analogue of Core Web Vitals. There is no rendering on a JSON API, so the equivalent question is narrower and more answerable: how long does the endpoint take to answer, and how much does it send back. Each configured path is sampled several times; the check reports the <strong>median</strong>, the <strong>slowest</strong> sample and the response size.</p>
+<p><strong>Why not p95:</strong> five samples cannot support a 95th percentile, and calling <code>max()</code> a percentile would dress up one noisy reading as statistics. Budgets gate on the <strong>median</strong>, which resists flakes because one slow sample from a shared CI runner moves the maximum and not the middle. <code>slowest_ms</code> is an opt-in tail ceiling for anyone who wants one.</p>
+<h3 id="what-it-checks-1">What it checks</h3>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Assertion</th><th>Hard fail?</th><th>Knob</th></tr></thead>
+  <tbody>
+    <tr><td>Every sample completes</td><td>yes</td><td>none</td></tr>
+    <tr><td>Status is 2xx/3xx</td><td>yes</td><td>none</td></tr>
+    <tr><td>Median response time</td><td>only with a budget set</td><td><code>api.latency.median_ms</code></td></tr>
+    <tr><td>Slowest sample</td><td>only with a budget set</td><td><code>api.latency.slowest_ms</code></td></tr>
+    <tr><td>Response size</td><td>only with a budget set</td><td><code>api.latency.max_bytes</code></td></tr>
+  </tbody>
+</table></div>
+<p>Reachability is the floor and never opt-in: a 500 that answers in 3ms is not fast, and a timing from a connection error is not a measurement. Everything else is advisory until you set a budget.</p>
+<h3 id="configuration-1">Configuration</h3>
+<div class="codeblock codeblock--yaml" tabindex="0"><pre><code># .slopstopper.yml
+api:
+  base_path: ''          # prefix the API is served under, e.g. /api/v1
+  latency:
+    paths: []            # empty → the check skips gracefully (exit 0)
+    samples: 5           # measured requests per endpoint
+    warmup: 1            # discarded first requests (DNS, TLS, cold start)
+    median_ms:           # unset → timings reported, never enforced
+    slowest_ms:
+    max_bytes:</code></pre></div>
+<p>Warmup requests are thrown away rather than averaged in: the first hit pays for DNS, TLS and whatever cold start the platform imposes, none of which is the steady-state latency a budget is about.</p>
+<p><strong>Derive budgets from numbers you have observed, not from numbers that sound right.</strong> A guessed budget on a shared runner is noise, and a check people learn to ignore is worse than no check. Run it with no budgets for a week, read the reports, then set one.</p>
+<h3 id="running-locally-1">Running locally</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:reliability:api-latency -- https://api.example.com
+
+# Override config from the command line
+task ss:reliability:api-latency -- https://api.example.com \
+  --path /v1/items --samples 9 --median-ms 400 --max-bytes 200000
+
+# Or set the env vars
+API_LATENCY_TEST_URL=https://api.example.com \
+  API_LATENCY_PATHS=/health,/v1/items task ss:reliability:api-latency</code></pre></div>
+<p>Report: <code>.ss/reports/api-latency/api-latency-report.{md,json}</code>.</p>
+<h3 id="running-in-ci-1">Running in CI</h3>
+<p><code>ss-reliability-api-latency-check.yml</code> resolves its URL exactly as the API health workflow does (<code>urls.preview</code> on pull requests, <code>urls.production</code> on main, schedules, <code>deployment_status</code> events and the Cloudflare post-deploy dispatch) and never builds or serves the repo locally.</p>
+<p>One caveat specific to this check: <strong>timings from a preview environment are not timings from production.</strong> A cold-started preview deploy is slower and noisier. Either set budgets loose enough for it, or leave them unset on PRs and rely on the scheduled production run.</p>
+<p>Ships under <code>api</code>, and under <code>ui</code> once the repo shows an API (see <a href="../architecture/profiles.html">profiles</a>). Inert until configured.</p>
+<h2 id="broken-link-checks">Broken Link Checks</h2>
+<p>The broken-link check can run against any site you provide via <code>BROKEN_LINKS_TEST_URL</code>. It visits each path in <code>BROKEN_LINKS_PAGES</code>, collects all anchor links, keeps only same-origin HTTP(S) links, then asserts each destination returns a non-4xx/5xx status. External links are intentionally skipped to reduce noise from third-party outages, rate limits, or bot protections outside your control.</p>
+<h3 id="running-broken-link-checks-locally">Running broken-link checks locally</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code># Pass URL directly
+task ss:reliability:broken-links -- https://your-site.example.com
+
+# Or set environment variables
+BROKEN_LINKS_TEST_URL=https://your-site.example.com \
+BROKEN_LINKS_PAGES="/,/features.html,/tools.html" \
+task ss:reliability:broken-links</code></pre></div>
+<h3 id="running-broken-link-checks-in-ci">Running broken-link checks in CI</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>BROKEN_LINKS_TEST_URL=https://your-site.example.com \
+BROKEN_LINKS_PAGES="/,/features.html,/tools.html" \
+task ss:reliability:broken-links -- --ci</code></pre></div>
+<p>For live <code>slopstopper.dev</code>, the workflow seeds <code>/,/features.html,/tools.html</code> so links from the three main pages are validated on every scheduled/deploy/PR run.</p>
+<h2 id="smoke-tests">Smoke Tests</h2>
+<p>Smoke tests are lightweight, critical-path tests that verify a deployed site is functioning correctly. These tests run against live URLs (production or staging) and check for:</p>
+<ul>
+  <li>Page availability (200 status codes)</li>
+  <li>Core navigation functionality</li>
+  <li>Asset loading</li>
+  <li>Response times</li>
+  <li>Critical content rendering</li>
+</ul>
+<h3 id="running-smoke-tests-locally">Running smoke tests locally</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code># Pass URL as a positional argument (works for any reliability check)
+task ss:reliability:smoke -- https://your-site.example.com
+
+# Add --ci for retries + HTML report + single worker
+task ss:reliability:smoke -- https://your-site.example.com --ci
+
+# Or set the env var (handy when chaining `BROKEN_LINKS_PAGES=… SMOKE_TEST_URL=…`)
+SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke</code></pre></div>
+<p><code>task ss:reliability:smoke</code> shells through to <code>slopstopper run reliability:smoke</code>, which launches the bundled Playwright spec via the config baked into the <code>slopstopper-cli</code> wheel. The config is <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/data/playwright.config.js" rel="noopener noreferrer"><code>cli/slopstopper/data/playwright.config.js</code></a> and the spec is <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/data/tests/smoke.spec.ts" rel="noopener noreferrer"><code>cli/slopstopper/data/tests/smoke.spec.ts</code></a>. Adopters don't vendor those files; the CLI owns them. To customise, run <code>slopstopper templates eject playwright.config.js</code> to drop an editable copy into <code>.ss/</code>; the CLI picks <code>.ss/&lt;filename&gt;</code> up automatically. Each run copies the resolved config and spec (your override if there is one, else the bundled file) into <code>.ss/.run/</code> so Playwright can reach your <code>node_modules</code>; that directory ignores itself and is rewritten on every run, so don't edit it.</p>
+<h3 id="running-in-ci-2">Running in CI</h3>
+<p>The canonical shape is the ready-to-run workflow the installer copies to <a href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-reliability-smoke-tests.yml" rel="noopener noreferrer"><code>.github/workflows/ss-reliability-smoke-tests.yml</code></a>. It runs on PRs, pushes to <code>main</code>, an hourly schedule, <code>deployment_status</code> events, and <code>workflow_dispatch</code> (which is how <code>ss-cloudflare-deployed.yml</code> runs it after a Workers Builds deploy); on failure it opens (or updates) a tracking issue, and on recovery it closes it. The job calls:</p>
+<div class="codeblock codeblock--yaml" tabindex="0"><pre><code>- name: Run smoke tests
+  run: task ss:reliability:smoke -- ${{ steps.url.outputs.url }} --ci</code></pre></div>
+<p>That is the same Task command you ran locally, with the positional URL resolved from the trigger context.</p>
+<h3 id="what-the-smoke-tests-check">What the Smoke Tests Check</h3>
+<ol>
+  <li><strong>Homepage Availability</strong> - Ensures the main page loads with 200 status</li>
+  <li><strong>Secondary Pages</strong> - Verifies all critical pages are accessible</li>
+  <li><strong>Navigation</strong> - Tests basic user navigation flows</li>
+  <li><strong>Static Assets</strong> - Confirms CSS and JS files load correctly</li>
+  <li><strong>Performance</strong> - Validates pages load within acceptable timeframes (&lt; 5s)</li>
+  <li><strong>Error Detection</strong> - Checks for JavaScript console errors</li>
+</ol>
+<h3 id="test-configuration">Test configuration</h3>
+<p>The portable spec is configured via <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/data/playwright.config.js" rel="noopener noreferrer"><code>cli/slopstopper/data/playwright.config.js</code></a>, which is bundled in the <code>slopstopper-cli</code> wheel. <code>testDir: './tests'</code> resolves to <code>.ss/.run/tests/</code>, where each run stages the spec, so SlopStopper's specs never collide with your own <code>tests/</code> directory. An ejected config is staged there too, so any relative path in it resolves from <code>.ss/.run/</code>. To customise, eject an editable copy into your repo's <code>.ss/</code> directory:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper templates eject playwright.config.js</code></pre></div>
+<p>The CLI's template resolver prefers <code>.ss/&lt;filename&gt;</code> over the bundled version, so edits to the ejected copy take effect immediately.</p>
+<h3 id="adding-pages-to-the-smoke-check">Adding pages to the smoke check</h3>
+<p>The portable smoke spec at <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/data/tests/smoke.spec.ts" rel="noopener noreferrer"><code>cli/slopstopper/data/tests/smoke.spec.ts</code></a> iterates over <code>SMOKE_PAGES</code>. Adding coverage is an env var, not a code change:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>SMOKE_TEST_URL=https://your-site.example.com \
+  SMOKE_PAGES="/,/login,/pricing,/about" \
+  task ss:reliability:smoke</code></pre></div>
+<p>For assertions beyond "page returns 200 and loads cleanly" (e.g. specific element visibility), add your own specs under your repo's own <code>tests/</code> directory. A <code>playwright.config.js</code> you write in your repo root picks those up; SlopStopper's bundled config does not.</p>
+<h3 id="troubleshooting">Troubleshooting</h3>
+<ul>
+  <li>CI installs Chromium through one composite action, <a href="https://github.com/hungovercoders/slopstopper/blob/main/.github/actions/ss-playwright/action.yml" rel="noopener noreferrer"><code>.github/actions/ss-playwright</code></a>: the browser with <code>npx playwright install chromium</code>, five minutes per attempt and one retry, so a stalled download fails the job instead of holding it for hours. The system packages (<code>npx playwright install-deps chromium</code>) are a separate, bounded step that runs on self-hosted runners only: a GitHub-hosted image already carries every library Chromium needs, and the phase spent its minutes on fonts no check uses. Pass <code>install-deps: true</code> to the action to force it, <code>false</code> to skip it everywhere.</li>
+  <li>The browser directory (<code>~/.cache/ms-playwright</code>) is cached on the Playwright version <code>npm ci</code> resolved, so a second run on the same version skips the download and a lockfile bump downloads afresh. Restore and save are separate steps: a completed download is saved whatever the check's verdict, so a red PR re-runs warm, and a stalled restore gives up after two minutes rather than ten. To discard a cache by hand, delete it under the repo's Actions → Caches.</li>
+  <li>Timeouts and retries live in the bundled Playwright config: <code>slopstopper templates eject playwright.config.js</code> and edit the copy under <code>.ss/</code>.</li>
+</ul>
+        </article>
+<nav class="doc-siblings" aria-label="In Reliability">
+  <h2>In Reliability</h2>
+  <ul>
+    <li><a href="index.html" aria-current="page">Reliability Testing</a></li>
+    <li><a href="accessibility.html">Accessibility Monitoring</a></li>
+    <li><a href="cwv.html">Core Web Vitals</a></li>
+    <li><a href="e2e.html">E2E Journeys</a></li>
+    <li><a href="llms-txt.html">llms.txt AI-Discoverability Check</a></li>
+    <li><a href="robots-txt.html">robots.txt Discoverability Check</a></li>
+    <li><a href="seo.html">SEO &amp; Social-Share Metatag Check</a></li>
+    <li><a href="sitemap.html">sitemap.xml Completeness + Drift Check</a></li>
+  </ul>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">docs/reliability/README.md</a>; edit it there and the page follows.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../../copy.js" defer></script>
+</body>
+</html>

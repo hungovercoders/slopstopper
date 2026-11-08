@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<!-- Generated from docs/security/SAST.md by scripts/docsite.py: edit the source, then `task contributing:docs:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Static Application Security Testing (SAST) · Security | SlopStopper</title>
+    <meta name="description" content="This template includes automated Static Application Security Testing (SAST) using Semgrep to detect security bugs and anti-patterns in your own source code. This guide explains how to customise and use this feature.">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/docs/security/sast.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/docs/security/sast.html">
+    <meta property="og:title" content="Static Application Security Testing (SAST) · Security | SlopStopper">
+    <meta property="og:description" content="This template includes automated Static Application Security Testing (SAST) using Semgrep to detect security bugs and anti-patterns in your own source code. This guide explains how to customise and use this feature.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Static Application Security Testing (SAST) · Security | SlopStopper">
+    <meta name="twitter:description" content="This template includes automated Static Application Security Testing (SAST) using Semgrep to detect security bugs and anti-patterns in your own source code. This guide explains how to customise and use this feature.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <script src="../../theme.js"></script>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+    <link rel="manifest" href="../../manifest.webmanifest">
+    <link rel="preload" href="../../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../../shared.css">
+    <link rel="stylesheet" href="../../lesson.css">
+    <link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../../index.html" id="nav-home">Home</a>
+            <a href="../../features.html" id="nav-features">Features</a>
+            <a href="../../tools.html" id="nav-tools">Tools</a>
+            <a href="../../learn.html" id="nav-learn">Learn</a>
+            <a href="../../docs.html" id="nav-docs">Docs</a>
+            <a href="../../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+            <button type="button" class="btn btn--ghost theme-toggle" aria-label="Switch theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson hero--doc">
+            <span class="kicker">📚 Docs · Security</span>
+            <h1>Static Application Security Testing (SAST)</h1>
+        </section>
+        <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Security</a></li><li aria-current="page">Static Application Security Testing (SAST)</li></ol></nav>
+        <article class="lesson doc">
+<p>This template includes automated Static Application Security Testing (SAST) using <strong>Semgrep</strong> to detect security bugs and anti-patterns in your own source code. This guide explains how to customise and use this feature.</p>
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="run-analysis-locally">Run Analysis Locally</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:security:sast</code></pre></div>
+<h3 id="what-you-get-automatically">What You Get Automatically</h3>
+<ul>
+  <li>✅ PR comments with SAST findings report</li>
+  <li>✅ Merge blocking on findings at or above <code>security.sast.fail_on</code> (default: ERROR)</li>
+  <li>✅ GitHub issues on main branch when blocking findings land</li>
+</ul>
+<h3 id="common-issues">Common Issues</h3>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Problem</th><th>Solution</th></tr></thead>
+  <tbody>
+    <tr><td>Workflow not triggering?</td><td>Check workflow is at <code>.github/workflows/ss-security-sast-check.yml</code></td></tr>
+    <tr><td>Want stricter/looser rules?</td><td>The rule set is fixed (<code>--config=auto</code>, see below). Tune what blocks with <code>security.sast.fail_on</code>, or suppress one finding with a <code># nosemgrep: &lt;rule-id&gt;</code> comment and a reason</td></tr>
+    <tr><td>Don't want SAST checks?</td><td>Delete <code>.github/workflows/ss-security-sast-check.yml</code></td></tr>
+  </tbody>
+</table></div>
+<h3 id="severity-reference">Severity Reference</h3>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Severity</th><th>Status</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td>ERROR</td><td>🔴 Blocking</td><td>Must be fixed before merge</td></tr>
+    <tr><td>WARNING</td><td>⚠️ Non-blocking</td><td>Review recommended</td></tr>
+    <tr><td>INFO</td><td>ℹ️ Informational</td><td>Awareness only</td></tr>
+  </tbody>
+</table></div>
+<h3 id="documented-suppressions">Documented suppressions</h3>
+<p>Some Semgrep rules are too broad for known-safe patterns. Rather than disable rules globally (which would hurt adopters whose code legitimately needs them), we use narrow inline annotations with a rationale at the call site:</p>
+<ul>
+  <li><code># nosemgrep: &lt;full-rule-id&gt;</code> for Python, placed on the affected statement with a brief comment explaining why the pattern is safe here</li>
+  <li><code>&lt;!-- nosemgrep: &lt;full-rule-id&gt; --&gt;&lt;rationale&gt;</code> for HTML, placed on the line directly above the affected element</li>
+</ul>
+<p>Both are visible in code review and act as documentation; nothing is silently disabled. Current suppressions in this repo:</p>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Rule</th><th>Where</th><th>Why it's safe here</th></tr></thead>
+  <tbody>
+    <tr><td><code>python.lang.security.audit.dynamic-urllib-use-detected</code></td><td><code>cli/slopstopper/checks/seo.py</code> (<code>_fetch</code> + <code>_head_ok</code>)</td><td>URL originates from <code>SEO_TEST_URL</code> env var (operator-supplied) and <code>_require_safe_url()</code> is called before every <code>urlopen()</code> to reject any scheme other than <code>http</code>/<code>https</code>. So <code>file://</code>/<code>ftp://</code> reads are impossible by construction.</td></tr>
+    <tr><td><code>html.security.audit.missing-integrity</code></td><td><code>&lt;link rel="canonical"&gt;</code> in <code>app/index.html</code>, <code>app/features.html</code>, <code>app/tools.html</code>, <code>app/feedback.html</code></td><td>Canonical links declare URL identity for search engines. They load no subresource, so Subresource Integrity is structurally inapplicable. The rule fires on any <code>&lt;link&gt;</code> without <code>integrity=</code> regardless of whether the tag loads anything.</td></tr>
+  </tbody>
+</table></div>
+<p><strong>For adopters:</strong> when SlopStopper flags noise in your code, prefer this narrow-suppression-with-rationale pattern over disabling a rule globally, because it keeps the rule active for real findings while you accept the false positive at the exact site that needs it.</p>
+<hr>
+<h2 id="overview">Overview</h2>
+<p>What SAST checks: <strong>your own source code</strong> for security vulnerabilities and anti-patterns using pattern matching (e.g. dangerous function calls, injection risks, hardcoded secrets).</p>
+<p>The SAST workflow:</p>
+<ul>
+  <li>✅ Runs automatically on every PR to <code>main</code> and push to <code>main</code></li>
+  <li>✅ Analyses code using Semgrep's auto-configured rule set</li>
+  <li>✅ Posts findings as PR comments</li>
+  <li>✅ Creates GitHub issues when blocking findings land on <code>main</code> (a scan that couldn't run fails the job but opens no issue)</li>
+  <li>✅ Fails PRs with blocking findings, and fails closed when Semgrep produces no readable report or exits with an error</li>
+</ul>
+<h2 id="files-involved">Files Involved</h2>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>.github/workflows/ss-security-sast-check.yml</code></td><td>GitHub Actions workflow</td></tr>
+    <tr><td><code>Taskfile.ss.yml</code> (<code>sast</code> task)</td><td>Local task runner shim → <code>slopstopper run security:sast</code></td></tr>
+    <tr><td><code>cli/slopstopper/checks/sast.py</code></td><td>Check implementation (subprocess-invokes Semgrep, renders MD report)</td></tr>
+    <tr><td><code>.gitignore</code></td><td>Excludes <code>.ss/reports/sast/</code></td></tr>
+  </tbody>
+</table></div>
+<h2 id="key-configuration-points">Key Configuration Points</h2>
+<h3 id="rule-set">Rule set</h3>
+<p>The check runs Semgrep with <code>--config=auto</code> (Semgrep picks rules from the languages it detects). The flag is set in <code>cli/slopstopper/checks/sast.py</code>, not in a task or workflow, and there is no <code>.slopstopper.yml</code> knob for it today. Tune individual rules with the inline <code>nosemgrep</code> suppressions above, or open an issue if you need a project-wide ruleset such as <code>p/owasp-top-ten</code>.</p>
+<h3 id="failure-threshold">Failure threshold</h3>
+<p>Semgrep reports findings at ERROR, WARNING and INFO severity. By default only ERROR fails the check; the rest are reported. <code>security.sast.fail_on</code> in <code>.slopstopper.yml</code> moves the line. Set it to <code>warning</code> and warnings block too; set it to <code>none</code> and the check reports without ever failing. The check's exit code is the verdict; the workflow no longer re-counts findings in a separate step.</p>
+<div class="codeblock codeblock--yaml" tabindex="0"><pre><code>security:
+  sast:
+    fail_on: error   # error | warning | info | none</code></pre></div>
+<h3 id="disable-sast-checking">Disable SAST Checking</h3>
+<div class="codeblock codeblock--sh" data-copyable><pre><code># Option A: delete the workflow
+rm .github/workflows/ss-security-sast-check.yml
+
+# Option B: disable in GitHub UI → Actions → SAST Analysis → Disable workflow</code></pre></div>
+<h2 id="running-locally">Running Locally</h2>
+<div class="codeblock codeblock--sh" data-copyable><pre><code># Install Task (one-time)
+curl -sL https://taskfile.dev/install.sh | sh -s -- -b /usr/local/bin
+
+# Run SAST
+task ss:security:sast</code></pre></div>
+<p>Reports are saved to <code>.ss/reports/sast/</code>.</p>
+<h2 id="for-more-information">For More Information</h2>
+<ul>
+  <li><strong>Semgrep Documentation:</strong> https://semgrep.dev/docs/</li>
+  <li><strong>Semgrep Registry:</strong> https://semgrep.dev/r</li>
+  <li><strong>Task Documentation:</strong> https://taskfile.dev</li>
+</ul>
+        </article>
+<nav class="doc-siblings" aria-label="In Security">
+  <h2>In Security</h2>
+  <ul>
+    <li><a href="index.html">Security</a></li>
+    <li><a href="api-headers.html">API Headers &amp; CORS</a></li>
+    <li><a href="csp-exceptions.html">CSP exceptions</a></li>
+    <li><a href="dast.html">Dynamic Application Security Testing (DAST)</a></li>
+    <li><a href="licences.html">Licence Inventory</a></li>
+    <li><a href="sast.html" aria-current="page">Static Application Security Testing (SAST)</a></li>
+    <li><a href="secrets.html">Secrets Detection</a></li>
+    <li><a href="vulnerability.html">Dependency Vulnerability Scanning</a></li>
+  </ul>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/SAST.md" rel="noopener noreferrer">docs/security/SAST.md</a>; edit it there and the page follows.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../../copy.js" defer></script>
+</body>
+</html>

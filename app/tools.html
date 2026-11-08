@@ -46,6 +46,7 @@
             <a href="features.html" id="nav-features">Features</a>
             <a href="tools.html" id="nav-tools" aria-current="page">Tools</a>
             <a href="learn.html" id="nav-learn">Learn</a>
+            <a href="docs.html" id="nav-docs">Docs</a>
             <a href="feedback.html" id="nav-feedback">Feedback</a>
         </nav>
         <div class="header-actions">
@@ -161,7 +162,7 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
                     <h3>🔍 Semgrep</h3>
                     <span class="tool-license">LGPL-2.1</span>
                     <p>Fast static application security testing (SAST). Scans source code for vulnerability patterns and OWASP-style issues before code is merged.</p>
-                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/README.md" rel="noopener noreferrer">Learn more about Security →</a>
+                    <a class="card-link" href="docs/security/index.html">Learn more about Security →</a>
                     <details class="details">
                         <summary>Workflow excerpt</summary>
                         <div class="details__body">
@@ -270,7 +271,7 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
                     <h3>🎭 Playwright</h3>
                     <span class="tool-license">Apache-2.0</span>
                     <p>Portable smoke, E2E journey, broken-link and accessibility specs ship inside the slopstopper-cli wheel, so adopters don't vendor them. Run <code>slopstopper templates eject playwright.config.js</code> to customise.</p>
-                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
+                    <a class="card-link" href="docs/reliability/index.html">Learn more about Reliability →</a>
                     <details class="details">
                         <summary>playwright.config.js (bundled)</summary>
                         <div class="details__body">
@@ -290,7 +291,7 @@ exec mise exec -- task ss:hygiene:test</code></pre></div>
                 <h3>♿ axe-core</h3>
                 <span class="tool-license">MPL-2.0</span>
                 <p>Industry-standard accessibility engine, run via Playwright on every page to flag WCAG 2.1 AA violations on PRs, after deploys and on a daily schedule.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/ACCESSIBILITY.md" rel="noopener noreferrer">Learn more about Accessibility →</a>
+                <a class="card-link" href="docs/reliability/accessibility.html">Learn more about Accessibility →</a>
                 <details class="details">
                     <summary>Workflow excerpt</summary>
                     <div class="details__body">
@@ -311,7 +312,7 @@ on:
                 <h3>⚡ Lighthouse CI</h3>
                 <span class="tool-license">Apache-2.0</span>
                 <p>Measures Core Web Vitals (LCP, INP, CLS) plus performance, accessibility, best-practice and SEO category scores on every PR and nightly against production.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/README.md" rel="noopener noreferrer">Learn more about Reliability →</a>
+                <a class="card-link" href="docs/reliability/index.html">Learn more about Reliability →</a>
                 <details class="details">
                     <summary>lighthouserc.json (bundled)</summary>
                     <div class="details__body">
@@ -339,7 +340,7 @@ on:
                 <h3>🔎 SEO Metatag Check</h3>
                 <span class="tool-license">MIT</span>
                 <p>Fetches each page and asserts the full set of social-share + indexer metadata: <code>&lt;title&gt;</code>, meta description, canonical, viewport, OpenGraph (og:title/description/type/url/image) and Twitter Card (twitter:card/title/description/image). HEAD-fetches <code>og:image</code> to confirm it is reachable. Stdlib Python, so no new dependencies.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/SEO.md" rel="noopener noreferrer">Learn more about SEO check config →</a>
+                <a class="card-link" href="docs/reliability/seo.html">Learn more about SEO check config →</a>
                 <details class="details">
                     <summary>Taskfile excerpt</summary>
                     <div class="details__body">
@@ -360,7 +361,7 @@ on:
                 <h3>📄 llms.txt Check</h3>
                 <span class="tool-license">MIT</span>
                 <p>Audits your site's <code>/llms.txt</code>, the <a href="https://llmstxt.org/" rel="noopener noreferrer">llmstxt.org</a> convention for a curated markdown map that lets AI assistants read your key content without parsing HTML. Asserts an H1 title, a summary blockquote and markdown links to key content, and can HEAD-verify every link resolves. Stdlib Python, so no new dependencies.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/LLMS_TXT.md" rel="noopener noreferrer">Learn more about llms.txt check config →</a>
+                <a class="card-link" href="docs/reliability/llms-txt.html">Learn more about llms.txt check config →</a>
                 <details class="details">
                     <summary>Taskfile excerpt</summary>
                     <div class="details__body">
@@ -381,7 +382,7 @@ on:
                 <h3>🤖 robots.txt Check</h3>
                 <span class="tool-license">MIT</span>
                 <p>Audits your site's <code>/robots.txt</code> for the two failures Lighthouse buries. Its headline job is the de-index guard: a stray <code>Disallow: /</code> under <code>User-agent: *</code> silently removes the whole site from search. Also requires a <code>Sitemap:</code> pointer, notes a stray <code>Llms:</code> line (not a directive; Lighthouse scores it 0), and can HEAD-verify the referenced URLs resolve. Stdlib Python, so no new dependencies.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/ROBOTS_TXT.md" rel="noopener noreferrer">Learn more about robots.txt check config →</a>
+                <a class="card-link" href="docs/reliability/robots-txt.html">Learn more about robots.txt check config →</a>
                 <details class="details">
                     <summary>Taskfile excerpt</summary>
                     <div class="details__body">
@@ -402,7 +403,7 @@ on:
                 <h3>🗺️ sitemap Check</h3>
                 <span class="tool-license">MIT</span>
                 <p>Crawls your site from <code>/</code> and cross-checks the served <code>sitemap.xml</code> against the pages it actually reaches. A reachable page missing from the sitemap, or a <code>&lt;loc&gt;</code> that 404s, hard-fails, because that is drift. <code>llms.txt</code> gaps are advisory. Flat and nested (sitemap-index) shapes both pass. When it fails it recommends generating the file from your routes so it can't drift. Stdlib Python, so no new dependencies.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/reliability/SITEMAP.md" rel="noopener noreferrer">Learn more about sitemap check config →</a>
+                <a class="card-link" href="docs/reliability/sitemap.html">Learn more about sitemap check config →</a>
                 <details class="details">
                     <summary>Taskfile excerpt</summary>
                     <div class="details__body">
@@ -432,7 +433,7 @@ on:
                     <h3>🐛 Lizard</h3>
                     <span class="tool-license">MIT</span>
                     <p>Lizard enforces a cyclomatic-complexity ceiling so code stays auditable and maintainable. It ships as a dependency of <code>slopstopper-cli</code>, so there's nothing extra to install, and the gate runs identically locally, in the pre-push hook and in CI, with one threshold and one exit code.</p>
-                    <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about Hygiene →</a>
+                    <a class="card-link" href="docs/hygiene/index.html">Learn more about Hygiene →</a>
                     <details class="details">
                         <summary>Workflow excerpt</summary>
                         <div class="details__body">
@@ -450,7 +451,7 @@ on:
                 <h3>📝 markdownlint</h3>
                 <span class="tool-license">MIT</span>
                 <p>Seeded, not enforced. <code>install.sh</code> merges <code>markdownlint-cli</code> into your devDependencies and drops a starter <code>.markdownlint.json</code>, ready to wire into your own lint script or pre-commit. The suite's own hygiene checks are about documentation <em>structure, accuracy and size</em>. Markdown style is left to you, because every repo's house style differs.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">Learn more about the hygiene checks →</a>
+                <a class="card-link" href="docs/hygiene/index.html">Learn more about the hygiene checks →</a>
                 <details class="details">
                     <summary>Seeded config</summary>
                     <div class="details__body">
@@ -489,7 +490,7 @@ on:
                 <h3>🟧 Cloudflare</h3>
                 <span class="tool-license">Platform</span>
                 <p>Static site served by Cloudflare Workers with the <code>[assets]</code> binding. Workers Builds watches the repo: pushes deploy to prod, PRs get preview URLs, closing a PR cleans up. No deploy workflow is needed; <code>ss-cloudflare-deployed.yml</code> runs the URL-driven checks against each deploy.</p>
-                <a class="card-link" href="https://github.com/hungovercoders/slopstopper/blob/main/docs/deployment/README.md" rel="noopener noreferrer">Learn more about Deployment →</a>
+                <a class="card-link" href="docs/deployment/index.html">Learn more about Deployment →</a>
                 <details class="details">
                     <summary>wrangler.jsonc</summary>
                     <div class="details__body">

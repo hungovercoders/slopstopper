@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<!-- Generated from docs/learn/TEMPLATE.md by scripts/docsite.py: edit the source, then `task contributing:docs:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Writing a lesson · The course | SlopStopper</title>
+    <meta name="description" content="This page is the template every lesson in the course is copied from, and the rules a lesson follows. Copy it to docs/learn/&lt;NN&gt;-&lt;slug&gt;.md, keep the H1 as Lesson N: &lt;title&gt;, replace each section, and update the row in the syllabus.">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/docs/learn/template.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/docs/learn/template.html">
+    <meta property="og:title" content="Writing a lesson · The course | SlopStopper">
+    <meta property="og:description" content="This page is the template every lesson in the course is copied from, and the rules a lesson follows. Copy it to docs/learn/&lt;NN&gt;-&lt;slug&gt;.md, keep the H1 as Lesson N: &lt;title&gt;, replace each section, and update the row in the syllabus.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Writing a lesson · The course | SlopStopper">
+    <meta name="twitter:description" content="This page is the template every lesson in the course is copied from, and the rules a lesson follows. Copy it to docs/learn/&lt;NN&gt;-&lt;slug&gt;.md, keep the H1 as Lesson N: &lt;title&gt;, replace each section, and update the row in the syllabus.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <script src="../../theme.js"></script>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+    <link rel="manifest" href="../../manifest.webmanifest">
+    <link rel="preload" href="../../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../../shared.css">
+    <link rel="stylesheet" href="../../lesson.css">
+    <link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../../index.html" id="nav-home">Home</a>
+            <a href="../../features.html" id="nav-features">Features</a>
+            <a href="../../tools.html" id="nav-tools">Tools</a>
+            <a href="../../learn.html" id="nav-learn">Learn</a>
+            <a href="../../docs.html" id="nav-docs">Docs</a>
+            <a href="../../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+            <button type="button" class="btn btn--ghost theme-toggle" aria-label="Switch theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson hero--doc">
+            <span class="kicker">📚 Docs · The course</span>
+            <h1>Writing a lesson</h1>
+        </section>
+        <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">The course</a></li><li aria-current="page">Writing a lesson</li></ol></nav>
+        <article class="lesson doc">
+<p>This page is the template every lesson in the course is copied from, and the rules a lesson follows. Copy it to <code>docs/learn/&lt;NN&gt;-&lt;slug&gt;.md</code>, keep the H1 as <code>Lesson N: &lt;title&gt;</code>, replace each section, and update the row in the <a href="index.html">syllabus</a>.</p>
+<h2 id="the-rules">The rules</h2>
+<ul>
+  <li><strong>Second person, present tense.</strong> "You run", not "we will run".</li>
+  <li><strong>One concept per lesson.</strong> One check, or one idea. If a step needs a second idea explained, that idea is its own lesson or belongs in Going further.</li>
+  <li><strong>Say why before how.</strong> The "Why this check" section names the slop the check stops and the tool behind it, in plain words, before the first command. A reader should be able to argue for the check after reading that section alone.</li>
+  <li><strong>Every command is copy-pasteable and shows its output.</strong> A reader compares what they see with what the page shows; never make them guess. Trim output to the lines that matter and say so.</li>
+  <li><strong>Every step runs in one of the two sandboxes from the syllabus</strong>: the demo repo (<code>&lt;!-- learn-sandbox: demo --&gt;</code> under the H1) for a lesson about a check, or the checkout (<code>&lt;!-- learn-sandbox: checkout --&gt;</code>, the default) for a lesson about the installer, the workflows or the source. Never a real deployment: nobody gets stuck at a login page. Steps that edit the sandbox end by putting it back (<code>git checkout &lt;file&gt;</code>, <code>rm</code>), so the next lesson starts clean.</li>
+  <li><strong>Render it onto the site.</strong> <code>task contributing:learn:site</code> writes <code>app/learn/NN-slug.html</code> from this page and the lesson entries in the sitemap and <code>llms.txt</code>; commit them with the lesson. The converter covers headings to three levels, paragraphs, bold, inline code, links, fenced code, tables, flat lists and <code>&lt;details&gt;</code> blocks, and fails on anything else, so stay inside that set.</li>
+  <li><strong>Mark runnable blocks</strong> with an HTML comment on the line before the fence. <code>&lt;!-- learn --&gt;</code> means the block must exit 0; <code>&lt;!-- learn: fails N --&gt;</code> means it must exit exactly N (<code>fails 1</code> for the break-it step of most lessons, and any <code>cmd; echo "exit $?"</code> block that shows a non-zero code, since <code>sh -e</code> stops at the command; <code>fails 2</code> where the point is a check that could not run). Name the code, because a bare <code>&lt;!-- learn: fails --&gt;</code> accepts any non-zero exit and a 2 (the check could not run) would pass as the red step you promised. The bare form is for a block whose last command is a <code>task</code> target, which maps every failure to 201. <code>task contributing:learn:check</code> runs the marked blocks of each lesson in order with <code>sh -e</code> in a scratch clone, and fails if a page leaves that clone dirty; the <code>learn</code> shards in <code>ci-cli.yml</code> run the same on every push to main, nightly, and on a pull request that changes the course, so a lesson cannot rot. Blocks that need credentials, an editor, a browser or a tool the harness does not have are left unmarked. Run <code>task contributing:learn:check -- --page NN</code> on a lesson before committing it.</li>
+  <li><strong>A background server is tracked by a pid file</strong> under <code>scratch/</code> (<code>PORT=8099 slopstopper serve &gt;/dev/null 2&gt;&amp;1 &amp; echo $! &gt; scratch/serve.pid</code>), stopped with <code>kill "$(cat scratch/serve.pid)"</code> in a later block, and <code>scratch/</code> removed at the end. If a block fails before the kill, the harness stops every process named by a pid file under <code>scratch/</code> before it moves on, so one lesson's failure cannot hold a port for the next; a reader does the same by hand.</li>
+  <li><strong>The checkpoint is one command</strong> whose output settles whether the lesson took. Make it the last runnable block.</li>
+  <li><strong>The episode script lives on the page</strong>, collapsed at the end, so the video and the text never drift apart.</li>
+</ul>
+<p>The rest of this page is the template.</p>
+<hr>
+<h2 id="lesson-n-title-in-sentence-case">Lesson N: Title in sentence case</h2>
+<p><strong>Goal.</strong> One sentence: what you can do when you finish. For example: run one check, break it, read the report and fix it.</p>
+<h2 id="why-this-check">Why this check</h2>
+<p>Two or three paragraphs. The class of slop this check stops, with one concrete example of what it looks like in a diff. The tool behind it and what the tool measures. What the check does with the result: the threshold, the report, the exit code.</p>
+<h2 id="you-will-need">You will need</h2>
+<ul>
+  <li>The checkout from the <a href="index.html">syllabus</a>, with the CLI on PATH.</li>
+  <li>Any tool beyond that (<code>gitleaks</code>, Docker), with the install hint <code>slopstopper doctor</code> prints.</li>
+</ul>
+<h2 id="steps">Steps</h2>
+<h3 id="1-see-it-green">1. See it green</h3>
+<p>Say what the reader is about to do and why, in a sentence. Then the command:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:complexity</code></pre></div>
+<p>Then what they should see. Show the real output, trimmed to the lines that matter:</p>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>✅ No high-complexity functions found (all CCN ≤ 15).</code></pre></div>
+<h3 id="2-break-it">2. Break it</h3>
+<p>Each step ends with something the reader can see change. Point at it: "the summary line now says one function exceeds the ceiling".</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:complexity</code></pre></div>
+<h3 id="3-read-the-report">3. Read the report</h3>
+<p>The red line says what failed; the report says where. Show the command that opens the part that matters.</p>
+<h3 id="4-fix-it">4. Fix it</h3>
+<p>The fix the check asks for, not a way round it. Then the green run again, and the clean-up that puts the checkout back.</p>
+<h2 id="checkpoint">Checkpoint</h2>
+<p>One command, one expected result. If it matches, the lesson took.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper run hygiene:complexity; echo "exit $?"</code></pre></div>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>exit 0</code></pre></div>
+<h2 id="exercise">Exercise</h2>
+<p>One task that uses what the lesson taught with a small twist. No new concepts.</p>
+<details class="details">
+  <summary>Solution</summary>
+  <div class="details__body">
+<p>The solution, as a command or a snippet, with a line on why it works.</p>
+  </div>
+</details>
+<h2 id="going-further">Going further</h2>
+<ul>
+  <li>The docs page this lesson skimmed, for example <a href="../hygiene/index.html">the hygiene README</a></li>
+  <li>The config knob, in <code>.slopstopper.yml.example</code></li>
+</ul>
+<details class="details">
+  <summary>Episode script</summary>
+  <div class="details__body">
+<p><strong>Length.</strong> 8 to 12 minutes.</p>
+<p><strong>Cold open (0:00).</strong> The one-line problem this lesson solves, shown not said: the diff that looks fine, the red line it causes.</p>
+<p><strong>Talking points.</strong></p>
+<ol>
+  <li>Why the check exists, in the words a viewer hears.</li>
+  <li>Step 1, step 2.</li>
+  <li>The checkpoint and what it proves.</li>
+</ol>
+<p><strong>Shot list.</strong> One terminal, 100x30, font size 16, the site's theme (<code>demos/theme.json</code>). <code>docs/learn/tapes/NN.tape</code>, which <code>task contributing:learn:tapes</code> writes from the blocks above, drives it for b-roll. Zoom on the line that changed after each step.</p>
+<p><strong>Chapters.</strong> <code>0:00 Why</code> · <code>1:00 Green</code> · <code>2:30 Break it</code> · <code>4:00 The report</code> · <code>6:00 Fix</code> · <code>7:30 Exercise</code> · <code>8:40 Next lesson</code>.</p>
+  </div>
+</details>
+        </article>
+<nav class="doc-siblings" aria-label="In The course">
+  <h2>In The course</h2>
+  <ul>
+    <li><a href="index.html">From zero to slopstopper</a></li>
+    <li><a href="episodes.html">Episode conventions</a></li>
+    <li><a href="template.html" aria-current="page">Writing a lesson</a></li>
+  </ul>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/learn/TEMPLATE.md" rel="noopener noreferrer">docs/learn/TEMPLATE.md</a>; edit it there and the page follows.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../../copy.js" defer></script>
+</body>
+</html>

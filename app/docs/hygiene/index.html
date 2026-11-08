@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<!-- Generated from docs/hygiene/README.md by scripts/docsite.py: edit the source, then `task contributing:docs:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hygiene · Hygiene | SlopStopper</title>
+    <meta name="description" content="Overview of code and documentation hygiene and quality gates.">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/docs/hygiene/index.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/docs/hygiene/index.html">
+    <meta property="og:title" content="Hygiene · Hygiene | SlopStopper">
+    <meta property="og:description" content="Overview of code and documentation hygiene and quality gates.">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Hygiene · Hygiene | SlopStopper">
+    <meta name="twitter:description" content="Overview of code and documentation hygiene and quality gates.">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <script src="../../theme.js"></script>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+    <link rel="manifest" href="../../manifest.webmanifest">
+    <link rel="preload" href="../../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../../shared.css">
+    <link rel="stylesheet" href="../../lesson.css">
+    <link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../../index.html" id="nav-home">Home</a>
+            <a href="../../features.html" id="nav-features">Features</a>
+            <a href="../../tools.html" id="nav-tools">Tools</a>
+            <a href="../../learn.html" id="nav-learn">Learn</a>
+            <a href="../../docs.html" id="nav-docs">Docs</a>
+            <a href="../../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+            <button type="button" class="btn btn--ghost theme-toggle" aria-label="Switch theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson hero--doc">
+            <span class="kicker">📚 Docs · Hygiene</span>
+            <h1>Hygiene</h1>
+        </section>
+        <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li aria-current="page">Hygiene</li></ol></nav>
+        <article class="lesson doc">
+<p>Overview of code and documentation hygiene and quality gates.</p>
+<h2 id="overview">Overview</h2>
+<p>Hygiene checks keep code within complexity bounds and documentation sized, routed and accurate enough for an AI context window.</p>
+<h2 id="checks">Checks</h2>
+<p>Every hygiene check, generated from the CLI's registry by <code>task contributing:tables</code>:</p>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Check</th><th>Run it</th><th>Workflow</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>hygiene:complexity</code></td><td><code>task ss:hygiene:complexity</code></td><td><code>ss-hygiene-complexity-check.yml</code></td><td>Code complexity analyzer (Lizard wrapper).</td></tr>
+    <tr><td><code>hygiene:csp-exceptions</code></td><td><code>task ss:hygiene:csp-exceptions</code></td><td><code>ss-hygiene-csp-exceptions-check.yml</code></td><td>CSP-Exceptions Drift Detector.</td></tr>
+    <tr><td><code>hygiene:docs-accuracy</code></td><td><code>task ss:hygiene:docs-accuracy</code></td><td><code>ss-hygiene-docs-accuracy-check.yml</code></td><td>Documentation accuracy validator.</td></tr>
+    <tr><td><code>hygiene:docs-size</code></td><td><code>task ss:hygiene:docs-size</code></td><td><code>ss-hygiene-docs-size-check.yml</code></td><td>Documentation size monitor.</td></tr>
+    <tr><td><code>hygiene:docs-structure</code></td><td><code>task ss:hygiene:docs-structure</code></td><td><code>ss-hygiene-docs-structure-check.yml</code></td><td>Documentation structure validator. Every doc must have an explicit route.</td></tr>
+    <tr><td><code>hygiene:entry-files</code></td><td><code>task ss:hygiene:entry-files</code></td><td><code>ss-hygiene-entry-files-check.yml</code></td><td>Entry-file budget + AGENTS.md-first routing check.</td></tr>
+    <tr><td><code>hygiene:openapi</code></td><td><code>task ss:hygiene:openapi</code></td><td><code>ss-hygiene-openapi-check.yml</code></td><td>OpenAPI spec drift audit (in-CLI implementation).</td></tr>
+    <tr><td><code>hygiene:privacy</code></td><td><code>task ss:hygiene:privacy</code></td><td><code>ss-hygiene-privacy-check.yml</code></td><td>Privacy statement check.</td></tr>
+  </tbody>
+</table></div>
+<h3 id="code-complexity-analysis">Code Complexity Analysis</h3>
+<p>Analyzes code complexity using Lizard to identify overly complex functions and modules. Helps identify refactoring opportunities and maintain code health.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:complexity</code></pre></div>
+<p>The check <strong>fails</strong> when any function's cyclomatic complexity (CCN) exceeds <code>hygiene.complexity.max_ccn</code> (default <code>15</code>, which is Lizard's own warning line). The gate lives in the CLI, so <code>task ss:hygiene:complexity</code> returns the same pass/fail locally, in the pre-push hook and in CI. There is no separate CI-only threshold. To run stricter, set the knob in <code>.slopstopper.yml</code>:</p>
+<div class="codeblock codeblock--yaml" tabindex="0"><pre><code>hygiene:
+  complexity:
+    max_ccn: 10   # McCabe's classic "review" bound</code></pre></div>
+<p>The gate measures production code. Test files by the common conventions (<code>tests/</code>, <code>test/</code>, <code>__tests__/</code>, <code>spec/</code>, <code>*_test.go</code>, <code>test_*.py</code>, <code>*.test.*</code>, <code>*.spec.*</code>, <code>*_spec.rb</code>, <code>*Test.java</code> …) and everything <code>.gitignore</code> ignores (build output such as <code>dist/</code>) are skipped, so a local run after a build sees what CI sees. Committed generated or vendored code goes in <code>hygiene.complexity.exclude</code> (globs, added to the built-in set).</p>
+<p>When a function trips the ceiling and is genuinely well-factored (e.g. a flat dispatch or validation table), prefer raising <code>max_ccn</code> with a note over contorting the code, but treat that as a deliberate, documented decision rather than a way to silence noise.</p>
+<h3 id="excluding-docs-from-the-docs-checks">Excluding docs from the docs checks</h3>
+<p><code>hygiene.docs.exclude</code> (repo-relative globs, default <code>docs/archive/**</code>) takes paths out of docs-size, docs-structure and docs-accuracy at once. Use it for content that lives under <code>docs/</code> but isn't agent or contributor documentation, such as a course rendered onto a site, rather than raising budgets or turning off routing for the real docs. Setting it replaces the default, so list the archive too if you keep one. Every report has an <strong>Excluded</strong> section naming what it left out.</p>
+<h3 id="documentation-size-monitoring">Documentation Size Monitoring</h3>
+<p>Monitors overall documentation size and checks against configured thresholds:</p>
+<ul>
+  <li><strong>Total documentation size:</strong> max 150 KB</li>
+  <li><strong>Individual file sizes:</strong> max 20 KB</li>
+  <li><strong>Number of documentation files:</strong> max 25</li>
+</ul>
+<p>Advisory: it always exits 0 and the report carries the verdict. Under AGENTS.md-first only <code>AGENTS.md</code> is always loaded and every other doc is opt-in behind a route, so the per-file cap is the one that protects a reader; the totals are a growth signal, sized to the repo, and moved only in a commit that says why. Running it generates <code>.ss/reports/docs/docs-size-report.md</code>.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:docs-size</code></pre></div>
+<h3 id="documentation-structure-validation">Documentation Structure Validation</h3>
+<p>Validates the AGENTS.md-first model: every doc under <code>docs/</code> must be reachable by an <strong>explicit route</strong> from <code>AGENTS.md</code>, the map (<code>docs/README.md</code>) or a <code>README.md</code> above it. An explicit route is a line that names its trigger and says read (<code>Before you change CI, read docs/ci.md for what task ci runs</code>, or a row of a "When you are… | Do this" table). A doc nothing routes to is invisible to agents; a "see also" is skipped. The report lists every reachable doc with its hop count.</p>
+<p><strong>Fails on:</strong></p>
+<ul>
+  <li><code>unrouted_doc</code> is a doc with no explicit route (the message says whether it is linked softly, or routed from a README that is itself unreachable)</li>
+  <li><code>soft_route</code> is a <code>.md</code> link in the map that does not say when to read it</li>
+  <li><code>route_too_deep</code> means more hops than <code>hygiene.docs_structure.max_route_depth</code> (default 3: <code>AGENTS.md</code> → map → directory README → doc)</li>
+  <li><code>doc_over_lines</code> is a topic doc past <code>hygiene.docs_structure.max_doc_lines</code> (default 300; the map is exempt). Split by concern and route each part</li>
+  <li><code>legacy_index</code> is a legacy index file beside the map. The map is a README so the repo UI renders it in place; fold it in and delete it</li>
+  <li><code>broken_route</code> is a route whose target does not exist</li>
+</ul>
+<p><code>hygiene.docs_structure.require_routed_docs: false</code> keeps only the other rules. The map path is shared with the entry-files check (<code>hygiene.entry_files.map_path</code>).</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:docs-structure</code></pre></div>
+<h3 id="documentation-accuracy">Documentation Accuracy</h3>
+<p>Scans markdown for stale or broken references: internal markdown links that don't resolve, <code>task &lt;name&gt;</code> references to non-existent Taskfile tasks, workflow filename references that don't match <code>.github/workflows/</code>, and stale source-file references. A backtick-quoted file resolves at the repo root, next to the doc, or anywhere in the repo by name or path suffix (for example <code>pack.json</code> or <code>demos/render.sh</code>), counting files <code>git ls-files</code> lists, so prose can name files the way people say them. A path a doc names on purpose although no checkout holds it (a file written at run time, a generated file that is gitignored) goes in <code>hygiene.docs_accuracy.ignore_refs</code>. Scans all of <code>docs/</code> plus the repo-root entry files (<code>README.md</code>, <code>AGENTS.md</code>, <code>CLAUDE.md</code>, <code>CONTRIBUTING.md</code>) so drift in the most-loaded files is caught too.</p>
+<p>Runs <strong>weekly on a schedule</strong> (Monday 07:00 UTC), on PRs/pushes that change docs or project structure, and can be triggered manually. When issues are found, a GitHub issue is automatically created or updated.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:docs-accuracy</code></pre></div>
+<p>By default it reads <code>docs/**/*.md</code> and the four root entry files. <code>hygiene.docs_accuracy.extra_paths</code> (repo-relative globs in <code>.slopstopper.yml</code>) brings more files into scope, with only the checks that are precise for a file describing an adopter's tree rather than this one: <code>task ss:…</code> and workflow references must exist (markdown), and every <code>github.com/&lt;this repo&gt;/blob|tree/&lt;ref&gt;/&lt;path&gt;</code> link must point at a path that exists (markdown and HTML). slopstopper.dev scans <code>app/*.html</code> and <code>.claude/skills/**/*.md</code> this way, because every piece of site and skill drift the repo review found lived in a file the <code>docs/</code>-only scan never read.</p>
+<h3 id="entry-file-budget">Entry-File Budget</h3>
+<p>Enforces the AGENTS.md-first entry files declared in <a href="../index.html#the-model"><code>docs/README.md</code></a>. <code>AGENTS.md</code> is loaded into every agent conversation (it is prompt-cached, so inlining what most tasks need is cheap, while every routing hop costs a tool turn), but instruction-following degrades as rules pile up, so it stays under <strong>~2,000 estimated tokens</strong> (chars/4; roughly 40–60 rules) and routes the overflow. The check enforces:</p>
+<ul>
+  <li><strong>Token budgets.</strong> <code>AGENTS.md</code> ≤ <code>hygiene.entry_files.max_tokens</code> (2000), <code>README.md</code> ≤ <code>readme_max_tokens</code> (600, pipeline badges excluded), the map ≤ <code>map_max_tokens</code> (1000)</li>
+  <li><strong><code>CLAUDE.md</code> is exactly <code>@AGENTS.md</code>.</strong> With one agent entry point there is nothing to drift (<code>require_claude_include</code>)</li>
+  <li><strong>Every <code>.md</code> link in <code>AGENTS.md</code> is an explicit route</strong> that gives the trigger, then "read", then the file (<code>require_explicit_routes</code>). One of them reaches the map, which <code>README.md</code> also links (<code>require_map_pointer</code>)</li>
+  <li><strong>The map exists</strong> at <code>hygiene.entry_files.map_path</code> (<code>docs/README.md</code>)</li>
+</ul>
+<p>It prints the <strong>cold-start cost</strong> (always-loaded tokens, the fallback hop, the sum) on every run, so a creeping cost is visible before a budget trips. Fails the build on violation; the report carries a paste-ready fix for each one (the route line, the <code>@AGENTS.md</code> body, a map skeleton, the rename for a legacy index file). The fix for an over-budget file is to move the content that serves the fewest tasks into a <code>docs/</code> topic doc and route it, never to raise the budget.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:entry-files</code></pre></div>
+<p>The workflow <code>ss-hygiene-entry-files-check.yml</code> runs on PRs/pushes touching <code>README.md</code>, <code>AGENTS.md</code>, <code>CLAUDE.md</code> or <code>docs/README.md</code>.</p>
+<h3 id="csp-exceptions-drift-check">CSP Exceptions Drift Check</h3>
+<p>Validates that every per-path CSP relaxation in <a href="https://github.com/hungovercoders/slopstopper/blob/main/worker/headers.json" rel="noopener noreferrer"><code>worker/headers.json</code></a> has a matching documented entry in <a href="../security/csp-exceptions.html"><code>docs/security/CSP_EXCEPTIONS.md</code></a>, and vice versa. Fails the build if either side has an entry the other lacks.</p>
+<p>The site ships a strict <code>default-src 'self'</code> CSP by default. When a page genuinely needs a vetted third-party widget (e.g. Giscus on <code>/feedback.html</code>), the exception must be declared in both files and SRI-pinned. This check keeps the two sources of truth in sync so CSP relaxations are never silent or undocumented.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:csp-exceptions</code></pre></div>
+<p>The workflow <code>ss-hygiene-csp-exceptions-check.yml</code> runs on PRs/pushes touching anything: the source is whatever <code>headers.source</code> names, and under <code>format: meta</code> the workflow builds the site first and reads every page's <code>&lt;meta&gt;</code> CSP.</p>
+<h3 id="privacy-statement">Privacy Statement</h3>
+<p>A site with no cookies and no analytics script still has a privacy statement to make: the host processes every visitor's IP (Cloudflare keeps aggregate traffic analytics for every zone, and per-request logs when <code>observability.enabled</code> is on in <code>wrangler.jsonc</code>), and so does every third-party origin the CSP lets a page reach. Three hungovercoders sites shipped without one and nothing noticed. This check reads what the repo says about its hosting and asks the page to say the same.</p>
+<p>It runs when the repo has a browser surface (profile <code>ui</code>) and host evidence: a wrangler config at the root or one directory down, a Netlify or Vercel config file, or <code>urls.production</code>. <code>api</code> and <code>library</code> drop it; with no evidence it skips. <strong>Fails unless:</strong></p>
+<ul>
+  <li>a privacy page exists: <code>privacy.page</code>, else the first file named privacy.html, privacy.md, privacy/index.*, privacy/page.* (Next), privacy/+page.svelte or privacy/+page.md in any source directory (dependency, build and hidden directories are never searched); this repo's is <code>app/privacy.html</code>, and a Starlight content page or a templated site page counts the same. <code>page: ''</code> or a bare <code>page:</code> opts out visibly</li>
+  <li>it names the host the config file implies (Cloudflare, Netlify, Vercel) and every name in <code>privacy.hosts</code></li>
+  <li>when wrangler turns Workers Logs on, it mentions logs</li>
+  <li>every third-party origin a fetch directive in <code>headers.source</code> allows (the same parse as the CSP exceptions check) is named: its hostname, or any label of it that identifies a service (<code>cdnjs</code> or <code>Cloudflare</code> for <code>cdnjs.cloudflare.com</code>, <code>GitHub</code> for <code>api.github.com</code>, <code>Google</code> for <code>fonts.gstatic.com</code>). This is what turns boilerplate into a true statement, and why a new embed is a change to the page in the same PR</li>
+  <li>it carries a real date, ISO or long form, so a stale statement shows its age</li>
+</ul>
+<p>Every rule reads the page's visible text: comments, tags and attributes are stripped first, so a `<code> or a </code>data-host=<code> does not count; a </code>&lt;time datetime="…"&gt;<code> is kept as a date. A </code>headers.source<code> that is set but does not exist skips the third-party rule with a note, and a built-HTML (</code>meta<code>) source missing in CI, an unknown </code>headers.format` or a file the adapter cannot parse is exit 2, the same rules the CSP exceptions check applies.</p>
+<p>The matching footer rule lives in the smoke test: every audited page must link to the statement (<code>SMOKE_PRIVACY_URL</code>, derived from <code>privacy.page</code> or set with <code>privacy.url</code>; <code>privacy.require_link: false</code> drops it).</p>
+<div class="codeblock codeblock--yaml" tabindex="0"><pre><code># .slopstopper.yml
+privacy:
+  page: auto            # repo path; '' opts out visibly, with the reason in a comment
+  url: auto             # privacy.html → /privacy.html, anything else → /privacy/
+  require_link: true
+  hosts: []             # extra names the page must carry</code></pre></div>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:privacy</code></pre></div>
+<p>Report: <code>.ss/reports/privacy/privacy-report.{md,json}</code>, each issue with the sentence to add. <a href="https://terminalofterror.com/privacy.html" rel="noopener noreferrer">terminalofterror.com's page</a> is the worked example of a cookieless site naming its host and the two origins its CSP allows; <a href="https://slopstopper.dev/privacy.html" rel="noopener noreferrer">slopstopper.dev's</a> adds a click-to-load embed. The workflow <code>ss-hygiene-privacy-check.yml</code> runs on every PR and push, since the inputs can live anywhere.</p>
+<h3 id="openapi-drift">OpenAPI Drift</h3>
+<p>The API-shaped analogue of the documentation-accuracy check. That one catches a doc referencing a file that moved; this one catches a spec that has stopped describing the API it documents, which is documentation that quietly became fiction on a different surface.</p>
+<p><strong>The only hygiene check that needs a URL</strong>, since drift means the spec measured against the thing it documents. So it is the one hygiene check <code>library</code> drops, and deliberately <strong>not</strong> part of <code>task ss:hygiene:test</code>, because that aggregate is what the pre-push hook runs and is all-static, so adding it would make every <code>git push</code> hit the network.</p>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Signal</th><th>What it means</th><th>Needs</th></tr></thead>
+  <tbody>
+    <tr><td>Served but not committed</td><td>the committed spec is stale against what is deployed</td><td><code>served_spec</code></td></tr>
+    <tr><td>Committed but not served</td><td>a route was removed and the spec wasn't updated, or the deploy is behind</td><td><code>served_spec</code></td></tr>
+    <tr><td>Documented path returns 404</td><td>the spec describes a route that isn't there</td><td>a URL</td></tr>
+    <tr><td>Documented path returns 5xx</td><td>the route exists but is broken</td><td>a URL</td></tr>
+  </tbody>
+</table></div>
+<p>The committed-vs-served comparison is the headline: it compares operation sets (method + path), not whole documents, so a reordered spec or a different <code>servers</code> block is not drift. The comparison needs no probing and no guessing, and it raises no false positives.</p>
+<p>Paths taking parameters (<code>/users/{id}</code>) are counted but never probed: a 404 from one could mean "route missing" or merely "no such record", and reporting both as failures would train people to ignore the check. A 405 proves the route exists and passes; only <code>GET</code> is sent. Detecting <em>undocumented</em> routes is out of scope because it needs framework-specific route introspection.</p>
+<p><strong>JSON specs only.</strong> <code>slopstopper-cli</code> ships no YAML parser (its only third-party dependency is <code>lizard</code>, for <code>hygiene:complexity</code>). A YAML spec is a graceful skip with that guidance rather than a failure, since most frameworks serve the JSON form at <code>/openapi.json</code>.</p>
+<div class="codeblock codeblock--yaml" tabindex="0"><pre><code># .slopstopper.yml
+api:
+  openapi:
+    spec:                 # URL or repo-relative JSON file; shared with security:dast
+    served_spec:          # URL the live API publishes its spec at
+    probe_paths: true     # probe parameterless documented paths
+    ignore_paths: []      # globs excluded from probing and comparison</code></pre></div>
+<p>With <code>api.openapi.spec</code> unset the check exits 0 with a note, because an unconfigured check is not a failing check.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:openapi -- https://api.example.com</code></pre></div>
+<p>Report: <code>.ss/reports/openapi/openapi-report.{md,json}</code>. Workflow: <code>ss-hygiene-openapi-check.yml</code>, resolving <code>urls.preview</code> on pull requests and <code>urls.production</code> on main, schedules, deployments and the Cloudflare dispatch like the API workflows. With no URL the committed-vs-served comparison still runs (it needs only <code>served_spec</code>); just the probes are skipped.</p>
+<h2 id="quick-reference">Quick Reference</h2>
+<p>Run all hygiene checks:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:test</code></pre></div>
+<p>Run individual checks:</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>task ss:hygiene:complexity        # Analyze code complexity
+task ss:hygiene:docs-size         # Monitor overall documentation size
+task ss:hygiene:entry-files       # Token budgets + explicit routes on AGENTS.md, README.md, CLAUDE.md, the map
+task ss:hygiene:docs-structure    # Every doc under docs/ has an explicit route
+task ss:hygiene:docs-accuracy     # Check for broken links and stale refs
+task ss:hygiene:csp-exceptions    # Validate CSP exceptions are fully documented
+task ss:hygiene:privacy           # The privacy page names the host and every third party the CSP allows</code></pre></div>
+<p><code>task ss:hygiene:test</code> runs everything above <strong>except</strong> <code>hygiene:openapi</code>, which needs a live API, so run that one separately with a URL.</p>
+<h2 id="routes">Routes</h2>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>When you are…</th><th>Do this</th></tr></thead>
+  <tbody>
+    <tr><td>setting up, editing or debugging the weekly agentic doc-updater (gh-aw)</td><td>Read <a href="doc-updater.html">DOC_UPDATER.md</a> for the required secret and setting, what it produces, and how to recompile after edits</td></tr>
+  </tbody>
+</table></div>
+<h2 id="when-to-run">When to Run</h2>
+<p><code>task ss:hygiene:test</code> before every push (the pre-push hook runs it); CI runs each check on the paths it watches. The thresholds keep code refactorable (complexity), keep every doc readable in one sitting (per-doc size and lines), and keep a typical task to zero reads beyond <code>AGENTS.md</code> (entry-file budgets, explicit routes). When one trips, move content deeper and route it; the <code>.ss/reports/</code> file for the check names what to move.</p>
+        </article>
+<nav class="doc-siblings" aria-label="In Hygiene">
+  <h2>In Hygiene</h2>
+  <ul>
+    <li><a href="index.html" aria-current="page">Hygiene</a></li>
+    <li><a href="doc-updater.html">Agentic Documentation Updater</a></li>
+  </ul>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/hygiene/README.md" rel="noopener noreferrer">docs/hygiene/README.md</a>; edit it there and the page follows.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../../copy.js" defer></script>
+</body>
+</html>

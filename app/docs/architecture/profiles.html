@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<!-- Generated from docs/architecture/PROFILES.md by scripts/docsite.py: edit the source, then `task contributing:docs:site`. -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project-shape profiles · Architecture | SlopStopper</title>
+    <meta name="description" content="Not every check applies to every repo. The nine browser-and-SEO reliability checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume HTML, a DOM and a public web surface. On an HTTP API they don&#x27;t quietly no-op. They build, serve and audit…">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBF5EC">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1612">
+    <meta name="author" content="SlopStopper">
+    <!-- nosemgrep: html.security.audit.missing-integrity.missing-integrity: <link rel="canonical"> declares URL identity for SEO; it loads no subresource so SRI is structurally inapplicable -->
+    <link rel="canonical" href="https://slopstopper.dev/docs/architecture/profiles.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://slopstopper.dev/docs/architecture/profiles.html">
+    <meta property="og:title" content="Project-shape profiles · Architecture | SlopStopper">
+    <meta property="og:description" content="Not every check applies to every repo. The nine browser-and-SEO reliability checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume HTML, a DOM and a public web surface. On an HTTP API they don&#x27;t quietly no-op. They build, serve and audit…">
+    <meta property="og:site_name" content="SlopStopper">
+    <meta property="og:image" content="https://slopstopper.dev/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Project-shape profiles · Architecture | SlopStopper">
+    <meta name="twitter:description" content="Not every check applies to every repo. The nine browser-and-SEO reliability checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume HTML, a DOM and a public web surface. On an HTTP API they don&#x27;t quietly no-op. They build, serve and audit…">
+    <meta name="twitter:image" content="https://slopstopper.dev/og-image.png">
+    <meta name="twitter:image:alt" content="SlopStopper: stop the slop. Deterministic feedback for AI-driven development.">
+
+    <script src="../../theme.js"></script>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+    <link rel="manifest" href="../../manifest.webmanifest">
+    <link rel="preload" href="../../fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="../../shared.css">
+    <link rel="stylesheet" href="../../lesson.css">
+    <link rel="stylesheet" href="../../docs.css">
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <header>
+        <a href="../../index.html" class="site-title">SlopStopper</a>
+        <nav aria-label="Main">
+            <a href="../../index.html" id="nav-home">Home</a>
+            <a href="../../features.html" id="nav-features">Features</a>
+            <a href="../../tools.html" id="nav-tools">Tools</a>
+            <a href="../../learn.html" id="nav-learn">Learn</a>
+            <a href="../../docs.html" id="nav-docs">Docs</a>
+            <a href="../../feedback.html" id="nav-feedback">Feedback</a>
+        </nav>
+        <div class="header-actions">
+            <a href="../../index.html#get-started" class="btn btn--primary nav-cta">Install →</a>
+            <a href="https://github.com/hungovercoders/slopstopper" class="btn btn--ghost btn--gh" rel="noopener noreferrer" aria-label="View SlopStopper on GitHub">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.11-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.12 3.06.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.35.78 1.05.78 2.12v3.14c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"/></svg>
+                <span class="btn__label">GitHub</span>
+            </a>
+            <button type="button" class="btn btn--ghost theme-toggle" aria-label="Switch theme">
+                <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+        </div>
+    </header>
+    <main id="main">
+        <section class="hero hero--lesson hero--doc">
+            <span class="kicker">📚 Docs · Architecture</span>
+            <h1>Project-shape profiles</h1>
+        </section>
+        <nav class="doc-crumbs" aria-label="Breadcrumb"><ol><li><a href="../../docs.html">Docs</a></li><li><a href="index.html">Architecture</a></li><li aria-current="page">Project-shape profiles</li></ol></nav>
+        <article class="lesson doc">
+<p>Not every check applies to every repo. The nine browser-and-SEO reliability checks (smoke, E2E, accessibility, Core Web Vitals, SEO, broken links, llms.txt, robots.txt, sitemap) assume HTML, a DOM and a public web surface. On an HTTP API they don't quietly no-op. They build, serve and audit nothing, and go red. On a library there is nothing to serve at all.</p>
+<p>A <strong>profile</strong> is a named preset for <code>workflows.disabled</code>: it says which workflows a repo of that shape shouldn't carry.</p>
+<div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
+  <thead><tr><th>Profile</th><th>Shape</th><th>Drops</th></tr></thead>
+  <tbody>
+    <tr><td><code>ui</code> (default)</td><td>Serves HTML to a browser</td><td>Nothing while the repo has an API. With no API found, the four API checks (api-health, api-latency, api-headers, OpenAPI drift) are left out until one appears</td></tr>
+    <tr><td><code>api</code></td><td>JSON/gRPC endpoints, no browser surface</td><td>The nine browser-and-SEO checks. Keeps the four API checks (api-health, api-latency, api-headers, OpenAPI drift), CSP exceptions (APIs still set response headers) and DAST, via ZAP's OpenAPI mode</td></tr>
+    <tr><td><code>library</code></td><td>Library, CLI or package; nothing deployed</td><td>The nine above, plus DAST, CSP exceptions and the four API checks, which is everything that needs a URL</td></tr>
+  </tbody>
+</table></div>
+<p><strong>DAST scans an API through ZAP's OpenAPI mode.</strong> The default scan is ZAP's <em>baseline</em>, which spiders a site from a root URL. That is right for an HTML surface and useless against a JSON API, which exposes no links to crawl. Setting <code>api.openapi.spec</code> switches the check to ZAP's API scan (<code>-f openapi</code>), which reads the spec and exercises the operations it declares. The scanned URL is passed as ZAP's <code>-O</code> host override, so a spec whose <code>servers</code> block names production can be run against a preview environment.</p>
+<p>Until a spec is configured the check skips rather than scanning nothing, under the same "unconfigured is not failing" contract as the other API checks. The workflow branches the same way: with a spec it audits a resolved URL (<code>urls.preview</code> on PRs, <code>urls.production</code> on main), and without one it keeps the original path of building the repo and serving it on <code>localhost:8080</code>.</p>
+<div class="codeblock codeblock--sh" data-copyable><pre><code>bash install.sh --profile api      # writes `profile: api` into .slopstopper.yml
+slopstopper profile show           # what this repo resolves to, and why
+slopstopper profile detect         # suggest one from the repo's contents
+slopstopper profile list           # the full mapping
+slopstopper profile disabled       # this repo's effective set, one per line (what install.sh and the Cloudflare trigger read)
+slopstopper profile show --json    # any of these as JSON, for a script or an agent</code></pre></div>
+<h2 id="design-decisions">Design decisions</h2>
+<p><strong>The config is the home, not the flag.</strong> <code>--profile</code> writes <code>profile:</code> into <code>.slopstopper.yml</code> and the installed workflow set is derived from that key on every run. The choice has to survive a re-run and be visible in review. That is the same reasoning as <code>workflows.disabled</code> itself, which exists so opting out isn't "delete the file and trust the marker".</p>
+<p><strong>A preset over the existing mechanism, not new machinery.</strong> A profile expands into the same disabled set that <code>workflows.disabled</code> already fed, resolved in one place (<a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/profiles.py" rel="noopener noreferrer"><code>profiles.effective_disabled()</code></a>):</p>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>effective = (profile.disables − workflows.enabled) ∪ workflows.disabled</code></pre></div>
+<p>So <code>slopstopper doctor</code> skipping a missing tool, <code>install.sh</code> deleting a workflow, and <code>slopstopper badges</code> (which globs what's on disk) all follow from the profile without knowing it exists. <code>workflows.enabled</code> is the escape hatch: an API that does serve a docs site can list <code>ss-reliability-broken-links-check.yml</code> and keep that one check. A profile only ever subtracts.</p>
+<p><strong>One mapping, two readers.</strong> The profile → workflow table lives in <a href="https://github.com/hungovercoders/slopstopper/blob/main/cli/slopstopper/data/profiles.json" rel="noopener noreferrer"><code>cli/slopstopper/data/profiles.json</code></a>. The CLI reads it through <code>slopstopper.profiles</code>, and <code>slopstopper install</code> (what <code>install.sh</code> hands over to) resolves the workflow set through the same module, so there is no second copy of the mapping to drift.</p>
+<p><strong>Detection suggests, never applies.</strong> <code>slopstopper profile detect</code> sniffs for framework configs, HTML, OpenAPI specs and server-framework dependencies, and <code>install.sh</code> prints the suggestion when it differs from the active profile. It never writes the key: a curl-piped install is non-interactive, and a wrong silent pick (checks quietly off) is worse than the default superset (checks visibly red). When signals conflict, UI wins for the same reason.</p>
+<p><strong>Profiles made <code>api</code> quiet before they made it covered.</strong> Subtraction removes checks that don't apply; it doesn't add the ones that should. The API-shaped analogues were a separate increment, not a gap in the mechanism, and have all landed: smoke → <a href="../reliability/index.html#api-health-check">api-health</a>, Core Web Vitals → <a href="../reliability/index.html#api-latency-check">api-latency</a>, CSP exceptions → <a href="../security/api-headers.html">api-headers</a>, docs-accuracy → <a href="../hygiene/index.html#openapi-drift">openapi</a>, DAST's spider → <a href="../security/dast.html">its OpenAPI scan mode</a>. Each is inert until configured. Under <code>ui</code> the four API checks ship only when the repo has an API: an OpenAPI/Swagger spec or proto file, a server-framework dependency, or an API check configured under <code>api.*</code> in <code>.slopstopper.yml</code> (<code>disables_without_api</code> in <code>cli/slopstopper/data/profiles.json</code>), so a static site doesn't run four jobs that check nothing and a UI with API routes still gets them without finding <code>workflows.enabled</code>. Re-run the installer after adding one to pick them up. Out of reach: detecting <em>undocumented</em> routes, which needs framework-specific route introspection.</p>
+        </article>
+<nav class="doc-siblings" aria-label="In Architecture">
+  <h2>In Architecture</h2>
+  <ul>
+    <li><a href="index.html">Architecture</a></li>
+    <li><a href="pr-feedback.html">PR feedback: one summary, compact detail</a></li>
+    <li><a href="profiles.html" aria-current="page">Project-shape profiles</a></li>
+    <li><a href="steward.html">slopstopper-steward: the org-wide operator</a></li>
+  </ul>
+</nav>
+        <p class="lesson-source">This page is rendered from <a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/architecture/PROFILES.md" rel="noopener noreferrer">docs/architecture/PROFILES.md</a>; edit it there and the page follows.</p>
+    </main>
+    <footer>
+        <p>SlopStopper is open source. <a href="https://github.com/hungovercoders/slopstopper" rel="noopener noreferrer">View the repository on GitHub</a>.</p>
+        <p class="footer-privacy">Hosted on Cloudflare, which keeps aggregate traffic statistics. No cookies, no tracking scripts, no per-request logs. <a href="../../privacy.html">Privacy</a></p>
+    </footer>
+    <script src="../../copy.js" defer></script>
+</body>
+</html>

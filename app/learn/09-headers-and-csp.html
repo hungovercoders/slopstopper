@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Generated from docs/learn/09-headers-and-csp.md by scripts/learnsite.py: edit the lesson, then `task contributing:learn:site`. -->
+<!-- Generated from docs/learn/09-headers-and-csp.md by scripts/learnsite.py: edit the source, then `task contributing:learn:site`. -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -46,6 +46,7 @@
             <a href="../features.html" id="nav-features">Features</a>
             <a href="../tools.html" id="nav-tools">Tools</a>
             <a href="../learn.html" id="nav-learn">Learn</a>
+            <a href="../docs.html" id="nav-docs">Docs</a>
             <a href="../feedback.html" id="nav-feedback">Feedback</a>
         </nav>
         <div class="header-actions">
@@ -238,8 +239,8 @@ git checkout app/_headers docs/security/CSP_EXCEPTIONS.md</code></pre></div>
 </details>
 <h2 id="going-further">Going further</h2>
 <ul>
-  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/CSP_EXCEPTIONS.md" rel="noopener noreferrer">CSP exceptions</a>: the pattern, the schema, computing an SRI hash, and how DAST treats documented paths</li>
-  <li><a href="https://github.com/hungovercoders/slopstopper/blob/main/docs/security/API_HEADERS.md" rel="noopener noreferrer">API headers and CORS</a>: every finding, which are hard failures, and the <code>api.headers</code> knobs</li>
+  <li><a href="../docs/security/csp-exceptions.html">CSP exceptions</a>: the pattern, the schema, computing an SRI hash, and how DAST treats documented paths</li>
+  <li><a href="../docs/security/api-headers.html">API headers and CORS</a>: every finding, which are hard failures, and the <code>api.headers</code> knobs</li>
   <li><code>headers.source</code> and <code>headers.format</code> in <code>.slopstopper.yml.example</code>, including <code>meta</code> for hosts that cannot send headers</li>
   <li>Lesson 10, where DAST looks at the same headers from the outside</li>
 </ul>
