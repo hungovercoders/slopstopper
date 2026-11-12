@@ -19,8 +19,8 @@ it serve? For every path in `pages.smoke` it loads the page in a real
 browser and asserts a 200, no JavaScript errors, and a load under five
 seconds, then checks the homepage links a stylesheet and, when the
 site has one, that the share image answers with the header that lets
-another site embed it. It is the check that runs hourly against
-production, because "it worked when we deployed" has a short shelf
+another site embed it. It is the check that runs every six hours
+against production, because "it worked when we deployed" has a short shelf
 life.
 
 `reliability:e2e` answers the second: can a visitor get around? From
@@ -218,7 +218,7 @@ green.
   reliability README: every assertion, the config, adding pages
 - [E2E journeys](../reliability/E2E.md): the four journeys in detail,
   what is skipped rather than failed, and adding your own
-- Lesson 17 for the hourly production run and the issue it opens when
+- Lesson 17 for the scheduled production run and the issue it opens when
   the site stops serving
 
 <details>

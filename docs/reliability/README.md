@@ -216,7 +216,7 @@ SMOKE_TEST_URL=https://your-site.example.com task ss:reliability:smoke
 
 ### Running in CI
 
-The canonical shape is the ready-to-run workflow the installer copies to [`.github/workflows/ss-reliability-smoke-tests.yml`](../../.github/workflows/ss-reliability-smoke-tests.yml). It runs on PRs, pushes to `main`, an hourly schedule, `deployment_status` events, and `workflow_dispatch` (which is how `ss-cloudflare-deployed.yml` runs it after a Workers Builds deploy); on failure it opens (or updates) a tracking issue, and on recovery it closes it. The job calls:
+The canonical shape is the ready-to-run workflow the installer copies to [`.github/workflows/ss-reliability-smoke-tests.yml`](../../.github/workflows/ss-reliability-smoke-tests.yml). It runs on PRs, pushes to `main`, a six-hourly schedule, `deployment_status` events, and `workflow_dispatch` (which is how `ss-cloudflare-deployed.yml` runs it after a Workers Builds deploy); on failure it opens (or updates) a tracking issue, and on recovery it closes it. The job calls:
 
 ```yaml
 - name: Run smoke tests
