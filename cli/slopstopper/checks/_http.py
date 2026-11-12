@@ -140,6 +140,39 @@ def head_ok(
         return False, f"{type(e).__name__}: {e}"
 
 
+class _NoRedirects(urllib.request.HTTPRedirectHandler):
+    """Hand a 3xx back as the answer. urllib then raises it as an HTTPError,
+    which `probe` reads like any other status."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+_PROBE_OPENER = urllib.request.build_opener(_NoRedirects())
+
+
+def probe(
+    url: str, user_agent: str, *, timeout: int = DEFAULT_TIMEOUT, label: str = "slopstopper"
+) -> tuple[int, dict[str, str]]:
+    """GET `url` without following a redirect. Returns (status, headers).
+
+    For a check whose question is what this URL itself answers: a 3xx, a
+    4xx and a 5xx are all answers, so none of them raises. A host that
+    does not answer raises URLError or TimeoutError, and a scheme other
+    than http/https raises ValueError before any request.
+    """
+    require_safe_url(url, label)
+    req = urllib.request.Request(url, headers={"User-Agent": user_agent}, method="GET")
+    try:
+        # The scheme is guarded above and no redirect is followed.
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+        with _PROBE_OPENER.open(req, timeout=timeout) as resp:  # nosec B310
+            return resp.status, dict(resp.headers.items())
+    except urllib.error.HTTPError as e:
+        with e:
+            return e.code, dict(e.headers.items())
+
+
 def join_url(url: str, base_path: str, path: str) -> str:
     """`https://host` + `/api/v1` + `health` → `https://host/api/v1/health`."""
     prefix = (base_path or "").rstrip("/")

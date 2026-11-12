@@ -56,6 +56,7 @@ GENERIC_WORKFLOWS: tuple[str, ...] = (
     "ss-reliability-api-health-check.yml",
     "ss-reliability-api-latency-check.yml",
     "ss-security-api-headers-check.yml",
+    "ss-security-https-check.yml",
     # The one hygiene check that needs a URL: drift means the spec measured
     # against the thing it documents, so it lives in layer 2 with the rest.
     "ss-hygiene-openapi-check.yml",

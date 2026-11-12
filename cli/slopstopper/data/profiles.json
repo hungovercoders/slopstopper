@@ -43,7 +43,7 @@
     },
     "library": {
       "summary": "A library, CLI or package with no deployed surface of any kind.",
-      "detail": "Drops everything that needs a URL: the nine browser-and-SEO checks, the privacy statement check, DAST and CSP exceptions, and the four API checks. hygiene:openapi is dropped here too, because it is the one hygiene check that needs a live API: drift means the spec against the thing it documents. What remains is the static-analysis layer, which is the whole of what applies to code that nothing serves.",
+      "detail": "Drops everything that needs a URL: the nine browser-and-SEO checks, the privacy statement check, DAST, the HTTPS redirect check and CSP exceptions, and the four API checks. hygiene:openapi is dropped here too, because it is the one hygiene check that needs a live API: drift means the spec against the thing it documents. What remains is the static-analysis layer, which is the whole of what applies to code that nothing serves.",
       "disables": [
         "ss-reliability-smoke-tests.yml",
         "ss-reliability-e2e-check.yml",
@@ -55,6 +55,7 @@
         "ss-reliability-robots-txt-check.yml",
         "ss-reliability-sitemap-check.yml",
         "ss-security-dast-check.yml",
+        "ss-security-https-check.yml",
         "ss-hygiene-csp-exceptions-check.yml",
         "ss-hygiene-privacy-check.yml",
         "ss-reliability-api-health-check.yml",

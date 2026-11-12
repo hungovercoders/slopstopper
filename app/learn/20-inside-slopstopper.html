@@ -76,8 +76,8 @@
 <h2 id="steps">Steps</h2>
 <h3 id="1-read-the-registry">1. Read the registry</h3>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>sed -n '/^REGISTRY/,/^}/p' cli/slopstopper/checks/__init__.py | grep -c '": '</code></pre></div>
-<div class="codeblock codeblock--out" tabindex="0"><pre><code>23</code></pre></div>
-<p>Twenty-three checks, each a <code>&lt;category&gt;:&lt;name&gt;</code> key mapped to a module's <code>run</code>. The key is what <code>slopstopper run</code> and the <code>task ss:*</code> shims use, so this dictionary is the one list every other surface is checked against.</p>
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>26</code></pre></div>
+<p>Twenty-six checks, each a <code>&lt;category&gt;:&lt;name&gt;</code> key mapped to a module's <code>run</code>. The key is what <code>slopstopper run</code> and the <code>task ss:*</code> shims use, so this dictionary is the one list every other surface is checked against.</p>
 <h3 id="2-add-a-check-to-the-registry-and-nothing-else">2. Add a check to the registry and nothing else</h3>
 <p>A copy of the smoke check under a new name, registered in the dictionary. This is how far a hurried pull request gets.</p>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>sed 's/smoke/probe/g; s/Smoke/Probe/g; s/SMOKE/PROBE/g' cli/slopstopper/checks/smoke.py &gt; cli/slopstopper/checks/probe.py
@@ -152,7 +152,7 @@ task contributing:test -- -k registration -o addopts= -q</code></pre></div>
 <p><strong>Talking points.</strong></p>
 <ol>
   <li>Why: the change map as prose did not fail a build; now it is a test keyed off the registry.</li>
-  <li>The registry; twenty-three keys; the shape every check shares and the licence boundary.</li>
+  <li>The registry; twenty-six keys; the shape every check shares and the licence boundary.</li>
   <li>Copy smoke, register it; seven failures, each naming a surface.</li>
   <li>The surfaces a test cannot cover: the site, the runbook, the skills.</li>
   <li>Remove it; green. The conventions: commits, pins, the hook, budgets.</li>

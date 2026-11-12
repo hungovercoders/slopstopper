@@ -123,9 +123,9 @@ sed -n '/^    steps:/,$p' .github/workflows/ss-hygiene-entry-files-check.yml | g
 </ul>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>grep -l "cron:" .github/workflows/ss-*.yml | wc -l
 grep -n "cron:" .github/workflows/ss-reliability-smoke-tests.yml</code></pre></div>
-<div class="codeblock codeblock--out" tabindex="0"><pre><code>12
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>13
 19:    - cron: '17 */6 * * *'</code></pre></div>
-<p>Twelve of the workflows this repo carries also run on a schedule, so a site that breaks between pushes is noticed; smoke is the most frequent, every six hours.</p>
+<p>Thirteen of the workflows this repo carries also run on a schedule, so a site that breaks between pushes is noticed; smoke is the most frequent, every six hours.</p>
 <h2 id="checkpoint">Checkpoint</h2>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>grep -h "uses: " .github/workflows/ss-*.yml | grep -v "./.github/actions" | grep -v '@[0-9a-f]\{40\}' | wc -l</code></pre></div>
 <div class="codeblock codeblock--out" tabindex="0"><pre><code>0</code></pre></div>

@@ -93,6 +93,7 @@
                         <li><strong>Secrets.</strong> Gitleaks scans every commit for accidentally committed credentials</li>
                         <li><strong>Dependencies.</strong> Trivy checks every dependency for known CVEs</li>
                         <li><strong>API Headers &amp; CORS.</strong> Audits a JSON API's response headers and CORS policy, such as a wildcard origin sent with credentials</li>
+                        <li><strong>HTTPS redirect &amp; HSTS.</strong> Asks the deployed site whether plain <code>http://</code> redirects to https and whether the https response sends <code>Strict-Transport-Security</code></li>
                         <li><strong>Licences.</strong> Every resolved dependency's licence against your allowlist; the dependency review judges what each PR adds</li>
                     </ul>
                     <a class="card-link" href="docs/security/index.html">Learn more about Security →</a>
@@ -725,8 +726,8 @@
                 <figure class="gh-comment">
                     <div class="gh-comment__head"><span class="gh-comment__avatar" aria-hidden="true"></span><strong>github-actions</strong> <span class="gh-comment__bot">bot</span> commented</div>
                     <div class="gh-comment__body">
-                        <p class="gh-comment__title">✅ SlopStopper: all 23 checks passed</p>
-                        <p>🔒 Security: API Headers · DAST · Dependency CVEs · Dependency Review · SAST · Secrets</p>
+                        <p class="gh-comment__title">✅ SlopStopper: all 24 checks passed</p>
+                        <p>🔒 Security: API Headers · DAST · Dependency CVEs · Dependency Review · HTTPS Redirect · SAST · Secrets</p>
                         <p>🧹 Hygiene: Auto-label PRs · Complexity · Docs Accuracy · Docs Size · Docs Structure · Entry Files · OpenAPI Drift</p>
                         <p>✅ Reliability: Accessibility · API Health · API Latency · Broken Links · Core Web Vitals · llms.txt · robots.txt · SEO · Sitemap · Smoke</p>
                         <p class="gh-comment__sub">head <code>75d1b28</code> · updated 2026-10-04 14:50 UTC</p>

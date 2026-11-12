@@ -212,6 +212,7 @@ CHECK_WORKFLOWS: dict[str, str] = {
     "reliability:e2e": "ss-reliability-e2e-check.yml",
     "security:api-headers": "ss-security-api-headers-check.yml",
     "security:dast": "ss-security-dast-check.yml",
+    "security:https": "ss-security-https-check.yml",
     "security:sast": "ss-security-sast-check.yml",
     "security:secrets": "ss-security-secrets-check.yml",
     "security:vulnerability:all": "ss-security-vulnerability-all-check.yml",

@@ -63,6 +63,7 @@ DYNAMIC_LABELS = (
     ("ss-reliability-api-health-check.yml", "API Health"),
     ("ss-reliability-api-latency-check.yml", "API Latency"),
     ("ss-security-api-headers-check.yml", "API Headers"),
+    ("ss-security-https-check.yml", "HTTPS Redirect"),
     ("ss-hygiene-openapi-check.yml", "OpenAPI Drift"),
 )
 

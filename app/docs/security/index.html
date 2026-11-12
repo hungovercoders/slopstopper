@@ -80,6 +80,7 @@
     <tr><td>judging a dependency's licence, exempting one, or when the inventory says the tree is not installed</td><td>Read <a href="licences.html">LICENCES.md</a> for what each ecosystem is read from, the purl exemptions, dev scope and the exit-2 cases</td></tr>
     <tr><td>handling a Gitleaks finding or allowlisting a false positive</td><td>Read <a href="secrets.html">SECRETS.md</a> for the quick start, the allowlist format and what to do the moment a real secret is detected</td></tr>
     <tr><td>adding a third-party script, widget or any external resource to a page</td><td>Read <a href="csp-exceptions.html">CSP_EXCEPTIONS.md</a> first for the strict-default + per-path exception pattern and the live list</td></tr>
+    <tr><td>a site that answers plain <code>http://</code> with a page, or sends no HSTS</td><td>Read <a href="https.html">HTTPS.md</a> for the two requests, the findings, the Cloudflare and <code>_headers</code> fixes and the knob</td></tr>
     <tr><td>auditing CORS, HSTS or <code>nosniff</code> on a JSON API</td><td>Read <a href="api-headers.html">API_HEADERS.md</a> for the findings, the hard-fail split, knobs and commands</td></tr>
   </tbody>
 </table></div>
@@ -90,6 +91,7 @@
   <tbody>
     <tr><td><code>security:api-headers</code></td><td><code>task ss:security:api-headers</code></td><td><code>ss-security-api-headers-check.yml</code></td><td>API response-header + CORS policy audit (in-CLI implementation).</td></tr>
     <tr><td><code>security:dast</code></td><td><code>task ss:security:dast</code></td><td><code>ss-security-dast-check.yml</code></td><td>Dynamic Application Security Testing (OWASP ZAP).</td></tr>
+    <tr><td><code>security:https</code></td><td><code>task ss:security:https</code></td><td><code>ss-security-https-check.yml</code></td><td>HTTPS redirect + HSTS audit (in-CLI implementation).</td></tr>
     <tr><td><code>security:licences</code></td><td><code>task ss:security:licences</code></td><td><code>ss-security-licences-check.yml</code></td><td>Licence inventory over the full resolved dependency tree.</td></tr>
     <tr><td><code>security:sast</code></td><td><code>task ss:security:sast</code></td><td><code>ss-security-sast-check.yml</code></td><td>Static Application Security Testing (Semgrep wrapper).</td></tr>
     <tr><td><code>security:secrets</code></td><td><code>task ss:security:secrets</code></td><td><code>ss-security-secrets-check.yml</code></td><td>Secrets detection (Gitleaks wrapper).</td></tr>
@@ -106,6 +108,7 @@
     <tr><td><code>security:licences</code></td><td>stdlib Python</td><td>a resolved dependency whose licence is outside <code>.github/dependency-review-config.yml</code></td></tr>
     <tr><td><code>security:secrets</code></td><td>Gitleaks</td><td>any secret, in files or git history</td></tr>
     <tr><td><code>security:api-headers</code></td><td>stdlib Python</td><td>credentialed CORS wildcards, missing HSTS / <code>nosniff</code></td></tr>
+    <tr><td><code>security:https</code></td><td>stdlib Python</td><td>plain <code>http://</code> that does not redirect to https, missing HSTS</td></tr>
     <tr><td><code>hygiene:csp-exceptions</code></td><td>stdlib Python</td><td>drift between <code>worker/headers.json</code> and the exceptions doc</td></tr>
   </tbody>
 </table></div>
@@ -132,6 +135,7 @@
     <li><a href="api-headers.html">API Headers &amp; CORS</a></li>
     <li><a href="csp-exceptions.html">CSP exceptions</a></li>
     <li><a href="dast.html">Dynamic Application Security Testing (DAST)</a></li>
+    <li><a href="https.html">HTTPS Redirect and HSTS</a></li>
     <li><a href="licences.html">Licence Inventory</a></li>
     <li><a href="sast.html">Static Application Security Testing (SAST)</a></li>
     <li><a href="secrets.html">Secrets Detection</a></li>

@@ -60,7 +60,7 @@ slopstopper install --profile ui --no-topic | grep -v '^ ' | grep -E 'installed|
 ✅ Taskfile.yml installed
 ℹ️  .slopstopper.yml: profile already 'ui'
 ✅ slopstopper-cli <this CLI's version> pinned in mise.toml
-✅ 27 workflow(s) installed, 0 refreshed, 0 previously-deleted skipped
+✅ 28 workflow(s) installed, 0 refreshed, 0 previously-deleted skipped
 ✅ composite actions refreshed under .github/actions/ (ss-playwright, ss-resolve-url, ss-setup)
 ℹ️  profile 'ui': 4 workflow(s) not installed for this repo shape (0 removed from a previous install)
 ✅ Added devDependencies: markdownlint-cli
@@ -146,7 +146,7 @@ cat .ss/.installed-from
 ```
 
 ```
-27
+28
 <this CLI's version>
 ```
 
@@ -282,11 +282,11 @@ slopstopper profile show
 git checkout .gitignore .slopstopper.yml package.json && git clean -fdq && git config --unset core.hooksPath
 ```
 
-The installer line reads `15 workflow(s) installed` and `16 workflow(s)
-not installed`, and `profile show` lists those sixteen with the reason
+The installer line reads `15 workflow(s) installed` and `17 workflow(s)
+not installed`, and `profile show` lists those seventeen with the reason
 `(profile)`: the nine
-browser checks, DAST, CSP exceptions, the privacy statement and the four
-API checks, which is everything that needs a URL or a served page. What
+browser checks, DAST, the HTTPS redirect check, CSP exceptions, the
+privacy statement and the four API checks, which is everything that needs a URL or a served page. What
 remains is the static layer: SAST, secrets, dependency CVEs, review and
 licences, complexity, the four docs checks. The last line puts the demo
 back, including the `profile: library` the flag wrote into its config.

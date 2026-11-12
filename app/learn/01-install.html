@@ -85,7 +85,7 @@
 ✅ Taskfile.yml installed
 ℹ️  .slopstopper.yml: profile already 'ui'
 ✅ slopstopper-cli &lt;this CLI's version&gt; pinned in mise.toml
-✅ 27 workflow(s) installed, 0 refreshed, 0 previously-deleted skipped
+✅ 28 workflow(s) installed, 0 refreshed, 0 previously-deleted skipped
 ✅ composite actions refreshed under .github/actions/ (ss-playwright, ss-resolve-url, ss-setup)
 ℹ️  profile 'ui': 4 workflow(s) not installed for this repo shape (0 removed from a previous install)
 ✅ Added devDependencies: markdownlint-cli
@@ -135,7 +135,7 @@
 <p>And <code>.ss/.workflows-installed</code> is the installer's memory: it lists the workflows it wrote, so a workflow you delete on purpose stays deleted on the next refresh (remove its line there to have it back). <code>.ss/.installed-from</code> names the version that wrote everything.</p>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>wc -l &lt; .ss/.workflows-installed
 cat .ss/.installed-from</code></pre></div>
-<div class="codeblock codeblock--out" tabindex="0"><pre><code>27
+<div class="codeblock codeblock--out" tabindex="0"><pre><code>28
 &lt;this CLI's version&gt;</code></pre></div>
 <h3 id="3-see-what-the-profile-decided">3. See what the profile decided</h3>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper profile show</code></pre></div>
@@ -195,7 +195,7 @@ git config --unset core.hooksPath</code></pre></div>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper install --profile library --no-topic | grep 'workflow(s)'
 slopstopper profile show
 git checkout .gitignore .slopstopper.yml package.json &amp;&amp; git clean -fdq &amp;&amp; git config --unset core.hooksPath</code></pre></div>
-<p>The installer line reads <code>15 workflow(s) installed</code> and <code>16 workflow(s) not installed</code>, and <code>profile show</code> lists those sixteen with the reason <code>(profile)</code>: the nine browser checks, DAST, CSP exceptions, the privacy statement and the four API checks, which is everything that needs a URL or a served page. What remains is the static layer: SAST, secrets, dependency CVEs, review and licences, complexity, the four docs checks. The last line puts the demo back, including the <code>profile: library</code> the flag wrote into its config.</p>
+<p>The installer line reads <code>15 workflow(s) installed</code> and <code>17 workflow(s) not installed</code>, and <code>profile show</code> lists those seventeen with the reason <code>(profile)</code>: the nine browser checks, DAST, the HTTPS redirect check, CSP exceptions, the privacy statement and the four API checks, which is everything that needs a URL or a served page. What remains is the static layer: SAST, secrets, dependency CVEs, review and licences, complexity, the four docs checks. The last line puts the demo back, including the <code>profile: library</code> the flag wrote into its config.</p>
   </div>
 </details>
 <h2 id="going-further">Going further</h2>
