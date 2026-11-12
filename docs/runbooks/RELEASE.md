@@ -1,18 +1,20 @@
 # Cutting a release
 
-How a slopstopper-cli release is cut: two GitHub workflows take a merged Release PR to a tagged GitHub Release and a signed PyPI publish, with no version bump, changelog edit or tag pushed by hand. The two workflows:
+How a slopstopper-cli release is cut: three GitHub workflows take Conventional Commits on `main` to a tagged GitHub Release and a signed PyPI publish, with no version bump, changelog edit or tag pushed by hand. The three workflows:
 
 1. [`release-please.yml`](../../.github/workflows/release-please.yml) watches `main` for [Conventional Commit](https://www.conventionalcommits.org/) pushes and maintains a perpetual **Release PR** that regenerates [`CHANGELOG.md`](../../CHANGELOG.md), bumps `cli/pyproject.toml` `version` and `cli/slopstopper/__init__.py` `__version__`. Merging it creates the matching `vX.Y.Z` tag + GitHub Release with notes.
 2. [`ss-release.yml`](../../.github/workflows/ss-release.yml) fires on that tag push, builds the wheel + sdist, signs them with Sigstore build-provenance, uploads to the GitHub Release, and publishes to PyPI via the OIDC Trusted Publisher flow.
 
-End-to-end, **no human edits a CHANGELOG, bumps a version, or pushes a tag**. The only manual step is reviewing and merging the Release PR when you want the next version cut.
+3. [`release-weekly.yml`](../../.github/workflows/release-weekly.yml) merges the open Release PR every Tuesday at 09:23 UTC when its checks are green, so a fix on `main` is released within a week whoever is watching.
+
+End-to-end, **no human edits a CHANGELOG, bumps a version, or pushes a tag**. Merging the Release PR by hand is how to cut a version sooner than Tuesday.
 
 ## The normal flow
 
 1. **Open PRs with Conventional Commit messages.** `feat:` for new behaviour, `fix:` for bug fixes, `chore:`/`docs:`/`refactor:` for everything else. Use `feat!:` or a `BREAKING CHANGE:` footer for breaking changes.
 2. **Merge PRs into `main` as usual.** Squash-merging keeps the commit titles clean, which matters because release-please reads the squash subject line.
 3. **Watch the Release PR build up.** `release-please.yml` runs after every push to `main` and either opens a new Release PR or amends the existing one to reflect the latest commits. Title shape: `chore(main): release X.Y.Z`. The PR body is a preview of the CHANGELOG section it will write.
-4. **Merge the Release PR when you want to cut.** That push creates the `vX.Y.Z` tag + GitHub Release with the generated notes, which immediately fires `ss-release.yml`.
+4. **Merge the Release PR when you want to cut, or leave it for Tuesday.** That push creates the `vX.Y.Z` tag + GitHub Release with the generated notes, which immediately fires `ss-release.yml`.
 5. **Watch `ss-release.yml` finish.** Roughly 30 seconds. It verifies versions, builds, attests, uploads artifacts to the already-created GitHub Release, and publishes to PyPI.
 6. **Verify** with the same checks each time:
 
@@ -21,6 +23,20 @@ End-to-end, **no human edits a CHANGELOG, bumps a version, or pushes a tag**. Th
    gh release download vX.Y.Z --pattern '*.whl'
    gh attestation verify slopstopper_cli-X.Y.Z-py3-none-any.whl --owner hungovercoders
    ```
+
+## The weekly release
+
+`release-weekly.yml` runs on a schedule and on `workflow_dispatch`, and does one thing: finds the open PR labelled `autorelease: pending` and squash-merges it.
+
+| It finds | It does |
+|---|---|
+| No Release PR | Passes with a notice. Nothing but `chore:`/`docs:` reached `main`, so there is nothing to release |
+| A Release PR with every check green | Merges it at the commit it checked. release-please then tags and `ss-release.yml` publishes |
+| Checks still running | Waits up to 30 minutes, then gives up until the next run |
+| A Release PR that is a draft | Passes with a notice and merges nothing |
+| A failed or cancelled check | Fails the run and merges nothing. Fix `main`, let release-please rewrite the PR, then re-run the workflow or merge by hand |
+
+It merges with the release bot's App token, the one `release-please.yml` uses, because a merge made with `GITHUB_TOKEN` pushes a commit that starts no workflow and release-please would never tag it. To hold a release back, convert the Release PR to a draft; to stop the schedule, disable the workflow in the Actions tab.
 
 ## Bumping rules
 
