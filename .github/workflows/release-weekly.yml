@@ -1,0 +1,92 @@
+name: SlopStopper · Weekly Release
+
+# Merges the open Release PR once a week, so a fix on main reaches adopters
+# without anyone remembering to cut it. release-please.yml keeps that PR
+# current after every push; merging it is what tags the release and fires
+# ss-release.yml, and nothing prompted that merge: 0.30.0 held a fix
+# adopters needed for five days.
+#
+# A week with nothing to release has no Release PR, and the run says so and
+# passes. A Release PR with a failing check is left alone and the run
+# fails, so a red release is looked at, not shipped. Merging the PR by
+# hand at any time is still how to cut a release sooner, and converting
+# it to a draft holds it back.
+#
+# The merge is made with the release bot's App token, the one
+# release-please.yml uses: a merge by GITHUB_TOKEN pushes a commit that
+# starts no workflow, so release-please would never tag it.
+# Docs: docs/runbooks/RELEASE.md.
+
+on:
+  schedule:
+    # Tuesday 09:23 UTC: off the hour, and early in a working week.
+    - cron: '23 9 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-weekly
+  cancel-in-progress: false
+
+jobs:
+  merge-release-pr:
+    name: Merge the Release PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mint App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_PRIVATE_KEY }}
+
+      - name: Merge the Release PR if its checks are green
+        # The wait is for a Release PR that release-please rewrote minutes
+        # ago: its checks get this long to finish before the run gives up.
+        timeout-minutes: 30
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          pr="$(gh pr list --state open --base main --label 'autorelease: pending' \
+            --json number,title,headRefOid,isDraft --jq '.[0] // empty')"
+          if [ -z "$pr" ]; then
+            echo "::notice::No Release PR is open, so there is nothing to release this week."
+            exit 0
+          fi
+          number="$(jq -r .number <<<"$pr")"
+          title="$(jq -r .title <<<"$pr")"
+          sha="$(jq -r .headRefOid <<<"$pr")"
+          echo "Release PR #$number: $title (${sha:0:7})"
+          if [ "$(jq -r .isDraft <<<"$pr")" = "true" ]; then
+            echo "::notice::Release PR #$number is a draft, which is how a release is held back, so it was left alone."
+            exit 0
+          fi
+
+          while :; do
+            # `gh pr checks` exits non-zero while a check is pending or
+            # failed, with the JSON still printed; no JSON at all is the
+            # real error.
+            checks="$(gh pr checks "$number" --json name,bucket || true)"
+            if ! jq -e 'type == "array" and length > 0' <<<"$checks" >/dev/null 2>&1; then
+              echo "::error::Could not read the checks on Release PR #$number, so it was not merged."
+              exit 1
+            fi
+            failed="$(jq -r '[.[] | select(.bucket == "fail" or .bucket == "cancel") | .name] | join(", ")' <<<"$checks")"
+            pending="$(jq '[.[] | select(.bucket == "pending")] | length' <<<"$checks")"
+            if [ -n "$failed" ]; then
+              echo "::error::Release PR #$number is not green ($failed), so it was not merged. Fix main, let release-please rewrite the PR, then re-run this workflow or merge the PR by hand."
+              exit 1
+            fi
+            [ "$pending" -eq 0 ] && break
+            echo "$pending check(s) still running on #$number; looking again in a minute."
+            sleep 60
+          done
+
+          # --match-head-commit: if release-please rewrote the PR while this
+          # run waited, the merge is refused and next week's run takes it.
+          gh pr merge "$number" --squash --match-head-commit "$sha"
+          echo "::notice::Merged Release PR #$number ($title). release-please tags it and ss-release.yml publishes."
