@@ -4,6 +4,21 @@ All notable changes to **slopstopper-cli** are documented here. The format follo
 
 The release workflow (`.github/workflows/ss-release.yml`) reads the section matching the pushed tag and posts it as the GitHub Release notes. To cut a release: bump `version` in `cli/pyproject.toml` and `__version__` in `cli/slopstopper/__init__.py`, move the `## [Unreleased]` block down to a new `## [X.Y.Z] - YYYY-MM-DD`, push a `vX.Y.Z` tag.
 
+## [0.30.0](https://github.com/hungovercoders/slopstopper/compare/v0.29.0...v0.30.0) (2026-11-12)
+
+
+### Features
+
+* **security:** check the HTTP to HTTPS redirect and HSTS on a deployed site ([#615](https://github.com/hungovercoders/slopstopper/issues/615)) ([8f328e2](https://github.com/hungovercoders/slopstopper/commit/8f328e2d4ca23a81f1ce39f35e74e73cef154fa3))
+* **site:** dark theme, calmer light theme, two-column hero, and tabbed Features and Tools ([#597](https://github.com/hungovercoders/slopstopper/issues/597)) ([85da83b](https://github.com/hungovercoders/slopstopper/commit/85da83b943e03323e78867503e3d47531479226a))
+* **site:** render the adopter docs as pages under /docs ([#600](https://github.com/hungovercoders/slopstopper/issues/600)) ([c07db6c](https://github.com/hungovercoders/slopstopper/commit/c07db6ccad38cd36d5d1c212901775ccbc2a24b9))
+
+
+### Bug Fixes
+
+* **reliability:** install a Playwright that knows Ubuntu 26.04 ([#612](https://github.com/hungovercoders/slopstopper/issues/612)) ([87fd75e](https://github.com/hungovercoders/slopstopper/commit/87fd75e0717cd3a1193a37e1df1f56aeb95279a1))
+* **worker:** send Strict-Transport-Security on every response ([#611](https://github.com/hungovercoders/slopstopper/issues/611)) ([9038227](https://github.com/hungovercoders/slopstopper/commit/9038227538769a9d8b997ebe667c4dbf6066da46))
+
 ## [0.29.0](https://github.com/hungovercoders/slopstopper/compare/v0.28.0...v0.29.0) (2026-11-03)
 
 
