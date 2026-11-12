@@ -107,7 +107,8 @@ def test_main_accepts_production_url_with_ipv6_query_and_fragment(tmp_path):
 
 def _dispatch(tmp_path, production: str, refuse: str = "", disabled: str = ""):
     for wf in ["ss-reliability-smoke-tests.yml", "ss-reliability-seo-check.yml",
-               "ss-reliability-api-health-check.yml", "ss-security-dast-check.yml"]:
+               "ss-reliability-api-health-check.yml", "ss-security-dast-check.yml",
+               "ss-security-https-check.yml"]:
         (tmp_path / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
         (tmp_path / ".github" / "workflows" / wf).write_text("")
     rc, _, log = _sh(tmp_path, "Dispatch the URL-driven checks",
@@ -120,11 +121,12 @@ def test_a_refused_dispatch_does_not_drop_the_rest(tmp_path):
     rc, ran, log = _dispatch(tmp_path, "true", refuse="ss-reliability-seo-check.yml")
     assert rc == 1
     assert ran == ["run", "ss-reliability-smoke-tests.yml", "run", "ss-reliability-seo-check.yml",
-                   "run", "ss-reliability-api-health-check.yml", "run", "ss-security-dast-check.yml"]
+                   "run", "ss-reliability-api-health-check.yml", "run", "ss-security-dast-check.yml",
+                   "run", "ss-security-https-check.yml"]
     assert "::warning::ss-reliability-seo-check.yml was not dispatched" in log
 
 
-def test_disabled_and_missing_workflows_are_not_dispatched_and_dast_is_production_only(tmp_path):
+def test_disabled_and_missing_workflows_are_not_dispatched_and_dast_and_https_are_production_only(tmp_path):
     rc, ran, log = _dispatch(tmp_path, "false", disabled="ss-reliability-api-health-check.yml")
     assert rc == 0, log
     assert ran == ["run", "ss-reliability-smoke-tests.yml", "run", "ss-reliability-seo-check.yml"]

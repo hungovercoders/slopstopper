@@ -46,6 +46,6 @@ HTTPS_TEST_URL=https://your-site.example.com task ss:security:https
 
 Report: `.ss/reports/https/https-report.{md,json}`.
 
-In CI the workflow audits `urls.preview` on pull requests and `urls.production` on pushes to `main`, the daily schedule, `deployment_status` events and the Cloudflare post-deploy dispatch. It never builds and serves the repo, because the redirect and the header come from the edge. With neither URL configured it skips with a notice.
+In CI the workflow audits `urls.preview` on pull requests and `urls.production` on pushes to `main`, the daily schedule and `deployment_status` events. The Cloudflare post-deploy dispatch runs it against production only: a `workers.dev` preview answers plain HTTP with the page and has no force-HTTPS setting, so point `urls.preview` at a preview host only if that host redirects. It never builds and serves the repo, because the redirect and the header come from the edge. With neither URL configured it skips with a notice.
 
 Env var: `HTTPS_TEST_URL` (base URL).

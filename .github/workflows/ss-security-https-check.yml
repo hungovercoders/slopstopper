@@ -6,7 +6,7 @@ name: SlopStopper · HTTPS Redirect Check
 # works in a browser that remembers the https URL and fails for a link
 # that starts `http://`. Triggers: PR, push to main, daily schedule,
 # `deployment_status` events, and a dispatch from ss-cloudflare-deployed.yml
-# after a Workers Builds deploy. Emits a rolling PR comment. The workflow
+# after a Workers Builds deploy to production. Emits a rolling PR comment. The workflow
 # fails on a missing redirect or header. There is no separate main-branch
 # issue because the exit code is the signal.
 # Docs: docs/security/HTTPS.md.

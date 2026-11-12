@@ -103,7 +103,7 @@ task ss:security:https -- https://your-site.example.com --no-require-hsts
 
 HTTPS_TEST_URL=https://your-site.example.com task ss:security:https</code></pre></div>
 <p>Report: <code>.ss/reports/https/https-report.{md,json}</code>.</p>
-<p>In CI the workflow audits <code>urls.preview</code> on pull requests and <code>urls.production</code> on pushes to <code>main</code>, the daily schedule, <code>deployment_status</code> events and the Cloudflare post-deploy dispatch. It never builds and serves the repo, because the redirect and the header come from the edge. With neither URL configured it skips with a notice.</p>
+<p>In CI the workflow audits <code>urls.preview</code> on pull requests and <code>urls.production</code> on pushes to <code>main</code>, the daily schedule and <code>deployment_status</code> events. The Cloudflare post-deploy dispatch runs it against production only: a <code>workers.dev</code> preview answers plain HTTP with the page and has no force-HTTPS setting, so point <code>urls.preview</code> at a preview host only if that host redirects. It never builds and serves the repo, because the redirect and the header come from the edge. With neither URL configured it skips with a notice.</p>
 <p>Env var: <code>HTTPS_TEST_URL</code> (base URL).</p>
         </article>
 <nav class="doc-siblings" aria-label="In Security">
