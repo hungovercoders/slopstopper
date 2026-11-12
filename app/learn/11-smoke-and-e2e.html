@@ -70,7 +70,7 @@
 <p><strong>Goal.</strong> Serve the demo, run the two browser checks that prove it works for a visitor, break each one the way a real change would, and read what the browser saw.</p>
 <h2 id="why-these-checks">Why these checks</h2>
 <p>A green build is not a working site. The deploy can succeed and serve a page with a JavaScript error that blanks it, a stylesheet that 404s, a share image that social networks cannot fetch, or a navigation link to a page that was renamed last week. None of that is visible to the static checks, because all of it is about what a browser gets back.</p>
-<p><code>reliability:smoke</code> answers the first question after any deploy: does it serve? For every path in <code>pages.smoke</code> it loads the page in a real browser and asserts a 200, no JavaScript errors, and a load under five seconds, then checks the homepage links a stylesheet and, when the site has one, that the share image answers with the header that lets another site embed it. It is the check that runs hourly against production, because "it worked when we deployed" has a short shelf life.</p>
+<p><code>reliability:smoke</code> answers the first question after any deploy: does it serve? For every path in <code>pages.smoke</code> it loads the page in a real browser and asserts a 200, no JavaScript errors, and a load under five seconds, then checks the homepage links a stylesheet and, when the site has one, that the share image answers with the header that lets another site embed it. It is the check that runs every six hours against production, because "it worked when we deployed" has a short shelf life.</p>
 <p><code>reliability:e2e</code> answers the second: can a visitor get around? From every path in <code>pages.e2e</code> it walks the primary navigation and asserts each destination answers, has a heading and still carries the nav; follows every in-page anchor to an element that exists; toggles every disclosure widget open and closed; and presses the back button. It names no selector of this site, so it runs unchanged on any site with a <code>&lt;nav&gt;</code>.</p>
 <p>Both are bundled Playwright specs inside the CLI's wheel, staged next to your <code>node_modules</code> on each run. Exit 0 is every test passed, 1 is a test failed, and 2 is the suite never ran to a verdict: no browser, no <code>npx</code>, a config error.</p>
 <h2 id="you-will-need">You will need</h2>
@@ -149,7 +149,7 @@ echo "$out" | grep 'passed'</code></pre></div>
 <ul>
   <li><a href="../docs/reliability/index.html#smoke-tests">Smoke tests</a> in the reliability README: every assertion, the config, adding pages</li>
   <li><a href="../docs/reliability/e2e.html">E2E journeys</a>: the four journeys in detail, what is skipped rather than failed, and adding your own</li>
-  <li>Lesson 17 for the hourly production run and the issue it opens when the site stops serving</li>
+  <li>Lesson 17 for the scheduled production run and the issue it opens when the site stops serving</li>
 </ul>
 <details class="details">
   <summary>Episode script</summary>

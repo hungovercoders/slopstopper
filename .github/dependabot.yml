@@ -9,6 +9,10 @@
 # setup-cli action takes a `version:` input that must move with the pin,
 # which Dependabot can't do (copilot-setup-steps.yml bumps both by hand).
 #
+# The npm entry moves the lockfile the browser checks install from. A
+# GitHub-hosted runner image moves on its own, and a Playwright older than
+# the image refuses to install its browser, so the lockfile has to keep up.
+#
 # Adopters don't need this file for the ss-* workflows and composite
 # actions: they are copied from here on every install.sh refresh, pins
 # included.
@@ -31,3 +35,14 @@ updates:
     labels: ["ci", "maintenance"]
     commit-message:
       prefix: "chore(ci)"
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      npm:
+        patterns: ["*"]
+    labels: ["maintenance"]
+    commit-message:
+      prefix: "chore(deps)"

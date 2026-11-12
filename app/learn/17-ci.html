@@ -119,13 +119,13 @@ sed -n '/^    steps:/,$p' .github/workflows/ss-hygiene-entry-files-check.yml | g
 <ul>
   <li><strong>Auto-label.</strong> <code>.github/labeler.yml</code> maps changed paths to labels, so a pull request touching a check's workflow, docs or module gets its category label without anyone choosing it. The workflow uses <code>pull_request_target</code> because only the base repository's token can label a pull request from a fork, and it runs nothing from the pull request's code.</li>
   <li><strong>The doc updater.</strong> A weekly agentic workflow reads the pull requests merged in the last week, finds documentation that drifted, and opens a pull request with the fix for a human to review. Its source is a markdown file the gh-aw tool compiles to a lock file; you edit the markdown.</li>
-  <li><strong>The deploy trigger.</strong> Cloudflare Workers Builds deploys every push but raises no GitHub deployment, so nothing would run the URL checks against a preview. When Cloudflare's check run succeeds, this workflow works out the preview URL from the comment Cloudflare posts and dispatches each URL-driven check against it. Lesson 11's hourly smoke run against production is the same checks on a schedule.</li>
+  <li><strong>The deploy trigger.</strong> Cloudflare Workers Builds deploys every push but raises no GitHub deployment, so nothing would run the URL checks against a preview. When Cloudflare's check run succeeds, this workflow works out the preview URL from the comment Cloudflare posts and dispatches each URL-driven check against it. Lesson 11's scheduled smoke run against production is the same checks on a schedule.</li>
 </ul>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>grep -l "cron:" .github/workflows/ss-*.yml | wc -l
 grep -n "cron:" .github/workflows/ss-reliability-smoke-tests.yml</code></pre></div>
 <div class="codeblock codeblock--out" tabindex="0"><pre><code>12
-19:    - cron: '0 * * * *'</code></pre></div>
-<p>Twelve of the workflows this repo carries also run on a schedule, so a site that breaks between pushes is noticed; smoke is the hourly one.</p>
+19:    - cron: '17 */6 * * *'</code></pre></div>
+<p>Twelve of the workflows this repo carries also run on a schedule, so a site that breaks between pushes is noticed; smoke is the most frequent, every six hours.</p>
 <h2 id="checkpoint">Checkpoint</h2>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>grep -h "uses: " .github/workflows/ss-*.yml | grep -v "./.github/actions" | grep -v '@[0-9a-f]\{40\}' | wc -l</code></pre></div>
 <div class="codeblock codeblock--out" tabindex="0"><pre><code>0</code></pre></div>

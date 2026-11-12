@@ -32,6 +32,16 @@ before; the rule is "do the obvious thing the obvious way."
   step, because composite steps carry no timeout of their own. A shape
   test fails on any copy.
 
+- **Adding a workflow that runs on `pull_request` without the
+  concurrency block.** Each push to a PR starts every check again, and
+  without the group above `jobs:` the runs on the replaced commit carry
+  on to the end. Copy the block from
+  [`ss-reliability-smoke-tests.yml`](../../.github/workflows/ss-reliability-smoke-tests.yml):
+  it cancels only within one PR, so nothing on `main` is ever cancelled.
+- **Scheduling a workflow on minute 0.** GitHub delays the top of the
+  hour most and drops runs when it is busy. Pick an odd minute that no
+  other workflow uses. A shape test fails on either.
+
 ## CSP and headers
 
 - **Adding any external resource.** CSP blocks it silently in

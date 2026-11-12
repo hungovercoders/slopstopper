@@ -82,10 +82,16 @@ on:
   # change that breaks a lesson is caught within a day even when the PR
   # that made it never touched docs/learn/.
   schedule:
-    - cron: '0 4 * * *'
+    - cron: '11 4 * * *'
 
 permissions:
   contents: read
+
+concurrency:
+  # A new push to a PR cancels the run on the commit it replaced. Every
+  # other event gets a group of its own, so nothing on main is cancelled.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   test:
