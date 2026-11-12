@@ -242,7 +242,7 @@
       pull_request: { branches: [ main ] }
       push:         { branches: [ main ] }
       deployment_status:
-      schedule: [ { cron: '0 * * * *' } ]   # hourly
+      schedule: [ { cron: '17 */6 * * *' } ]   # every six hours
     jobs:
       smoke-test:
         steps:
@@ -265,7 +265,7 @@
       pull_request: { branches: [ main ] }
       push:         { branches: [ main ] }
       deployment_status:
-      schedule: [ { cron: '0 5 * * *' } ]   # daily
+      schedule: [ { cron: '13 5 * * *' } ]   # daily
     jobs:
       e2e:
         steps:
@@ -290,7 +290,7 @@
       pull_request: { branches: [main] }
       push:         { branches: [main] }
       deployment_status:
-      schedule: [ { cron: '0 8 * * *' } ]
+      schedule: [ { cron: '9 8 * * *' } ]
     jobs:
       broken-links:
         runs-on: ubuntu-latest
@@ -314,7 +314,7 @@
       pull_request:      { branches: [main] }
       push:              { branches: [main] }
       deployment_status:
-      schedule: [ { cron: '0 6 * * *' } ]    # daily
+      schedule: [ { cron: '19 6 * * *' } ]    # daily
     jobs:
       a11y:
         name: Accessibility Audit (axe-core / WCAG 2.1 AA)
@@ -336,7 +336,7 @@
                             <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Core Web Vitals
     on:
       deployment_status:
-      schedule: [ { cron: '0 0 * * *' } ]   # nightly prod
+      schedule: [ { cron: '23 0 * * *' } ]   # nightly prod
       pull_request: { branches: [ main ] }
       push:         { branches: [ main ] }
     jobs:
@@ -362,7 +362,7 @@
       pull_request: { branches: [main] }
       push:         { branches: [main] }
       deployment_status:
-      schedule: [ { cron: '0 7 * * *' } ]    # daily
+      schedule: [ { cron: '43 7 * * *' } ]    # daily
     jobs:
       seo:
         name: SEO Metatag Audit (OpenGraph + Twitter Card + canonical)
@@ -387,7 +387,7 @@
       pull_request: { branches: [main] }
       push:         { branches: [main] }
       deployment_status:
-      schedule: [ { cron: '0 7 * * *' } ]    # daily
+      schedule: [ { cron: '26 7 * * *' } ]    # daily
     jobs:
       llms-txt:
         name: llms.txt AI-discoverability audit
@@ -412,7 +412,7 @@
       pull_request: { branches: [main] }
       push:         { branches: [main] }
       deployment_status:
-      schedule: [ { cron: '0 7 * * *' } ]    # daily
+      schedule: [ { cron: '33 7 * * *' } ]    # daily
     jobs:
       robots-txt:
         name: robots.txt discoverability audit
@@ -437,7 +437,7 @@
       pull_request: { branches: [main] }
       push:         { branches: [main] }
       deployment_status:
-      schedule: [ { cron: '0 7 * * *' } ]    # daily
+      schedule: [ { cron: '38 7 * * *' } ]    # daily
     jobs:
       sitemap:
         name: sitemap completeness audit
@@ -503,7 +503,7 @@
                         <div class="details__body">
                             <div class="codeblock codeblock--yaml"><pre><code>name: SlopStopper · Hygiene - Documentation Accuracy Check
     on:
-      schedule: [ { cron: '0 7 * * 1' } ]   # weekly
+      schedule: [ { cron: '47 6 * * 1' } ]   # weekly
       pull_request:                         # every PR, no paths filter: a deleted
       push:         { branches: [ main ] }  # file anywhere can break a link</code></pre></div>
                             <a class="details__source" href="https://github.com/hungovercoders/slopstopper/blob/main/.github/workflows/ss-hygiene-docs-accuracy-check.yml" rel="noopener noreferrer">View accuracy workflow →</a>

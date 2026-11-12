@@ -154,3 +154,44 @@ def test_the_newest_checks_are_covered(filename):
     name = _workflow_name(WORKFLOWS_DIR / filename)
     for reacting in LISTS:
         assert name in set(_trigger_list(WORKFLOWS_DIR / reacting)), reacting
+
+
+# A push to a PR starts every check again; without a concurrency group the
+# runs on the commit it replaced carry on and finish for nobody.
+PR_CONCURRENCY_GROUP = (
+    "group: ${{ github.workflow }}-"
+    "${{ github.event_name == 'pull_request' && github.ref || github.run_id }}"
+)
+
+
+def _pull_request_workflows() -> list[str]:
+    return sorted(
+        path.name
+        for path in [*WORKFLOWS_DIR.glob("ss-*.yml"), WORKFLOWS_DIR / "ci-cli.yml"]
+        if re.search(r"^  pull_request:", path.read_text(encoding="utf-8"), re.M)
+    )
+
+
+def test_the_fixture_finds_pull_request_workflows():
+    assert len(_pull_request_workflows()) > 20
+
+
+@pytest.mark.parametrize("filename", _pull_request_workflows())
+def test_a_pull_request_workflow_cancels_the_run_it_replaces(filename):
+    text = (WORKFLOWS_DIR / filename).read_text(encoding="utf-8")
+    assert PR_CONCURRENCY_GROUP in text, (
+        f"{filename} runs on pull_request but has no concurrency group; "
+        "copy the block above `jobs:` from ss-reliability-smoke-tests.yml"
+    )
+    assert re.search(r"^  cancel-in-progress: true$", text, re.M)
+
+
+def test_no_schedule_fires_on_the_hour():
+    """GitHub delays and drops schedules queued for minute 0 most."""
+    on_the_hour = [
+        path.name
+        for path in WORKFLOWS_DIR.glob("*.yml")
+        if not path.name.endswith(".lock.yml")
+        and re.search(r"- cron: *['\"]0 ", path.read_text(encoding="utf-8"))
+    ]
+    assert on_the_hour == []

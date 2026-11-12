@@ -62,7 +62,7 @@ runs locally before commits, and the PNG outputs are checked in.
   whose default branch isn't `main`, gets the checks but not the issues.
 - **Live-health README badge.** The existing
   [`ss-reliability-smoke-tests.yml`](../../.github/workflows/ss-reliability-smoke-tests.yml)
-  workflow runs hourly and after every deploy, and its GitHub Actions
+  workflow runs every six hours and after every deploy, and its GitHub Actions
   status badge tells you whether the live site is behaving right now.
 - **Per-PR check.** Cloudflare's GitHub App writes a Workers Builds
   check on each PR commit with the preview URL. It has the same shape
