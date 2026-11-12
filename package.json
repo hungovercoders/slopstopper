@@ -17,8 +17,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@axe-core/playwright": "^4.11.1",
-    "@lhci/cli": "^0.14.0",
+    "@axe-core/playwright": "^4.14.0",
+    "@lhci/cli": "^0.16.0",
     "@playwright/test": "^1.61.0"
   }
 }
