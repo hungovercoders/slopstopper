@@ -115,7 +115,7 @@ slopstopper profile show</code></pre></div>
   library
       A library, CLI or package with no deployed surface of any kind.
       …
-      disables 16 workflow(s):</code></pre></div>
+      disables 17 workflow(s):</code></pre></div>
 <h3 id="4-switch-the-repo-to-the-api-profile">4. Switch the repo to the API profile</h3>
 <p>The installer does this with <code>--profile api</code>; the key it writes is the whole mechanism, so write it yourself.</p>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>sed -i.bak 's/^profile: ui$/profile: api/' .slopstopper.yml &amp;&amp; rm .slopstopper.yml.bak
@@ -138,8 +138,8 @@ slopstopper profile show</code></pre></div>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>slopstopper install --no-topic --no-hooks --no-skills | grep 'not installed for this repo shape'
 ls .github/workflows | wc -l</code></pre></div>
 <div class="codeblock codeblock--out" tabindex="0"><pre><code>ℹ️  profile 'api': 10 workflow(s) not installed for this repo shape (10 removed from a previous install)
-21</code></pre></div>
-<p>Ten removed, four API ones added: twenty-one workflows where lesson 1 had twenty-seven. The deploy trigger stops dispatching the nine too; <code>slopstopper profile disabled</code> prints the resolved set one per line, which is what both of them read.</p>
+22</code></pre></div>
+<p>Ten removed, four API ones added: twenty-two workflows where lesson 1 had twenty-eight. The deploy trigger stops dispatching the nine too; <code>slopstopper profile disabled</code> prints the resolved set one per line, which is what both of them read.</p>
 <h3 id="5-keep-one-of-them">5. Keep one of them</h3>
 <p>An API that serves its own docs pages still wants the link check.</p>
 <div class="codeblock codeblock--sh" data-copyable><pre><code>python3 - &lt;&lt;'PY'

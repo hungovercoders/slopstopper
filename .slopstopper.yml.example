@@ -435,6 +435,13 @@ security:
     # Interpreter whose environment holds the project's Python dependencies.
     # Unset: a .venv/ or venv/ beside the manifest, else python3 on PATH.
     # python: cli/.venv/bin/python
+  # security:https asks the deployed site whether `http://<host>/`
+  # redirects to https on the same host, and whether the https response
+  # sends `Strict-Transport-Security`. The redirect has no knob.
+  https:
+    # Demand HSTS on the https response. false → a missing header is a
+    # note, not a failure.
+    require_hsts: true
 
 # ── Hygiene-check thresholds ─────────────────────────────────────────
 # Every hygiene check reads its own thresholds from here. Values shown

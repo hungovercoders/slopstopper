@@ -107,7 +107,7 @@ slopstopper profile list
   library
       A library, CLI or package with no deployed surface of any kind.
       …
-      disables 16 workflow(s):
+      disables 17 workflow(s):
 ```
 
 ### 4. Switch the repo to the API profile
@@ -152,11 +152,11 @@ ls .github/workflows | wc -l
 
 ```
 ℹ️  profile 'api': 10 workflow(s) not installed for this repo shape (10 removed from a previous install)
-21
+22
 ```
 
-Ten removed, four API ones added: twenty-one workflows where lesson 1
-had twenty-seven. The deploy trigger stops dispatching the nine too;
+Ten removed, four API ones added: twenty-two workflows where lesson 1
+had twenty-eight. The deploy trigger stops dispatching the nine too;
 `slopstopper profile disabled` prints the resolved set one per line,
 which is what both of them read.
 

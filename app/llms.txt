@@ -86,6 +86,7 @@ One page per reference doc an adopter reads, by section; each section's index sa
 - [Security: API Headers & CORS](https://slopstopper.dev/docs/security/api-headers.html): Audits a JSON API's response headers and CORS policy, where a permissive policy on a credentialed API is a cross-origin data leak.
 - [Security: CSP exceptions](https://slopstopper.dev/docs/security/csp-exceptions.html): This file is the single source of truth for every per-path Content-Security-Policy relaxation on the SlopStopper site.
 - [Security: Dynamic Application Security Testing (DAST)](https://slopstopper.dev/docs/security/dast.html): OWASP ZAP scans your running site, or your API through its OpenAPI spec, for runtime security issues.
+- [Security: HTTPS Redirect and HSTS](https://slopstopper.dev/docs/security/https.html): Checks that a deployed site sends every visitor to https:// and keeps them there.
 - [Security: Licence Inventory](https://slopstopper.dev/docs/security/licences.html): security:licences judges every dependency the lockfiles resolve to against the repo's licence allowlist, so a transitive package under a denied licence cannot sit in the tree unnoticed.
 - [Security: Static Application Security Testing (SAST)](https://slopstopper.dev/docs/security/sast.html): Semgrep scans your source code for security bugs and unsafe patterns before they merge.
 - [Security: Secrets Detection](https://slopstopper.dev/docs/security/secrets.html): Gitleaks scans your source and your git history for committed credentials, API keys and other secrets.

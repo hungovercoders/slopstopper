@@ -29,6 +29,7 @@ security:
       - 'cli/slopstopper/checks/vulnerability_all.py'
       - 'cli/slopstopper/checks/licences.py'
       - 'cli/slopstopper/checks/api_headers.py'
+      - 'cli/slopstopper/checks/https.py'
       - 'worker/headers.json'
 
 # ── Reliability ──

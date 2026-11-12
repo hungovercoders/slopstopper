@@ -128,7 +128,7 @@ slopstopper run hygiene:docs-size    # one check; the report lands in .ss/report
 <div class="lesson-table-wrap" tabindex="0"><table class="lesson-table">
   <thead><tr><th>Loop</th><th>What it does</th><th>Tools</th><th>Docs</th></tr></thead>
   <tbody>
-    <tr><td>🔒 <strong>Security</strong></td><td>SAST, DAST, secrets detection, dependency CVEs, API header + CORS audit</td><td>Semgrep, OWASP ZAP, Gitleaks, Trivy</td><td><a href="../security/index.html">Security →</a></td></tr>
+    <tr><td>🔒 <strong>Security</strong></td><td>SAST, DAST, secrets detection, dependency CVEs, API header + CORS audit, HTTP→HTTPS redirect + HSTS</td><td>Semgrep, OWASP ZAP, Gitleaks, Trivy</td><td><a href="../security/index.html">Security →</a></td></tr>
     <tr><td>🧹 <strong>Hygiene</strong></td><td>Complexity caps, docs structure/accuracy/size and entry-file checks, CSP drift, the privacy statement, OpenAPI drift, auto-labelled PRs</td><td>Lizard, stdlib Python</td><td><a href="../hygiene/index.html">Hygiene →</a></td></tr>
     <tr><td>✅ <strong>Reliability</strong></td><td>E2E + smoke tests, broken-link audits, accessibility (WCAG 2.1 AA), Core Web Vitals, SEO metatags, llms.txt, robots.txt, sitemap.xml, API health + latency</td><td>Playwright, axe-core, Lighthouse CI, stdlib Python</td><td><a href="../reliability/index.html">Reliability →</a></td></tr>
     <tr><td>🤖 <strong>Runbooks</strong></td><td>One rolling PR comment summarises every check; failed workflows auto-raise issues; an agentic doc updater opens weekly sync PRs</td><td>GitHub Actions, gh-aw</td><td><a href="index.html">Runbooks →</a></td></tr>
@@ -141,7 +141,7 @@ slopstopper run hygiene:docs-size    # one check; the report lands in .ss/report
   <thead><tr><th>Layer</th><th>Checks</th><th>What you provide</th></tr></thead>
   <tbody>
     <tr><td><strong>1. Static analysis</strong> (any code)</td><td>SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure/Accuracy/Size, Entry Files, Auto-label PRs, Workflow-failure tracker</td><td>Nothing</td></tr>
-    <tr><td><strong>2. Deployed surface</strong> (need a URL)</td><td>Smoke, E2E, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, llms.txt, robots.txt, sitemap.xml, DAST, Playwright, API Health/Latency/Headers, OpenAPI Drift</td><td><code>urls.production</code> / <code>urls.preview</code> in <code>.slopstopper.yml</code> (<a href="../reliability/index.html">per-check env vars</a> also work)</td></tr>
+    <tr><td><strong>2. Deployed surface</strong> (need a URL)</td><td>Smoke, E2E, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, llms.txt, robots.txt, sitemap.xml, DAST, HTTPS Redirect, Playwright, API Health/Latency/Headers, OpenAPI Drift</td><td><code>urls.production</code> / <code>urls.preview</code> in <code>.slopstopper.yml</code> (<a href="../reliability/index.html">per-check env vars</a> also work)</td></tr>
     <tr><td><strong>3. Agentic doc-updater</strong></td><td>Weekly doc-sync PRs</td><td><code>COPILOT_GITHUB_TOKEN</code> repo secret</td></tr>
     <tr><td><strong>Cloudflare repos only</strong></td><td><code>ss-cloudflare-deployed.yml</code>: after each Workers Builds deploy, runs the layer-2 checks against the preview (PRs) or <code>urls.production</code> (main)</td><td>wrangler config (at the root or one directory down) or <code>worker/</code> in the repo; <code>urls.production</code> for the live site</td></tr>
   </tbody>

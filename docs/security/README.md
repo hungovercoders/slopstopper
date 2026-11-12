@@ -13,6 +13,7 @@ One page per check; read the one whose trigger matches.
 | judging a dependency's licence, exempting one, or when the inventory says the tree is not installed | Read [LICENCES.md](LICENCES.md) for what each ecosystem is read from, the purl exemptions, dev scope and the exit-2 cases |
 | handling a Gitleaks finding or allowlisting a false positive          | Read [SECRETS.md](SECRETS.md) for the quick start, the allowlist format and what to do the moment a real secret is detected |
 | adding a third-party script, widget or any external resource to a page | Read [CSP_EXCEPTIONS.md](CSP_EXCEPTIONS.md) first for the strict-default + per-path exception pattern and the live list |
+| a site that answers plain `http://` with a page, or sends no HSTS      | Read [HTTPS.md](HTTPS.md) for the two requests, the findings, the Cloudflare and `_headers` fixes and the knob |
 | auditing CORS, HSTS or `nosniff` on a JSON API                        | Read [API_HEADERS.md](API_HEADERS.md) for the findings, the hard-fail split, knobs and commands |
 
 ## Checks
@@ -24,6 +25,7 @@ Generated from the CLI's registry by `task contributing:tables`:
 | ----- | ------ | -------- | ------------ |
 | `security:api-headers` | `task ss:security:api-headers` | `ss-security-api-headers-check.yml` | API response-header + CORS policy audit (in-CLI implementation). |
 | `security:dast` | `task ss:security:dast` | `ss-security-dast-check.yml` | Dynamic Application Security Testing (OWASP ZAP). |
+| `security:https` | `task ss:security:https` | `ss-security-https-check.yml` | HTTPS redirect + HSTS audit (in-CLI implementation). |
 | `security:licences` | `task ss:security:licences` | `ss-security-licences-check.yml` | Licence inventory over the full resolved dependency tree. |
 | `security:sast` | `task ss:security:sast` | `ss-security-sast-check.yml` | Static Application Security Testing (Semgrep wrapper). |
 | `security:secrets` | `task ss:security:secrets` | `ss-security-secrets-check.yml` | Secrets detection (Gitleaks wrapper). |
@@ -40,6 +42,7 @@ What each one blocks on:
 | `security:licences` | stdlib Python | a resolved dependency whose licence is outside `.github/dependency-review-config.yml` |
 | `security:secrets` | Gitleaks | any secret, in files or git history |
 | `security:api-headers` | stdlib Python | credentialed CORS wildcards, missing HSTS / `nosniff` |
+| `security:https` | stdlib Python | plain `http://` that does not redirect to https, missing HSTS |
 | `hygiene:csp-exceptions` | stdlib Python | drift between `worker/headers.json` and the exceptions doc |
 
 Every check follows the same shape: run it locally with the `task`

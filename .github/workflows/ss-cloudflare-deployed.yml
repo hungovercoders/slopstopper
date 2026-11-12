@@ -140,6 +140,7 @@ jobs:
             ss-reliability-api-health-check.yml
             ss-reliability-api-latency-check.yml
             ss-security-api-headers-check.yml
+            ss-security-https-check.yml
             ss-hygiene-openapi-check.yml
           )
           [ "$PRODUCTION" = "true" ] && checks+=(ss-security-dast-check.yml)

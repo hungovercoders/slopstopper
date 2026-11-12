@@ -43,10 +43,10 @@ sed -n '/^REGISTRY/,/^}/p' cli/slopstopper/checks/__init__.py | grep -c '": '
 ```
 
 ```
-23
+26
 ```
 
-Twenty-three checks, each a `<category>:<name>` key mapped to a
+Twenty-six checks, each a `<category>:<name>` key mapped to a
 module's `run`. The key is what `slopstopper run` and the `task ss:*`
 shims use, so this dictionary is the one list every other surface is
 checked against.
@@ -205,7 +205,7 @@ workflow, a marketing bullet. `docs/`: nothing.
 
 1. Why: the change map as prose did not fail a build; now it is a test
    keyed off the registry.
-2. The registry; twenty-three keys; the shape every check shares and
+2. The registry; twenty-six keys; the shape every check shares and
    the licence boundary.
 3. Copy smoke, register it; seven failures, each naming a surface.
 4. The surfaces a test cannot cover: the site, the runbook, the skills.

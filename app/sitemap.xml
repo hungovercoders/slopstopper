@@ -189,6 +189,11 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://slopstopper.dev/docs/security/https.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://slopstopper.dev/docs/security/licences.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>

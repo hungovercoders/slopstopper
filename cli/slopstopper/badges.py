@@ -42,6 +42,7 @@ WORKFLOW_DISPLAY: dict[str, tuple[str, str]] = {
     "ss-security-licences-check.yml": ("security", "Licences"),
     "ss-security-dast-check.yml": ("security", "DAST"),
     "ss-security-api-headers-check.yml": ("security", "API Headers"),
+    "ss-security-https-check.yml": ("security", "HTTPS Redirect"),
     "ss-hygiene-complexity-check.yml": ("hygiene", "Complexity"),
     "ss-hygiene-csp-exceptions-check.yml": ("hygiene", "CSP Exceptions"),
     "ss-hygiene-privacy-check.yml": ("hygiene", "Privacy Statement"),

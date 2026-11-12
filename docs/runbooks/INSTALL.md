@@ -83,7 +83,7 @@ There are five feedback loops. The first four run on every PR and push to `main`
 
 | Loop | What it does | Tools | Docs |
 | ---- | ------------ | ----- | ---- |
-| 🔒 **Security** | SAST, DAST, secrets detection, dependency CVEs, API header + CORS audit | Semgrep, OWASP ZAP, Gitleaks, Trivy | [Security →](../security/README.md) |
+| 🔒 **Security** | SAST, DAST, secrets detection, dependency CVEs, API header + CORS audit, HTTP→HTTPS redirect + HSTS | Semgrep, OWASP ZAP, Gitleaks, Trivy | [Security →](../security/README.md) |
 | 🧹 **Hygiene** | Complexity caps, docs structure/accuracy/size and entry-file checks, CSP drift, the privacy statement, OpenAPI drift, auto-labelled PRs | Lizard, stdlib Python | [Hygiene →](../hygiene/README.md) |
 | ✅ **Reliability** | E2E + smoke tests, broken-link audits, accessibility (WCAG 2.1 AA), Core Web Vitals, SEO metatags, llms.txt, robots.txt, sitemap.xml, API health + latency | Playwright, axe-core, Lighthouse CI, stdlib Python | [Reliability →](../reliability/README.md) |
 | 🤖 **Runbooks** | One rolling PR comment summarises every check; failed workflows auto-raise issues; an agentic doc updater opens weekly sync PRs | GitHub Actions, gh-aw | [Runbooks →](./README.md) |
@@ -96,7 +96,7 @@ Three portability layers. Layer 1 runs on install; layers 2–3 need a little co
 | Layer | Checks | What you provide |
 | ----- | ------ | ---------------- |
 | **1. Static analysis** (any code) | SAST, Secrets, Trivy, Dependency Review, Complexity, Doc Structure/Accuracy/Size, Entry Files, Auto-label PRs, Workflow-failure tracker | Nothing |
-| **2. Deployed surface** (need a URL) | Smoke, E2E, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, llms.txt, robots.txt, sitemap.xml, DAST, Playwright, API Health/Latency/Headers, OpenAPI Drift | `urls.production` / `urls.preview` in `.slopstopper.yml` ([per-check env vars](../reliability/README.md) also work) |
+| **2. Deployed surface** (need a URL) | Smoke, E2E, Broken Links, Accessibility, Core Web Vitals, SEO Metatags, llms.txt, robots.txt, sitemap.xml, DAST, HTTPS Redirect, Playwright, API Health/Latency/Headers, OpenAPI Drift | `urls.production` / `urls.preview` in `.slopstopper.yml` ([per-check env vars](../reliability/README.md) also work) |
 | **3. Agentic doc-updater** | Weekly doc-sync PRs | `COPILOT_GITHUB_TOKEN` repo secret |
 | **Cloudflare repos only** | `ss-cloudflare-deployed.yml`: after each Workers Builds deploy, runs the layer-2 checks against the preview (PRs) or `urls.production` (main) | wrangler config (at the root or one directory down) or `worker/` in the repo; `urls.production` for the live site |
 
